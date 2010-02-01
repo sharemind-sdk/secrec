@@ -48,11 +48,12 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
 
     assert(p->type() == NODE_PROGRAM);
     assert(m_symbolMap.size() == 0);
-    const TreeNode *fs = p->children().at(0);
+    const TreeNode *fs;
 
     // Check for global declarations:
     assert(p->children().size() == 1 || p->children().size() == 2);
     if (p->children().size() > 1) {
+        fs = p->children().at(0);
 
         // Handle global declarations:
         const std::deque<TreeNode*> &gds = fs->children();
@@ -65,11 +66,18 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
             */
             addDecl(ds, decl);
             if (decl->children().size() == 3) {
+                /*
+                  1    0            2
+                  type identifier = initializer;
+                  type identifier   [vector][suffix];
+                */
                 initSymbolMap(ds, decl->children().at(2));
             }
         }
 
         fs = p->children().at(1);
+    } else {
+        fs = p->children().at(0);
     }
 
     // Handle global functions:
@@ -102,8 +110,15 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
 
     DECLS ds(current);
 
-    std::stack<const TreeNode*> s;
+    std::stack<const TreeNode*> s; // Tree nodes appearing in order
+
+
     if (node->type() == NODE_STMT_COMPOUND) {
+        /*
+          If the only node inside the new scope is a NODE_STMT_COMPOUND, the
+          semantics of the scope are identical to a scope having all the child
+          nodes of the NODE_STMT_COMPOUND.
+        */
         const std::deque<TreeNode*> &nc = node->children();
         for (TDCRI it = nc.rbegin(); it != nc.rend(); it++) {
             s.push(*it);
@@ -122,6 +137,11 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
                 break;
             case NODE_DECL:
                 assert(n->children().size() > 1 && n->children().size() < 4);
+
+                /*
+                  Since we're in a while-loop of nodes in the program, this
+                  declaration only has effect on the following nodes.
+                */
 
                 /**
                   \note Currently we allow stuff like "public int a = a;"

@@ -41,7 +41,7 @@
 
 %type <treenode> variable_declarations variable_declaration initializer
 %type <treenode> vector_suffix type_specifier basic_type_specifier
-%type <treenode> vector_type_specifier vector_type_suffixes function_definitions
+%type <treenode> function_definitions
 %type <treenode> function_definition function_parameter_list function_parameter
 %type <treenode> compound_statement statement_list statement if_statement
 %type <treenode> for_statement for_statement_expression while_statement
@@ -138,92 +138,71 @@ vector_suffix
 *******************************************************************************/
 
 type_specifier
- : vector_type_specifier
+ : type_specifier '[' ']'
+   {
+     $$ = (struct TreeNode *) treenode_init(NODE_ARRAYTYPE, &@$);
+     treenode_setValue_uint($$, 0);
+     treenode_appendChild($$, $1);
+   }
  | basic_type_specifier
  ;
 
 basic_type_specifier
  : PRIVATE BOOL
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PRIVATE, TYPE_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PRIVATE_BOOL, &@$);
    }
  | PRIVATE INT
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PRIVATE, TYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PRIVATE_INT, &@$);
    }
  | PUBLIC VOID
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_VOID, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_VOID, &@$);
    }
  | PUBLIC BOOL
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_BOOL, &@$);
    }
  | PUBLIC INT
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
    }
  | PUBLIC SIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
    }
  | PUBLIC UNSIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_UINT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_UINT, &@$);
    }
  | PUBLIC STRING
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_STRING, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_STRING, &@$);
    }
  | VOID /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_VOID, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_VOID, &@$);
    }
  | BOOL /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_BOOL, &@$);
    }
  | INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
    }
  | SIGNED INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
    }
  | UNSIGNED INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_UINT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_UINT, &@$);
    }
  | STRING /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_type(SECTYPE_PUBLIC, TYPE_STRING, &@$);
-   }
- ;
-
-vector_type_specifier
- : basic_type_specifier vector_type_suffixes
-   {
-     $$ = treenode_init_vtype(treenode_value_secType($1),
-                              treenode_value_type($1),
-                              treenode_numChildren($2),
-                              &@$);
-     treenode_free($1);
-     treenode_free($2);
-   }
- ;
-
-vector_type_suffixes /* Helper nonterminal for ('[' ']')+ */
- : vector_type_suffixes '[' ']'
-   {
-     $$ = $1;
-     treenode_setLocation($$, &@$);
-     treenode_appendChild($$, treenode_init(NODE_INTERNAL_USE, &@$));
-   }
- | '[' ']'
-   {
-     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
-     treenode_appendChild($$, treenode_init(NODE_INTERNAL_USE, &@$));
+     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_STRING, &@$);
    }
  ;
 
@@ -675,7 +654,7 @@ primary_expression
  | constant
    {
      $$ = $1;
-     treenode_setConstant($$, 1);
+     treenode_setFlag($$, NODE_FLAG_CONSTANT, 1);
    }
  ;
 

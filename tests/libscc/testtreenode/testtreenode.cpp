@@ -10,7 +10,8 @@ bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
     return true;
 }
 
-Q_DECLARE_METATYPE(SecrecType)
+Q_DECLARE_METATYPE(SecrecBasicType)
+Q_DECLARE_METATYPE(SecrecVarType)
 Q_DECLARE_METATYPE(SecrecSecType)
 
 class TestTreeNode: public QObject {
@@ -28,8 +29,6 @@ class TestTreeNode: public QObject {
         void testInitString_data();
         void testInitType();
         void testInitType_data();
-        void testInitVType();
-        void testInitVType_data();
         void testChildren();
 };
 
@@ -44,10 +43,6 @@ class TestTreeNode: public QObject {
 #define NR2(a,b) QTest::newRow(#a","#b)<<(a)<<(b)
 #define NR3(a,b,c) QTest::newRow(#a","#b","#c)<<(a)<<(b)<<(c)
 #define NR4(a,b,c,d) QTest::newRow(#a","#b","#c","#d)<<(a)<<(b)<<(c)<<(d)
-#define NR5(a,b,c,d,e) QTest::newRow(#a","#b","#c","#d","#e)\
-                       <<(a)<<(b)<<(c)<<(d)<<(e)
-#define NR6(a,b,c,d,e,f) QTest::newRow(#a","#b","#c","#d","#e","#f)\
-                         <<(a)<<(b)<<(c)<<(d)<<(e)<<(f)
 
 void TestTreeNode::testInitTreeNode() {
     DEFLOC(loc,1,2,3,4);
@@ -60,10 +55,10 @@ void TestTreeNode::testInitTreeNode() {
     QCOMPARE(n->type(), NODE_INTERNAL_USE);
     QCOMPARE(n->location(), loc);
     QCOMPARE(n->children().size(), (unsigned long) 0);
-    QCOMPARE(n->constant(), false);
+    QCOMPARE(n->testFlag(NODE_FLAG_CONSTANT), false);
 
-    n->setConstant(true);
-    QCOMPARE(n->constant(), true);
+    n->setFlag(NODE_FLAG_CONSTANT, true);
+    QCOMPARE(n->testFlag(NODE_FLAG_CONSTANT), true);
 
     n->setLocation(nloc);
     QCOMPARE(n->location(), nloc);
@@ -166,29 +161,29 @@ void TestTreeNode::testInitType() {
     DEFLOC(loc,1,2,3,4);
 
     QFETCH(SecrecSecType, sectype1);
-    QFETCH(SecrecType, type1);
+    QFETCH(SecrecVarType, type1);
     QFETCH(SecrecSecType, sectype2);
-    QFETCH(SecrecType, type2);
+    QFETCH(SecrecVarType, type2);
 
-    TreeNode n(sectype1, type1, loc);
-    QCOMPARE(n.type(), NODE_TYPE);
-    QCOMPARE(n.valueSecType(), sectype1);
-    QCOMPARE(n.valueType(), type1);
-    n.setValue(sectype2);
-    n.setValue(type2);
-    QCOMPARE(n.valueSecType(), sectype2);
-    QCOMPARE(n.valueType(), type2);
+    TreeNode n(make_basicType(sectype1, type1), loc);
+    QCOMPARE(n.type(), NODE_BASICTYPE);
+    QCOMPARE(secType_from_basicType(n.valueBasicType()), sectype1);
+    QCOMPARE(varType_from_basicType(n.valueBasicType()), type1);
+    n.setValue(make_basicType(sectype2, type2));
+    QCOMPARE(secType_from_basicType(n.valueBasicType()), sectype2);
+    QCOMPARE(varType_from_basicType(n.valueBasicType()), type2);
 }
 
 void TestTreeNode::testInitType_data() {
     QTest::addColumn<SecrecSecType>("sectype1");
-    QTest::addColumn<SecrecType>("type1");
+    QTest::addColumn<SecrecVarType>("type1");
     QTest::addColumn<SecrecSecType>("sectype2");
-    QTest::addColumn<SecrecType>("type2");
+    QTest::addColumn<SecrecVarType>("type2");
 
     static const SecrecSecType PR = SECTYPE_PRIVATE, PU = SECTYPE_PRIVATE;
-    static const SecrecType V = TYPE_VOID, B = TYPE_BOOL, I = TYPE_INT,
-                            U = TYPE_UINT, S = TYPE_STRING;
+    static const SecrecVarType V = VARTYPE_VOID, B = VARTYPE_BOOL,
+                               I = VARTYPE_INT, U = VARTYPE_UINT,
+                               S = VARTYPE_STRING;
 
 
     NR4(PU,V,PU,V);NR4(PU,V,PR,V);NR4(PR,V,PU,V);NR4(PR,V,PR,V);
@@ -216,146 +211,6 @@ void TestTreeNode::testInitType_data() {
     NR4(PU,S,PU,I);NR4(PU,S,PR,I);NR4(PR,S,PU,I);NR4(PR,S,PR,I);
     NR4(PU,S,PU,U);NR4(PU,S,PR,U);NR4(PR,S,PU,U);NR4(PR,S,PR,U);
     NR4(PU,S,PU,S);NR4(PU,S,PR,S);NR4(PR,S,PU,S);NR4(PR,S,PR,S);
-}
-
-void TestTreeNode::testInitVType() {
-    DEFLOC(loc,1,2,3,4);
-
-    QFETCH(SecrecSecType, sectype1);
-    QFETCH(SecrecType, type1);
-    QFETCH(unsigned, dim1);
-    QFETCH(SecrecSecType, sectype2);
-    QFETCH(SecrecType, type2);
-    QFETCH(unsigned, dim2);
-
-    TreeNode n(sectype1, type1, dim1, loc);
-    QCOMPARE(n.type(), NODE_VTYPE);
-    QCOMPARE(n.valueSecType(), sectype1);
-    QCOMPARE(n.valueType(), type1);
-    QCOMPARE(n.valueDimensions(), dim1);
-    n.setValue(sectype2);
-    n.setValue(type2);
-    n.setValueDimensions(dim2);
-    QCOMPARE(n.valueSecType(), sectype2);
-    QCOMPARE(n.valueType(), type2);
-    QCOMPARE(n.valueDimensions(), dim2);
-}
-
-void TestTreeNode::testInitVType_data() {
-    QTest::addColumn<SecrecSecType>("sectype1");
-    QTest::addColumn<SecrecType>("type1");
-    QTest::addColumn<unsigned>("dim1");
-    QTest::addColumn<SecrecSecType>("sectype2");
-    QTest::addColumn<SecrecType>("type2");
-    QTest::addColumn<unsigned>("dim2");
-
-    static const SecrecSecType PR = SECTYPE_PRIVATE, PU = SECTYPE_PRIVATE;
-    static const SecrecType V = TYPE_VOID, B = TYPE_BOOL, I = TYPE_INT,
-                            U = TYPE_UINT, S = TYPE_STRING;
-
-    NR6(PU,V,1u,PU,V,1u);NR6(PU,V,1u,PR,V,1u);NR6(PR,V,1u,PU,V,1u);NR6(PR,V,1u,PR,V,1u);
-    NR6(PU,V,1u,PU,B,1u);NR6(PU,V,1u,PR,B,1u);NR6(PR,V,1u,PU,B,1u);NR6(PR,V,1u,PR,B,1u);
-    NR6(PU,V,1u,PU,I,1u);NR6(PU,V,1u,PR,I,1u);NR6(PR,V,1u,PU,I,1u);NR6(PR,V,1u,PR,I,1u);
-    NR6(PU,V,1u,PU,U,1u);NR6(PU,V,1u,PR,U,1u);NR6(PR,V,1u,PU,U,1u);NR6(PR,V,1u,PR,U,1u);
-    NR6(PU,V,1u,PU,S,1u);NR6(PU,V,1u,PR,S,1u);NR6(PR,V,1u,PU,S,1u);NR6(PR,V,1u,PR,S,1u);
-    NR6(PU,B,1u,PU,V,1u);NR6(PU,B,1u,PR,V,1u);NR6(PR,B,1u,PU,V,1u);NR6(PR,B,1u,PR,V,1u);
-    NR6(PU,B,1u,PU,B,1u);NR6(PU,B,1u,PR,B,1u);NR6(PR,B,1u,PU,B,1u);NR6(PR,B,1u,PR,B,1u);
-    NR6(PU,B,1u,PU,I,1u);NR6(PU,B,1u,PR,I,1u);NR6(PR,B,1u,PU,I,1u);NR6(PR,B,1u,PR,I,1u);
-    NR6(PU,B,1u,PU,U,1u);NR6(PU,B,1u,PR,U,1u);NR6(PR,B,1u,PU,U,1u);NR6(PR,B,1u,PR,U,1u);
-    NR6(PU,B,1u,PU,S,1u);NR6(PU,B,1u,PR,S,1u);NR6(PR,B,1u,PU,S,1u);NR6(PR,B,1u,PR,S,1u);
-    NR6(PU,I,1u,PU,V,1u);NR6(PU,I,1u,PR,V,1u);NR6(PR,I,1u,PU,V,1u);NR6(PR,I,1u,PR,V,1u);
-    NR6(PU,I,1u,PU,B,1u);NR6(PU,I,1u,PR,B,1u);NR6(PR,I,1u,PU,B,1u);NR6(PR,I,1u,PR,B,1u);
-    NR6(PU,I,1u,PU,I,1u);NR6(PU,I,1u,PR,I,1u);NR6(PR,I,1u,PU,I,1u);NR6(PR,I,1u,PR,I,1u);
-    NR6(PU,I,1u,PU,U,1u);NR6(PU,I,1u,PR,U,1u);NR6(PR,I,1u,PU,U,1u);NR6(PR,I,1u,PR,U,1u);
-    NR6(PU,I,1u,PU,S,1u);NR6(PU,I,1u,PR,S,1u);NR6(PR,I,1u,PU,S,1u);NR6(PR,I,1u,PR,S,1u);
-    NR6(PU,U,1u,PU,V,1u);NR6(PU,U,1u,PR,V,1u);NR6(PR,U,1u,PU,V,1u);NR6(PR,U,1u,PR,V,1u);
-    NR6(PU,U,1u,PU,B,1u);NR6(PU,U,1u,PR,B,1u);NR6(PR,U,1u,PU,B,1u);NR6(PR,U,1u,PR,B,1u);
-    NR6(PU,U,1u,PU,I,1u);NR6(PU,U,1u,PR,I,1u);NR6(PR,U,1u,PU,I,1u);NR6(PR,U,1u,PR,I,1u);
-    NR6(PU,U,1u,PU,U,1u);NR6(PU,U,1u,PR,U,1u);NR6(PR,U,1u,PU,U,1u);NR6(PR,U,1u,PR,U,1u);
-    NR6(PU,U,1u,PU,S,1u);NR6(PU,U,1u,PR,S,1u);NR6(PR,U,1u,PU,S,1u);NR6(PR,U,1u,PR,S,1u);
-    NR6(PU,S,1u,PU,V,1u);NR6(PU,S,1u,PR,V,1u);NR6(PR,S,1u,PU,V,1u);NR6(PR,S,1u,PR,V,1u);
-    NR6(PU,S,1u,PU,B,1u);NR6(PU,S,1u,PR,B,1u);NR6(PR,S,1u,PU,B,1u);NR6(PR,S,1u,PR,B,1u);
-    NR6(PU,S,1u,PU,I,1u);NR6(PU,S,1u,PR,I,1u);NR6(PR,S,1u,PU,I,1u);NR6(PR,S,1u,PR,I,1u);
-    NR6(PU,S,1u,PU,U,1u);NR6(PU,S,1u,PR,U,1u);NR6(PR,S,1u,PU,U,1u);NR6(PR,S,1u,PR,U,1u);
-    NR6(PU,S,1u,PU,S,1u);NR6(PU,S,1u,PR,S,1u);NR6(PR,S,1u,PU,S,1u);NR6(PR,S,1u,PR,S,1u);
-
-    NR6(PU,V,1u,PU,V,42u);NR6(PU,V,1u,PR,V,42u);NR6(PR,V,1u,PU,V,42u);NR6(PR,V,1u,PR,V,42u);
-    NR6(PU,V,1u,PU,B,42u);NR6(PU,V,1u,PR,B,42u);NR6(PR,V,1u,PU,B,42u);NR6(PR,V,1u,PR,B,42u);
-    NR6(PU,V,1u,PU,I,42u);NR6(PU,V,1u,PR,I,42u);NR6(PR,V,1u,PU,I,42u);NR6(PR,V,1u,PR,I,42u);
-    NR6(PU,V,1u,PU,U,42u);NR6(PU,V,1u,PR,U,42u);NR6(PR,V,1u,PU,U,42u);NR6(PR,V,1u,PR,U,42u);
-    NR6(PU,V,1u,PU,S,42u);NR6(PU,V,1u,PR,S,42u);NR6(PR,V,1u,PU,S,42u);NR6(PR,V,1u,PR,S,42u);
-    NR6(PU,B,1u,PU,V,42u);NR6(PU,B,1u,PR,V,42u);NR6(PR,B,1u,PU,V,42u);NR6(PR,B,1u,PR,V,42u);
-    NR6(PU,B,1u,PU,B,42u);NR6(PU,B,1u,PR,B,42u);NR6(PR,B,1u,PU,B,42u);NR6(PR,B,1u,PR,B,42u);
-    NR6(PU,B,1u,PU,I,42u);NR6(PU,B,1u,PR,I,42u);NR6(PR,B,1u,PU,I,42u);NR6(PR,B,1u,PR,I,42u);
-    NR6(PU,B,1u,PU,U,42u);NR6(PU,B,1u,PR,U,42u);NR6(PR,B,1u,PU,U,42u);NR6(PR,B,1u,PR,U,42u);
-    NR6(PU,B,1u,PU,S,42u);NR6(PU,B,1u,PR,S,42u);NR6(PR,B,1u,PU,S,42u);NR6(PR,B,1u,PR,S,42u);
-    NR6(PU,I,1u,PU,V,42u);NR6(PU,I,1u,PR,V,42u);NR6(PR,I,1u,PU,V,42u);NR6(PR,I,1u,PR,V,42u);
-    NR6(PU,I,1u,PU,B,42u);NR6(PU,I,1u,PR,B,42u);NR6(PR,I,1u,PU,B,42u);NR6(PR,I,1u,PR,B,42u);
-    NR6(PU,I,1u,PU,I,42u);NR6(PU,I,1u,PR,I,42u);NR6(PR,I,1u,PU,I,42u);NR6(PR,I,1u,PR,I,42u);
-    NR6(PU,I,1u,PU,U,42u);NR6(PU,I,1u,PR,U,42u);NR6(PR,I,1u,PU,U,42u);NR6(PR,I,1u,PR,U,42u);
-    NR6(PU,I,1u,PU,S,42u);NR6(PU,I,1u,PR,S,42u);NR6(PR,I,1u,PU,S,42u);NR6(PR,I,1u,PR,S,42u);
-    NR6(PU,U,1u,PU,V,42u);NR6(PU,U,1u,PR,V,42u);NR6(PR,U,1u,PU,V,42u);NR6(PR,U,1u,PR,V,42u);
-    NR6(PU,U,1u,PU,B,42u);NR6(PU,U,1u,PR,B,42u);NR6(PR,U,1u,PU,B,42u);NR6(PR,U,1u,PR,B,42u);
-    NR6(PU,U,1u,PU,I,42u);NR6(PU,U,1u,PR,I,42u);NR6(PR,U,1u,PU,I,42u);NR6(PR,U,1u,PR,I,42u);
-    NR6(PU,U,1u,PU,U,42u);NR6(PU,U,1u,PR,U,42u);NR6(PR,U,1u,PU,U,42u);NR6(PR,U,1u,PR,U,42u);
-    NR6(PU,U,1u,PU,S,42u);NR6(PU,U,1u,PR,S,42u);NR6(PR,U,1u,PU,S,42u);NR6(PR,U,1u,PR,S,42u);
-    NR6(PU,S,1u,PU,V,42u);NR6(PU,S,1u,PR,V,42u);NR6(PR,S,1u,PU,V,42u);NR6(PR,S,1u,PR,V,42u);
-    NR6(PU,S,1u,PU,B,42u);NR6(PU,S,1u,PR,B,42u);NR6(PR,S,1u,PU,B,42u);NR6(PR,S,1u,PR,B,42u);
-    NR6(PU,S,1u,PU,I,42u);NR6(PU,S,1u,PR,I,42u);NR6(PR,S,1u,PU,I,42u);NR6(PR,S,1u,PR,I,42u);
-    NR6(PU,S,1u,PU,U,42u);NR6(PU,S,1u,PR,U,42u);NR6(PR,S,1u,PU,U,42u);NR6(PR,S,1u,PR,U,42u);
-    NR6(PU,S,1u,PU,S,42u);NR6(PU,S,1u,PR,S,42u);NR6(PR,S,1u,PU,S,42u);NR6(PR,S,1u,PR,S,42u);
-
-    NR6(PU,V,42u,PU,V,1u);NR6(PU,V,42u,PR,V,1u);NR6(PR,V,42u,PU,V,1u);NR6(PR,V,42u,PR,V,1u);
-    NR6(PU,V,42u,PU,B,1u);NR6(PU,V,42u,PR,B,1u);NR6(PR,V,42u,PU,B,1u);NR6(PR,V,42u,PR,B,1u);
-    NR6(PU,V,42u,PU,I,1u);NR6(PU,V,42u,PR,I,1u);NR6(PR,V,42u,PU,I,1u);NR6(PR,V,42u,PR,I,1u);
-    NR6(PU,V,42u,PU,U,1u);NR6(PU,V,42u,PR,U,1u);NR6(PR,V,42u,PU,U,1u);NR6(PR,V,42u,PR,U,1u);
-    NR6(PU,V,42u,PU,S,1u);NR6(PU,V,42u,PR,S,1u);NR6(PR,V,42u,PU,S,1u);NR6(PR,V,42u,PR,S,1u);
-    NR6(PU,B,42u,PU,V,1u);NR6(PU,B,42u,PR,V,1u);NR6(PR,B,42u,PU,V,1u);NR6(PR,B,42u,PR,V,1u);
-    NR6(PU,B,42u,PU,B,1u);NR6(PU,B,42u,PR,B,1u);NR6(PR,B,42u,PU,B,1u);NR6(PR,B,42u,PR,B,1u);
-    NR6(PU,B,42u,PU,I,1u);NR6(PU,B,42u,PR,I,1u);NR6(PR,B,42u,PU,I,1u);NR6(PR,B,42u,PR,I,1u);
-    NR6(PU,B,42u,PU,U,1u);NR6(PU,B,42u,PR,U,1u);NR6(PR,B,42u,PU,U,1u);NR6(PR,B,42u,PR,U,1u);
-    NR6(PU,B,42u,PU,S,1u);NR6(PU,B,42u,PR,S,1u);NR6(PR,B,42u,PU,S,1u);NR6(PR,B,42u,PR,S,1u);
-    NR6(PU,I,42u,PU,V,1u);NR6(PU,I,42u,PR,V,1u);NR6(PR,I,42u,PU,V,1u);NR6(PR,I,42u,PR,V,1u);
-    NR6(PU,I,42u,PU,B,1u);NR6(PU,I,42u,PR,B,1u);NR6(PR,I,42u,PU,B,1u);NR6(PR,I,42u,PR,B,1u);
-    NR6(PU,I,42u,PU,I,1u);NR6(PU,I,42u,PR,I,1u);NR6(PR,I,42u,PU,I,1u);NR6(PR,I,42u,PR,I,1u);
-    NR6(PU,I,42u,PU,U,1u);NR6(PU,I,42u,PR,U,1u);NR6(PR,I,42u,PU,U,1u);NR6(PR,I,42u,PR,U,1u);
-    NR6(PU,I,42u,PU,S,1u);NR6(PU,I,42u,PR,S,1u);NR6(PR,I,42u,PU,S,1u);NR6(PR,I,42u,PR,S,1u);
-    NR6(PU,U,42u,PU,V,1u);NR6(PU,U,42u,PR,V,1u);NR6(PR,U,42u,PU,V,1u);NR6(PR,U,42u,PR,V,1u);
-    NR6(PU,U,42u,PU,B,1u);NR6(PU,U,42u,PR,B,1u);NR6(PR,U,42u,PU,B,1u);NR6(PR,U,42u,PR,B,1u);
-    NR6(PU,U,42u,PU,I,1u);NR6(PU,U,42u,PR,I,1u);NR6(PR,U,42u,PU,I,1u);NR6(PR,U,42u,PR,I,1u);
-    NR6(PU,U,42u,PU,U,1u);NR6(PU,U,42u,PR,U,1u);NR6(PR,U,42u,PU,U,1u);NR6(PR,U,42u,PR,U,1u);
-    NR6(PU,U,42u,PU,S,1u);NR6(PU,U,42u,PR,S,1u);NR6(PR,U,42u,PU,S,1u);NR6(PR,U,42u,PR,S,1u);
-    NR6(PU,S,42u,PU,V,1u);NR6(PU,S,42u,PR,V,1u);NR6(PR,S,42u,PU,V,1u);NR6(PR,S,42u,PR,V,1u);
-    NR6(PU,S,42u,PU,B,1u);NR6(PU,S,42u,PR,B,1u);NR6(PR,S,42u,PU,B,1u);NR6(PR,S,42u,PR,B,1u);
-    NR6(PU,S,42u,PU,I,1u);NR6(PU,S,42u,PR,I,1u);NR6(PR,S,42u,PU,I,1u);NR6(PR,S,42u,PR,I,1u);
-    NR6(PU,S,42u,PU,U,1u);NR6(PU,S,42u,PR,U,1u);NR6(PR,S,42u,PU,U,1u);NR6(PR,S,42u,PR,U,1u);
-    NR6(PU,S,42u,PU,S,1u);NR6(PU,S,42u,PR,S,1u);NR6(PR,S,42u,PU,S,1u);NR6(PR,S,42u,PR,S,1u);
-
-    NR6(PU,V,42u,PU,V,42u);NR6(PU,V,42u,PR,V,42u);NR6(PR,V,42u,PU,V,42u);NR6(PR,V,42u,PR,V,42u);
-    NR6(PU,V,42u,PU,B,42u);NR6(PU,V,42u,PR,B,42u);NR6(PR,V,42u,PU,B,42u);NR6(PR,V,42u,PR,B,42u);
-    NR6(PU,V,42u,PU,I,42u);NR6(PU,V,42u,PR,I,42u);NR6(PR,V,42u,PU,I,42u);NR6(PR,V,42u,PR,I,42u);
-    NR6(PU,V,42u,PU,U,42u);NR6(PU,V,42u,PR,U,42u);NR6(PR,V,42u,PU,U,42u);NR6(PR,V,42u,PR,U,42u);
-    NR6(PU,V,42u,PU,S,42u);NR6(PU,V,42u,PR,S,42u);NR6(PR,V,42u,PU,S,42u);NR6(PR,V,42u,PR,S,42u);
-    NR6(PU,B,42u,PU,V,42u);NR6(PU,B,42u,PR,V,42u);NR6(PR,B,42u,PU,V,42u);NR6(PR,B,42u,PR,V,42u);
-    NR6(PU,B,42u,PU,B,42u);NR6(PU,B,42u,PR,B,42u);NR6(PR,B,42u,PU,B,42u);NR6(PR,B,42u,PR,B,42u);
-    NR6(PU,B,42u,PU,I,42u);NR6(PU,B,42u,PR,I,42u);NR6(PR,B,42u,PU,I,42u);NR6(PR,B,42u,PR,I,42u);
-    NR6(PU,B,42u,PU,U,42u);NR6(PU,B,42u,PR,U,42u);NR6(PR,B,42u,PU,U,42u);NR6(PR,B,42u,PR,U,42u);
-    NR6(PU,B,42u,PU,S,42u);NR6(PU,B,42u,PR,S,42u);NR6(PR,B,42u,PU,S,42u);NR6(PR,B,42u,PR,S,42u);
-    NR6(PU,I,42u,PU,V,42u);NR6(PU,I,42u,PR,V,42u);NR6(PR,I,42u,PU,V,42u);NR6(PR,I,42u,PR,V,42u);
-    NR6(PU,I,42u,PU,B,42u);NR6(PU,I,42u,PR,B,42u);NR6(PR,I,42u,PU,B,42u);NR6(PR,I,42u,PR,B,42u);
-    NR6(PU,I,42u,PU,I,42u);NR6(PU,I,42u,PR,I,42u);NR6(PR,I,42u,PU,I,42u);NR6(PR,I,42u,PR,I,42u);
-    NR6(PU,I,42u,PU,U,42u);NR6(PU,I,42u,PR,U,42u);NR6(PR,I,42u,PU,U,42u);NR6(PR,I,42u,PR,U,42u);
-    NR6(PU,I,42u,PU,S,42u);NR6(PU,I,42u,PR,S,42u);NR6(PR,I,42u,PU,S,42u);NR6(PR,I,42u,PR,S,42u);
-    NR6(PU,U,42u,PU,V,42u);NR6(PU,U,42u,PR,V,42u);NR6(PR,U,42u,PU,V,42u);NR6(PR,U,42u,PR,V,42u);
-    NR6(PU,U,42u,PU,B,42u);NR6(PU,U,42u,PR,B,42u);NR6(PR,U,42u,PU,B,42u);NR6(PR,U,42u,PR,B,42u);
-    NR6(PU,U,42u,PU,I,42u);NR6(PU,U,42u,PR,I,42u);NR6(PR,U,42u,PU,I,42u);NR6(PR,U,42u,PR,I,42u);
-    NR6(PU,U,42u,PU,U,42u);NR6(PU,U,42u,PR,U,42u);NR6(PR,U,42u,PU,U,42u);NR6(PR,U,42u,PR,U,42u);
-    NR6(PU,U,42u,PU,S,42u);NR6(PU,U,42u,PR,S,42u);NR6(PR,U,42u,PU,S,42u);NR6(PR,U,42u,PR,S,42u);
-    NR6(PU,S,42u,PU,V,42u);NR6(PU,S,42u,PR,V,42u);NR6(PR,S,42u,PU,V,42u);NR6(PR,S,42u,PR,V,42u);
-    NR6(PU,S,42u,PU,B,42u);NR6(PU,S,42u,PR,B,42u);NR6(PR,S,42u,PU,B,42u);NR6(PR,S,42u,PR,B,42u);
-    NR6(PU,S,42u,PU,I,42u);NR6(PU,S,42u,PR,I,42u);NR6(PR,S,42u,PU,I,42u);NR6(PR,S,42u,PR,I,42u);
-    NR6(PU,S,42u,PU,U,42u);NR6(PU,S,42u,PR,U,42u);NR6(PR,S,42u,PU,U,42u);NR6(PR,S,42u,PR,U,42u);
-    NR6(PU,S,42u,PU,S,42u);NR6(PU,S,42u,PR,S,42u);NR6(PR,S,42u,PU,S,42u);NR6(PR,S,42u,PR,S,42u);
 }
 
 void TestTreeNode::testChildren() {

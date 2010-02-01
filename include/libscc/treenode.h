@@ -2,6 +2,7 @@
 #define TREENODE_H
 
 #include "parser.h"
+#include "secrec_types.h"
 
 #ifdef __cplusplus
 #include <deque>
@@ -65,17 +66,18 @@ enum NodeType {
     NODE_DECL,
     NODE_DECL_VSUFFIX,
     NODE_DECL_GLOBALS,
-    NODE_TYPE,
-    NODE_VTYPE,
+    NODE_BASICTYPE,
+    NODE_ARRAYTYPE,
     NODE_FUNDEF,
     NODE_FUNDEF_PARAM,
     NODE_FUNDEFS,
     NODE_PROGRAM
 };
 
-enum SecrecType { TYPE_VOID, TYPE_BOOL, TYPE_INT, TYPE_UINT, TYPE_STRING };
-enum SecrecSecType { SECTYPE_PUBLIC, SECTYPE_PRIVATE };
-
+enum NodeFlag {
+    NODE_FLAG_CONSTANT  = 0x01,
+    NODE_FLAG_GENERATED = 0x02
+};
 
 struct TreeNode;
 
@@ -91,40 +93,37 @@ struct TreeNode *treenode_init_uint(unsigned value,
                                     const struct YYLTYPE *loc);
 struct TreeNode *treenode_init_string(const char *value,
                                       const struct YYLTYPE *loc);
-struct TreeNode *treenode_init_type(enum SecrecSecType secType,
-                                    enum SecrecType type,
-                                    const struct YYLTYPE *loc);
-struct TreeNode *treenode_init_vtype(enum SecrecSecType secType,
-                                     enum SecrecType type,
-                                     unsigned dimensions,
-                                     const struct YYLTYPE *loc);
+struct TreeNode *treenode_init_basictype(enum SecrecBasicType type,
+                                         const struct YYLTYPE *loc);
 void treenode_free(struct TreeNode *node);
 
 enum NodeType treenode_type(const struct TreeNode *node);
 const struct YYLTYPE *treenode_location(const struct TreeNode *node);
 unsigned treenode_numChildren(const struct TreeNode *node);
 struct TreeNode *treenode_childAt(const struct TreeNode *node, unsigned index);
-unsigned treenode_constant(const struct TreeNode *node);
-unsigned treenode_generated(const struct TreeNode *node);
+
+#define treenode_for_each_child(node,child,i) \
+    for (i = 0, child = treenode_childAt(node, 0);\
+         i < treenode_numChildren(node);\
+         child = treenode_childAt(node, ++i))
+
+unsigned treenode_testFlag(const struct TreeNode *node, enum NodeFlag flag);
 void treenode_appendChild(struct TreeNode *node, struct TreeNode *child);
 void treenode_setLocation(struct TreeNode *node, const struct YYLTYPE *loc);
-void treenode_setConstant(struct TreeNode *node, unsigned constant);
-void treenode_setGenerated(struct TreeNode *node, unsigned generated);
+void treenode_setFlag(struct TreeNode *node, enum NodeFlag flag,
+                      unsigned value);
 
 unsigned treenode_value_bool(const struct TreeNode *node);
 int treenode_value_int(const struct TreeNode *node);
 unsigned treenode_value_uint(const struct TreeNode *node);
 const char *treenode_value_string(const struct TreeNode *node);
-enum SecrecSecType treenode_value_secType(const struct TreeNode *node);
-enum SecrecType treenode_value_type(const struct TreeNode *node);
-unsigned treenode_value_dimensions(const struct TreeNode *node);
+enum SecrecBasicType treenode_value_basicType(const struct TreeNode *node);
 void treenode_setValue_bool(struct TreeNode *node, unsigned value);
 void treenode_setValue_int(struct TreeNode *node, int value);
 void treenode_setValue_uint(struct TreeNode *node, unsigned value);
 void treenode_setValue_string(struct TreeNode *node, const char *value);
-void treenode_setValue_secType(struct TreeNode *node, enum SecrecSecType value);
-void treenode_setValue_type(struct TreeNode *node, enum SecrecType value);
-void treenode_setValue_dimensions(struct TreeNode *node, unsigned value);
+void treenode_setValue_basicType(struct TreeNode *node,
+                                 enum SecrecBasicType value);
 
 void treenode_print(const struct TreeNode *node, FILE *stream, unsigned indentation);
 void treenode_printXml(const struct TreeNode *node, FILE *stream);
@@ -141,46 +140,35 @@ class TreeNode {
         explicit TreeNode(int value, const YYLTYPE &loc);
         explicit TreeNode(unsigned value, const YYLTYPE &loc);
         explicit TreeNode(const std::string &value, const YYLTYPE &loc);
-        explicit TreeNode(SecrecSecType secType, SecrecType type,
-                          const YYLTYPE &loc);
-        explicit TreeNode(SecrecSecType secType, SecrecType type,
-                          unsigned dimensions, const YYLTYPE &loc);
+        explicit TreeNode(SecrecBasicType type, const YYLTYPE &loc);
         virtual ~TreeNode();
 
         inline NodeType type() const;
         inline const std::deque<TreeNode*> &children() const;
         inline const YYLTYPE &location() const;
-        inline bool constant() const;
-        inline bool generated() const;
+        inline bool testFlag(NodeFlag flag) const;
 
         void appendChild(TreeNode *child, bool reparent = true);
         void setLocation(const YYLTYPE &location);
-        void setConstant(bool constant);
-        void setGenerated(bool generated);
+        void setFlag(NodeFlag flag, bool value);
 
         inline bool valueBool() const;
         inline int valueInt() const;
         inline unsigned valueUInt() const;
         const std::string &valueString() const;
-        inline SecrecSecType valueSecType() const;
-        inline SecrecType valueType() const;
-        inline unsigned valueDimensions() const;
+        inline SecrecBasicType valueBasicType() const;
 
         void setValue(bool value);
         void setValue(int value);
         void setValue(unsigned value);
         void setValue(const std::string &value);
-        void setValue(SecrecSecType value);
-        void setValue(SecrecType value);
-        void setValueDimensions(unsigned value);
+        void setValue(SecrecBasicType value);
 
         std::string toString(unsigned indentation = 4,
                              unsigned startIndent = 0) const;
         std::string toXml(bool full = false) const;
 
         static const char *nodeTypeName(NodeType type);
-        static const char *varTypeName(SecrecType type);
-        static const char *secTypeName(SecrecSecType type);
 
     private: /* methods */
         void replaceChildren(TreeNode *child);
@@ -195,8 +183,7 @@ class TreeNode {
         YYLTYPE                m_location;
 
         /* Flags: */
-        bool                   m_constant;
-        bool                   m_generated;
+        int                    m_flags;
 
         /* Data: */
         union {
@@ -204,11 +191,7 @@ class TreeNode {
             bool               m_valueBool;
             int                m_valueInt;
             unsigned int       m_valueUInt;
-            struct {
-                SecrecSecType secType;
-                SecrecType    type;
-                unsigned      dimensions;
-            } m_valueType;
+            SecrecBasicType    m_valueBasicType;
         };
 };
 
@@ -224,12 +207,8 @@ inline const YYLTYPE &TreeNode::location() const {
     return m_location;
 }
 
-inline bool TreeNode::constant() const {
-    return m_constant;
-}
-
-inline bool TreeNode::generated() const {
-    return m_generated;
+inline bool TreeNode::testFlag(NodeFlag flag) const {
+    return (m_flags & flag);
 }
 
 inline bool TreeNode::valueBool() const {
@@ -244,16 +223,8 @@ inline unsigned TreeNode::valueUInt() const {
     return m_valueUInt;
 }
 
-inline SecrecSecType TreeNode::valueSecType() const {
-    return m_valueType.secType;
-}
-
-inline SecrecType TreeNode::valueType() const {
-    return m_valueType.type;
-}
-
-inline unsigned TreeNode::valueDimensions() const {
-    return m_valueType.dimensions;
+inline SecrecBasicType TreeNode::valueBasicType() const {
+    return m_valueBasicType;
 }
 
 #endif /* #ifdef __cplusplus */

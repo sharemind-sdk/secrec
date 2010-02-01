@@ -77,22 +77,11 @@ extern "C" struct TreeNode *treenode_init_string(const char *value,
     return new TreeNode(s, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_type(enum SecrecSecType secType,
-                                               enum SecrecType type,
-                                               const struct YYLTYPE *loc)
+extern "C" struct TreeNode *treenode_init_basictype(enum SecrecBasicType type,
+                                                    const struct YYLTYPE *loc)
 {
     assert(loc != 0);
-    return new TreeNode(secType, type, *loc);
-}
-
-extern "C" struct TreeNode *treenode_init_vtype(enum SecrecSecType secType,
-                                                enum SecrecType type,
-                                                unsigned dimensions,
-                                                const struct YYLTYPE *loc)
-{
-    assert(dimensions > 0);
-    assert(loc != 0);
-    return new TreeNode(secType, type, dimensions, *loc);
+    return new TreeNode(type, *loc);
 }
 
 extern "C" void treenode_free(struct TreeNode *node) {
@@ -123,14 +112,11 @@ extern "C" struct TreeNode *treenode_childAt(const struct TreeNode *node,
     return node->children().at(index);
 }
 
-extern "C" unsigned treenode_constant(const struct TreeNode *node) {
+extern "C" unsigned treenode_testFlag(const struct TreeNode *node,
+                                      enum NodeFlag flag)
+{
     assert(node != 0);
-    return node->constant();
-}
-
-extern "C" unsigned treenode_generated(const struct TreeNode *node) {
-    assert(node != 0);
-    return node->generated();
+    return node->testFlag(flag);
 }
 
 extern "C" void treenode_appendChild(struct TreeNode *node,
@@ -149,15 +135,11 @@ extern "C" void treenode_setLocation(struct TreeNode *node,
     node->setLocation(*loc);
 }
 
-extern "C" void treenode_setConstant(struct TreeNode *node, unsigned constant) {
-    assert(node != 0);
-    node->setConstant(constant);
-}
-
-extern "C" void treenode_setGenerated(struct TreeNode *node, unsigned generated)
+extern "C" void treenode_setFlag(struct TreeNode *node, enum NodeFlag flag,
+                                 unsigned value)
 {
     assert(node != 0);
-    node->setGenerated(generated);
+    node->setFlag(flag, value);
 }
 
 extern "C" unsigned treenode_value_bool(const struct TreeNode *node) {
@@ -179,21 +161,9 @@ extern "C" const char *treenode_value_string(const struct TreeNode *node) {
     return node->valueString().c_str();
 }
 
-extern "C" enum SecrecSecType treenode_value_secType(
-        const struct TreeNode *node)
-{
+extern "C" enum SecrecBasicType treenode_value_basicType(const struct TreeNode *node) {
     assert(node != 0);
-    return node->valueSecType();
-}
-
-extern "C" enum SecrecType treenode_value_type(const struct TreeNode *node) {
-    assert(node != 0);
-    return node->valueType();
-}
-
-extern "C" unsigned treenode_value_dimensions(const struct TreeNode *node) {
-    assert(node != 0);
-    return node->valueDimensions();
+    return node->valueBasicType();
 }
 
 extern "C" void treenode_setValue_bool(struct TreeNode *node, unsigned value) {
@@ -220,26 +190,11 @@ extern "C" void treenode_setValue_string(struct TreeNode *node,
     node->setValue(s);
 }
 
-extern "C" void treenode_setValue_secType(struct TreeNode *node,
-                                          enum SecrecSecType value)
-{
-    assert(node != 0);
-    node->setValue(value);
-}
-
 extern "C" void treenode_setValue_type(struct TreeNode *node,
-                                       enum SecrecType value)
+                                       enum SecrecBasicType value)
 {
     assert(node != 0);
     node->setValue(value);
-}
-
-extern "C" void treenode_setValue_dimensions(struct TreeNode *node,
-                                             unsigned value)
-{
-    assert(node != 0);
-    assert(value > 0);
-    node->setValueDimensions(value);
 }
 
 extern "C" void treenode_print(const struct TreeNode *node, FILE *stream,
@@ -259,57 +214,43 @@ extern "C" void treenode_printXml(const struct TreeNode *node, FILE *stream) {
 *******************************************************************************/
 
 TreeNode::TreeNode(NodeType type, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(type), m_location(loc), m_constant(false),
-    m_generated(false), m_valueString(0)
+    : m_parent(0), m_type(type), m_location(loc), m_flags(0), m_valueString(0)
 {
     // Intentionally empty
 }
 
 TreeNode::TreeNode(bool value, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_LITE_BOOL), m_location(loc), m_constant(false),
-    m_generated(false), m_valueBool(value)
+    : m_parent(0), m_type(NODE_LITE_BOOL), m_location(loc), m_flags(0),
+    m_valueBool(value)
 {
     // Intentionally empty
 }
 
 TreeNode::TreeNode(int value, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_LITE_INT), m_location(loc), m_constant(false),
-    m_generated(false), m_valueInt(value)
+    : m_parent(0), m_type(NODE_LITE_INT), m_location(loc), m_flags(0),
+    m_valueInt(value)
 {
     // Intentionally empty
 }
 
 TreeNode::TreeNode(unsigned value, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_LITE_UINT), m_location(loc), m_constant(false),
-    m_generated(false), m_valueUInt(value)
+    : m_parent(0), m_type(NODE_LITE_UINT), m_location(loc), m_flags(0),
+    m_valueUInt(value)
 {
     // Intentionally empty
 }
 
 TreeNode::TreeNode(const std::string &value, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_LITE_STRING), m_location(loc), m_constant(false),
-    m_generated(false), m_valueString(new std::string(value))
+    : m_parent(0), m_type(NODE_LITE_STRING), m_location(loc), m_flags(0),
+    m_valueString(new std::string(value))
 {
     // Intentionally empty
 }
 
-TreeNode::TreeNode(SecrecSecType secType, SecrecType type, const YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_TYPE), m_location(loc), m_constant(false),
-    m_generated(false)
+TreeNode::TreeNode(SecrecBasicType type, const YYLTYPE &loc)
+    : m_parent(0), m_type(NODE_BASICTYPE), m_location(loc), m_flags(0)
 {
-    m_valueType.secType = secType;
-    m_valueType.type = type;
-}
-
-TreeNode::TreeNode(SecrecSecType secType, SecrecType type, unsigned dimensions,
-                   const YYLTYPE &loc)
-    : m_parent(0), m_type(NODE_VTYPE), m_location(loc), m_constant(false),
-    m_generated(false)
-{
-    assert(dimensions > 0);
-    m_valueType.secType = secType;
-    m_valueType.type = type;
-    m_valueType.dimensions = dimensions;
+    m_valueBasicType = type;
 }
 
 TreeNode::~TreeNode() {
@@ -357,12 +298,12 @@ void TreeNode::setLocation(const YYLTYPE &location) {
     m_location = location;
 }
 
-void TreeNode::setConstant(bool constant) {
-    m_constant = constant;
-}
-
-void TreeNode::setGenerated(bool generated) {
-    m_generated = generated;
+void TreeNode::setFlag(NodeFlag flag, bool value) {
+    if (value) {
+        m_flags |= flag;
+    } else {
+        m_flags &= ~flag;
+    }
 }
 
 const std::string &TreeNode::valueString() const {
@@ -390,17 +331,8 @@ void TreeNode::setValue(const std::string &value) {
     }
 }
 
-void TreeNode::setValue(SecrecSecType value) {
-    m_valueType.secType = value;
-}
-
-void TreeNode::setValue(SecrecType value) {
-    m_valueType.type = value;
-}
-
-void TreeNode::setValueDimensions(unsigned value) {
-    assert(value > 0);
-    m_valueType.dimensions = value;
+void TreeNode::setValue(SecrecBasicType value) {
+    m_valueBasicType = value;
 }
 
 const char *TreeNode::nodeTypeName(NodeType type) {
@@ -451,32 +383,14 @@ const char *TreeNode::nodeTypeName(NodeType type) {
         case NODE_DECL: return "DECL";
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_DECL_GLOBALS: return "DECL_GLOBALS";
-        case NODE_TYPE: return "TYPE";
-        case NODE_VTYPE: return "VTYPE";
+        case NODE_BASICTYPE:
+        case NODE_ARRAYTYPE: return "TYPE";
         case NODE_FUNDEF: return "FUNDEF";
         case NODE_FUNDEF_PARAM: return "FUNDEF_PARAM";
         case NODE_FUNDEFS: return "FUNDEFS";
         case NODE_PROGRAM: return "PROGRAM";
         default: return "UNKNOWN";
     }
-}
-
-const char *TreeNode::varTypeName(SecrecType type) {
-    switch (type) {
-        case TYPE_VOID: return "void";
-        case TYPE_BOOL: return "bool";
-        case TYPE_INT: return "int";
-        case TYPE_UINT: return "unsigned int";
-        case TYPE_STRING: return "string";
-        default: return "<unknown>";
-    }
-}
-
-const char *TreeNode::secTypeName(SecrecSecType type) {
-    if (type == SECTYPE_PRIVATE) return "private";
-
-    assert(type == SECTYPE_PUBLIC);
-    return "public";
 }
 
 std::string TreeNode::toString(unsigned indent, unsigned startIndent)
@@ -504,16 +418,8 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent)
         case NODE_LITE_UINT:
             os << ' ' << m_valueUInt;
             break;
-        case NODE_TYPE:
-            os << ' ' << secTypeName(valueSecType())
-               << ' ' << varTypeName(valueType());
-            break;
-        case NODE_VTYPE:
-            os << ' ' << secTypeName(valueSecType())
-               << ' ' << varTypeName(valueType());
-            for (unsigned i = 0; i < valueDimensions(); i++) {
-                os << "[]";
-            }
+        case NODE_BASICTYPE:
+            os << ' ' << basicType_name(valueBasicType());
             break;
         default:
             break;
@@ -547,15 +453,11 @@ std::string TreeNode::toXml(bool full) const {
         case NODE_LITE_UINT:
             os << " value=\"uint:" << m_valueUInt << '"';
             break;
-        case NODE_TYPE:
-            os << " value=\"type:" << secTypeName(valueSecType()) << ' '
-                                   << varTypeName(valueType()) << '"';
+        case NODE_BASICTYPE:
+            os << " value=\"basic:" << basicType_name(valueBasicType()) << '"';
             break;
-        case NODE_VTYPE:
-            os << " value=\"vtype:" << secTypeName(valueSecType()) << ' '
-                                    << varTypeName(valueType()) << ' '
-                                    << valueDimensions() << '"';
-            break;
+        case NODE_ARRAYTYPE:
+            os << " value=\"array:" << m_valueUInt << '"';
         default:
             break;
     }

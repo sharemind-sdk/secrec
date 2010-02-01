@@ -5,7 +5,9 @@ TARGET = ../../lib/scc
 TEMPLATE = lib
 
 SOURCES = \
-    tnbasicblock.cpp \
+    cmap.cpp \
+    intermediate.c \
+    secrec_types.c \
     tnsymbols.cpp \
     treenode.cpp
 
@@ -14,8 +16,10 @@ OTHER_FILES = \
     secrec.y
 
 HEADERS = \
-    ../../include/libscc/tnbasicblock.h \
+    cmap.h \
+    ../../include/libscc/intermediate.h \
     ../../include/libscc/parser.h \
+    ../../include/libscc/secrec_types.h \
     ../../include/libscc/tnsymbols.h \
     ../../include/libscc/treenode.h
 
