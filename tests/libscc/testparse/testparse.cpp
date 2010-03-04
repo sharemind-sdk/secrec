@@ -339,12 +339,14 @@ void TestParse::testStmtOther_data() {
         << QString(SIMPLE_PARSE("<STMT_RETURN/>"));
 
     QTest::newRow("continue")
-        << QString(SIMPLE("continue;"))
-        << QString(SIMPLE_PARSE("<STMT_CONTINUE/>"));
+        << QString(SIMPLE("for(;;) continue;"))
+        << QString(SIMPLE_PARSE(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
+                                   "<EXPR_NONE/><STMT_CONTINUE/>")));
 
     QTest::newRow("break")
-        << QString(SIMPLE("break;"))
-        << QString(SIMPLE_PARSE("<STMT_BREAK/>"));
+        << QString(SIMPLE("for(;;) break;"))
+        << QString(SIMPLE_PARSE(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
+                                   "<EXPR_NONE/><STMT_BREAK/>")));
 
     QTest::newRow("statementExpression")
         << QString(SIMPLE("42;"))

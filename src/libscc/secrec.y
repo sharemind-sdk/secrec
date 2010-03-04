@@ -39,19 +39,46 @@
 %left '*' '/' '%'
 %right UNEG UMINUS
 
-%type <treenode> variable_declarations variable_declaration initializer
-%type <treenode> vector_suffix type_specifier basic_type_specifier
+%type <treenode> variable_declarations
+%type <treenode> variable_declaration
+%type <treenode> initializer
+%type <treenode> vector_suffix
+%type <treenode> type_specifier
+%type <treenode> basic_type_specifier
 %type <treenode> function_definitions
-%type <treenode> function_definition function_parameter_list function_parameter
-%type <treenode> compound_statement statement_list statement if_statement
-%type <treenode> for_statement for_statement_expression while_statement
-%type <treenode> dowhile_statement expression assignment_expression lvalue
-%type <treenode> conditional_expression logical_or_expression
-%type <treenode> logical_and_expression equality_expression
-%type <treenode> relational_expression additive_expression
-%type <treenode> multiplicative_expression matrix_expression cast_expression
-%type <treenode> unary_expression postfix_expression argument_list
-%type <treenode> primary_expression constant identifier
+%type <treenode> function_definition
+%type <treenode> function_parameter_list
+%type <treenode> function_parameter
+%type <treenode> compound_statement
+%type <treenode> statement_list
+%type <treenode> statement
+%type <treenode> if_statement
+%type <treenode> compound_statement_l
+%type <treenode> statement_list_l
+%type <treenode> statement_l
+%type <treenode> if_statement_l
+%type <treenode> common_statement
+%type <treenode> for_statement
+%type <treenode> for_statement_expression
+%type <treenode> while_statement
+%type <treenode> dowhile_statement
+%type <treenode> expression
+%type <treenode> assignment_expression
+%type <treenode> lvalue
+%type <treenode> conditional_expression
+%type <treenode> logical_or_expression
+%type <treenode> logical_and_expression
+%type <treenode> equality_expression
+%type <treenode> relational_expression
+%type <treenode> additive_expression
+%type <treenode> multiplicative_expression
+%type <treenode> matrix_expression
+%type <treenode> cast_expression
+%type <treenode> unary_expression
+%type <treenode> postfix_expression
+%type <treenode> argument_list
+%type <treenode> primary_expression
+%type <treenode> constant identifier
 
 %type <nothing> program
 
@@ -280,6 +307,11 @@ compound_statement
  | '{' statement_list '}' { $$ = $2; treenode_setLocation($$, &@$); }
  ;
 
+compound_statement_l
+ : '{' '}' { $$ = treenode_init(NODE_STMT_COMPOUND, &@$); }
+ | '{' statement_list_l '}' { $$ = $2; treenode_setLocation($$, &@$); }
+ ;
+
 statement_list
  : statement_list variable_declaration
    {
@@ -313,21 +345,49 @@ statement_list
  | statement
  ;
 
+statement_list_l
+ : statement_list_l variable_declaration
+   {
+     if (treenode_type($1) == NODE_STMT_COMPOUND) {
+       $$ = $1;
+       treenode_appendChild($$, $2);
+       treenode_setLocation($$, &@$);
+     } else {
+       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+       treenode_appendChild($$, $1);
+       treenode_appendChild($$, $2);
+     }
+   }
+ | statement_list_l statement_l
+   {
+     if (treenode_type($1) == NODE_STMT_COMPOUND) {
+       $$ = $1;
+       treenode_appendChild($$, $2);
+       treenode_setLocation($$, &@$);
+     } else {
+       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+       treenode_appendChild($$, $1);
+       treenode_appendChild($$, $2);
+     }
+   }
+ | variable_declaration
+   {
+     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+     treenode_appendChild($$, $1);
+   }
+ | statement
+ ;
+
 statement
  : compound_statement
  | if_statement
- | for_statement
- | while_statement
- | dowhile_statement
- | RETURN expression ';'
-   {
-     $$ = treenode_init(NODE_STMT_RETURN, &@$);
-     treenode_appendChild($$, $2);
-   }
- | RETURN ';'
-   {
-     $$ = treenode_init(NODE_STMT_RETURN, &@$);
-   }
+ | common_statement
+ ;
+
+statement_l
+ : compound_statement_l
+ | if_statement_l
+ | common_statement
  | CONTINUE ';'
    {
      $$ = treenode_init(NODE_STMT_CONTINUE, &@$);
@@ -335,15 +395,6 @@ statement
  | BREAK ';'
    {
      $$ = treenode_init(NODE_STMT_BREAK, &@$);
-   }
- | expression ';'
-   {
-     $$ = treenode_init(NODE_STMT_EXPR, &@$);
-     treenode_appendChild($$, $1);
-   }
- | ';'
-   { /* We also use the compound statement construct for empty statements: */
-     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
    }
  ;
 
@@ -363,10 +414,50 @@ if_statement
    }
  ;
 
+if_statement_l
+ : IF '(' expression ')' statement_l ELSE statement_l
+   {
+     $$ = treenode_init(NODE_STMT_IF, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+     treenode_appendChild($$, $7);
+   }
+ | IF '(' expression ')' statement_l
+   {
+     $$ = treenode_init(NODE_STMT_IF, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+   }
+ ;
+
+common_statement
+ : for_statement
+ | while_statement
+ | dowhile_statement
+ | RETURN expression ';'
+   {
+     $$ = treenode_init(NODE_STMT_RETURN, &@$);
+     treenode_appendChild($$, $2);
+   }
+ | RETURN ';'
+   {
+     $$ = treenode_init(NODE_STMT_RETURN, &@$);
+   }
+ | expression ';'
+   {
+     $$ = treenode_init(NODE_STMT_EXPR, &@$);
+     treenode_appendChild($$, $1);
+   }
+ | ';'
+   { /* We also use the compound statement construct for empty statements: */
+     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+   }
+ ;
+
 for_statement
  : FOR '(' for_statement_expression ';'
            for_statement_expression ';'
-           for_statement_expression ')' statement
+           for_statement_expression ')' statement_l
    {
      $$ = treenode_init(NODE_STMT_FOR, &@$);
      treenode_appendChild($$, $3);
@@ -382,7 +473,7 @@ for_statement_expression /* Helper nonterminal for expression? */
  ;
 
 while_statement
- : WHILE '(' expression ')' statement
+ : WHILE '(' expression ')' statement_l
    {
      $$ = treenode_init(NODE_STMT_WHILE, &@$);
      treenode_appendChild($$, $3);
@@ -391,7 +482,7 @@ while_statement
  ;
 
 dowhile_statement
- : DO statement WHILE '(' expression ')'
+ : DO statement_l WHILE '(' expression ')'
    {
      $$ = treenode_init(NODE_STMT_DOWHILE, &@$);
      treenode_appendChild($$, $2);
