@@ -109,6 +109,7 @@ struct TreeNode *treenode_childAt(const struct TreeNode *node, unsigned index);
 
 unsigned treenode_testFlag(const struct TreeNode *node, enum NodeFlag flag);
 void treenode_appendChild(struct TreeNode *node, struct TreeNode *child);
+void treenode_prependChild(struct TreeNode *node, struct TreeNode *child);
 void treenode_setLocation(struct TreeNode *node, const struct YYLTYPE *loc);
 void treenode_setFlag(struct TreeNode *node, enum NodeFlag flag,
                       unsigned value);
@@ -149,6 +150,7 @@ class TreeNode {
         inline bool testFlag(NodeFlag flag) const;
 
         void appendChild(TreeNode *child, bool reparent = true);
+        void prependChild(TreeNode *child, bool reparent = true);
         void setLocation(const YYLTYPE &location);
         void setFlag(NodeFlag flag, bool value);
 

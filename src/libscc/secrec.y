@@ -7,6 +7,57 @@
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, struct TreeNode **parseTree,
                const char *s);
+
+  struct TreeNode *add_vardecl(struct TreeNode *node1, struct TreeNode *node2,
+                               YYLTYPE *loc)
+  {
+    struct TreeNode *ret;
+    if (treenode_type(node2) == NODE_STMT_COMPOUND) {
+      if (treenode_numChildren(node2) > 0) {
+        ret = node2;
+        treenode_prependChild(ret, node1);
+        treenode_setLocation(ret, loc);
+      } else {
+        treenode_free(node2);
+        ret = treenode_init(NODE_STMT_COMPOUND, loc);
+        treenode_appendChild(ret, node1);
+      }
+    } else {
+      ret = treenode_init(NODE_STMT_COMPOUND, loc);
+      treenode_appendChild(ret, node1);
+      treenode_appendChild(ret, node2);
+    }
+    return ret;
+  }
+
+  struct TreeNode *add_stmt(struct TreeNode *node1, struct TreeNode *node2,
+                            YYLTYPE *loc)
+  {
+    struct TreeNode *ret;
+    if (treenode_type(node2) == NODE_STMT_COMPOUND) {
+      if (treenode_numChildren(node2) > 0) {
+        ret = node2;
+        treenode_prependChild(ret, node1);
+        treenode_setLocation(ret, loc);
+      } else {
+        treenode_free(node2);
+        ret = node1;
+      }
+    } else {
+      if (treenode_type(node1) == NODE_STMT_COMPOUND &&
+          treenode_numChildren(node1) <= 0)
+      {
+        treenode_free(node1);
+        ret = node2;
+      } else {
+        ret = treenode_init(NODE_STMT_COMPOUND, loc);
+        treenode_appendChild(ret, node1);
+        treenode_appendChild(ret, node2);
+      }
+    }
+    return ret;
+  }
+
 %}
 
 %define api.pure
@@ -314,29 +365,13 @@ compound_statement_l
  ;
 
 statement_list
- : statement_list variable_declaration
+ : variable_declaration statement_list
    {
-     if (treenode_type($1) == NODE_STMT_COMPOUND) {
-       $$ = $1;
-       treenode_appendChild($$, $2);
-       treenode_setLocation($$, &@$);
-     } else {
-       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-       treenode_appendChild($$, $1);
-       treenode_appendChild($$, $2);
-     }
+     $$ = add_vardecl($1, $2, &@$);
    }
- | statement_list statement
+ | statement statement_list
    {
-     if (treenode_type($1) == NODE_STMT_COMPOUND) {
-       $$ = $1;
-       treenode_appendChild($$, $2);
-       treenode_setLocation($$, &@$);
-     } else {
-       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-       treenode_appendChild($$, $1);
-       treenode_appendChild($$, $2);
-     }
+     $$ = add_stmt($1, $2, &@$);
    }
  | variable_declaration
    {
@@ -347,29 +382,13 @@ statement_list
  ;
 
 statement_list_l
- : statement_list_l variable_declaration
+ : variable_declaration statement_list_l
    {
-     if (treenode_type($1) == NODE_STMT_COMPOUND) {
-       $$ = $1;
-       treenode_appendChild($$, $2);
-       treenode_setLocation($$, &@$);
-     } else {
-       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-       treenode_appendChild($$, $1);
-       treenode_appendChild($$, $2);
-     }
+     $$ = add_vardecl($1, $2, &@$);
    }
- | statement_list_l statement_l
+ | statement_l statement_list_l
    {
-     if (treenode_type($1) == NODE_STMT_COMPOUND) {
-       $$ = $1;
-       treenode_appendChild($$, $2);
-       treenode_setLocation($$, &@$);
-     } else {
-       $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-       treenode_appendChild($$, $1);
-       treenode_appendChild($$, $2);
-     }
+     $$ = add_stmt($1, $2, &@$);
    }
  | variable_declaration
    {

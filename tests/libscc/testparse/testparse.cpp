@@ -352,10 +352,18 @@ void TestParse::testStmtOther_data() {
         << QString(SIMPLE("42;"))
         << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
 
-    QTest::newRow("emptyExpression")
+    QTest::newRow("emptyExpressionEnd")
         << QString(SIMPLE("42;;"))
-        << QString(SIMPLE_PARSE(XSTMTS(XB("STMT_EXPR", XINT(42)) XSCE)));
+        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
 
+    QTest::newRow("emptyExpressionMiddle")
+        << QString(SIMPLE("42;;42;"))
+        << QString(SIMPLE_PARSE(XSTMTS(XB("STMT_EXPR", XINT(42))
+                                       XB("STMT_EXPR", XINT(42)))));
+
+    QTest::newRow("emptyExpressionBegin")
+        << QString(SIMPLE(";42;"))
+        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
 }
 
 void TestParse::testExprPrimary_data() {
@@ -684,7 +692,7 @@ void TestParse::testInlineDecls_data() {
                          XID("i") XBASICTYPE("public int"))
                   )));
 
-    QTest::newRow("simpleDeclInline")
+    QTest::newRow("simpleDeclMiddle")
         << QString(SIMPLE("f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
@@ -693,7 +701,7 @@ void TestParse::testInlineDecls_data() {
                       XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
-    QTest::newRow("simpleDeclsInline")
+    QTest::newRow("simpleDeclsMiddle")
         << QString(SIMPLE("f(); public int i; f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
@@ -702,6 +710,63 @@ void TestParse::testInlineDecls_data() {
                       XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                  )));
+
+    QTest::newRow("simpleInlineDecl")
+        << QString(SIMPLE("{ public int i; f(); } f();"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XSTMTS(
+                          XB("DECL",
+                             XID("i") XBASICTYPE("public int"))
+                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                  )));
+
+    QTest::newRow("simpleInlineDeclLonely")
+        << QString(SIMPLE("{ public int i; } f();"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XSTMTS(
+                          XB("DECL",
+                             XID("i") XBASICTYPE("public int")))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                  )));
+
+    QTest::newRow("simpleInlineDeclAfter")
+        << QString(SIMPLE("f(); { public int i; f(); }"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB("DECL",
+                         XID("i") XBASICTYPE("public int"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                  )));
+
+    QTest::newRow("simpleInlineDeclLonelyAfter")
+        << QString(SIMPLE("f(); { public int i; }"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB("DECL",
+                         XID("i") XBASICTYPE("public int"))
+                  )));
+
+    QTest::newRow("simpleInlineDeclMiddle")
+        << QString(SIMPLE("f(); { public int i; f(); } f();"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XSTMTS(
+                          XB("DECL",
+                             XID("i") XBASICTYPE("public int"))
+                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                  )));
+
+    QTest::newRow("simpleInlineDeclLonelyMiddle")
+        << QString(SIMPLE("f(); { public int i; } f();"))
+        << QString(SIMPLE_PARSE(XSTMTS(
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XSTMTS(
+                          XB("DECL",
+                             XID("i") XBASICTYPE("public int")))
                       XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 }

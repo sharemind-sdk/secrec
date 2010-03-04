@@ -127,6 +127,14 @@ extern "C" void treenode_appendChild(struct TreeNode *node,
     node->appendChild(child);
 }
 
+extern "C" void treenode_prependChild(struct TreeNode *node,
+                                     struct TreeNode *child)
+{
+    assert(node != 0);
+    assert(child != 0);
+    node->prependChild(child);
+}
+
 extern "C" void treenode_setLocation(struct TreeNode *node,
                                      const struct YYLTYPE *loc)
 {
@@ -286,6 +294,17 @@ TreeNode::~TreeNode() {
 void TreeNode::appendChild(TreeNode *child, bool reparent) {
     assert(child != 0);
     m_children.push_back(child);
+    if (reparent) {
+        if (child->m_parent != 0) {
+            child->m_parent->replaceChildren(child);
+        }
+        child->m_parent = this;
+    }
+}
+
+void TreeNode::prependChild(TreeNode *child, bool reparent) {
+    assert(child != 0);
+    m_children.push_front(child);
     if (reparent) {
         if (child->m_parent != 0) {
             child->m_parent->replaceChildren(child);
