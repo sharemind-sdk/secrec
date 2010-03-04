@@ -78,7 +78,8 @@
 %type <treenode> postfix_expression
 %type <treenode> argument_list
 %type <treenode> primary_expression
-%type <treenode> constant identifier
+%type <treenode> constant
+%type <treenode> identifier
 
 %type <nothing> program
 
