@@ -19,6 +19,7 @@ HEADERS = \
     cmap.h \
     ../../include/libscc/intermediate.h \
     ../../include/libscc/parser.h \
+    ../../include/libscc/sccrefobj.h \
     ../../include/libscc/secrec_types.h \
     ../../include/libscc/tnsymbols.h \
     ../../include/libscc/treenode.h
