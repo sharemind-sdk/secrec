@@ -6,4 +6,4 @@ INCLUDEPATH += ../../include/
 LIBS += -L../../lib/ -lscc
 
 SOURCES = \
-    main.c
+    main.cpp

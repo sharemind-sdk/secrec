@@ -1,6 +1,8 @@
 #include <QtTest>
-#include <libscc/parser.h>
-#include <libscc/treenode.h>
+#include <libscc/secrec/parser.h>
+#include <libscc/secrec/treenode.h>
+
+using namespace SecreC;
 
 bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
     if (a.first_line   != b.first_line)   return false;
@@ -10,7 +12,6 @@ bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
     return true;
 }
 
-Q_DECLARE_METATYPE(SecrecBasicType)
 Q_DECLARE_METATYPE(SecrecVarType)
 Q_DECLARE_METATYPE(SecrecSecType)
 
@@ -55,10 +56,6 @@ void TestTreeNode::testInitTreeNode() {
     QCOMPARE(n->type(), NODE_INTERNAL_USE);
     QCOMPARE(n->location(), loc);
     QCOMPARE(n->children().size(), (unsigned long) 0);
-    QCOMPARE(n->testFlag(NODE_FLAG_CONSTANT), false);
-
-    n->setFlag(NODE_FLAG_CONSTANT, true);
-    QCOMPARE(n->testFlag(NODE_FLAG_CONSTANT), true);
 
     n->setLocation(nloc);
     QCOMPARE(n->location(), nloc);
@@ -75,11 +72,11 @@ void TestTreeNode::testInitBool() {
 
     QFETCH(bool, value);
 
-    TreeNode n(value, loc);
+    TreeNodeBool n(value, loc);
     QCOMPARE(n.type(), NODE_LITE_BOOL);
-    QCOMPARE(n.valueBool(), value);
+    QCOMPARE(n.value(), value);
     n.setValue(!value);
-    QCOMPARE(n.valueBool(), !value);
+    QCOMPARE(n.value(), !value);
 }
 
 void TestTreeNode::testInitBool_data() {
@@ -94,11 +91,11 @@ void TestTreeNode::testInitInt() {
     QFETCH(int, value1);
     QFETCH(int, value2);
 
-    TreeNode n(value1, loc);
+    TreeNodeInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_INT);
-    QCOMPARE(n.valueInt(), value1);
+    QCOMPARE(n.value(), value1);
     n.setValue(value2);
-    QCOMPARE(n.valueInt(), value2);
+    QCOMPARE(n.value(), value2);
 }
 
 void TestTreeNode::testInitInt_data() {
@@ -118,11 +115,11 @@ void TestTreeNode::testInitUInt() {
     QFETCH(unsigned, value1);
     QFETCH(unsigned, value2);
 
-    TreeNode n(value1, loc);
+    TreeNodeUInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_UINT);
-    QCOMPARE(n.valueUInt(), value1);
+    QCOMPARE(n.value(), value1);
     n.setValue(value2);
-    QCOMPARE(n.valueUInt(), value2);
+    QCOMPARE(n.value(), value2);
 }
 
 void TestTreeNode::testInitUInt_data() {
@@ -140,11 +137,11 @@ void TestTreeNode::testInitString() {
     QFETCH(QString, value1);
     QFETCH(QString, value2);
 
-    TreeNode n(value1.toStdString(), loc);
+    TreeNodeString n(value1.toStdString(), loc);
     QCOMPARE(n.type(), NODE_LITE_STRING);
-    QCOMPARE(n.valueString(), value1.toStdString());
+    QCOMPARE(n.value(), value1.toStdString());
     n.setValue(value2.toStdString());
-    QCOMPARE(n.valueString(), value2.toStdString());
+    QCOMPARE(n.value(), value2.toStdString());
 }
 
 void TestTreeNode::testInitString_data() {
@@ -165,13 +162,14 @@ void TestTreeNode::testInitType() {
     QFETCH(SecrecSecType, sectype2);
     QFETCH(SecrecVarType, type2);
 
-    TreeNode n(make_basicType(sectype1, type1), loc);
+    TreeNodeBasicType n(sectype1, type1, loc);
     QCOMPARE(n.type(), NODE_BASICTYPE);
-    QCOMPARE(secType_from_basicType(n.valueBasicType()), sectype1);
-    QCOMPARE(varType_from_basicType(n.valueBasicType()), type1);
-    n.setValue(make_basicType(sectype2, type2));
-    QCOMPARE(secType_from_basicType(n.valueBasicType()), sectype2);
-    QCOMPARE(varType_from_basicType(n.valueBasicType()), type2);
+    QCOMPARE(n.secType(), sectype1);
+    QCOMPARE(n.varType(), type1);
+    n.setSecType(sectype2);
+    n.setVarType(type2);
+    QCOMPARE(n.secType(), sectype2);
+    QCOMPARE(n.varType(), type2);
 }
 
 void TestTreeNode::testInitType_data() {
@@ -217,60 +215,54 @@ void TestTreeNode::testChildren() {
     typedef std::deque<TreeNode*>::size_type ST;
     DEFLOC(loc,1,2,3,4);
 
-    const std::string noChild(TreeNode::NOCHILD);
-
-    TreeNode *n  = new TreeNode(NODE_INTERNAL_USE, loc);
-    TreeNode *c1 = new TreeNode(NODE_INTERNAL_USE, loc);
-    TreeNode *c2 = new TreeNode(NODE_INTERNAL_USE, loc);
-    TreeNode *c3 = new TreeNode(NODE_INTERNAL_USE, loc);
-    TreeNode *c4 = new TreeNode(NODE_INTERNAL_USE, loc);
-    c1->setValue(std::string("c1"));
-    c2->setValue(std::string("c2"));
-    c3->setValue(std::string("c3"));
-    c4->setValue(std::string("c4"));
+    TreeNodeString *n  = new TreeNodeString("n", loc);
+    TreeNodeString *c1 = new TreeNodeString("c1", loc);
+    TreeNodeString *c2 = new TreeNodeString("c2", loc);
+    TreeNodeString *c3 = new TreeNodeString("c3", loc);
+    TreeNodeString *c4 = new TreeNodeString("c4", loc);
     QCOMPARE(n->children().size(), (ST) 0);
     n->appendChild(c1);
     QCOMPARE(n->children().size(), (ST) 1);
-    QCOMPARE(n->children().at(0), c1);
+    QCOMPARE(n->children().at(0).data(), c1);
     n->appendChild(c2);
     QCOMPARE(n->children().size(), (ST) 2);
-    QCOMPARE(n->children().at(0), c1);
-    QCOMPARE(n->children().at(1), c2);
+    QCOMPARE(n->children().at(0).data(), c1);
+    QCOMPARE(n->children().at(1).data(), c2);
     n->appendChild(c3);
     QCOMPARE(n->children().size(), (ST) 3);
-    QCOMPARE(n->children().at(0), c1);
-    QCOMPARE(n->children().at(1), c2);
-    QCOMPARE(n->children().at(2), c3);
+    QCOMPARE(n->children().at(0).data(), c1);
+    QCOMPARE(n->children().at(1).data(), c2);
+    QCOMPARE(n->children().at(2).data(), c3);
     n->appendChild(c4);
     QCOMPARE(n->children().size(), (ST) 4);
-    QCOMPARE(n->children().at(0), c1);
-    QCOMPARE(n->children().at(1), c2);
-    QCOMPARE(n->children().at(2), c3);
-    QCOMPARE(n->children().at(3), c4);
+    QCOMPARE(n->children().at(0).data(), c1);
+    QCOMPARE(n->children().at(1).data(), c2);
+    QCOMPARE(n->children().at(2).data(), c3);
+    QCOMPARE(n->children().at(3).data(), c4);
     delete c2;
     QCOMPARE(n->children().size(), (ST) 4);
-    QCOMPARE(n->children().at(0), c1);
-    QCOMPARE(n->children().at(1)->valueString(), noChild);
-    QCOMPARE(n->children().at(2), c3);
-    QCOMPARE(n->children().at(3), c4);
+    QCOMPARE(n->children().at(0).data(), c1);
+    QVERIFY(n->children().at(1).data() == 0);
+    QCOMPARE(n->children().at(2).data(), c3);
+    QCOMPARE(n->children().at(3).data(), c4);
     delete c4;
     QCOMPARE(n->children().size(), (ST) 4);
-    QCOMPARE(n->children().at(0), c1);
-    QCOMPARE(n->children().at(1)->valueString(), noChild);
-    QCOMPARE(n->children().at(2), c3);
-    QCOMPARE(n->children().at(3)->valueString(), noChild);
+    QCOMPARE(n->children().at(0).data(), c1);
+    QVERIFY(n->children().at(1).data() == 0);
+    QCOMPARE(n->children().at(2).data(), c3);
+    QVERIFY(n->children().at(3).data() == 0);
     delete c1;
     QCOMPARE(n->children().size(), (ST) 4);
-    QCOMPARE(n->children().at(0)->valueString(), noChild);
-    QCOMPARE(n->children().at(1)->valueString(), noChild);
-    QCOMPARE(n->children().at(2), c3);
-    QCOMPARE(n->children().at(3)->valueString(), noChild);
+    QVERIFY(n->children().at(0).data() == 0);
+    QVERIFY(n->children().at(1).data() == 0);
+    QCOMPARE(n->children().at(2).data(), c3);
+    QVERIFY(n->children().at(3).data() == 0);
     delete c3;
     QCOMPARE(n->children().size(), (ST) 4);
-    QCOMPARE(n->children().at(0)->valueString(), noChild);
-    QCOMPARE(n->children().at(1)->valueString(), noChild);
-    QCOMPARE(n->children().at(2)->valueString(), noChild);
-    QCOMPARE(n->children().at(3)->valueString(), noChild);
+    QVERIFY(n->children().at(0).data() == 0);
+    QVERIFY(n->children().at(1).data() == 0);
+    QVERIFY(n->children().at(2).data() == 0);
+    QVERIFY(n->children().at(3).data() == 0);
     delete n;
 }
 

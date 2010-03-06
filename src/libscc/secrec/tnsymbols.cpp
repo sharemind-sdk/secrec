@@ -1,48 +1,24 @@
-#include "tnsymbols.h"
+#include "secrec/tnsymbols.h"
 
 #include <cassert>
 #include <stack>
-#include "treenode.h"
+#include "secrec/treenode.h"
 
 
-extern "C" struct TNSymbols *tnsymbols_init(const struct TreeNode *program) {
-    return new TNSymbols(program);
-}
-
-extern "C" void tnsymbols_free(const struct TNSymbols *symbols) {
-    delete symbols;
-}
-
-extern "C" const struct TreeNode *tnsymbols_symbol(const struct TNSymbols *s,
-                                                   const struct TreeNode *id)
-{
-    return s->symbol(id);
-}
-
-extern "C" unsigned tnsymbols_unresolvedCount(const struct TNSymbols *symbols) {
-    return symbols->unresolved().size();
-}
-
-extern "C" const struct TreeNode *tnsymbols_unresolvedAt(
-        const struct TNSymbols *symbols,
-        unsigned index)
-{
-    return symbols->unresolved().at(index);
-}
+namespace SecreC {
 
 TNSymbols::TNSymbols(const TreeNode *program) {
     assert(program != 0);
     initSymbolMap(program);
 }
 
-const TreeNode *TNSymbols::symbol(const TreeNode *id) const {
-    assert(id->type() == NODE_IDENTIFIER);
+const TreeNode *TNSymbols::symbol(const TreeNodeIdentifier *id) const {
     TNMAP::const_iterator it = m_symbolMap.find(id);
     return (it != m_symbolMap.end() ? (*it).second : 0);
 }
 
 void TNSymbols::initSymbolMap(const TreeNode *p) {
-    typedef std::deque<TreeNode*>::const_iterator TDCI;
+    typedef std::deque<SccPointer<TreeNode> >::const_iterator TDCI;
 
     DECLS ds;
 
@@ -56,15 +32,11 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
         fs = p->children().at(0);
 
         // Handle global declarations:
-        const std::deque<TreeNode*> &gds = fs->children();
+        const std::deque<SccPointer<TreeNode> > &gds = fs->children();
         for (TDCI it = gds.begin(); it != gds.end(); it++) {
             const TreeNode *decl = (*it);
             assert(decl->children().size() > 1 && decl->children().size() < 4);
 
-            /**
-              \note Currently we allow stuff like "public int a = a;"
-            */
-            addDecl(ds, decl);
             if (decl->children().size() == 3) {
                 /*
                   1    0            2
@@ -73,6 +45,8 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
                 */
                 initSymbolMap(ds, decl->children().at(2));
             }
+
+            addDecl(ds, decl);
         }
 
         fs = p->children().at(1);
@@ -96,7 +70,7 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
         } else {
             // Function has parameters
             DECLS nds(ds);
-            const std::deque<TreeNode*> &fc = f->children();
+            const std::deque<SccPointer<TreeNode> > &fc = f->children();
             for (TDCI it = fc.begin() + 3; it != fc.end(); it++) {
                 addDecl(nds, *it);
             }
@@ -106,7 +80,7 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
 }
 
 void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
-    typedef std::deque<TreeNode*>::const_reverse_iterator TDCRI;
+    typedef std::deque<SccPointer<TreeNode> >::const_reverse_iterator TDCRI;
 
     DECLS ds(current);
 
@@ -119,7 +93,7 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
           semantics of the scope are identical to a scope having all the child
           nodes of the NODE_STMT_COMPOUND.
         */
-        const std::deque<TreeNode*> &nc = node->children();
+        const std::deque<SccPointer<TreeNode> > &nc = node->children();
         for (TDCRI it = nc.rbegin(); it != nc.rend(); it++) {
             s.push(*it);
         }
@@ -153,13 +127,14 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
                 break;
             case NODE_IDENTIFIER:
             {
-                DECLS::const_iterator it = ds.find(n->valueString());
-                addRef(n, (it != ds.end() ? (*it).second : 0));
+                const TreeNodeIdentifier* in = static_cast<const TreeNodeIdentifier*>(n);
+                DECLS::const_iterator it = ds.find(in->value());
+                addRef(in, (it != ds.end() ? (*it).second : 0));
                 break;
             }
             default:
             {
-                const std::deque<TreeNode*> &nc = n->children();
+                const std::deque<SccPointer<TreeNode> > &nc = n->children();
                 for (TDCRI it = nc.rbegin(); it != nc.rend(); it++) {
                     s.push(*it);
                 }
@@ -169,7 +144,7 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
     }
 }
 
-void TNSymbols::addRef(const TreeNode *n, const TreeNode *decl) {
+void TNSymbols::addRef(const TreeNodeIdentifier *n, const TreeNode *decl) {
     assert(n != 0);
     if (decl == 0) {
         m_unresolved.push_back(n);
@@ -178,7 +153,8 @@ void TNSymbols::addRef(const TreeNode *n, const TreeNode *decl) {
 }
 
 void TNSymbols::addDecl(DECLS &ds, const TreeNode *decl) {
-    const TreeNode *id = decl->children().at(0);
-    assert(id->type() == NODE_IDENTIFIER);
-    ds[id->valueString()] = decl;
+    const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(decl->children().at(0).data());
+    ds[id->value()] = decl;
 }
+
+} // namespace SecreC

@@ -1,8 +1,10 @@
-#include <libscc/parser.h>
-#include <libscc/treenode.h>
+#include <libscc/secrec/parser.h>
+#include <libscc/secrec/treenode.h>
 #include <QtTest>
 #include <string>
 
+
+using namespace SecreC;
 
 #define ADD_STANDARD_COLUMNS \
     QTest::addColumn<QString>("sccInput");\

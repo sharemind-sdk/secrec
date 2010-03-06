@@ -1,15 +1,14 @@
 %require "2.4"
 %{
+  struct TreeNode;
   #include <stdio.h>
-  #include "parser.h"
+  #include "secrec/parser.h"
   #include "lex_secrec.h"
-  #include "treenode.h"
+  #include "secrec/treenode.h"
 
-  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, struct TreeNode **parseTree,
-               const char *s);
+  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, struct TreeNode **parseTree, const char *s);
 
-  struct TreeNode *add_vardecl(struct TreeNode *node1, struct TreeNode *node2,
-                               YYLTYPE *loc)
+  struct TreeNode *add_vardecl(struct TreeNode *node1, struct TreeNode *node2, YYLTYPE *loc)
   {
     struct TreeNode *ret;
     if (treenode_type(node2) == NODE_STMT_COMPOUND) {
@@ -30,9 +29,7 @@
     return ret;
   }
 
-  struct TreeNode *add_stmt(struct TreeNode *node1, struct TreeNode *node2,
-                            YYLTYPE *loc)
-  {
+  struct TreeNode *add_stmt(struct TreeNode *node1, struct TreeNode *node2, YYLTYPE *loc) {
     struct TreeNode *ret;
     if (treenode_type(node2) == NODE_STMT_COMPOUND) {
       if (treenode_numChildren(node2) > 0) {
@@ -44,9 +41,7 @@
         ret = node1;
       }
     } else {
-      if (treenode_type(node1) == NODE_STMT_COMPOUND &&
-          treenode_numChildren(node1) <= 0)
-      {
+      if (treenode_type(node1) == NODE_STMT_COMPOUND && treenode_numChildren(node1) <= 0) {
         treenode_free(node1);
         ret = node2;
       } else {
@@ -219,8 +214,7 @@ vector_suffix
 type_specifier
  : type_specifier '[' ']'
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_ARRAYTYPE, &@$);
-     treenode_setValue_uint($$, 0);
+     $$ = treenode_init_arraytype(0, &@$);
      treenode_appendChild($$, $1);
    }
  | basic_type_specifier
@@ -229,59 +223,59 @@ type_specifier
 basic_type_specifier
  : PRIVATE BOOL
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PRIVATE_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PRIVATE, VARTYPE_BOOL, &@$);
    }
  | PRIVATE INT
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PRIVATE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PRIVATE, VARTYPE_INT, &@$);
    }
  | PUBLIC VOID
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_VOID, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_VOID, &@$);
    }
  | PUBLIC BOOL
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_BOOL, &@$);
    }
  | PUBLIC INT
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
    }
  | PUBLIC SIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
    }
  | PUBLIC UNSIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_UINT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_UINT, &@$);
    }
  | PUBLIC STRING
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_STRING, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_STRING, &@$);
    }
  | VOID /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_VOID, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_VOID, &@$);
    }
  | BOOL /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_BOOL, &@$);
    }
  | INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
    }
  | SIGNED INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
    }
  | UNSIGNED INT /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_UINT, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_UINT, &@$);
    }
  | STRING /* TODO: Not in grammar. */
    {
-     $$ = (struct TreeNode *) treenode_init_basictype(TYPE_PUBLIC_STRING, &@$);
+     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_STRING, &@$);
    }
  ;
 
@@ -763,10 +757,6 @@ primary_expression
    }
  | identifier
  | constant
-   {
-     $$ = $1;
-     treenode_setFlag($$, NODE_FLAG_CONSTANT, 1);
-   }
  ;
 
 constant
@@ -791,8 +781,7 @@ constant
 identifier
  : IDENTIFIER
    {
-     $$ = treenode_init(NODE_IDENTIFIER, &@$);
-     treenode_setValue_string($$, yyget_text(yyscanner));
+     $$ = treenode_init_identifier(yyget_text(yyscanner), &@$);
    }
 
 %%

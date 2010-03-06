@@ -5,25 +5,23 @@ TARGET = ../../lib/scc
 TEMPLATE = lib
 
 SOURCES = \
-    cmap.cpp \
-    intermediate.c \
-    secrec_types.c \
-    tnsymbols.cpp \
-    treenode.cpp
+    intermediate.cpp \
+    secrec/tnsymbols.cpp \
+    secrec/treenode.cpp \
+    secrec/types.cpp
 
 OTHER_FILES = \
     secrec.l \
     secrec.y
 
 HEADERS = \
-    cmap.h \
     ../../include/libscc/intermediate.h \
-    ../../include/libscc/parser.h \
     ../../include/libscc/sccobject.h \
     ../../include/libscc/sccpointer.h \
-    ../../include/libscc/secrec_types.h \
-    ../../include/libscc/tnsymbols.h \
-    ../../include/libscc/treenode.h
+    ../../include/libscc/secrec/parser.h \
+    ../../include/libscc/secrec/tnsymbols.h \
+    ../../include/libscc/secrec/treenode.h \
+    ../../include/libscc/secrec/types.h
 
 GENERATED_SOURCES += lex_secrec.c yacc_secrec.tab.c
 GENERATED_FILES   += lex_secrec.h yacc_secrec.tab.h
@@ -34,7 +32,7 @@ SCC_LEX_FLAGS += -8
 SCC_YACC_FLAGS +=
 
 target_yacc_h.target = yacc_secrec.tab.h
-target_yacc_h.depends = secrec.y ../../include/libscc/parser.h
+target_yacc_h.depends = secrec.y ../../include/libscc/secrec/parser.h
 target_yacc_h.commands = $${SCC_YACC} -d -b yacc_secrec $${SCC_YACC_FLAGS} secrec.y $$escape_expand(\n\t) \
                          $$QMAKE_MOVE yacc_secrec.tab.c yacc_secrec.tmp $$escape_expand(\n\t)
 silent:target_yacc_h.commands = @echo Bison H ${QMAKE_FILE_IN} && $$target_yacc_h.commands
@@ -45,7 +43,7 @@ target_yacc_c.commands = $$QMAKE_COPY yacc_secrec.tmp yacc_secrec.tab.c $$escape
 silent:target_yacc_c.commands = @echo Bison C ${QMAKE_FILE_IN} && $$target_yacc_c.commands
 
 target_lex_h.target = lex_secrec.h
-target_lex_h.depends = secrec.l ../../include/libscc/parser.h
+target_lex_h.depends = secrec.l ../../include/libscc/secrec/parser.h
 target_lex_h.commands = $${SCC_LEX} -o lex_secrec.tmp --header-file=lex_secrec.h $${SCC_LEX_FLAGS} secrec.l $$escape_expand(\n)
 silent:target_lex_h.commands = @echo Flex H ${QMAKE_FILE_IN} && $$target_lex_h.commands
 
