@@ -113,6 +113,9 @@ class TreeNodeIdentifier: public TreeNode {
         explicit TreeNodeIdentifier(const std::string &value,
                                     const YYLTYPE &loc)
             : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
+        explicit TreeNodeIdentifier(const char *value,
+                                    const YYLTYPE &loc)
+            : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
 
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
