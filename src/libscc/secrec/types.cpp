@@ -30,4 +30,20 @@ std::string BasicType::toString(SecType secType, VarType varType) {
     return os.str();
 }
 
+FunctionType::FunctionType(const FunctionType &copy)
+    : Type(copy), m_ret(copy.m_ret->clone())
+{
+    typedef std::vector<Type*>::const_iterator TVCI;
+    for (TVCI it(copy.m_params.begin()); it != copy.m_params.end(); it++) {
+        m_params.push_back((*it)->clone());
+    }
+}
+
+FunctionType::~FunctionType() {
+    typedef std::vector<Type*>::const_iterator TVCI;
+    for (TVCI it(m_params.begin()); it != m_params.end(); it++) {
+        delete (*it);
+    }
+}
+
 } // namespace SecreC

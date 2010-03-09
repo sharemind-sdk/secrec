@@ -1,7 +1,6 @@
 #include "secrec/treenode.h"
 
 #include <algorithm>
-#include <cassert>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -256,13 +255,13 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 
 std::string TreeNodeBasicType::stringHelper() const {
     std::ostringstream os;
-    os << "\"" << BasicType::toString(m_secType, m_varType) << "\"";
+    os << "\"" << m_type.toString() << "\"";
     return os.str();
 }
 
 std::string TreeNodeBasicType::xmlHelper() const {
     std::ostringstream os;
-    os << "value=\"basic:" << BasicType::toString(m_secType, m_varType) << "\"";
+    os << "value=\"basic:" << m_type.toString() << "\"";
     return os.str();
 }
 
@@ -270,6 +269,19 @@ std::string TreeNodeBasicType::xmlHelper() const {
 /*******************************************************************************
   Class TreeNodeArrayType
 *******************************************************************************/
+
+SecreC::Type *TreeNodeArrayType::secrecType() const {
+    typedef TreeNodeType TNT;
+
+    assert(children().size() == 1);
+    if (m_cachedType != 0) return m_cachedType;
+
+    assert(dynamic_cast<TNT*>(children().at(0).data()) != 0);
+    TNT *t = static_cast<TNT*>(children().at(0).data());
+
+    m_cachedType = new SecreC::ArrayType(t->secrecType(), m_value);
+    return m_cachedType;
+}
 
 std::string TreeNodeArrayType::stringHelper() const {
     std::ostringstream os;

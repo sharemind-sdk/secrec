@@ -4,6 +4,7 @@
 #include "parser.h"
 
 #ifdef __cplusplus
+#include <cassert>
 #include <deque>
 #include <string>
 #include "../sccpointer.h"
@@ -20,14 +21,17 @@ class TreeNode: public SccObject {
 
         inline TreeNode* parent() const { return m_parent; }
         inline Type type() const { return m_type; }
-        inline const std::deque<SccPointer<TreeNode> > &children() const { return m_children; }
+        inline const std::deque<SccPointer<TreeNode> > &children() const {
+            return m_children;
+        }
         inline const YYLTYPE &location() const { return m_location; }
 
         void appendChild(TreeNode *child, bool reparent = true);
         void prependChild(TreeNode *child, bool reparent = true);
         void setLocation(const YYLTYPE &location);
 
-        std::string toString(unsigned indentation = 2, unsigned startIndent = 0) const;
+        std::string toString(unsigned indentation = 2, unsigned startIndent = 0)
+                const;
         inline virtual std::string stringHelper() const { return ""; }
 
         std::string toXml(bool full = false) const;
@@ -106,7 +110,8 @@ class TreeNodeString: public TreeNode {
 
 class TreeNodeIdentifier: public TreeNode {
     public: /* Methods: */
-        explicit TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
+        explicit TreeNodeIdentifier(const std::string &value,
+                                    const YYLTYPE &loc)
             : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
 
         inline void setValue(const std::string &value) { m_value = value; }
@@ -119,30 +124,54 @@ class TreeNodeIdentifier: public TreeNode {
         std::string m_value;
 };
 
-class TreeNodeBasicType: public TreeNode {
+class TreeNodeType: public TreeNode {
     public: /* Methods: */
-        explicit TreeNodeBasicType(BasicType::SecType secType, BasicType::VarType varType,
-                                   const YYLTYPE &loc)
-            : TreeNode(NODE_BASICTYPE, loc), m_secType(secType),
-              m_varType(varType) {}
+        explicit inline TreeNodeType(TreeNode::Type type, const YYLTYPE &loc)
+            : TreeNode(type, loc) {}
 
-        inline void setSecType(BasicType::SecType secType) { m_secType = secType; }
-        inline BasicType::SecType secType() const { return m_secType; }
-        inline void setVarType(BasicType::VarType varType) { m_varType = varType; }
-        inline BasicType::VarType varType() const { return m_varType; }
+        virtual SecreC::Type *secrecType() const = 0;
+};
+
+class TreeNodeBasicType: public TreeNodeType {
+    public: /* Methods: */
+        explicit TreeNodeBasicType(BasicType::SecType secType,
+                                   BasicType::VarType varType,
+                                   const YYLTYPE &loc)
+            : TreeNodeType(NODE_BASICTYPE, loc), m_type(secType, varType) {}
+
+        virtual inline SecreC::Type *secrecType() const {
+            return m_type.clone();
+        }
+        inline void setSecrecBasicType(const SecreC::BasicType &type) {
+            m_type = type;
+        }
+
+        inline BasicType::SecType secType() const { return m_type.secType(); }
+        inline void setSecType(BasicType::SecType secType) {
+            m_type.setSecType(secType);
+        }
+        inline BasicType::VarType varType() const { return m_type.varType(); }
+        inline void setVarType(BasicType::VarType varType) {
+            m_type.setVarType(varType);
+        }
 
         std::string stringHelper() const;
         std::string xmlHelper() const;
 
     private: /* Fields: */
-        BasicType::SecType m_secType;
-        BasicType::VarType m_varType;
+        SecreC::BasicType m_type;
 };
 
-class TreeNodeArrayType: public TreeNode {
+class TreeNodeArrayType: public TreeNodeType {
     public: /* Methods: */
         explicit TreeNodeArrayType(unsigned value, const YYLTYPE &loc)
-            : TreeNode(NODE_ARRAYTYPE, loc), m_value(value) {}
+            : TreeNodeType(NODE_ARRAYTYPE, loc), m_value(value),
+              m_cachedType(0) {}
+        virtual inline ~TreeNodeArrayType() {
+            delete m_cachedType;
+        }
+
+        virtual SecreC::Type *secrecType() const;
 
         inline void setValue(unsigned value) { m_value = value; }
         inline unsigned value() const { return m_value; }
@@ -151,7 +180,8 @@ class TreeNodeArrayType: public TreeNode {
         std::string xmlHelper() const;
 
     private: /* Fields: */
-        unsigned m_value;
+        unsigned                   m_value;
+        mutable SecreC::ArrayType *m_cachedType;
 };
 
 extern "C" {
