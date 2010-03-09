@@ -2,10 +2,39 @@
 #define INTERMEDIATE_H
 
 #include "sccpointer.h"
+#include "secrec/types.h"
 
+namespace SecreC {
 
-class Symbol: public SccObject {
-    //asdf
+class Value {
+    /// \todo
+};
+
+class Symbol {
+    public: /* Types: */
+        enum Type { CONSTANT, GLOBAL_SYMBOL, LOCAL_SYMBOL, GENERATED_SYMBOL, SSA };
+
+    public: /* Methods: */
+        explicit inline Symbol(Type type)
+            : m_symbolType(type) {}
+
+        inline Type symbolType() const { return m_symbolType; }
+
+    private: /* Fields: */
+        Type m_symbolType;
+};
+
+class SymbolConstant {
+    public: /* Methods: */
+        SymbolConstant(const SecreC::Type &type, const SecreC::Value &value)
+            : m_constantType(type), m_constantValue(value) {}
+
+        inline SecreC::Type constantType() const { return m_constantType; }
+        // inline SecreC::Value constantValue() const { return m_constantValue; }
+
+    private: /* Fields: */
+        SecreC::Type  m_constantType;
+        SecreC::Value m_constantValue;
 };
 
 class Imop {
@@ -58,10 +87,12 @@ class Imop {
         inline Symbol *arg2() const { return m_arg2; }
 
     private:
-        Type               m_type;
-        SccPointer<Symbol> m_dest;
-        SccPointer<Symbol> m_arg1;
-        SccPointer<Symbol> m_arg2;
+        Type    m_type;
+        Symbol *m_dest;
+        Symbol *m_arg1;
+        Symbol *m_arg2;
 };
+
+} // namespace SecreC
 
 #endif // INTERMEDIATE_H
