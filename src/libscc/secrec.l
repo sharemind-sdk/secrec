@@ -23,6 +23,8 @@
     (loc)->last_column++;\
 }
 
+#define saveText(s) yyget_lval(s)->str = strndup(yyget_text(s), yyget_leng(s));
+
 %}
 
 %option bison-bridge bison-locations reentrant noyywrap nounput noinput
@@ -43,83 +45,83 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 %x COMMENT_CPP
 %%
 
-"/*"                      { stepLen(yylloc, 2); BEGIN(COMMENT_C); }
-<COMMENT_C>[^*\n\r]*      { stepLen(yylloc, yyleng); }
-<COMMENT_C>"*"+[^*/\n\r]* { stepLen(yylloc, yyleng); }
-<COMMENT_C>\n\r           { newline(yylloc); }
-<COMMENT_C>\r\n           { newline(yylloc); }
-<COMMENT_C>\n             { newline(yylloc); }
-<COMMENT_C>\r             { newline(yylloc); }
+"/*"                      { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_C); }
+<COMMENT_C>[^*\n\r]*      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
+<COMMENT_C>"*"+[^*/\n\r]* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
+<COMMENT_C>\n\r           { newline(yyget_lloc(yyscanner)); }
+<COMMENT_C>\r\n           { newline(yyget_lloc(yyscanner)); }
+<COMMENT_C>\n             { newline(yyget_lloc(yyscanner)); }
+<COMMENT_C>\r             { newline(yyget_lloc(yyscanner)); }
 <COMMENT_C>"*"+"/"        { BEGIN(INITIAL); }
 
  /* Ignore C++-style comments: */
-"//"               { stepLen(yylloc, 2); BEGIN(COMMENT_CPP); }
-<COMMENT_CPP>[^\n] { stepChar(yylloc); }
-<COMMENT_CPP>[\n]  { newline(yylloc); BEGIN(INITIAL); }
+"//"               { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_CPP); }
+<COMMENT_CPP>[^\n] { stepChar(yyget_lloc(yyscanner)); }
+<COMMENT_CPP>[\n]  { newline(yyget_lloc(yyscanner)); BEGIN(INITIAL); }
 
-"bool"     { stepLen(yylloc, 4); return BOOL; }
-"break"    { stepLen(yylloc, 5); return BREAK; }
-"continue" { stepLen(yylloc, 8); return CONTINUE; }
-"do"       { stepLen(yylloc, 2); return DO; }
- /* "double"   { stepLen(yylloc, 6); return DOUBLE; } */
-"else"     { stepLen(yylloc, 4); return ELSE; }
-"false"    { stepLen(yylloc, 5); return FALSE_B; }
-"for"      { stepLen(yylloc, 3); return FOR; }
-"if"       { stepLen(yylloc, 2); return IF; }
-"int"      { stepLen(yylloc, 3); return INT; }
-"private"  { stepLen(yylloc, 7); return PRIVATE; }
-"public"   { stepLen(yylloc, 6); return PUBLIC; }
-"return"   { stepLen(yylloc, 6); return RETURN; }
-"signed"   { stepLen(yylloc, 6); return SIGNED; }
-"string"   { stepLen(yylloc, 6); return STRING; }
-"true"     { stepLen(yylloc, 4); return TRUE_B; }
-"unsigned" { stepLen(yylloc, 8); return UNSIGNED; }
-"void"     { stepLen(yylloc, 4); return VOID; }
-"while"    { stepLen(yylloc, 5); return WHILE; }
+"bool"     { stepLen(yyget_lloc(yyscanner), 4); return BOOL; }
+"break"    { stepLen(yyget_lloc(yyscanner), 5); return BREAK; }
+"continue" { stepLen(yyget_lloc(yyscanner), 8); return CONTINUE; }
+"do"       { stepLen(yyget_lloc(yyscanner), 2); return DO; }
+ /* "double"   { stepLen(yyget_lloc(yyscanner), 6); return DOUBLE; } */
+"else"     { stepLen(yyget_lloc(yyscanner), 4); return ELSE; }
+"false"    { stepLen(yyget_lloc(yyscanner), 5); return FALSE_B; }
+"for"      { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
+"if"       { stepLen(yyget_lloc(yyscanner), 2); return IF; }
+"int"      { stepLen(yyget_lloc(yyscanner), 3); return INT; }
+"private"  { stepLen(yyget_lloc(yyscanner), 7); return PRIVATE; }
+"public"   { stepLen(yyget_lloc(yyscanner), 6); return PUBLIC; }
+"return"   { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
+"signed"   { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; }
+"string"   { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
+"true"     { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
+"unsigned" { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; }
+"void"     { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
+"while"    { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
 
-{NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yylloc, yyleng); return IDENTIFIER; }
+{NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 
-0|[1-9]{DIGIT}*   { stepLen(yylloc, yyleng); return DECIMAL_LITERAL; }
-\"(\\.|[^\\"])*\" { stepLen(yylloc, yyleng); return STRING_LITERAL; }
+0|[1-9]{DIGIT}*   { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DECIMAL_LITERAL; }
+\"(\\.|[^\\"])*\" { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return STRING_LITERAL; }
 
-"+=" { stepLen(yylloc, 2); return ADD_ASSIGN; }
-"-=" { stepLen(yylloc, 2); return SUB_ASSIGN; }
-"*=" { stepLen(yylloc, 2); return MUL_ASSIGN; }
-"/=" { stepLen(yylloc, 2); return DIV_ASSIGN; }
-"%=" { stepLen(yylloc, 2); return MOD_ASSIGN; }
- /* "++" { stepLen(yylloc, 2); return INC_OP; } */
- /* "--" { stepLen(yylloc, 2); return DEC_OP; } */
-"&&" { stepLen(yylloc, 2); return LAND_OP; }
-"||" { stepLen(yylloc, 2); return LOR_OP; }
-"<=" { stepLen(yylloc, 2); return LE_OP; }
-">=" { stepLen(yylloc, 2); return GE_OP; }
-"==" { stepLen(yylloc, 2); return EQ_OP; }
-"!=" { stepLen(yylloc, 2); return NE_OP; }
-":"  { stepChar(yylloc); return ':'; }
-";"  { stepChar(yylloc); return ';'; }
-"{"  { stepChar(yylloc); return '{'; }
-"}"  { stepChar(yylloc); return '}'; }
-","  { stepChar(yylloc); return ','; }
-"="  { stepChar(yylloc); return '='; }
-"("  { stepChar(yylloc); return '('; }
-")"  { stepChar(yylloc); return ')'; }
-"["  { stepChar(yylloc); return '['; }
-"]"  { stepChar(yylloc); return ']'; }
-"!"  { stepChar(yylloc); return '!'; }
-"-"  { stepChar(yylloc); return '-'; }
-"+"  { stepChar(yylloc); return '+'; }
-"*"  { stepChar(yylloc); return '*'; }
-"/"  { stepChar(yylloc); return '/'; }
-"%"  { stepChar(yylloc); return '%'; }
-"<"  { stepChar(yylloc); return '<'; }
-">"  { stepChar(yylloc); return '>'; }
-"?"  { stepChar(yylloc); return '?'; }
-"#"  { stepChar(yylloc); return '#'; }
+"+=" { stepLen(yyget_lloc(yyscanner), 2); return ADD_ASSIGN; }
+"-=" { stepLen(yyget_lloc(yyscanner), 2); return SUB_ASSIGN; }
+"*=" { stepLen(yyget_lloc(yyscanner), 2); return MUL_ASSIGN; }
+"/=" { stepLen(yyget_lloc(yyscanner), 2); return DIV_ASSIGN; }
+"%=" { stepLen(yyget_lloc(yyscanner), 2); return MOD_ASSIGN; }
+ /* "++" { stepLen(yyget_lloc(yyscanner), 2); return INC_OP; } */
+ /* "--" { stepLen(yyget_lloc(yyscanner), 2); return DEC_OP; } */
+"&&" { stepLen(yyget_lloc(yyscanner), 2); return LAND_OP; }
+"||" { stepLen(yyget_lloc(yyscanner), 2); return LOR_OP; }
+"<=" { stepLen(yyget_lloc(yyscanner), 2); return LE_OP; }
+">=" { stepLen(yyget_lloc(yyscanner), 2); return GE_OP; }
+"==" { stepLen(yyget_lloc(yyscanner), 2); return EQ_OP; }
+"!=" { stepLen(yyget_lloc(yyscanner), 2); return NE_OP; }
+":"  { stepChar(yyget_lloc(yyscanner)); return ':'; }
+";"  { stepChar(yyget_lloc(yyscanner)); return ';'; }
+"{"  { stepChar(yyget_lloc(yyscanner)); return '{'; }
+"}"  { stepChar(yyget_lloc(yyscanner)); return '}'; }
+","  { stepChar(yyget_lloc(yyscanner)); return ','; }
+"="  { stepChar(yyget_lloc(yyscanner)); return '='; }
+"("  { stepChar(yyget_lloc(yyscanner)); return '('; }
+")"  { stepChar(yyget_lloc(yyscanner)); return ')'; }
+"["  { stepChar(yyget_lloc(yyscanner)); return '['; }
+"]"  { stepChar(yyget_lloc(yyscanner)); return ']'; }
+"!"  { stepChar(yyget_lloc(yyscanner)); return '!'; }
+"-"  { stepChar(yyget_lloc(yyscanner)); return '-'; }
+"+"  { stepChar(yyget_lloc(yyscanner)); return '+'; }
+"*"  { stepChar(yyget_lloc(yyscanner)); return '*'; }
+"/"  { stepChar(yyget_lloc(yyscanner)); return '/'; }
+"%"  { stepChar(yyget_lloc(yyscanner)); return '%'; }
+"<"  { stepChar(yyget_lloc(yyscanner)); return '<'; }
+">"  { stepChar(yyget_lloc(yyscanner)); return '>'; }
+"?"  { stepChar(yyget_lloc(yyscanner)); return '?'; }
+"#"  { stepChar(yyget_lloc(yyscanner)); return '#'; }
 
-"\n\r" { newline(yylloc); }
-"\r\n" { newline(yylloc); }
-"\n" { newline(yylloc); }
-"\r" { newline(yylloc); }
-{WHITESPACE} { stepChar(yylloc); }
+"\n\r" { newline(yyget_lloc(yyscanner)); }
+"\r\n" { newline(yyget_lloc(yyscanner)); }
+"\n" { newline(yyget_lloc(yyscanner)); }
+"\r" { newline(yyget_lloc(yyscanner)); }
+{WHITESPACE} { stepChar(yyget_lloc(yyscanner)); }
 
 . { /* Ignore bad characters */ }

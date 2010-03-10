@@ -66,14 +66,15 @@
 %destructor { treenode_free($$); } <treenode>
 
 /* Identifiers: */
-%token IDENTIFIER
+%token <str> IDENTIFIER
 
 /* Keywords: */
 %token BOOL BREAK CONTINUE DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC RETURN
 %token SIGNED STRING TRUE_B UNSIGNED VOID WHILE
 
 /* Literals: */
-%token STRING_LITERAL DECIMAL_LITERAL
+%token <str> STRING_LITERAL
+%token <str> DECIMAL_LITERAL
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -762,11 +763,11 @@ primary_expression
 constant
  : DECIMAL_LITERAL
    {
-     $$ = treenode_init_int(atoi(yyget_text(yyscanner)), &@$);
+     $$ = treenode_init_int(atoi($1), &@$);
    }
  | STRING_LITERAL
    {
-     $$ = treenode_init_string(yyget_text(yyscanner), &@$);
+     $$ = treenode_init_string($1, &@$);
    }
  | TRUE_B
    {
@@ -781,7 +782,7 @@ constant
 identifier
  : IDENTIFIER
    {
-     $$ = treenode_init_identifier(yyget_text(yyscanner), &@$);
+     $$ = treenode_init_identifier($1, &@$);
    }
 
 %%

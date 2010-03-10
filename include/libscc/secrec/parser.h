@@ -111,7 +111,8 @@ extern int sccparse_mem(const void *buf, size_t size, TYPE_TREENODE **result);
 
 union YYSTYPE {
     TYPE_TREENODE *treenode;
-    void *nothing;
+    char *nothing;
+    char *str;
 };
 typedef union YYSTYPE YYSTYPE;
 

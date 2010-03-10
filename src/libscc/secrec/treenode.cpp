@@ -301,7 +301,9 @@ std::string TreeNodeArrayType::xmlHelper() const {
   C interface for Yacc
 *******************************************************************************/
 
-extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type, YYLTYPE *loc) {
+extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
+                                          YYLTYPE *loc)
+{
     return (TreeNode*) (new SecreC::TreeNode(type, *loc));
 }
 
@@ -317,16 +319,23 @@ extern "C" unsigned treenode_numChildren(struct TreeNode *node) {
     return ((SecreC::TreeNode*) node)->children().size();
 }
 
-extern "C" struct TreeNode *treenode_childAt(struct TreeNode *node, unsigned index) {
+extern "C" struct TreeNode *treenode_childAt(struct TreeNode *node,
+                                             unsigned index)
+{
     return (TreeNode*) ((SecreC::TreeNode*) node)->children().at(index).data();
 }
 
-extern "C" void treenode_appendChild(struct TreeNode *parent, struct TreeNode *child) {
+extern "C" void treenode_appendChild(struct TreeNode *parent,
+                                     struct TreeNode *child)
+{
     return ((SecreC::TreeNode*) parent)->appendChild((SecreC::TreeNode*) child);
 }
 
-extern "C" void treenode_prependChild(struct TreeNode *parent, struct TreeNode *child) {
-    return ((SecreC::TreeNode*) parent)->prependChild((SecreC::TreeNode*) child);
+extern "C" void treenode_prependChild(struct TreeNode *parent,
+                                      struct TreeNode *child)
+{
+    typedef SecreC::TreeNode TN;
+    return ((TN*) parent)->prependChild((TN*) child);
 }
 
 extern "C" void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc) {
@@ -346,20 +355,27 @@ extern "C" struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc) {
     return (TreeNode*) new SecreC::TreeNodeUInt(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_string(const char *value, YYLTYPE *loc) {
+extern "C" struct TreeNode *treenode_init_string(const char *value,
+                                                 YYLTYPE *loc)
+{
     return (TreeNode*) new SecreC::TreeNodeString(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc) {
+extern "C" struct TreeNode *treenode_init_identifier(const char *value,
+                                                     YYLTYPE *loc)
+{
     return (TreeNode*) new SecreC::TreeNodeIdentifier(value, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_basictype(enum SecrecSecType secType,
                                                     enum SecrecVarType varType,
-                                                    YYLTYPE *loc) {
+                                                    YYLTYPE *loc)
+{
     return (TreeNode*) new SecreC::TreeNodeBasicType(secType, varType, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_arraytype(unsigned value, YYLTYPE *loc) {
+extern "C" struct TreeNode *treenode_init_arraytype(unsigned value,
+                                                    YYLTYPE *loc)
+{
     return (TreeNode*) new SecreC::TreeNodeArrayType(value, *loc);
 }
