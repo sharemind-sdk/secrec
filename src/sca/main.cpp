@@ -3,11 +3,12 @@
 #include <libscc/secrec/parser.h>
 #include <libscc/secrec/treenode.h>
 #include <libscc/secrec/tnsymbols.h>
+#include <libscc/intermediate.h>
 
 using namespace std;
 
 int main() {
-    SecreC::TreeNode *parseTree = 0;
+    SecreC::TreeNodeProgram *parseTree = 0;
 
     int parseResult = sccparse(&parseTree);
     fflush(stdout);

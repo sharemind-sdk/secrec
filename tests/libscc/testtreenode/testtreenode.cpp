@@ -162,7 +162,7 @@ void TestTreeNode::testInitType() {
     QFETCH(SecrecSecType, sectype2);
     QFETCH(SecrecVarType, type2);
 
-    TreeNodeBasicType n(sectype1, type1, loc);
+    TreeNodeTypeBasic n(sectype1, type1, loc);
     QCOMPARE(n.type(), NODE_BASICTYPE);
     QCOMPARE(n.secType(), sectype1);
     QCOMPARE(n.varType(), type1);

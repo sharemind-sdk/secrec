@@ -8,6 +8,7 @@
 #include <deque>
 #include <string>
 #include "../sccpointer.h"
+#include "../intermediate.h"
 #include "types.h"
 
 namespace SecreC {
@@ -15,6 +16,9 @@ namespace SecreC {
 class TreeNode: public SccObject {
     public: /* Types: */
         typedef enum SecrecTreeNodeType Type;
+        typedef std::deque<SccPointer<TreeNode> > ChildrenList;
+        typedef ChildrenList::iterator ChildrenListIterator;
+        typedef ChildrenList::const_iterator ChildrenListConstIterator;
 
     public: /* Methods: */
         explicit TreeNode(Type type, const YYLTYPE &loc);
@@ -40,10 +44,171 @@ class TreeNode: public SccObject {
         static const char *typeName(Type type);
 
     private: /* Fields: */
-        TreeNode                          *m_parent;
-        const Type                         m_type;
-        std::deque<SccPointer<TreeNode> >  m_children;
-        YYLTYPE                            m_location;
+        TreeNode    *m_parent;
+        const Type   m_type;
+        ChildrenList m_children;
+        YYLTYPE      m_location;
+};
+
+class TreeNodeCodeable: public TreeNode {
+    public: /* Methods: */
+        TreeNodeCodeable(Type type, const YYLTYPE &loc)
+            : TreeNode(type, loc) {}
+        virtual inline ~TreeNodeCodeable() {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es) = 0;
+};
+
+class TreeNodeProgram: public TreeNodeCodeable {
+    public: /* Methods: */
+        explicit TreeNodeProgram(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_PROGRAM, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code, SymbolTable &st,
+                                           std::ostream &es);
+};
+
+class TreeNodeGlobals: public TreeNodeCodeable {
+    public: /* Methods: */
+        explicit TreeNodeGlobals(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_GLOBALS, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+class TreeNodeDecl: public TreeNodeCodeable {
+    public: /* Methods: */
+        explicit TreeNodeDecl(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_DECL, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+class TreeNodeFundefs: public TreeNodeCodeable {
+    public: /* Methods: */
+        explicit TreeNodeFundefs(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_FUNDEFS, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+class TreeNodeFundef: public TreeNodeCodeable {
+    public: /* Methods: */
+        explicit TreeNodeFundef(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_DECL, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+class TreeNodeExpr: public TreeNodeCodeable {
+    public: /* Types: */
+        enum Flags { CONSTANT = 0x01, PARENTHESIS = 0x02 };
+
+    public: /* Methods: */
+        explicit TreeNodeExpr(Type type, const YYLTYPE &loc)
+            : TreeNodeCodeable(type, loc) {}
+
+        virtual const Symbol *result() const = 0;
+        virtual const SecreC::Type *resultType() const = 0;
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es) = 0;
+
+    private: /* Fields: */
+        /// \todo Add flags.
+};
+
+class TreeNodeExprUnary: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprUnary(Type type, const YYLTYPE &loc)
+            : TreeNodeExpr(type, loc), m_result(0), m_resultType(0) {}
+        virtual ~TreeNodeExprUnary() {
+            if (m_resultType != 0) delete *m_resultType;
+            delete m_resultType;
+        }
+
+        virtual const Symbol *result() const {
+            assert(m_result != 0);
+            return m_result;
+        }
+        virtual inline const SecreC::Type *resultType() const {
+            assert(m_resultType != 0);
+            return *m_resultType;
+        }
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+
+    private: /* Fields: */
+        const Symbol *m_result;
+        const SecreC::Type **m_resultType;
+};
+
+class TreeNodeExprBinary: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprBinary(Type type, const YYLTYPE &loc)
+            : TreeNodeExpr(type, loc), m_result(0), m_resultType(0) {}
+        virtual ~TreeNodeExprBinary() {
+            if (m_resultType != 0) delete *m_resultType;
+            delete m_resultType;
+        }
+
+        virtual const Symbol *result() const {
+            assert(m_result != 0);
+            return m_result;
+        }
+        virtual inline const SecreC::Type *resultType() const {
+            assert(m_resultType != 0);
+            return *m_resultType;
+        }
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+
+    private: /* Fields: */
+        const Symbol *m_result;
+        const SecreC::Type **m_resultType;
+};
+
+class TreeNodeExprTernary: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprTernary(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_TERNIF, loc), m_result(0), m_resultType(0) {}
+        virtual ~TreeNodeExprTernary() {
+            if (m_resultType != 0) delete *m_resultType;
+            delete m_resultType;
+        }
+
+        virtual const Symbol *result() const {
+            assert(m_result != 0);
+            return m_result;
+        }
+        virtual inline const SecreC::Type *resultType() const {
+            assert(m_resultType != 0);
+            return *m_resultType;
+        }
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+
+    private: /* Fields: */
+        const Symbol *m_result;
+        const SecreC::Type **m_resultType;
 };
 
 class TreeNodeBool: public TreeNode {
@@ -129,19 +294,17 @@ class TreeNodeType: public TreeNode {
         explicit inline TreeNodeType(TreeNode::Type type, const YYLTYPE &loc)
             : TreeNode(type, loc) {}
 
-        virtual SecreC::Type *secrecType() const = 0;
+        virtual const SecreC::Type &secrecType() const = 0;
 };
 
-class TreeNodeBasicType: public TreeNodeType {
+class TreeNodeTypeBasic: public TreeNodeType {
     public: /* Methods: */
-        explicit TreeNodeBasicType(BasicType::SecType secType,
+        explicit TreeNodeTypeBasic(BasicType::SecType secType,
                                    BasicType::VarType varType,
                                    const YYLTYPE &loc)
             : TreeNodeType(NODE_BASICTYPE, loc), m_type(secType, varType) {}
 
-        virtual inline SecreC::Type *secrecType() const {
-            return m_type.clone();
-        }
+        virtual inline const SecreC::Type &secrecType() const { return m_type; }
         inline void setSecrecBasicType(const SecreC::BasicType &type) {
             m_type = type;
         }
@@ -162,16 +325,14 @@ class TreeNodeBasicType: public TreeNodeType {
         SecreC::BasicType m_type;
 };
 
-class TreeNodeArrayType: public TreeNodeType {
+class TreeNodeTypeArray: public TreeNodeType {
     public: /* Methods: */
-        explicit TreeNodeArrayType(unsigned value, const YYLTYPE &loc)
+        explicit TreeNodeTypeArray(unsigned value, const YYLTYPE &loc)
             : TreeNodeType(NODE_ARRAYTYPE, loc), m_value(value),
               m_cachedType(0) {}
-        virtual inline ~TreeNodeArrayType() {
-            delete m_cachedType;
-        }
+        virtual inline ~TreeNodeTypeArray() { delete m_cachedType; }
 
-        virtual SecreC::Type *secrecType() const;
+        virtual const SecreC::Type &secrecType() const;
 
         inline void setValue(unsigned value) { m_value = value; }
         inline unsigned value() const { return m_value; }
@@ -190,9 +351,10 @@ extern "C" {
 
 /* C interface for yacc: */
 
-struct TreeNode *treenode_init(enum SecrecTreeNodeType type, YYLTYPE *loc);
+struct TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
 void treenode_free(struct TreeNode *node);
 enum SecrecTreeNodeType treenode_type(struct TreeNode *node);
+const YYLTYPE *treenode_location(const struct TreeNode *node);
 unsigned treenode_numChildren(struct TreeNode *node);
 struct TreeNode *treenode_childAt(struct TreeNode *node, unsigned index);
 void treenode_appendChild(struct TreeNode *parent, struct TreeNode *child);
@@ -212,6 +374,9 @@ struct TreeNode *treenode_init_arraytype(unsigned value, YYLTYPE *loc);
 #ifdef __cplusplus
 } /* extern "C" */
 } /* namespace SecreC */
+
+std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc);
+
 #endif /* #ifdef __cplusplus */
 
 
