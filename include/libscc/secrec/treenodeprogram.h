@@ -1,8 +1,10 @@
 #ifndef TREENODEPROGRAM_H
 #define TREENODEPROGRAM_H
 
-#include "treenode.h"
+#include "treenodecodeable.h"
 
+
+namespace SecreC {
 
 class TreeNodeProgram: public TreeNodeCodeable {
     public: /* Methods: */
@@ -12,5 +14,7 @@ class TreeNodeProgram: public TreeNodeCodeable {
         virtual ICode::Status generateCode(ICode::CodeList &code, SymbolTable &st,
                                            std::ostream &es);
 };
+
+} // namespace SecreC
 
 #endif // TREENODEPROGRAM_H

@@ -1,8 +1,9 @@
 #ifndef TREENODEEXPRBINARY_H
 #define TREENODEEXPRBINARY_H
 
-#include "treenode.h"
+#include "treenodeexpr.h"
 
+namespace SecreC {
 
 class TreeNodeExprBinary: public TreeNodeExpr {
     public: /* Methods: */
@@ -31,5 +32,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         const Symbol *m_result;
         const SecreC::Type **m_resultType;
 };
+
+} // namespace SecreC
 
 #endif // TREENODEEXPRBINARY_H

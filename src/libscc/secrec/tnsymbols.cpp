@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stack>
 #include "secrec/treenode.h"
+#include "secrec/treenodeidentifier.h"
 
 
 namespace SecreC {

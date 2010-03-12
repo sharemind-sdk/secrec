@@ -1,8 +1,10 @@
 #ifndef TREENODEFUNDEFS_H
 #define TREENODEFUNDEFS_H
 
-#include "treenode.h"
+#include "treenodecodeable.h"
 
+
+namespace SecreC {
 
 class TreeNodeFundefs: public TreeNodeCodeable {
     public: /* Methods: */
@@ -13,5 +15,7 @@ class TreeNodeFundefs: public TreeNodeCodeable {
                                            SymbolTable &st,
                                            std::ostream &es);
 };
+
+} // namespace SecreC
 
 #endif // TREENODEFUNDEFS_H

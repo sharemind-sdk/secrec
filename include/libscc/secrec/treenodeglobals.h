@@ -1,8 +1,10 @@
 #ifndef TREENODEGLOBALS_H
 #define TREENODEGLOBALS_H
 
-#include "treenode.h"
+#include "treenodecodeable.h"
 
+
+namespace SecreC {
 
 class TreeNodeGlobals: public TreeNodeCodeable {
     public: /* Methods: */
@@ -14,4 +16,6 @@ class TreeNodeGlobals: public TreeNodeCodeable {
                                            std::ostream &es);
 };
 
-#endif TREENODEGLOBALS_H
+} // namespace SecreC
+
+#endif // TREENODEGLOBALS_H

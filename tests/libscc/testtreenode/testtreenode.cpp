@@ -1,6 +1,11 @@
 #include <QtTest>
 #include <libscc/secrec/parser.h>
-#include <libscc/secrec/treenode.h>
+#include <libscc/secrec/treenodebool.h>
+#include <libscc/secrec/treenodeint.h>
+#include <libscc/secrec/treenodeuint.h>
+#include <libscc/secrec/treenodestring.h>
+#include <libscc/secrec/treenodetypebasic.h>
+
 
 using namespace SecreC;
 

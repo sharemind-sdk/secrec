@@ -1,5 +1,10 @@
 #include "secrec/treenodeprogram.h"
 
+#include "secrec/treenodefundefs.h"
+#include "secrec/treenodeglobals.h"
+
+
+namespace SecreC {
 
 ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
                                             SymbolTable &st,
@@ -33,3 +38,5 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
         return ICode::E_EMPTY_PROGRAM;
     }
 }
+
+} // namespace SecreC
