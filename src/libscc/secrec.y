@@ -569,7 +569,12 @@ assignment_expression /* WARNING: RIGHT RECURSION */
  ;
 
 lvalue
- : unary_expression
+/* : unary_expression */
+ : identifier
+   {
+     $$ = treenode_init(NODE_EXPR_LVARIABLE, &@$);
+     treenode_appendChild($$, $1);
+   }
  ;
 
 conditional_expression
@@ -720,18 +725,22 @@ unary_expression
  ;
 
 postfix_expression
- : postfix_expression '(' ')'
+/* : postfix_expression '(' ')'*/
+ : identifier '(' ')'
    {
      $$ = treenode_init(NODE_EXPR_FUNCALL, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     /* treenode_appendChild($$, ensure_rValue($1)); */
+     treenode_appendChild($$, $1);
    }
- | postfix_expression '(' argument_list ')'
+/* | postfix_expression '(' argument_list ')' */
+ | identifier '(' argument_list ')'
    {
      unsigned i;
      unsigned n;
 
      $$ = treenode_init(NODE_EXPR_FUNCALL, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     /* treenode_appendChild($$, ensure_rValue($1));*/
+     treenode_appendChild($$, $1);
      n = treenode_numChildren($3);
      for (i = 0; i < n; i++) {
          treenode_appendChild($$, ensure_rValue(treenode_childAt($3, i)));

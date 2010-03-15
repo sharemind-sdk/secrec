@@ -111,12 +111,43 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
                                                     SymbolTable &st,
                                                     std::ostream &es)
 {
-    /// \todo Is type check necessary?
+    /// \todo Write assertion that were have good return type
+
     // Type check
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    /// \todo
+    // Generate code for boolean expression:
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    s = e1->generateBoolCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    // Generate code for first value child expression:
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
+    s = e2->generateBoolCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    // Generate code for second value child expression:
+    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
+    const TreeNodeExpr *ce3 = const_cast<const TreeNodeExpr*>(e3);
+    s = e3->generateCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    // Link conditional expression code to the rest of the code:
+    e1->patchTrueList(st.label(ce2->firstImop()));
+    e1->patchFalseList(st.label(ce3->firstImop()));
+
+    trueList().insert(trueList().begin(), ce2->trueList().begin(),
+                                          ce2->trueList().end());
+    trueList().insert(trueList().begin(), ce3->trueList().begin(),
+                                          ce3->trueList().end());
+    falseList().insert(falseList().begin(), ce2->falseList().begin(),
+                                            ce2->falseList().end());
+    falseList().insert(falseList().begin(), ce3->falseList().begin(),
+                                            ce3->falseList().end());
+
+    return ICode::OK;
 }
 
 } // namespace SecreC

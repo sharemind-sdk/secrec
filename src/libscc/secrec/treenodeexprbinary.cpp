@@ -97,19 +97,20 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
 
     // Generate code for binary expression:
     Imop *i;
-    /// \todo implement more expressions
     switch (type()) {
-        case NODE_EXPR_ADD: i = new Imop(Imop::ADD); break;
-        case NODE_EXPR_SUB: i = new Imop(Imop::SUB); break;
-        case NODE_EXPR_MUL: i = new Imop(Imop::MUL); break;
-        case NODE_EXPR_DIV: i = new Imop(Imop::DIV); break;
-        case NODE_EXPR_MOD: i = new Imop(Imop::MOD); break;
-        case NODE_EXPR_EQ:  i = new Imop(Imop::EQ);  break;
-        case NODE_EXPR_GE:  i = new Imop(Imop::GE);  break;
-        case NODE_EXPR_GT:  i = new Imop(Imop::GT);  break;
-        case NODE_EXPR_LE:  i = new Imop(Imop::LE);  break;
-        case NODE_EXPR_LT:  i = new Imop(Imop::LT);  break;
-        case NODE_EXPR_NE:  i = new Imop(Imop::NE);  break;
+        case NODE_EXPR_ADD:  i = new Imop(Imop::ADD);  break;
+        case NODE_EXPR_SUB:  i = new Imop(Imop::SUB);  break;
+        case NODE_EXPR_MUL:  i = new Imop(Imop::MUL);  break;
+        case NODE_EXPR_DIV:  i = new Imop(Imop::DIV);  break;
+        case NODE_EXPR_MOD:  i = new Imop(Imop::MOD);  break;
+        case NODE_EXPR_EQ:   i = new Imop(Imop::EQ);   break;
+        case NODE_EXPR_GE:   i = new Imop(Imop::GE);   break;
+        case NODE_EXPR_GT:   i = new Imop(Imop::GT);   break;
+        case NODE_EXPR_LE:   i = new Imop(Imop::LE);   break;
+        case NODE_EXPR_LT:   i = new Imop(Imop::LT);   break;
+        case NODE_EXPR_NE:   i = new Imop(Imop::NE);   break;
+        case NODE_EXPR_LAND: i = new Imop(Imop::LAND); break;
+        case NODE_EXPR_LOR:  i = new Imop(Imop::LOR);  break;
         default:
             /// \todo Write better error message
             es << "Binary is not yet implemented. At " << location()
@@ -147,12 +148,12 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
 
     // Generate code for first child expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
-    const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(ce1);
+    const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
     s = e1->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
     firstImop() = static_cast<const TreeNodeExpr*>(e1)->firstImop();
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
-    const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(ce2);
+    const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
 
@@ -182,20 +183,20 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
         return ICode::OK;
     }
 
-    Imop::Type jumpType;
+    Imop *tj;
     switch (type()) {
-        case NODE_EXPR_EQ: jumpType = Imop::JE; break;
-        case NODE_EXPR_GE: jumpType = Imop::JGE; break;
-        case NODE_EXPR_GT: jumpType = Imop::JGT; break;
-        case NODE_EXPR_LE: jumpType = Imop::JLE; break;
-        case NODE_EXPR_LT: jumpType = Imop::JLT; break;
-        case NODE_EXPR_NE: jumpType = Imop::JNE; break;
+        case NODE_EXPR_EQ: tj = new Imop(Imop::JE,  0); break;
+        case NODE_EXPR_GE: tj = new Imop(Imop::JGE, 0); break;
+        case NODE_EXPR_GT: tj = new Imop(Imop::JGT, 0); break;
+        case NODE_EXPR_LE: tj = new Imop(Imop::JLE, 0); break;
+        case NODE_EXPR_LT: tj = new Imop(Imop::JLT, 0); break;
+        case NODE_EXPR_NE: tj = new Imop(Imop::JNE, 0); break;
         default:
             assert(false); // Shouldn't happen.
     }
-    Imop *tj = new Imop(jumpType, 0,
-                       static_cast<const TreeNodeExpr*>(e1)->result(),
-                       static_cast<const TreeNodeExpr*>(e2)->result());
+
+    tj->setArg1(static_cast<const TreeNodeExpr*>(e1)->result());
+    tj->setArg2(static_cast<const TreeNodeExpr*>(e2)->result());
     trueList().push_back(tj);
     code.push_back(tj);
 

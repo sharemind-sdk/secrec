@@ -6,13 +6,16 @@
 #include <stdlib.h>
 #include "secrec/symboltable.h"
 #include "secrec/treenodebool.h"
-#include "secrec/treenodeexprunary.h"
+#include "secrec/treenodeexprassign.h"
 #include "secrec/treenodeexprbinary.h"
+#include "secrec/treenodeexprrvariable.h"
 #include "secrec/treenodeexprternary.h"
+#include "secrec/treenodeexprunary.h"
 #include "secrec/treenodefundefs.h"
 #include "secrec/treenodeglobals.h"
 #include "secrec/treenodeidentifier.h"
 #include "secrec/treenodeint.h"
+#include "secrec/treenodelvariable.h"
 #include "secrec/treenodeprogram.h"
 #include "secrec/treenodestring.h"
 #include "secrec/treenodetypebasic.h"
@@ -188,13 +191,18 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_EXPR_LT:         /* Fall through: */
         case NODE_EXPR_LAND:       /* Fall through: */
         case NODE_EXPR_LOR:        /* Fall through: */
+            return (TreeNode*) (new SecreC::TreeNodeExprBinary(type, *loc));
         case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
         case NODE_EXPR_ASSIGN_DIV: /* Fall through: */
         case NODE_EXPR_ASSIGN_MOD: /* Fall through: */
         case NODE_EXPR_ASSIGN_ADD: /* Fall through: */
         case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
         case NODE_EXPR_ASSIGN:
-            return (TreeNode*) (new SecreC::TreeNodeExprBinary(type, *loc));
+            return (TreeNode*) (new SecreC::TreeNodeExprAssign(type, *loc));
+        case NODE_EXPR_RVARIABLE:
+            return (TreeNode*) (new SecreC::TreeNodeExprRVariable(*loc));
+        case NODE_EXPR_LVARIABLE:
+            return (TreeNode*) (new SecreC::TreeNodeLVariable(*loc));
         case NODE_EXPR_TERNIF:
             return (TreeNode*) (new SecreC::TreeNodeExprTernary(*loc));
         default:

@@ -26,10 +26,7 @@ class TreeNodeExpr: public TreeNode {
                                            SymbolWithValue *result = 0) = 0;
         virtual ICode::Status generateBoolCode(ICode::CodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es)
-        {
-            assert(false);
-        }
+                                               std::ostream &es) = 0;
 
         inline SymbolWithValue *result() const {
             assert(m_result != 0);
