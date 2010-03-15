@@ -41,6 +41,12 @@ class Imop {
             LOR,           /*   d = arg1 || arg2;                */
             JT,            /* if (arg1) GOTO d;                  */
             JF,            /* if (!arg1) GOTO d;                 */
+            JE,            /* if (arg1 == arg2) GOTO d;          */
+            JNE,           /* if (arg1 != arg2) GOTO d;          */
+            JLE,           /* if (arg1 <= arg2) GOTO d;          */
+            JLT,           /* if (arg1 <  arg2) GOTO d;          */
+            JGE,           /* if (arg1 >= arg2) GOTO d;          */
+            JGT,           /* if (arg1 >  arg2) GOTO d;          */
             JUMP,          /* GOTO d;                            */
             LABEL,         /* label:                       (NOP) */
             RETURN,        /* RETURN;                            */

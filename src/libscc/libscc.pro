@@ -12,6 +12,7 @@ SOURCES = \
     secrec/treenode.cpp \
     secrec/treenodebool.cpp \
     secrec/treenodedecl.cpp \
+    secrec/treenodeexpr.cpp \
     secrec/treenodeexprunary.cpp \
     secrec/treenodeexprbinary.cpp \
     secrec/treenodeexprternary.cpp \

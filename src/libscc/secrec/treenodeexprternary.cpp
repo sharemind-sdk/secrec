@@ -11,12 +11,12 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
     assert((children().at(2)->type() & NODE_EXPR_MASK) != 0x0);
 
-    if (m_resultType != 0) {
-        assert(*m_resultType != 0);
+    if (resultType() != 0) {
+        assert(*resultType() != 0);
         return ICode::OK;
     }
 
-    m_resultType = new (const SecreC::Type*);
+    resultType() = new (SecreC::Type*);
 
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
     ICode::Status s = e1->calculateResultType(st, es);
@@ -30,67 +30,93 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     s = e3->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type *eType1 = e1->resultType();
-    const SecreC::Type *eType2 = e2->resultType();
-    const SecreC::Type *eType3 = e3->resultType();
+    const SecreC::Type *eType1 = static_cast<const TreeNodeExpr*>(e1)->resultType();
+    const SecreC::Type *eType2 = static_cast<const TreeNodeExpr*>(e2)->resultType();
+    const SecreC::Type *eType3 = static_cast<const TreeNodeExpr*>(e3)->resultType();
 
     if (eType1->kind() == SecreC::Type::Basic
         && static_cast<const SecreC::BasicType*>(eType1)->varType() == VARTYPE_BOOL
         && static_cast<const SecreC::BasicType*>(eType1)->secType() == SECTYPE_PUBLIC
         && *eType2 == *eType3)
     {
-        *m_resultType = eType2->clone();
+        *resultType() = eType2->clone();
         return ICode::OK;
     }
 
     /// \todo Write better error message
     es << "Invalid ternary operation at " << location() << std::endl;
 
-    *m_resultType = 0;
+    *resultType() = 0;
     return ICode::E_TYPE;
 }
 
 ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
                                                 SymbolTable &st,
-                                                std::ostream &es)
+                                                std::ostream &es,
+                                                SymbolWithValue *r)
 {
-    assert(m_result == 0);
+    assert(result() == 0);
 
     // Type check:
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
-    const SecreC::Type *rt = resultType();
 
-    // Generate code for child expressions:
-    /// \todo Evaluate only one side!!!
+    // Generate temporary for the result of the unary expression, if needed:
+    if (r == 0) {
+        SecreC::Type *rt = *resultType();
+        result() = st.appendTemporary(*rt);
+    } else {
+        assert(r->secrecType() == **resultType());
+        result() = r;
+    }
 
-    return ICode::E_NOT_IMPLEMENTED;
-
-    /*
-
+    // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
-    s = e1->generateCode(code, st, es);
+    s = e1->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
+
+    // Generate code for first value child expression:
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
-    s = e2->generateCode(code, st, es);
+    const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
+    s = e2->generateCode(code, st, es, result());
     if (s != ICode::OK) return s;
+
+    // Jump out of the ternary construct:
+    Imop *j = new Imop(Imop::JUMP);
+    nextList().push_back(j);
+    code.push_back(j);
+
+    // Generate code for second value child expression:
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
-    s = e3->generateCode(code, st, es);
+    const TreeNodeExpr *ce3 = const_cast<const TreeNodeExpr*>(e3);
+    s = e3->generateCode(code, st, es, result());
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the unary expression:
-    m_result = st.appendTemporary(*rt);
+    // Link boolean expression code to the rest of the code:
+    e1->patchTrueList(st.label(ce2->firstImop()));
+    e1->patchFalseList(st.label(ce3->firstImop()));
 
-    // Generate code for binary expression:
-    Imop *i = new Imop();
-
-    i->setDest(m_result);
-    i->setArg1(e1->result());
-    i->setArg1(e2->result());
-    code.push_back(i);
+    // Handle next lists of value child expressions:
+    nextList().insert(nextList().begin(),
+                      ce2->nextList().begin(),
+                      ce2->nextList().end());
+    nextList().insert(nextList().begin(),
+                      ce3->nextList().begin(),
+                      ce3->nextList().end());
 
     return ICode::OK;
-    */
+}
+
+ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
+                                                    SymbolTable &st,
+                                                    std::ostream &es)
+{
+    /// \todo Is type check necessary?
+    // Type check
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    /// \todo
 }
 
 } // namespace SecreC

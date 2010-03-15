@@ -6,6 +6,7 @@
 
 namespace SecreC {
 
+class Imop;
 class TreeNodeDecl;
 
 class Symbol {
@@ -112,6 +113,16 @@ class SymbolConstantString: public SymbolWithValue {
         const std::string m_value;
 };
 
+class SymbolLabel: public Symbol {
+    public: /* Methods: */
+        SymbolLabel(const Imop *target)
+            : Symbol(Symbol::LABEL), m_target(target) {}
+        inline const Imop *target() const { return m_target; }
+
+    private: /* Fields: */
+        const Imop *m_target;
+};
+
 class SymbolTable {
     private: /* Types: */
         typedef std::vector<Symbol*> Table;
@@ -122,6 +133,7 @@ class SymbolTable {
 
         void appendSymbol(Symbol *symbol);
         SymbolWithValue *appendTemporary(const Type &type);
+        Symbol *label(const Imop *imop);
         Symbol *comment(const std::string &comment);
         Symbol *constantBool(bool value);
         Symbol *constantInt(int value);
@@ -138,6 +150,7 @@ class SymbolTable {
         SymbolTable *m_last;
         unsigned long m_tempCount;
         unsigned long m_constCount;
+        unsigned long m_labelCount;
 };
 
 } // namespace SecreC

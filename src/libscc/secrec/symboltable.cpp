@@ -9,7 +9,7 @@ namespace SecreC {
 
 SymbolTable::SymbolTable(SymbolTable *parent)
     : m_parent(parent), m_scope(0), m_cont(0), m_last(0), m_tempCount(0),
-      m_constCount(0)
+      m_constCount(0), m_labelCount(0)
 {
     // Intentionally empty
 }
@@ -36,6 +36,15 @@ SymbolWithValue *SymbolTable::appendTemporary(const Type &type) {
     tmp->setName(os.str());
     appendSymbol(tmp);
     return tmp;
+}
+
+Symbol *SymbolTable::label(const Imop *imop) {
+    Symbol *label = new SymbolLabel(imop);
+    std::ostringstream os("$label$");
+    os << m_labelCount++;
+    label->setName(os.str());
+    appendSymbol(label);
+    return label;
 }
 
 Symbol *SymbolTable::comment(const std::string &comment) {
