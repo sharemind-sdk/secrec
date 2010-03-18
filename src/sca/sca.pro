@@ -1,4 +1,4 @@
-include(../../config.pri)
+include(../../scc.pri)
 
 TARGET = ../../bin/sca
 

@@ -1,4 +1,4 @@
-include(../../../config.pri)
+include(../../../scc.pri)
 CONFIG += qt qtestlib
 
 TARGET = ../../../bin/test-libscc-treenode

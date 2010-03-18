@@ -1,4 +1,4 @@
-include(../../config.pri)
+include(../../scc.pri)
 
 INCLUDEPATH += ../../include/libscc/
 TARGET = ../../lib/scc

@@ -1,20 +1,27 @@
-include(config.pri)
+include(scc.pri)
 
 TEMPLATE = subdirs
 
 CONFIG += ordered
 SUBDIRS = src tests
 
-runtests_debug.commands = \
-    LD_LIBRARY_PATH=lib/ bin/test-libscc-treenode$$escape_expand(\n\t) \
-    LD_LIBRARY_PATH=lib/ bin/test-libscc-parse$$escape_expand(\n\t)
-runtests_debug.depends = debug
+SCC_TESTS = \
+    bin/test-libscc-parse \
+    bin/test-libscc-treenode
 
-runtests_release.commands = \
-    LD_LIBRARY_PATH=lib/ bin/test-libscc-treenode$$escape_expand(\n\t) \
-    LD_LIBRARY_PATH=lib/ bin/test-libscc-parse$$escape_expand(\n\t)
-runtests_release.depends = release
 
-runtests.depends = runtests_debug runtests_release
 
-QMAKE_EXTRA_TARGETS += runtests runtests_debug runtests_release
+
+
+
+for(t,SCC_TESTS){
+  !win32 {
+    runtests.commands += \
+        LD_LIBRARY_PATH=lib/ "$$t" $$escape_expand(\n\t)
+  }
+  win32 {
+    runtests.commands += \
+        $$t $$escape_expand(\n\t)
+  }
+}
+QMAKE_EXTRA_TARGETS += runtests

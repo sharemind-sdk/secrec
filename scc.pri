@@ -1,5 +1,5 @@
 CONFIG -= qt
-CONFIG += debug_and_release
+CONFIG += debug
 
 QMAKE_CLEAN=*~
 QMAKE_CFLAGS_DEBUG=-std=c99 -DDEBUG -O0 -ggdb -Wall -Wextra -pedantic -pedantic-errors -Wno-long-long -pipe $$(CFLAGS)
@@ -12,3 +12,8 @@ DEFINES += _POSIX_SOURCE
 win32:DEFINES += WIN32
 unix:DEFINES  += UNIX _GNU_SOURCE
 macx:DEFINES  += MACX
+
+PRIVATECONFIG = config.pri
+exists($$PRIVATECONFIG) {
+    include($$PRIVATECONFIG)
+}
