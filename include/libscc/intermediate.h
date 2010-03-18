@@ -92,6 +92,8 @@ class ICode {
                 typedef List::iterator iterator;
 
             public: /* Methods: */
+                ~CodeList();
+
                 inline const_iterator begin() const { return m_list.begin(); }
                 inline iterator begin() { return m_list.begin(); }
                 inline const_iterator end() const { return m_list.end(); }

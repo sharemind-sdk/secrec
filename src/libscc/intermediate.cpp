@@ -6,107 +6,111 @@
 
 namespace SecreC {
 
+#define dname  (m_dest == 0 ? "_" : m_dest->name())
+#define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
+#define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
+
 std::string Imop::toString() const {
     std::ostringstream os;
     switch (m_type) {
         case ASSIGN:       /*   d = arg1;                        */
-            os << m_dest->name() << " = " << m_arg1->name();
+            os << dname << " = " << a1name;
             break;
         case CAST:         /*   d = (arg1) arg2;                 */
             os << "TODO CAST";
             break;
         case PUTPARAM:     /* PUTPARAM arg1;                     */
-            os << "PUTPARAM " << m_arg1->name();
+            os << "PUTPARAM " << a1name;
             break;
         case FUNCALL:      /*   d = arg1(PARAMS);                */
-            os << m_dest->name() << " = CALL " << m_arg1->name();
+            os << dname << " = CALL " << a1name;
             break;
         case WILDCARD:     /*   d = arg1[*];                     */
-            os << m_dest->name() << " = " << m_arg1->name() << "[*]";
+            os << dname << " = " << a1name << "[*]";
             break;
         case SUBSCRIPT:    /*   d = arg1[arg2];                  */
-            os << m_dest->name() << " = " << m_arg1->name() << "[" << m_arg2->name() << "]";
+            os << dname << " = " << a1name << "[" << a2name << "]";
             break;
         case UNEG:         /*   d = !arg1;                       */
-            os << m_dest->name() << " = !" << m_arg1->name();
+            os << dname << " = !" << a1name;
             break;
         case UMINUS:       /*   d = -arg1;                       */
-            os << m_dest->name() << " = -" << m_arg1->name();
+            os << dname << " = -" << a1name;
             break;
         case MATRIXMUL:    /*   d = arg1 #  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " # " << m_arg2->name();
+            os << dname << " = " << a1name << " # " << a2name;
             break;
         case MUL:          /*   d = arg1 *  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " * " << m_arg2->name();
+            os << dname << " = " << a1name << " * " << a2name;
             break;
         case DIV:          /*   d = arg1 /  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " / " << m_arg2->name();
+            os << dname << " = " << a1name << " / " << a2name;
             break;
         case MOD:          /*   d = arg1 %  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " % " << m_arg2->name();
+            os << dname << " = " << a1name << " % " << a2name;
             break;
         case ADD:          /*   d = arg1 +  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " + " << m_arg2->name();
+            os << dname << " = " << a1name << " + " << a2name;
             break;
         case SUB:          /*   d = arg1 -  arg2;                */
-            os << m_dest->name() << " = " << m_arg1->name() << " - " << m_arg2->name();
+            os << dname << " = " << a1name << " - " << a2name;
             break;
         case EQ:           /*   d = arg1 == arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " == " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " == " << a2name << ")";
             break;
         case NE:           /*   d = arg1 != arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " != " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " != " << a2name << ")";
             break;
         case LE:           /*   d = arg1 <= arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " <= " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " <= " << a2name << ")";
             break;
         case LT:           /*   d = arg1 <  arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " < " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " < " << a2name << ")";
             break;
         case GE:           /*   d = arg1 >= arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " >= " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " >= " << a2name << ")";
             break;
         case GT:           /*   d = arg1 >  arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " > " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " > " << a2name << ")";
             break;
         case LAND:         /*   d = arg1 && arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " && " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " && " << a2name << ")";
             break;
         case LOR:          /*   d = arg1 || arg2;                */
-            os << m_dest->name() << " = (" << m_arg1->name() << " || " << m_arg2->name() << ")";
+            os << dname << " = (" << a1name << " || " << a2name << ")";
             break;
         case JT:           /* if (arg1) GOTO d;                  */
-            os << "if (" << m_arg1->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << ") GOTO " << dname;
             break;
         case JF:           /* if (!arg1) GOTO d;                 */
-            os << "if (!" << m_arg1->name() << ") GOTO " << m_dest->name();
+            os << "if (!" << a1name << ") GOTO " << dname;
             break;
         case JE:           /* if (arg1 == arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " == " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " == " << a2name << ") GOTO " << dname;
             break;
         case JNE:          /* if (arg1 != arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " != " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " != " << a2name << ") GOTO " << dname;
             break;
         case JLE:          /* if (arg1 <= arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " <= " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " <= " << a2name << ") GOTO " << dname;
             break;
         case JLT:          /* if (arg1 <  arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " < " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " < " << a2name << ") GOTO " << dname;
             break;
         case JGE:          /* if (arg1 >= arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " >= " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " >= " << a2name << ") GOTO " << dname;
             break;
         case JGT:          /* if (arg1 >  arg2) GOTO d;          */
-            os << "if (" << m_arg1->name() << " > " << m_arg2->name() << ") GOTO " << m_dest->name();
+            os << "if (" << a1name << " > " << a2name << ") GOTO " << dname;
             break;
         case JUMP:         /* GOTO d;                            */
-            os << "GOTO " << m_dest->name();
+            os << "GOTO " << dname;
             break;
         case RETURN:       /* RETURN;                            */
             if (m_arg1 == 0) {
                 os << "RETURN";
             } else {       /* RETURN arg1;                       */
-                os << "RETURN " << m_arg1->name();
+                os << "RETURN " << a1name;
             }
         case END:          /* END PROGRAM                        */
             os << "END PROGRAM";
@@ -114,6 +118,12 @@ std::string Imop::toString() const {
             os << "TODO";
     }
     return os.str();
+}
+
+ICode::CodeList::~CodeList() {
+    for (const_iterator it(begin()); it != end(); it++) {
+        delete *it;
+    }
 }
 
 ICode::ICode(TreeNodeProgram *program) {

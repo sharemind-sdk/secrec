@@ -10,6 +10,8 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es)
 {
+    Imop *mainCall = new Imop(Imop::FUNCALL, 0, 0);
+    code.push_back(mainCall);
     if (children().size() >= 1) {
         assert(children().size() < 3);
 
