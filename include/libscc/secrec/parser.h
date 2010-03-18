@@ -59,7 +59,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_ASSIGN      = 0x21, /* expr = expr              */
     NODE_EXPR_LVARIABLE   = 0x22, /* x (L-value)              */
     NODE_EXPR_RVARIABLE   = 0x23, /* x (R-value)              */
-        NODE_EXPR_MASK = 0xff,
+        NODE_EXPR_MASK    = 0xff,
     NODE_STMT_IF        = 0x100,
     NODE_STMT_FOR       = 0x200,
     NODE_STMT_WHILE     = 0x300,
@@ -76,9 +76,11 @@ enum SecrecTreeNodeType {
     NODE_FUNDEF_PARAM   = 0xe00,
     NODE_FUNDEFS        = 0xf00,
     NODE_PROGRAM        = 0x1000,
-    NODE_BASICTYPE      = 0x10000,
-    NODE_ARRAYTYPE      = 0x20000,
-        NODE_TYPE_MASK = 0xf0000
+
+    NODE_VOIDTYPE       = 0x10000,
+    NODE_BASICTYPE      = 0x20000,
+    NODE_ARRAYTYPE      = 0x30000,
+        NODE_TYPE_MASK  = 0xf0000
 };
 
 enum SecrecSecType { SECTYPE_PUBLIC = 0x01, SECTYPE_PRIVATE = 0x02 };

@@ -17,7 +17,10 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
     assert(children().size() > 0 && children().size() <= 3);
     assert(children().at(0).data()->type() == NODE_IDENTIFIER);
     assert((children().at(1).data()->type() & NODE_TYPE_MASK) != 0x0);
+
+    assert(dynamic_cast<TNI*>(children().at(0).data()) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0).data());
+    assert(dynamic_cast<TNT*>(children().at(1).data()) != 0);
     TNT *type = static_cast<TNT*>(children().at(1).data());
 
     /// \note Check here for overrides first if new symbol table is needed.
@@ -28,6 +31,7 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
     if (children().size() >= 2) {
         TreeNode *t = children().at(2).data();
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
         ICode::Status s = e->generateCode(code, st, es);
         if (s != ICode::OK) return s;

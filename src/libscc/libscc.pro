@@ -18,6 +18,7 @@ SOURCES = \
     secrec/treenodeexprrvariable.cpp \
     secrec/treenodeexprternary.cpp \
     secrec/treenodeexprunary.cpp \
+    secrec/treenodefundef.cpp \
     secrec/treenodefundefs.cpp \
     secrec/treenodeglobals.cpp \
     secrec/treenodeidentifier.cpp \

@@ -88,8 +88,11 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
 
     // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
+    firstImop() = ce1->firstImop();
+
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es);
@@ -146,44 +149,59 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
            || type() == NODE_EXPR_LT
            || type() == NODE_EXPR_NE);
 
-    // Generate code for first child expression:
+    if (type() == NODE_EXPR_LAND || type() == NODE_EXPR_LOR) {
+        // Generate code for child expressions:
+        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+        const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
+        s = e1->generateBoolCode(code, st, es);
+        if (s != ICode::OK) return s;
+        firstImop() = static_cast<const TreeNodeExpr*>(e1)->firstImop();
+
+        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+        const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
+        s = e2->generateBoolCode(code, st, es);
+        if (s != ICode::OK) return s;
+
+        // Short circuit the code:
+        if (type() == NODE_EXPR_LAND) {
+            e1->patchTrueList(st.label(ce2->firstImop()));
+            falseList() = ce1->falseList();
+
+            trueList() = ce2->trueList();
+            falseList().insert(falseList().begin(),
+                               ce2->falseList().begin(),
+                               ce2->falseList().end());
+        } else {
+            assert(type() == NODE_EXPR_LOR);
+
+            e1->patchFalseList(st.label(ce2->firstImop()));
+            trueList() = ce1->trueList();
+
+            falseList() = ce2->falseList();
+            trueList().insert(trueList().begin(),
+                               ce2->trueList().begin(),
+                               ce2->trueList().end());
+        }
+
+        return ICode::OK;
+    }
+
+    // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
     const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
-    s = e1->generateBoolCode(code, st, es);
+    s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
     firstImop() = static_cast<const TreeNodeExpr*>(e1)->firstImop();
+
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
-    s = e2->generateBoolCode(code, st, es);
+    s = e2->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
-    if (type() == NODE_EXPR_LAND) {
-        /// \todo check if true
-        e1->patchTrueList(st.label(ce2->firstImop()));
-        falseList() = ce1->falseList();
-
-        trueList() = ce2->trueList();
-        falseList().insert(falseList().begin(),
-                           ce2->falseList().begin(),
-                           ce2->falseList().end());
-
-        return ICode::OK;
-    }
-
-    if (type() == NODE_EXPR_LOR) {
-        /// \todo check if true
-        e1->patchFalseList(st.label(ce2->firstImop()));
-        trueList() = ce1->trueList();
-
-        falseList() = ce2->falseList();
-        trueList().insert(trueList().begin(),
-                           ce2->trueList().begin(),
-                           ce2->trueList().end());
-
-        return ICode::OK;
-    }
-
     Imop *tj;
+    e1->patchNextList(st.label(ce2->firstImop()));
+    e2->patchNextList(st.label(tj));
+
     switch (type()) {
         case NODE_EXPR_EQ: tj = new Imop(Imop::JE,  0); break;
         case NODE_EXPR_GE: tj = new Imop(Imop::JGE, 0); break;
@@ -195,8 +213,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
             assert(false); // Shouldn't happen.
     }
 
-    tj->setArg1(static_cast<const TreeNodeExpr*>(e1)->result());
-    tj->setArg2(static_cast<const TreeNodeExpr*>(e2)->result());
+    tj->setArg1(ce1->result());
+    tj->setArg2(ce2->result());
     trueList().push_back(tj);
     code.push_back(tj);
 

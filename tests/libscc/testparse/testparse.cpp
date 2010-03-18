@@ -19,6 +19,7 @@ using namespace SecreC;
 #define XID(a) "<IDENTIFIER value=\"string:" a "\"/>"
 #define XLVAR(a) XB("LVARIABLE", XID(a))
 #define XRVAR(a) XB("RVARIABLE", XID(a))
+#define XVOIDTYPE "<TYPE value=\"void\"/>"
 #define XBASICTYPE(a) "<TYPE value=\"basic:" a "\"/>"
 #define XARRAYTYPE(a, b) "<TYPE value=\"array:" #a "\">" b "</TYPE>"
 #define XARRAYTYPE2(a, b, c) XARRAYTYPE(a, XARRAYTYPE(b, c))
@@ -29,9 +30,9 @@ using namespace SecreC;
 #define XSTMTS(a) "<STMT_COMPOUND>" a "</STMT_COMPOUND>"
 
 // Macros for testing simple code in blocks:
-#define SIMPLE(x) "public void myfunction() {" x "}"
+#define SIMPLE(x) "void myfunction() {" x "}"
 #define SIMPLE_PARSE(x) XB3("PROGRAM", "FUNDEFS", "FUNDEF",\
-        XID("myfunction") XBASICTYPE("public void") x)
+        XID("myfunction") XVOIDTYPE x)
 
 // Macros for testing expressions as a statement:
 #define SIMPLE_E(x) SIMPLE(x ";")
@@ -64,10 +65,10 @@ using namespace SecreC;
                                << QString(SIMPLE_PARSE_ASSOC_LEFT(e, c));
 
 // Macros to test the associativity and precedence of binary assignment operators:
-#define SIMPLE_PARSE_ASSIGN_DETAIL(a,b,c) SIMPLE_PARSE_E(XB("EXPR_" b, XLVAR(a) XRVAR(c)))
+#define SIMPLE_PARSE_ASSIGN_DETAIL(a,b,c) SIMPLE_PARSE_E(XB("EXPR_" b, XID(a) XRVAR(c)))
 #define SIMPLE_PARSE_ASSIGN(a) SIMPLE_PARSE_ASSIGN_DETAIL("o1",a,"o2")
 #define SIMPLE_PARSE_ASSIGN_ASSOC_RIGHT_DETAIL(a,b,c,d,e) \
-    SIMPLE_PARSE_E(XB("EXPR_" b, XLVAR(a) XB("EXPR_" d, XLVAR(c) XRVAR(e))))
+    SIMPLE_PARSE_E(XB("EXPR_" b, XID(a) XB("EXPR_" d, XID(c) XRVAR(e))))
 #define SIMPLE_PARSE_ASSIGN_ASSOC_RIGHT(a,b) \
     SIMPLE_PARSE_ASSIGN_ASSOC_RIGHT_DETAIL("o1",a,"o2",b,"o3")
 #define ADD_ROWS_ASSIGN(a,b,c) \
@@ -147,31 +148,31 @@ void TestParse::testParseProgram_data() {
     ADD_STANDARD_COLUMNS;
 
     QTest::newRow("oneFunction")
-        << QString("public void myfunction(){}")
+        << QString("void myfunction(){}")
         << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XBASICTYPE("public void") XSCE));
+                       XID("myfunction") XVOIDTYPE XSCE));
 
     QTest::newRow("twoFunctions")
-        << QString("public void myfunction(){}private int[][] myfunction2(){}")
+        << QString("void myfunction(){}private int[][] myfunction2(){}")
         << QString(XB2("PROGRAM", "FUNDEFS",
                        XB("FUNDEF",
-                           XID("myfunction") XBASICTYPE("public void") XSCE)
+                           XID("myfunction") XVOIDTYPE XSCE)
                        XB("FUNDEF",
                            XID("myfunction2")
                            XARRAYTYPE2(0, 0, XBASICTYPE("private int"))
                            XSCE)));
 
     QTest::newRow("declarationAndFunction")
-        << QString("private int myInt; public void myfunction(){}")
+        << QString("private int myInt; void myfunction(){}")
         << QString(XB("PROGRAM",
                       XB2("DECL_GLOBALS", "DECL",
                            XID("myInt") XBASICTYPE("private int"))
                       XB2("FUNDEFS", "FUNDEF",
-                          XID("myfunction") XBASICTYPE("public void") XSCE)));
+                          XID("myfunction") XVOIDTYPE XSCE)));
 
     QTest::newRow("declarationsAndFunction")
         << QString("private int[][] myInt[2][3]; public bool myBool = true;"
-                   "public void myfunction(){}")
+                   "void myfunction(){}")
         << QString(XB("PROGRAM",
                        XB("DECL_GLOBALS",
                            XB("DECL",
@@ -181,19 +182,19 @@ void TestParse::testParseProgram_data() {
                            XB("DECL",
                                XID("myBool") XBASICTYPE("public bool") XBOOL(true)))
                        XB2("FUNDEFS", "FUNDEF",
-                           XID("myfunction") XBASICTYPE("public void") XSCE)));
+                           XID("myfunction") XVOIDTYPE XSCE)));
 
     QTest::newRow("functionWithParam")
-        << QString("public void myfunction(private int i){}")
+        << QString("void myfunction(private int i){}")
         << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XBASICTYPE("public void") XSCE
+                       XID("myfunction") XVOIDTYPE XSCE
                        XB("FUNDEF_PARAM", XID("i") XBASICTYPE("private int"))
                   ));
 
     QTest::newRow("functionWithParams")
-        << QString("public void myfunction(private int i, public bool j){}")
+        << QString("void myfunction(private int i, public bool j){}")
         << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XBASICTYPE("public void") XSCE
+                       XID("myfunction") XVOIDTYPE XSCE
                        XB("FUNDEF_PARAM", XID("i") XBASICTYPE("private int"))
                        XB("FUNDEF_PARAM", XID("j") XBASICTYPE("public bool"))
                   ));
@@ -202,17 +203,17 @@ void TestParse::testParseProgram_data() {
 void TestParse::testGlobalDecls_data() {
     ADD_STANDARD_COLUMNS;
 
-    QString iSkeleton("%1 myVar; public void myfunction(){}");
+    QString iSkeleton("%1 myVar; void myfunction(){}");
     QString oSkeleton(XB("PROGRAM",
                          XB2("DECL_GLOBALS", "DECL",
                              XID("myVar") XBASICTYPE("%1"))
                          XB2("FUNDEFS", "FUNDEF",
-                             XID("myfunction") XBASICTYPE("public void") XSCE)));
+                             XID("myfunction") XVOIDTYPE XSCE)));
     QString ovSkeleton(XB("PROGRAM",
                           XB2("DECL_GLOBALS", "DECL",
                               XID("myVar") "%1")
                           XB2("FUNDEFS", "FUNDEF",
-                              XID("myfunction") XBASICTYPE("public void") XSCE)));
+                              XID("myfunction") XVOIDTYPE XSCE)));
 
     QTest::newRow("privateBool") << iSkeleton.arg("private bool")
                                  << oSkeleton.arg("private bool");
@@ -228,16 +229,6 @@ void TestParse::testGlobalDecls_data() {
                                 << oSkeleton.arg("public unsigned int");
     QTest::newRow("publicString") << iSkeleton.arg("public string")
                                   << oSkeleton.arg("public string");
-    QTest::newRow("publicBool_") << iSkeleton.arg("bool")
-                                 << oSkeleton.arg("public bool");
-    QTest::newRow("publicInt_") << iSkeleton.arg("int")
-                                << oSkeleton.arg("public int");
-    QTest::newRow("publicSInt_") << iSkeleton.arg("signed int")
-                                 << oSkeleton.arg("public int");
-    QTest::newRow("publicUInt_") << iSkeleton.arg("unsigned int")
-                                 << oSkeleton.arg("public unsigned int");
-    QTest::newRow("publicString_") << iSkeleton.arg("string")
-                                   << oSkeleton.arg("public string");
 
     QTest::newRow("privateBoolV") << iSkeleton.arg("private bool[]")
         << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("private bool")));
@@ -252,16 +243,6 @@ void TestParse::testGlobalDecls_data() {
     QTest::newRow("publicUIntV") << iSkeleton.arg("public unsigned int[]")
         << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public unsigned int")));
     QTest::newRow("publicStringV") << iSkeleton.arg("public string []")
-        << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public string")));
-    QTest::newRow("publicBool_V") << iSkeleton.arg("bool  [  ]  ")
-        << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public bool")));
-    QTest::newRow("publicInt_V") << iSkeleton.arg("int[]")
-        << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public int")));
-    QTest::newRow("publicSInt_V") << iSkeleton.arg("signed int[][]")
-        << ovSkeleton.arg(XARRAYTYPE2(0, 0, XBASICTYPE("public int")));
-    QTest::newRow("publicUInt_V") << iSkeleton.arg("unsigned int[]")
-        << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public unsigned int")));
-    QTest::newRow("publicString_V") << iSkeleton.arg("string[]")
         << ovSkeleton.arg(XARRAYTYPE(0, XBASICTYPE("public string")));
 }
 
@@ -411,15 +392,15 @@ void TestParse::testExprPostfix_data() {
 
     QTest::newRow("functionCall")
         << QString(SIMPLE_E("f()"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XRVAR("f"))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f"))));
 
     QTest::newRow("functionCallWithArg")
         << QString(SIMPLE_E("f(42)"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XRVAR("f") XINT(42))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f") XINT(42))));
 
     QTest::newRow("functionCallWithArgs")
         << QString(SIMPLE_E("f(42,24)"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XRVAR("f") XINT(42) XINT(24))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f") XINT(42) XINT(24))));
 
     QTest::newRow("matrixExpressionWildCard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[*]"))
@@ -440,12 +421,11 @@ void TestParse::testExprPostfix_data() {
                                       XINT(24))));
 
     QTest::newRow("postfixExpression") /// \todo RVAR or LVAR
-        << QString(SIMPLE_E("m[*](42)[42]()"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_FUNCALL", "EXPR_SUBSCRIPT",
-                                      XB("EXPR_FUNCALL",
-                                          XB("EXPR_WILDCARD", XLVAR("m"))
-                                          XINT(42))
-                                      XINT(42))));
+        << QString(SIMPLE_E("m[*][42][*]"))
+        << QString(SIMPLE_PARSE_E(XB("EXPR_WILDCARD",
+                                     XB("EXPR_SUBSCRIPT",
+                                        XB("EXPR_WILDCARD", XLVAR("m"))
+                                        XINT(42)))));
 }
 
 void TestParse::testExprUnary_data() {
@@ -619,52 +599,52 @@ void TestParse::testExprPrecedence_data() {
     ADD_ROWS_BINARY_RIGHT("modToMat",  "%",  "MOD",  "#",  "MATRIXMUL");
 
     QTest::newRow("matToCast1") /// \todo RVAR or LVAR
-        << QString(SIMPLE_E("(public void) o1 # o2"))
+        << QString(SIMPLE_E("(private int) o1 # o2"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_MATRIXMUL",
                                       XB("EXPR_CAST",
-                                          XBASICTYPE("public void") XLVAR("o1"))
+                                          XBASICTYPE("private int") XLVAR("o1"))
                                       XRVAR("o2"))));
 
     QTest::newRow("matToCast2") /// \todo RVAR or LVAR
-        << QString(SIMPLE_E("o1 # (public void) o2"))
+        << QString(SIMPLE_E("o1 # (private int) o2"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_MATRIXMUL",
                                       XRVAR("o1")
                                       XB("EXPR_CAST",
-                                          XBASICTYPE("public void") XLVAR("o2")))));
+                                          XBASICTYPE("private int") XLVAR("o2")))));
 
     QTest::newRow("castToUminus") /// \todo RVAR or LVAR
-        << QString(SIMPLE_E("(public void) - (private int) ! o1"))
+        << QString(SIMPLE_E("(private bool) - (private int) ! o1"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_CAST",
-                                      XBASICTYPE("public void")
+                                      XBASICTYPE("private bool")
                                       XB2("EXPR_UMINUS", "EXPR_CAST",
                                           XBASICTYPE("private int")
                                           XB("EXPR_UNEG", XRVAR("o1"))))));
 
     QTest::newRow("castToUneg") /// \todo RVAR or LVAR
-        << QString(SIMPLE_E("(public void) ! (private int) - o1"))
+        << QString(SIMPLE_E("(private bool) ! (private int) - o1"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_CAST",
-                                      XBASICTYPE("public void")
+                                      XBASICTYPE("private bool")
                                       XB2("EXPR_UNEG", "EXPR_CAST",
                                           XBASICTYPE("private int")
                                           XB("EXPR_UMINUS", XRVAR("o1"))))));
 
     QTest::newRow("uminusToFuncall1")
         << QString(SIMPLE_E("-f()"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_FUNCALL", XRVAR("f"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_FUNCALL", XID("f"))));
 
     QTest::newRow("unegToFuncall1")
         << QString(SIMPLE_E("!f()"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_FUNCALL", XRVAR("f"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_FUNCALL", XID("f"))));
 
     QTest::newRow("uminusToFuncall2")
         << QString(SIMPLE_E("-f(o1,o2)"))
         << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_FUNCALL",
-                                      XRVAR("f") XRVAR("o1") XRVAR("o2"))));
+                                      XID("f") XRVAR("o1") XRVAR("o2"))));
 
     QTest::newRow("unegToFuncall2")
         << QString(SIMPLE_E("!f(o1,o2)"))
         << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_FUNCALL",
-                                      XRVAR("f") XRVAR("o1") XRVAR("o2"))));
+                                      XID("f") XRVAR("o1") XRVAR("o2"))));
 
     QTest::newRow("uminusToWildcard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("-o1[*]"))
@@ -693,13 +673,13 @@ void TestParse::testInlineDecls_data() {
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleDeclAfter")
         << QString(SIMPLE("f(); public int i;"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
                   )));
@@ -707,22 +687,22 @@ void TestParse::testInlineDecls_data() {
     QTest::newRow("simpleDeclMiddle")
         << QString(SIMPLE("f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleDeclsMiddle")
         << QString(SIMPLE("f(); public int i; f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDecl")
@@ -731,8 +711,8 @@ void TestParse::testInlineDecls_data() {
                       XSTMTS(
                           XB("DECL",
                              XID("i") XBASICTYPE("public int"))
-                          XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonely")
@@ -741,22 +721,22 @@ void TestParse::testInlineDecls_data() {
                       XSTMTS(
                           XB("DECL",
                              XID("i") XBASICTYPE("public int")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclAfter")
         << QString(SIMPLE("f(); { public int i; f(); }"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyAfter")
         << QString(SIMPLE("f(); { public int i; }"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XB("DECL",
                          XID("i") XBASICTYPE("public int"))
                   )));
@@ -764,22 +744,22 @@ void TestParse::testInlineDecls_data() {
     QTest::newRow("simpleInlineDeclMiddle")
         << QString(SIMPLE("f(); { public int i; f(); } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XSTMTS(
                           XB("DECL",
                              XID("i") XBASICTYPE("public int"))
-                          XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyMiddle")
         << QString(SIMPLE("f(); { public int i; } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                       XSTMTS(
                           XB("DECL",
                              XID("i") XBASICTYPE("public int")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XRVAR("f"))
+                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
                   )));
 }
 

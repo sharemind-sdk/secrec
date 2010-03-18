@@ -34,6 +34,7 @@ std::string BasicType::toString(SecType secType, VarType varType) {
 
 bool BasicType::operator==(const Type &other) const {
     if (other.kind() != kind()) return false;
+    assert(dynamic_cast<const BasicType*>(&other) != 0);
     const BasicType &o(static_cast<const BasicType&>(other));
     if (o.secType() != secType()) return false;
     if (o.varType() != varType()) return false;
@@ -53,6 +54,7 @@ std::string ArrayType::toString() const {
 
 bool ArrayType::operator==(const Type &other) const {
     if (other.kind() != kind()) return false;
+    assert(dynamic_cast<const ArrayType*>(&other) != 0);
     const ArrayType &o(static_cast<const ArrayType&>(other));
     if (o.size() != size()) return false;
     if (*o.itemType() != *itemType()) return false;
@@ -96,6 +98,7 @@ std::string FunctionType::toString() const {
 
 bool FunctionType::operator==(const Type &other) const {
     if (other.kind() != kind()) return false;
+    assert(dynamic_cast<const FunctionType*>(&other) != 0);
     const FunctionType &o(static_cast<const FunctionType&>(other));
     if (o.numParams() != numParams()) return false;
     if (*o.returnType() != *returnType()) return false;

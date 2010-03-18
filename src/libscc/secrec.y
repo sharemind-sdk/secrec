@@ -106,6 +106,7 @@
 %type <treenode> initializer
 %type <treenode> vector_suffix
 %type <treenode> type_specifier
+%type <treenode> function_type_specifier
 %type <treenode> basic_type_specifier
 %type <treenode> function_definitions
 %type <treenode> function_definition
@@ -236,6 +237,14 @@ type_specifier
  | basic_type_specifier
  ;
 
+function_type_specifier
+ : VOID
+   {
+     $$ = (struct TreeNode *) treenode_init(NODE_VOIDTYPE, &@$);
+   }
+ | type_specifier
+ ;
+
 basic_type_specifier
  : PRIVATE BOOL
    {
@@ -244,10 +253,6 @@ basic_type_specifier
  | PRIVATE INT
    {
      $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PRIVATE, VARTYPE_INT, &@$);
-   }
- | PUBLIC VOID
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_VOID, &@$);
    }
  | PUBLIC BOOL
    {
@@ -266,30 +271,6 @@ basic_type_specifier
      $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_UINT, &@$);
    }
  | PUBLIC STRING
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_STRING, &@$);
-   }
- | VOID /* TODO: Not in grammar. */
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_VOID, &@$);
-   }
- | BOOL /* TODO: Not in grammar. */
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_BOOL, &@$);
-   }
- | INT /* TODO: Not in grammar. */
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
-   }
- | SIGNED INT /* TODO: Not in grammar. */
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
-   }
- | UNSIGNED INT /* TODO: Not in grammar. */
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_UINT, &@$);
-   }
- | STRING /* TODO: Not in grammar. */
    {
      $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_STRING, &@$);
    }
@@ -313,14 +294,14 @@ function_definitions /* Helper nonterminal for function_definition+ */
  ;
 
 function_definition
- : type_specifier identifier '(' ')' compound_statement
+ : function_type_specifier identifier '(' ')' compound_statement
    {
      $$ = treenode_init(NODE_FUNDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $5);
    }
- | type_specifier identifier '(' function_parameter_list ')' compound_statement
+ | function_type_specifier identifier '(' function_parameter_list ')' compound_statement
    {
      unsigned i;
      unsigned n;
@@ -529,7 +510,8 @@ expression
  ;
 
 assignment_expression /* WARNING: RIGHT RECURSION */
- : lvalue '=' assignment_expression
+/* : lvalue '=' assignment_expression */
+ : identifier '=' assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_ASSIGN, &@$);
      treenode_appendChild($$, $1);
@@ -569,12 +551,12 @@ assignment_expression /* WARNING: RIGHT RECURSION */
  ;
 
 lvalue
-/* : unary_expression */
- : identifier
+/* : unary_expression
    {
      $$ = treenode_init(NODE_EXPR_LVARIABLE, &@$);
      treenode_appendChild($$, $1);
-   }
+   }*/
+ : identifier
  ;
 
 conditional_expression

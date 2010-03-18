@@ -11,6 +11,7 @@
 #include "secrec/treenodeexprrvariable.h"
 #include "secrec/treenodeexprternary.h"
 #include "secrec/treenodeexprunary.h"
+#include "secrec/treenodefundef.h"
 #include "secrec/treenodefundefs.h"
 #include "secrec/treenodeglobals.h"
 #include "secrec/treenodeidentifier.h"
@@ -18,8 +19,9 @@
 #include "secrec/treenodelvariable.h"
 #include "secrec/treenodeprogram.h"
 #include "secrec/treenodestring.h"
-#include "secrec/treenodetypebasic.h"
 #include "secrec/treenodetypearray.h"
+#include "secrec/treenodetypebasic.h"
+#include "secrec/treenodetypevoid.h"
 #include "secrec/treenodeuint.h"
 
 
@@ -101,6 +103,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_DECL: return "DECL";
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_GLOBALS: return "DECL_GLOBALS";
+        case NODE_VOIDTYPE:
         case NODE_BASICTYPE:
         case NODE_ARRAYTYPE: return "TYPE";
         case NODE_FUNDEF: return "FUNDEF";
@@ -173,6 +176,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeGlobals(*loc));
         case NODE_FUNDEFS:
             return (TreeNode*) (new SecreC::TreeNodeFundefs(*loc));
+        case NODE_FUNDEF:
+            return (TreeNode*) (new SecreC::TreeNodeFundef(*loc));
         case NODE_EXPR_WILDCARD: /* Fall through: */
         case NODE_EXPR_UNEG:     /* Fall through: */
         case NODE_EXPR_UMINUS:
@@ -205,6 +210,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeLVariable(*loc));
         case NODE_EXPR_TERNIF:
             return (TreeNode*) (new SecreC::TreeNodeExprTernary(*loc));
+        case NODE_VOIDTYPE:
+            return (TreeNode*) (new SecreC::TreeNodeTypeVoid(*loc));
         default:
             return (TreeNode*) (new SecreC::TreeNode(type, *loc));
     }

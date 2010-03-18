@@ -31,8 +31,10 @@ int main() {
                          << n->location().last_column << ")" << endl;
         }
         delete s;
+        SecreC::ICode ic(parseTree);
+        cout << ic;
     }
-    if (parseTree != 0) delete parseTree;
+    delete parseTree;
 
     return parseResult;
 }

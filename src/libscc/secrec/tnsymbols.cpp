@@ -128,6 +128,7 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
                 break;
             case NODE_IDENTIFIER:
             {
+                assert(dynamic_cast<const TreeNodeIdentifier*>(n) != 0);
                 const TreeNodeIdentifier* in = static_cast<const TreeNodeIdentifier*>(n);
                 DECLS::const_iterator it = ds.find(in->value());
                 addRef(in, (it != ds.end() ? (*it).second : 0));
@@ -154,6 +155,7 @@ void TNSymbols::addRef(const TreeNodeIdentifier *n, const TreeNode *decl) {
 }
 
 void TNSymbols::addDecl(DECLS &ds, const TreeNode *decl) {
+    assert(dynamic_cast<const TreeNodeIdentifier*>(decl->children().at(0).data()) != 0);
     const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(decl->children().at(0).data());
     ds[id->value()] = decl;
 }

@@ -9,7 +9,7 @@ namespace SecreC {
 class TreeNodeFundef: public TreeNodeCodeable {
     public: /* Methods: */
         explicit TreeNodeFundef(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_DECL, loc) {}
+            : TreeNodeCodeable(NODE_FUNDEF, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,

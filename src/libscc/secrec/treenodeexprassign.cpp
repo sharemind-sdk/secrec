@@ -17,16 +17,18 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
     resultType() = new (SecreC::Type*);
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
     ICode::Status s = e1->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
     s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type *eType1 = static_cast<const TreeNodeExpr*>(e1)->resultType();
-    const SecreC::Type *eType2 = static_cast<const TreeNodeExpr*>(e2)->resultType();
+    const SecreC::Type *eType1 = const_cast<const TreeNodeExpr*>(e1)->resultType();
+    const SecreC::Type *eType2 = const_cast<const TreeNodeExpr*>(e2)->resultType();
 
     /// \todo implement more expressions
     if (eType1->kind() == SecreC::Type::Basic) {
@@ -40,7 +42,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
             default:
                 *resultType() = 0;
                 /// \todo Write better error message
-                es << "This kind of binary operation is not yet supported. At "
+                es << "This kind of assignment operation is not yet supported. At "
                    << location() << std::endl;
                 return ICode::E_NOT_IMPLEMENTED;
         }
@@ -84,7 +86,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
 
     // Generate code for binary expression:
     Imop *i;
-    /// \todo implement more expressions
+    /// \todo implement assignment
     switch (type()) {
         case NODE_EXPR_ASSIGN:     /* Fall through: */
         case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
@@ -94,7 +96,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
         case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
         default:
             /// \todo Write better error message
-            es << "Binary is not yet implemented. At " << location()
+            es << "Assignement is not yet implemented. At " << location()
                << std::endl;
             return ICode::E_NOT_IMPLEMENTED;
     }
@@ -119,6 +121,8 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &code, Symbol
     // Type check:
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
+
+    /// \todo Implement
 
     return ICode::E_NOT_IMPLEMENTED;
 }

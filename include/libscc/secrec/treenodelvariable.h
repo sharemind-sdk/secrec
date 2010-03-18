@@ -10,7 +10,7 @@ namespace SecreC {
 class TreeNodeLVariable: public TreeNode {
     public: /* Methods: */
         explicit TreeNodeLVariable(const YYLTYPE &loc)
-            : TreeNode(NODE_EXPR_RVARIABLE, loc), m_cachedSymbol(0) {}
+            : TreeNode(NODE_EXPR_LVARIABLE, loc), m_cachedSymbol(0) {}
         inline ~TreeNodeLVariable() { delete m_cachedSymbol; }
 
         Symbol *symbol(SymbolTable &st, std::ostream &es) const;

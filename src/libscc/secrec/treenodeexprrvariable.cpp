@@ -11,6 +11,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
     assert(children().size() == 1);
     assert(children().at(0)->type() == NODE_EXPR_LVARIABLE);
 
+    assert(dynamic_cast<TreeNodeLVariable*>(children().at(0).data()) != 0);
     TreeNodeLVariable *l = static_cast<TreeNodeLVariable*>(children().at(0).data());
     if (l->symbol(st, es) == 0) return ICode::E_OTHER;
 
@@ -38,9 +39,11 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
+    assert(dynamic_cast<TreeNodeLVariable*>(children().at(0).data()) != 0);
     TreeNodeLVariable *l = static_cast<TreeNodeLVariable*>(children().at(0).data());
     assert(l->symbolType() == Symbol::SYMBOL);
     if (r == 0) {
+        assert(dynamic_cast<const SymbolWithValue*>(l->symbol()) != 0);
         result() = static_cast<const SymbolWithValue*>(l->symbol());
     } else {
         assert(r->secrecType() == **resultType());
@@ -61,6 +64,7 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    assert(dynamic_cast<TreeNodeLVariable*>(children().at(0).data()) != 0);
     TreeNodeLVariable *l = static_cast<TreeNodeLVariable*>(children().at(0).data());
     assert(l->symbolType() == Symbol::SYMBOL);
 

@@ -14,7 +14,7 @@ inline SecrecSecType upperSecType(SecrecSecType a, SecrecSecType b) {
 
 class Type {
     public: /* Types: */
-        enum Kind { Basic, Array, Function };
+        enum Kind { Void, Basic, Array, Function };
 
     public: /* Methods: */
         Type(Kind kind)
@@ -31,6 +31,21 @@ class Type {
 
     private: /* Fields: */
         Kind m_kind;
+};
+
+class VoidType: public Type {
+    public: /* Methods: */
+        VoidType()
+            : Type(Type::Void) {}
+
+        inline Type *clone() const { return new VoidType(); }
+        inline std::string toString() const { return "void"; }
+        inline bool operator==(const Type &other) const {
+            return (other.kind() == Type::Void);
+        }
+        inline bool operator!=(const Type &other) const {
+            return (other.kind() != Type::Void);
+        }
 };
 
 class BasicType: public Type {

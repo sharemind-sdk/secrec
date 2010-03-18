@@ -74,6 +74,8 @@ class Imop {
         inline const Symbol *arg2() const { return m_arg2; }
         inline void setArg2(const Symbol *arg2) { m_arg2 = arg2; }
 
+        std::string toString() const;
+
     private:
         const Type    m_type;
         const Symbol *m_dest;
@@ -83,8 +85,23 @@ class Imop {
 
 class ICode {
     public: /* Types: */
-        struct CodeList: public std::list<Imop*> {
+        class CodeList {
+            public: /* Types: */
+                typedef std::list<Imop*> List;
+                typedef List::const_iterator const_iterator;
+                typedef List::iterator iterator;
 
+            public: /* Methods: */
+                inline const_iterator begin() const { return m_list.begin(); }
+                inline iterator begin() { return m_list.begin(); }
+                inline const_iterator end() const { return m_list.end(); }
+                inline iterator end() { return m_list.end(); }
+                inline void push_back(Imop *i) {
+                    m_list.push_back(i);
+                }
+
+            private: /* Fields: */
+                List m_list;
         };
         enum Status { OK, E_NOT_IMPLEMENTED, E_EMPTY_PROGRAM, E_NO_MAIN,
                       E_TYPE, E_OTHER, E_NO_MEM };
@@ -95,6 +112,7 @@ class ICode {
         const CodeList &code() const { return m_code; }
         const SymbolTable &symbols() const { return m_symbols; }
         Status status() const { return m_status; }
+        std::string messages() const { return m_errorStream.str(); }
 
     private: /* Fields: */
         SymbolTable        m_symbols;
