@@ -22,8 +22,8 @@ class TreeNodeTypeArray: public TreeNodeType {
         std::string xmlHelper() const;
 
     private: /* Fields: */
-        unsigned                   m_value;
-        mutable SecreC::ArrayType *m_cachedType;
+        unsigned              m_value;
+        mutable SecreC::Type *m_cachedType;
 };
 
 } // namespace SecreC

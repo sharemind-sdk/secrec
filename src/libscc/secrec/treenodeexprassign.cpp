@@ -31,24 +31,17 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     const SecreC::Type *eType2 = const_cast<const TreeNodeExpr*>(e2)->resultType();
 
     /// \todo implement more expressions
-    if (eType1->kind() == SecreC::Type::Basic) {
-        SecrecVarType v1 = static_cast<const SecreC::BasicType*>(eType1)->varType();
-        SecrecSecType s1 = static_cast<const SecreC::BasicType*>(eType1)->secType();
-        SecrecVarType v2 = static_cast<const SecreC::BasicType*>(eType2)->varType();
-        SecrecSecType s2 = static_cast<const SecreC::BasicType*>(eType2)->secType();
-
-        switch (type()) {
-            /// \todo
-            default:
-                *resultType() = 0;
-                /// \todo Write better error message
-                es << "This kind of assignment operation is not yet supported. At "
-                   << location() << std::endl;
-                return ICode::E_NOT_IMPLEMENTED;
-        }
+    if (!eType1->isVoid()
+        && static_cast<const NonVoidType*>(eType1)->kind() == NonVoidType::BASIC
+        && *eType1 == *eType2)
+    {
+        *resultType() = eType1->clone();
+        es << "This kind of assignment operation is not yet supported. At "
+           << location() << std::endl;
+        return ICode::E_NOT_IMPLEMENTED;
     }
 
-    /// \todo Write better error message
+    /// \todo Provide better error messages
     es << "Invalid binary operation at " << location() << std::endl;
 
     *resultType() = 0;
@@ -76,9 +69,11 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     }
 
     // Generate code for child expressions:
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es);
@@ -102,8 +97,8 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     }
 
     i->setDest(result());
-    i->setArg1(static_cast<const TreeNodeExpr*>(e1)->result());
-    i->setArg1(static_cast<const TreeNodeExpr*>(e2)->result());
+    i->setArg1(const_cast<const TreeNodeExpr*>(e1)->result());
+    i->setArg1(const_cast<const TreeNodeExpr*>(e2)->result());
     code.push_back(i);
 
     // Patch next lists of child expressions:

@@ -4,44 +4,37 @@
 #include <sstream>
 
 
-namespace SecreC {
+namespace {
 
-
-const char *BasicType::toString(SecType secType) {
+const char *SecrecFundSecTypeToString(SecrecSecType secType) {
     switch (secType) {
+        case SECTYPE_INVALID: return "invalid";
         case SECTYPE_PUBLIC:  return "public";
         case SECTYPE_PRIVATE: return "private";
     }
     return 0;
 }
 
-const char *BasicType::toString(VarType varType) {
+const char *SecrecFundDataTypeToString(SecrecVarType varType) {
     switch (varType) {
-        case VARTYPE_VOID:   return "void";
-        case VARTYPE_BOOL:   return "bool";
-        case VARTYPE_INT:    return "int";
-        case VARTYPE_UINT:   return "unsigned int";
-        case VARTYPE_STRING: return "string";
+        case VARTYPE_INVALID: return "invalid";
+        case VARTYPE_BOOL:    return "bool";
+        case VARTYPE_INT:     return "int";
+        case VARTYPE_UINT:    return "unsigned int";
+        case VARTYPE_STRING:  return "string";
     }
     return 0;
 }
 
-std::string BasicType::toString(SecType secType, VarType varType) {
-    std::ostringstream os;
-    os << toString(secType) << ' ' << toString(varType);
-    return os.str();
 }
 
-bool BasicType::operator==(const Type &other) const {
-    if (other.kind() != kind()) return false;
-    assert(dynamic_cast<const BasicType*>(&other) != 0);
-    const BasicType &o(static_cast<const BasicType&>(other));
-    if (o.secType() != secType()) return false;
-    if (o.varType() != varType()) return false;
-    return true;
+namespace SecreC {
+
+std::string BasicDataType::toString() const {
+    return SecrecFundDataTypeToString(m_varType);
 }
 
-std::string ArrayType::toString() const {
+std::string ArrayDataType::toString() const {
     assert(m_itemType != 0);
 
     std::ostringstream os("(");
@@ -52,33 +45,25 @@ std::string ArrayType::toString() const {
     return os.str();
 }
 
-bool ArrayType::operator==(const Type &other) const {
-    if (other.kind() != kind()) return false;
-    assert(dynamic_cast<const ArrayType*>(&other) != 0);
-    const ArrayType &o(static_cast<const ArrayType&>(other));
-    if (o.size() != size()) return false;
-    if (*o.itemType() != *itemType()) return false;
-    return true;
-}
-
-FunctionType::FunctionType(const FunctionType &copy)
-    : Type(copy), m_ret(copy.m_ret->clone())
+FunctionDataType::FunctionDataType(const FunctionDataType &copy)
+    : DataType(copy), m_ret(copy.m_ret->clone())
 {
-    typedef std::vector<Type*>::const_iterator TVCI;
+    typedef std::vector<DataType*>::const_iterator TVCI;
     for (TVCI it(copy.m_params.begin()); it != copy.m_params.end(); it++) {
         m_params.push_back((*it)->clone());
     }
 }
 
-FunctionType::~FunctionType() {
-    typedef std::vector<Type*>::const_iterator TVCI;
+FunctionDataType::~FunctionDataType() {
+    typedef std::vector<DataType*>::const_iterator TVCI;
     for (TVCI it(m_params.begin()); it != m_params.end(); it++) {
         delete (*it);
     }
+    delete m_ret;
 }
 
-std::string FunctionType::toString() const {
-    typedef std::vector<Type*>::const_iterator TVCI;
+std::string FunctionDataType::toString() const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
 
     assert(m_ret != 0);
 
@@ -96,14 +81,20 @@ std::string FunctionType::toString() const {
     return os.str();
 }
 
-bool FunctionType::operator==(const Type &other) const {
-    if (other.kind() != kind()) return false;
-    assert(dynamic_cast<const FunctionType*>(&other) != 0);
-    const FunctionType &o(static_cast<const FunctionType&>(other));
-    if (o.numParams() != numParams()) return false;
-    if (*o.returnType() != *returnType()) return false;
-    for (unsigned i = 0; i < numParams(); i++) {
-        if (*o.paramAt(i) != *paramAt(i)) return false;
+bool FunctionDataType::operator==(const DataType &other) const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
+
+    if (!DataType::operator==(other)) return false;
+    assert(dynamic_cast<const FunctionDataType*>(&other) != 0);
+    const FunctionDataType &o(static_cast<const FunctionDataType&>(other));
+
+    if (m_params.size() != o.m_params.size()) return false;
+    if (*m_ret != *o.m_ret) return false;
+
+    TVCI it(m_params.begin());
+    TVCI jt(m_params.begin());
+    for (; it != m_params.end(); it++, jt++) {
+        if (*it != *jt) return false;
     }
     return true;
 }

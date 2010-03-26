@@ -17,8 +17,8 @@ SecreC::Type *TreeNodeLVariable::secrecType() const {
     assert(symbol() != 0);
     if (symbolType() == Symbol::FUNCTION) return 0;
     assert(symbolType() == Symbol::SYMBOL);
-    assert(dynamic_cast<const SymbolWithValue*>(symbol()) != 0);
 
+    assert(dynamic_cast<const SymbolWithValue*>(symbol()) != 0);
     return &static_cast<const SymbolWithValue*>(symbol())->secrecType();
 }
 

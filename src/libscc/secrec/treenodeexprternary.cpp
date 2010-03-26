@@ -18,32 +18,42 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
 
     resultType() = new (SecreC::Type*);
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
     ICode::Status s = e1->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
     s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(2).data()) != 0);
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
     s = e3->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type *eType1 = static_cast<const TreeNodeExpr*>(e1)->resultType();
-    const SecreC::Type *eType2 = static_cast<const TreeNodeExpr*>(e2)->resultType();
-    const SecreC::Type *eType3 = static_cast<const TreeNodeExpr*>(e3)->resultType();
+    const SecreC::Type *eType1 = const_cast<const TreeNodeExpr*>(e1)->resultType();
+    const SecreC::Type *eType2 = const_cast<const TreeNodeExpr*>(e2)->resultType();
+    const SecreC::Type *eType3 = const_cast<const TreeNodeExpr*>(e3)->resultType();
 
-    if (eType1->kind() == SecreC::Type::Basic
-        && static_cast<const SecreC::BasicType*>(eType1)->varType() == VARTYPE_BOOL
-        && static_cast<const SecreC::BasicType*>(eType1)->secType() == SECTYPE_PUBLIC
-        && *eType2 == *eType3)
-    {
-        *resultType() = eType2->clone();
-        return ICode::OK;
+    if (!eType1->isVoid()) {
+        assert(dynamic_cast<const NonVoidType*>(eType1) != 0);
+        const NonVoidType *cType = static_cast<const NonVoidType*>(eType1);
+
+        if (cType->kind() == NonVoidType::BASIC
+            && cType->dataType().kind() == DataType::BASIC
+            && cType->secType().kind() == SecType::BASIC
+            && static_cast<const SecreC::BasicDataType&>(cType->dataType()).varType() == VARTYPE_BOOL
+            && static_cast<const SecreC::BasicSecType&>(cType->secType()).secType()== SECTYPE_PUBLIC
+            && *eType2 == *eType3)
+        {
+            *resultType() = eType2->clone();
+            return ICode::OK;
+        }
     }
 
-    /// \todo Write better error message
+    /// \todo Provide better error messages
     es << "Invalid ternary operation at " << location() << std::endl;
 
     *resultType() = 0;

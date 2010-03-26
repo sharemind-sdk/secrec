@@ -22,14 +22,21 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
     const SecreC::Type *eType = static_cast<const TreeNodeExpr*>(e)->resultType();
 
     /// \todo implement for matrixes also
-    if (eType->kind() == SecreC::Type::Basic) {
-        const BasicType *bType = static_cast<const BasicType*>(eType);
-        if (type() == NODE_EXPR_UNEG && bType->varType() == VARTYPE_BOOL) {
-            *resultType() = bType->clone();
+    if (!eType->isVoid()
+#ifndef NDEBUG
+        && (assert(dynamic_cast<const NonVoidType*>(eType) != 0), true)
+#endif
+        && static_cast<const NonVoidType*>(eType)->kind() == NonVoidType::BASIC)
+    {
+        const NonVoidType *et = static_cast<const NonVoidType*>(eType);
+        assert(dynamic_cast<const BasicDataType*>(&et->dataType()) != 0);
+        const BasicDataType &bType = static_cast<const BasicDataType&>(et->dataType());
+        if (type() == NODE_EXPR_UNEG && bType.varType() == VARTYPE_BOOL) {
+            *resultType() = et->clone();
             return ICode::OK;
         } else if (type() == NODE_EXPR_UMINUS) {
-            if (bType->varType() == VARTYPE_INT) {
-                *resultType() = bType->clone();
+            if (bType.varType() == VARTYPE_INT) {
+                *resultType() = et->clone();
                 return ICode::OK;
             }
         }

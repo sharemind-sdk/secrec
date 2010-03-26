@@ -184,32 +184,22 @@ void TestTreeNode::testInitType_data() {
     QTest::addColumn<SecrecVarType>("type2");
 
     static const SecrecSecType PR = SECTYPE_PRIVATE, PU = SECTYPE_PRIVATE;
-    static const SecrecVarType V = VARTYPE_VOID, B = VARTYPE_BOOL,
-                               I = VARTYPE_INT, U = VARTYPE_UINT,
-                               S = VARTYPE_STRING;
+    static const SecrecVarType B = VARTYPE_BOOL, I = VARTYPE_INT,
+                               U = VARTYPE_UINT, S = VARTYPE_STRING;
 
 
-    NR4(PU,V,PU,V);NR4(PU,V,PR,V);NR4(PR,V,PU,V);NR4(PR,V,PR,V);
-    NR4(PU,V,PU,B);NR4(PU,V,PR,B);NR4(PR,V,PU,B);NR4(PR,V,PR,B);
-    NR4(PU,V,PU,I);NR4(PU,V,PR,I);NR4(PR,V,PU,I);NR4(PR,V,PR,I);
-    NR4(PU,V,PU,U);NR4(PU,V,PR,U);NR4(PR,V,PU,U);NR4(PR,V,PR,U);
-    NR4(PU,V,PU,S);NR4(PU,V,PR,S);NR4(PR,V,PU,S);NR4(PR,V,PR,S);
-    NR4(PU,B,PU,V);NR4(PU,B,PR,V);NR4(PR,B,PU,V);NR4(PR,B,PR,V);
     NR4(PU,B,PU,B);NR4(PU,B,PR,B);NR4(PR,B,PU,B);NR4(PR,B,PR,B);
     NR4(PU,B,PU,I);NR4(PU,B,PR,I);NR4(PR,B,PU,I);NR4(PR,B,PR,I);
     NR4(PU,B,PU,U);NR4(PU,B,PR,U);NR4(PR,B,PU,U);NR4(PR,B,PR,U);
     NR4(PU,B,PU,S);NR4(PU,B,PR,S);NR4(PR,B,PU,S);NR4(PR,B,PR,S);
-    NR4(PU,I,PU,V);NR4(PU,I,PR,V);NR4(PR,I,PU,V);NR4(PR,I,PR,V);
     NR4(PU,I,PU,B);NR4(PU,I,PR,B);NR4(PR,I,PU,B);NR4(PR,I,PR,B);
     NR4(PU,I,PU,I);NR4(PU,I,PR,I);NR4(PR,I,PU,I);NR4(PR,I,PR,I);
     NR4(PU,I,PU,U);NR4(PU,I,PR,U);NR4(PR,I,PU,U);NR4(PR,I,PR,U);
     NR4(PU,I,PU,S);NR4(PU,I,PR,S);NR4(PR,I,PU,S);NR4(PR,I,PR,S);
-    NR4(PU,U,PU,V);NR4(PU,U,PR,V);NR4(PR,U,PU,V);NR4(PR,U,PR,V);
     NR4(PU,U,PU,B);NR4(PU,U,PR,B);NR4(PR,U,PU,B);NR4(PR,U,PR,B);
     NR4(PU,U,PU,I);NR4(PU,U,PR,I);NR4(PR,U,PU,I);NR4(PR,U,PR,I);
     NR4(PU,U,PU,U);NR4(PU,U,PR,U);NR4(PR,U,PU,U);NR4(PR,U,PR,U);
     NR4(PU,U,PU,S);NR4(PU,U,PR,S);NR4(PR,U,PU,S);NR4(PR,U,PR,S);
-    NR4(PU,S,PU,V);NR4(PU,S,PR,V);NR4(PR,S,PU,V);NR4(PR,S,PR,V);
     NR4(PU,S,PU,B);NR4(PU,S,PR,B);NR4(PR,S,PU,B);NR4(PR,S,PR,B);
     NR4(PU,S,PU,I);NR4(PU,S,PR,I);NR4(PR,S,PU,I);NR4(PR,S,PR,I);
     NR4(PU,S,PU,U);NR4(PU,S,PR,U);NR4(PR,S,PU,U);NR4(PR,S,PR,U);

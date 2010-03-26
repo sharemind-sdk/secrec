@@ -29,25 +29,38 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
     const SecreC::Type *eType2 = static_cast<const TreeNodeExpr*>(e2)->resultType();
 
     /// \todo implement more expressions
-    if (eType1->kind() == SecreC::Type::Basic) {
-        SecrecVarType v1 = static_cast<const SecreC::BasicType*>(eType1)->varType();
-        SecrecSecType s1 = static_cast<const SecreC::BasicType*>(eType1)->secType();
-        SecrecVarType v2 = static_cast<const SecreC::BasicType*>(eType2)->varType();
-        SecrecSecType s2 = static_cast<const SecreC::BasicType*>(eType2)->secType();
+    if (!eType1->isVoid() && !eType2->isVoid()
+#ifndef NDEBUG
+        && (assert(dynamic_cast<const NonVoidType*>(eType1) != 0), true)
+        && (assert(dynamic_cast<const NonVoidType*>(eType2) != 0), true)
+#endif
+        && static_cast<const NonVoidType*>(eType1)->kind() == NonVoidType::BASIC
+        && static_cast<const NonVoidType*>(eType2)->kind() == NonVoidType::BASIC)
+    {
+        const NonVoidType *et1 = static_cast<const NonVoidType*>(eType1);
+        const NonVoidType *et2 = static_cast<const NonVoidType*>(eType2);
+        assert(dynamic_cast<const BasicDataType*>(&et1->dataType()) != 0);
+        assert(dynamic_cast<const BasicSecType*>(&et1->secType()) != 0);
+        assert(dynamic_cast<const BasicDataType*>(&et2->dataType()) != 0);
+        assert(dynamic_cast<const BasicSecType*>(&et2->secType()) != 0);
+        SecrecVarType d1 = static_cast<const BasicDataType*>(&et1->dataType())->varType();
+        SecrecSecType s1 = static_cast<const BasicSecType*>(&et1->secType())->secType();
+        SecrecVarType d2 = static_cast<const BasicDataType*>(&et2->dataType())->varType();
+        SecrecSecType s2 = static_cast<const BasicSecType*>(&et2->secType())->secType();
 
         switch (type()) {
             case NODE_EXPR_ADD:
-                if (v1 != v2) break;
-                if ((v1 & (VARTYPE_INT|VARTYPE_UINT|VARTYPE_STRING)) != 0x0) break;
-                *resultType() = new SecreC::BasicType(upperSecType(s1, s2), v1);
+                if (d1 != d2) break;
+                if ((d1 & (VARTYPE_INT|VARTYPE_UINT|VARTYPE_STRING)) != 0x0) break;
+                *resultType() = new SecreC::NonVoidType(upperSecType(s1, s2), d1);
                 return ICode::OK;
             case NODE_EXPR_SUB:
             case NODE_EXPR_MUL:
             case NODE_EXPR_MOD:
             case NODE_EXPR_DIV:
-                if (v1 != v2) break;
-                if ((v1 & (VARTYPE_INT|VARTYPE_UINT)) != 0x0) break;
-                *resultType() = new SecreC::BasicType(upperSecType(s1, s2), v1);
+                if (d1 != d2) break;
+                if ((d1 & (VARTYPE_INT|VARTYPE_UINT)) != 0x0) break;
+                *resultType() = new SecreC::NonVoidType(upperSecType(s1, s2), d1);
                 return ICode::OK;
 
             default:
