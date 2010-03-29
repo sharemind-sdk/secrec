@@ -1,8 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <libscc/secrec/parser.h>
-#include <libscc/secrec/treenodeprogram.h>
-#include <libscc/secrec/treenodeidentifier.h>
+#include <libscc/secrec/treenode.h>
 #include <libscc/secrec/tnsymbols.h>
 #include <libscc/intermediate.h>
 

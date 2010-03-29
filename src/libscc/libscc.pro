@@ -10,25 +10,6 @@ SOURCES = \
     secrec/symboltable.cpp \
     secrec/tnsymbols.cpp \
     secrec/treenode.cpp \
-    secrec/treenodebool.cpp \
-    secrec/treenodedecl.cpp \
-    secrec/treenodeexpr.cpp \
-    secrec/treenodeexprassign.cpp \
-    secrec/treenodeexprbinary.cpp \
-    secrec/treenodeexprrvariable.cpp \
-    secrec/treenodeexprternary.cpp \
-    secrec/treenodeexprunary.cpp \
-    secrec/treenodefundef.cpp \
-    secrec/treenodefundefs.cpp \
-    secrec/treenodeglobals.cpp \
-    secrec/treenodeidentifier.cpp \
-    secrec/treenodeint.cpp \
-    secrec/treenodelvariable.cpp \
-    secrec/treenodeprogram.cpp \
-    secrec/treenodestring.cpp \
-    secrec/treenodetypebasic.cpp \
-    secrec/treenodetypearray.cpp \
-    secrec/treenodeuint.cpp \
     secrec/types.cpp
 
 OTHER_FILES = \
@@ -44,24 +25,6 @@ HEADERS = \
     ../../include/libscc/secrec/symboltable.h \
     ../../include/libscc/secrec/tnsymbols.h \
     ../../include/libscc/secrec/treenode.h \
-    ../../include/libscc/secrec/treenodebool.h \
-    ../../include/libscc/secrec/treenodecodeable.h \
-    ../../include/libscc/secrec/treenodedecl.h \
-    ../../include/libscc/secrec/treenodeexpr.h \
-    ../../include/libscc/secrec/treenodeexprassign.h \
-    ../../include/libscc/secrec/treenodeexprbinary.h \
-    ../../include/libscc/secrec/treenodeexprrvariable.h \
-    ../../include/libscc/secrec/treenodeexprternary.h \
-    ../../include/libscc/secrec/treenodeexprunary.h \
-    ../../include/libscc/secrec/treenodefundef.h \
-    ../../include/libscc/secrec/treenodefundefs.h \
-    ../../include/libscc/secrec/treenodeglobals.h \
-    ../../include/libscc/secrec/treenodeidentifier.h \
-    ../../include/libscc/secrec/treenodeint.h \
-    ../../include/libscc/secrec/treenodelvariable.h \
-    ../../include/libscc/secrec/treenodestring.h \
-    ../../include/libscc/secrec/treenodeuint.h \
-    ../../include/libscc/secrec/treenodeprogram.h \
     ../../include/libscc/secrec/types.h
 
 GENERATED_SOURCES += lex_secrec.c yacc_secrec.tab.c

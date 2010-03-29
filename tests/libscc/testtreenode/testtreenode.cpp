@@ -1,10 +1,6 @@
 #include <QtTest>
 #include <libscc/secrec/parser.h>
-#include <libscc/secrec/treenodebool.h>
-#include <libscc/secrec/treenodeint.h>
-#include <libscc/secrec/treenodeuint.h>
-#include <libscc/secrec/treenodestring.h>
-#include <libscc/secrec/treenodetypebasic.h>
+#include <libscc/secrec/treenode.h>
 
 
 using namespace SecreC;
@@ -160,50 +156,11 @@ void TestTreeNode::testInitString_data() {
 }
 
 void TestTreeNode::testInitType() {
-    DEFLOC(loc,1,2,3,4);
-
-    QFETCH(SecrecSecType, sectype1);
-    QFETCH(SecrecVarType, type1);
-    QFETCH(SecrecSecType, sectype2);
-    QFETCH(SecrecVarType, type2);
-
-    TreeNodeTypeBasic n(sectype1, type1, loc);
-    QCOMPARE(n.type(), NODE_BASICTYPE);
-    QCOMPARE(n.secType(), sectype1);
-    QCOMPARE(n.varType(), type1);
-    n.setSecType(sectype2);
-    n.setVarType(type2);
-    QCOMPARE(n.secType(), sectype2);
-    QCOMPARE(n.varType(), type2);
+    /// \todo
 }
 
 void TestTreeNode::testInitType_data() {
-    QTest::addColumn<SecrecSecType>("sectype1");
-    QTest::addColumn<SecrecVarType>("type1");
-    QTest::addColumn<SecrecSecType>("sectype2");
-    QTest::addColumn<SecrecVarType>("type2");
-
-    static const SecrecSecType PR = SECTYPE_PRIVATE, PU = SECTYPE_PRIVATE;
-    static const SecrecVarType B = VARTYPE_BOOL, I = VARTYPE_INT,
-                               U = VARTYPE_UINT, S = VARTYPE_STRING;
-
-
-    NR4(PU,B,PU,B);NR4(PU,B,PR,B);NR4(PR,B,PU,B);NR4(PR,B,PR,B);
-    NR4(PU,B,PU,I);NR4(PU,B,PR,I);NR4(PR,B,PU,I);NR4(PR,B,PR,I);
-    NR4(PU,B,PU,U);NR4(PU,B,PR,U);NR4(PR,B,PU,U);NR4(PR,B,PR,U);
-    NR4(PU,B,PU,S);NR4(PU,B,PR,S);NR4(PR,B,PU,S);NR4(PR,B,PR,S);
-    NR4(PU,I,PU,B);NR4(PU,I,PR,B);NR4(PR,I,PU,B);NR4(PR,I,PR,B);
-    NR4(PU,I,PU,I);NR4(PU,I,PR,I);NR4(PR,I,PU,I);NR4(PR,I,PR,I);
-    NR4(PU,I,PU,U);NR4(PU,I,PR,U);NR4(PR,I,PU,U);NR4(PR,I,PR,U);
-    NR4(PU,I,PU,S);NR4(PU,I,PR,S);NR4(PR,I,PU,S);NR4(PR,I,PR,S);
-    NR4(PU,U,PU,B);NR4(PU,U,PR,B);NR4(PR,U,PU,B);NR4(PR,U,PR,B);
-    NR4(PU,U,PU,I);NR4(PU,U,PR,I);NR4(PR,U,PU,I);NR4(PR,U,PR,I);
-    NR4(PU,U,PU,U);NR4(PU,U,PR,U);NR4(PR,U,PU,U);NR4(PR,U,PR,U);
-    NR4(PU,U,PU,S);NR4(PU,U,PR,S);NR4(PR,U,PU,S);NR4(PR,U,PR,S);
-    NR4(PU,S,PU,B);NR4(PU,S,PR,B);NR4(PR,S,PU,B);NR4(PR,S,PR,B);
-    NR4(PU,S,PU,I);NR4(PU,S,PR,I);NR4(PR,S,PU,I);NR4(PR,S,PR,I);
-    NR4(PU,S,PU,U);NR4(PU,S,PR,U);NR4(PR,S,PU,U);NR4(PR,S,PR,U);
-    NR4(PU,S,PU,S);NR4(PU,S,PR,S);NR4(PR,S,PU,S);NR4(PR,S,PR,S);
+    /// \todo
 }
 
 void TestTreeNode::testChildren() {

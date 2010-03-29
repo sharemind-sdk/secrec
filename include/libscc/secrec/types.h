@@ -43,35 +43,35 @@ class SecType {
         bool m_kind;
 };
 
-class BasicSecType: public SecType {
+class SecTypeBasic: public SecType {
     public: /* Methods: */
-        explicit BasicSecType(SecrecSecType secType)
+        explicit SecTypeBasic(SecrecSecType secType)
             : SecType(SecType::BASIC), m_secType(secType) {}
-        explicit BasicSecType(const BasicSecType &copy)
+        explicit SecTypeBasic(const SecTypeBasic &copy)
             : SecType(copy), m_secType(copy.secType()) {}
 
         inline SecrecSecType secType() const { return m_secType; }
-        virtual SecType *clone() const { return new BasicSecType(*this); }
+        virtual SecType *clone() const { return new SecTypeBasic(*this); }
         virtual inline std::string toString() const {
             if (m_secType == SECTYPE_INVALID) return "invalid";
             return m_secType == SECTYPE_PRIVATE ? "private" : "public";
         }
         virtual inline bool operator==(const SecType &other) {
             if (!SecType::operator==(other)) return false;
-            return m_secType == static_cast<const BasicSecType &>(other).secType();
+            return m_secType == static_cast<const SecTypeBasic &>(other).secType();
         }
 
     private: /* Fields: */
         SecrecSecType m_secType;
 };
 
-class FunctionSecType: public SecType {
+class SecTypeFunction: public SecType {
     public: /* Methods: */
-        FunctionSecType()
+        SecTypeFunction()
             : SecType(SecType::FUNCTION), m_returnSecType(SECTYPE_INVALID) {}
-        explicit FunctionSecType(SecrecSecType secType)
+        explicit SecTypeFunction(SecrecSecType secType)
             : SecType(SecType::FUNCTION), m_returnSecType(secType) {}
-        explicit FunctionSecType(const FunctionSecType &copy)
+        explicit SecTypeFunction(const SecTypeFunction &copy)
             : SecType(copy), m_returnSecType(copy.m_returnSecType),
               m_paramSecTypes(copy.m_paramSecTypes) {}
 
@@ -83,7 +83,7 @@ class FunctionSecType: public SecType {
             return m_paramSecTypes;
         }
 
-        virtual SecType *clone() const { return new FunctionSecType(*this); }
+        virtual SecType *clone() const { return new SecTypeFunction(*this); }
         virtual std::string toString() const;
         virtual inline bool operator==(const SecType &other);
 
@@ -122,59 +122,59 @@ class DataType {
         Kind m_kind;
 };
 
-class BasicDataType: public DataType {
+class DataTypeBasic: public DataType {
     public: /* Methods: */
-        explicit BasicDataType(SecrecVarType varType)
+        explicit DataTypeBasic(SecrecVarType varType)
             : DataType(DataType::BASIC), m_varType(varType) {}
-        explicit BasicDataType(const BasicDataType &copy)
+        explicit DataTypeBasic(const DataTypeBasic &copy)
             : DataType(copy), m_varType(copy.m_varType) {}
 
         inline SecrecVarType varType() const { return m_varType; }
 
-        virtual inline DataType *clone() const { return new BasicDataType(*this); }
+        virtual inline DataType *clone() const { return new DataTypeBasic(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_varType == static_cast<const BasicDataType &>(other).m_varType;
+                   && m_varType == static_cast<const DataTypeBasic &>(other).m_varType;
         }
 
     private: /* Fields: */
         SecrecVarType m_varType;
 };
 
-class VarDataType: public DataType {
+class DataTypeVar: public DataType {
     public: /* Methods: */
-        explicit VarDataType(SecrecVarType varType)
+        explicit DataTypeVar(SecrecVarType varType)
             : DataType(DataType::BASIC), m_varType(varType) {}
-        explicit VarDataType(const VarDataType &copy)
+        explicit DataTypeVar(const DataTypeVar &copy)
             : DataType(copy), m_varType(copy.m_varType) {}
 
         inline SecrecVarType varType() const { return m_varType; }
 
-        virtual inline DataType *clone() const { return new VarDataType(*this); }
+        virtual inline DataType *clone() const { return new DataTypeVar(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_varType == static_cast<const VarDataType &>(other).m_varType;
+                   && m_varType == static_cast<const DataTypeVar &>(other).m_varType;
         }
 
     private: /* Fields: */
         SecrecVarType m_varType;
 };
 
-class ArrayDataType: public DataType {
+class DataTypeArray: public DataType {
     public: /* Methods: */
-        ArrayDataType(const DataType &itemType, unsigned size)
+        DataTypeArray(const DataType &itemType, unsigned size)
             : DataType(DataType::ARRAY), m_itemType(itemType.clone()), m_size(size)
         {
             assert(itemType.kind() == DataType::BASIC || itemType.kind() == DataType::ARRAY);
         }
-        ArrayDataType(const ArrayDataType &copy)
+        DataTypeArray(const DataTypeArray &copy)
             : DataType(copy), m_itemType(copy.m_itemType),
               m_size(copy.m_size) {}
-        inline ~ArrayDataType() { delete m_itemType; }
+        inline ~DataTypeArray() { delete m_itemType; }
 
-        virtual inline DataType *clone() const { return new ArrayDataType(*this); }
+        virtual inline DataType *clone() const { return new DataTypeArray(*this); }
         virtual std::string toString() const;
 
         inline const DataType &itemType() const { return *m_itemType; }
@@ -182,8 +182,8 @@ class ArrayDataType: public DataType {
 
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_size == static_cast<const ArrayDataType &>(other).m_size
-                   && m_itemType == static_cast<const ArrayDataType &>(other).m_itemType;
+                   && m_size == static_cast<const DataTypeArray &>(other).m_size
+                   && m_itemType == static_cast<const DataTypeArray &>(other).m_itemType;
         }
 
     private: /* Fields: */
@@ -191,14 +191,14 @@ class ArrayDataType: public DataType {
         unsigned m_size;
 };
 
-class FunctionDataType: public DataType {
+class DataTypeFunction: public DataType {
     public: /* Methods: */
-        FunctionDataType(const DataType &returnType)
+        DataTypeFunction(const DataType &returnType)
             : DataType(DataType::FUNCTION), m_ret(returnType.clone()) {}
-        FunctionDataType(const FunctionDataType &copy);
-        virtual ~FunctionDataType();
+        DataTypeFunction(const DataTypeFunction &copy);
+        virtual ~DataTypeFunction();
 
-        virtual inline DataType *clone() const { return new FunctionDataType(*this); }
+        virtual inline DataType *clone() const { return new DataTypeFunction(*this); }
         virtual std::string toString() const;
 
         inline void addParamType(const DataType &paramType) { m_params.push_back(paramType.clone()); }
@@ -240,18 +240,18 @@ class Type {
         bool m_isVoid;
 };
 
-class VoidType: public Type {
+class TypeVoid: public Type {
     public: /* Methods: */
-        inline VoidType()
+        inline TypeVoid()
             : Type(true) {}
-        explicit inline VoidType(const VoidType &copy)
+        explicit inline TypeVoid(const TypeVoid &copy)
             : Type(copy) {}
 
-        virtual inline Type *clone() const { return new VoidType(); }
+        virtual inline Type *clone() const { return new TypeVoid(); }
         virtual inline std::string toString() const { return "void"; }
 };
 
-class NonVoidType: public Type {
+class TypeNonVoid: public Type {
     public: /* Types: */
         enum Kind {
             BASIC,   /**< BasicSecType    + BasicDataType.    */
@@ -261,24 +261,28 @@ class NonVoidType: public Type {
         };
 
     public: /* Methods: */
-        NonVoidType(SecrecSecType secType, SecrecVarType varType)
-            : Type(false), m_kind(BASIC), m_secType(new BasicSecType(secType)),
-              m_dataType(new BasicDataType(varType)) {}
-        NonVoidType(const BasicSecType &secType, const BasicDataType &dataType)
+        TypeNonVoid(SecrecSecType secType, SecrecVarType varType)
+            : Type(false), m_kind(BASIC), m_secType(new SecTypeBasic(secType)),
+              m_dataType(new DataTypeBasic(varType)) {}
+        TypeNonVoid(const SecTypeBasic &secType, const DataTypeBasic &dataType)
             : Type(false), m_kind(BASIC), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
-        NonVoidType(const BasicSecType &secType, const VarDataType &dataType)
+        TypeNonVoid(const SecTypeBasic &secType, const DataTypeVar &dataType)
             : Type(false), m_kind(VAR), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
-        NonVoidType(const BasicSecType &secType,
-                    const ArrayDataType &dataType)
+        TypeNonVoid(const SecTypeBasic &secType,
+                    const DataTypeArray &dataType)
             : Type(false), m_kind(ARRAY), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
-        NonVoidType(const FunctionSecType &secType,
-                    const FunctionDataType &dataType)
+        TypeNonVoid(const SecTypeFunction &secType,
+                    const DataTypeFunction &dataType)
             : Type(false), m_kind(FUNCTION), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
-        explicit inline NonVoidType(const NonVoidType &copy)
+        TypeNonVoid(const SecType &secType,
+                    const DataType &dataType);
+        TypeNonVoid(SecrecSecType secType,
+                    const DataType &dataType);
+        explicit inline TypeNonVoid(const TypeNonVoid &copy)
             : Type(copy), m_kind(copy.m_kind),
               m_secType(copy.m_secType->clone()),
               m_dataType(copy.m_dataType->clone()) {}
@@ -287,11 +291,11 @@ class NonVoidType: public Type {
         inline const SecType &secType() const { return *m_secType; }
         inline const DataType &dataType() const { return *m_dataType; }
 
-        virtual inline Type *clone() const { return new NonVoidType(*this); }
+        virtual inline Type *clone() const { return new TypeNonVoid(*this); }
         virtual std::string toString() const;
         virtual inline bool operator==(const Type &other) const {
             return Type::operator==(other)
-                   && m_kind == static_cast<const NonVoidType&>(other).kind();
+                   && m_kind == static_cast<const TypeNonVoid&>(other).kind();
         }
 
     private: /* Fields: */

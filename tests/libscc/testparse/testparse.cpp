@@ -1,5 +1,5 @@
 #include <libscc/secrec/parser.h>
-#include <libscc/secrec/treenodeprogram.h>
+#include <libscc/secrec/treenode.h>
 #include <QtTest>
 #include <string>
 

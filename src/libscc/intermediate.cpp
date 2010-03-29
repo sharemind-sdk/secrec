@@ -1,7 +1,7 @@
 #include "intermediate.h"
 
 #include <iostream>
-#include "secrec/treenodeprogram.h"
+#include "secrec/treenode.h"
 
 
 namespace SecreC {

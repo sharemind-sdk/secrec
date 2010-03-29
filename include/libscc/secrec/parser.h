@@ -77,10 +77,11 @@ enum SecrecTreeNodeType {
     NODE_FUNDEFS        = 0xf00,
     NODE_PROGRAM        = 0x1000,
 
-    NODE_VOIDTYPE       = 0x10000,
-    NODE_BASICTYPE      = 0x20000,
-    NODE_ARRAYTYPE      = 0x30000,
-        NODE_TYPE_MASK  = 0xf0000
+    NODE_TYPETYPE       = 0x10000,
+    NODE_TYPEVOID       = 0x20000,
+    NODE_DATATYPE_F     = 0x30000,
+    NODE_DATATYPE_ARRAY = 0x40000,
+    NODE_SECTYPE_F      = 0x50000
 };
 
 enum SecrecSecType { SECTYPE_INVALID = 0x00, SECTYPE_PUBLIC = 0x01,

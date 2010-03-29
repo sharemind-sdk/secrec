@@ -107,7 +107,9 @@
 %type <treenode> vector_suffix
 %type <treenode> type_specifier
 %type <treenode> function_type_specifier
-%type <treenode> basic_type_specifier
+%type <treenode> datatype_specifier
+%type <treenode> datatype_fund_specifier
+%type <treenode> sectype_specifier
 %type <treenode> function_definitions
 %type <treenode> function_definition
 %type <treenode> function_parameter_list
@@ -229,52 +231,65 @@ vector_suffix
 *******************************************************************************/
 
 type_specifier
- : type_specifier '[' ']'
+ : sectype_specifier datatype_specifier
    {
-     $$ = treenode_init_arraytype(0, &@$);
+     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+   }
+ ;
+
+sectype_specifier
+ : PRIVATE
+   {
+     $$ = (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PRIVATE, &@$);
+   }
+ | PUBLIC
+   {
+     $$ = (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$);
+   }
+ ;
+
+datatype_fund_specifier
+ : BOOL
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_BOOL, &@$);
+   }
+ | INT
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_INT, &@$);
+   }
+ | SIGNED INT
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_INT, &@$);
+   }
+ | UNSIGNED INT
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_UINT, &@$);
+   }
+ | STRING
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_STRING, &@$);
+   }
+ ;
+
+datatype_specifier
+ : datatype_specifier '[' ']'
+   {
+     $$ = (struct TreeNode*) treenode_init_dataTypeArray(0, &@$);
      treenode_appendChild($$, $1);
    }
- | basic_type_specifier
+ | datatype_fund_specifier
  ;
 
 function_type_specifier
  : VOID
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_VOIDTYPE, &@$);
+     $$ = (struct TreeNode *) treenode_init(NODE_TYPEVOID, &@$);
    }
  | type_specifier
  ;
 
-basic_type_specifier
- : PRIVATE BOOL
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PRIVATE, VARTYPE_BOOL, &@$);
-   }
- | PRIVATE INT
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PRIVATE, VARTYPE_INT, &@$);
-   }
- | PUBLIC BOOL
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_BOOL, &@$);
-   }
- | PUBLIC INT
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
-   }
- | PUBLIC SIGNED INT
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_INT, &@$);
-   }
- | PUBLIC UNSIGNED INT
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_UINT, &@$);
-   }
- | PUBLIC STRING
-   {
-     $$ = (struct TreeNode *) treenode_init_basictype(SECTYPE_PUBLIC, VARTYPE_STRING, &@$);
-   }
- ;
 
 /*******************************************************************************
   Functions:

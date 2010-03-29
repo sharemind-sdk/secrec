@@ -72,7 +72,7 @@ class SymbolSymbol: public SymbolWithValue {
 class SymbolConstantBool: public SymbolWithValue {
     public: /* Methods: */
         explicit SymbolConstantBool(bool value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::NonVoidType(SECTYPE_PUBLIC, VARTYPE_BOOL)), m_value(value) {}
+            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_BOOL)), m_value(value) {}
 
         inline bool value() const { return m_value; }
 
@@ -83,7 +83,7 @@ class SymbolConstantBool: public SymbolWithValue {
 class SymbolConstantInt: public SymbolWithValue {
     public: /* Methods: */
         explicit SymbolConstantInt(int value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::NonVoidType(SECTYPE_PUBLIC, VARTYPE_INT)), m_value(value) {}
+            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_INT)), m_value(value) {}
 
         inline int value() const { return m_value; }
 
@@ -94,7 +94,7 @@ class SymbolConstantInt: public SymbolWithValue {
 class SymbolConstantUInt: public SymbolWithValue {
     public: /* Methods: */
         explicit SymbolConstantUInt(unsigned value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::NonVoidType(SECTYPE_PUBLIC, VARTYPE_UINT)), m_value(value) {}
+            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_UINT)), m_value(value) {}
 
         inline unsigned value() const { return m_value; }
 
@@ -105,7 +105,7 @@ class SymbolConstantUInt: public SymbolWithValue {
 class SymbolConstantString: public SymbolWithValue {
     public: /* Methods: */
         explicit SymbolConstantString(const std::string &value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::NonVoidType(SECTYPE_PUBLIC, VARTYPE_STRING)), m_value(value) {}
+            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_STRING)), m_value(value) {}
 
         inline const std::string &value() const { return m_value; }
 
