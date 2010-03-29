@@ -6,7 +6,7 @@
 
 namespace {
 
-const char *SecrecFundSecTypeToString(SecrecSecType secType) {
+inline const char *SecrecFundSecTypeToString(SecrecSecType secType) {
     switch (secType) {
         case SECTYPE_INVALID: return "invalid";
         case SECTYPE_PUBLIC:  return "public";
@@ -15,7 +15,7 @@ const char *SecrecFundSecTypeToString(SecrecSecType secType) {
     return 0;
 }
 
-const char *SecrecFundDataTypeToString(SecrecVarType varType) {
+inline const char *SecrecFundDataTypeToString(SecrecVarType varType) {
     switch (varType) {
         case VARTYPE_INVALID: return "invalid";
         case VARTYPE_BOOL:    return "bool";
@@ -30,6 +30,10 @@ const char *SecrecFundDataTypeToString(SecrecVarType varType) {
 
 namespace SecreC {
 
+std::string SecTypeBasic::toString() const {
+    return SecrecFundSecTypeToString(m_secType);
+}
+
 std::string DataTypeBasic::toString() const {
     return SecrecFundDataTypeToString(m_varType);
 }
@@ -37,8 +41,8 @@ std::string DataTypeBasic::toString() const {
 std::string DataTypeArray::toString() const {
     assert(m_itemType != 0);
 
-    std::ostringstream os("(");
-    os << m_itemType->toString() << ")[";
+    std::ostringstream os;
+    os << *m_itemType << "[";
     if (m_size > 0)
         os << m_size;
     os << "]";
@@ -149,9 +153,20 @@ TypeNonVoid::TypeNonVoid(SecrecSecType secType,
 std::string TypeNonVoid::toString() const {
     assert(m_secType != 0);
     assert(m_dataType != 0);
-    std::ostringstream os("(");
-    os << *m_secType << " " << *m_dataType << ")";
+    std::ostringstream os;
+    os << "(" << *m_secType << "," << *m_dataType << ")";
     return os.str();
 }
 
 } // namespace SecreC
+
+
+std::ostream &operator<<(std::ostream &out, const SecrecSecType &type) {
+    out << SecrecFundSecTypeToString(type);
+    return out;
+}
+
+std::ostream &operator<<(std::ostream &out, const SecrecVarType &type) {
+    out << SecrecFundDataTypeToString(type);
+    return out;
+}

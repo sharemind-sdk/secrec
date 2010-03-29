@@ -52,10 +52,7 @@ class SecTypeBasic: public SecType {
 
         inline SecrecSecType secType() const { return m_secType; }
         virtual SecType *clone() const { return new SecTypeBasic(*this); }
-        virtual inline std::string toString() const {
-            if (m_secType == SECTYPE_INVALID) return "invalid";
-            return m_secType == SECTYPE_PRIVATE ? "private" : "public";
-        }
+        virtual std::string toString() const;
         virtual inline bool operator==(const SecType &other) {
             if (!SecType::operator==(other)) return false;
             return m_secType == static_cast<const SecTypeBasic &>(other).secType();
@@ -306,6 +303,9 @@ class TypeNonVoid: public Type {
 
 
 } // namespace SecreC
+
+std::ostream &operator<<(std::ostream &out, const SecrecSecType &type);
+std::ostream &operator<<(std::ostream &out, const SecrecVarType &type);
 
 inline std::ostream &operator<<(std::ostream &out, const SecreC::Type &type) {
     out << type.toString();

@@ -36,10 +36,10 @@ class TreeNode: public SccObject {
 
         std::string toString(unsigned indentation = 2, unsigned startIndent = 0)
                 const;
-        inline virtual std::string stringHelper() const { return ""; }
+        virtual inline std::string stringHelper() const { return ""; }
 
         std::string toXml(bool full = false) const;
-        inline virtual std::string xmlHelper() const { return ""; }
+        virtual inline std::string xmlHelper() const { return ""; }
 
         static const char *typeName(Type type);
 
@@ -98,10 +98,10 @@ class TreeNodeBool: public TreeNode {
         inline void setValue(bool value) { m_value = value; }
         inline bool value() const { return m_value; }
 
-        inline virtual std::string stringHelper() const {
+        virtual inline std::string stringHelper() const {
             return (m_value ? "true" : "false");
         }
-        std::string xmlHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         bool m_value;
@@ -147,6 +147,9 @@ class TreeNodeDataTypeArray: public TreeNodeDataType {
 
         virtual const DataType &dataType() const;
 
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+
     private: /* Fields: */
         unsigned m_dim;
         mutable DataType *m_cachedType;
@@ -167,6 +170,9 @@ class TreeNodeDataTypeF: public TreeNodeDataType {
         virtual inline const DataType &dataType() const {
             return m_cachedType;
         }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         DataTypeBasic m_cachedType;
@@ -455,8 +461,8 @@ class TreeNodeIdentifier: public TreeNode {
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
 
-        std::string stringHelper() const;
-        std::string xmlHelper() const;
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         std::string m_value;
@@ -475,8 +481,8 @@ class TreeNodeInt: public TreeNode {
         inline void setValue(int value) { m_value = value; }
         inline int value() const { return m_value; }
 
-        std::string stringHelper() const;
-        std::string xmlHelper() const;
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         int m_value;
@@ -528,6 +534,9 @@ class TreeNodeSecTypeF: public TreeNode {
 
         SecrecSecType secType() const { return m_secType; }
 
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+
     private: /* Fields: */
         SecrecSecType m_secType;
 };
@@ -545,8 +554,8 @@ class TreeNodeString: public TreeNode {
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
 
-        std::string stringHelper() const;
-        std::string xmlHelper() const;
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         std::string m_value;
@@ -573,9 +582,10 @@ class TreeNodeType: public TreeNode {
 class TreeNodeTypeType: public TreeNodeType {
     public: /* Methods: */
         explicit inline TreeNodeTypeType(const YYLTYPE &loc)
-            : TreeNodeType(NODE_TYPETYPE, loc) {}
+            : TreeNodeType(NODE_TYPETYPE, loc), m_cachedType(0) {}
 
         virtual const SecreC::Type &secrecType() const;
+        virtual std::string stringHelper() const;
 
     private: /* Fields: */
         mutable SecreC::TypeNonVoid *m_cachedType;
@@ -612,8 +622,8 @@ class TreeNodeUInt: public TreeNode {
         inline void setValue(unsigned value) { m_value = value; }
         inline unsigned value() const { return m_value; }
 
-        std::string stringHelper() const;
-        std::string xmlHelper() const;
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
 
     private: /* Fields: */
         unsigned m_value;

@@ -38,6 +38,7 @@ void TreeNode::setLocation(const YYLTYPE &location) {
 const char *TreeNode::typeName(Type type) {
     switch (type) {
         case NODE_INTERNAL_USE: return "INTERNAL_USE";
+
         case NODE_IDENTIFIER: return "IDENTIFIER";
         case NODE_LITE_BOOL: return "BOOL";
         case NODE_LITE_INT: return "INT";
@@ -89,6 +90,12 @@ const char *TreeNode::typeName(Type type) {
         case NODE_FUNDEF_PARAM: return "FUNDEF_PARAM";
         case NODE_FUNDEFS: return "FUNDEFS";
         case NODE_PROGRAM: return "PROGRAM";
+
+        case NODE_TYPETYPE: return "TYPETYPE";
+        case NODE_TYPEVOID: return "TYPEVOID";
+        case NODE_DATATYPE_F: return "DATATYPE_F";
+        case NODE_DATATYPE_ARRAY: return "DATATYPE_ARRAY";
+        case NODE_SECTYPE_F: return "SECTYPE_F";
         default: return "UNKNOWN";
     }
 }
@@ -319,6 +326,34 @@ const DataType &TreeNodeDataTypeArray::dataType() const {
     return *m_cachedType;
 }
 
+std::string TreeNodeDataTypeArray::stringHelper() const {
+    std::ostringstream os;
+    os << m_dim;
+    return os.str();
+}
+
+std::string TreeNodeDataTypeArray::xmlHelper() const {
+    std::ostringstream os;
+    os << "dim=\"" << m_dim << "\"";
+    return os.str();
+}
+
+
+/******************************************************************
+  TreeNodeDataTypeF
+******************************************************************/
+
+std::string TreeNodeDataTypeF::stringHelper() const {
+    std::ostringstream os;
+    os << m_cachedType;
+    return os.str();
+}
+
+std::string TreeNodeDataTypeF::xmlHelper() const {
+    std::ostringstream os;
+    os << "type=\"" << m_cachedType << "\"";
+    return os.str();
+}
 
 /******************************************************************
   TreeNodeDecl
@@ -1271,6 +1306,22 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
 
 
 /******************************************************************
+  TreeNodeSecTypeF
+******************************************************************/
+
+std::string TreeNodeSecTypeF::stringHelper() const {
+    std::ostringstream os;
+    os << m_secType;
+    return os.str();
+}
+
+std::string TreeNodeSecTypeF::xmlHelper() const {
+    std::ostringstream os;
+    os << "type=\"" << m_secType << "\"";
+    return os.str();
+}
+
+/******************************************************************
   TreeNodeString
 ******************************************************************/
 
@@ -1306,6 +1357,11 @@ const SecreC::Type &TreeNodeTypeType::secrecType() const {
     m_cachedType = new SecreC::TypeNonVoid(st->secType(), dt->dataType());
     return *m_cachedType;
 }
+
+std::string TreeNodeTypeType::stringHelper() const {
+    return secrecType().toString();
+}
+
 
 /******************************************************************
   TreeNodeUInt
