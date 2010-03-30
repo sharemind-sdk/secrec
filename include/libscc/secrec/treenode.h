@@ -25,7 +25,7 @@ class TreeNode: public SccObject {
 
         inline TreeNode* parent() const { return m_parent; }
         inline Type type() const { return m_type; }
-        inline const std::deque<SccPointer<TreeNode> > &children() const {
+        inline const ChildrenList &children() const {
             return m_children;
         }
         inline const YYLTYPE &location() const { return m_location; }
@@ -107,6 +107,10 @@ class TreeNodeBool: public TreeNode {
         bool m_value;
 };
 
+/******************************************************************
+  TreeNodeCodeable
+******************************************************************/
+
 class TreeNodeCodeable: public TreeNode {
     public: /* Methods: */
         TreeNodeCodeable(Type type, const YYLTYPE &loc)
@@ -116,6 +120,21 @@ class TreeNodeCodeable: public TreeNode {
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es) = 0;
+};
+
+/******************************************************************
+  TreeNodeCompound
+******************************************************************/
+
+class TreeNodeCompound: public TreeNodeCodeable {
+    public: /* Methods: */
+        TreeNodeCompound(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_STMT_COMPOUND, loc) {}
+        virtual inline ~TreeNodeCompound() {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
 };
 
 
@@ -460,6 +479,7 @@ class TreeNodeIdentifier: public TreeNode {
 
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
+        SymbolSymbol *getSymbol(SymbolTable &st, std::ostream &es) const;
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
@@ -486,26 +506,6 @@ class TreeNodeInt: public TreeNode {
 
     private: /* Fields: */
         int m_value;
-};
-
-
-/******************************************************************
-  TreeNodeLVariable
-******************************************************************/
-
-class TreeNodeLVariable: public TreeNode {
-    public: /* Methods: */
-        explicit TreeNodeLVariable(const YYLTYPE &loc)
-            : TreeNode(NODE_EXPR_LVARIABLE, loc), m_cachedSymbol(0) {}
-        inline ~TreeNodeLVariable() { delete m_cachedSymbol; }
-
-        Symbol *symbol(SymbolTable &st, std::ostream &es) const;
-        Symbol *symbol() const;
-        Symbol::Type symbolType() const;
-        SecreC::Type *secrecType() const;
-
-    public:
-        mutable Symbol **m_cachedSymbol;
 };
 
 
@@ -541,6 +541,20 @@ class TreeNodeSecTypeF: public TreeNode {
         SecrecSecType m_secType;
 };
 
+
+/******************************************************************
+  TreeNodeStmtExpr
+******************************************************************/
+
+class TreeNodeStmtExpr: public TreeNodeCodeable {
+    public: /* Methods: */
+        TreeNodeStmtExpr(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_STMT_EXPR, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
 
 /******************************************************************
   TreeNodeString

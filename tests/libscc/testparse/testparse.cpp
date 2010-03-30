@@ -17,7 +17,6 @@ using namespace SecreC;
 
 // Parser-specific XML elements:
 #define XID(a) "<IDENTIFIER value=\"string:" a "\"/>"
-#define XLVAR(a) XB("LVARIABLE", XID(a))
 #define XRVAR(a) XB("RVARIABLE", XID(a))
 #define XTYPEVOID "<TYPEVOID/>"
 #define XTYPETYPE(a,b) XB("TYPETYPE", a b)
@@ -387,11 +386,11 @@ void TestParse::testExprPrimary_data() {
 
     QTest::newRow("identifier")
         << QString(SIMPLE_E("identifier"))
-        << QString(SIMPLE_PARSE_E(XLVAR("identifier")));
+        << QString(SIMPLE_PARSE_E(XRVAR("identifier")));
 
     QTest::newRow("identifierInBrackets")
         << QString(SIMPLE_E("(identifier)"))
-        << QString(SIMPLE_PARSE_E(XLVAR("identifier")));
+        << QString(SIMPLE_PARSE_E(XRVAR("identifier")));
 }
 
 void TestParse::testExprPostfix_data() {
@@ -411,27 +410,27 @@ void TestParse::testExprPostfix_data() {
 
     QTest::newRow("matrixExpressionWildCard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[*]"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_WILDCARD", XLVAR("m"))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_WILDCARD", XRVAR("m"))));
 
     QTest::newRow("matrixExpressionWildCards") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[*][*]"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_WILDCARD", "EXPR_WILDCARD", XLVAR("m"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_WILDCARD", "EXPR_WILDCARD", XRVAR("m"))));
 
     QTest::newRow("matrixExpression") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[42]"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_SUBSCRIPT", XLVAR("m") XINT(42))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_SUBSCRIPT", XRVAR("m") XINT(42))));
 
     QTest::newRow("matrixExpressions") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[42][24]"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_SUBSCRIPT",
-                                      XB("EXPR_SUBSCRIPT", XLVAR("m") XINT(42))
+                                      XB("EXPR_SUBSCRIPT", XRVAR("m") XINT(42))
                                       XINT(24))));
 
     QTest::newRow("postfixExpression") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[*][42][*]"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_WILDCARD",
                                      XB("EXPR_SUBSCRIPT",
-                                        XB("EXPR_WILDCARD", XLVAR("m"))
+                                        XB("EXPR_WILDCARD", XRVAR("m"))
                                         XINT(42)))));
 }
 
@@ -525,22 +524,22 @@ void TestParse::testExprCond_data() {
 
     QTest::newRow("ternaryConditional")
         << QString(SIMPLE_E("o1 ? o2 : o3"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF", XRVAR("o1") XLVAR("o2") XLVAR("o3"))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF", XRVAR("o1") XRVAR("o2") XRVAR("o3"))));
 
     QTest::newRow("ternaryConditionalAssoc")
         << QString(SIMPLE_E("o1 ? o2 ? o3 : o4 : o5"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF",
                                       XRVAR("o1")
                                       XB("EXPR_TERNIF",
-                                         XRVAR("o2") XLVAR("o3") XLVAR("o4"))
-                                      XLVAR("o5"))));
+                                         XRVAR("o2") XRVAR("o3") XRVAR("o4"))
+                                      XRVAR("o5"))));
 
     QTest::newRow("ternaryConditionalAssoc")
         << QString(SIMPLE_E("o1 ? o2 : o3 ? o4 : o5"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF",
-                                      XRVAR("o1") XLVAR("o2")
+                                      XRVAR("o1") XRVAR("o2")
                                       XB("EXPR_TERNIF",
-                                          XRVAR("o3") XLVAR("o4") XLVAR("o5")))));
+                                          XRVAR("o3") XRVAR("o4") XRVAR("o5")))));
 }
 
 void TestParse::testExprAssign_data() {
@@ -561,19 +560,19 @@ void TestParse::testExprPrecedence_data() {
         << QString(SIMPLE_E("o1 || o2 ? o3 : o4"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF",
                                       XB("EXPR_LOR", XRVAR("o1") XRVAR("o2"))
-                                      XLVAR("o3") XLVAR("o4"))));
+                                      XRVAR("o3") XRVAR("o4"))));
 
     QTest::newRow("ternaryToLor2")
         << QString(SIMPLE_E("o1 ? o2 || o3 : o4"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF",
                                       XRVAR("o1")
                                       XB("EXPR_LOR", XRVAR("o2") XRVAR("o3"))
-                                      XLVAR("o4"))));
+                                      XRVAR("o4"))));
 
     QTest::newRow("ternaryToLor3")
         << QString(SIMPLE_E("o1 ? o2 : o3 || o4"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_TERNIF",
-                                      XRVAR("o1") XLVAR("o2")
+                                      XRVAR("o1") XRVAR("o2")
                                       XB("EXPR_LOR", XRVAR("o3") XRVAR("o4")))));
 
     ADD_ROWS_BINARY_RIGHT("lorToLand", "||", "LOR",  "&&", "LAND");
@@ -609,7 +608,7 @@ void TestParse::testExprPrecedence_data() {
         << QString(SIMPLE_E("(private int) o1 # o2"))
         << QString(SIMPLE_PARSE_E(XB("EXPR_MATRIXMUL",
                                       XB("EXPR_CAST",
-                                          XSIMPLETYPE("private", "int") XLVAR("o1"))
+                                          XSIMPLETYPE("private", "int") XRVAR("o1"))
                                       XRVAR("o2"))));
 
     QTest::newRow("matToCast2") /// \todo RVAR or LVAR
@@ -617,7 +616,7 @@ void TestParse::testExprPrecedence_data() {
         << QString(SIMPLE_PARSE_E(XB("EXPR_MATRIXMUL",
                                       XRVAR("o1")
                                       XB("EXPR_CAST",
-                                          XSIMPLETYPE("private", "int") XLVAR("o2")))));
+                                          XSIMPLETYPE("private", "int") XRVAR("o2")))));
 
     QTest::newRow("castToUminus") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("(private bool) - (private int) ! o1"))
@@ -655,21 +654,21 @@ void TestParse::testExprPrecedence_data() {
 
     QTest::newRow("uminusToWildcard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("-o1[*]"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_WILDCARD", XLVAR("o1"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_WILDCARD", XRVAR("o1"))));
 
     QTest::newRow("unegToWildcard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("!o1[*]"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_WILDCARD", XLVAR("o1"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_WILDCARD", XRVAR("o1"))));
 
     QTest::newRow("uminusToSubscript") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("-o1[o2]"))
         << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_SUBSCRIPT",
-                                      XLVAR("o1") XRVAR("o2"))));
+                                      XRVAR("o1") XRVAR("o2"))));
 
     QTest::newRow("unegToSubscript") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("!o1[o2]"))
         << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_SUBSCRIPT",
-                                      XLVAR("o1") XRVAR("o2"))));
+                                      XRVAR("o1") XRVAR("o2"))));
 }
 
 void TestParse::testInlineDecls_data() {

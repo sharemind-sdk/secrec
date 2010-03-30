@@ -10,12 +10,10 @@
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
   struct TreeNode *ensure_rValue(struct TreeNode *node) {
-     if (treenode_type(node) == NODE_EXPR_LVARIABLE) {
-         assert(treenode_numChildren(node) == 1);
+     if (treenode_type(node) == NODE_IDENTIFIER) {;
          struct TreeNode *t = treenode_init(NODE_EXPR_RVARIABLE,
                                             treenode_location(node));
          treenode_appendChild(t, treenode_childAt(node, 0));
-         treenode_free(node);
          return t;
      } else {
          return node;
@@ -525,8 +523,7 @@ expression
  ;
 
 assignment_expression /* WARNING: RIGHT RECURSION */
-/* : lvalue '=' assignment_expression */
- : identifier '=' assignment_expression
+ : lvalue '=' assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_ASSIGN, &@$);
      treenode_appendChild($$, $1);
@@ -779,7 +776,7 @@ primary_expression
    }
  | identifier
    {
-     $$ = treenode_init(NODE_EXPR_LVARIABLE, &@$);
+     $$ = treenode_init(NODE_EXPR_RVARIABLE, &@$);
      treenode_appendChild($$, $1);
    }
  | constant
