@@ -85,28 +85,6 @@ std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc);
 
 namespace SecreC {
 
-
-/******************************************************************
-  TreeNodeBool
-******************************************************************/
-
-class TreeNodeBool: public TreeNode {
-    public: /* Methods: */
-        explicit TreeNodeBool(bool value, const YYLTYPE &loc)
-            : TreeNode(NODE_LITE_BOOL, loc), m_value(value) {}
-
-        inline void setValue(bool value) { m_value = value; }
-        inline bool value() const { return m_value; }
-
-        virtual inline std::string stringHelper() const {
-            return (m_value ? "true" : "false");
-        }
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        bool m_value;
-};
-
 /******************************************************************
   TreeNodeCodeable
 ******************************************************************/
@@ -339,14 +317,21 @@ class TreeNodeExprBinary: public TreeNodeExpr {
 
 
 /******************************************************************
-  TreeNodeExprIdentifier
+  TreeNodeExprBool
 ******************************************************************/
 
-class TreeNodeExprIdentifier: public TreeNodeExpr {
+class TreeNodeExprBool: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprIdentifier(Type type, const YYLTYPE &loc)
-            : TreeNodeExpr(type, loc) {}
+        explicit TreeNodeExprBool(bool value, const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_BOOL, loc), m_value(value) {}
 
+        inline void setValue(bool value) { m_value = value; }
+        inline bool value() const { return m_value; }
+
+        virtual inline std::string stringHelper() const {
+            return (m_value ? "true" : "false");
+        }
+        virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -356,6 +341,38 @@ class TreeNodeExprIdentifier: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICode::CodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
+
+    private: /* Fields: */
+        bool m_value;
+};
+
+
+/******************************************************************
+  TreeNodeExprInt
+******************************************************************/
+
+class TreeNodeExprInt: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprInt(int value, const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
+
+        inline void setValue(int value) { m_value = value; }
+        inline int value() const { return m_value; }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es,
+                                           SymbolWithValue *result = 0);
+        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es);
+
+    private: /* Fields: */
+        int m_value;
 };
 
 
@@ -381,6 +398,36 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 
 
 /******************************************************************
+  TreeNodeExprString
+******************************************************************/
+
+class TreeNodeExprString: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprString(const std::string &value,
+                                    const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_STRING, loc), m_value(value) {}
+
+        inline void setValue(const std::string &value) { m_value = value; }
+        inline const std::string &value() const { return m_value; }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es,
+                                           SymbolWithValue *result = 0);
+        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es);
+
+    private: /* Fields: */
+        std::string m_value;
+};
+
+
+/******************************************************************
   TreeNodeExprTernary
 ******************************************************************/
 
@@ -398,6 +445,35 @@ class TreeNodeExprTernary: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICode::CodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
+};
+
+
+/******************************************************************
+  TreeNodeExprUInt
+******************************************************************/
+
+class TreeNodeExprUInt: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_UINT, loc), m_value(value) {}
+
+        inline void setValue(unsigned value) { m_value = value; }
+        inline unsigned value() const { return m_value; }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es,
+                                           SymbolWithValue *result = 0);
+        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es);
+
+    private: /* Fields: */
+        unsigned m_value;
 };
 
 
@@ -490,26 +566,6 @@ class TreeNodeIdentifier: public TreeNode {
 
 
 /******************************************************************
-  TreeNodeInt
-******************************************************************/
-
-class TreeNodeInt: public TreeNode {
-    public: /* Methods: */
-        explicit TreeNodeInt(int value, const YYLTYPE &loc)
-            : TreeNode(NODE_LITE_INT, loc), m_value(value) {}
-
-        inline void setValue(int value) { m_value = value; }
-        inline int value() const { return m_value; }
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        int m_value;
-};
-
-
-/******************************************************************
   TreeNodeProgram
 ******************************************************************/
 
@@ -554,25 +610,6 @@ class TreeNodeStmtExpr: public TreeNodeCodeable {
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
-};
-
-/******************************************************************
-  TreeNodeString
-******************************************************************/
-
-class TreeNodeString: public TreeNode {
-    public: /* Methods: */
-        explicit TreeNodeString(const std::string &value, const YYLTYPE &loc)
-            : TreeNode(NODE_LITE_STRING, loc), m_value(value) {}
-
-        inline void setValue(const std::string &value) { m_value = value; }
-        inline const std::string &value() const { return m_value; }
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        std::string m_value;
 };
 
 
@@ -621,26 +658,6 @@ class TreeNodeTypeVoid: public TreeNodeType {
 
     private: /* Fields: */
         const SecreC::TypeVoid m_typeVoid;
-};
-
-
-/******************************************************************
-  TreeNodeUInt
-******************************************************************/
-
-class TreeNodeUInt: public TreeNode {
-    public: /* Methods: */
-        explicit TreeNodeUInt(unsigned value, const YYLTYPE &loc)
-            : TreeNode(NODE_LITE_UINT, loc), m_value(value) {}
-
-        inline void setValue(unsigned value) { m_value = value; }
-        inline unsigned value() const { return m_value; }
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        unsigned m_value;
 };
 
 } // namespace SecreC

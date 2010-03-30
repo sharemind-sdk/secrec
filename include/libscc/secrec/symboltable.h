@@ -133,12 +133,12 @@ class SymbolTable {
 
         void appendSymbol(Symbol *symbol);
         SymbolWithValue *appendTemporary(const Type &type);
-        Symbol *label(const Imop *imop);
-        Symbol *comment(const std::string &comment);
-        Symbol *constantBool(bool value);
-        Symbol *constantInt(int value);
-        Symbol *constantUInt(unsigned value);
-        Symbol *constantString(const std::string &value);
+        SymbolLabel *label(const Imop *imop);
+        SymbolComment *comment(const std::string &comment);
+        SymbolConstantBool *constantBool(bool value);
+        SymbolConstantInt *constantInt(int value);
+        SymbolConstantUInt *constantUInt(unsigned value);
+        SymbolConstantString *constantString(const std::string &value);
         Symbol *find(const std::string &name) const;
         SymbolTable *newScope();
 

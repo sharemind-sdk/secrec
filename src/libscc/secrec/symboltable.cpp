@@ -38,8 +38,8 @@ SymbolWithValue *SymbolTable::appendTemporary(const Type &type) {
     return tmp;
 }
 
-Symbol *SymbolTable::label(const Imop *imop) {
-    Symbol *label = new SymbolLabel(imop);
+SymbolLabel *SymbolTable::label(const Imop *imop) {
+    SymbolLabel *label = new SymbolLabel(imop);
     std::ostringstream os("$label$");
     os << m_labelCount++;
     label->setName(os.str());
@@ -47,10 +47,11 @@ Symbol *SymbolTable::label(const Imop *imop) {
     return label;
 }
 
-Symbol *SymbolTable::comment(const std::string &comment) {
+SymbolComment *SymbolTable::comment(const std::string &comment) {
     /// \todo Implement hashing instead
     std::string name("$comment$" + comment);
-    Symbol *s = find(name);
+    assert(dynamic_cast<SymbolComment*>(find(name)) != 0);
+    SymbolComment *s = static_cast<SymbolComment*>(find(name));
     if (s != 0) return s;
 
     s = new SymbolComment(comment);
@@ -58,9 +59,10 @@ Symbol *SymbolTable::comment(const std::string &comment) {
     return s;
 }
 
-Symbol *SymbolTable::constantBool(bool value) {
+SymbolConstantBool *SymbolTable::constantBool(bool value) {
     const std::string name(value ? "$constBool$true" : "$constBool$false");
-    Symbol *s = find(name);
+    assert(dynamic_cast<SymbolConstantBool*>(find(name)) != 0);
+    SymbolConstantBool *s = static_cast<SymbolConstantBool*>(find(name));
     if (s != 0) return s;
 
     s = new SymbolConstantBool(value);
@@ -68,11 +70,12 @@ Symbol *SymbolTable::constantBool(bool value) {
     return s;
 }
 
-Symbol *SymbolTable::constantInt(int value) {
+SymbolConstantInt *SymbolTable::constantInt(int value) {
     std::ostringstream os("$constInt$");
     os << value;
     std::string name(os.str());
-    Symbol *s = find(name);
+    assert(dynamic_cast<SymbolConstantInt*>(find(name)) != 0);
+    SymbolConstantInt *s = static_cast<SymbolConstantInt*>(find(name));
     if (s != 0) return s;
 
     s = new SymbolConstantInt(value);
@@ -80,11 +83,12 @@ Symbol *SymbolTable::constantInt(int value) {
     return s;
 }
 
-Symbol *SymbolTable::constantUInt(unsigned value) {
+SymbolConstantUInt *SymbolTable::constantUInt(unsigned value) {
     std::ostringstream os("$constUInt$");
     os << value;
     std::string name(os.str());
-    Symbol *s = find(name);
+    assert(dynamic_cast<SymbolConstantUInt*>(find(name)) != 0);
+    SymbolConstantUInt *s = static_cast<SymbolConstantUInt*>(find(name));
     if (s != 0) return s;
 
     s = new SymbolConstantUInt(value);
@@ -92,10 +96,11 @@ Symbol *SymbolTable::constantUInt(unsigned value) {
     return s;
 }
 
-Symbol *SymbolTable::constantString(const std::string &value) {
+SymbolConstantString *SymbolTable::constantString(const std::string &value) {
     /// \todo Implement hashing instead
     std::string name("$constString$" + value);
-    Symbol *s = find(name);
+    assert(dynamic_cast<SymbolConstantString*>(find(name)) != 0);
+    SymbolConstantString *s = static_cast<SymbolConstantString*>(find(name));
     if (s != 0) return s;
 
     s = new SymbolConstantString(value);

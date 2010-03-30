@@ -73,7 +73,7 @@ void TestTreeNode::testInitBool() {
 
     QFETCH(bool, value);
 
-    TreeNodeBool n(value, loc);
+    TreeNodeExprBool n(value, loc);
     QCOMPARE(n.type(), NODE_LITE_BOOL);
     QCOMPARE(n.value(), value);
     n.setValue(!value);
@@ -92,7 +92,7 @@ void TestTreeNode::testInitInt() {
     QFETCH(int, value1);
     QFETCH(int, value2);
 
-    TreeNodeInt n(value1, loc);
+    TreeNodeExprInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_INT);
     QCOMPARE(n.value(), value1);
     n.setValue(value2);
@@ -116,7 +116,7 @@ void TestTreeNode::testInitUInt() {
     QFETCH(unsigned, value1);
     QFETCH(unsigned, value2);
 
-    TreeNodeUInt n(value1, loc);
+    TreeNodeExprUInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_UINT);
     QCOMPARE(n.value(), value1);
     n.setValue(value2);
@@ -138,7 +138,7 @@ void TestTreeNode::testInitString() {
     QFETCH(QString, value1);
     QFETCH(QString, value2);
 
-    TreeNodeString n(value1.toStdString(), loc);
+    TreeNodeExprString n(value1.toStdString(), loc);
     QCOMPARE(n.type(), NODE_LITE_STRING);
     QCOMPARE(n.value(), value1.toStdString());
     n.setValue(value2.toStdString());
@@ -167,11 +167,11 @@ void TestTreeNode::testChildren() {
     typedef std::deque<TreeNode*>::size_type ST;
     DEFLOC(loc,1,2,3,4);
 
-    TreeNodeString *n  = new TreeNodeString("n", loc);
-    TreeNodeString *c1 = new TreeNodeString("c1", loc);
-    TreeNodeString *c2 = new TreeNodeString("c2", loc);
-    TreeNodeString *c3 = new TreeNodeString("c3", loc);
-    TreeNodeString *c4 = new TreeNodeString("c4", loc);
+    TreeNodeExprString *n  = new TreeNodeExprString("n", loc);
+    TreeNodeExprString *c1 = new TreeNodeExprString("c1", loc);
+    TreeNodeExprString *c2 = new TreeNodeExprString("c2", loc);
+    TreeNodeExprString *c3 = new TreeNodeExprString("c3", loc);
+    TreeNodeExprString *c4 = new TreeNodeExprString("c4", loc);
     QCOMPARE(n->children().size(), (ST) 0);
     n->appendChild(c1);
     QCOMPARE(n->children().size(), (ST) 1);

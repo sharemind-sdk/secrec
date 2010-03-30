@@ -249,21 +249,21 @@ extern "C" void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc) {
 
 extern "C" struct TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc) {
 
-    return (TreeNode*) new SecreC::TreeNodeBool(value, *loc);
+    return (TreeNode*) new SecreC::TreeNodeExprBool(value, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_int(int value, YYLTYPE *loc) {
-    return (TreeNode*) new SecreC::TreeNodeInt(value, *loc);
+    return (TreeNode*) new SecreC::TreeNodeExprInt(value, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc) {
-    return (TreeNode*) new SecreC::TreeNodeUInt(value, *loc);
+    return (TreeNode*) new SecreC::TreeNodeExprUInt(value, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_string(const char *value,
                                                  YYLTYPE *loc)
 {
-    return (TreeNode*) new SecreC::TreeNodeString(value, *loc);
+    return (TreeNode*) new SecreC::TreeNodeExprString(value, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_identifier(const char *value,
@@ -301,17 +301,6 @@ std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc) {
 }
 
 namespace SecreC {
-
-/******************************************************************
-  TreeNodeBool
-******************************************************************/
-
-std::string TreeNodeBool::xmlHelper() const {
-    std::ostringstream os;
-    os << "value=\"bool:" << stringHelper() << "\"";
-    return os.str();
-}
-
 
 /******************************************************************
   TreeNodeCompound
@@ -811,6 +800,129 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
 
 
 /******************************************************************
+  TreeNodeExprBool
+******************************************************************/
+
+std::string TreeNodeExprBool::xmlHelper() const {
+    std::ostringstream os;
+    os << "value=\"bool:" << stringHelper() << "\"";
+    return os.str();
+}
+
+ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
+                                                    std::ostream &)
+{
+    assert(children().empty());
+
+    if (resultType() != 0) {
+        assert(*resultType() != 0);
+        return ICode::OK;
+    }
+
+    resultType() = new (SecreC::Type*);
+    *resultType() = new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_BOOL);
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprBool::generateCode(ICode::CodeList &code,
+                                             SymbolTable &st,
+                                             std::ostream &es,
+                                             SymbolWithValue *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    SymbolConstantBool *sym = st.constantBool(m_value);
+    if (r != 0) {
+        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        code.push_back(i);
+    } else {
+        result() = sym;
+    }
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
+                                                 SymbolTable &st,
+                                                 std::ostream &es)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(Imop::JUMP);
+    if (m_value) {
+        trueList().push_back(i);
+    } else {
+        falseList().push_back(i);
+    }
+    code.push_back(i);
+    return ICode::OK;
+}
+
+
+/******************************************************************
+  TreeNodeExprInt
+******************************************************************/
+
+std::string TreeNodeExprInt::stringHelper() const {
+    std::ostringstream os;
+    os << m_value;
+    return os.str();
+}
+
+std::string TreeNodeExprInt::xmlHelper() const {
+    std::ostringstream os;
+    os << "value=\"int:" << m_value << "\"";
+    return os.str();
+}
+
+ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
+                                                   std::ostream &)
+{
+    assert(children().empty());
+
+    if (resultType() != 0) {
+        assert(*resultType() != 0);
+        return ICode::OK;
+    }
+
+    resultType() = new (SecreC::Type*);
+    *resultType() = new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_INT);
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprInt::generateCode(ICode::CodeList &code,
+                                            SymbolTable &st,
+                                            std::ostream &es,
+                                            SymbolWithValue *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    SymbolConstantInt *sym = st.constantInt(m_value);
+    if (r != 0) {
+        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        code.push_back(i);
+    } else {
+        result() = sym;
+    }
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprInt::generateBoolCode(ICode::CodeList &,
+                                                SymbolTable &,
+                                                std::ostream &es)
+{
+    es << "Integer as boolean expression not implemented. At "
+       << location() << std::endl;
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+
+/******************************************************************
   TreeNodeExprRVariable
 ******************************************************************/
 
@@ -877,6 +989,65 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
     falseList().push_back(i);
 
     return ICode::OK;
+}
+
+/******************************************************************
+  TreeNodeExprString
+******************************************************************/
+
+std::string TreeNodeExprString::stringHelper() const {
+    std::ostringstream os;
+    os << "\"" << m_value << "\"";
+    return os.str();
+}
+
+std::string TreeNodeExprString::xmlHelper() const {
+    std::ostringstream os;
+    os << "value=\"string:" << xmlEncode(m_value) << "\"";
+    return os.str();
+}
+
+ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
+                                                      std::ostream &)
+{
+    assert(children().empty());
+
+    if (resultType() != 0) {
+        assert(*resultType() != 0);
+        return ICode::OK;
+    }
+
+    resultType() = new (SecreC::Type*);
+    *resultType() = new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_STRING);
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprString::generateCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es,
+                                               SymbolWithValue *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    SymbolConstantString *sym = st.constantString(m_value);
+    if (r != 0) {
+        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        code.push_back(i);
+    } else {
+        result() = sym;
+    }
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprString::generateBoolCode(ICode::CodeList &,
+                                                   SymbolTable &,
+                                                   std::ostream &es)
+{
+    es << "String as boolean expression not implemented. At "
+       << location() << std::endl;
+    return ICode::E_NOT_IMPLEMENTED;
 }
 
 
@@ -1039,6 +1210,66 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
                                             ce3->falseList().end());
 
     return ICode::OK;
+}
+
+
+/******************************************************************
+  TreeNodeExprUInt
+******************************************************************/
+
+std::string TreeNodeExprUInt::stringHelper() const {
+    std::ostringstream os;
+    os << m_value;
+    return os.str();
+}
+
+std::string TreeNodeExprUInt::xmlHelper() const {
+    std::ostringstream os;
+    os << "value=\"uint:" << m_value << "\"";
+    return os.str();
+}
+
+ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
+                                                    std::ostream &)
+{
+    assert(children().empty());
+
+    if (resultType() != 0) {
+        assert(*resultType() != 0);
+        return ICode::OK;
+    }
+
+    resultType() = new (SecreC::Type*);
+    *resultType() = new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_UINT);
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprUInt::generateCode(ICode::CodeList &code,
+                                             SymbolTable &st,
+                                             std::ostream &es,
+                                             SymbolWithValue *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    SymbolConstantUInt *sym = st.constantUInt(m_value);
+    if (r != 0) {
+        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        code.push_back(i);
+    } else {
+        result() = sym;
+    }
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprUInt::generateBoolCode(ICode::CodeList &,
+                                                 SymbolTable &,
+                                                 std::ostream &es)
+{
+    es << "Unsigned int as boolean expression not implemented. At "
+       << location() << std::endl;
+    return ICode::E_NOT_IMPLEMENTED;
 }
 
 
@@ -1242,23 +1473,6 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 
 
 /******************************************************************
-  TreeNodeInt
-******************************************************************/
-
-std::string TreeNodeInt::stringHelper() const {
-    std::ostringstream os;
-    os << m_value;
-    return os.str();
-}
-
-std::string TreeNodeInt::xmlHelper() const {
-    std::ostringstream os;
-    os << "value=\"int:" << m_value << "\"";
-    return os.str();
-}
-
-
-/******************************************************************
   TreeNodeProgram
 ******************************************************************/
 
@@ -1332,22 +1546,6 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-/******************************************************************
-  TreeNodeString
-******************************************************************/
-
-std::string TreeNodeString::stringHelper() const {
-    std::ostringstream os;
-    os << "\"" << m_value << "\"";
-    return os.str();
-}
-
-std::string TreeNodeString::xmlHelper() const {
-    std::ostringstream os;
-    os << "value=\"string:" << xmlEncode(m_value) << "\"";
-    return os.str();
-}
-
 
 /******************************************************************
   TreeNodeTypeType
@@ -1371,23 +1569,6 @@ const SecreC::Type &TreeNodeTypeType::secrecType() const {
 
 std::string TreeNodeTypeType::stringHelper() const {
     return secrecType().toString();
-}
-
-
-/******************************************************************
-  TreeNodeUInt
-******************************************************************/
-
-std::string TreeNodeUInt::stringHelper() const {
-    std::ostringstream os;
-    os << m_value;
-    return os.str();
-}
-
-std::string TreeNodeUInt::xmlHelper() const {
-    std::ostringstream os;
-    os << "value=\"uint:" << m_value << "\"";
-    return os.str();
 }
 
 } // namespace SecreC
