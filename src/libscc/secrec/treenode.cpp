@@ -1,7 +1,6 @@
 #include "secrec/treenode.h"
 
 #include <algorithm>
-#include <iostream>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,6 +182,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_EXPR_LAND:       /* Fall through: */
         case NODE_EXPR_LOR:        /* Fall through: */
             return (TreeNode*) (new SecreC::TreeNodeExprBinary(type, *loc));
+        case NODE_EXPR_TERNIF:
+            return (TreeNode*) (new SecreC::TreeNodeExprTernary(*loc));
         case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
         case NODE_EXPR_ASSIGN_DIV: /* Fall through: */
         case NODE_EXPR_ASSIGN_MOD: /* Fall through: */
@@ -192,10 +193,12 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprAssign(type, *loc));
         case NODE_EXPR_RVARIABLE:
             return (TreeNode*) (new SecreC::TreeNodeExprRVariable(*loc));
-        case NODE_EXPR_TERNIF:
-            return (TreeNode*) (new SecreC::TreeNodeExprTernary(*loc));
+        case NODE_STMT_COMPOUND:
+            return (TreeNode*) (new SecreC::TreeNodeCompound(*loc));
         case NODE_STMT_EXPR:
             return (TreeNode*) (new SecreC::TreeNodeStmtExpr(*loc));
+        case NODE_DECL:
+            return (TreeNode*) (new SecreC::TreeNodeDecl(*loc));
         case NODE_TYPETYPE:
             return (TreeNode*) (new SecreC::TreeNodeTypeType(*loc));
         case NODE_TYPEVOID:
@@ -318,8 +321,16 @@ ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
                                              SymbolTable &st,
                                              std::ostream &es)
 {
-    es << "TODO TreeNodeCompound::generateCode()" << std::endl;
-    return ICode::E_NOT_IMPLEMENTED;
+    typedef ChildrenListConstIterator CLCI;
+
+    for (CLCI it(children().begin()); it != children().end(); it++) {
+        assert(dynamic_cast<TreeNodeCodeable*>((*it).data()) != 0);
+        TreeNodeCodeable *c = static_cast<TreeNodeCodeable*>((*it).data());
+        ICode::Status s = c->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+    }
+
+    return ICode::OK;
 }
 
 /******************************************************************
@@ -388,16 +399,16 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
     TNT *type = static_cast<TNT*>(children().at(1).data());
 
     /// \note Check here for overrides first if new symbol table is needed.
-    SymbolSymbol *s = new SymbolSymbol(type->secrecType(), this);
-    s->setName(id->value());
-    st.appendSymbol(s);
+    SymbolSymbol *ns = new SymbolSymbol(type->secrecType(), this);
+    ns->setName(id->value());
+    st.appendSymbol(ns);
 
-    if (children().size() >= 2) {
+    if (children().size() > 2) {
         TreeNode *t = children().at(2).data();
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
-        ICode::Status s = e->generateCode(code, st, es);
+        ICode::Status s = e->generateCode(code, st, es, ns);
         if (s != ICode::OK) return s;
     }
     return ICode::OK;
@@ -1152,8 +1163,6 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
 {
     es << "TODO TreeNodeFundef::generateCode: Add function to symbol table" << std::endl;
 
-    std::cout << typeName(children().at(2)->type()) << std::endl;
-    /// \bug void main() { public int a; a = 42; } : dynamic cast fails
     assert(dynamic_cast<TreeNodeCodeable*>(children().at(2).data()) != 0);
     TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(children().at(2).data());
     ICode::Status s = body->generateCode(code, st, es);
