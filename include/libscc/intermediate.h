@@ -65,6 +65,7 @@ class Imop {
         explicit inline Imop(Type type, Symbol *dest, Symbol *arg1,
                              Symbol *arg2)
             : m_type(type), m_dest(dest), m_arg1(arg1), m_arg2(arg2) {}
+        virtual ~Imop() { if (m_type == COMMENT) delete (std::string*) m_arg1; }
 
         inline Type    type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
@@ -100,6 +101,9 @@ class ICode {
                 inline iterator end() { return m_list.end(); }
                 inline void push_back(Imop *i) {
                     m_list.push_back(i);
+                }
+                inline void push_comment(const std::string &comment) {
+                    push_back(new Imop(Imop::COMMENT, 0, (Symbol*) new std::string(comment)));
                 }
 
             private: /* Fields: */

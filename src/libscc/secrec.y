@@ -348,7 +348,7 @@ function_parameter_list
 function_parameter
  : type_specifier identifier
    {
-     $$ = treenode_init(NODE_FUNDEF_PARAM, &@$);
+     $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
    }

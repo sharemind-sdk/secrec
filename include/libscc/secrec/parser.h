@@ -30,7 +30,7 @@ enum SecrecTreeNodeType {
     NODE_LITE_UINT        = 0x4,
     NODE_LITE_STRING      = 0x5,
         NODE_LITE_MASK    = 0xf,
-    NODE_EXPR_NONE        = 0x010, /* no expression in statements */
+    NODE_EXPR_NONE        = 0x010, /* void expression          */
     NODE_EXPR_FUNCALL     = 0x020, /* expr(), expr(expr, ...)  */
     NODE_EXPR_WILDCARD    = 0x030, /* expr[*]                  */
     NODE_EXPR_SUBSCRIPT   = 0x040, /* expr[expr]               */
@@ -60,28 +60,27 @@ enum SecrecTreeNodeType {
     NODE_EXPR_ASSIGN      = 0x2c0, /* expr = expr              */
     NODE_EXPR_RVARIABLE   = 0x2d0, /* x (R-value)              */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
-    NODE_STMT_IF        = 0x01000,
-    NODE_STMT_FOR       = 0x02000,
-    NODE_STMT_WHILE     = 0x03000,
-    NODE_STMT_DOWHILE   = 0x04000,
-    NODE_STMT_COMPOUND  = 0x05000,
-    NODE_STMT_RETURN    = 0x06000,
-    NODE_STMT_CONTINUE  = 0x07000,
-    NODE_STMT_BREAK     = 0x08000,
-    NODE_STMT_EXPR      = 0x09000,
-    NODE_DECL           = 0x0a000,
-    NODE_DECL_VSUFFIX   = 0x0b000,
-    NODE_GLOBALS        = 0x0c000,
-    NODE_FUNDEF         = 0x0d000,
-    NODE_FUNDEF_PARAM   = 0x0e000,
-    NODE_FUNDEFS        = 0x0f000,
-    NODE_PROGRAM        = 0x10000,
+    NODE_STMT_IF        = 0x1000,
+    NODE_STMT_FOR       = 0x2000,
+    NODE_STMT_WHILE     = 0x3000,
+    NODE_STMT_DOWHILE   = 0x4000,
+    NODE_STMT_COMPOUND  = 0x5000,
+    NODE_STMT_RETURN    = 0x6000,
+    NODE_STMT_CONTINUE  = 0x7000,
+    NODE_STMT_BREAK     = 0x8000,
+    NODE_STMT_EXPR      = 0x9000,
+    NODE_DECL           = 0xa000,
+    NODE_DECL_VSUFFIX   = 0xb000,
+    NODE_GLOBALS        = 0xc000,
+    NODE_FUNDEF         = 0xd000,
+    NODE_FUNDEFS        = 0xe000,
+    NODE_PROGRAM        = 0xf000,
 
-    NODE_TYPETYPE       = 0x100000,
-    NODE_TYPEVOID       = 0x200000,
-    NODE_DATATYPE_F     = 0x300000,
-    NODE_DATATYPE_ARRAY = 0x400000,
-    NODE_SECTYPE_F      = 0x500000
+    NODE_TYPETYPE       = 0x10000,
+    NODE_TYPEVOID       = 0x20000,
+    NODE_DATATYPE_F     = 0x30000,
+    NODE_DATATYPE_ARRAY = 0x40000,
+    NODE_SECTYPE_F      = 0x50000
 };
 
 enum SecrecSecType { SECTYPE_INVALID = 0x00, SECTYPE_PUBLIC = 0x01,

@@ -7,6 +7,27 @@
 #include "secrec/symboltable.h"
 #include "misc.h"
 
+
+namespace {
+
+void patchList(std::vector<SecreC::Imop*> &list,
+               SecreC::Imop *dest)
+{
+    typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
+    for (IVCI it(list.begin()); it != list.end(); it++) {
+        (*it)->setDest((SecreC::Symbol*) dest);
+    }
+    list.clear();
+}
+
+inline void operator+=(std::vector<SecreC::Imop*> &dest,
+                       const std::vector<SecreC::Imop*> &src)
+{
+    dest.insert(dest.end(), src.begin(), src.end());
+}
+
+} // anonymous namespace
+
 namespace SecreC {
 
 TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
@@ -86,7 +107,6 @@ const char *TreeNode::typeName(Type type) {
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_GLOBALS: return "DECL_GLOBALS";
         case NODE_FUNDEF: return "FUNDEF";
-        case NODE_FUNDEF_PARAM: return "FUNDEF_PARAM";
         case NODE_FUNDEFS: return "FUNDEFS";
         case NODE_PROGRAM: return "PROGRAM";
 
@@ -147,9 +167,9 @@ std::string TreeNode::toXml(bool full) const {
 
 } // namespace SecreC
 
-/*******************************************************************************
+/********************************************************************************************
   C interface for Yacc
-*******************************************************************************/
+********************************************************************************************/
 
 extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
                                           const YYLTYPE *loc)
@@ -197,6 +217,10 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeCompound(*loc));
         case NODE_STMT_EXPR:
             return (TreeNode*) (new SecreC::TreeNodeStmtExpr(*loc));
+        case NODE_STMT_FOR:
+            return (TreeNode*) (new SecreC::TreeNodeStmtFor(*loc));
+        case NODE_STMT_IF:
+            return (TreeNode*) (new SecreC::TreeNodeStmtIf(*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeDecl(*loc));
         case NODE_TYPETYPE:
@@ -302,9 +326,27 @@ std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc) {
 
 namespace SecreC {
 
-/******************************************************************
+
+/*******************************************************************************
+  TreeNodeCodeable
+*******************************************************************************/
+
+void TreeNodeCodeable::patchBreakList(Imop *dest) {
+    patchList(m_breakList, dest);
+}
+
+void TreeNodeCodeable::patchContinueList(Imop *dest) {
+    patchList(m_continueList, dest);
+}
+
+void TreeNodeCodeable::patchNextList(Imop *dest) {
+    patchList(m_nextList, dest);
+}
+
+
+/*******************************************************************************
   TreeNodeCompound
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
                                              SymbolTable &st,
@@ -312,19 +354,30 @@ ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
 {
     typedef ChildrenListConstIterator CLCI;
 
+    TreeNodeCodeable *last = 0;
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert(dynamic_cast<TreeNodeCodeable*>((*it).data()) != 0);
         TreeNodeCodeable *c = static_cast<TreeNodeCodeable*>((*it).data());
         ICode::Status s = c->generateCode(code, st, es);
         if (s != ICode::OK) return s;
+
+        breakList() += const_cast<const TreeNodeCodeable*>(c)->breakList();
+        continueList() += const_cast<const TreeNodeCodeable*>(c)->continueList();
+        if (last != 0) {
+            last->patchNextList(const_cast<const TreeNodeCodeable*>(c)->firstImop());
+        }
+        last = c;
+    }
+    if (last != 0) {
+        nextList() = const_cast<const TreeNodeCodeable*>(last)->nextList();
     }
 
     return ICode::OK;
 }
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeDataTypeArray
-******************************************************************/
+*******************************************************************************/
 
 const DataType &TreeNodeDataTypeArray::dataType() const {
     typedef TreeNodeDataType TNDT;
@@ -352,9 +405,9 @@ std::string TreeNodeDataTypeArray::xmlHelper() const {
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeDataTypeF
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeDataTypeF::stringHelper() const {
     std::ostringstream os;
@@ -368,9 +421,9 @@ std::string TreeNodeDataTypeF::xmlHelper() const {
     return os.str();
 }
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeDecl
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
                                          SymbolTable &st,
@@ -387,11 +440,13 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
     assert(dynamic_cast<TNT*>(children().at(1).data()) != 0);
     TNT *type = static_cast<TNT*>(children().at(1).data());
 
-    /// \note Check here for overrides first if new symbol table is needed.
+    /// \todo Check here for overrides first if new symbol table is needed.
+
+    // First we create the new symbol, but we don't add it to the symbol table:
     SymbolSymbol *ns = new SymbolSymbol(type->secrecType(), this);
     ns->setName(id->value());
-    st.appendSymbol(ns);
 
+    // Secondly we generate code for the initializer:
     if (children().size() > 2) {
         TreeNode *t = children().at(2).data();
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
@@ -400,44 +455,34 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
         ICode::Status s = e->generateCode(code, st, es, ns);
         if (s != ICode::OK) return s;
     }
+
+    // Thirdly we add the symbol to the symbol table for use in expressions:
+    st.appendSymbol(ns);
+
     return ICode::OK;
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExpr
-******************************************************************/
+*******************************************************************************/
 
-namespace {
-
-void patchList(std::vector<SecreC::Imop*> &list,
-               SecreC::Symbol *dest)
-{
-    typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
-    for (IVCI it(list.begin()); it != list.end(); it++) {
-        (*it)->setDest(dest);
-    }
-    list.clear();
-}
-
-} // anonymous namespace
-
-void TreeNodeExpr::patchTrueList(Symbol *dest) {
+void TreeNodeExpr::patchTrueList(Imop *dest) {
     patchList(m_trueList, dest);
 }
 
-void TreeNodeExpr::patchFalseList(Symbol *dest) {
+void TreeNodeExpr::patchFalseList(Imop *dest) {
     patchList(m_falseList, dest);
 }
 
-void TreeNodeExpr::patchNextList(Symbol *dest) {
+void TreeNodeExpr::patchNextList(Imop *dest) {
     patchList(m_nextList, dest);
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExpAssign
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
                                                       std::ostream &es)
@@ -539,8 +584,8 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     code.push_back(i);
 
     // Patch next lists of child expressions:
-    e1->patchNextList(st.label(ce2->firstImop()));
-    e2->patchNextList(st.label(i));
+    e1->patchNextList(ce2->firstImop());
+    e2->patchNextList(i);
 
     return ICode::OK;
 }
@@ -560,9 +605,9 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &code, Symbol
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprBinary
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
                                                       std::ostream &es)
@@ -701,8 +746,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
     code.push_back(i);
 
     // Patch next lists of child expressions:
-    e1->patchNextList(st.label(ce2->firstImop()));
-    e2->patchNextList(st.label(i));
+    e1->patchNextList(ce2->firstImop());
+    e2->patchNextList(i);
 
     return ICode::OK;
 }
@@ -738,23 +783,19 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
 
         // Short circuit the code:
         if (type() == NODE_EXPR_LAND) {
-            e1->patchTrueList(st.label(ce2->firstImop()));
+            e1->patchTrueList(ce2->firstImop());
             falseList() = ce1->falseList();
 
             trueList() = ce2->trueList();
-            falseList().insert(falseList().begin(),
-                               ce2->falseList().begin(),
-                               ce2->falseList().end());
+            falseList() += ce2->falseList();
         } else {
             assert(type() == NODE_EXPR_LOR);
 
-            e1->patchFalseList(st.label(ce2->firstImop()));
+            e1->patchFalseList(ce2->firstImop());
             trueList() = ce1->trueList();
 
             falseList() = ce2->falseList();
-            trueList().insert(trueList().begin(),
-                               ce2->trueList().begin(),
-                               ce2->trueList().end());
+            trueList() += ce2->trueList();
         }
 
         return ICode::OK;
@@ -773,8 +814,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     if (s != ICode::OK) return s;
 
     Imop *tj;
-    e1->patchNextList(st.label(ce2->firstImop()));
-    e2->patchNextList(st.label(tj));
+    e1->patchNextList(ce2->firstImop());
+    e2->patchNextList(tj);
 
     switch (type()) {
         case NODE_EXPR_EQ: tj = new Imop(Imop::JE,  0); break;
@@ -799,9 +840,9 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprBool
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeExprBool::xmlHelper() const {
     std::ostringstream os;
@@ -862,9 +903,9 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprInt
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeExprInt::stringHelper() const {
     std::ostringstream os;
@@ -922,9 +963,9 @@ ICode::Status TreeNodeExprInt::generateBoolCode(ICode::CodeList &,
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprRVariable
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
                                                          std::ostream &es)
@@ -991,9 +1032,9 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprString
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeExprString::stringHelper() const {
     std::ostringstream os;
@@ -1051,9 +1092,9 @@ ICode::Status TreeNodeExprString::generateBoolCode(ICode::CodeList &,
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprTernary
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
                                                        std::ostream &es)
@@ -1155,16 +1196,12 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Link boolean expression code to the rest of the code:
-    e1->patchTrueList(st.label(ce2->firstImop()));
-    e1->patchFalseList(st.label(ce3->firstImop()));
+    e1->patchTrueList(ce2->firstImop());
+    e1->patchFalseList(ce3->firstImop());
 
     // Handle next lists of value child expressions:
-    nextList().insert(nextList().begin(),
-                      ce2->nextList().begin(),
-                      ce2->nextList().end());
-    nextList().insert(nextList().begin(),
-                      ce3->nextList().begin(),
-                      ce3->nextList().end());
+    nextList() += ce2->nextList();
+    nextList() += ce3->nextList();
 
     return ICode::OK;
 }
@@ -1197,25 +1234,21 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Link conditional expression code to the rest of the code:
-    e1->patchTrueList(st.label(ce2->firstImop()));
-    e1->patchFalseList(st.label(ce3->firstImop()));
+    e1->patchTrueList(ce2->firstImop());
+    e1->patchFalseList(ce3->firstImop());
 
-    trueList().insert(trueList().begin(), ce2->trueList().begin(),
-                                          ce2->trueList().end());
-    trueList().insert(trueList().begin(), ce3->trueList().begin(),
-                                          ce3->trueList().end());
-    falseList().insert(falseList().begin(), ce2->falseList().begin(),
-                                            ce2->falseList().end());
-    falseList().insert(falseList().begin(), ce3->falseList().begin(),
-                                            ce3->falseList().end());
+    trueList() += ce2->trueList();
+    trueList() += ce3->trueList();
+    falseList() += ce2->falseList();
+    falseList() += ce3->falseList();
 
     return ICode::OK;
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprUInt
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeExprUInt::stringHelper() const {
     std::ostringstream os;
@@ -1273,9 +1306,9 @@ ICode::Status TreeNodeExprUInt::generateBoolCode(ICode::CodeList &,
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeExprUnary
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
                                                      std::ostream &es)
@@ -1357,7 +1390,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
     code.push_back(i);
 
     // Patch next list of child expression:
-    e->patchNextList(st.label(i));
+    e->patchNextList(i);
 
     return ICode::OK;
 }
@@ -1384,27 +1417,92 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICode::CodeList &code, SymbolT
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeFundef
-******************************************************************/
+*******************************************************************************/
+
+const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
+    if (m_cachedType != 0) return *m_cachedType;
+
+    SecTypeFunctionVoid *st;
+    DataTypeFunctionVoid *dt;
+
+    assert(dynamic_cast<TreeNodeType*>(children().at(1).data()) != 0);
+    TreeNodeType *rt = static_cast<TreeNodeType*>(children().at(1).data());
+
+    if (rt->type() == NODE_TYPEVOID) {
+        assert(rt->secrecType().isVoid());
+        st = new SecTypeFunctionVoid();
+        dt = new DataTypeFunctionVoid();
+    } else {
+        assert(rt->type() == NODE_TYPETYPE);
+        assert(!rt->secrecType().isVoid());
+        assert(dynamic_cast<const TypeNonVoid*>(&rt->secrecType()) != 0);
+        const TypeNonVoid &tt = static_cast<const TypeNonVoid&>(rt->secrecType());
+
+        assert(tt.secType().kind() == SecType::BASIC);
+        assert(tt.dataType().kind() == DataType::BASIC || tt.dataType().kind() == DataType::ARRAY);
+
+        assert(dynamic_cast<const SecTypeBasic*>(&tt.secType()) != 0);
+        const SecTypeBasic &tts = static_cast<const SecTypeBasic&>(tt.secType());
+
+        st = new SecTypeFunction(tts.secType());
+        dt = new DataTypeFunction(tt.dataType());
+    }
+
+    m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
+    delete st;
+    delete dt;
+
+    return *m_cachedType;
+}
 
 ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es)
 {
-    es << "TODO TreeNodeFundef::generateCode: Add function to symbol table" << std::endl;
+    typedef ChildrenListConstIterator CLCI;
 
+    assert(children().size() >= 3);
+    assert(dynamic_cast<const TreeNodeIdentifier*>(children().at(0).data()) != 0);
+    const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(children().at(0).data());
+
+    std::ostringstream os;
+    os << "Start of function: " << id->value();
+    code.push_comment(os.str());
+    os.str("");
+
+    // Add to symbol table:
+    SymbolFunction *ns = new SymbolFunction(this);
+    ns->setName(id->value());
+    st.appendSymbol(ns);
+
+    // Generate local scope:
+    SymbolTable *localScope = st.newScope();
+    if (children().size() > 3) {
+        for (CLCI it(children().begin() + 3); it != children().end(); it++) {
+            assert((*it)->type() == NODE_DECL);
+            assert(dynamic_cast<TreeNodeDecl*>((*it).data()) != 0);
+            ICode::Status s = static_cast<TreeNodeDecl*>((*it).data())->generateCode(code, *localScope, es);
+            if (s != ICode::OK) return s;
+        }
+    }
+
+    // Generate code for function body:
     assert(dynamic_cast<TreeNodeCodeable*>(children().at(2).data()) != 0);
     TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(children().at(2).data());
-    ICode::Status s = body->generateCode(code, st, es);
+    ICode::Status s = body->generateCode(code, *localScope, es);
     if (s != ICode::OK) return s;
 
+    /// \todo The following could be factored out in case of static analysis:
+    os << "End of function: " << id->value();
+    code.push_comment(os.str());
     return ICode::OK;
 }
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeFundefs
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeFundefs::generateCode(ICode::CodeList &code,
                                             SymbolTable &st,
@@ -1416,15 +1514,17 @@ ICode::Status TreeNodeFundefs::generateCode(ICode::CodeList &code,
         assert((*it)->type() == NODE_FUNDEF);
         assert(dynamic_cast<TreeNodeFundef*>((*it).data()) != 0);
         TreeNodeFundef *fundef = static_cast<TreeNodeFundef*>((*it).data());
+
+        // Generate code:
         ICode::Status s = fundef->generateCode(code, st, es);
         if (s != ICode::OK) return s;
     }
     return ICode::OK;
 }
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeGlobals
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
                                             SymbolTable &st,
@@ -1434,6 +1534,7 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
 
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_DECL);
+        assert(dynamic_cast<TreeNodeDecl*>((*it).data()) != 0);
         TreeNodeDecl *decl = static_cast<TreeNodeDecl*>((*it).data());
         ICode::Status s = decl->generateCode(code, st, es);
         if (s != ICode::OK) return s;
@@ -1442,9 +1543,9 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeIdentifier
-******************************************************************/
+*******************************************************************************/
 
 SymbolSymbol *TreeNodeIdentifier::getSymbol(SymbolTable &st, std::ostream &es) const {
     Symbol *s = st.find(m_value);
@@ -1472,49 +1573,74 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeProgram
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es)
 {
-    Imop *mainCall = new Imop(Imop::FUNCALL, 0, 0);
-    code.push_back(mainCall);
-    if (children().size() >= 1) {
-        assert(children().size() < 3);
-
-        TreeNode *child = children().at(0);
-        if (children().size() >= 2) {
-            assert(child->type() == NODE_GLOBALS);
-
-            // Handle global declarations:
-            TreeNodeGlobals *t = static_cast<TreeNodeGlobals*>(child);
-            ICode::Status s = t->generateCode(code, st, es);
-            if (s != ICode::OK) return s;
-
-            child = children().at(1);
-        }
-
-        // Handle functions:
-        assert(child->type() == NODE_FUNDEFS);
-        TreeNodeFundefs *t = static_cast<TreeNodeFundefs*>(child);
-        ICode::Status s = t->generateCode(code, st, es);
-        if (s != ICode::OK) return s;
-
-        // Handle calling main():
-        /// \todo
-        return s;
-    } else {
+    if (children().empty()) {
+        es << "Program is empty" << std::endl;
         return ICode::E_EMPTY_PROGRAM;
     }
+
+    assert(children().size() < 3);
+
+    TreeNodeFundefs *fs;
+
+    /**
+      \todo In contrast with grammar we don't allow mixed declarations of
+            variables and functions in global scope.
+    */
+
+    // Handle global declarations:
+    if (children().size() == 2) {
+        code.push_comment("Start of global declarations:");
+        assert(children().at(0)->type() == NODE_GLOBALS);
+        assert(dynamic_cast<TreeNodeGlobals*>(children().at(0).data()) != 0);
+        TreeNodeGlobals *gs = static_cast<TreeNodeGlobals*>(children().at(0).data());
+
+        ICode::Status s = gs->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+        code.push_comment("End of global declarations.");
+
+        assert(children().at(1)->type() == NODE_FUNDEFS);
+        assert(dynamic_cast<TreeNodeFundefs*>(children().at(1).data()) != 0);
+        fs = static_cast<TreeNodeFundefs*>(children().at(1).data());
+    } else {
+        assert(children().at(0)->type() == NODE_FUNDEFS);
+        assert(dynamic_cast<TreeNodeFundefs*>(children().at(0).data()) != 0);
+        fs = static_cast<TreeNodeFundefs*>(children().at(0).data());
+    }
+
+    // Insert main call into the beginning of the program:
+    Imop *mainCall = new Imop(Imop::FUNCALL, 0, 0);
+    code.push_back(mainCall);
+    code.push_back(new Imop(Imop::END));
+
+    // Handle functions:
+    ICode::Status s = fs->generateCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    // Check for "void main()":
+    Symbol *mainFun = st.find("main");
+    if (mainFun == 0 || mainFun->symbolType() != Symbol::FUNCTION) {
+        es << "No function \"void main()\" found!" << std::endl;
+        return ICode::E_NO_MAIN;
+    }
+
+    // Bind call to main(), i.e. mainCall:
+    mainCall->setArg1(mainFun);
+
+    return ICode::OK;
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeSecTypeF
-******************************************************************/
+*******************************************************************************/
 
 std::string TreeNodeSecTypeF::stringHelper() const {
     std::ostringstream os;
@@ -1529,9 +1655,9 @@ std::string TreeNodeSecTypeF::xmlHelper() const {
 }
 
 
-/******************************************************************
+/*******************************************************************************
   TreeNodeStmtExpr
-******************************************************************/
+*******************************************************************************/
 
 ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -1547,9 +1673,104 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
 }
 
 
-/******************************************************************
+/*******************************************************************************
+  TreeNodeStmtFor
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
+                                            SymbolTable &st,
+                                            std::ostream &es)
+{
+    assert(children().size() == 4);
+    TreeNode *c0 = children().at(0);
+    TreeNode *c1 = children().at(1);
+    TreeNode *c2 = children().at(2);
+    TreeNode *c3 = children().at(3);
+    assert((c0->type() & NODE_EXPR_MASK) != 0);
+    assert((c1->type() & NODE_EXPR_MASK) != 0);
+    assert((c2->type() & NODE_EXPR_MASK) != 0);
+
+    // Initialization expression:
+    TreeNodeExpr *e0 = 0;
+    if (children().at(0)->type() != NODE_EXPR_NONE) {
+        assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
+        e0 = static_cast<TreeNodeExpr*>(c0);
+        ICode::Status s = e0->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+        firstImop() = const_cast<const TreeNodeExpr*>(e0)->firstImop();
+    }
+
+    // Conditional expression:
+    TreeNodeExpr *e1 = 0;
+    if (children().at(1)->type() != NODE_EXPR_NONE) {
+        assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
+        e1 = static_cast<TreeNodeExpr*>(c1);
+        ICode::Status s = e1->generateBoolCode(code, st, es);
+        if (s != ICode::OK) return s;
+        if (firstImop() == 0) {
+            firstImop() = const_cast<const TreeNodeExpr*>(e1)->firstImop();
+        }
+        nextList() += const_cast<const TreeNodeExpr*>(e1)->falseList();
+    }
+
+    // Loop body:
+    assert(dynamic_cast<TreeNodeCodeable*>(c3) != 0);
+    TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(c3);
+    ICode::Status s = body->generateCode(code, *(st.newScope()), es);
+    if (s != ICode::OK) return s;
+    if (firstImop() == 0) {
+        firstImop() = const_cast<const TreeNodeCodeable*>(body)->firstImop();
+    }
+    if (e1 != 0) e1->patchTrueList(const_cast<const TreeNodeCodeable*>(body)->firstImop());
+    nextList() += const_cast<const TreeNodeCodeable*>(body)->breakList();
+
+    // Iteration expression:
+    TreeNodeExpr *e2 = 0;
+    if (children().at(2)->type() != NODE_EXPR_NONE) {
+        assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
+        e2 = static_cast<TreeNodeExpr*>(c2);
+        ICode::Status s = e2->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+        body->patchContinueList(const_cast<const TreeNodeExpr*>(e2)->firstImop());
+        body->patchNextList(const_cast<const TreeNodeExpr*>(e2)->firstImop());
+    } else {
+        if (e1 != 0) {
+            body->patchContinueList(const_cast<const TreeNodeExpr*>(e1)->firstImop());
+            body->patchNextList(const_cast<const TreeNodeExpr*>(e1)->firstImop());
+        } else {
+            body->patchContinueList(const_cast<const TreeNodeCodeable*>(body)->firstImop());
+            body->patchNextList(const_cast<const TreeNodeCodeable*>(body)->firstImop());
+        }
+    }
+
+    // Next iteration jump:
+    Imop *j = new Imop(Imop::JUMP);
+    if (e1 != 0) {
+        j->setDest((SecreC::Symbol*) const_cast<const TreeNodeExpr*>(e1)->firstImop());
+    } else {
+        j->setDest((SecreC::Symbol*) const_cast<const TreeNodeCodeable*>(body)->firstImop());
+    }
+    code.push_back(j);
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtIf
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es)
+{
+    es << "if statement not yet implemented.";
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+/*******************************************************************************
   TreeNodeTypeType
-******************************************************************/
+*******************************************************************************/
 
 const SecreC::Type &TreeNodeTypeType::secrecType() const {
     typedef TreeNodeDataType TNDT;

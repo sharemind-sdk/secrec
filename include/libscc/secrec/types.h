@@ -62,31 +62,46 @@ class SecTypeBasic: public SecType {
         SecrecSecType m_secType;
 };
 
-class SecTypeFunction: public SecType {
+class SecTypeFunctionVoid: public SecType {
+    public: /* Methods: */
+        SecTypeFunctionVoid()
+            : SecType(SecType::FUNCTION) {}
+        explicit SecTypeFunctionVoid(const SecTypeFunctionVoid &copy)
+            : SecType(copy), m_params(copy.m_params) {}
+        virtual ~SecTypeFunctionVoid() {}
+
+        void addParamType(SecrecSecType secType) {
+            m_params.push_back(secType);
+        }
+        inline const std::vector<SecrecSecType> &paramTypes() const {
+            return m_params;
+        }
+
+        virtual SecType *clone() const { return new SecTypeFunctionVoid(*this); }
+        virtual std::string toString() const;
+        virtual bool operator==(const SecType &other);
+
+    private: /* Fields: */
+        std::vector<SecrecSecType> m_params;
+};
+
+class SecTypeFunction: public SecTypeFunctionVoid {
     public: /* Methods: */
         SecTypeFunction()
-            : SecType(SecType::FUNCTION), m_returnSecType(SECTYPE_INVALID) {}
+            : m_returnSecType(SECTYPE_INVALID) {}
         explicit SecTypeFunction(SecrecSecType secType)
-            : SecType(SecType::FUNCTION), m_returnSecType(secType) {}
+            : m_returnSecType(secType) {}
         explicit SecTypeFunction(const SecTypeFunction &copy)
-            : SecType(copy), m_returnSecType(copy.m_returnSecType),
-              m_paramSecTypes(copy.m_paramSecTypes) {}
+            : SecTypeFunctionVoid(copy), m_returnSecType(copy.m_returnSecType) {}
 
-        void appendParamSecType(SecrecSecType secType) {
-            m_paramSecTypes.push_back(secType);
-        }
         inline SecrecSecType returnSecType() const { return m_returnSecType; }
-        inline const std::vector<SecrecSecType> &paramSecTypes() const {
-            return m_paramSecTypes;
-        }
 
         virtual SecType *clone() const { return new SecTypeFunction(*this); }
         virtual std::string toString() const;
-        virtual inline bool operator==(const SecType &other);
+        virtual bool operator==(const SecType &other);
 
     private: /* Fields: */
         SecrecSecType              m_returnSecType;
-        std::vector<SecrecSecType> m_paramSecTypes;
 };
 
 
@@ -99,9 +114,9 @@ class DataType {
         enum Kind { BASIC, VAR, ARRAY, FUNCTION };
 
     public: /* Methods: */
-        DataType(Kind kind)
+        explicit DataType(Kind kind)
             : m_kind(kind) {}
-        DataType(const DataType &other)
+        explicit DataType(const DataType &other)
             : m_kind(other.m_kind) {}
 
         inline Kind kind() const { return m_kind; }
@@ -166,7 +181,7 @@ class DataTypeArray: public DataType {
         {
             assert(itemType.kind() == DataType::BASIC || itemType.kind() == DataType::ARRAY);
         }
-        DataTypeArray(const DataTypeArray &copy)
+        explicit DataTypeArray(const DataTypeArray &copy)
             : DataType(copy), m_itemType(copy.m_itemType),
               m_size(copy.m_size) {}
         inline ~DataTypeArray() { delete m_itemType; }
@@ -188,25 +203,42 @@ class DataTypeArray: public DataType {
         unsigned m_size;
 };
 
-class DataTypeFunction: public DataType {
+class DataTypeFunctionVoid: public DataType {
     public: /* Methods: */
-        DataTypeFunction(const DataType &returnType)
-            : DataType(DataType::FUNCTION), m_ret(returnType.clone()) {}
-        DataTypeFunction(const DataTypeFunction &copy);
-        virtual ~DataTypeFunction();
+        DataTypeFunctionVoid()
+            : DataType(DataType::FUNCTION) {}
+        explicit DataTypeFunctionVoid(const DataTypeFunctionVoid &copy);
+        virtual ~DataTypeFunctionVoid();
 
-        virtual inline DataType *clone() const { return new DataTypeFunction(*this); }
+        virtual inline DataType *clone() const { return new DataTypeFunctionVoid(*this); }
         virtual std::string toString() const;
 
         inline void addParamType(const DataType &paramType) { m_params.push_back(paramType.clone()); }
         inline const std::vector<DataType*> &paramTypes() const { return m_params; }
-        inline const DataType &returnType() const { return *m_ret; }
 
         virtual bool operator==(const DataType &other) const;
 
     private: /* Fields: */
         std::vector<DataType*> m_params;
-        DataType              *m_ret;
+};
+
+class DataTypeFunction: public DataTypeFunctionVoid {
+    public: /* Methods: */
+        explicit DataTypeFunction(const DataType &returnType)
+            : m_ret(returnType.clone()) {}
+        explicit DataTypeFunction(const DataTypeFunction &copy)
+            : DataTypeFunctionVoid(copy), m_ret(copy.m_ret->clone()) {}
+        virtual inline ~DataTypeFunction() { delete m_ret; }
+
+        virtual inline DataType *clone() const { return new DataTypeFunction(*this); }
+        virtual std::string toString() const;
+
+        inline const DataType &returnType() const { return *m_ret; }
+
+        virtual bool operator==(const DataType &other) const;
+
+    private: /* Fields: */
+        const DataType *m_ret;
 };
 
 

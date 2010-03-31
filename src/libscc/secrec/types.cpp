@@ -49,8 +49,91 @@ std::string DataTypeArray::toString() const {
     return os.str();
 }
 
-DataTypeFunction::DataTypeFunction(const DataTypeFunction &copy)
-    : DataType(copy), m_ret(copy.m_ret->clone())
+
+/*******************************************************************************
+  SecTypeFunctionVoid
+*******************************************************************************/
+
+std::string SecTypeFunctionVoid::toString() const {
+    typedef std::vector<SecrecSecType>::const_iterator SVCI;
+
+    std::ostringstream os;
+    os << "(";
+    if (m_params.size() > 0) {
+        os << m_params.at(0);
+        if (m_params.size() > 1) {
+            for (SVCI it(++(m_params.begin())); it != m_params.end(); it++) {
+                os << ", " << (*it);
+            }
+        }
+    }
+    os << ") -> void";
+    return os.str();
+}
+
+inline bool SecTypeFunctionVoid::operator==(const SecType &other) {
+    typedef std::vector<SecrecSecType>::const_iterator SVCI;
+
+    if (!SecType::operator==(other)) return false;
+    assert(dynamic_cast<const SecTypeFunctionVoid*>(&other) != 0);
+    const SecTypeFunctionVoid &o(static_cast<const SecTypeFunctionVoid&>(other));
+
+    if (m_params.size() != o.m_params.size()) return false;
+
+    SVCI it(m_params.begin());
+    SVCI jt(m_params.begin());
+    for (; it != m_params.end(); it++, jt++) {
+        if (*it != *jt) return false;
+    }
+    return true;
+}
+
+
+/*******************************************************************************
+  SecTypeFunction
+*******************************************************************************/
+
+std::string SecTypeFunction::toString() const {
+    typedef std::vector<SecrecSecType>::const_iterator SVCI;
+
+    std::ostringstream os;
+    os << "(";
+    if (paramTypes().size() > 0) {
+        os << paramTypes().at(0);
+        if (paramTypes().size() > 1) {
+            for (SVCI it(++(paramTypes().begin())); it != paramTypes().end(); it++) {
+                os << ", " << (*it);
+            }
+        }
+    }
+    os << ") -> void";
+    return os.str();
+}
+
+inline bool SecTypeFunction::operator==(const SecType &other) {
+    typedef std::vector<SecrecSecType>::const_iterator SVCI;
+
+    if (!SecType::operator==(other)) return false;
+    assert(dynamic_cast<const SecTypeFunctionVoid*>(&other) != 0);
+    const SecTypeFunctionVoid &o(static_cast<const SecTypeFunctionVoid&>(other));
+
+    if (paramTypes().size() != o.paramTypes().size()) return false;
+
+    SVCI it(paramTypes().begin());
+    SVCI jt(paramTypes().begin());
+    for (; it != paramTypes().end(); it++, jt++) {
+        if (*it != *jt) return false;
+    }
+    return true;
+}
+
+
+/*******************************************************************************
+  DataTypeFunctionVoid
+*******************************************************************************/
+
+DataTypeFunctionVoid::DataTypeFunctionVoid(const DataTypeFunctionVoid &copy)
+    : DataType(copy)
 {
     typedef std::vector<DataType*>::const_iterator TVCI;
     for (TVCI it(copy.m_params.begin()); it != copy.m_params.end(); it++) {
@@ -58,21 +141,18 @@ DataTypeFunction::DataTypeFunction(const DataTypeFunction &copy)
     }
 }
 
-DataTypeFunction::~DataTypeFunction() {
+DataTypeFunctionVoid::~DataTypeFunctionVoid() {
     typedef std::vector<DataType*>::const_iterator TVCI;
     for (TVCI it(m_params.begin()); it != m_params.end(); it++) {
         delete (*it);
     }
-    delete m_ret;
 }
 
-std::string DataTypeFunction::toString() const {
+std::string DataTypeFunctionVoid::toString() const {
     typedef std::vector<DataType*>::const_iterator TVCI;
 
-    assert(m_ret != 0);
-
-    std::ostringstream os(m_ret->toString());
-    os << " (";
+    std::ostringstream os;
+    os << "(";
     if (m_params.size() > 0) {
         os << *(m_params.at(0));
         if (m_params.size() > 1) {
@@ -81,19 +161,18 @@ std::string DataTypeFunction::toString() const {
             }
         }
     }
-    os << ")";
+    os << ") -> void";
     return os.str();
 }
 
-bool DataTypeFunction::operator==(const DataType &other) const {
+bool DataTypeFunctionVoid::operator==(const DataType &other) const {
     typedef std::vector<DataType*>::const_iterator TVCI;
 
     if (!DataType::operator==(other)) return false;
-    assert(dynamic_cast<const DataTypeFunction*>(&other) != 0);
-    const DataTypeFunction &o(static_cast<const DataTypeFunction&>(other));
+    assert(dynamic_cast<const DataTypeFunctionVoid*>(&other) != 0);
+    const DataTypeFunctionVoid &o(static_cast<const DataTypeFunctionVoid&>(other));
 
     if (m_params.size() != o.m_params.size()) return false;
-    if (*m_ret != *o.m_ret) return false;
 
     TVCI it(m_params.begin());
     TVCI jt(m_params.begin());
@@ -102,6 +181,43 @@ bool DataTypeFunction::operator==(const DataType &other) const {
     }
     return true;
 }
+
+
+/*******************************************************************************
+  DataTypeFunction
+*******************************************************************************/
+
+std::string DataTypeFunction::toString() const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
+
+    std::ostringstream os;
+    os << "(";
+    if (paramTypes().size() > 0) {
+        os << *(paramTypes().at(0));
+        if (paramTypes().size() > 1) {
+            for (TVCI it(++(paramTypes().begin())); it != paramTypes().end(); it++) {
+                os << ", " << (**it);
+            }
+        }
+    }
+    os << ") -> " << *m_ret;
+    return os.str();
+}
+
+bool DataTypeFunction::operator==(const DataType &other) const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
+
+    if (!DataTypeFunctionVoid::operator==(other)) return false;
+    assert(dynamic_cast<const DataTypeFunction*>(&other) != 0);
+    const DataTypeFunction &o(static_cast<const DataTypeFunction&>(other));
+
+    return *m_ret == *o.m_ret;
+}
+
+
+/*******************************************************************************
+  TypeNonVoid
+*******************************************************************************/
 
 TypeNonVoid::TypeNonVoid(const SecType &secType,
                          const DataType &dataType)
@@ -160,6 +276,10 @@ std::string TypeNonVoid::toString() const {
 
 } // namespace SecreC
 
+
+/*******************************************************************************
+  Global functions
+*******************************************************************************/
 
 std::ostream &operator<<(std::ostream &out, const SecrecSecType &type) {
     out << SecrecFundSecTypeToString(type);

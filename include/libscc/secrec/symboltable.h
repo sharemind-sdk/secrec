@@ -8,10 +8,11 @@ namespace SecreC {
 
 class Imop;
 class TreeNodeDecl;
+class TreeNodeFundef;
 
 class Symbol {
     public: /* Types: */
-        enum Type { COMMENT, FUNCTION, CONSTANT, SYMBOL, TEMPORARY, LABEL };
+        enum Type { FUNCTION, CONSTANT, SYMBOL, TEMPORARY };
 
     public: /* Methods: */
         explicit inline Symbol(Type symbolType)
@@ -25,17 +26,6 @@ class Symbol {
     private: /* Fields: */
         const Type  m_symbolType;
         std::string m_name;
-};
-
-class SymbolComment: public Symbol {
-    public: /* Methods: */
-        explicit inline SymbolComment(const std::string &comment)
-            : Symbol(Symbol::COMMENT), m_comment(comment) {}
-
-        const std::string &comment() const { return m_comment; }
-
-    private: /* Fields: */
-        std::string m_comment;
 };
 
 class SymbolWithValue: public Symbol {
@@ -67,6 +57,19 @@ class SymbolSymbol: public SymbolWithValue {
     private: /* Fields: */
         const TreeNodeDecl *m_decl;
         ScopeType           m_scopeType;
+};
+
+class SymbolFunction: public SymbolWithValue {
+    public: /* Methods: */
+        SymbolFunction(const TreeNodeFundef *fundef);
+
+        inline const TreeNodeFundef *decl() const { return m_decl; }
+        inline const Imop *target() const { return m_target; }
+        inline void setTarget(const Imop *target) { m_target = target; }
+
+    private: /* Fields: */
+        const TreeNodeFundef *m_decl;
+        const Imop           *m_target;
 };
 
 class SymbolConstantBool: public SymbolWithValue {
@@ -113,16 +116,6 @@ class SymbolConstantString: public SymbolWithValue {
         const std::string m_value;
 };
 
-class SymbolLabel: public Symbol {
-    public: /* Methods: */
-        SymbolLabel(const Imop *target)
-            : Symbol(Symbol::LABEL), m_target(target) {}
-        inline const Imop *target() const { return m_target; }
-
-    private: /* Fields: */
-        const Imop *m_target;
-};
-
 class SymbolTable {
     private: /* Types: */
         typedef std::vector<Symbol*> Table;
@@ -133,8 +126,6 @@ class SymbolTable {
 
         void appendSymbol(Symbol *symbol);
         SymbolWithValue *appendTemporary(const Type &type);
-        SymbolLabel *label(const Imop *imop);
-        SymbolComment *comment(const std::string &comment);
         SymbolConstantBool *constantBool(bool value);
         SymbolConstantInt *constantInt(int value);
         SymbolConstantUInt *constantUInt(unsigned value);

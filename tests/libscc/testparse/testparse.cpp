@@ -194,15 +194,15 @@ void TestParse::testParseProgram_data() {
         << QString("void myfunction(private int i){}")
         << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
                        XID("myfunction") XTYPEVOID XSCE
-                       XB("FUNDEF_PARAM", XID("i") XSIMPLETYPE("private", "int"))
+                       XB("DECL", XID("i") XSIMPLETYPE("private", "int"))
                   ));
 
     QTest::newRow("functionWithParams")
         << QString("void myfunction(private int i, public bool j){}")
         << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
                        XID("myfunction") XTYPEVOID XSCE
-                       XB("FUNDEF_PARAM", XID("i") XSIMPLETYPE("private", "int"))
-                       XB("FUNDEF_PARAM", XID("j") XSIMPLETYPE("public", "bool"))
+                       XB("DECL", XID("i") XSIMPLETYPE("private", "int"))
+                       XB("DECL", XID("j") XSIMPLETYPE("public", "bool"))
                   ));
 }
 

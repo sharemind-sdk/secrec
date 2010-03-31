@@ -8,7 +8,6 @@ SOURCES = \
     intermediate.cpp \
     misc.cpp \
     secrec/symboltable.cpp \
-    secrec/tnsymbols.cpp \
     secrec/treenode.cpp \
     secrec/types.cpp
 
@@ -23,7 +22,6 @@ HEADERS = \
     ../../include/libscc/sccpointer.h \
     ../../include/libscc/secrec/parser.h \
     ../../include/libscc/secrec/symboltable.h \
-    ../../include/libscc/secrec/tnsymbols.h \
     ../../include/libscc/secrec/treenode.h \
     ../../include/libscc/secrec/types.h
 

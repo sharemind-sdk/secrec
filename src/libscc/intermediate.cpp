@@ -112,8 +112,13 @@ std::string Imop::toString() const {
             } else {       /* RETURN arg1;                       */
                 os << "RETURN " << a1name;
             }
+            break;
         case END:          /* END PROGRAM                        */
-            os << "END PROGRAM";
+            os << "END";
+            break;
+        case COMMENT:      /* // arg1                            */
+            os << "// " << *((std::string*) m_arg1);
+            break;
         default:
             os << "TODO";
     }
@@ -134,7 +139,7 @@ ICode::ICode(TreeNodeProgram *program) {
 
 std::ostream &operator<<(std::ostream &out, const SecreC::Imop &i) {
     (void) i;
-    out << i.toString() << std::endl;
+    out << i.toString();
     return out;
 }
 
@@ -163,7 +168,7 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICode::CodeList &c) {
 }
 
 std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode) {
-    out << "ICode:" << icode.status() << std::endl;
+    out << "ICode status: " << icode.status() << std::endl;
     // if (icode.status() == SecreC::ICode::OK) {
         out << "ICode symbols:"  << std::endl << icode.symbols()  << std::endl
             << "ICode code:"     << std::endl << icode.code()     << std::endl
