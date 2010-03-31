@@ -8,15 +8,17 @@
 namespace SecreC {
 
 class TreeNode;
+class TreeNodeDecl;
 class TreeNodeIdentifier;
+class TreeNodeProgram;
 
 class TNSymbols {
     private: /* types*/
-        typedef std::map<std::string,const TreeNode*> DECLS;
+        typedef std::map<std::string,const TreeNodeDecl*> DECLS;
         typedef std::map<const TreeNodeIdentifier*,const TreeNode*> TNMAP;
 
     public: /* methods */
-        explicit TNSymbols(const TreeNode *program);
+        explicit TNSymbols(const TreeNodeProgram *program);
 
         const TreeNode *symbol(const TreeNodeIdentifier *id) const;
         inline const std::vector<const TreeNodeIdentifier*> &unresolved() const {
@@ -24,10 +26,10 @@ class TNSymbols {
         }
 
     private: /* methods */
-        void initSymbolMap(const TreeNode *program);
+        void initSymbolMap(const TreeNodeProgram *program);
         void initSymbolMap(const DECLS &current, const TreeNode *node);
         void addRef(const TreeNodeIdentifier *n, const TreeNode *decl);
-        static void addDecl(DECLS &ds, const TreeNode *decl);
+        static void addDecl(DECLS &ds, const TreeNodeDecl *decl);
 
     private: /* fields */
         TNMAP                        m_symbolMap;

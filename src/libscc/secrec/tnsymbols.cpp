@@ -7,7 +7,7 @@
 
 namespace SecreC {
 
-TNSymbols::TNSymbols(const TreeNode *program) {
+TNSymbols::TNSymbols(const TreeNodeProgram *program) {
     assert(program != 0);
     initSymbolMap(program);
 }
@@ -17,64 +17,75 @@ const TreeNode *TNSymbols::symbol(const TreeNodeIdentifier *id) const {
     return (it != m_symbolMap.end() ? (*it).second : 0);
 }
 
-void TNSymbols::initSymbolMap(const TreeNode *p) {
+void TNSymbols::initSymbolMap(const TreeNodeProgram *p) {
     typedef std::deque<SccPointer<TreeNode> >::const_iterator TDCI;
 
-    DECLS ds;
+    DECLS globalScope;
 
     assert(p->type() == NODE_PROGRAM);
     assert(m_symbolMap.size() == 0);
-    const TreeNode *fs;
+    const TreeNodeFundefs *fs;
+
+    assert(p->children().size() == 1 || p->children().size() == 2);
 
     // Check for global declarations:
-    assert(p->children().size() == 1 || p->children().size() == 2);
     if (p->children().size() > 1) {
-        fs = p->children().at(0);
+        assert(dynamic_cast<const TreeNodeGlobals*>(p->children().at(0).data()) != 0);
+        const TreeNodeGlobals *gs = static_cast<const TreeNodeGlobals*>(p->children().at(0).data());
 
         // Handle global declarations:
-        const std::deque<SccPointer<TreeNode> > &gds = fs->children();
+        const std::deque<SccPointer<TreeNode> > &gds = gs->children();
         for (TDCI it = gds.begin(); it != gds.end(); it++) {
-            const TreeNode *decl = (*it);
+            assert(dynamic_cast<const TreeNodeDecl*>((*it).data()) != 0);
+            const TreeNodeDecl *decl = static_cast<const TreeNodeDecl*>((*it).data());
             assert(decl->children().size() > 1 && decl->children().size() < 4);
 
+            // First link the identifiers in the initializer/vector suffix:
             if (decl->children().size() == 3) {
                 /*
                   1    0            2
                   type identifier = initializer;
                   type identifier   [vector][suffix];
                 */
-                initSymbolMap(ds, decl->children().at(2));
+                initSymbolMap(globalScope, decl->children().at(2));
             }
 
-            addDecl(ds, decl);
+            // Secondly add the global declaration:
+            addDecl(globalScope, decl);
         }
 
-        fs = p->children().at(1);
+        assert(dynamic_cast<const TreeNodeFundefs*>(p->children().at(1).data()) != 0);
+        fs = static_cast<const TreeNodeFundefs*>(p->children().at(1).data());
     } else {
-        fs = p->children().at(0);
+        assert(dynamic_cast<const TreeNodeFundefs*>(p->children().at(0).data()) != 0);
+        fs = static_cast<const TreeNodeFundefs*>(p->children().at(0).data());
     }
 
-    // Handle global functions:
+    // Handle global functions
     for (TDCI it = fs->children().begin(); it != fs->children().end(); it++) {
-        // Register names of each function:
-        addDecl(ds, *it);
+        // First we register the names of all functions:
+        /// \todo Warn, if a globals with identical names already exist
+        assert(dynamic_cast<const TreeNodeDecl*>((*it).data()) != 0);
+        addDecl(globalScope, static_cast<const TreeNodeDecl*>((*it).data()));
     }
     for (TDCI it = fs->children().begin(); it != fs->children().end(); it++) {
         // Handle symbols of each function individually:
-        const TreeNode *f = *it;
+        assert(dynamic_cast<const TreeNodeFundef*>((*it).data()));
+        const TreeNodeFundef *f = static_cast<const TreeNodeFundef*>((*it).data());
 
         assert(f->children().size() >= 3);
         if (f->children().size() == 3) {
             // Function has no parameters
-            initSymbolMap(ds, f->children().at(2));
+            initSymbolMap(globalScope, f->children().at(2));
         } else {
             // Function has parameters
-            DECLS nds(ds);
+            DECLS functionScope(globalScope);
             const std::deque<SccPointer<TreeNode> > &fc = f->children();
             for (TDCI it = fc.begin() + 3; it != fc.end(); it++) {
-                addDecl(nds, *it);
+                assert(dynamic_cast<TreeNodeDecl*>((*it).data()) != 0);
+                addDecl(functionScope, static_cast<TreeNodeDecl*>((*it).data()));
             }
-            initSymbolMap(nds, f->children().at(2));
+            initSymbolMap(functionScope, f->children().at(2));
         }
     }
 }
@@ -82,7 +93,7 @@ void TNSymbols::initSymbolMap(const TreeNode *p) {
 void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
     typedef std::deque<SccPointer<TreeNode> >::const_reverse_iterator TDCRI;
 
-    DECLS ds(current);
+    DECLS localScope(current);
 
     std::stack<const TreeNode*> s; // Tree nodes appearing in order
 
@@ -107,7 +118,7 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
 
         switch (n->type()) {
             case NODE_STMT_COMPOUND:
-                initSymbolMap(ds, n);
+                initSymbolMap(localScope, n);
                 break;
             case NODE_DECL:
                 assert(n->children().size() > 1 && n->children().size() < 4);
@@ -117,20 +128,21 @@ void TNSymbols::initSymbolMap(const DECLS &current, const TreeNode *node) {
                   declaration only has effect on the following nodes.
                 */
 
-                /**
-                  \note Currently we allow stuff like "public int a = a;"
-                */
-                addDecl(ds, n);
+                // First link the identifiers in the initializer/vector suffix:
                 if (n->children().size() == 3) {
-                    s.push(n->children().at(2));
+                    initSymbolMap(localScope, n->children().at(2));
                 }
+
+                // Secondly add the declaration to the local scope:
+                assert(dynamic_cast<const TreeNodeDecl*>(n) != 0);
+                addDecl(localScope, static_cast<const TreeNodeDecl*>(n));
                 break;
             case NODE_IDENTIFIER:
             {
                 assert(dynamic_cast<const TreeNodeIdentifier*>(n) != 0);
                 const TreeNodeIdentifier* in = static_cast<const TreeNodeIdentifier*>(n);
-                DECLS::const_iterator it = ds.find(in->value());
-                addRef(in, (it != ds.end() ? (*it).second : 0));
+                DECLS::const_iterator it = localScope.find(in->value());
+                addRef(in, (it != localScope.end() ? (*it).second : 0));
                 break;
             }
             default:
@@ -153,7 +165,7 @@ void TNSymbols::addRef(const TreeNodeIdentifier *n, const TreeNode *decl) {
     m_symbolMap[n] = decl;
 }
 
-void TNSymbols::addDecl(DECLS &ds, const TreeNode *decl) {
+void TNSymbols::addDecl(DECLS &ds, const TreeNodeDecl *decl) {
     assert(dynamic_cast<const TreeNodeIdentifier*>(decl->children().at(0).data()) != 0);
     const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(decl->children().at(0).data());
     ds[id->value()] = decl;
