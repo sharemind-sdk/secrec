@@ -266,6 +266,11 @@ TypeNonVoid::TypeNonVoid(SecrecSecType secType,
     }
 }
 
+TypeNonVoid::~TypeNonVoid() {
+    delete m_secType;
+    delete m_dataType;
+}
+
 std::string TypeNonVoid::toString() const {
     assert(m_secType != 0);
     assert(m_dataType != 0);

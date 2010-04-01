@@ -542,6 +542,7 @@ class TreeNodeFundef: public TreeNodeCodeable {
     public: /* Methods: */
         explicit TreeNodeFundef(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_FUNDEF, loc), m_cachedType(0) {}
+        virtual inline ~TreeNodeFundef() { delete m_cachedType; }
 
         const SecreC::TypeNonVoid &functionType() const;
 

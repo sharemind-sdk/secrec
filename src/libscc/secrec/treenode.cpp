@@ -37,7 +37,10 @@ TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
 }
 
 TreeNode::~TreeNode() {
-
+    typedef ChildrenListConstIterator CLCI;
+    for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
+        delete *it;
+    }
 }
 
 void TreeNode::appendChild(TreeNode *child, bool reparent) {

@@ -27,6 +27,7 @@ class SecType {
             : m_kind(kind) {}
         explicit SecType(const SecType &copy)
             : m_kind(copy.m_kind) {}
+        virtual inline ~SecType() {}
 
         inline bool kind() const { return m_kind; }
 
@@ -68,7 +69,7 @@ class SecTypeFunctionVoid: public SecType {
             : SecType(SecType::FUNCTION) {}
         explicit SecTypeFunctionVoid(const SecTypeFunctionVoid &copy)
             : SecType(copy), m_params(copy.m_params) {}
-        virtual ~SecTypeFunctionVoid() {}
+        virtual inline ~SecTypeFunctionVoid() {};
 
         void addParamType(SecrecSecType secType) {
             m_params.push_back(secType);
@@ -118,6 +119,7 @@ class DataType {
             : m_kind(kind) {}
         explicit DataType(const DataType &other)
             : m_kind(other.m_kind) {}
+        virtual inline ~DataType() {};
 
         inline Kind kind() const { return m_kind; }
 
@@ -252,6 +254,7 @@ class Type {
             : m_isVoid(isVoid) {}
         explicit inline Type(const Type &copy)
             : m_isVoid(copy.m_isVoid) {}
+        virtual inline ~Type() {}
 
         inline bool isVoid() const { return m_isVoid; }
 
@@ -315,6 +318,7 @@ class TypeNonVoid: public Type {
             : Type(copy), m_kind(copy.m_kind),
               m_secType(copy.m_secType->clone()),
               m_dataType(copy.m_dataType->clone()) {}
+        virtual ~TypeNonVoid();
 
         inline Kind kind() const { return m_kind; }
         inline const SecType &secType() const { return *m_secType; }
