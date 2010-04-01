@@ -786,10 +786,12 @@ constant
  : DECIMAL_LITERAL
    {
      $$ = treenode_init_int(atoi($1), &@$);
+     free($1);
    }
  | STRING_LITERAL
    {
      $$ = treenode_init_string($1, &@$);
+     free($1);
    }
  | TRUE_B
    {
@@ -805,6 +807,7 @@ identifier
  : IDENTIFIER
    {
      $$ = treenode_init_identifier($1, &@$);
+     free($1);
    }
 
 %%

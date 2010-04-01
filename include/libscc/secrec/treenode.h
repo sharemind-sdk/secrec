@@ -7,21 +7,21 @@
 #include <cassert>
 #include <deque>
 #include <string>
-#include "../sccpointer.h"
 #include "../intermediate.h"
 #include "types.h"
 
 namespace SecreC {
 
-class TreeNode: public SccObject {
+class TreeNode {
     public: /* Types: */
         typedef enum SecrecTreeNodeType Type;
-        typedef std::deque<SccPointer<TreeNode> > ChildrenList;
+        typedef std::deque<TreeNode*> ChildrenList;
         typedef ChildrenList::iterator ChildrenListIterator;
         typedef ChildrenList::const_iterator ChildrenListConstIterator;
 
     public: /* Methods: */
         explicit TreeNode(Type type, const YYLTYPE &loc);
+        virtual ~TreeNode();
 
         inline TreeNode* parent() const { return m_parent; }
         inline Type type() const { return m_type; }

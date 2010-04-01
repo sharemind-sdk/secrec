@@ -36,6 +36,10 @@ TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
     // Intentionally empty
 }
 
+TreeNode::~TreeNode() {
+
+}
+
 void TreeNode::appendChild(TreeNode *child, bool reparent) {
     assert(child != 0);
     m_children.push_back(child);
@@ -251,7 +255,7 @@ extern "C" unsigned treenode_numChildren(const struct TreeNode *node) {
 extern "C" struct TreeNode *treenode_childAt(const struct TreeNode *node,
                                              unsigned index)
 {
-    return (TreeNode*) ((const SecreC::TreeNode*) node)->children().at(index).data();
+    return (TreeNode*) ((const SecreC::TreeNode*) node)->children().at(index);
 }
 
 extern "C" void treenode_appendChild(struct TreeNode *parent,
@@ -356,8 +360,8 @@ ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
 
     TreeNodeCodeable *last = 0;
     for (CLCI it(children().begin()); it != children().end(); it++) {
-        assert(dynamic_cast<TreeNodeCodeable*>((*it).data()) != 0);
-        TreeNodeCodeable *c = static_cast<TreeNodeCodeable*>((*it).data());
+        assert(dynamic_cast<TreeNodeCodeable*>(*it) != 0);
+        TreeNodeCodeable *c = static_cast<TreeNodeCodeable*>(*it);
         ICode::Status s = c->generateCode(code, st, es);
         if (s != ICode::OK) return s;
 
@@ -385,8 +389,8 @@ const DataType &TreeNodeDataTypeArray::dataType() const {
     assert(children().size() == 1);
     if (m_cachedType != 0) return *m_cachedType;
 
-    assert(dynamic_cast<TNDT*>(children().at(0).data()) != 0);
-    TNDT *t = static_cast<TNDT*>(children().at(0).data());
+    assert(dynamic_cast<TNDT*>(children().at(0)) != 0);
+    TNDT *t = static_cast<TNDT*>(children().at(0));
 
     m_cachedType = new SecreC::DataTypeArray(t->dataType(), m_dim);
     return *m_cachedType;
@@ -433,12 +437,12 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
     typedef TreeNodeType       TNT;
 
     assert(children().size() > 0 && children().size() <= 3);
-    assert(children().at(0).data()->type() == NODE_IDENTIFIER);
+    assert(children().at(0)->type() == NODE_IDENTIFIER);
 
-    assert(dynamic_cast<TNI*>(children().at(0).data()) != 0);
-    TNI *id   = static_cast<TNI*>(children().at(0).data());
-    assert(dynamic_cast<TNT*>(children().at(1).data()) != 0);
-    TNT *type = static_cast<TNT*>(children().at(1).data());
+    assert(dynamic_cast<TNI*>(children().at(0)) != 0);
+    TNI *id   = static_cast<TNI*>(children().at(0));
+    assert(dynamic_cast<TNT*>(children().at(1)) != 0);
+    TNT *type = static_cast<TNT*>(children().at(1));
 
     /// \todo Check here for overrides first if new symbol table is needed.
 
@@ -448,7 +452,7 @@ ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
 
     // Secondly we generate code for the initializer:
     if (children().size() > 2) {
-        TreeNode *t = children().at(2).data();
+        TreeNode *t = children().at(2);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
@@ -498,13 +502,13 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
     resultType() = new (SecreC::Type*);
 
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0).data()) != 0);
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
     SymbolSymbol *target = id->getSymbol(st, es);
     if (target == 0) return ICode::E_OTHER;
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     ICode::Status s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
@@ -551,12 +555,12 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     }
 
     // Generate code for child expressions:
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es);
     if (s != ICode::OK) return s;
@@ -623,11 +627,11 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
 
     resultType() = new (SecreC::Type*);
 
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e1->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
@@ -706,13 +710,13 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
     }
 
     // Generate code for child expressions:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
     firstImop() = ce1->firstImop();
 
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es);
     if (s != ICode::OK) return s;
@@ -770,13 +774,13 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
 
     if (type() == NODE_EXPR_LAND || type() == NODE_EXPR_LOR) {
         // Generate code for child expressions:
-        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
         const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
         s = e1->generateBoolCode(code, st, es);
         if (s != ICode::OK) return s;
         firstImop() = static_cast<const TreeNodeExpr*>(e1)->firstImop();
 
-        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
         const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
         s = e2->generateBoolCode(code, st, es);
         if (s != ICode::OK) return s;
@@ -802,13 +806,13 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     }
 
     // Generate code for child expressions:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     const TreeNodeExpr *ce1 = const_cast<const TreeNodeExpr*>(e1);
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
     firstImop() = static_cast<const TreeNodeExpr*>(e1)->firstImop();
 
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es);
     if (s != ICode::OK) return s;
@@ -973,8 +977,8 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
     assert(children().size() == 1);
     assert(children().at(0)->type() == NODE_IDENTIFIER);
 
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0).data()) != 0);
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
     SymbolSymbol *s = id->getSymbol(st, es);
     if (s == 0) return ICode::E_OTHER;
 
@@ -994,8 +998,8 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0).data()) != 0);
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
     if (r == 0) {
         result() = id->getSymbol(st, es);
@@ -1018,8 +1022,8 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0).data()) != 0);
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
     Imop *i = new Imop(Imop::JT, 0, id->getSymbol(st, es));
     code.push_back(i);
@@ -1111,18 +1115,18 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
 
     resultType() = new (SecreC::Type*);
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e1->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(1).data()) != 0);
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(2).data()) != 0);
-    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
+    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
     s = e3->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
@@ -1174,12 +1178,12 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
     }
 
     // Generate code for boolean expression:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
 
     // Generate code for first value child expression:
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateCode(code, st, es, result());
     if (s != ICode::OK) return s;
@@ -1190,7 +1194,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
     code.push_back(j);
 
     // Generate code for second value child expression:
-    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
+    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
     const TreeNodeExpr *ce3 = const_cast<const TreeNodeExpr*>(e3);
     s = e3->generateCode(code, st, es, result());
     if (s != ICode::OK) return s;
@@ -1217,18 +1221,18 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Generate code for boolean expression:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
 
     // Generate code for first value child expression:
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1).data());
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     const TreeNodeExpr *ce2 = const_cast<const TreeNodeExpr*>(e2);
     s = e2->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
 
     // Generate code for second value child expression:
-    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2).data());
+    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
     const TreeNodeExpr *ce3 = const_cast<const TreeNodeExpr*>(e3);
     s = e3->generateCode(code, st, es);
     if (s != ICode::OK) return s;
@@ -1323,7 +1327,7 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
     }
 
     resultType() = new (SecreC::Type*);
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e->calculateResultType(st, es);
     if (s != ICode::OK) return s;
     const SecreC::Type *eType = static_cast<const TreeNodeExpr*>(e)->resultType();
@@ -1378,7 +1382,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
     }
 
     // Generate code for child expression:
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
@@ -1405,7 +1409,7 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICode::CodeList &code, SymbolT
     assert(type() == NODE_EXPR_UNEG);
 
     // Generate code for child expression:
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0).data());
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     const TreeNodeExpr *ce = const_cast<const TreeNodeExpr*>(e);
     s = e->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
@@ -1427,8 +1431,8 @@ const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
     SecTypeFunctionVoid *st;
     DataTypeFunctionVoid *dt;
 
-    assert(dynamic_cast<TreeNodeType*>(children().at(1).data()) != 0);
-    TreeNodeType *rt = static_cast<TreeNodeType*>(children().at(1).data());
+    assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+    TreeNodeType *rt = static_cast<TreeNodeType*>(children().at(1));
 
     if (rt->type() == NODE_TYPEVOID) {
         assert(rt->secrecType().isVoid());
@@ -1464,8 +1468,8 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     typedef ChildrenListConstIterator CLCI;
 
     assert(children().size() >= 3);
-    assert(dynamic_cast<const TreeNodeIdentifier*>(children().at(0).data()) != 0);
-    const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(children().at(0).data());
+    assert(dynamic_cast<const TreeNodeIdentifier*>(children().at(0)) != 0);
+    const TreeNodeIdentifier *id = static_cast<const TreeNodeIdentifier*>(children().at(0));
 
     std::ostringstream os;
     os << "Start of function: " << id->value();
@@ -1482,15 +1486,15 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     if (children().size() > 3) {
         for (CLCI it(children().begin() + 3); it != children().end(); it++) {
             assert((*it)->type() == NODE_DECL);
-            assert(dynamic_cast<TreeNodeDecl*>((*it).data()) != 0);
-            ICode::Status s = static_cast<TreeNodeDecl*>((*it).data())->generateCode(code, *localScope, es);
+            assert(dynamic_cast<TreeNodeDecl*>(*it) != 0);
+            ICode::Status s = static_cast<TreeNodeDecl*>(*it)->generateCode(code, *localScope, es);
             if (s != ICode::OK) return s;
         }
     }
 
     // Generate code for function body:
-    assert(dynamic_cast<TreeNodeCodeable*>(children().at(2).data()) != 0);
-    TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(children().at(2).data());
+    assert(dynamic_cast<TreeNodeCodeable*>(children().at(2)) != 0);
+    TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(children().at(2));
     ICode::Status s = body->generateCode(code, *localScope, es);
     if (s != ICode::OK) return s;
 
@@ -1512,8 +1516,8 @@ ICode::Status TreeNodeFundefs::generateCode(ICode::CodeList &code,
 
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_FUNDEF);
-        assert(dynamic_cast<TreeNodeFundef*>((*it).data()) != 0);
-        TreeNodeFundef *fundef = static_cast<TreeNodeFundef*>((*it).data());
+        assert(dynamic_cast<TreeNodeFundef*>(*it) != 0);
+        TreeNodeFundef *fundef = static_cast<TreeNodeFundef*>(*it);
 
         // Generate code:
         ICode::Status s = fundef->generateCode(code, st, es);
@@ -1534,8 +1538,8 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
 
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_DECL);
-        assert(dynamic_cast<TreeNodeDecl*>((*it).data()) != 0);
-        TreeNodeDecl *decl = static_cast<TreeNodeDecl*>((*it).data());
+        assert(dynamic_cast<TreeNodeDecl*>(*it) != 0);
+        TreeNodeDecl *decl = static_cast<TreeNodeDecl*>(*it);
         ICode::Status s = decl->generateCode(code, st, es);
         if (s != ICode::OK) return s;
     }
@@ -1599,20 +1603,20 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     if (children().size() == 2) {
         code.push_comment("Start of global declarations:");
         assert(children().at(0)->type() == NODE_GLOBALS);
-        assert(dynamic_cast<TreeNodeGlobals*>(children().at(0).data()) != 0);
-        TreeNodeGlobals *gs = static_cast<TreeNodeGlobals*>(children().at(0).data());
+        assert(dynamic_cast<TreeNodeGlobals*>(children().at(0)) != 0);
+        TreeNodeGlobals *gs = static_cast<TreeNodeGlobals*>(children().at(0));
 
         ICode::Status s = gs->generateCode(code, st, es);
         if (s != ICode::OK) return s;
         code.push_comment("End of global declarations.");
 
         assert(children().at(1)->type() == NODE_FUNDEFS);
-        assert(dynamic_cast<TreeNodeFundefs*>(children().at(1).data()) != 0);
-        fs = static_cast<TreeNodeFundefs*>(children().at(1).data());
+        assert(dynamic_cast<TreeNodeFundefs*>(children().at(1)) != 0);
+        fs = static_cast<TreeNodeFundefs*>(children().at(1));
     } else {
         assert(children().at(0)->type() == NODE_FUNDEFS);
-        assert(dynamic_cast<TreeNodeFundefs*>(children().at(0).data()) != 0);
-        fs = static_cast<TreeNodeFundefs*>(children().at(0).data());
+        assert(dynamic_cast<TreeNodeFundefs*>(children().at(0)) != 0);
+        fs = static_cast<TreeNodeFundefs*>(children().at(0));
     }
 
     // Insert main call into the beginning of the program:
@@ -1664,8 +1668,8 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
                                            std::ostream &es)
 {
     assert(children().size() == 1);
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(0).data()) != 0);
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0).data());
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
@@ -1779,10 +1783,10 @@ const SecreC::Type &TreeNodeTypeType::secrecType() const {
     assert(children().size() == 2);
     if (m_cachedType != 0) return *m_cachedType;
 
-    assert(dynamic_cast<TNST*>(children().at(0).data()) != 0);
-    TNST *st = static_cast<TNST*>(children().at(0).data());
-    assert(dynamic_cast<TNDT*>(children().at(1).data()) != 0);
-    TNDT *dt = static_cast<TNDT*>(children().at(1).data());
+    assert(dynamic_cast<TNST*>(children().at(0)) != 0);
+    TNST *st = static_cast<TNST*>(children().at(0));
+    assert(dynamic_cast<TNDT*>(children().at(1)) != 0);
+    TNDT *dt = static_cast<TNDT*>(children().at(1));
 
     m_cachedType = new SecreC::TypeNonVoid(st->secType(), dt->dataType());
     return *m_cachedType;
