@@ -20,7 +20,7 @@ inline SecrecSecType upperSecType(SecrecSecType a, SecrecSecType b) {
 
 class SecType {
     public: /* Types: */
-        enum Kind { BASIC, FUNCTION };
+        enum Kind { BASIC, FUNCTION, FUNCTIONVOID };
 
     public: /* Methods: */
         explicit SecType(Kind kind)
@@ -65,8 +65,8 @@ class SecTypeBasic: public SecType {
 
 class SecTypeFunctionVoid: public SecType {
     public: /* Methods: */
-        SecTypeFunctionVoid()
-            : SecType(SecType::FUNCTION) {}
+        SecTypeFunctionVoid(SecType::Kind kind = SecType::FUNCTIONVOID)
+            : SecType(kind) {}
         explicit SecTypeFunctionVoid(const SecTypeFunctionVoid &copy)
             : SecType(copy), m_params(copy.m_params) {}
         virtual inline ~SecTypeFunctionVoid() {};
@@ -89,9 +89,11 @@ class SecTypeFunctionVoid: public SecType {
 class SecTypeFunction: public SecTypeFunctionVoid {
     public: /* Methods: */
         SecTypeFunction()
-            : m_returnSecType(SECTYPE_INVALID) {}
+            : SecTypeFunctionVoid(SecType::FUNCTION),
+              m_returnSecType(SECTYPE_INVALID) {}
         explicit SecTypeFunction(SecrecSecType secType)
-            : m_returnSecType(secType) {}
+            : SecTypeFunctionVoid(SecType::FUNCTION),
+              m_returnSecType(secType) {}
         explicit SecTypeFunction(const SecTypeFunction &copy)
             : SecTypeFunctionVoid(copy), m_returnSecType(copy.m_returnSecType) {}
 
@@ -112,7 +114,7 @@ class SecTypeFunction: public SecTypeFunctionVoid {
 
 class DataType {
     public: /* Types: */
-        enum Kind { BASIC, VAR, ARRAY, FUNCTION };
+        enum Kind { BASIC, VAR, ARRAY, FUNCTION, FUNCTIONVOID };
 
     public: /* Methods: */
         explicit DataType(Kind kind)
@@ -136,12 +138,15 @@ class DataType {
         Kind m_kind;
 };
 
+class DataTypeVar;
+
 class DataTypeBasic: public DataType {
     public: /* Methods: */
         explicit DataTypeBasic(SecrecVarType varType)
             : DataType(DataType::BASIC), m_varType(varType) {}
         explicit DataTypeBasic(const DataTypeBasic &copy)
             : DataType(copy), m_varType(copy.m_varType) {}
+        explicit DataTypeBasic(const DataTypeVar &copy);
 
         inline SecrecVarType varType() const { return m_varType; }
 
@@ -162,6 +167,7 @@ class DataTypeVar: public DataType {
             : DataType(DataType::BASIC), m_varType(varType) {}
         explicit DataTypeVar(const DataTypeVar &copy)
             : DataType(copy), m_varType(copy.m_varType) {}
+        explicit DataTypeVar(const DataTypeBasic &copy);
 
         inline SecrecVarType varType() const { return m_varType; }
 
@@ -170,6 +176,9 @@ class DataTypeVar: public DataType {
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
                    && m_varType == static_cast<const DataTypeVar &>(other).m_varType;
+        }
+        inline bool equivalentTo(const DataTypeBasic &basicType) const {
+            return basicType.varType() == m_varType;
         }
 
     private: /* Fields: */
@@ -207,8 +216,8 @@ class DataTypeArray: public DataType {
 
 class DataTypeFunctionVoid: public DataType {
     public: /* Methods: */
-        DataTypeFunctionVoid()
-            : DataType(DataType::FUNCTION) {}
+        explicit DataTypeFunctionVoid(DataType::Kind kind = FUNCTIONVOID)
+            : DataType(kind) {}
         explicit DataTypeFunctionVoid(const DataTypeFunctionVoid &copy);
         virtual ~DataTypeFunctionVoid();
 
@@ -227,7 +236,7 @@ class DataTypeFunctionVoid: public DataType {
 class DataTypeFunction: public DataTypeFunctionVoid {
     public: /* Methods: */
         explicit DataTypeFunction(const DataType &returnType)
-            : m_ret(returnType.clone()) {}
+            : DataTypeFunctionVoid(FUNCTION), m_ret(returnType.clone()) {}
         explicit DataTypeFunction(const DataTypeFunction &copy)
             : DataTypeFunctionVoid(copy), m_ret(copy.m_ret->clone()) {}
         virtual inline ~DataTypeFunction() { delete m_ret; }
@@ -286,10 +295,11 @@ class TypeVoid: public Type {
 class TypeNonVoid: public Type {
     public: /* Types: */
         enum Kind {
-            BASIC,   /**< BasicSecType    + BasicDataType.    */
-            VAR,     /**< BasicSecType    + VarDataType.      */
-            ARRAY,   /**< BasicSecType    + ArrayDataType.    */
-            FUNCTION /**< FunctionSecType + FunctionDataType. */
+            BASIC,       /**< SecTypeBasic        + SecTypeBasic.         */
+            VAR,         /**< SecTypeBasic        + DataTypeVar.          */
+            ARRAY,       /**< SecTypeBasic        + DataTypeArray.        */
+            FUNCTION,    /**< SecTypeFunction     + DataTypeFunction.     */
+            FUNCTIONVOID /**< SecTypeFunctionVoid + DataTypeFunctionVoid. */
         };
 
     public: /* Methods: */
@@ -309,6 +319,10 @@ class TypeNonVoid: public Type {
         TypeNonVoid(const SecTypeFunction &secType,
                     const DataTypeFunction &dataType)
             : Type(false), m_kind(FUNCTION), m_secType(secType.clone()),
+              m_dataType(dataType.clone()) {}
+        TypeNonVoid(const SecTypeFunctionVoid &secType,
+                    const DataTypeFunctionVoid &dataType)
+            : Type(false), m_kind(FUNCTIONVOID), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
         TypeNonVoid(const SecType &secType,
                     const DataType &dataType);

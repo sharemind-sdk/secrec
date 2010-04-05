@@ -3,10 +3,20 @@
 #include <iostream>
 #include "secrec/treenode.h"
 
+namespace {
+
+std::string ulongToString(unsigned long n) {
+    std::ostringstream os;
+    os << n;
+    return os.str();
+}
+
+}
 
 namespace SecreC {
 
 #define dname  (m_dest == 0 ? "_" : m_dest->name())
+#define tname  (m_dest == 0 ? "_" : ulongToString(((SecreC::Imop*) m_dest)->index()) )
 #define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
 #define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
 
@@ -23,7 +33,10 @@ std::string Imop::toString() const {
             os << "PUTPARAM " << a1name;
             break;
         case FUNCALL:      /*   d = arg1(PARAMS);                */
-            os << dname << " = CALL " << a1name;
+            if (m_dest != 0) {
+                os << dname << " = ";
+            }
+            os << "CALL " << a1name;
             break;
         case WILDCARD:     /*   d = arg1[*];                     */
             os << dname << " = " << a1name << "[*]";
@@ -80,38 +93,37 @@ std::string Imop::toString() const {
             os << dname << " = (" << a1name << " || " << a2name << ")";
             break;
         case JT:           /* if (arg1) GOTO d;                  */
-            os << "if (" << a1name << ") GOTO " << dname;
+            os << "if (" << a1name << ") GOTO " << tname;
             break;
         case JF:           /* if (!arg1) GOTO d;                 */
-            os << "if (!" << a1name << ") GOTO " << dname;
+            os << "if (!" << a1name << ") GOTO " << tname;
             break;
         case JE:           /* if (arg1 == arg2) GOTO d;          */
-            os << "if (" << a1name << " == " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " == " << a2name << ") GOTO " << tname;
             break;
         case JNE:          /* if (arg1 != arg2) GOTO d;          */
-            os << "if (" << a1name << " != " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " != " << a2name << ") GOTO " << tname;
             break;
         case JLE:          /* if (arg1 <= arg2) GOTO d;          */
-            os << "if (" << a1name << " <= " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " <= " << a2name << ") GOTO " << tname;
             break;
         case JLT:          /* if (arg1 <  arg2) GOTO d;          */
-            os << "if (" << a1name << " < " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " < " << a2name << ") GOTO " << tname;
             break;
         case JGE:          /* if (arg1 >= arg2) GOTO d;          */
-            os << "if (" << a1name << " >= " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " >= " << a2name << ") GOTO " << tname;
             break;
         case JGT:          /* if (arg1 >  arg2) GOTO d;          */
-            os << "if (" << a1name << " > " << a2name << ") GOTO " << dname;
+            os << "if (" << a1name << " > " << a2name << ") GOTO " << tname;
             break;
         case JUMP:         /* GOTO d;                            */
-            os << "GOTO " << dname;
+            os << "GOTO " << tname;
             break;
-        case RETURN:       /* RETURN;                            */
-            if (m_arg1 == 0) {
-                os << "RETURN";
-            } else {       /* RETURN arg1;                       */
-                os << "RETURN " << a1name;
-            }
+        case RETURNVOID:   /* RETURN;                            */
+            os << "RETURN";
+            break;
+        case RETURN:       /* RETURN arg1;                       */
+            os << "RETURN " << a1name;
             break;
         case END:          /* END PROGRAM                        */
             os << "END";
@@ -159,9 +171,10 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICode::Status &s) {
 
 std::ostream &operator<<(std::ostream &out, const SecreC::ICode::CodeList &c) {
     typedef SecreC::ICode::CodeList::const_iterator CLCI;
+    unsigned i = 1;
 
-    for (CLCI it(c.begin()); it != c.end(); it++) {
-        out << **it << std::endl;
+    for (CLCI it(c.begin()); it != c.end(); it++, i++) {
+        out << i << "  " << **it << std::endl;
     }
 
     return out;

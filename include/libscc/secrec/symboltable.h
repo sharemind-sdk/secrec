@@ -35,7 +35,7 @@ class SymbolWithValue: public Symbol {
             : Symbol(symbolType), m_type(valueType.clone()) {}
         virtual ~SymbolWithValue() { delete m_type; }
 
-        inline SecreC::Type &secrecType() const { return *m_type; }
+        inline const SecreC::Type &secrecType() const { return *m_type; }
 
     private: /* Fields: */
         SecreC::Type *m_type;

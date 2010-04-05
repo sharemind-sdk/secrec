@@ -49,8 +49,8 @@ class Imop {
             JGT,           /* if (arg1 >  arg2) GOTO d;          */
             JUMP,          /* GOTO d;                            */
             LABEL,         /* label:                       (NOP) */
-            RETURN,        /* RETURN;                            */
-                           /* RETURN arg1;                       */
+            RETURNVOID,    /* RETURN;                            */
+            RETURN,        /* RETURN arg1;                       */
             END,           /* END PROGRAM                        */
             COMMENT        /* // arg1                            */
         };
@@ -75,6 +75,9 @@ class Imop {
         inline const Symbol *arg2() const { return m_arg2; }
         inline void setArg2(const Symbol *arg2) { m_arg2 = arg2; }
 
+        inline unsigned long index() const { return m_index; }
+        inline void setIndex(unsigned long index) { m_index = index; }
+
         std::string toString() const;
 
     private:
@@ -82,6 +85,7 @@ class Imop {
         const Symbol *m_dest;
         const Symbol *m_arg1;
         const Symbol *m_arg2;
+        unsigned long m_index;
 };
 
 class ICode {
@@ -101,6 +105,7 @@ class ICode {
                 inline iterator end() { return m_list.end(); }
                 inline void push_back(Imop *i) {
                     m_list.push_back(i);
+                    i->setIndex(m_list.size());
                 }
                 inline void push_comment(const std::string &comment) {
                     push_back(new Imop(Imop::COMMENT, 0, (Symbol*) new std::string(comment)));

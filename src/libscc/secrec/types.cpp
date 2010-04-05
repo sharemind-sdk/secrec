@@ -30,23 +30,12 @@ inline const char *SecrecFundDataTypeToString(SecrecVarType varType) {
 
 namespace SecreC {
 
+/*******************************************************************************
+  SecTypeBasic
+*******************************************************************************/
+
 std::string SecTypeBasic::toString() const {
     return SecrecFundSecTypeToString(m_secType);
-}
-
-std::string DataTypeBasic::toString() const {
-    return SecrecFundDataTypeToString(m_varType);
-}
-
-std::string DataTypeArray::toString() const {
-    assert(m_itemType != 0);
-
-    std::ostringstream os;
-    os << *m_itemType << "[";
-    if (m_size > 0)
-        os << m_size;
-    os << "]";
-    return os.str();
 }
 
 
@@ -129,6 +118,52 @@ inline bool SecTypeFunction::operator==(const SecType &other) {
 
 
 /*******************************************************************************
+  DataTypeBasic
+*******************************************************************************/
+
+DataTypeBasic::DataTypeBasic(const DataTypeVar &copy)
+    : DataType(DataType::BASIC), m_varType(copy.varType())
+{
+    // Intentionally empty
+}
+
+std::string DataTypeBasic::toString() const {
+    return SecrecFundDataTypeToString(m_varType);
+}
+
+
+/*******************************************************************************
+  DataTypeVar
+*******************************************************************************/
+
+DataTypeVar::DataTypeVar(const DataTypeBasic &copy)
+    : DataType(DataType::VAR), m_varType(copy.varType())
+{
+    // Intentionally empty
+}
+
+std::string DataTypeVar::toString() const {
+    return std::string("VAR") + SecrecFundDataTypeToString(m_varType);
+}
+
+
+/*******************************************************************************
+  DataTypeArray
+*******************************************************************************/
+
+std::string DataTypeArray::toString() const {
+    assert(m_itemType != 0);
+
+    std::ostringstream os;
+    os << *m_itemType << "[";
+    if (m_size > 0)
+        os << m_size;
+    os << "]";
+    return os.str();
+}
+
+
+/*******************************************************************************
   DataTypeFunctionVoid
 *******************************************************************************/
 
@@ -181,7 +216,6 @@ bool DataTypeFunctionVoid::operator==(const DataType &other) const {
     }
     return true;
 }
-
 
 /*******************************************************************************
   DataTypeFunction
