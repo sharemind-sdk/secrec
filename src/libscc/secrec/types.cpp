@@ -275,6 +275,10 @@ TypeNonVoid::TypeNonVoid(const SecType &secType,
             assert(secType.kind() == SecType::FUNCTION);
             m_kind = TypeNonVoid::FUNCTION;
             break;
+        case DataType::FUNCTIONVOID:
+            assert(secType.kind() == SecType::FUNCTIONVOID);
+            m_kind = TypeNonVoid::FUNCTIONVOID;
+            break;
     }
 }
 
