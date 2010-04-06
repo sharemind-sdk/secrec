@@ -6,10 +6,26 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
+    char *filename = 0;
+    if (argc > 1) {
+        filename = argv[1];
+    }
     SecreC::TreeNodeProgram *parseTree = 0;
 
-    int parseResult = sccparse(&parseTree);
+    int parseResult;
+    if (filename == 0) {
+        parseResult = sccparse(&parseTree);
+    } else {
+        FILE *f = fopen(filename, "r");
+        if (f != NULL) {
+            cerr << "Parsing file: " << filename << endl;
+            parseResult = sccparse_file(f, &parseTree);
+            fclose(f);
+        } else {
+            cerr << "Unable to open file: " << filename << endl;
+        }
+    }
     fflush(stdout);
     fflush(stderr);
 

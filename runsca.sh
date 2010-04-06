@@ -18,4 +18,4 @@ if [ ! -e "$E" ]; then
 	echo "\"make\" in ${D}." >&2
     exit 1
 fi
-LD_LIBRARY_PATH=${L} ${E}
+LD_LIBRARY_PATH=${L} ${E} $*

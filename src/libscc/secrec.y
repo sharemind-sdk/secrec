@@ -834,7 +834,7 @@ int sccparse(TYPE_TREENODEPROGRAM *result) {
 int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result) {
     yyscan_t scanner;
     yylex_init(&scanner);
-    yyset_in(input, &scanner);
+    yyset_in(input, scanner);
     int r = yyparse(scanner, result);
     yylex_destroy(scanner);
     return r;
