@@ -399,7 +399,7 @@ statement_list_l
      $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
      treenode_appendChild($$, $1);
    }
- | statement
+ | statement_l
  ;
 
 statement
