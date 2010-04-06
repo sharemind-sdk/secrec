@@ -39,6 +39,9 @@ class SecType {
         virtual inline bool operator!=(const SecType &other) {
             return !operator==(other);
         }
+        virtual inline bool canAssign(const SecType &) const {
+            return false;
+        }
 
     private: /* Fields: */
         bool m_kind;
@@ -57,6 +60,13 @@ class SecTypeBasic: public SecType {
         virtual inline bool operator==(const SecType &other) {
             if (!SecType::operator==(other)) return false;
             return m_secType == static_cast<const SecTypeBasic &>(other).secType();
+        }
+        virtual inline bool canAssign(const SecType &other) const {
+            if (other.kind() != SecType::BASIC) return false;
+            if (m_secType == SECTYPE_PRIVATE) return true;
+            assert(dynamic_cast<const SecTypeBasic*>(&other) != 0);
+            const SecTypeBasic &o = static_cast<const SecTypeBasic&>(other);
+            return o.m_secType == SECTYPE_PUBLIC;
         }
 
     private: /* Fields: */
@@ -133,6 +143,9 @@ class DataType {
         virtual inline bool operator!=(const DataType &other) const {
             return !operator==(other);
         }
+        virtual inline bool canAssign(const DataType &) const {
+            return false;
+        }
 
     private: /* Fields: */
         Kind m_kind;
@@ -179,6 +192,12 @@ class DataTypeVar: public DataType {
         }
         inline bool equivalentTo(const DataTypeBasic &basicType) const {
             return basicType.varType() == m_varType;
+        }
+        virtual inline bool canAssign(const DataType &other) const {
+            if (other.kind() != DataType::BASIC) return false;
+            assert(dynamic_cast<const DataTypeBasic*>(&other) != 0);
+            const DataTypeBasic &o = static_cast<const DataTypeBasic&>(other);
+            return m_varType == o.varType();
         }
 
     private: /* Fields: */
@@ -276,6 +295,9 @@ class Type {
         virtual inline bool operator!=(const Type &other) const {
             return !operator==(other);
         }
+        virtual inline bool canAssign(const Type &) const {
+            return false;
+        }
 
     private: /* Fields: */
         bool m_isVoid;
@@ -343,6 +365,12 @@ class TypeNonVoid: public Type {
         virtual inline bool operator==(const Type &other) const {
             return Type::operator==(other)
                    && m_kind == static_cast<const TypeNonVoid&>(other).kind();
+        }
+        virtual inline bool canAssign(const Type &other) const {
+            if (other.isVoid()) return false;
+            assert(dynamic_cast<const TypeNonVoid*>(&other) != 0);
+            const TypeNonVoid &o = static_cast<const TypeNonVoid&>(other);
+            return m_secType->canAssign(*(o.m_secType)) && m_dataType->canAssign(*(o.m_dataType));
         }
 
     private: /* Fields: */

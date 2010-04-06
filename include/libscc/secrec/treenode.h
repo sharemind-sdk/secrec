@@ -641,6 +641,36 @@ class TreeNodeSecTypeF: public TreeNode {
 
 
 /******************************************************************
+  TreeNodeStmtBreak
+******************************************************************/
+
+class TreeNodeStmtBreak: public TreeNodeCodeable {
+    public: /* Methods: */
+        TreeNodeStmtBreak(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_STMT_BREAK, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
+  TreeNodeStmtContinue
+******************************************************************/
+
+class TreeNodeStmtContinue: public TreeNodeCodeable {
+    public: /* Methods: */
+        TreeNodeStmtContinue(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_STMT_CONTINUE, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
   TreeNodeStmtExpr
 ******************************************************************/
 

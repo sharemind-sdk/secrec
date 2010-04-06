@@ -220,6 +220,10 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprAssign(type, *loc));
         case NODE_EXPR_RVARIABLE:
             return (TreeNode*) (new SecreC::TreeNodeExprRVariable(*loc));
+        case NODE_STMT_BREAK:
+            return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
+        case NODE_STMT_CONTINUE:
+            return (TreeNode*) (new SecreC::TreeNodeStmtContinue(*loc));
         case NODE_STMT_COMPOUND:
             return (TreeNode*) (new SecreC::TreeNodeCompound(*loc));
         case NODE_STMT_EXPR:
@@ -701,7 +705,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
         switch (type()) {
             case NODE_EXPR_ADD:
                 if (d1 != d2) break;
-                if ((d1 & (VARTYPE_INT|VARTYPE_UINT|VARTYPE_STRING)) != 0x0) break;
+                if ((d1 & (VARTYPE_INT|VARTYPE_UINT|VARTYPE_STRING)) == 0x0) break;
                 *resultType() = new SecreC::TypeNonVoid(upperSecType(s1, s2), d1);
                 return ICode::OK;
             case NODE_EXPR_SUB:
@@ -709,7 +713,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
             case NODE_EXPR_MOD:
             case NODE_EXPR_DIV:
                 if (d1 != d2) break;
-                if ((d1 & (VARTYPE_INT|VARTYPE_UINT)) != 0x0) break;
+                if ((d1 & (VARTYPE_INT|VARTYPE_UINT)) == 0x0) break;
                 *resultType() = new SecreC::TypeNonVoid(upperSecType(s1, s2), d1);
                 return ICode::OK;
             case NODE_EXPR_EQ:
@@ -758,7 +762,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
         SecreC::Type *rt = *resultType();
         result() = st.appendTemporary(*rt);
     } else {
-        assert(r->secrecType() == **resultType());
+        assert(r->secrecType().canAssign(**resultType()));
         result() = r;
     }
 
@@ -1069,8 +1073,7 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
     if (r == 0) {
         result() = id->getSymbol(st, es);
     } else {
-        /// \todo Might be var also; use DataTypeVar::equivalentTo():
-        // assert(r->secrecType() == **resultType());
+        assert(r->secrecType().canAssign(**resultType()));
         result() = r;
 
         Imop *i = new Imop(Imop::ASSIGN, r, id->getSymbol(st, es));
@@ -1444,8 +1447,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
         SecreC::Type *rt = *resultType();
         result() = st.appendTemporary(*rt);
     } else {
-        /// \todo Might be var also; use DataTypeVar::equivalentTo():
-        // assert(r->secrecType() == **resultType());
+        assert(r->secrecType().canAssign(**resultType()));
         result() = r;
     }
 
@@ -1737,6 +1739,40 @@ std::string TreeNodeSecTypeF::xmlHelper() const {
     std::ostringstream os;
     os << "type=\"" << m_secType << "\"";
     return os.str();
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtBreak
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtBreak::generateCode(ICode::CodeList &code,
+                                           SymbolTable &,
+                                           std::ostream &)
+{
+    Imop *i = new Imop(Imop::JUMP, 0);
+    code.push_back(i);
+    firstImop() = i;
+    breakList().push_back(i);
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtContinue
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtContinue::generateCode(ICode::CodeList &code,
+                                           SymbolTable &,
+                                           std::ostream &)
+{
+    Imop *i = new Imop(Imop::JUMP, 0);
+    code.push_back(i);
+    firstImop() = i;
+    continueList().push_back(i);
+
+    return ICode::OK;
 }
 
 
