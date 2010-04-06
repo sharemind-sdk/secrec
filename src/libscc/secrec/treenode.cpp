@@ -804,7 +804,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
 
     i->setDest(result());
     i->setArg1(static_cast<const TreeNodeExpr*>(e1)->result());
-    i->setArg1(static_cast<const TreeNodeExpr*>(e2)->result());
+    i->setArg2(static_cast<const TreeNodeExpr*>(e2)->result());
     code.push_back(i);
     if (firstImop() == 0) firstImop() = i;
 
