@@ -384,9 +384,15 @@ ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
         ICode::Status s = c->generateCode(code, st, es);
         if (s != ICode::OK) return s;
 
-        if (firstImop() == 0) {
+        if (c->firstImop() == 0) {
+            if (c->type() != NODE_DECL) {
+                es << "Statement with no effect at " << c->location() << std::endl;
+                return ICode::E_OTHER;
+            }
+        } else if (firstImop() == 0) {
             setFirstImop(c->firstImop());
         }
+
         addToBreakList(c->breakList());
         addToContinueList(c->continueList());
         if (last != 0) {
@@ -939,6 +945,7 @@ ICode::Status TreeNodeExprBool::generateCode(ICode::CodeList &code,
     if (r != 0) {
         Imop *i = new Imop(Imop::ASSIGN, r, sym);
         code.push_back(i);
+        setFirstImop(i);
     } else {
         setResult(sym);
     }
@@ -954,6 +961,7 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(Imop::JUMP, 0);
+    setFirstImop(i);
     if (m_value) {
         addToTrueList(i);
     } else {
@@ -1003,6 +1011,7 @@ ICode::Status TreeNodeExprInt::generateCode(ICode::CodeList &code,
     SymbolConstantInt *sym = st.constantInt(m_value);
     if (r != 0) {
         Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        setFirstImop(i);
         code.push_back(i);
     } else {
         setResult(sym);
@@ -1135,6 +1144,7 @@ ICode::Status TreeNodeExprString::generateCode(ICode::CodeList &code,
     SymbolConstantString *sym = st.constantString(m_value);
     if (r != 0) {
         Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        setFirstImop(i);
         code.push_back(i);
     } else {
         setResult(sym);
@@ -1333,6 +1343,7 @@ ICode::Status TreeNodeExprUInt::generateCode(ICode::CodeList &code,
     SymbolConstantUInt *sym = st.constantUInt(m_value);
     if (r != 0) {
         Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        setFirstImop(i);
         code.push_back(i);
     } else {
         setResult(sym);
@@ -1541,8 +1552,14 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
         /// \todo
     } else {
         assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
-        code.push_back(new Imop(Imop::RETURNVOID));
+        Imop *i = new Imop(Imop::RETURNVOID);
+        body->patchNextList(i);
+        code.push_back(i);
     }
+
+    assert(body->breakList().empty());
+    assert(body->continueList().empty());
+    assert(body->nextList().empty());
 
     os << "End of function: " << id->value();
     code.push_comment(os.str());
@@ -1878,14 +1895,15 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         }
     }
 
+    // Generate code for conditional expression:
     s = e->generateBoolCode(code, st, es);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
     setFirstImop(e->firstImop());
 
+    // Generate code for first branch:
     assert(dynamic_cast<TreeNodeCodeable*>(children().at(1)) != 0);
     TreeNodeCodeable *s1 = static_cast<TreeNodeCodeable*>(children().at(1));
-
     s = s1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
@@ -1898,9 +1916,14 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     if (children().size() == 2) {
         addToNextList(e->falseList());
     } else {
+        // Generate jump out of first branch:
+        Imop *i = new Imop(Imop::JUMP, 0);
+        code.push_back(i);
+        addToNextList(i);
+
+        // Generate code for second branch:
         assert(dynamic_cast<TreeNodeCodeable*>(children().at(2)) != 0);
         TreeNodeCodeable *s2 = static_cast<TreeNodeCodeable*>(children().at(2));
-
         s = s2->generateCode(code, st, es);
         if (s != ICode::OK) return s;
 
