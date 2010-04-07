@@ -111,22 +111,43 @@ class TreeNodeCodeable: public TreeNode {
         inline Imop *firstImop() const {
             return m_firstImop;
         }
+
         void patchBreakList(Imop *dest);
         void patchContinueList(Imop *dest);
         void patchNextList(Imop *dest);
 
     protected: /* Methods: */
-        inline std::vector<Imop*> &breakList() {
-            return m_breakList;
+        inline void setBreakList(const std::vector<Imop*> &bl) {
+            assert(m_breakList.empty());
+            m_breakList = bl;
         }
-        inline std::vector<Imop*> &continueList() {
-            return m_continueList;
+        inline void addToBreakList(Imop *i) {
+            m_breakList.push_back(i);
         }
-        inline std::vector<Imop*> &nextList() {
-            return m_nextList;
+        void addToBreakList(const std::vector<Imop*> &bl);
+        inline void setContinueList(const std::vector<Imop*> &cl) {
+            assert(m_continueList.empty());
+            m_continueList = cl;
         }
-        inline Imop *&firstImop() {
-            return m_firstImop;
+        inline void addToContinueList(Imop *i) {
+            m_continueList.push_back(i);
+        }
+        void addToContinueList(const std::vector<Imop*> &cl);
+        inline void setNextList(const std::vector<Imop*> &nl) {
+            assert(m_nextList.empty());
+            m_nextList = nl;
+        }
+        inline void addToNextList(Imop *i) {
+            m_nextList.push_back(i);
+        }
+        void addToNextList(const std::vector<Imop*> &nl);
+        inline void setFirstImop(Imop *imop) {
+            assert(m_firstImop == 0);
+            m_firstImop = imop;
+        }
+        inline void patchFirstImop(Imop *imop) {
+            if (m_firstImop != 0) return;
+            m_firstImop = imop;
         }
 
     private: /* Fields: */
@@ -240,7 +261,6 @@ class TreeNodeExpr: public TreeNode {
             : TreeNode(type, loc), m_result(0), m_resultType(0),
               m_firstImop(0) {}
         virtual ~TreeNodeExpr() {
-            if (m_resultType != 0) delete *m_resultType;
             delete m_resultType;
         }
 
@@ -259,8 +279,7 @@ class TreeNodeExpr: public TreeNode {
             return m_result;
         };
         inline SecreC::Type *resultType() const {
-            assert(m_resultType != 0);
-            return *m_resultType;
+            return m_resultType;
         }
         inline const std::vector<Imop*> &falseList() const {
             return m_falseList;
@@ -279,28 +298,49 @@ class TreeNodeExpr: public TreeNode {
         void patchNextList(Imop *dest);
 
     protected: /* Methods: */
-        inline SymbolWithValue *&result() {
-            return m_result;
-        };
-        inline SecreC::Type **&resultType() {
-            return m_resultType;
+        inline void setResult(SymbolWithValue *r) {
+            m_result = r;
         }
-        inline std::vector<Imop*> &falseList() {
-            return m_falseList;
+        inline void setFalseList(const std::vector<Imop*> &fl) {
+            assert(m_falseList.empty());
+            m_falseList = fl;
         }
-        inline std::vector<Imop*> &trueList() {
-            return m_trueList;
+        inline void addToFalseList(Imop *i) {
+            m_falseList.push_back(i);
         }
-        inline std::vector<Imop*> &nextList() {
-            return m_nextList;
+        void addToFalseList(const std::vector<Imop*> &fl);
+        inline void setTrueList(const std::vector<Imop*> &tl) {
+            assert(m_trueList.empty());
+            m_trueList = tl;
         }
-        inline Imop *&firstImop() {
-            return m_firstImop;
+        inline void addToTrueList(Imop *i) {
+            m_trueList.push_back(i);
+        }
+        void addToTrueList(const std::vector<Imop*> &bl);
+        inline void setNextList(const std::vector<Imop*> &nl) {
+            assert(m_nextList.empty());
+            m_nextList = nl;
+        }
+        inline void addToNextList(Imop *i) {
+            m_nextList.push_back(i);
+        }
+        void addToNextList(const std::vector<Imop*> &bl);
+        inline void setResultType(SecreC::Type *type) {
+            assert(m_resultType == 0);
+            m_resultType = type;
+        }
+        inline void setFirstImop(Imop *imop) {
+            assert(m_firstImop == 0);
+            m_firstImop = imop;
+        }
+        inline void patchFirstImop(Imop *imop) {
+            if (m_firstImop != 0) return;
+            m_firstImop = imop;
         }
 
     private: /* Fields: */
         SymbolWithValue    *m_result;
-        SecreC::Type      **m_resultType;
+        SecreC::Type       *m_resultType;
         std::vector<Imop*>  m_falseList;
         std::vector<Imop*>  m_trueList;
         std::vector<Imop*>  m_nextList;
