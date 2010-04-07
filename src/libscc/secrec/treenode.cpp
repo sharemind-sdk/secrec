@@ -899,7 +899,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     code.push_back(tj);
     if (firstImop() == 0) firstImop() = tj;
 
-    Imop *fj = new Imop(Imop::JUMP);
+    Imop *fj = new Imop(Imop::JUMP, 0);
     falseList().push_back(fj);
     code.push_back(fj);
     return ICode::OK;
@@ -958,7 +958,7 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    Imop *i = new Imop(Imop::JUMP);
+    Imop *i = new Imop(Imop::JUMP, 0);
     if (m_value) {
         trueList().push_back(i);
     } else {
@@ -1259,7 +1259,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Jump out of the ternary construct:
-    Imop *j = new Imop(Imop::JUMP);
+    Imop *j = new Imop(Imop::JUMP, 0);
     nextList().push_back(j);
     code.push_back(j);
 
@@ -1868,7 +1868,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
     }
 
     // Next iteration jump:
-    Imop *j = new Imop(Imop::JUMP);
+    Imop *j = new Imop(Imop::JUMP, 0);
     if (e1 != 0) {
         j->setDest((SecreC::Symbol*) const_cast<const TreeNodeExpr*>(e1)->firstImop());
     } else {
