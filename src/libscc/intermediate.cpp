@@ -20,6 +20,22 @@ namespace SecreC {
 #define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
 #define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
 
+Imop::~Imop() {
+    typedef std::set<Imop*>::const_iterator ISCI;
+
+    if (m_type == COMMENT) {
+        delete (std::string*) m_arg1;
+    } else if ((m_type & JUMP_MASK) != 0x0) {
+        if (m_dest != 0) {
+            ((Imop*) m_dest)->removeIncoming(this);
+        }
+    }
+
+    for (ISCI it(m_incoming.begin()); it != m_incoming.end(); it++) {
+        (*it)->setDest(0);
+    }
+}
+
 std::string Imop::toString() const {
     std::ostringstream os;
     switch (m_type) {
@@ -133,6 +149,24 @@ std::string Imop::toString() const {
             break;
         default:
             os << "TODO";
+    }
+
+    if (!m_incoming.empty()) {
+        typedef std::set<Imop*>::const_iterator ISCI;
+        typedef std::set<unsigned long>::const_iterator ULSCI;
+
+        std::set<unsigned long> is;
+        for (ISCI it(m_incoming.begin()); it != m_incoming.end(); it++) {
+            is.insert((*it)->index());
+        }
+        os << "    IN[";
+        for (ULSCI it(is.begin()); it != is.end(); it++) {
+            if (it != is.begin()) {
+                os << ", ";
+            }
+            os << (*it);
+        }
+        os << "]";
     }
     return os.str();
 }

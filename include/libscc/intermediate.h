@@ -2,6 +2,7 @@
 #define INTERMEDIATE_H
 
 #include <list>
+#include <set>
 #include <sstream>
 #include "secrec/symboltable.h"
 #include "secrec/types.h"
@@ -12,50 +13,49 @@ namespace SecreC {
 class TreeNodeProgram;
 
 class Imop {
-    public:
+    public: /* Types: */
         enum Type {
-            DECLARE,       /* arg1 d;           (TreeNode *arg2) */
-            SYMBOL,        /*   d = arg1;  (SSA; TreeNode *arg2) */
+            COMMENT    = 0x0,   /* // arg1                            */
+            ASSIGN     = 0x1,   /*   d = arg1;                        */
+            CAST       = 0x2,   /*   d = (arg1) arg2;                 */
+            PUTPARAM   = 0x3,   /* PUTPARAM arg1;                     */
+            FUNCALL    = 0x4,   /*   d = arg1(PARAMS);                */
+            WILDCARD   = 0x5,   /*   d = arg1[*];                     */
+            SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
+            UNEG       = 0x7,   /*   d = !arg1;                       */
+            UMINUS     = 0x8,   /*   d = -arg1;                       */
+            MATRIXMUL  = 0x9,   /*   d = arg1 #  arg2;                */
+            MUL        = 0xa,   /*   d = arg1 *  arg2;                */
+            DIV        = 0xb,   /*   d = arg1 /  arg2;                */
+            MOD        = 0xc,   /*   d = arg1 %  arg2;                */
+            ADD        = 0xd,   /*   d = arg1 +  arg2;                */
+            SUB        = 0xe,   /*   d = arg1 -  arg2;                */
+            EQ         = 0xf,   /*   d = arg1 == arg2;                */
+            NE         = 0x10,  /*   d = arg1 != arg2;                */
+            LE         = 0x11,  /*   d = arg1 <= arg2;                */
+            LT         = 0x12,  /*   d = arg1 <  arg2;                */
+            GE         = 0x13,  /*   d = arg1 >= arg2;                */
+            GT         = 0x14,  /*   d = arg1 >  arg2;                */
+            LAND       = 0x15,  /*   d = arg1 && arg2;                */
+            LOR        = 0x16,  /*   d = arg1 || arg2;                */
 
-            ASSIGN,        /*   d = arg1;                        */
-            CAST,          /*   d = (arg1) arg2;                 */
-            PUTPARAM,      /* PUTPARAM arg1;                     */
-            FUNCALL,       /*   d = arg1(PARAMS);                */
-            WILDCARD,      /*   d = arg1[*];                     */
-            SUBSCRIPT,     /*   d = arg1[arg2];                  */
-            UNEG,          /*   d = !arg1;                       */
-            UMINUS,        /*   d = -arg1;                       */
-            MATRIXMUL,     /*   d = arg1 #  arg2;                */
-            MUL,           /*   d = arg1 *  arg2;                */
-            DIV,           /*   d = arg1 /  arg2;                */
-            MOD,           /*   d = arg1 %  arg2;                */
-            ADD,           /*   d = arg1 +  arg2;                */
-            SUB,           /*   d = arg1 -  arg2;                */
-            EQ,            /*   d = arg1 == arg2;                */
-            NE,            /*   d = arg1 != arg2;                */
-            LE,            /*   d = arg1 <= arg2;                */
-            LT,            /*   d = arg1 <  arg2;                */
-            GE,            /*   d = arg1 >= arg2;                */
-            GT,            /*   d = arg1 >  arg2;                */
-            LAND,          /*   d = arg1 && arg2;                */
-            LOR,           /*   d = arg1 || arg2;                */
-            JT,            /* if (arg1) GOTO d;                  */
-            JF,            /* if (!arg1) GOTO d;                 */
-            JE,            /* if (arg1 == arg2) GOTO d;          */
-            JNE,           /* if (arg1 != arg2) GOTO d;          */
-            JLE,           /* if (arg1 <= arg2) GOTO d;          */
-            JLT,           /* if (arg1 <  arg2) GOTO d;          */
-            JGE,           /* if (arg1 >= arg2) GOTO d;          */
-            JGT,           /* if (arg1 >  arg2) GOTO d;          */
-            JUMP,          /* GOTO d;                            */
-            LABEL,         /* label:                       (NOP) */
-            RETURNVOID,    /* RETURN;                            */
-            RETURN,        /* RETURN arg1;                       */
-            END,           /* END PROGRAM                        */
-            COMMENT        /* // arg1                            */
+            RETURNVOID = 0x17,  /* RETURN;                            */
+            RETURN     = 0x18,  /* RETURN arg1;                       */
+            END        = 0x19,  /* END PROGRAM                        */
+
+            JUMP       = 0x100, /* GOTO d;                            */
+            JT         = 0x200, /* if (arg1) GOTO d;                  */
+            JF         = 0x300, /* if (!arg1) GOTO d;                 */
+            JE         = 0x400, /* if (arg1 == arg2) GOTO d;          */
+            JNE        = 0x500, /* if (arg1 != arg2) GOTO d;          */
+            JLE        = 0x600, /* if (arg1 <= arg2) GOTO d;          */
+            JLT        = 0x700, /* if (arg1 <  arg2) GOTO d;          */
+            JGE        = 0x800, /* if (arg1 >= arg2) GOTO d;          */
+            JGT        = 0x900, /* if (arg1 >  arg2) GOTO d;          */
+                JUMP_MASK  = 0xf00
         };
 
-    public:
+    public: /* Methods: */
         explicit inline Imop(Type type)
             : m_type(type) {}
         explicit inline Imop(Type type, Symbol *dest)
@@ -65,11 +65,16 @@ class Imop {
         explicit inline Imop(Type type, Symbol *dest, Symbol *arg1,
                              Symbol *arg2)
             : m_type(type), m_dest(dest), m_arg1(arg1), m_arg2(arg2) {}
-        virtual ~Imop() { if (m_type == COMMENT) delete (std::string*) m_arg1; }
+        ~Imop();
 
         inline Type    type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }
+        inline void setJumpDest(Imop *dest) {
+            assert((m_type & JUMP_MASK) != 0x0);
+            m_dest = (SecreC::Symbol*) dest;
+            dest->addIncoming(this);
+        }
         inline const Symbol *arg1() const { return m_arg1; }
         inline void setArg1(const Symbol *arg1) { m_arg1 = arg1; }
         inline const Symbol *arg2() const { return m_arg2; }
@@ -80,7 +85,14 @@ class Imop {
 
         std::string toString() const;
 
-    private:
+    protected: /* Methods: */
+        inline void addIncoming(Imop *jump) { m_incoming.insert(jump); }
+        inline void removeIncoming(Imop *jump) { m_incoming.erase(jump); }
+        inline const std::set<Imop*> incoming() const { return m_incoming; }
+
+    private: /* Fields: */
+        std::set<Imop*> m_incoming;
+
         const Type    m_type;
         const Symbol *m_dest;
         const Symbol *m_arg1;

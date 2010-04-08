@@ -15,7 +15,7 @@ void patchList(std::vector<SecreC::Imop*> &list,
 {
     typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
     for (IVCI it(list.begin()); it != list.end(); it++) {
-        (*it)->setDest((SecreC::Symbol*) dest);
+        (*it)->setJumpDest(dest);
     }
     list.clear();
 }
@@ -1896,9 +1896,9 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
     // Next iteration jump:
     Imop *j = new Imop(Imop::JUMP, 0);
     if (e1 != 0) {
-        j->setDest((SecreC::Symbol*) e2->firstImop());
+        j->setJumpDest(e2->firstImop());
     } else {
-        j->setDest((SecreC::Symbol*) body->firstImop());
+        j->setJumpDest(body->firstImop());
     }
     code.push_back(j);
 
