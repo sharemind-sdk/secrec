@@ -95,7 +95,7 @@ std::string SecTypeFunction::toString() const {
             }
         }
     }
-    os << ") -> void";
+    os << ") -> " << m_returnSecType;
     return os.str();
 }
 
@@ -143,7 +143,7 @@ DataTypeVar::DataTypeVar(const DataTypeBasic &copy)
 }
 
 std::string DataTypeVar::toString() const {
-    return std::string("VAR") + SecrecFundDataTypeToString(m_varType);
+    return std::string("VAR ") + SecrecFundDataTypeToString(m_varType);
 }
 
 

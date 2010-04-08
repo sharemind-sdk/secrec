@@ -280,6 +280,11 @@ datatype_specifier
  | datatype_fund_specifier
  ;
 
+
+/*******************************************************************************
+  Functions:
+*******************************************************************************/
+
 function_type_specifier
  : VOID
    {
@@ -287,11 +292,6 @@ function_type_specifier
    }
  | type_specifier
  ;
-
-
-/*******************************************************************************
-  Functions:
-*******************************************************************************/
 
 function_definitions /* Helper nonterminal for function_definition+ */
  : function_definitions function_definition

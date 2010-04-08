@@ -12,6 +12,8 @@
 
 namespace SecreC {
 
+class TreeNodeFundef;
+
 class TreeNode {
     public: /* Types: */
         typedef enum SecrecTreeNodeType Type;
@@ -23,6 +25,7 @@ class TreeNode {
         explicit TreeNode(Type type, const YYLTYPE &loc);
         virtual ~TreeNode();
 
+        TreeNodeFundef* containingFunction();
         inline TreeNode* parent() const { return m_parent; }
         inline Type type() const { return m_type; }
         inline const ChildrenList &children() const {
@@ -30,8 +33,8 @@ class TreeNode {
         }
         inline const YYLTYPE &location() const { return m_location; }
 
-        void appendChild(TreeNode *child, bool reparent = true);
-        void prependChild(TreeNode *child, bool reparent = true);
+        void appendChild(TreeNode *child);
+        void prependChild(TreeNode *child);
         void setLocation(const YYLTYPE &location);
 
         std::string toString(unsigned indentation = 2, unsigned startIndent = 0)
@@ -43,11 +46,20 @@ class TreeNode {
 
         static const char *typeName(Type type);
 
+    protected: /* Methods: */
+        inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
+        inline void setContainingFunctionDirectly(TreeNodeFundef *f) { m_function = f; }
+        virtual inline void resetParent(TreeNode *parent) {
+            m_parent = parent;
+            m_function = parent->m_function;
+        }
+
     private: /* Fields: */
-        TreeNode    *m_parent;
-        const Type   m_type;
-        ChildrenList m_children;
-        YYLTYPE      m_location;
+        TreeNode       *m_parent;
+        TreeNodeFundef *m_function;
+        const Type      m_type;
+        ChildrenList    m_children;
+        YYLTYPE         m_location;
 };
 
 extern "C" {
@@ -551,8 +563,15 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 class TreeNodeFundef: public TreeNodeCodeable {
     public: /* Methods: */
         explicit TreeNodeFundef(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_FUNDEF, loc), m_cachedType(0) {}
+            : TreeNodeCodeable(NODE_FUNDEF, loc), m_cachedType(0)
+        {
+            setContainingFunctionDirectly(this);
+        }
         virtual inline ~TreeNodeFundef() { delete m_cachedType; }
+
+        virtual inline void resetParent(TreeNode *parent) {
+            setParentDirectly(parent);
+        }
 
         const SecreC::TypeNonVoid &functionType() const;
 
@@ -728,11 +747,17 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
 class TreeNodeStmtDecl: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_DECL, loc) {}
+            : TreeNodeStmt(NODE_DECL, loc), m_global(false) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
+
+        inline bool global() const { return m_global; }
+        inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
+
+    private: /* Fields: */
+        bool m_global;
 };
 
 
@@ -774,6 +799,21 @@ class TreeNodeStmtIf: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_IF, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
+  TreeNodeStmtReturn
+******************************************************************/
+
+class TreeNodeStmtReturn: public TreeNodeStmt {
+    public: /* Methods: */
+        TreeNodeStmtReturn(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,

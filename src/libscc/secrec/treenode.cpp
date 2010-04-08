@@ -32,7 +32,7 @@ inline void appendVectorToVector(std::vector<T> &dst,
 namespace SecreC {
 
 TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
-    : m_parent(0), m_type(type), m_location(loc)
+    : m_parent(0), m_function(0), m_type(type), m_location(loc)
 {
     // Intentionally empty
 }
@@ -44,20 +44,24 @@ TreeNode::~TreeNode() {
     }
 }
 
-void TreeNode::appendChild(TreeNode *child, bool reparent) {
-    assert(child != 0);
-    m_children.push_back(child);
-    if (reparent) {
-        child->m_parent = this;
+TreeNodeFundef* TreeNode::containingFunction() {
+    if (m_function != 0) return m_function;
+    if (m_parent != 0) {
+        return (m_function = m_parent->containingFunction());
     }
+    return 0;
 }
 
-void TreeNode::prependChild(TreeNode *child, bool reparent) {
+void TreeNode::appendChild(TreeNode *child) {
+    assert(child != 0);
+    m_children.push_back(child);
+    child->resetParent(this);
+}
+
+void TreeNode::prependChild(TreeNode *child) {
     assert(child != 0);
     m_children.push_front(child);
-    if (reparent) {
-        child->m_parent = this;
-    }
+    child->resetParent(this);
 }
 
 void TreeNode::setLocation(const YYLTYPE &location) {
@@ -233,6 +237,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtFor(*loc));
         case NODE_STMT_IF:
             return (TreeNode*) (new SecreC::TreeNodeStmtIf(*loc));
+        case NODE_STMT_RETURN:
+            return (TreeNode*) (new SecreC::TreeNodeStmtReturn(*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:
@@ -378,6 +384,8 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICode::CodeList &code,
     typedef ChildrenListConstIterator CLCI;
 
     TreeNodeStmt *last = 0;
+    setResultFlags(TreeNodeStmt::FALLTHRU);
+
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert(dynamic_cast<TreeNodeStmt*>(*it) != 0);
         TreeNodeStmt *c = static_cast<TreeNodeStmt*>(*it);
@@ -1434,16 +1442,21 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICode::CodeList &code, SymbolT
 const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
     if (m_cachedType != 0) return *m_cachedType;
 
-    SecTypeFunctionVoid *st;
-    DataTypeFunctionVoid *dt;
-
     assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
     TreeNodeType *rt = static_cast<TreeNodeType*>(children().at(1));
 
     if (rt->type() == NODE_TYPEVOID) {
         assert(rt->secrecType().isVoid());
-        st = new SecTypeFunctionVoid();
-        dt = new DataTypeFunctionVoid();
+
+        SecTypeFunctionVoid *st = new SecTypeFunctionVoid();
+        DataTypeFunctionVoid *dt = new DataTypeFunctionVoid();
+
+        /// \todo Add parameters
+
+        m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
+
+        delete st;
+        delete dt;
     } else {
         assert(rt->type() == NODE_TYPETYPE);
         assert(!rt->secrecType().isVoid());
@@ -1456,13 +1469,16 @@ const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
         assert(dynamic_cast<const SecTypeBasic*>(&tt.secType()) != 0);
         const SecTypeBasic &tts = static_cast<const SecTypeBasic&>(tt.secType());
 
-        st = new SecTypeFunction(tts.secType());
-        dt = new DataTypeFunction(tt.dataType());
-    }
+        SecTypeFunction *st = new SecTypeFunction(tts.secType());
+        DataTypeFunction *dt = new DataTypeFunction(tt.dataType());
 
-    m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
-    delete st;
-    delete dt;
+        /// \todo Add parameters
+
+        m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
+
+        delete st;
+        delete dt;
+    }
 
     return *m_cachedType;
 }
@@ -1485,15 +1501,15 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     // Add to symbol table:
     SymbolFunction *ns = new SymbolFunction(this);
     ns->setName(id->value());
-    st.appendSymbol(ns);
+    st.appendGlobalSymbol(ns);
 
     // Generate local scope:
-    SymbolTable *localScope = st.newScope();
+    SymbolTable &localScope = *st.newScope();
     if (children().size() > 3) {
         for (CLCI it(children().begin() + 3); it != children().end(); it++) {
             assert((*it)->type() == NODE_DECL);
             assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
-            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, *localScope, es);
+            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, localScope, es);
             if (s != ICode::OK) return s;
         }
     }
@@ -1501,22 +1517,22 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     // Generate code for function body:
     assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(children().at(2));
-    ICode::Status s = body->generateCode(code, *localScope, es);
+    ICode::Status s = body->generateCode(code, localScope, es);
+    if (s != ICode::OK) return s;
     assert(body->resultFlags() != 0x0);
     assert((body->resultFlags() & ~TreeNodeStmt::MASK) == 0);
-    if (s != ICode::OK) return s;
 
-    /// \todo The following could be factored out in case of static analysis:
+    // Static checking:
     assert(ns->secrecType().isVoid() == false);
     assert(dynamic_cast<const TypeNonVoid*>(&ns->secrecType()) != 0);
     const TypeNonVoid &fType = static_cast<const TypeNonVoid&>(ns->secrecType());
     if (fType.kind() == TypeNonVoid::FUNCTION) {
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
-                es << "Function at " << location() << " contains an uncontained break statement!" << std::endl;
+                es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
                 return ICode::E_OTHER;
             } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
-                es << "Function at " << location() << " contains an uncontained continue statement!" << std::endl;
+                es << "Function at " << location() << " contains a continue statement outside of any loop!" << std::endl;
                 return ICode::E_OTHER;
             } else {
                 assert((body->resultFlags() & TreeNodeStmt::FALLTHRU) != 0x0);
@@ -1524,13 +1540,15 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
                 return ICode::E_OTHER;
             }
         }
+        assert((body->resultFlags() & TreeNodeStmt::RETURN) != 0x0);
     } else {
+        assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
-                es << "Function at " << location() << " contains an uncontained break statement!" << std::endl;
+                es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
                 return ICode::E_OTHER;
             } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
-                es << "Function at " << location() << " contains an uncontained continue statement!" << std::endl;
+                es << "Function at " << location() << " contains a continue statement outside of any loop!" << std::endl;
                 return ICode::E_OTHER;
             }
             assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
@@ -1585,6 +1603,7 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
         assert((*it)->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
         TreeNodeStmtDecl *decl = static_cast<TreeNodeStmtDecl*>(*it);
+        decl->setGlobal();
         ICode::Status s = decl->generateCode(code, st, es);
         if (s != ICode::OK) return s;
     }
@@ -1674,7 +1693,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Check for "void main()":
-    Symbol *mainFun = st.find("main");
+    Symbol *mainFun = st.findGlobal("main");
     if (mainFun == 0 || mainFun->symbolType() != Symbol::FUNCTION) {
         es << "No function \"void main()\" found!" << std::endl;
         return ICode::E_NO_MAIN;
@@ -1773,6 +1792,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
     const SecTypeBasic &secType = static_cast<const SecTypeBasic&>(justType.secType());
 
     SymbolSymbol *ns = new SymbolSymbol(TypeNonVoid(secType, DataTypeVar(dataType)), this);
+    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
     ns->setName(id->value());
 
     // Secondly we generate code for the initializer:
@@ -1854,9 +1874,10 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
     }
 
     // Loop body:
+    SymbolTable &innerScope = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(c3) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c3);
-    ICode::Status s = body->generateCode(code, *(st.newScope()), es);
+    ICode::Status s = body->generateCode(code, innerScope, es);
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
     if (e1 != 0) e1->patchTrueList(body->firstImop());
@@ -1953,9 +1974,10 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     setFirstImop(e->firstImop());
 
     // Generate code for first branch:
+    SymbolTable &innerScope1 = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(children().at(1)) != 0);
     TreeNodeStmt *s1 = static_cast<TreeNodeStmt*>(children().at(1));
-    s = s1->generateCode(code, st, es);
+    s = s1->generateCode(code, innerScope1, es);
     if (s != ICode::OK) return s;
 
 
@@ -1975,9 +1997,10 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         addToNextList(i);
 
         // Generate code for second branch:
+        SymbolTable &innerScope2 = *st.newScope();
         assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
         TreeNodeStmt *s2 = static_cast<TreeNodeStmt*>(children().at(2));
-        s = s2->generateCode(code, st, es);
+        s = s2->generateCode(code, innerScope2, es);
         if (s != ICode::OK) return s;
 
         e->patchFalseList(s2->firstImop());
@@ -1987,6 +2010,60 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         assert(s2->resultFlags() != 0x0);
         setResultFlags(s1->resultFlags() | s2->resultFlags());
     }
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtReturn
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es)
+{
+    if (children().empty()) {
+        if (containingFunction()->functionType().kind() == TypeNonVoid::FUNCTION) {
+            es << "Cannot return from non-void function without value at " << location() << std::endl;
+            return ICode::E_OTHER;
+        }
+        assert(containingFunction()->functionType().kind() == TypeNonVoid::FUNCTIONVOID);
+
+        Imop *i = new Imop(Imop::RETURNVOID);
+        code.push_back(i);
+        setFirstImop(i);
+    } else {
+        assert(children().size() == 1);
+        if (containingFunction()->functionType().kind() == TypeNonVoid::FUNCTIONVOID) {
+            es << "Cannot return value from void function at" << location() << std::endl;
+            return ICode::E_OTHER;
+        }
+        assert(containingFunction()->functionType().kind() == TypeNonVoid::FUNCTION);
+
+        assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+        ICode::Status s = e->calculateResultType(st, es);
+        if (s != ICode::OK) return s;
+        if (!containingFunction()->functionType().canAssign(*e->resultType())) {
+            es << "Cannot return value of type " << *e->resultType()
+               << " from function with type "
+               << containingFunction()->functionType() << ". At" << location()
+               << std::endl;
+            return ICode::E_OTHER;
+        }
+
+        s = e->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+        setFirstImop(e->firstImop());
+
+        Imop *i = new Imop(Imop::RETURN);
+        code.push_back(i);
+        i->setArg1(e->result());
+        patchFirstImop(i);
+    }
+    setResultFlags(TreeNodeStmt::RETURN);
 
     return ICode::OK;
 }

@@ -112,6 +112,9 @@ class SecTypeFunction: public SecTypeFunctionVoid {
         virtual SecType *clone() const { return new SecTypeFunction(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const SecType &other);
+        virtual inline bool canAssign(const SecType &other) const {
+            return SecTypeBasic(m_returnSecType).canAssign(other);
+        }
 
     private: /* Fields: */
         SecrecSecType              m_returnSecType;
@@ -266,6 +269,11 @@ class DataTypeFunction: public DataTypeFunctionVoid {
         inline const DataType &returnType() const { return *m_ret; }
 
         virtual bool operator==(const DataType &other) const;
+        virtual inline bool canAssign(const DataType &other) const {
+            assert(other.kind() == BASIC);
+            assert(dynamic_cast<const DataTypeBasic*>(m_ret) != 0);
+            return DataTypeVar(*static_cast<const DataTypeBasic*>(m_ret)).canAssign(other);
+        }
 
     private: /* Fields: */
         const DataType *m_ret;

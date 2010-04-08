@@ -23,6 +23,8 @@ class Symbol {
         inline const std::string &name() const { return m_name; }
         inline void setName(const std::string &name) { m_name = name; }
 
+        virtual std::string toString() const = 0;
+
     private: /* Fields: */
         const Type  m_symbolType;
         std::string m_name;
@@ -55,9 +57,27 @@ class SymbolSymbol: public SymbolWithValue {
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
+        virtual std::string toString() const;
+
     private: /* Fields: */
         const TreeNodeStmtDecl *m_decl;
         ScopeType               m_scopeType;
+};
+
+class SymbolTemporary: public SymbolWithValue {
+    public: /* Types: */
+        enum ScopeType { GLOBAL, LOCAL };
+
+    public: /* Methods: */
+        SymbolTemporary(const SecreC::Type &valueType)
+            : SymbolWithValue(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
+
+        inline void setScopeType(ScopeType type) { m_scopeType = type; }
+
+        virtual std::string toString() const;
+
+    private: /* Fields: */
+        ScopeType m_scopeType;
 };
 
 class SymbolFunction: public SymbolWithValue {
@@ -67,6 +87,8 @@ class SymbolFunction: public SymbolWithValue {
         inline const TreeNodeFundef *decl() const { return m_decl; }
         inline const Imop *target() const { return m_target; }
         inline void setTarget(const Imop *target) { m_target = target; }
+
+        virtual std::string toString() const;
 
     private: /* Fields: */
         const TreeNodeFundef *m_decl;
@@ -80,6 +102,8 @@ class SymbolConstantBool: public SymbolWithValue {
 
         inline bool value() const { return m_value; }
 
+        virtual std::string toString() const;
+
     private: /* Fields: */
         const bool m_value;
 };
@@ -90,6 +114,8 @@ class SymbolConstantInt: public SymbolWithValue {
             : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_INT)), m_value(value) {}
 
         inline int value() const { return m_value; }
+
+        virtual std::string toString() const;
 
     private: /* Fields: */
         const int m_value;
@@ -102,6 +128,8 @@ class SymbolConstantUInt: public SymbolWithValue {
 
         inline unsigned value() const { return m_value; }
 
+        virtual std::string toString() const;
+
     private: /* Fields: */
         const unsigned m_value;
 };
@@ -112,6 +140,8 @@ class SymbolConstantString: public SymbolWithValue {
             : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_STRING)), m_value(value) {}
 
         inline const std::string &value() const { return m_value; }
+
+        virtual std::string toString() const;
 
     private: /* Fields: */
         const std::string m_value;
@@ -126,17 +156,23 @@ class SymbolTable {
         ~SymbolTable();
 
         void appendSymbol(Symbol *symbol);
-        SymbolWithValue *appendTemporary(const Type &type);
+        void appendGlobalSymbol(Symbol *symbol);
+        SymbolTemporary *appendTemporary(const Type &type);
         SymbolConstantBool *constantBool(bool value);
         SymbolConstantInt *constantInt(int value);
         SymbolConstantUInt *constantUInt(unsigned value);
         SymbolConstantString *constantString(const std::string &value);
         Symbol *find(const std::string &name) const;
+        Symbol *findGlobal(const std::string &name) const;
         SymbolTable *newScope();
+
+        std::string toString(unsigned level = 0, unsigned indent = 4,
+                             bool newScope = true) const;
 
     private: /* Fields: */
         Table        m_table;
         SymbolTable *m_parent;
+        SymbolTable *m_global;
         SymbolTable *m_scope;
         SymbolTable *m_cont;
         SymbolTable *m_last;
@@ -147,6 +183,14 @@ class SymbolTable {
 
 } // namespace SecreC
 
-std::ostream &operator<<(std::ostream &out, const SecreC::SymbolTable &t);
+inline std::ostream &operator<<(std::ostream &out, const SecreC::Symbol &s) {
+    out << s.toString();
+    return out;
+}
+
+inline std::ostream &operator<<(std::ostream &out, const SecreC::SymbolTable &st) {
+    out << st.toString();
+    return out;
+}
 
 #endif // SYMBOLTABLE_H
