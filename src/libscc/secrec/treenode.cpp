@@ -226,7 +226,7 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_STMT_CONTINUE:
             return (TreeNode*) (new SecreC::TreeNodeStmtContinue(*loc));
         case NODE_STMT_COMPOUND:
-            return (TreeNode*) (new SecreC::TreeNodeCompound(*loc));
+            return (TreeNode*) (new SecreC::TreeNodeStmtCompound(*loc));
         case NODE_STMT_EXPR:
             return (TreeNode*) (new SecreC::TreeNodeStmtExpr(*loc));
         case NODE_STMT_FOR:
@@ -234,7 +234,7 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_STMT_IF:
             return (TreeNode*) (new SecreC::TreeNodeStmtIf(*loc));
         case NODE_DECL:
-            return (TreeNode*) (new SecreC::TreeNodeDecl(*loc));
+            return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:
             return (TreeNode*) (new SecreC::TreeNodeTypeType(*loc));
         case NODE_TYPEVOID:
@@ -368,21 +368,23 @@ void TreeNodeCodeable::addToNextList(const std::vector<Imop*> &nl) {
 }
 
 /*******************************************************************************
-  TreeNodeCompound
+  TreeNodeStmtCompound
 *******************************************************************************/
 
-ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
-                                             SymbolTable &st,
-                                             std::ostream &es)
+ICode::Status TreeNodeStmtCompound::generateCode(ICode::CodeList &code,
+                                                 SymbolTable &st,
+                                                 std::ostream &es)
 {
     typedef ChildrenListConstIterator CLCI;
 
-    TreeNodeCodeable *last = 0;
+    TreeNodeStmt *last = 0;
     for (CLCI it(children().begin()); it != children().end(); it++) {
-        assert(dynamic_cast<TreeNodeCodeable*>(*it) != 0);
-        TreeNodeCodeable *c = static_cast<TreeNodeCodeable*>(*it);
+        assert(dynamic_cast<TreeNodeStmt*>(*it) != 0);
+        TreeNodeStmt *c = static_cast<TreeNodeStmt*>(*it);
         ICode::Status s = c->generateCode(code, st, es);
         if (s != ICode::OK) return s;
+
+        assert(c->resultFlags() != 0x0);
 
         if (c->firstImop() == 0) {
             if (c->type() != NODE_DECL) {
@@ -396,7 +398,17 @@ ICode::Status TreeNodeCompound::generateCode(ICode::CodeList &code,
         addToBreakList(c->breakList());
         addToContinueList(c->continueList());
         if (last != 0) {
+            // Static checking:
+            if ((resultFlags() & TreeNodeStmt::FALLTHRU) == 0x0) {
+                es << "Unreachable statement at " << c->location() << std::endl;
+                return ICode::E_OTHER;
+            } else {
+                setResultFlags((resultFlags() & ~TreeNodeStmt::FALLTHRU) | c->resultFlags());
+            }
+
             last->patchNextList(c->firstImop());
+        } else {
+            setResultFlags(c->resultFlags());
         }
         last = c;
     }
@@ -451,58 +463,6 @@ std::string TreeNodeDataTypeF::xmlHelper() const {
     std::ostringstream os;
     os << "type=\"" << m_cachedType << "\"";
     return os.str();
-}
-
-/*******************************************************************************
-  TreeNodeDecl
-*******************************************************************************/
-
-ICode::Status TreeNodeDecl::generateCode(ICode::CodeList &code,
-                                         SymbolTable &st,
-                                         std::ostream &es)
-{
-    typedef TreeNodeIdentifier TNI;
-    typedef TreeNodeType       TNT;
-
-    assert(children().size() > 0 && children().size() <= 3);
-    assert(children().at(0)->type() == NODE_IDENTIFIER);
-
-    assert(dynamic_cast<TNI*>(children().at(0)) != 0);
-    TNI *id   = static_cast<TNI*>(children().at(0));
-    assert(dynamic_cast<TNT*>(children().at(1)) != 0);
-    TNT *type = static_cast<TNT*>(children().at(1));
-
-    /// \todo Check here for overrides first if new symbol table is needed.
-
-    // First we create the new symbol, but we don't add it to the symbol table:
-    assert(type->secrecType().isVoid() == false);
-    assert(dynamic_cast<const TypeNonVoid*>(&type->secrecType()) != 0);
-    const TypeNonVoid &justType = static_cast<const TypeNonVoid&>(type->secrecType());
-
-    assert(justType.kind() == TypeNonVoid::BASIC);
-    assert(dynamic_cast<const DataTypeBasic*>(&justType.dataType()) != 0);
-    const DataTypeBasic &dataType = static_cast<const DataTypeBasic&>(justType.dataType());
-
-    assert(dynamic_cast<const SecTypeBasic*>(&justType.secType()) != 0);
-    const SecTypeBasic &secType = static_cast<const SecTypeBasic&>(justType.secType());
-
-    SymbolSymbol *ns = new SymbolSymbol(TypeNonVoid(secType, DataTypeVar(dataType)), this);
-    ns->setName(id->value());
-
-    // Secondly we generate code for the initializer:
-    if (children().size() > 2) {
-        TreeNode *t = children().at(2);
-        assert((t->type() & NODE_EXPR_MASK) != 0x0);
-        assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
-        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
-        ICode::Status s = e->generateCode(code, st, es, ns);
-        if (s != ICode::OK) return s;
-    }
-
-    // Thirdly we add the symbol to the symbol table for use in expressions:
-    st.appendSymbol(ns);
-
-    return ICode::OK;
 }
 
 
@@ -1532,16 +1492,18 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     if (children().size() > 3) {
         for (CLCI it(children().begin() + 3); it != children().end(); it++) {
             assert((*it)->type() == NODE_DECL);
-            assert(dynamic_cast<TreeNodeDecl*>(*it) != 0);
-            ICode::Status s = static_cast<TreeNodeDecl*>(*it)->generateCode(code, *localScope, es);
+            assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
+            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, *localScope, es);
             if (s != ICode::OK) return s;
         }
     }
 
     // Generate code for function body:
-    assert(dynamic_cast<TreeNodeCodeable*>(children().at(2)) != 0);
-    TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(children().at(2));
+    assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
+    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(children().at(2));
     ICode::Status s = body->generateCode(code, *localScope, es);
+    assert(body->resultFlags() != 0x0);
+    assert((body->resultFlags() & ~TreeNodeStmt::MASK) == 0);
     if (s != ICode::OK) return s;
 
     /// \todo The following could be factored out in case of static analysis:
@@ -1549,12 +1511,33 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     assert(dynamic_cast<const TypeNonVoid*>(&ns->secrecType()) != 0);
     const TypeNonVoid &fType = static_cast<const TypeNonVoid&>(ns->secrecType());
     if (fType.kind() == TypeNonVoid::FUNCTION) {
-        /// \todo
+        if (body->resultFlags() != TreeNodeStmt::RETURN) {
+            if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
+                es << "Function at " << location() << " contains an uncontained break statement!" << std::endl;
+                return ICode::E_OTHER;
+            } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
+                es << "Function at " << location() << " contains an uncontained continue statement!" << std::endl;
+                return ICode::E_OTHER;
+            } else {
+                assert((body->resultFlags() & TreeNodeStmt::FALLTHRU) != 0x0);
+                es << "Function at " << location() << " does not always return a value!" << std::endl;
+                return ICode::E_OTHER;
+            }
+        }
     } else {
-        assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
-        Imop *i = new Imop(Imop::RETURNVOID);
-        body->patchNextList(i);
-        code.push_back(i);
+        if (body->resultFlags() != TreeNodeStmt::RETURN) {
+            if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
+                es << "Function at " << location() << " contains an uncontained break statement!" << std::endl;
+                return ICode::E_OTHER;
+            } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
+                es << "Function at " << location() << " contains an uncontained continue statement!" << std::endl;
+                return ICode::E_OTHER;
+            }
+            assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
+            Imop *i = new Imop(Imop::RETURNVOID);
+            body->patchNextList(i);
+            code.push_back(i);
+        }
     }
 
     assert(body->breakList().empty());
@@ -1600,8 +1583,8 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
 
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_DECL);
-        assert(dynamic_cast<TreeNodeDecl*>(*it) != 0);
-        TreeNodeDecl *decl = static_cast<TreeNodeDecl*>(*it);
+        assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
+        TreeNodeStmtDecl *decl = static_cast<TreeNodeStmtDecl*>(*it);
         ICode::Status s = decl->generateCode(code, st, es);
         if (s != ICode::OK) return s;
     }
@@ -1726,13 +1709,14 @@ std::string TreeNodeSecTypeF::xmlHelper() const {
 *******************************************************************************/
 
 ICode::Status TreeNodeStmtBreak::generateCode(ICode::CodeList &code,
-                                           SymbolTable &,
-                                           std::ostream &)
+                                              SymbolTable &,
+                                              std::ostream &)
 {
     Imop *i = new Imop(Imop::JUMP, 0);
     code.push_back(i);
     setFirstImop(i);
     addToBreakList(i);
+    setResultFlags(TreeNodeStmt::BREAK);
 
     return ICode::OK;
 }
@@ -1743,14 +1727,68 @@ ICode::Status TreeNodeStmtBreak::generateCode(ICode::CodeList &code,
 *******************************************************************************/
 
 ICode::Status TreeNodeStmtContinue::generateCode(ICode::CodeList &code,
-                                           SymbolTable &,
-                                           std::ostream &)
+                                                 SymbolTable &,
+                                                 std::ostream &)
 {
     Imop *i = new Imop(Imop::JUMP, 0);
     code.push_back(i);
     setFirstImop(i);
     addToContinueList(i);
+    setResultFlags(TreeNodeStmt::CONTINUE);
 
+    return ICode::OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtDecl
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
+                                             SymbolTable &st,
+                                             std::ostream &es)
+{
+    typedef TreeNodeIdentifier TNI;
+    typedef TreeNodeType       TNT;
+
+    assert(children().size() > 0 && children().size() <= 3);
+    assert(children().at(0)->type() == NODE_IDENTIFIER);
+
+    assert(dynamic_cast<TNI*>(children().at(0)) != 0);
+    TNI *id   = static_cast<TNI*>(children().at(0));
+    assert(dynamic_cast<TNT*>(children().at(1)) != 0);
+    TNT *type = static_cast<TNT*>(children().at(1));
+
+    /// \todo Check here for overrides first if new symbol table is needed.
+
+    // First we create the new symbol, but we don't add it to the symbol table:
+    assert(type->secrecType().isVoid() == false);
+    assert(dynamic_cast<const TypeNonVoid*>(&type->secrecType()) != 0);
+    const TypeNonVoid &justType = static_cast<const TypeNonVoid&>(type->secrecType());
+
+    assert(justType.kind() == TypeNonVoid::BASIC);
+    assert(dynamic_cast<const DataTypeBasic*>(&justType.dataType()) != 0);
+    const DataTypeBasic &dataType = static_cast<const DataTypeBasic&>(justType.dataType());
+
+    assert(dynamic_cast<const SecTypeBasic*>(&justType.secType()) != 0);
+    const SecTypeBasic &secType = static_cast<const SecTypeBasic&>(justType.secType());
+
+    SymbolSymbol *ns = new SymbolSymbol(TypeNonVoid(secType, DataTypeVar(dataType)), this);
+    ns->setName(id->value());
+
+    // Secondly we generate code for the initializer:
+    if (children().size() > 2) {
+        TreeNode *t = children().at(2);
+        assert((t->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
+        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
+        ICode::Status s = e->generateCode(code, st, es, ns);
+        if (s != ICode::OK) return s;
+    }
+
+    // Thirdly we add the symbol to the symbol table for use in expressions:
+    st.appendSymbol(ns);
+
+    setResultFlags(TreeNodeStmt::FALLTHRU);
     return ICode::OK;
 }
 
@@ -1771,6 +1809,7 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
 
     setFirstImop(e->firstImop());
     setNextList(e->nextList());
+    setResultFlags(TreeNodeStmt::FALLTHRU);
 
     return ICode::OK;
 }
@@ -1815,8 +1854,8 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
     }
 
     // Loop body:
-    assert(dynamic_cast<TreeNodeCodeable*>(c3) != 0);
-    TreeNodeCodeable *body = static_cast<TreeNodeCodeable*>(c3);
+    assert(dynamic_cast<TreeNodeStmt*>(c3) != 0);
+    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c3);
     ICode::Status s = body->generateCode(code, *(st.newScope()), es);
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
@@ -1841,6 +1880,18 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
             body->patchNextList(body->firstImop());
         }
     }
+
+    // Static checking:
+    assert(body->resultFlags() != 0x0);
+    if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
+        es << "For loop at " << location() << " wont loop!" << std::endl;
+        return ICode::E_OTHER;
+    }
+    if (e1 == 0 && ((body->resultFlags() & (TreeNodeStmt::BREAK | TreeNodeStmt::RETURN)) == 0x0)) {
+        es << "For loop at " << location() << " is clearly infinite!" << std::endl;
+        return ICode::E_OTHER;
+    }
+    setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
 
     // Next iteration jump:
     Imop *j = new Imop(Imop::JUMP, 0);
@@ -1874,7 +1925,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
     if (e->resultType()->isVoid()) {
         es << "Conditional expression of the if statement can't have a void "
-              "type." << std::endl;
+              "type. At " << e->location() << std::endl;
         return ICode::E_TYPE;
     }
     assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
@@ -1902,8 +1953,8 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     setFirstImop(e->firstImop());
 
     // Generate code for first branch:
-    assert(dynamic_cast<TreeNodeCodeable*>(children().at(1)) != 0);
-    TreeNodeCodeable *s1 = static_cast<TreeNodeCodeable*>(children().at(1));
+    assert(dynamic_cast<TreeNodeStmt*>(children().at(1)) != 0);
+    TreeNodeStmt *s1 = static_cast<TreeNodeStmt*>(children().at(1));
     s = s1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
@@ -1912,9 +1963,11 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     addToNextList(s1->nextList());
     addToBreakList(s1->breakList());
     addToContinueList(s1->continueList());
+    assert(s1->resultFlags() != 0x0);
 
     if (children().size() == 2) {
         addToNextList(e->falseList());
+        setResultFlags(s1->resultFlags() | TreeNodeStmt::FALLTHRU);
     } else {
         // Generate jump out of first branch:
         Imop *i = new Imop(Imop::JUMP, 0);
@@ -1922,8 +1975,8 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         addToNextList(i);
 
         // Generate code for second branch:
-        assert(dynamic_cast<TreeNodeCodeable*>(children().at(2)) != 0);
-        TreeNodeCodeable *s2 = static_cast<TreeNodeCodeable*>(children().at(2));
+        assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
+        TreeNodeStmt *s2 = static_cast<TreeNodeStmt*>(children().at(2));
         s = s2->generateCode(code, st, es);
         if (s != ICode::OK) return s;
 
@@ -1931,6 +1984,8 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         addToNextList(s2->nextList());
         addToBreakList(s2->breakList());
         addToContinueList(s2->continueList());
+        assert(s2->resultFlags() != 0x0);
+        setResultFlags(s1->resultFlags() | s2->resultFlags());
     }
 
     return ICode::OK;

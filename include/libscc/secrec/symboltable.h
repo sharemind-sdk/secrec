@@ -7,7 +7,7 @@
 namespace SecreC {
 
 class Imop;
-class TreeNodeDecl;
+class TreeNodeStmtDecl;
 class TreeNodeFundef;
 
 class Symbol {
@@ -46,17 +46,18 @@ class SymbolSymbol: public SymbolWithValue {
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolSymbol(const SecreC::Type &valueType, const TreeNodeDecl *decl)
+        SymbolSymbol(const SecreC::Type &valueType,
+                     const TreeNodeStmtDecl *decl)
             : SymbolWithValue(Symbol::SYMBOL, valueType), m_decl(decl),
               m_scopeType(LOCAL) {}
 
-        inline const TreeNodeDecl *decl() const { return m_decl; }
+        inline const TreeNodeStmtDecl *decl() const { return m_decl; }
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
     private: /* Fields: */
-        const TreeNodeDecl *m_decl;
-        ScopeType           m_scopeType;
+        const TreeNodeStmtDecl *m_decl;
+        ScopeType               m_scopeType;
 };
 
 class SymbolFunction: public SymbolWithValue {

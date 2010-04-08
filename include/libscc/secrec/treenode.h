@@ -157,21 +157,6 @@ class TreeNodeCodeable: public TreeNode {
         Imop              *m_firstImop;
 };
 
-/******************************************************************
-  TreeNodeCompound
-******************************************************************/
-
-class TreeNodeCompound: public TreeNodeCodeable {
-    public: /* Methods: */
-        TreeNodeCompound(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_COMPOUND, loc) {}
-        virtual inline ~TreeNodeCompound() {}
-
-        virtual ICode::Status generateCode(ICode::CodeList &code,
-                                           SymbolTable &st,
-                                           std::ostream &es);
-};
-
 
 /******************************************************************
   TreeNodeDataType
@@ -230,21 +215,6 @@ class TreeNodeDataTypeF: public TreeNodeDataType {
 
     private: /* Fields: */
         DataTypeBasic m_cachedType;
-};
-
-
-/******************************************************************
-  TreeNodeDecl
-******************************************************************/
-
-class TreeNodeDecl: public TreeNodeCodeable {
-    public: /* Methods: */
-        explicit inline TreeNodeDecl(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_DECL, loc) {}
-
-        virtual ICode::Status generateCode(ICode::CodeList &code,
-                                           SymbolTable &st,
-                                           std::ostream &es);
 };
 
 
@@ -681,13 +651,54 @@ class TreeNodeSecTypeF: public TreeNode {
 
 
 /******************************************************************
+  TreeNodeStmt
+******************************************************************/
+
+class TreeNodeStmt: public TreeNodeCodeable {
+    public: /* Types: */
+        enum ResultClass {
+            FALLTHRU = 0x01,
+            RETURN   = 0x02,
+            BREAK    = 0x04,
+            CONTINUE = 0x08,
+            MASK     = 0x0f
+        };
+
+    public: /* Methods: */
+        TreeNodeStmt(Type type, const YYLTYPE &loc)
+            : TreeNodeCodeable(type, loc), m_resultFlags(0) {}
+
+        inline int resultFlags() const { return m_resultFlags; }
+        inline void setResultFlags(int flags) { m_resultFlags = flags; }
+
+    private: /* Fields: */
+        int m_resultFlags;
+};
+
+
+/******************************************************************
   TreeNodeStmtBreak
 ******************************************************************/
 
-class TreeNodeStmtBreak: public TreeNodeCodeable {
+class TreeNodeStmtBreak: public TreeNodeStmt {
     public: /* Methods: */
         TreeNodeStmtBreak(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_BREAK, loc) {}
+            : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+/******************************************************************
+  TreeNodeStmtCompound
+******************************************************************/
+
+class TreeNodeStmtCompound: public TreeNodeStmt {
+    public: /* Methods: */
+        TreeNodeStmtCompound(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
+        virtual inline ~TreeNodeStmtCompound() {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -699,10 +710,25 @@ class TreeNodeStmtBreak: public TreeNodeCodeable {
   TreeNodeStmtContinue
 ******************************************************************/
 
-class TreeNodeStmtContinue: public TreeNodeCodeable {
+class TreeNodeStmtContinue: public TreeNodeStmt {
     public: /* Methods: */
         TreeNodeStmtContinue(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_CONTINUE, loc) {}
+            : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
+  TreeNodeStmtDecl
+******************************************************************/
+
+class TreeNodeStmtDecl: public TreeNodeStmt {
+    public: /* Methods: */
+        explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_DECL, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -714,10 +740,10 @@ class TreeNodeStmtContinue: public TreeNodeCodeable {
   TreeNodeStmtExpr
 ******************************************************************/
 
-class TreeNodeStmtExpr: public TreeNodeCodeable {
+class TreeNodeStmtExpr: public TreeNodeStmt {
     public: /* Methods: */
         TreeNodeStmtExpr(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_EXPR, loc) {}
+            : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -729,10 +755,10 @@ class TreeNodeStmtExpr: public TreeNodeCodeable {
   TreeNodeStmtFor
 ******************************************************************/
 
-class TreeNodeStmtFor: public TreeNodeCodeable {
+class TreeNodeStmtFor: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_FOR, loc) {}
+            : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -744,10 +770,10 @@ class TreeNodeStmtFor: public TreeNodeCodeable {
   TreeNodeStmtIf
 ******************************************************************/
 
-class TreeNodeStmtIf: public TreeNodeCodeable {
+class TreeNodeStmtIf: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_STMT_IF, loc) {}
+            : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
