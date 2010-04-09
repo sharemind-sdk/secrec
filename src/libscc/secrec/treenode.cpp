@@ -40,7 +40,10 @@ TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
 TreeNode::~TreeNode() {
     typedef ChildrenListConstIterator CLCI;
     for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
-        delete *it;
+        assert((*it) != 0);
+        if ((*it)->m_parent == this) {
+            delete *it;
+        }
     }
 }
 
@@ -134,6 +137,8 @@ const char *TreeNode::typeName(Type type) {
 std::string TreeNode::toString(unsigned indent, unsigned startIndent)
         const
 {
+    typedef ChildrenListConstIterator CLCI;
+
     std::ostringstream os;
 
     // Indent:
@@ -147,14 +152,17 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent)
     if (!sh.empty())
         os << ' ' << sh;
 
-    for (unsigned i = 0; i < m_children.size(); i++) {
+    for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
         os << std::endl;
-        os << m_children.at(i)->toString(indent, startIndent + indent);
+        assert((*it)->parent() == this);
+        os << (*it)->toString(indent, startIndent + indent);
     }
     return os.str();
 }
 
 std::string TreeNode::toXml(bool full) const {
+    typedef ChildrenListConstIterator CLCI;
+
     std::ostringstream os;
     if (full) {
         os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
@@ -169,8 +177,9 @@ std::string TreeNode::toXml(bool full) const {
         os << "/>";
     } else {
         os << '>';
-        for (unsigned i = 0; i < m_children.size(); i++) {
-            os << m_children.at(i)->toXml(false);
+        for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
+            assert((*it)->parent() == this);
+            os << (*it)->toXml(false);
         }
         os << "</" << typeName(m_type) << '>';
     }

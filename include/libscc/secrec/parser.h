@@ -56,9 +56,9 @@ enum SecrecTreeNodeType {
     NODE_EXPR_ASSIGN_DIV  = 0x180, /* expr /= expr             */
     NODE_EXPR_ASSIGN_MOD  = 0x190, /* expr %= expr             */
     NODE_EXPR_ASSIGN_ADD  = 0x1a0, /* expr += expr             */
-    NODE_EXPR_ASSIGN_SUB  = 0x2b0, /* expr -= expr             */
-    NODE_EXPR_ASSIGN      = 0x2c0, /* expr = expr              */
-    NODE_EXPR_RVARIABLE   = 0x2d0, /* x (R-value)              */
+    NODE_EXPR_ASSIGN_SUB  = 0x1b0, /* expr -= expr             */
+    NODE_EXPR_ASSIGN      = 0x1c0, /* expr = expr              */
+    NODE_EXPR_RVARIABLE   = 0x1d0, /* x (R-value)              */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x1000,
     NODE_STMT_FOR       = 0x2000,

@@ -285,6 +285,7 @@ datatype_specifier
   Functions:
 *******************************************************************************/
 
+
 function_type_specifier
  : VOID
    {

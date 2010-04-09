@@ -842,6 +842,7 @@ class TreeNodeTypeType: public TreeNodeType {
     public: /* Methods: */
         explicit inline TreeNodeTypeType(const YYLTYPE &loc)
             : TreeNodeType(NODE_TYPETYPE, loc), m_cachedType(0) {}
+        virtual inline ~TreeNodeTypeType() { delete m_cachedType; }
 
         virtual const SecreC::Type &secrecType() const;
         virtual std::string stringHelper() const;
