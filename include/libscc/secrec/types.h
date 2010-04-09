@@ -158,53 +158,53 @@ class DataTypeVar;
 
 class DataTypeBasic: public DataType {
     public: /* Methods: */
-        explicit DataTypeBasic(SecrecVarType varType)
-            : DataType(DataType::BASIC), m_varType(varType) {}
+        explicit DataTypeBasic(SecrecDataType dataType)
+            : DataType(DataType::BASIC), m_dataType(dataType) {}
         explicit DataTypeBasic(const DataTypeBasic &copy)
-            : DataType(copy), m_varType(copy.m_varType) {}
+            : DataType(copy), m_dataType(copy.m_dataType) {}
         explicit DataTypeBasic(const DataTypeVar &copy);
 
-        inline SecrecVarType varType() const { return m_varType; }
+        inline SecrecDataType dataType() const { return m_dataType; }
 
         virtual inline DataType *clone() const { return new DataTypeBasic(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_varType == static_cast<const DataTypeBasic &>(other).m_varType;
+                   && m_dataType == static_cast<const DataTypeBasic &>(other).m_dataType;
         }
 
     private: /* Fields: */
-        SecrecVarType m_varType;
+        SecrecDataType m_dataType;
 };
 
 class DataTypeVar: public DataType {
     public: /* Methods: */
-        explicit DataTypeVar(SecrecVarType varType)
-            : DataType(DataType::BASIC), m_varType(varType) {}
+        explicit DataTypeVar(SecrecDataType dataType)
+            : DataType(DataType::BASIC), m_dataType(dataType) {}
         explicit DataTypeVar(const DataTypeVar &copy)
-            : DataType(copy), m_varType(copy.m_varType) {}
+            : DataType(copy), m_dataType(copy.m_dataType) {}
         explicit DataTypeVar(const DataTypeBasic &copy);
 
-        inline SecrecVarType varType() const { return m_varType; }
+        inline SecrecDataType dataType() const { return m_dataType; }
 
         virtual inline DataType *clone() const { return new DataTypeVar(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_varType == static_cast<const DataTypeVar &>(other).m_varType;
+                   && m_dataType == static_cast<const DataTypeVar &>(other).m_dataType;
         }
         inline bool equivalentTo(const DataTypeBasic &basicType) const {
-            return basicType.varType() == m_varType;
+            return basicType.dataType() == m_dataType;
         }
         virtual inline bool canAssign(const DataType &other) const {
             if (other.kind() != DataType::BASIC) return false;
             assert(dynamic_cast<const DataTypeBasic*>(&other) != 0);
             const DataTypeBasic &o = static_cast<const DataTypeBasic&>(other);
-            return m_varType == o.varType();
+            return m_dataType == o.dataType();
         }
 
     private: /* Fields: */
-        SecrecVarType m_varType;
+        SecrecDataType m_dataType;
 };
 
 class DataTypeArray: public DataType {
@@ -333,9 +333,9 @@ class TypeNonVoid: public Type {
         };
 
     public: /* Methods: */
-        TypeNonVoid(SecrecSecType secType, SecrecVarType varType)
+        TypeNonVoid(SecrecSecType secType, SecrecDataType dataType)
             : Type(false), m_kind(BASIC), m_secType(new SecTypeBasic(secType)),
-              m_dataType(new DataTypeBasic(varType)) {}
+              m_dataType(new DataTypeBasic(dataType)) {}
         TypeNonVoid(const SecTypeBasic &secType, const DataTypeBasic &dataType)
             : Type(false), m_kind(BASIC), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
@@ -391,7 +391,7 @@ class TypeNonVoid: public Type {
 } // namespace SecreC
 
 std::ostream &operator<<(std::ostream &out, const SecrecSecType &type);
-std::ostream &operator<<(std::ostream &out, const SecrecVarType &type);
+std::ostream &operator<<(std::ostream &out, const SecrecDataType &type);
 
 inline std::ostream &operator<<(std::ostream &out, const SecreC::Type &type) {
     out << type.toString();

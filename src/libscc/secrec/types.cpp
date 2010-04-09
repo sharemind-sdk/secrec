@@ -15,13 +15,13 @@ inline const char *SecrecFundSecTypeToString(SecrecSecType secType) {
     return 0;
 }
 
-inline const char *SecrecFundDataTypeToString(SecrecVarType varType) {
-    switch (varType) {
-        case VARTYPE_INVALID: return "invalid";
-        case VARTYPE_BOOL:    return "bool";
-        case VARTYPE_INT:     return "int";
-        case VARTYPE_UINT:    return "unsigned int";
-        case VARTYPE_STRING:  return "string";
+inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
+    switch (dataType) {
+        case DATATYPE_INVALID: return "invalid";
+        case DATATYPE_BOOL:    return "bool";
+        case DATATYPE_INT:     return "int";
+        case DATATYPE_UINT:    return "unsigned int";
+        case DATATYPE_STRING:  return "string";
     }
     return 0;
 }
@@ -122,13 +122,13 @@ inline bool SecTypeFunction::operator==(const SecType &other) {
 *******************************************************************************/
 
 DataTypeBasic::DataTypeBasic(const DataTypeVar &copy)
-    : DataType(DataType::BASIC), m_varType(copy.varType())
+    : DataType(DataType::BASIC), m_dataType(copy.dataType())
 {
     // Intentionally empty
 }
 
 std::string DataTypeBasic::toString() const {
-    return SecrecFundDataTypeToString(m_varType);
+    return SecrecFundDataTypeToString(m_dataType);
 }
 
 
@@ -137,13 +137,13 @@ std::string DataTypeBasic::toString() const {
 *******************************************************************************/
 
 DataTypeVar::DataTypeVar(const DataTypeBasic &copy)
-    : DataType(DataType::VAR), m_varType(copy.varType())
+    : DataType(DataType::VAR), m_dataType(copy.dataType())
 {
     // Intentionally empty
 }
 
 std::string DataTypeVar::toString() const {
-    return std::string("VAR ") + SecrecFundDataTypeToString(m_varType);
+    return std::string("VAR ") + SecrecFundDataTypeToString(m_dataType);
 }
 
 
@@ -329,7 +329,7 @@ std::ostream &operator<<(std::ostream &out, const SecrecSecType &type) {
     return out;
 }
 
-std::ostream &operator<<(std::ostream &out, const SecrecVarType &type) {
+std::ostream &operator<<(std::ostream &out, const SecrecDataType &type) {
     out << SecrecFundDataTypeToString(type);
     return out;
 }

@@ -85,9 +85,9 @@ enum SecrecTreeNodeType {
 
 enum SecrecSecType { SECTYPE_INVALID = 0x00, SECTYPE_PUBLIC = 0x01,
                      SECTYPE_PRIVATE = 0x02 };
-enum SecrecVarType { VARTYPE_INVALID = 0x00, VARTYPE_BOOL = 0x01,
-                     VARTYPE_INT = 0x02, VARTYPE_UINT = 0x04,
-                     VARTYPE_STRING = 0x08 };
+enum SecrecDataType { DATATYPE_INVALID = 0x00, DATATYPE_BOOL = 0x01,
+                      DATATYPE_INT = 0x02, DATATYPE_UINT = 0x04,
+                      DATATYPE_STRING = 0x08 };
 
 /**
     Parses SecreC from the standard input.

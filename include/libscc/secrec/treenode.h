@@ -85,7 +85,7 @@ struct TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
 struct TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
 struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
                                         YYLTYPE *loc);
-struct TreeNode *treenode_init_dataTypeF(enum SecrecVarType varType,
+struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
                                          YYLTYPE *loc);
 struct TreeNode *treenode_init_dataTypeArray(unsigned value, YYLTYPE *loc);
 
@@ -213,10 +213,10 @@ class TreeNodeDataTypeArray: public TreeNodeDataType {
 
 class TreeNodeDataTypeF: public TreeNodeDataType {
     public: /* Methods: */
-        inline TreeNodeDataTypeF(SecrecVarType varType,
+        inline TreeNodeDataTypeF(SecrecDataType dataType,
                                  const YYLTYPE &loc)
             : TreeNodeDataType(NODE_DATATYPE_F, loc),
-              m_cachedType(varType) {}
+              m_cachedType(dataType) {}
 
         virtual inline const DataType &dataType() const {
             return m_cachedType;

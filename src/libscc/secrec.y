@@ -251,23 +251,23 @@ sectype_specifier
 datatype_fund_specifier
  : BOOL
    {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_BOOL, &@$);
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_BOOL, &@$);
    }
  | INT
    {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT, &@$);
    }
  | SIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_INT, &@$);
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT, &@$);
    }
  | UNSIGNED INT
    {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_UINT, &@$);
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT, &@$);
    }
  | STRING
    {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(VARTYPE_STRING, &@$);
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_STRING, &@$);
    }
  ;
 

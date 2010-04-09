@@ -331,10 +331,10 @@ extern "C" struct TreeNode *treenode_init_secTypeF(
 }
 
 extern "C" struct TreeNode *treenode_init_dataTypeF(
-        enum SecrecVarType varType,
+        enum SecrecDataType dataType,
         YYLTYPE *loc)
 {
-    return (TreeNode*) new SecreC::TreeNodeDataTypeF(varType, *loc);
+    return (TreeNode*) new SecreC::TreeNodeDataTypeF(dataType, *loc);
 }
 
 extern "C" struct TreeNode *treenode_init_dataTypeArray(
@@ -689,15 +689,15 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
         assert(dynamic_cast<const SecTypeBasic*>(&et1->secType()) != 0);
         assert(dynamic_cast<const DataTypeBasic*>(&et2->dataType()) != 0);
         assert(dynamic_cast<const SecTypeBasic*>(&et2->secType()) != 0);
-        SecrecVarType d1 = static_cast<const DataTypeBasic*>(&et1->dataType())->varType();
+        SecrecDataType d1 = static_cast<const DataTypeBasic*>(&et1->dataType())->dataType();
         SecrecSecType s1 = static_cast<const SecTypeBasic*>(&et1->secType())->secType();
-        SecrecVarType d2 = static_cast<const DataTypeBasic*>(&et2->dataType())->varType();
+        SecrecDataType d2 = static_cast<const DataTypeBasic*>(&et2->dataType())->dataType();
         SecrecSecType s2 = static_cast<const SecTypeBasic*>(&et2->secType())->secType();
 
         switch (type()) {
             case NODE_EXPR_ADD:
                 if (d1 != d2) break;
-                if ((d1 & (VARTYPE_INT|VARTYPE_UINT|VARTYPE_STRING)) == 0x0) break;
+                if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), d1));
                 return ICode::OK;
             case NODE_EXPR_SUB:
@@ -705,7 +705,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
             case NODE_EXPR_MOD:
             case NODE_EXPR_DIV:
                 if (d1 != d2) break;
-                if ((d1 & (VARTYPE_INT|VARTYPE_UINT)) == 0x0) break;
+                if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), d1));
                 return ICode::OK;
             case NODE_EXPR_EQ:
@@ -715,12 +715,12 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
             case NODE_EXPR_LT:
             case NODE_EXPR_NE:
                 if (d1 != d2) break;
-                setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), VARTYPE_BOOL));
+                setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), DATATYPE_BOOL));
                 return ICode::OK;
             case NODE_EXPR_LAND:
             case NODE_EXPR_LOR:
-                if (d1 != VARTYPE_BOOL || d2 != VARTYPE_BOOL) break;
-                setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), VARTYPE_BOOL));
+                if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
+                setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), DATATYPE_BOOL));
                 return ICode::OK;
             default:
                 /// \todo Write better error message
@@ -905,7 +905,7 @@ ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
 
     assert(children().empty());
 
-    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_BOOL));
+    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL));
     return ICode::OK;
 }
 
@@ -972,7 +972,7 @@ ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
 
     assert(children().empty());
 
-    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_INT));
+    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT));
     return ICode::OK;
 }
 
@@ -1105,7 +1105,7 @@ ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
 
     assert(children().empty());
 
-    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_STRING));
+    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_STRING));
     return ICode::OK;
 }
 
@@ -1179,7 +1179,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
         if (cType->kind() == TypeNonVoid::BASIC
             && cType->dataType().kind() == DataType::BASIC
             && cType->secType().kind() == SecType::BASIC
-            && static_cast<const SecreC::DataTypeBasic&>(cType->dataType()).varType() == VARTYPE_BOOL
+            && static_cast<const SecreC::DataTypeBasic&>(cType->dataType()).dataType() == DATATYPE_BOOL
             && static_cast<const SecreC::SecTypeBasic&>(cType->secType()).secType()== SECTYPE_PUBLIC
             && *eType2 == *eType3)
         {
@@ -1304,7 +1304,7 @@ ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
 
     assert(children().empty());
 
-    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, VARTYPE_UINT));
+    setResultType(new SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT));
     return ICode::OK;
 }
 
@@ -1366,11 +1366,11 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
         const TypeNonVoid *et = static_cast<const TypeNonVoid*>(eType);
         assert(dynamic_cast<const DataTypeBasic*>(&et->dataType()) != 0);
         const DataTypeBasic &bType = static_cast<const DataTypeBasic&>(et->dataType());
-        if (type() == NODE_EXPR_UNEG && bType.varType() == VARTYPE_BOOL) {
+        if (type() == NODE_EXPR_UNEG && bType.dataType() == DATATYPE_BOOL) {
             setResultType(et->clone());
             return ICode::OK;
         } else if (type() == NODE_EXPR_UMINUS) {
-            if (bType.varType() == VARTYPE_INT) {
+            if (bType.dataType() == DATATYPE_INT) {
                 setResultType(et->clone());
                 return ICode::OK;
             }
@@ -1969,7 +1969,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
         assert(dynamic_cast<const DataTypeBasic*>(&eType->dataType()) != 0);
         const DataTypeBasic &dt = static_cast<const DataTypeBasic&>(eType->dataType());
 
-        if (st.secType() != SECTYPE_PUBLIC || dt.varType() != VARTYPE_BOOL) {
+        if (st.secType() != SECTYPE_PUBLIC || dt.dataType() != DATATYPE_BOOL) {
             es << "Conditional expression in if statement must be of type "
                   "public bool." << std::endl;
             return ICode::E_TYPE;

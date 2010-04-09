@@ -13,7 +13,7 @@ bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
     return true;
 }
 
-Q_DECLARE_METATYPE(SecrecVarType)
+Q_DECLARE_METATYPE(SecrecDataType)
 Q_DECLARE_METATYPE(SecrecSecType)
 
 class TestTreeNode: public QObject {
