@@ -762,6 +762,21 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
 
 
 /******************************************************************
+  TreeNodeStmtDoWhile
+******************************************************************/
+
+class TreeNodeStmtDoWhile: public TreeNodeStmt {
+    public: /* Methods: */
+        explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
   TreeNodeStmtExpr
 ******************************************************************/
 
@@ -814,6 +829,21 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
     public: /* Methods: */
         TreeNodeStmtReturn(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
+
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es);
+};
+
+
+/******************************************************************
+  TreeNodeStmtWhile
+******************************************************************/
+
+class TreeNodeStmtWhile: public TreeNodeStmt {
+    public: /* Methods: */
+        explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,

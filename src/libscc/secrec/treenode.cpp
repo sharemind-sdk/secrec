@@ -240,6 +240,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtContinue(*loc));
         case NODE_STMT_COMPOUND:
             return (TreeNode*) (new SecreC::TreeNodeStmtCompound(*loc));
+        case NODE_STMT_DOWHILE:
+            return (TreeNode*) (new SecreC::TreeNodeStmtDoWhile(*loc));
         case NODE_STMT_EXPR:
             return (TreeNode*) (new SecreC::TreeNodeStmtExpr(*loc));
         case NODE_STMT_FOR:
@@ -248,6 +250,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtIf(*loc));
         case NODE_STMT_RETURN:
             return (TreeNode*) (new SecreC::TreeNodeStmtReturn(*loc));
+        case NODE_STMT_WHILE:
+            return (TreeNode*) (new SecreC::TreeNodeStmtWhile(*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:
@@ -512,7 +516,7 @@ void TreeNodeExpr::addToNextList(const std::vector<Imop*> &nl) {
 }
 
 /*******************************************************************************
-  TreeNodeExpAssign
+  TreeNodeExprAssign
 *******************************************************************************/
 
 ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
@@ -1073,6 +1077,7 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
 
     Imop *i = new Imop(Imop::JT, 0, id->getSymbol(st, es));
     code.push_back(i);
+    setFirstImop(i);
     addToTrueList(i);
 
     i = new Imop(Imop::JUMP, 0);
@@ -1823,6 +1828,58 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
 
 
 /*******************************************************************************
+  TreeNodeStmtDoWhile
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtDoWhile::generateCode(ICode::CodeList &code,
+                                                SymbolTable &st,
+                                                std::ostream &es)
+{
+    assert(children().size() == 2);
+    TreeNode *c0 = children().at(0);
+    TreeNode *c1 = children().at(1);
+    assert((c1->type() & NODE_EXPR_MASK) != 0);
+
+    // Loop body:
+    SymbolTable &innerScope = *st.newScope();
+    assert(dynamic_cast<TreeNodeStmt*>(c0) != 0);
+    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c0);
+    ICode::Status s = body->generateCode(code, innerScope, es);
+    if (s != ICode::OK) return s;
+
+    // Static checking:
+    if (body->firstImop() == 0) {
+        es << "Empty loop body at " << body->location() << std::endl;
+        return ICode::E_OTHER;
+    }
+    assert(body->resultFlags() != 0x0);
+    if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
+        es << "Do-while loop at " << location() << " wont loop!" << std::endl;
+        return ICode::E_OTHER;
+    }
+    setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
+
+    // Conditional expression:
+    assert(c1->type() != NODE_EXPR_NONE);
+    assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c1);
+    s = e->generateBoolCode(code, st, es);
+    if (s != ICode::OK) return s;
+    assert(e->firstImop() != 0);
+
+    // Patch jump lists:
+    setFirstImop(body->firstImop());
+    setNextList(body->breakList());
+    e->patchTrueList(body->firstImop());
+    addToNextList(e->falseList());
+    body->patchContinueList(e->firstImop());
+    body->patchNextList(e->firstImop());
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
   TreeNodeStmtExpr
 *******************************************************************************/
 
@@ -2073,6 +2130,62 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
         patchFirstImop(i);
     }
     setResultFlags(TreeNodeStmt::RETURN);
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtWhile
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtWhile::generateCode(ICode::CodeList &code,
+                                              SymbolTable &st,
+                                              std::ostream &es)
+{
+    assert(children().size() == 2);
+    TreeNode *c0 = children().at(0);
+    TreeNode *c1 = children().at(1);
+    assert((c0->type() & NODE_EXPR_MASK) != 0);
+
+    // Conditional expression:
+    assert(c0->type() != NODE_EXPR_NONE);
+    assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
+    ICode::Status s = e->generateBoolCode(code, st, es);
+    if (s != ICode::OK) return s;
+    assert(e->firstImop() != 0);
+
+    // Loop body:
+    SymbolTable &innerScope = *st.newScope();
+    assert(dynamic_cast<TreeNodeStmt*>(c1) != 0);
+    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c1);
+    s = body->generateCode(code, innerScope, es);
+    if (s != ICode::OK) return s;
+
+    // Static checking:
+    if (body->firstImop() == 0) {
+        es << "Empty loop body at " << body->location() << std::endl;
+        return ICode::E_OTHER;
+    }
+    assert(body->resultFlags() != 0x0);
+    if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
+        es << "While loop at " << location() << " wont loop!" << std::endl;
+        return ICode::E_OTHER;
+    }
+    setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
+
+    Imop *i = new Imop(Imop::JUMP);
+    code.push_back(i);
+    i->setJumpDest(e->firstImop());
+
+    // Patch jump lists:
+    setFirstImop(e->firstImop());
+    e->patchTrueList(body->firstImop());
+    setNextList(e->falseList());
+    addToBreakList(body->breakList());
+    body->patchContinueList(e->firstImop());
+    body->patchNextList(e->firstImop());
 
     return ICode::OK;
 }
