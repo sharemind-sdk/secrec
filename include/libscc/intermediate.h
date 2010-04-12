@@ -1,7 +1,6 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
-#include <list>
 #include <set>
 #include <sstream>
 #include "secrec/symboltable.h"
@@ -104,7 +103,7 @@ class ICode {
     public: /* Types: */
         class CodeList {
             public: /* Types: */
-                typedef std::list<Imop*> List;
+                typedef std::vector<Imop*> List;
                 typedef List::const_iterator const_iterator;
                 typedef List::iterator iterator;
 

@@ -22,7 +22,7 @@ class TreeNode {
         typedef ChildrenList::const_iterator ChildrenListConstIterator;
 
     public: /* Methods: */
-        explicit TreeNode(Type type, const YYLTYPE &loc);
+        TreeNode(Type type, const YYLTYPE &loc);
         virtual ~TreeNode();
 
         TreeNodeFundef* containingFunction();
@@ -103,7 +103,7 @@ namespace SecreC {
 
 class TreeNodeCodeable: public TreeNode {
     public: /* Methods: */
-        TreeNodeCodeable(Type type, const YYLTYPE &loc)
+        inline TreeNodeCodeable(Type type, const YYLTYPE &loc)
             : TreeNode(type, loc), m_firstImop(0) {}
         virtual inline ~TreeNodeCodeable() {}
 
@@ -188,8 +188,7 @@ class TreeNodeDataType: public TreeNode {
 
 class TreeNodeDataTypeArray: public TreeNodeDataType {
     public: /* Methods: */
-        inline TreeNodeDataTypeArray(unsigned dim,
-                                     const YYLTYPE &loc)
+        inline TreeNodeDataTypeArray(unsigned dim, const YYLTYPE &loc)
             : TreeNodeDataType(NODE_DATATYPE_ARRAY, loc),
               m_dim(dim), m_cachedType(0) {}
         inline ~TreeNodeDataTypeArray() {
@@ -239,7 +238,7 @@ class TreeNodeExpr: public TreeNode {
         enum Flags { CONSTANT = 0x01, PARENTHESIS = 0x02 };
 
     public: /* Methods: */
-        explicit TreeNodeExpr(Type type, const YYLTYPE &loc)
+        inline TreeNodeExpr(Type type, const YYLTYPE &loc)
             : TreeNode(type, loc), m_result(0), m_resultType(0),
               m_firstImop(0) {}
         virtual ~TreeNodeExpr() {
@@ -338,7 +337,7 @@ class TreeNodeExpr: public TreeNode {
 
 class TreeNodeExprAssign: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprAssign(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprAssign(Type type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -359,7 +358,7 @@ class TreeNodeExprAssign: public TreeNodeExpr {
 
 class TreeNodeExprBinary: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprBinary(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprBinary(Type type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -380,7 +379,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
 
 class TreeNodeExprBool: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprBool(bool value, const YYLTYPE &loc)
+        inline TreeNodeExprBool(bool value, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_LITE_BOOL, loc), m_value(value) {}
 
         inline void setValue(bool value) { m_value = value; }
@@ -411,7 +410,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
 
 class TreeNodeExprInt: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprInt(int value, const YYLTYPE &loc)
+        inline TreeNodeExprInt(int value, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
         inline void setValue(int value) { m_value = value; }
@@ -440,7 +439,7 @@ class TreeNodeExprInt: public TreeNodeExpr {
 
 class TreeNodeExprRVariable: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprRVariable(const YYLTYPE &loc)
+        explicit inline TreeNodeExprRVariable(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -461,8 +460,7 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 
 class TreeNodeExprString: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprString(const std::string &value,
-                                    const YYLTYPE &loc)
+        inline TreeNodeExprString(const std::string &value, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_LITE_STRING, loc), m_value(value) {}
 
         inline void setValue(const std::string &value) { m_value = value; }
@@ -491,7 +489,7 @@ class TreeNodeExprString: public TreeNodeExpr {
 
 class TreeNodeExprTernary: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprTernary(const YYLTYPE &loc)
+        explicit inline TreeNodeExprTernary(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -512,7 +510,7 @@ class TreeNodeExprTernary: public TreeNodeExpr {
 
 class TreeNodeExprUInt: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
+        inline TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_LITE_UINT, loc), m_value(value) {}
 
         inline void setValue(unsigned value) { m_value = value; }
@@ -541,7 +539,7 @@ class TreeNodeExprUInt: public TreeNodeExpr {
 
 class TreeNodeExprUnary: public TreeNodeExpr {
     public: /* Methods: */
-        explicit TreeNodeExprUnary(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprUnary(Type type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -562,7 +560,7 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 
 class TreeNodeFundef: public TreeNodeCodeable {
     public: /* Methods: */
-        explicit TreeNodeFundef(const YYLTYPE &loc)
+        explicit inline TreeNodeFundef(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_FUNDEF, loc), m_cachedType(0)
         {
             setContainingFunctionDirectly(this);
@@ -590,7 +588,7 @@ class TreeNodeFundef: public TreeNodeCodeable {
 
 class TreeNodeFundefs: public TreeNodeCodeable {
     public: /* Methods: */
-        explicit TreeNodeFundefs(const YYLTYPE &loc)
+        explicit inline TreeNodeFundefs(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_FUNDEFS, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -620,8 +618,7 @@ class TreeNodeGlobals: public TreeNodeCodeable {
 
 class TreeNodeIdentifier: public TreeNode {
     public: /* Methods: */
-        explicit TreeNodeIdentifier(const std::string &value,
-                                    const YYLTYPE &loc)
+        inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
             : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
 
         inline void setValue(const std::string &value) { m_value = value; }
@@ -684,7 +681,7 @@ class TreeNodeStmt: public TreeNodeCodeable {
         };
 
     public: /* Methods: */
-        TreeNodeStmt(Type type, const YYLTYPE &loc)
+        inline TreeNodeStmt(Type type, const YYLTYPE &loc)
             : TreeNodeCodeable(type, loc), m_resultFlags(0) {}
 
         inline int resultFlags() const { return m_resultFlags; }
@@ -701,7 +698,7 @@ class TreeNodeStmt: public TreeNodeCodeable {
 
 class TreeNodeStmtBreak: public TreeNodeStmt {
     public: /* Methods: */
-        TreeNodeStmtBreak(const YYLTYPE &loc)
+        explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -715,7 +712,7 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
 
 class TreeNodeStmtCompound: public TreeNodeStmt {
     public: /* Methods: */
-        TreeNodeStmtCompound(const YYLTYPE &loc)
+        explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
         virtual inline ~TreeNodeStmtCompound() {}
 
@@ -731,7 +728,7 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
 
 class TreeNodeStmtContinue: public TreeNodeStmt {
     public: /* Methods: */
-        TreeNodeStmtContinue(const YYLTYPE &loc)
+        explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -782,7 +779,7 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
 
 class TreeNodeStmtExpr: public TreeNodeStmt {
     public: /* Methods: */
-        TreeNodeStmtExpr(const YYLTYPE &loc)
+        explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -827,7 +824,7 @@ class TreeNodeStmtIf: public TreeNodeStmt {
 
 class TreeNodeStmtReturn: public TreeNodeStmt {
     public: /* Methods: */
-        TreeNodeStmtReturn(const YYLTYPE &loc)
+        explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
@@ -857,7 +854,7 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
 
 class TreeNodeType: public TreeNode {
     public: /* Methods: */
-        explicit inline TreeNodeType(Type type, const YYLTYPE &loc)
+        inline TreeNodeType(Type type, const YYLTYPE &loc)
             : TreeNode(type, loc) {}
 
         virtual const SecreC::Type &secrecType() const = 0;
