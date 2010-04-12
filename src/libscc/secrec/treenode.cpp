@@ -1613,6 +1613,7 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
 {
     typedef ChildrenListConstIterator CLCI;
 
+    TreeNodeStmtDecl *last = 0;
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
@@ -1620,6 +1621,20 @@ ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
         decl->setGlobal();
         ICode::Status s = decl->generateCode(code, st, es);
         if (s != ICode::OK) return s;
+
+        if (decl->firstImop() != 0) {
+            if (last == 0) {
+                setFirstImop(decl->firstImop());
+            } else {
+                last->patchNextList(decl->firstImop());
+            }
+            last = decl;
+        } else {
+            assert(decl->nextList().empty());
+        }
+    }
+    if (last != 0) {
+        addToNextList(last->nextList());
     }
     return ICode::OK;
 }
