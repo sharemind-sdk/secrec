@@ -131,8 +131,8 @@ void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
 
 SymbolTemporary *SymbolTable::appendTemporary(const Type &type) {
     SymbolTemporary *tmp = new SymbolTemporary(type);
-    std::ostringstream os("$t$");
-    os << m_tempCount++;
+    std::ostringstream os;
+    os << "$t$" << m_tempCount++;
     tmp->setName(os.str());
     appendSymbol(tmp);
     return tmp;
