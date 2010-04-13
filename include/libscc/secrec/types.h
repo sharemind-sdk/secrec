@@ -64,8 +64,7 @@ class SecTypeBasic: public SecType {
             if (other.kind() != SecType::BASIC) return false;
             if (m_secType == SECTYPE_PRIVATE) return true;
             assert(dynamic_cast<const SecTypeBasic*>(&other) != 0);
-            const SecTypeBasic &o = static_cast<const SecTypeBasic&>(other);
-            return o.m_secType == SECTYPE_PUBLIC;
+            return static_cast<const SecTypeBasic&>(other).m_secType == SECTYPE_PUBLIC;
         }
 
     private: /* Fields: */
@@ -191,14 +190,8 @@ class DataTypeVar: public DataType {
             return DataType::operator==(other)
                    && m_dataType == static_cast<const DataTypeVar &>(other).m_dataType;
         }
-        inline bool equivalentTo(const DataTypeBasic &basicType) const {
-            return basicType == *m_dataType;
-        }
         virtual inline bool canAssign(const DataType &other) const {
-            if (other.kind() != DataType::BASIC) return false;
-            assert(dynamic_cast<const DataTypeBasic*>(&other) != 0);
-            const DataTypeBasic &o = static_cast<const DataTypeBasic&>(other);
-            return *m_dataType == o;
+            return *m_dataType == other;
         }
 
     private: /* Fields: */
@@ -269,9 +262,7 @@ class DataTypeProcedure: public DataTypeProcedureVoid {
 
         virtual bool operator==(const DataType &other) const;
         virtual inline bool canAssign(const DataType &other) const {
-            assert(other.kind() == BASIC);
-            assert(dynamic_cast<const DataTypeBasic*>(m_ret) != 0);
-            return DataTypeVar(*static_cast<const DataTypeBasic*>(m_ret)).canAssign(other);
+            return DataTypeVar(*m_ret).canAssign(other);
         }
 
     private: /* Fields: */

@@ -567,7 +567,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
         assert(dynamic_cast<const DataTypeBasic*>(&srcTypeNV->dataType()) != 0);
         const DataTypeBasic &srcTypeBasic = static_cast<const DataTypeBasic&>(srcTypeNV->dataType());
 
-        if (destTypeVar.equivalentTo(srcTypeBasic)) {
+        if (destTypeVar.canAssign(srcTypeBasic)) {
             assert(srcTypeNV->secType().kind() == SecType::BASIC);
             assert(dynamic_cast<const SecTypeBasic*>(&srcTypeNV->secType()) != 0);
             const SecTypeBasic &sst = static_cast<const SecTypeBasic&>(srcTypeNV->secType());
