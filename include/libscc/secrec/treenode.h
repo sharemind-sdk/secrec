@@ -259,8 +259,10 @@ class TreeNodeExpr: public TreeNode {
             assert(m_result != 0);
             return m_result;
         };
-        inline SecreC::Type *resultType() const {
-            return m_resultType;
+        inline bool haveResultType() const { return m_resultType != 0; }
+        inline const SecreC::Type &resultType() const {
+            assert(m_resultType != 0);
+            return *m_resultType;
         }
         inline const std::vector<Imop*> &falseList() const {
             return m_falseList;

@@ -533,67 +533,45 @@ void TreeNodeExpr::addToNextList(const std::vector<Imop*> &nl) {
 ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
                                                       std::ostream &es)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().size() == 2);
     assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
 
+    // Get symbol for l-value:
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
     SymbolSymbol *dest = id->getSymbol(st, es);
     if (dest == 0) return ICode::E_OTHER;
 
+    // Calculate type of r-value:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *src = static_cast<TreeNodeExpr*>(children().at(1));
     ICode::Status s = src->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    // Get types for destination and source:
     const SecreC::Type &destType = dest->secrecType();
     assert(destType.isVoid() == false);
-    const SecreC::Type *srcType = src->resultType();
+    const SecreC::Type &srcType = src->resultType();
 
-    /// \todo implement more expressions
-    assert(dynamic_cast<const TypeNonVoid*>(srcType) != 0);
-    const TypeNonVoid* srcTypeNV = static_cast<const TypeNonVoid*>(srcType);
-    assert(dynamic_cast<const TypeNonVoid*>(&destType) != 0);
-    const TypeNonVoid* destTypeNV = static_cast<const TypeNonVoid*>(&destType);
-
-    if (destTypeNV->kind() == TypeNonVoid::VAR
-        && srcTypeNV->kind() == TypeNonVoid::BASIC)
-    {
-        assert(dynamic_cast<const DataTypeVar*>(&destTypeNV->dataType()) != 0);
-        const DataTypeVar &destTypeVar = static_cast<const DataTypeVar&>(destTypeNV->dataType());
-
-        assert(dynamic_cast<const DataTypeBasic*>(&srcTypeNV->dataType()) != 0);
-        const DataTypeBasic &srcTypeBasic = static_cast<const DataTypeBasic&>(srcTypeNV->dataType());
-
-        if (destTypeVar.canAssign(srcTypeBasic)) {
-            assert(srcTypeNV->secType().kind() == SecType::BASIC);
-            assert(dynamic_cast<const SecTypeBasic*>(&srcTypeNV->secType()) != 0);
-            const SecTypeBasic &sst = static_cast<const SecTypeBasic&>(srcTypeNV->secType());
-
-            assert(destTypeNV->secType().kind() == SecType::BASIC);
-            assert(dynamic_cast<const SecTypeBasic*>(&destTypeNV->secType()) != 0);
-            const SecTypeBasic &tst = static_cast<const SecTypeBasic&>(destTypeNV->secType());
-
-            assert(sst.secType() != SECTYPE_INVALID);
-            assert(tst.secType() != SECTYPE_INVALID);
-
-            if (tst.secType() == SECTYPE_PUBLIC && sst.secType() == SECTYPE_PRIVATE) {
-                es << "Invalid assignment of private value to public variable." << std::endl;
-                return ICode::E_OTHER;
-            }
-
-            setResultType(srcType->clone());
-            return ICode::OK;
-        }
+    // Check types:
+    if (srcType.isVoid()) {
+        es << "Subexpression has type void at " << src->location() << std::endl;
+        return ICode::E_TYPE;
     }
+    if (!destType.canAssign(srcType)) {
+        es << "Invalid assignment from value of type " << srcType
+           << " to variable of type " << destType << ". At " << location() << std::endl;
 
-    /// \todo Provide better error messages
-    es << "Invalid assignment from value of type " << *srcTypeNV
-       << " to variable of type " << *destTypeNV << ". At " << location() << std::endl;
-
-    return ICode::E_TYPE;
+        return ICode::E_TYPE;
+    }
+    assert(dynamic_cast<const TypeNonVoid*>(&destType) != 0);
+    const TypeNonVoid &destTypeNV = static_cast<const TypeNonVoid&>(destType);
+    assert(destTypeNV.dataType().kind() == DataType::VAR);
+    assert(dynamic_cast<const DataTypeVar*>(&destTypeNV.dataType()) != 0);
+    setResultType(new TypeNonVoid(destTypeNV.secType(), static_cast<const DataTypeVar&>(destTypeNV.dataType()).dataType()));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
@@ -688,42 +666,44 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &, SymbolTabl
 ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
                                                       std::ostream &es)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().size() == 2);
     assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
     assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e1->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     s = e2->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type *eType1 = static_cast<const TreeNodeExpr*>(e1)->resultType();
-    const SecreC::Type *eType2 = static_cast<const TreeNodeExpr*>(e2)->resultType();
+    const SecreC::Type &eType1 = e1->resultType();
+    const SecreC::Type &eType2 = e2->resultType();
 
     /// \todo implement more expressions
-    if (!eType1->isVoid() && !eType2->isVoid()
+    if (!eType1.isVoid() && !eType2.isVoid()
 #ifndef NDEBUG
-        && (assert(dynamic_cast<const TypeNonVoid*>(eType1) != 0), true)
-        && (assert(dynamic_cast<const TypeNonVoid*>(eType2) != 0), true)
+        && (assert(dynamic_cast<const TypeNonVoid*>(&eType1) != 0), true)
+        && (assert(dynamic_cast<const TypeNonVoid*>(&eType2) != 0), true)
 #endif
-        && static_cast<const TypeNonVoid*>(eType1)->kind() == TypeNonVoid::BASIC
-        && static_cast<const TypeNonVoid*>(eType2)->kind() == TypeNonVoid::BASIC)
+        && static_cast<const TypeNonVoid&>(eType1).kind() == TypeNonVoid::BASIC
+        && static_cast<const TypeNonVoid&>(eType2).kind() == TypeNonVoid::BASIC)
     {
-        const TypeNonVoid *et1 = static_cast<const TypeNonVoid*>(eType1);
-        const TypeNonVoid *et2 = static_cast<const TypeNonVoid*>(eType2);
-        assert(dynamic_cast<const DataTypeBasic*>(&et1->dataType()) != 0);
-        assert(dynamic_cast<const SecTypeBasic*>(&et1->secType()) != 0);
-        assert(dynamic_cast<const DataTypeBasic*>(&et2->dataType()) != 0);
-        assert(dynamic_cast<const SecTypeBasic*>(&et2->secType()) != 0);
-        SecrecDataType d1 = static_cast<const DataTypeBasic*>(&et1->dataType())->dataType();
-        SecrecSecType s1 = static_cast<const SecTypeBasic*>(&et1->secType())->secType();
-        SecrecDataType d2 = static_cast<const DataTypeBasic*>(&et2->dataType())->dataType();
-        SecrecSecType s2 = static_cast<const SecTypeBasic*>(&et2->secType())->secType();
+        const TypeNonVoid &et1 = static_cast<const TypeNonVoid&>(eType1);
+        const TypeNonVoid &et2 = static_cast<const TypeNonVoid&>(eType2);
+        assert(dynamic_cast<const DataTypeBasic*>(&et1.dataType()) != 0);
+        SecrecDataType d1 = static_cast<const DataTypeBasic*>(&et1.dataType())->dataType();
+        assert(dynamic_cast<const SecTypeBasic*>(&et1.secType()) != 0);
+        SecrecSecType s1 = static_cast<const SecTypeBasic*>(&et1.secType())->secType();
+        assert(dynamic_cast<const DataTypeBasic*>(&et2.dataType()) != 0);
+        SecrecDataType d2 = static_cast<const DataTypeBasic*>(&et2.dataType())->dataType();
+        assert(dynamic_cast<const SecTypeBasic*>(&et2.secType()) != 0);
+        SecrecSecType s2 = static_cast<const SecTypeBasic*>(&et2.secType())->secType();
 
         switch (type()) {
             case NODE_EXPR_ADD:
@@ -778,10 +758,9 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
-        SecreC::Type *rt = resultType();
-        setResult(st.appendTemporary(*rt));
+        setResult(st.appendTemporary(resultType()));
     } else {
-        assert(r->secrecType().canAssign(*resultType()));
+        assert(r->secrecType().canAssign(resultType()));
         setResult(r);
     }
 
@@ -932,7 +911,7 @@ std::string TreeNodeExprBool::xmlHelper() const {
 ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
                                                     std::ostream &)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().empty());
 
@@ -991,7 +970,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
     typedef DataTypeProcedure DTF;
     typedef ChildrenListConstIterator CLCI;
 
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(!children().empty());
     assert(children().at(0)->type() == NODE_IDENTIFIER);
@@ -1016,15 +995,15 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         ICode::Status s = e->calculateResultType(st, es);
         if (s != ICode::OK) return s;
 
-        if (e->resultType()->isVoid()) {
+        if (e->resultType().isVoid()) {
             es << "Can't pass argument of void type to function at "
                << e->location() << std::endl;
             return ICode::E_TYPE;
         }
-        assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
-        TypeNonVoid *t = static_cast<TypeNonVoid*>(e->resultType());
-        secType.addParamType(t->secType());
-        dataType.addParamType(t->dataType());
+        assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
+        const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
+        secType.addParamType(t.secType());
+        dataType.addParamType(t.dataType());
     }
 
     m_procedure = st.findGlobalProcedure(id->value(), secType, dataType);
@@ -1107,7 +1086,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
     Imop *i = new Imop(Imop::PROCCALL);
     if (r == 0) {
         // Generate temporary for the result of the unary expression
-        SymbolTemporary *t = st.appendTemporary(*resultType());
+        SymbolTemporary *t = st.appendTemporary(resultType());
         setResult(t);
         i->setDest(t);
     } else {
@@ -1162,7 +1141,7 @@ std::string TreeNodeExprInt::xmlHelper() const {
 ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
                                                    std::ostream &)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().empty());
 
@@ -1207,7 +1186,7 @@ ICode::Status TreeNodeExprInt::generateBoolCode(ICode::CodeList &,
 ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
                                                          std::ostream &es)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().size() == 1);
     assert(children().at(0)->type() == NODE_IDENTIFIER);
@@ -1243,7 +1222,7 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
     if (r == 0) {
         setResult(id->getSymbol(st, es));
     } else {
-        assert(r->secrecType().canAssign(*resultType()));
+        assert(r->secrecType().canAssign(resultType()));
         setResult(r);
 
         Imop *i = new Imop(Imop::ASSIGN, r, id->getSymbol(st, es));
@@ -1296,7 +1275,7 @@ std::string TreeNodeExprString::xmlHelper() const {
 ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
                                                       std::ostream &)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().empty());
 
@@ -1341,7 +1320,7 @@ ICode::Status TreeNodeExprString::generateBoolCode(ICode::CodeList &,
 ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
                                                        std::ostream &es)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().size() == 3);
     assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
@@ -1363,22 +1342,22 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     s = e3->calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type *eType1 = e1->resultType();
-    const SecreC::Type *eType2 = e2->resultType();
-    const SecreC::Type *eType3 = e3->resultType();
+    const SecreC::Type &eType1 = e1->resultType();
+    const SecreC::Type &eType2 = e2->resultType();
+    const SecreC::Type &eType3 = e3->resultType();
 
-    if (!eType1->isVoid()) {
-        assert(dynamic_cast<const TypeNonVoid*>(eType1) != 0);
-        const TypeNonVoid *cType = static_cast<const TypeNonVoid*>(eType1);
+    if (!eType1.isVoid()) {
+        assert(dynamic_cast<const TypeNonVoid*>(&eType1) != 0);
+        const TypeNonVoid &cType = static_cast<const TypeNonVoid&>(eType1);
 
-        if (cType->kind() == TypeNonVoid::BASIC
-            && cType->dataType().kind() == DataType::BASIC
-            && cType->secType().kind() == SecType::BASIC
-            && static_cast<const SecreC::DataTypeBasic&>(cType->dataType()).dataType() == DATATYPE_BOOL
-            && static_cast<const SecreC::SecTypeBasic&>(cType->secType()).secType()== SECTYPE_PUBLIC
-            && *eType2 == *eType3)
+        if (cType.kind() == TypeNonVoid::BASIC
+            && cType.dataType().kind() == DataType::BASIC
+            && cType.secType().kind() == SecType::BASIC
+            && static_cast<const SecreC::DataTypeBasic&>(cType.dataType()).dataType() == DATATYPE_BOOL
+            && static_cast<const SecreC::SecTypeBasic&>(cType.secType()).secType()== SECTYPE_PUBLIC
+            && eType2 == eType3)
         {
-            setResultType(eType2->clone());
+            setResultType(eType2.clone());
             return ICode::OK;
         }
     }
@@ -1400,10 +1379,9 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
-        SecreC::Type *rt = resultType();
-        setResult(st.appendTemporary(*rt));
+        setResult(st.appendTemporary(resultType()));
     } else {
-        assert(r->secrecType() == *resultType());
+        assert(r->secrecType() == resultType());
         setResult(r);
     }
 
@@ -1495,7 +1473,7 @@ std::string TreeNodeExprUInt::xmlHelper() const {
 ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
                                                     std::ostream &)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(children().empty());
 
@@ -1540,39 +1518,40 @@ ICode::Status TreeNodeExprUInt::generateBoolCode(ICode::CodeList &,
 ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
                                                      std::ostream &es)
 {
-    if (resultType() != 0) return ICode::OK;
+    if (haveResultType()) return ICode::OK;
 
     assert(type() == NODE_EXPR_UMINUS || type() == NODE_EXPR_UNEG);
     assert(children().size() == 1);
     assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
 
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e->calculateResultType(st, es);
     if (s != ICode::OK) return s;
-    const SecreC::Type *eType = static_cast<const TreeNodeExpr*>(e)->resultType();
+    const SecreC::Type &eType = e->resultType();
 
     /// \todo implement for matrixes also
-    if (!eType->isVoid()
+    if (!eType.isVoid()
 #ifndef NDEBUG
-        && (assert(dynamic_cast<const TypeNonVoid*>(eType) != 0), true)
+        && (assert(dynamic_cast<const TypeNonVoid*>(&eType) != 0), true)
 #endif
-        && static_cast<const TypeNonVoid*>(eType)->kind() == TypeNonVoid::BASIC)
+        && static_cast<const TypeNonVoid&>(eType).kind() == TypeNonVoid::BASIC)
     {
-        const TypeNonVoid *et = static_cast<const TypeNonVoid*>(eType);
-        assert(dynamic_cast<const DataTypeBasic*>(&et->dataType()) != 0);
-        const DataTypeBasic &bType = static_cast<const DataTypeBasic&>(et->dataType());
+        const TypeNonVoid &et = static_cast<const TypeNonVoid&>(eType);
+        assert(dynamic_cast<const DataTypeBasic*>(&et.dataType()) != 0);
+        const DataTypeBasic &bType = static_cast<const DataTypeBasic&>(et.dataType());
         if (type() == NODE_EXPR_UNEG && bType.dataType() == DATATYPE_BOOL) {
-            setResultType(et->clone());
+            setResultType(et.clone());
             return ICode::OK;
         } else if (type() == NODE_EXPR_UMINUS) {
             if (bType.dataType() == DATATYPE_INT) {
-                setResultType(et->clone());
+                setResultType(et.clone());
                 return ICode::OK;
             }
         }
     }
 
-    es << "Invalid expression of type (" << *eType << ") given to unary "
+    es << "Invalid expression of type (" << eType << ") given to unary "
        << (type() == NODE_EXPR_UNEG ? "negation" : "minus")
        << "operator at " << location() << std::endl;
 
@@ -1590,10 +1569,9 @@ ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
-        SecreC::Type *rt = resultType();
-        setResult(st.appendTemporary(*rt));
+        setResult(st.appendTemporary(resultType()));
     } else {
-        assert(r->secrecType().canAssign(*resultType()));
+        assert(r->secrecType().canAssign(resultType()));
         setResult(r);
     }
 
@@ -2246,21 +2224,21 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
     ICode::Status s = e->calculateResultType(st, es);
     if (s != ICode::OK) return s;
-    if (e->resultType()->isVoid()) {
+    if (e->resultType().isVoid()) {
         es << "Conditional expression of the if statement can't have a void "
               "type. At " << e->location() << std::endl;
         return ICode::E_TYPE;
     }
-    assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
-    TypeNonVoid *eType = static_cast<TypeNonVoid*>(e->resultType());
-    if (eType->kind() != TypeNonVoid::BASIC) {
-        assert(eType->secType().kind() == SecType::BASIC);
-        assert(dynamic_cast<const SecTypeBasic*>(&eType->secType()) != 0);
-        const SecTypeBasic &st = static_cast<const SecTypeBasic&>(eType->secType());
+    assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
+    const TypeNonVoid &eType = static_cast<const TypeNonVoid&>(e->resultType());
+    if (eType.kind() != TypeNonVoid::BASIC) {
+        assert(eType.secType().kind() == SecType::BASIC);
+        assert(dynamic_cast<const SecTypeBasic*>(&eType.secType()) != 0);
+        const SecTypeBasic &st = static_cast<const SecTypeBasic&>(eType.secType());
 
-        assert(eType->dataType().kind() == DataType::BASIC);
-        assert(dynamic_cast<const DataTypeBasic*>(&eType->dataType()) != 0);
-        const DataTypeBasic &dt = static_cast<const DataTypeBasic&>(eType->dataType());
+        assert(eType.dataType().kind() == DataType::BASIC);
+        assert(dynamic_cast<const DataTypeBasic*>(&eType.dataType()) != 0);
+        const DataTypeBasic &dt = static_cast<const DataTypeBasic&>(eType.dataType());
 
         if (st.secType() != SECTYPE_PUBLIC || dt.dataType() != DATATYPE_BOOL) {
             es << "Conditional expression in if statement must be of type "
@@ -2348,8 +2326,8 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
         ICode::Status s = e->calculateResultType(st, es);
         if (s != ICode::OK) return s;
-        if (!containingProcedure()->procedureType().canAssign(*e->resultType())) {
-            es << "Cannot return value of type " << *e->resultType()
+        if (!containingProcedure()->procedureType().canAssign(e->resultType())) {
+            es << "Cannot return value of type " << e->resultType()
                << " from function with type "
                << containingProcedure()->procedureType() << ". At" << location()
                << std::endl;
