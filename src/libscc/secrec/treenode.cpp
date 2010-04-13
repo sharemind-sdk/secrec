@@ -261,7 +261,15 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeTypeType(*loc));
         case NODE_TYPEVOID:
             return (TreeNode*) (new SecreC::TreeNodeTypeVoid(*loc));
+        case NODE_EXPR_SUBSCRIPT:
+            /// \todo
+        case NODE_EXPR_CAST:
+            /// \todo
+        case NODE_DECL_VSUFFIX:
+            /// \todo
         default:
+            assert(type != NODE_IDENTIFIER);
+            assert((type & NODE_LITE_MASK) == 0x0);
             return (TreeNode*) (new SecreC::TreeNode(type, *loc));
     }
 }
