@@ -607,7 +607,9 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
             code.push_back(i);
             patchFirstImop(i);
             e2->patchNextList(i);
+            setResult(r);
         } else {
+            setResult(destSymSym);
             setNextList(e2->nextList());
         }
     } else {
@@ -644,18 +646,32 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &, SymbolTable &st,
+ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &code,
+                                                   SymbolTable &st,
                                                    std::ostream &es)
 {
-    /// \todo Write assertion about return type
-
     // Type check:
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    /// \todo Implement
+    if (resultType() == TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL)) {
+        es << "Not a public boolean expression at " << location() << std::endl;
+        return ICode::E_TYPE;
+    }
 
-    return ICode::E_NOT_IMPLEMENTED;
+    s = generateCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(Imop::JT, 0, result());
+    code.push_back(i);
+    patchFirstImop(i);
+    addToTrueList(i);
+
+    i = new Imop(Imop::JUMP, 0);
+    code.push_back(i);
+    addToFalseList(i);
+
+    return ICode::OK;
 }
 
 
