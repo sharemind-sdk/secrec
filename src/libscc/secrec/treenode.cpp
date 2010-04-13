@@ -802,6 +802,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
         setResult(r);
     }
 
+    /// \todo Optimize && and || when first operand is public
+
     // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateCode(code, st, es);
@@ -830,8 +832,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
         case NODE_EXPR_BINARY_LAND: i = new Imop(Imop::LAND); break;
         case NODE_EXPR_BINARY_LOR:  i = new Imop(Imop::LOR);  break;
         default:
-            /// \todo Write better error message
-            es << "Binary is not yet implemented. At " << location()
+            es << "Binary " << operatorString() << " not yet implemented. At " << location()
                << std::endl;
             return ICode::E_NOT_IMPLEMENTED;
     }
@@ -865,45 +866,48 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
            || type() == NODE_EXPR_BINARY_LT
            || type() == NODE_EXPR_BINARY_NE);
 
+    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
+
     if (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR) {
-        // Generate code for child expressions:
-        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-        s = e1->generateBoolCode(code, st, es);
-        if (s != ICode::OK) return s;
-        setFirstImop(e1->firstImop());
+        assert(!e1->resultType().isVoid());
+        assert(dynamic_cast<const TypeNonVoid*>(&e1->resultType()) != 0);
+        if (static_cast<const TypeNonVoid&>(e1->resultType()).secType() == SecTypeBasic(SECTYPE_PUBLIC)) {
+            // Generate code for child expressions:
+            s = e1->generateBoolCode(code, st, es);
+            if (s != ICode::OK) return s;
+            setFirstImop(e1->firstImop());
 
-        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-        s = e2->generateBoolCode(code, st, es);
-        if (s != ICode::OK) return s;
-        patchFirstImop(e2->firstImop());
+            s = e2->generateBoolCode(code, st, es);
+            if (s != ICode::OK) return s;
+            patchFirstImop(e2->firstImop());
 
-        // Short circuit the code:
-        if (type() == NODE_EXPR_BINARY_LAND) {
-            e1->patchTrueList(e2->firstImop());
-            setFalseList(e1->falseList());
+            // Short circuit the code:
+            if (type() == NODE_EXPR_BINARY_LAND) {
+                e1->patchTrueList(e2->firstImop());
+                setFalseList(e1->falseList());
 
-            setTrueList(e2->trueList());
-            addToFalseList(e2->falseList());
-        } else {
-            assert(type() == NODE_EXPR_BINARY_LOR);
+                setTrueList(e2->trueList());
+                addToFalseList(e2->falseList());
+            } else {
+                assert(type() == NODE_EXPR_BINARY_LOR);
 
-            e1->patchFalseList(e2->firstImop());
-            setTrueList(e1->trueList());
+                e1->patchFalseList(e2->firstImop());
+                setTrueList(e1->trueList());
 
-            setFalseList(e2->falseList());
-            addToTrueList(e2->trueList());
+                setFalseList(e2->falseList());
+                addToTrueList(e2->trueList());
+            }
+
+            return ICode::OK;
         }
-
-        return ICode::OK;
     }
 
     // Generate code for child expressions:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateCode(code, st, es);
     if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
 
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     s = e2->generateCode(code, st, es);
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());

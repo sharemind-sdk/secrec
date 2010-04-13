@@ -32,10 +32,10 @@ class SecType {
 
         virtual SecType *clone() const = 0;
         virtual std::string toString() const = 0;
-        virtual inline bool operator==(const SecType &other) {
+        virtual inline bool operator==(const SecType &other) const {
             return m_kind == other.kind();
         }
-        virtual inline bool operator!=(const SecType &other) {
+        virtual inline bool operator!=(const SecType &other) const {
             return !operator==(other);
         }
         virtual inline bool canAssign(const SecType &) const {
@@ -56,7 +56,7 @@ class SecTypeBasic: public SecType {
         inline SecrecSecType secType() const { return m_secType; }
         virtual SecType *clone() const { return new SecTypeBasic(*this); }
         virtual std::string toString() const;
-        virtual inline bool operator==(const SecType &other) {
+        virtual inline bool operator==(const SecType &other) const {
             if (!SecType::operator==(other)) return false;
             return m_secType == static_cast<const SecTypeBasic &>(other).secType();
         }
@@ -88,7 +88,7 @@ class SecTypeProcedureVoid: public SecType {
         virtual SecType *clone() const { return new SecTypeProcedureVoid(*this); }
         virtual std::string toString() const;
         std::string mangle() const;
-        virtual bool operator==(const SecType &other);
+        virtual bool operator==(const SecType &other) const;
 
     private: /* Fields: */
         std::vector<SecType*> m_params;
@@ -109,7 +109,7 @@ class SecTypeProcedure: public SecTypeProcedureVoid {
 
         virtual SecType *clone() const { return new SecTypeProcedure(*this); }
         virtual std::string toString() const;
-        virtual bool operator==(const SecType &other);
+        virtual bool operator==(const SecType &other) const;
         virtual inline bool canAssign(const SecType &other) const {
             return SecTypeBasic(m_returnSecType).canAssign(other);
         }

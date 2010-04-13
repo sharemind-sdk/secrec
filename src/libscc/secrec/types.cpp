@@ -82,7 +82,7 @@ std::string SecTypeProcedureVoid::mangle() const {
     return os.str();
 }
 
-inline bool SecTypeProcedureVoid::operator==(const SecType &other) {
+inline bool SecTypeProcedureVoid::operator==(const SecType &other) const {
     typedef std::vector<SecType*>::const_iterator SVCI;
 
     if (!SecType::operator==(other)) return false;
@@ -110,7 +110,7 @@ std::string SecTypeProcedure::toString() const {
     return os.str();
 }
 
-inline bool SecTypeProcedure::operator==(const SecType &other) {
+inline bool SecTypeProcedure::operator==(const SecType &other) const {
     typedef std::vector<SecType*>::const_iterator SVCI;
 
     if (!SecType::operator==(other)) return false;
