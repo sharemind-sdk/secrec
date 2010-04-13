@@ -41,19 +41,19 @@ std::string SymbolTemporary::toString() const {
 }
 
 /*******************************************************************************
-  SymbolFunction
+  SymbolProcedure
 *******************************************************************************/
 
-SymbolFunction::SymbolFunction(const TreeNodeFundef *fundef)
-    : SymbolWithValue(Symbol::FUNCTION, fundef->functionType()), m_decl(fundef),
+SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
+    : SymbolWithValue(Symbol::PROCEDURE, procdef->procedureType()), m_decl(procdef),
       m_target(0)
 {
     // Intentionally empty
 }
 
-std::string SymbolFunction::toString() const {
+std::string SymbolProcedure::toString() const {
     std::ostringstream os;
-    os << "FUNCTION " << name() << ": " << secrecType();
+    os << "PROCEDURE " << name() << ": " << secrecType();
     return os.str();
 }
 
@@ -127,6 +127,25 @@ void SymbolTable::appendSymbol(Symbol *symbol) {
 
 void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
     m_global->m_table.push_back(symbol);
+}
+
+SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
+    typedef SecTypeProcedureVoid STPV;
+    typedef DataTypeProcedureVoid DTPV;
+
+    SymbolProcedure *ns = new SymbolProcedure(&procdef);
+
+    assert(procdef.procedureType().kind() == TypeNonVoid::PROCEDURE
+           || procdef.procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
+    assert(dynamic_cast<const STPV*>(&procdef.procedureType().secType()) != 0);
+    const STPV &st = static_cast<const STPV&>(procdef.procedureType().secType());
+    assert(dynamic_cast<const DTPV*>(&procdef.procedureType().dataType()) != 0);
+    const DTPV &dt = static_cast<const DTPV&>(procdef.procedureType().dataType());
+
+    ns->setName(procdef.procedureName() + "$proc$" + st.mangle() + dt.mangle());
+    appendGlobalSymbol(ns);
+
+    return ns;
 }
 
 SymbolTemporary *SymbolTable::appendTemporary(const Type &type) {
@@ -219,6 +238,26 @@ Symbol *SymbolTable::findGlobal(const std::string &name) const {
     for (STI it(t.rbegin()); it != t.rend(); it++) {
         if ((*it)->name() == name)
             return (*it);
+    }
+    return 0;
+}
+
+SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
+                                                const SecTypeProcedureVoid &st,
+                                                const DataTypeProcedureVoid &dt)
+{
+    typedef Table::const_reverse_iterator STI;
+
+    assert(name.empty() == false);
+
+    std::string fn(name + "$proc$" + st.mangle() + dt.mangle());
+
+    const Table &t(m_global->m_table);
+    for (STI it(t.rbegin()); it != t.rend(); it++) {
+        if ((*it)->name() == fn) {
+            assert(dynamic_cast<SymbolProcedure*>(*it) != 0);
+            return static_cast<SymbolProcedure*>(*it);
+        }
     }
     return 0;
 }

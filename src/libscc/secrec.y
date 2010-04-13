@@ -104,14 +104,14 @@
 %type <treenode> initializer
 %type <treenode> vector_suffix
 %type <treenode> type_specifier
-%type <treenode> function_type_specifier
+%type <treenode> procedure_type_specifier
 %type <treenode> datatype_specifier
 %type <treenode> datatype_fund_specifier
 %type <treenode> sectype_specifier
-%type <treenode> function_definitions
-%type <treenode> function_definition
-%type <treenode> function_parameter_list
-%type <treenode> function_parameter
+%type <treenode> procedure_definitions
+%type <treenode> procedure_definition
+%type <treenode> procedure_parameter_list
+%type <treenode> procedure_parameter
 %type <treenode> compound_statement
 %type <treenode> statement_list
 %type <treenode> statement
@@ -156,14 +156,14 @@
 *******************************************************************************/
 
 program
- : variable_declarations function_definitions
+ : variable_declarations procedure_definitions
    {
      $$ = 0;
      *parseTree = treenode_init(NODE_PROGRAM, &@$);
      treenode_appendChild(*parseTree, $1);
      treenode_appendChild(*parseTree, $2);
    }
- | function_definitions
+ | procedure_definitions
    {
      $$ = 0;
      *parseTree = treenode_init(NODE_PROGRAM, &@$);
@@ -282,11 +282,11 @@ datatype_specifier
 
 
 /*******************************************************************************
-  Functions:
+  Procedures:
 *******************************************************************************/
 
 
-function_type_specifier
+procedure_type_specifier
  : VOID
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPEVOID, &@$);
@@ -294,33 +294,33 @@ function_type_specifier
  | type_specifier
  ;
 
-function_definitions /* Helper nonterminal for function_definition+ */
- : function_definitions function_definition
+procedure_definitions /* Helper nonterminal for procedure_definition+ */
+ : procedure_definitions procedure_definition
    { $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $2);
    }
- | function_definition
+ | procedure_definition
    {
-     $$ = treenode_init(NODE_FUNDEFS, &@$);
+     $$ = treenode_init(NODE_PROCDEFS, &@$);
      treenode_appendChild($$, $1);
    }
  ;
 
-function_definition
- : function_type_specifier identifier '(' ')' compound_statement
+procedure_definition
+ : procedure_type_specifier identifier '(' ')' compound_statement
    {
-     $$ = treenode_init(NODE_FUNDEF, &@$);
+     $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $5);
    }
- | function_type_specifier identifier '(' function_parameter_list ')' compound_statement
+ | procedure_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
    {
      unsigned i;
      unsigned n;
 
-     $$ = treenode_init(NODE_FUNDEF, &@$);
+     $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $6);
@@ -333,20 +333,20 @@ function_definition
    }
  ;
 
-function_parameter_list
- : function_parameter_list ',' function_parameter
+procedure_parameter_list
+ : procedure_parameter_list ',' procedure_parameter
    { $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $3);
    }
- | function_parameter
+ | procedure_parameter
    {
      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
    }
  ;
 
-function_parameter
+procedure_parameter
  : type_specifier identifier
    {
      $$ = treenode_init(NODE_DECL, &@$);
@@ -723,7 +723,7 @@ postfix_expression
 /* : postfix_expression '(' ')'*/
  : identifier '(' ')'
    {
-     $$ = treenode_init(NODE_EXPR_FUNCALL, &@$);
+     $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      /* treenode_appendChild($$, ensure_rValue($1)); */
      treenode_appendChild($$, $1);
    }
@@ -733,7 +733,7 @@ postfix_expression
      unsigned i;
      unsigned n;
 
-     $$ = treenode_init(NODE_EXPR_FUNCALL, &@$);
+     $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      /* treenode_appendChild($$, ensure_rValue($1));*/
      treenode_appendChild($$, $1);
      n = treenode_numChildren($3);

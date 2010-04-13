@@ -8,11 +8,11 @@ namespace SecreC {
 
 class Imop;
 class TreeNodeStmtDecl;
-class TreeNodeFundef;
+class TreeNodeProcDef;
 
 class Symbol {
     public: /* Types: */
-        enum Type { FUNCTION, CONSTANT, SYMBOL, TEMPORARY };
+        enum Type { PROCEDURE, CONSTANT, SYMBOL, TEMPORARY };
 
     public: /* Methods: */
         explicit inline Symbol(Type symbolType)
@@ -80,18 +80,18 @@ class SymbolTemporary: public SymbolWithValue {
         ScopeType m_scopeType;
 };
 
-class SymbolFunction: public SymbolWithValue {
+class SymbolProcedure: public SymbolWithValue {
     public: /* Methods: */
-        SymbolFunction(const TreeNodeFundef *fundef);
+        SymbolProcedure(const TreeNodeProcDef *procdef);
 
-        inline const TreeNodeFundef *decl() const { return m_decl; }
+        inline const TreeNodeProcDef *decl() const { return m_decl; }
         inline const Imop *target() const { return m_target; }
         inline void setTarget(const Imop *target) { m_target = target; }
 
         virtual std::string toString() const;
 
     private: /* Fields: */
-        const TreeNodeFundef *m_decl;
+        const TreeNodeProcDef *m_decl;
         const Imop           *m_target;
 };
 
@@ -157,6 +157,7 @@ class SymbolTable {
 
         void appendSymbol(Symbol *symbol);
         void appendGlobalSymbol(Symbol *symbol);
+        SymbolProcedure *appendProcedure(const TreeNodeProcDef &procdef);
         SymbolTemporary *appendTemporary(const Type &type);
         SymbolConstantBool *constantBool(bool value);
         SymbolConstantInt *constantInt(int value);
@@ -164,6 +165,9 @@ class SymbolTable {
         SymbolConstantString *constantString(const std::string &value);
         Symbol *find(const std::string &name) const;
         Symbol *findGlobal(const std::string &name) const;
+        SymbolProcedure *findGlobalProcedure(const std::string &name,
+                                             const SecTypeProcedureVoid &st,
+                                             const DataTypeProcedureVoid &dt);
         SymbolTable *newScope();
 
         std::string toString(unsigned level = 0, unsigned indent = 4,

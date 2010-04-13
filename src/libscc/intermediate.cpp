@@ -48,7 +48,7 @@ std::string Imop::toString() const {
         case PUTPARAM:     /* PUTPARAM arg1;                     */
             os << "PUTPARAM " << a1name;
             break;
-        case FUNCALL:      /*   d = arg1(PARAMS);                */
+        case PROCCALL:     /*   d = arg1(PARAMS);                */
             if (m_dest != 0) {
                 os << dname << " = ";
             }

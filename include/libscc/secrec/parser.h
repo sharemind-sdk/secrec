@@ -31,7 +31,7 @@ enum SecrecTreeNodeType {
     NODE_LITE_STRING      = 0x5,
         NODE_LITE_MASK    = 0xf,
     NODE_EXPR_NONE        = 0x010, /* void expression          */
-    NODE_EXPR_FUNCALL     = 0x020, /* expr(), expr(expr, ...)  */
+    NODE_EXPR_PROCCALL    = 0x020, /* expr(), expr(expr, ...)  */
     NODE_EXPR_WILDCARD    = 0x030, /* expr[*]                  */
     NODE_EXPR_SUBSCRIPT   = 0x040, /* expr[expr]               */
     NODE_EXPR_UNEG        = 0x050, /* !expr                    */
@@ -72,8 +72,8 @@ enum SecrecTreeNodeType {
     NODE_DECL           = 0xa000,
     NODE_DECL_VSUFFIX   = 0xb000,
     NODE_GLOBALS        = 0xc000,
-    NODE_FUNDEF         = 0xd000,
-    NODE_FUNDEFS        = 0xe000,
+    NODE_PROCDEF        = 0xd000,
+    NODE_PROCDEFS       = 0xe000,
     NODE_PROGRAM        = 0xf000,
 
     NODE_TYPETYPE       = 0x10000,

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <stack>
 #include <stdio.h>
 #include <stdlib.h>
 #include "secrec/symboltable.h"
@@ -32,7 +33,7 @@ inline void appendVectorToVector(std::vector<T> &dst,
 namespace SecreC {
 
 TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
-    : m_parent(0), m_function(0), m_type(type), m_location(loc)
+    : m_parent(0), m_procedure(0), m_type(type), m_location(loc)
 {
     // Intentionally empty
 }
@@ -47,10 +48,10 @@ TreeNode::~TreeNode() {
     }
 }
 
-TreeNodeFundef* TreeNode::containingFunction() {
-    if (m_function != 0) return m_function;
+TreeNodeProcDef* TreeNode::containingProcedure() {
+    if (m_procedure != 0) return m_procedure;
     if (m_parent != 0) {
-        return (m_function = m_parent->containingFunction());
+        return (m_procedure = m_parent->containingProcedure());
     }
     return 0;
 }
@@ -81,7 +82,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_LITE_UINT: return "UINT";
         case NODE_LITE_STRING: return "STRING";
         case NODE_EXPR_NONE: return "EXPR_NONE";
-        case NODE_EXPR_FUNCALL: return "EXPR_FUNCALL";
+        case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
         case NODE_EXPR_WILDCARD: return "EXPR_WILDCARD";
         case NODE_EXPR_SUBSCRIPT: return "EXPR_SUBSCRIPT";
         case NODE_EXPR_UNEG: return "EXPR_UNEG";
@@ -121,8 +122,8 @@ const char *TreeNode::typeName(Type type) {
         case NODE_DECL: return "DECL";
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_GLOBALS: return "DECL_GLOBALS";
-        case NODE_FUNDEF: return "FUNDEF";
-        case NODE_FUNDEFS: return "FUNDEFS";
+        case NODE_PROCDEF: return "PROCDEF";
+        case NODE_PROCDEFS: return "PROCDEFS";
         case NODE_PROGRAM: return "PROGRAM";
 
         case NODE_TYPETYPE: return "TYPETYPE";
@@ -200,10 +201,10 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeProgram(*loc));
         case NODE_GLOBALS:
             return (TreeNode*) (new SecreC::TreeNodeGlobals(*loc));
-        case NODE_FUNDEFS:
-            return (TreeNode*) (new SecreC::TreeNodeFundefs(*loc));
-        case NODE_FUNDEF:
-            return (TreeNode*) (new SecreC::TreeNodeFundef(*loc));
+        case NODE_PROCDEFS:
+            return (TreeNode*) (new SecreC::TreeNodeProcDefs(*loc));
+        case NODE_PROCDEF:
+            return (TreeNode*) (new SecreC::TreeNodeProcDef(*loc));
         case NODE_EXPR_WILDCARD: /* Fall through: */
         case NODE_EXPR_UNEG:     /* Fall through: */
         case NODE_EXPR_UMINUS:
@@ -232,6 +233,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
         case NODE_EXPR_ASSIGN:
             return (TreeNode*) (new SecreC::TreeNodeExprAssign(type, *loc));
+        case NODE_EXPR_PROCCALL:
+            return (TreeNode*) (new SecreC::TreeNodeExprProcCall(*loc));
         case NODE_EXPR_RVARIABLE:
             return (TreeNode*) (new SecreC::TreeNodeExprRVariable(*loc));
         case NODE_STMT_BREAK:
@@ -954,6 +957,169 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
 
 
 /*******************************************************************************
+  TreeNodeExprPROCCALL
+*******************************************************************************/
+
+ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
+                                                        std::ostream &es)
+{
+    typedef SecTypeProcedure STF;
+    typedef DataTypeProcedure DTF;
+    typedef ChildrenListConstIterator CLCI;
+
+    if (resultType() != 0) return ICode::OK;
+
+    assert(!children().empty());
+    assert(children().at(0)->type() == NODE_IDENTIFIER);
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
+
+    Symbol *s = st.find(id->value());
+    if (s != 0 && s->symbolType() != Symbol::PROCEDURE) {
+        es << "Identifier " << id->value() << " is not a function at "
+           << location() << std::endl;
+        return ICode::E_TYPE;
+    }
+
+    SecTypeProcedureVoid secType;
+    DataTypeProcedureVoid dataType;
+
+    for (CLCI it(children().begin() + 1); it != children().end(); it++) {
+        assert(((*it)->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
+        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
+
+        ICode::Status s = e->calculateResultType(st, es);
+        if (s != ICode::OK) return s;
+
+        if (e->resultType()->isVoid()) {
+            es << "Can't pass argument of void type to function at "
+               << e->location() << std::endl;
+            return ICode::E_TYPE;
+        }
+        assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
+        TypeNonVoid *t = static_cast<TypeNonVoid*>(e->resultType());
+        secType.addParamType(t->secType());
+        dataType.addParamType(t->dataType());
+    }
+
+    m_procedure = st.findGlobalProcedure(id->value(), secType, dataType);
+    if (m_procedure == 0) {
+        es << "No function of type (" << secType.mangle() << " -> ?, "
+           << dataType.mangle() << " -> ?) found in scope at " << location()
+           << std::endl;
+        return ICode::E_TYPE;
+    }
+
+    const TypeNonVoid &ft = m_procedure->decl()->procedureType();
+    if (ft.kind() == TypeNonVoid::PROCEDURE) {
+        assert(dynamic_cast<const STF*>(&ft.secType()) != 0);
+        const STF &rst = static_cast<const STF&>(ft.secType());
+        assert(dynamic_cast<const DTF*>(&ft.dataType()) != 0);
+        const DTF &rdt = static_cast<const DTF&>(ft.dataType());
+
+        setResultType(new TypeNonVoid(rst.returnSecType(), rdt.returnType()));
+    } else {
+        assert(ft.kind() == TypeNonVoid::PROCEDUREVOID);
+
+        setResultType(new TypeVoid);
+    }
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
+                                                 SymbolTable &st,
+                                                 std::ostream &es,
+                                                 SymbolWithValue *r)
+{
+    typedef ChildrenListConstIterator CLCI;
+
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    std::stack<SymbolWithValue*> resultList;
+
+    // Initialize arguments
+    TreeNodeExpr *last = 0;
+    for (CLCI it(children().begin() + 1); it != children().end(); it++) {
+        assert(((*it)->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
+        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
+        ICode::Status s = e->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+
+        if (e->firstImop() != 0) {
+            if (last != 0) {
+                last->patchNextList(e->firstImop());
+            } else {
+                setFirstImop(e->firstImop());
+            }
+            last = e;
+        }
+
+        assert(e->result() != 0);
+        resultList.push(e->result());
+    }
+
+    // Add them as arguments in a backward manner:
+    while (!resultList.empty()) {
+        Imop *i = new Imop(Imop::PUTPARAM);
+        i->setArg1(resultList.top());
+        code.push_back(i);
+
+        if (last != 0) {
+            last->patchNextList(i);
+            last = 0;
+        } else {
+            patchFirstImop(i);
+        }
+
+        resultList.pop();
+    }
+
+    // Do function call
+    Imop *i = new Imop(Imop::PROCCALL);
+    if (r == 0) {
+        // Generate temporary for the result of the unary expression
+        SymbolTemporary *t = st.appendTemporary(*resultType());
+        setResult(t);
+        i->setDest(t);
+    } else {
+        i->setDest(r);
+    }
+    i->setArg1(m_procedure);
+    code.push_back(i);
+    patchFirstImop(i);
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprProcCall::generateBoolCode(ICode::CodeList &code,
+                                                     SymbolTable &st,
+                                                     std::ostream &es)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, es);
+    if (s != ICode::OK) return s;
+
+    s = generateCode(code, st, es);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(Imop::JT, 0, result());
+    code.push_back(i);
+    addToTrueList(i);
+
+    i = new Imop(Imop::JUMP, 0);
+    code.push_back(i);
+    addToFalseList(i);
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
   TreeNodeExprInt
 *******************************************************************************/
 
@@ -1032,7 +1198,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
     const TypeNonVoid *type = static_cast<const TypeNonVoid*>(&s->secrecType());
     assert(type->dataType().kind() == DataType::VAR);
     assert(dynamic_cast<const DataTypeVar*>(&type->dataType()) != 0);
-    setResultType(new TypeNonVoid(type->secType(), DataTypeBasic(static_cast<const DataTypeVar&>(type->dataType()))));
+    setResultType(new TypeNonVoid(type->secType(), static_cast<const DataTypeVar&>(type->dataType()).dataType()));
 
     return ICode::OK;
 }
@@ -1252,11 +1418,11 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
                                                     SymbolTable &st,
                                                     std::ostream &es)
 {
-    /// \todo Write assertion that were have good return type
-
     // Type check
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
+
+    /// \todo Write check that were have good return type
 
     // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
@@ -1453,7 +1619,13 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICode::CodeList &code, SymbolT
   TreeNodeFundef
 *******************************************************************************/
 
-const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
+const std::string &TreeNodeProcDef::procedureName() const {
+    assert(children().size() >= 3);
+    assert(dynamic_cast<const TreeNodeIdentifier*>(children().at(0)) != 0);
+    return static_cast<const TreeNodeIdentifier*>(children().at(0))->value();
+}
+
+const SecreC::TypeNonVoid &TreeNodeProcDef::procedureType() const {
     if (m_cachedType != 0) return *m_cachedType;
 
     assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
@@ -1462,15 +1634,12 @@ const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
     if (rt->type() == NODE_TYPEVOID) {
         assert(rt->secrecType().isVoid());
 
-        SecTypeFunctionVoid *st = new SecTypeFunctionVoid();
-        DataTypeFunctionVoid *dt = new DataTypeFunctionVoid();
+        SecTypeProcedureVoid st;
+        DataTypeProcedureVoid dt;
 
-        /// \todo Add parameters
+        addParameters(st, dt);
 
-        m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
-
-        delete st;
-        delete dt;
+        m_cachedType = new SecreC::TypeNonVoid(st, dt);
     } else {
         assert(rt->type() == NODE_TYPETYPE);
         assert(!rt->secrecType().isVoid());
@@ -1483,21 +1652,18 @@ const SecreC::TypeNonVoid &TreeNodeFundef::functionType() const {
         assert(dynamic_cast<const SecTypeBasic*>(&tt.secType()) != 0);
         const SecTypeBasic &tts = static_cast<const SecTypeBasic&>(tt.secType());
 
-        SecTypeFunction *st = new SecTypeFunction(tts.secType());
-        DataTypeFunction *dt = new DataTypeFunction(tt.dataType());
+        SecTypeProcedure st(tts.secType());
+        DataTypeProcedure dt(tt.dataType());
 
-        /// \todo Add parameters
+        addParameters(st, dt);
 
-        m_cachedType = new SecreC::TypeNonVoid(*st, *dt);
-
-        delete st;
-        delete dt;
+        m_cachedType = new SecreC::TypeNonVoid(st, dt);
     }
 
     return *m_cachedType;
 }
 
-ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeProcDef::generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es)
 {
@@ -1513,9 +1679,8 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     os.str("");
 
     // Add to symbol table:
-    SymbolFunction *ns = new SymbolFunction(this);
-    ns->setName(id->value());
-    st.appendGlobalSymbol(ns);
+    /// \todo Check whether already defined
+    SymbolProcedure *ns = st.appendProcedure(*this);
 
     // Generate local scope:
     SymbolTable &localScope = *st.newScope();
@@ -1540,7 +1705,7 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     assert(ns->secrecType().isVoid() == false);
     assert(dynamic_cast<const TypeNonVoid*>(&ns->secrecType()) != 0);
     const TypeNonVoid &fType = static_cast<const TypeNonVoid&>(ns->secrecType());
-    if (fType.kind() == TypeNonVoid::FUNCTION) {
+    if (fType.kind() == TypeNonVoid::PROCEDURE) {
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
                 es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
@@ -1556,7 +1721,7 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
         }
         assert((body->resultFlags() & TreeNodeStmt::RETURN) != 0x0);
     } else {
-        assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
+        assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
                 es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
@@ -1565,7 +1730,7 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
                 es << "Function at " << location() << " contains a continue statement outside of any loop!" << std::endl;
                 return ICode::E_OTHER;
             }
-            assert(fType.kind() == TypeNonVoid::FUNCTIONVOID);
+            assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
             Imop *i = new Imop(Imop::RETURNVOID);
             body->patchNextList(i);
             code.push_back(i);
@@ -1581,20 +1746,39 @@ ICode::Status TreeNodeFundef::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
+void TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
+                                   DataTypeProcedureVoid &dt) const
+{
+    typedef ChildrenListConstIterator CLCI;
+
+    if (children().size() <= 3) return;
+
+    for (CLCI it(children().begin() + 3); it != children().end(); it++) {
+        assert((*it)->type() == NODE_DECL);
+        assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
+        TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(*it);
+        const TypeNonVoid &pt = d->resultType();
+        st.addParamType(pt.secType());
+        assert(pt.dataType().kind() == DataType::VAR);
+        assert(dynamic_cast<const DataTypeVar*>(&pt.dataType()) != 0);
+        dt.addParamType(static_cast<const DataTypeVar&>(pt.dataType()).dataType());
+    }
+}
+
 /*******************************************************************************
   TreeNodeFundefs
 *******************************************************************************/
 
-ICode::Status TreeNodeFundefs::generateCode(ICode::CodeList &code,
-                                            SymbolTable &st,
-                                            std::ostream &es)
+ICode::Status TreeNodeProcDefs::generateCode(ICode::CodeList &code,
+                                             SymbolTable &st,
+                                             std::ostream &es)
 {
     typedef ChildrenListConstIterator CLCI;
 
     for (CLCI it(children().begin()); it != children().end(); it++) {
-        assert((*it)->type() == NODE_FUNDEF);
-        assert(dynamic_cast<TreeNodeFundef*>(*it) != 0);
-        TreeNodeFundef *fundef = static_cast<TreeNodeFundef*>(*it);
+        assert((*it)->type() == NODE_PROCDEF);
+        assert(dynamic_cast<TreeNodeProcDef*>(*it) != 0);
+        TreeNodeProcDef *fundef = static_cast<TreeNodeProcDef*>(*it);
 
         // Generate code:
         ICode::Status s = fundef->generateCode(code, st, es);
@@ -1685,7 +1869,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
 
     assert(children().size() < 3);
 
-    TreeNodeFundefs *fs;
+    TreeNodeProcDefs *ps;
 
     /**
       \todo In contrast with grammar we don't allow mixed declarations of
@@ -1703,33 +1887,33 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
         if (s != ICode::OK) return s;
         code.push_comment("End of global declarations.");
 
-        assert(children().at(1)->type() == NODE_FUNDEFS);
-        assert(dynamic_cast<TreeNodeFundefs*>(children().at(1)) != 0);
-        fs = static_cast<TreeNodeFundefs*>(children().at(1));
+        assert(children().at(1)->type() == NODE_PROCDEFS);
+        assert(dynamic_cast<TreeNodeProcDefs*>(children().at(1)) != 0);
+        ps = static_cast<TreeNodeProcDefs*>(children().at(1));
     } else {
-        assert(children().at(0)->type() == NODE_FUNDEFS);
-        assert(dynamic_cast<TreeNodeFundefs*>(children().at(0)) != 0);
-        fs = static_cast<TreeNodeFundefs*>(children().at(0));
+        assert(children().at(0)->type() == NODE_PROCDEFS);
+        assert(dynamic_cast<TreeNodeProcDefs*>(children().at(0)) != 0);
+        ps = static_cast<TreeNodeProcDefs*>(children().at(0));
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = new Imop(Imop::FUNCALL, 0, 0);
+    Imop *mainCall = new Imop(Imop::PROCCALL, 0, 0);
     code.push_back(mainCall);
     code.push_back(new Imop(Imop::END));
 
     // Handle functions:
-    ICode::Status s = fs->generateCode(code, st, es);
+    ICode::Status s = ps->generateCode(code, st, es);
     if (s != ICode::OK) return s;
 
     // Check for "void main()":
-    Symbol *mainFun = st.findGlobal("main");
-    if (mainFun == 0 || mainFun->symbolType() != Symbol::FUNCTION) {
+    Symbol *mainProc = st.findGlobalProcedure("main", SecTypeProcedureVoid(), DataTypeProcedureVoid());
+    if (mainProc == 0) {
         es << "No function \"void main()\" found!" << std::endl;
         return ICode::E_NO_MAIN;
     }
 
     // Bind call to main(), i.e. mainCall:
-    mainCall->setArg1(mainFun);
+    mainCall->setArg1(mainProc);
 
     return ICode::OK;
 }
@@ -1796,13 +1980,42 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
                                              std::ostream &es)
 {
     typedef TreeNodeIdentifier TNI;
-    typedef TreeNodeType       TNT;
 
     assert(children().size() > 0 && children().size() <= 3);
     assert(children().at(0)->type() == NODE_IDENTIFIER);
 
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0));
+
+    SymbolSymbol *ns = new SymbolSymbol(resultType(), this);
+    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
+    ns->setName(id->value());
+
+    // Secondly we generate code for the initializer:
+    if (children().size() > 2) {
+        TreeNode *t = children().at(2);
+        assert((t->type() & NODE_EXPR_MASK) != 0x0);
+        assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
+        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
+        ICode::Status s = e->generateCode(code, st, es, ns);
+        if (s != ICode::OK) {
+            delete ns;
+            return s;
+        }
+    }
+
+    // Thirdly we add the symbol to the symbol table for use in expressions:
+    st.appendSymbol(ns);
+
+    setResultFlags(TreeNodeStmt::FALLTHRU);
+    return ICode::OK;
+}
+
+const SecreC::TypeNonVoid &TreeNodeStmtDecl::resultType() const {
+    typedef TreeNodeType TNT;
+
+    if (m_type != 0) return *m_type;
+
     assert(dynamic_cast<TNT*>(children().at(1)) != 0);
     TNT *type = static_cast<TNT*>(children().at(1));
 
@@ -1820,25 +2033,9 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
     assert(dynamic_cast<const SecTypeBasic*>(&justType.secType()) != 0);
     const SecTypeBasic &secType = static_cast<const SecTypeBasic&>(justType.secType());
 
-    SymbolSymbol *ns = new SymbolSymbol(TypeNonVoid(secType, DataTypeVar(dataType)), this);
-    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
-    ns->setName(id->value());
+    m_type = new TypeNonVoid(secType, DataTypeVar(dataType));
 
-    // Secondly we generate code for the initializer:
-    if (children().size() > 2) {
-        TreeNode *t = children().at(2);
-        assert((t->type() & NODE_EXPR_MASK) != 0x0);
-        assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
-        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
-        ICode::Status s = e->generateCode(code, st, es, ns);
-        if (s != ICode::OK) return s;
-    }
-
-    // Thirdly we add the symbol to the symbol table for use in expressions:
-    st.appendSymbol(ns);
-
-    setResultFlags(TreeNodeStmt::FALLTHRU);
-    return ICode::OK;
+    return *m_type;
 }
 
 
@@ -2105,32 +2302,32 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
                                                std::ostream &es)
 {
     if (children().empty()) {
-        if (containingFunction()->functionType().kind() == TypeNonVoid::FUNCTION) {
+        if (containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDURE) {
             es << "Cannot return from non-void function without value at " << location() << std::endl;
             return ICode::E_OTHER;
         }
-        assert(containingFunction()->functionType().kind() == TypeNonVoid::FUNCTIONVOID);
+        assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
 
         Imop *i = new Imop(Imop::RETURNVOID);
         code.push_back(i);
         setFirstImop(i);
     } else {
         assert(children().size() == 1);
-        if (containingFunction()->functionType().kind() == TypeNonVoid::FUNCTIONVOID) {
+        if (containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID) {
             es << "Cannot return value from void function at" << location() << std::endl;
             return ICode::E_OTHER;
         }
-        assert(containingFunction()->functionType().kind() == TypeNonVoid::FUNCTION);
+        assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDURE);
 
         assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
         ICode::Status s = e->calculateResultType(st, es);
         if (s != ICode::OK) return s;
-        if (!containingFunction()->functionType().canAssign(*e->resultType())) {
+        if (!containingProcedure()->procedureType().canAssign(*e->resultType())) {
             es << "Cannot return value of type " << *e->resultType()
                << " from function with type "
-               << containingFunction()->functionType() << ". At" << location()
+               << containingProcedure()->procedureType() << ". At" << location()
                << std::endl;
             return ICode::E_OTHER;
         }

@@ -32,9 +32,9 @@ using namespace SecreC;
 #define XSTMTS(a) "<STMT_COMPOUND>" a "</STMT_COMPOUND>"
 
 // Macros for testing simple code in blocks:
-#define SIMPLE(x) "void myfunction() {" x "}"
-#define SIMPLE_PARSE(x) XB3("PROGRAM", "FUNDEFS", "FUNDEF",\
-        XID("myfunction") XTYPEVOID x)
+#define SIMPLE(x) "void myprocedure() {" x "}"
+#define SIMPLE_PARSE(x) XB3("PROGRAM", "PROCDEFS", "PROCDEF",\
+        XID("myprocedure") XTYPEVOID x)
 
 // Macros for testing expressions as a statement:
 #define SIMPLE_E(x) SIMPLE(x ";")
@@ -149,34 +149,34 @@ void TestParse::simpleParseTest() {
 void TestParse::testParseProgram_data() {
     ADD_STANDARD_COLUMNS;
 
-    QTest::newRow("oneFunction")
-        << QString("void myfunction(){}")
-        << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XTYPEVOID XSCE));
+    QTest::newRow("oneprocedure")
+        << QString("void myprocedure(){}")
+        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+                       XID("myprocedure") XTYPEVOID XSCE));
 
-    QTest::newRow("twoFunctions")
-        << QString("void myfunction(){}private int[][] myfunction2(){}")
-        << QString(XB2("PROGRAM", "FUNDEFS",
-                       XB("FUNDEF",
-                           XID("myfunction") XTYPEVOID XSCE)
-                       XB("FUNDEF",
-                           XID("myfunction2")
+    QTest::newRow("twoprocedures")
+        << QString("void myprocedure(){}private int[][] myprocedure2(){}")
+        << QString(XB2("PROGRAM", "PROCDEFS",
+                       XB("PROCDEF",
+                           XID("myprocedure") XTYPEVOID XSCE)
+                       XB("PROCDEF",
+                           XID("myprocedure2")
                            XTYPETYPE(
                                XTYPESECF("private"),
                                XTYPEDATAARRAY2(0, 0, XTYPEDATAF("int")))
                            XSCE)));
 
-    QTest::newRow("declarationAndFunction")
-        << QString("private int myInt; void myfunction(){}")
+    QTest::newRow("declarationAndprocedure")
+        << QString("private int myInt; void myprocedure(){}")
         << QString(XB("PROGRAM",
                       XB2("DECL_GLOBALS", "DECL",
                            XID("myInt") XSIMPLETYPE("private", "int"))
-                      XB2("FUNDEFS", "FUNDEF",
-                          XID("myfunction") XTYPEVOID XSCE)));
+                      XB2("PROCDEFS", "PROCDEF",
+                          XID("myprocedure") XTYPEVOID XSCE)));
 
-    QTest::newRow("declarationsAndFunction")
+    QTest::newRow("declarationsAndprocedure")
         << QString("private int[][] myInt[2][3]; public bool myBool = true;"
-                   "void myfunction(){}")
+                   "void myprocedure(){}")
         << QString(XB("PROGRAM",
                        XB("DECL_GLOBALS",
                            XB("DECL",
@@ -187,20 +187,20 @@ void TestParse::testParseProgram_data() {
                                XB("DECL_VSUFFIX", XINT(2) XINT(3)))
                            XB("DECL",
                                XID("myBool") XSIMPLETYPE("public", "bool") XBOOL(true)))
-                       XB2("FUNDEFS", "FUNDEF",
-                           XID("myfunction") XTYPEVOID XSCE)));
+                       XB2("PROCDEFS", "PROCDEF",
+                           XID("myprocedure") XTYPEVOID XSCE)));
 
-    QTest::newRow("functionWithParam")
-        << QString("void myfunction(private int i){}")
-        << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XTYPEVOID XSCE
+    QTest::newRow("procedureWithParam")
+        << QString("void myprocedure(private int i){}")
+        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+                       XID("myprocedure") XTYPEVOID XSCE
                        XB("DECL", XID("i") XSIMPLETYPE("private", "int"))
                   ));
 
-    QTest::newRow("functionWithParams")
-        << QString("void myfunction(private int i, public bool j){}")
-        << QString(XB3("PROGRAM", "FUNDEFS", "FUNDEF",
-                       XID("myfunction") XTYPEVOID XSCE
+    QTest::newRow("procedureWithParams")
+        << QString("void myprocedure(private int i, public bool j){}")
+        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+                       XID("myprocedure") XTYPEVOID XSCE
                        XB("DECL", XID("i") XSIMPLETYPE("private", "int"))
                        XB("DECL", XID("j") XSIMPLETYPE("public", "bool"))
                   ));
@@ -209,17 +209,17 @@ void TestParse::testParseProgram_data() {
 void TestParse::testGlobalDecls_data() {
     ADD_STANDARD_COLUMNS;
 
-    QString iSkeleton("%1 myVar; void myfunction(){}");
+    QString iSkeleton("%1 myVar; void myprocedure(){}");
     QString oSkeleton(XB("PROGRAM",
                          XB2("DECL_GLOBALS", "DECL",
                              XID("myVar") "%1")
-                         XB2("FUNDEFS", "FUNDEF",
-                             XID("myfunction") XTYPEVOID XSCE)));
+                         XB2("PROCDEFS", "PROCDEF",
+                             XID("myprocedure") XTYPEVOID XSCE)));
     QString ovSkeleton(XB("PROGRAM",
                           XB2("DECL_GLOBALS", "DECL",
                               XID("myVar") "%1")
-                          XB2("FUNDEFS", "FUNDEF",
-                              XID("myfunction") XTYPEVOID XSCE)));
+                          XB2("PROCDEFS", "PROCDEF",
+                              XID("myprocedure") XTYPEVOID XSCE)));
 
     QTest::newRow("privateBool") << iSkeleton.arg("private bool")
                                  << oSkeleton.arg(XSIMPLETYPE("private", "bool"));
@@ -396,17 +396,17 @@ void TestParse::testExprPrimary_data() {
 void TestParse::testExprPostfix_data() {
     ADD_STANDARD_COLUMNS;
 
-    QTest::newRow("functionCall")
+    QTest::newRow("procedureCall")
         << QString(SIMPLE_E("f()"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f"))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_PROCCALL", XID("f"))));
 
-    QTest::newRow("functionCallWithArg")
+    QTest::newRow("procedureCallWithArg")
         << QString(SIMPLE_E("f(42)"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f") XINT(42))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_PROCCALL", XID("f") XINT(42))));
 
-    QTest::newRow("functionCallWithArgs")
+    QTest::newRow("procedureCallWithArgs")
         << QString(SIMPLE_E("f(42,24)"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_FUNCALL", XID("f") XINT(42) XINT(24))));
+        << QString(SIMPLE_PARSE_E(XB("EXPR_PROCCALL", XID("f") XINT(42) XINT(24))));
 
     QTest::newRow("matrixExpressionWildCard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("m[*]"))
@@ -634,22 +634,22 @@ void TestParse::testExprPrecedence_data() {
                                           XSIMPLETYPE("private", "int")
                                           XB("EXPR_UMINUS", XRVAR("o1"))))));
 
-    QTest::newRow("uminusToFuncall1")
+    QTest::newRow("uminusToPROCCALL1")
         << QString(SIMPLE_E("-f()"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_FUNCALL", XID("f"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_PROCCALL", XID("f"))));
 
-    QTest::newRow("unegToFuncall1")
+    QTest::newRow("unegToPROCCALL1")
         << QString(SIMPLE_E("!f()"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_FUNCALL", XID("f"))));
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_PROCCALL", XID("f"))));
 
-    QTest::newRow("uminusToFuncall2")
+    QTest::newRow("uminusToPROCCALL2")
         << QString(SIMPLE_E("-f(o1,o2)"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_FUNCALL",
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UMINUS", "EXPR_PROCCALL",
                                       XID("f") XRVAR("o1") XRVAR("o2"))));
 
-    QTest::newRow("unegToFuncall2")
+    QTest::newRow("unegToPROCCALL2")
         << QString(SIMPLE_E("!f(o1,o2)"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_FUNCALL",
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_PROCCALL",
                                       XID("f") XRVAR("o1") XRVAR("o2"))));
 
     QTest::newRow("uminusToWildcard") /// \todo RVAR or LVAR
@@ -679,13 +679,13 @@ void TestParse::testInlineDecls_data() {
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleDeclAfter")
         << QString(SIMPLE("f(); public int i;"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
                   )));
@@ -693,22 +693,22 @@ void TestParse::testInlineDecls_data() {
     QTest::newRow("simpleDeclMiddle")
         << QString(SIMPLE("f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleDeclsMiddle")
         << QString(SIMPLE("f(); public int i; f(); public int i; f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDecl")
@@ -717,8 +717,8 @@ void TestParse::testInlineDecls_data() {
                       XSTMTS(
                           XB("DECL",
                              XID("i") XSIMPLETYPE("public", "int"))
-                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                          XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonely")
@@ -727,22 +727,22 @@ void TestParse::testInlineDecls_data() {
                       XSTMTS(
                           XB("DECL",
                              XID("i") XSIMPLETYPE("public", "int")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclAfter")
         << QString(SIMPLE("f(); { public int i; f(); }"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyAfter")
         << QString(SIMPLE("f(); { public int i; }"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
                          XID("i") XSIMPLETYPE("public", "int"))
                   )));
@@ -750,22 +750,22 @@ void TestParse::testInlineDecls_data() {
     QTest::newRow("simpleInlineDeclMiddle")
         << QString(SIMPLE("f(); { public int i; f(); } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XSTMTS(
                           XB("DECL",
                              XID("i") XSIMPLETYPE("public", "int"))
-                          XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                          XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f")))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyMiddle")
         << QString(SIMPLE("f(); { public int i; } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XSTMTS(
                           XB("DECL",
                              XID("i") XSIMPLETYPE("public", "int")))
-                      XB2("STMT_EXPR", "EXPR_FUNCALL", XID("f"))
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                   )));
 }
 

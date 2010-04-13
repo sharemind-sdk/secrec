@@ -12,7 +12,7 @@
 
 namespace SecreC {
 
-class TreeNodeFundef;
+class TreeNodeProcDef;
 
 class TreeNode {
     public: /* Types: */
@@ -25,7 +25,7 @@ class TreeNode {
         TreeNode(Type type, const YYLTYPE &loc);
         virtual ~TreeNode();
 
-        TreeNodeFundef* containingFunction();
+        TreeNodeProcDef* containingProcedure();
         inline TreeNode* parent() const { return m_parent; }
         inline Type type() const { return m_type; }
         inline const ChildrenList &children() const {
@@ -48,18 +48,18 @@ class TreeNode {
 
     protected: /* Methods: */
         inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
-        inline void setContainingFunctionDirectly(TreeNodeFundef *f) { m_function = f; }
+        inline void setContainingProcedureDirectly(TreeNodeProcDef *p) { m_procedure = p; }
         virtual inline void resetParent(TreeNode *parent) {
             m_parent = parent;
-            m_function = parent->m_function;
+            m_procedure = parent->m_procedure;
         }
 
     private: /* Fields: */
-        TreeNode       *m_parent;
-        TreeNodeFundef *m_function;
-        const Type      m_type;
-        ChildrenList    m_children;
-        YYLTYPE         m_location;
+        TreeNode        *m_parent;
+        TreeNodeProcDef *m_procedure;
+        const Type       m_type;
+        ChildrenList     m_children;
+        YYLTYPE          m_location;
 };
 
 extern "C" {
@@ -405,6 +405,30 @@ class TreeNodeExprBool: public TreeNodeExpr {
 
 
 /******************************************************************
+  TreeNodeExprProcCall
+******************************************************************/
+
+class TreeNodeExprProcCall: public TreeNodeExpr {
+    public: /* Methods: */
+        explicit inline TreeNodeExprProcCall(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_PROCCALL, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  std::ostream &es);
+        virtual ICode::Status generateCode(ICode::CodeList &code,
+                                           SymbolTable &st,
+                                           std::ostream &es,
+                                           SymbolWithValue *result = 0);
+        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+                                               SymbolTable &st,
+                                               std::ostream &es);
+
+    private: /* Fields: */
+        SymbolProcedure *m_procedure;
+};
+
+
+/******************************************************************
   TreeNodeExprInt
 ******************************************************************/
 
@@ -555,27 +579,31 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 
 
 /******************************************************************
-  TreeNodeFundef
+  TreeNodeProcDef
 ******************************************************************/
 
-class TreeNodeFundef: public TreeNodeCodeable {
+class TreeNodeProcDef: public TreeNodeCodeable {
     public: /* Methods: */
-        explicit inline TreeNodeFundef(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_FUNDEF, loc), m_cachedType(0)
+        explicit inline TreeNodeProcDef(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_PROCDEF, loc), m_cachedType(0)
         {
-            setContainingFunctionDirectly(this);
+            setContainingProcedureDirectly(this);
         }
-        virtual inline ~TreeNodeFundef() { delete m_cachedType; }
+        virtual inline ~TreeNodeProcDef() { delete m_cachedType; }
 
         virtual inline void resetParent(TreeNode *parent) {
             setParentDirectly(parent);
         }
 
-        const SecreC::TypeNonVoid &functionType() const;
+        const std::string &procedureName() const;
+        const SecreC::TypeNonVoid &procedureType() const;
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
+
+    private: /* Methods: */
+        void addParameters(SecTypeProcedureVoid &st, DataTypeProcedureVoid &dt) const;
 
     private: /* Fields: */
         mutable const SecreC::TypeNonVoid *m_cachedType;
@@ -583,13 +611,13 @@ class TreeNodeFundef: public TreeNodeCodeable {
 
 
 /******************************************************************
-  TreeNodeFundefs
+  TreeNodeProcDefs
 ******************************************************************/
 
-class TreeNodeFundefs: public TreeNodeCodeable {
+class TreeNodeProcDefs: public TreeNodeCodeable {
     public: /* Methods: */
-        explicit inline TreeNodeFundefs(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_FUNDEFS, loc) {}
+        explicit inline TreeNodeProcDefs(const YYLTYPE &loc)
+            : TreeNodeCodeable(NODE_PROCDEFS, loc) {}
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
@@ -744,16 +772,20 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
 class TreeNodeStmtDecl: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_DECL, loc), m_global(false) {}
+            : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false) {}
+        virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
         virtual ICode::Status generateCode(ICode::CodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 
+        const SecreC::TypeNonVoid &resultType() const;
+
         inline bool global() const { return m_global; }
         inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
 
     private: /* Fields: */
+        mutable SecreC::TypeNonVoid *m_type;
         bool m_global;
 };
 

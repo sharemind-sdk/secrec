@@ -18,7 +18,7 @@ class Imop {
             ASSIGN     = 0x1,   /*   d = arg1;                        */
             CAST       = 0x2,   /*   d = (arg1) arg2;                 */
             PUTPARAM   = 0x3,   /* PUTPARAM arg1;                     */
-            FUNCALL    = 0x4,   /*   d = arg1(PARAMS);                */
+            PROCCALL   = 0x4,   /*   d = arg1(PARAMS);                */
             WILDCARD   = 0x5,   /*   d = arg1[*];                     */
             SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
             UNEG       = 0x7,   /*   d = !arg1;                       */
