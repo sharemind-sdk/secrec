@@ -613,38 +613,54 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     assert(dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol *destSymSym = static_cast<SymbolSymbol*>(destSym);
 
+    // Generate code for righthand expression:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
-    // Generate code for binary expression:
-    switch (type()) {
-        case NODE_EXPR_ASSIGN:
-            s = e2->generateCode(code, st, es, destSymSym);
-            if (s != ICode::OK) return s;
-            break;
-        case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
-        case NODE_EXPR_ASSIGN_DIV: /* Fall through: */
-        case NODE_EXPR_ASSIGN_MOD: /* Fall through: */
-        case NODE_EXPR_ASSIGN_ADD: /* Fall through: */
-        case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
-        default:
-            /// \todo Write better error message
-            es << "This kind of assignement is not yet implemented. At " << location()
-               << std::endl;
-            return ICode::E_NOT_IMPLEMENTED;
-    }
+    // Generate code for assignment
+    if (type() == NODE_EXPR_ASSIGN) {
+        // Simple assignment
+        s = e2->generateCode(code, st, es, destSymSym);
+        if (s != ICode::OK) return s;
+        setFirstImop(e2->firstImop());
 
-    setFirstImop(e2->firstImop());
+        if (r != 0) {
+            Imop *i = new Imop(Imop::ASSIGN, r, destSymSym);
+            code.push_back(i);
+            patchFirstImop(i);
+            e2->patchNextList(i);
+        } else {
+            setNextList(e2->nextList());
+        }
+    } else {
+        // Calculating assignments
+        s = e2->generateCode(code, st, es);
+        if (s != ICode::OK) return s;
+        setFirstImop(e2->firstImop());
 
-    if (r != 0) {
-        Imop *i = new Imop(Imop::ASSIGN);
-        i->setDest(r);
-        i->setArg1(destSymSym);
+        Imop::Type iType;
+        switch (type()) {
+            case NODE_EXPR_ASSIGN_MUL: iType = Imop::MUL; break;
+            case NODE_EXPR_ASSIGN_DIV: iType = Imop::DIV; break;
+            case NODE_EXPR_ASSIGN_MOD: iType = Imop::MOD; break;
+            case NODE_EXPR_ASSIGN_ADD: iType = Imop::ADD; break;
+            case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
+            default:
+                assert(false); // shouldn't happen
+        }
+
+        Imop *i = new Imop(iType, destSymSym, destSymSym, e2->result());
         code.push_back(i);
         patchFirstImop(i);
         e2->patchNextList(i);
-    } else {
-        setNextList(e2->nextList());
+
+        if (r != 0) {
+            i = new Imop(Imop::ASSIGN, r, destSymSym);
+            code.push_back(i);
+            setResult(r);
+        } else {
+            setResult(destSymSym);
+        }
     }
 
     return ICode::OK;
