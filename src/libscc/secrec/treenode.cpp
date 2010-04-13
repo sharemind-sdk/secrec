@@ -88,20 +88,20 @@ const char *TreeNode::typeName(Type type) {
         case NODE_EXPR_UNEG: return "EXPR_UNEG";
         case NODE_EXPR_UMINUS: return "EXPR_UMINUS";
         case NODE_EXPR_CAST: return "EXPR_CAST";
-        case NODE_EXPR_MATRIXMUL: return "EXPR_MATRIXMUL";
-        case NODE_EXPR_MUL: return "EXPR_MUL";
-        case NODE_EXPR_DIV: return "EXPR_DIV";
-        case NODE_EXPR_MOD: return "EXPR_MOD";
-        case NODE_EXPR_ADD: return "EXPR_ADD";
-        case NODE_EXPR_SUB: return "EXPR_SUB";
-        case NODE_EXPR_EQ: return "EXPR_EQ";
-        case NODE_EXPR_NE: return "EXPR_NE";
-        case NODE_EXPR_LE: return "EXPR_LE";
-        case NODE_EXPR_GT: return "EXPR_GT";
-        case NODE_EXPR_GE: return "EXPR_GE";
-        case NODE_EXPR_LT: return "EXPR_LT";
-        case NODE_EXPR_LAND: return "EXPR_LAND";
-        case NODE_EXPR_LOR: return "EXPR_LOR";
+        case NODE_EXPR_BINARY_MATRIXMUL: return "EXPR_MATRIXMUL";
+        case NODE_EXPR_BINARY_MUL: return "EXPR_MUL";
+        case NODE_EXPR_BINARY_DIV: return "EXPR_DIV";
+        case NODE_EXPR_BINARY_MOD: return "EXPR_MOD";
+        case NODE_EXPR_BINARY_ADD: return "EXPR_ADD";
+        case NODE_EXPR_BINARY_SUB: return "EXPR_SUB";
+        case NODE_EXPR_BINARY_EQ: return "EXPR_EQ";
+        case NODE_EXPR_BINARY_NE: return "EXPR_NE";
+        case NODE_EXPR_BINARY_LE: return "EXPR_LE";
+        case NODE_EXPR_BINARY_GT: return "EXPR_GT";
+        case NODE_EXPR_BINARY_GE: return "EXPR_GE";
+        case NODE_EXPR_BINARY_LT: return "EXPR_LT";
+        case NODE_EXPR_BINARY_LAND: return "EXPR_LAND";
+        case NODE_EXPR_BINARY_LOR: return "EXPR_LOR";
         case NODE_EXPR_TERNIF: return "EXPR_TERNIF";
         case NODE_EXPR_ASSIGN_MUL: return "EXPR_ASSIGN_MUL";
         case NODE_EXPR_ASSIGN_DIV: return "EXPR_ASSIGN_DIV";
@@ -209,20 +209,20 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_EXPR_UNEG:     /* Fall through: */
         case NODE_EXPR_UMINUS:
             return (TreeNode*) (new SecreC::TreeNodeExprUnary(type, *loc));
-        case NODE_EXPR_MATRIXMUL:  /* Fall through: */
-        case NODE_EXPR_MUL:        /* Fall through: */
-        case NODE_EXPR_DIV:        /* Fall through: */
-        case NODE_EXPR_MOD:        /* Fall through: */
-        case NODE_EXPR_ADD:        /* Fall through: */
-        case NODE_EXPR_SUB:        /* Fall through: */
-        case NODE_EXPR_EQ:         /* Fall through: */
-        case NODE_EXPR_NE:         /* Fall through: */
-        case NODE_EXPR_LE:         /* Fall through: */
-        case NODE_EXPR_GT:         /* Fall through: */
-        case NODE_EXPR_GE:         /* Fall through: */
-        case NODE_EXPR_LT:         /* Fall through: */
-        case NODE_EXPR_LAND:       /* Fall through: */
-        case NODE_EXPR_LOR:        /* Fall through: */
+        case NODE_EXPR_BINARY_MATRIXMUL:  /* Fall through: */
+        case NODE_EXPR_BINARY_MUL:        /* Fall through: */
+        case NODE_EXPR_BINARY_DIV:        /* Fall through: */
+        case NODE_EXPR_BINARY_MOD:        /* Fall through: */
+        case NODE_EXPR_BINARY_ADD:        /* Fall through: */
+        case NODE_EXPR_BINARY_SUB:        /* Fall through: */
+        case NODE_EXPR_BINARY_EQ:         /* Fall through: */
+        case NODE_EXPR_BINARY_NE:         /* Fall through: */
+        case NODE_EXPR_BINARY_LE:         /* Fall through: */
+        case NODE_EXPR_BINARY_GT:         /* Fall through: */
+        case NODE_EXPR_BINARY_GE:         /* Fall through: */
+        case NODE_EXPR_BINARY_LT:         /* Fall through: */
+        case NODE_EXPR_BINARY_LAND:       /* Fall through: */
+        case NODE_EXPR_BINARY_LOR:        /* Fall through: */
             return (TreeNode*) (new SecreC::TreeNodeExprBinary(type, *loc));
         case NODE_EXPR_TERNIF:
             return (TreeNode*) (new SecreC::TreeNodeExprTernary(*loc));
@@ -679,6 +679,27 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &code,
   TreeNodeExprBinary
 *******************************************************************************/
 
+const char *TreeNodeExprBinary::operatorString() const {
+    switch (type()) {
+        case NODE_EXPR_BINARY_ADD:  return "+";
+        case NODE_EXPR_BINARY_SUB:  return "-";
+        case NODE_EXPR_BINARY_MUL:  return "*";
+        case NODE_EXPR_BINARY_MOD:  return "%";
+        case NODE_EXPR_BINARY_DIV:  return "/";
+        case NODE_EXPR_BINARY_EQ:   return "==";
+        case NODE_EXPR_BINARY_GE:   return ">=";
+        case NODE_EXPR_BINARY_GT:   return ">";
+        case NODE_EXPR_BINARY_LE:   return "<=";
+        case NODE_EXPR_BINARY_LT:   return "<";
+        case NODE_EXPR_BINARY_NE:   return "!=";
+        case NODE_EXPR_BINARY_LAND: return "&&";
+        case NODE_EXPR_BINARY_LOR:  return "||";
+        case NODE_EXPR_BINARY_MATRIXMUL: return "#";
+        default:
+            assert(false); // shouldn't happen
+    }
+}
+
 ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
                                                       std::ostream &es)
 {
@@ -722,43 +743,44 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
         SecrecSecType s2 = static_cast<const SecTypeBasic*>(&et2.secType())->secType();
 
         switch (type()) {
-            case NODE_EXPR_ADD:
+            case NODE_EXPR_BINARY_ADD:
                 if (d1 != d2) break;
                 if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), d1));
                 return ICode::OK;
-            case NODE_EXPR_SUB:
-            case NODE_EXPR_MUL:
-            case NODE_EXPR_MOD:
-            case NODE_EXPR_DIV:
+            case NODE_EXPR_BINARY_SUB:
+            case NODE_EXPR_BINARY_MUL:
+            case NODE_EXPR_BINARY_MOD:
+            case NODE_EXPR_BINARY_DIV:
                 if (d1 != d2) break;
                 if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), d1));
                 return ICode::OK;
-            case NODE_EXPR_EQ:
-            case NODE_EXPR_GE:
-            case NODE_EXPR_GT:
-            case NODE_EXPR_LE:
-            case NODE_EXPR_LT:
-            case NODE_EXPR_NE:
+            case NODE_EXPR_BINARY_EQ:
+            case NODE_EXPR_BINARY_GE:
+            case NODE_EXPR_BINARY_GT:
+            case NODE_EXPR_BINARY_LE:
+            case NODE_EXPR_BINARY_LT:
+            case NODE_EXPR_BINARY_NE:
                 if (d1 != d2) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), DATATYPE_BOOL));
                 return ICode::OK;
-            case NODE_EXPR_LAND:
-            case NODE_EXPR_LOR:
+            case NODE_EXPR_BINARY_LAND:
+            case NODE_EXPR_BINARY_LOR:
                 if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), DATATYPE_BOOL));
                 return ICode::OK;
-            default:
-                /// \todo Write better error message
-                es << "This kind of binary operation is not yet supported. At "
-                   << location() << std::endl;
+            case NODE_EXPR_BINARY_MATRIXMUL:
+                es << "Matrix multiplication not yet supported. At " << location() << std::endl;
                 return ICode::E_NOT_IMPLEMENTED;
+            default:
+                assert(false);
         }
     }
 
-    /// \todo Write better error message
-    es << "Invalid binary operation at " << location() << std::endl;
+    es << "Invalid binary operation " << operatorString()
+       << " between operands of type " << eType1 << " and " << eType2
+       << " at " << location() << std::endl;
 
     return ICode::E_TYPE;
 }
@@ -794,19 +816,19 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
     // Generate code for binary expression:
     Imop *i;
     switch (type()) {
-        case NODE_EXPR_ADD:  i = new Imop(Imop::ADD);  break;
-        case NODE_EXPR_SUB:  i = new Imop(Imop::SUB);  break;
-        case NODE_EXPR_MUL:  i = new Imop(Imop::MUL);  break;
-        case NODE_EXPR_DIV:  i = new Imop(Imop::DIV);  break;
-        case NODE_EXPR_MOD:  i = new Imop(Imop::MOD);  break;
-        case NODE_EXPR_EQ:   i = new Imop(Imop::EQ);   break;
-        case NODE_EXPR_GE:   i = new Imop(Imop::GE);   break;
-        case NODE_EXPR_GT:   i = new Imop(Imop::GT);   break;
-        case NODE_EXPR_LE:   i = new Imop(Imop::LE);   break;
-        case NODE_EXPR_LT:   i = new Imop(Imop::LT);   break;
-        case NODE_EXPR_NE:   i = new Imop(Imop::NE);   break;
-        case NODE_EXPR_LAND: i = new Imop(Imop::LAND); break;
-        case NODE_EXPR_LOR:  i = new Imop(Imop::LOR);  break;
+        case NODE_EXPR_BINARY_ADD:  i = new Imop(Imop::ADD);  break;
+        case NODE_EXPR_BINARY_SUB:  i = new Imop(Imop::SUB);  break;
+        case NODE_EXPR_BINARY_MUL:  i = new Imop(Imop::MUL);  break;
+        case NODE_EXPR_BINARY_DIV:  i = new Imop(Imop::DIV);  break;
+        case NODE_EXPR_BINARY_MOD:  i = new Imop(Imop::MOD);  break;
+        case NODE_EXPR_BINARY_EQ:   i = new Imop(Imop::EQ);   break;
+        case NODE_EXPR_BINARY_GE:   i = new Imop(Imop::GE);   break;
+        case NODE_EXPR_BINARY_GT:   i = new Imop(Imop::GT);   break;
+        case NODE_EXPR_BINARY_LE:   i = new Imop(Imop::LE);   break;
+        case NODE_EXPR_BINARY_LT:   i = new Imop(Imop::LT);   break;
+        case NODE_EXPR_BINARY_NE:   i = new Imop(Imop::NE);   break;
+        case NODE_EXPR_BINARY_LAND: i = new Imop(Imop::LAND); break;
+        case NODE_EXPR_BINARY_LOR:  i = new Imop(Imop::LOR);  break;
         default:
             /// \todo Write better error message
             es << "Binary is not yet implemented. At " << location()
@@ -834,16 +856,16 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     ICode::Status s = calculateResultType(st, es);
     if (s != ICode::OK) return s;
 
-    assert(type() == NODE_EXPR_EQ
-           || type() == NODE_EXPR_GE
-           || type() == NODE_EXPR_GT
-           || type() == NODE_EXPR_LAND
-           || type() == NODE_EXPR_LE
-           || type() == NODE_EXPR_LOR
-           || type() == NODE_EXPR_LT
-           || type() == NODE_EXPR_NE);
+    assert(type() == NODE_EXPR_BINARY_EQ
+           || type() == NODE_EXPR_BINARY_GE
+           || type() == NODE_EXPR_BINARY_GT
+           || type() == NODE_EXPR_BINARY_LAND
+           || type() == NODE_EXPR_BINARY_LE
+           || type() == NODE_EXPR_BINARY_LOR
+           || type() == NODE_EXPR_BINARY_LT
+           || type() == NODE_EXPR_BINARY_NE);
 
-    if (type() == NODE_EXPR_LAND || type() == NODE_EXPR_LOR) {
+    if (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR) {
         // Generate code for child expressions:
         TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
         s = e1->generateBoolCode(code, st, es);
@@ -856,14 +878,14 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
         patchFirstImop(e2->firstImop());
 
         // Short circuit the code:
-        if (type() == NODE_EXPR_LAND) {
+        if (type() == NODE_EXPR_BINARY_LAND) {
             e1->patchTrueList(e2->firstImop());
             setFalseList(e1->falseList());
 
             setTrueList(e2->trueList());
             addToFalseList(e2->falseList());
         } else {
-            assert(type() == NODE_EXPR_LOR);
+            assert(type() == NODE_EXPR_BINARY_LOR);
 
             e1->patchFalseList(e2->firstImop());
             setTrueList(e1->trueList());
@@ -891,12 +913,12 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     e2->patchNextList(tj);
 
     switch (type()) {
-        case NODE_EXPR_EQ: tj = new Imop(Imop::JE,  0); break;
-        case NODE_EXPR_GE: tj = new Imop(Imop::JGE, 0); break;
-        case NODE_EXPR_GT: tj = new Imop(Imop::JGT, 0); break;
-        case NODE_EXPR_LE: tj = new Imop(Imop::JLE, 0); break;
-        case NODE_EXPR_LT: tj = new Imop(Imop::JLT, 0); break;
-        case NODE_EXPR_NE: tj = new Imop(Imop::JNE, 0); break;
+        case NODE_EXPR_BINARY_EQ: tj = new Imop(Imop::JE,  0); break;
+        case NODE_EXPR_BINARY_GE: tj = new Imop(Imop::JGE, 0); break;
+        case NODE_EXPR_BINARY_GT: tj = new Imop(Imop::JGT, 0); break;
+        case NODE_EXPR_BINARY_LE: tj = new Imop(Imop::JLE, 0); break;
+        case NODE_EXPR_BINARY_LT: tj = new Imop(Imop::JLT, 0); break;
+        case NODE_EXPR_BINARY_NE: tj = new Imop(Imop::JNE, 0); break;
         default:
             assert(false); // Shouldn't happen.
     }

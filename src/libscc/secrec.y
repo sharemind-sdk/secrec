@@ -586,7 +586,7 @@ conditional_expression
 logical_or_expression
  : logical_or_expression LOR_OP logical_and_expression
    {
-     $$ = treenode_init(NODE_EXPR_LOR, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_LOR, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -596,7 +596,7 @@ logical_or_expression
 logical_and_expression
  : logical_and_expression LAND_OP equality_expression
    {
-     $$ = treenode_init(NODE_EXPR_LAND, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_LAND, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -606,13 +606,13 @@ logical_and_expression
 equality_expression
  : equality_expression EQ_OP relational_expression
    {
-     $$ = treenode_init(NODE_EXPR_EQ, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_EQ, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | equality_expression NE_OP relational_expression
    {
-     $$ = treenode_init(NODE_EXPR_NE, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_NE, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -622,25 +622,25 @@ equality_expression
 relational_expression
  : relational_expression LE_OP additive_expression
    {
-     $$ = treenode_init(NODE_EXPR_LE, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_LE, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | relational_expression GE_OP additive_expression
    {
-     $$ = treenode_init(NODE_EXPR_GE, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_GE, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | relational_expression '<' additive_expression
    {
-     $$ = treenode_init(NODE_EXPR_LT, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_LT, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | relational_expression '>' additive_expression
    {
-     $$ = treenode_init(NODE_EXPR_GT, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_GT, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -650,13 +650,13 @@ relational_expression
 additive_expression
  : additive_expression '+' multiplicative_expression
    {
-     $$ = treenode_init(NODE_EXPR_ADD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ADD, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | additive_expression '-' multiplicative_expression
    {
-     $$ = treenode_init(NODE_EXPR_SUB, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_SUB, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -666,19 +666,19 @@ additive_expression
 multiplicative_expression
  : multiplicative_expression '*' matrix_expression
    {
-     $$ = treenode_init(NODE_EXPR_MUL, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_MUL, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | multiplicative_expression '/' matrix_expression
    {
-     $$ = treenode_init(NODE_EXPR_DIV, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_DIV, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
  | multiplicative_expression '%' matrix_expression
    {
-     $$ = treenode_init(NODE_EXPR_MOD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_MOD, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -688,7 +688,7 @@ multiplicative_expression
 matrix_expression
  : matrix_expression '#' cast_expression
    {
-     $$ = treenode_init(NODE_EXPR_MATRIXMUL, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_MATRIXMUL, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }

@@ -37,20 +37,20 @@ enum SecrecTreeNodeType {
     NODE_EXPR_UNEG        = 0x050, /* !expr                    */
     NODE_EXPR_UMINUS      = 0x060, /* -expr                    */
     NODE_EXPR_CAST        = 0x070, /* (type) expr              */
-    NODE_EXPR_MATRIXMUL   = 0x080, /* expr # expr              */
-    NODE_EXPR_MUL         = 0x090, /* expr * expr              */
-    NODE_EXPR_DIV         = 0x0a0, /* expr / expr              */
-    NODE_EXPR_MOD         = 0x0b0, /* expr % expr              */
-    NODE_EXPR_ADD         = 0x0c0, /* expr + expr              */
-    NODE_EXPR_SUB         = 0x0d0, /* expr - expr              */
-    NODE_EXPR_EQ          = 0x0e0, /* expr == expr             */
-    NODE_EXPR_NE          = 0x0f0, /* expr != expr             */
-    NODE_EXPR_LE          = 0x100, /* expr <= expr             */
-    NODE_EXPR_GT          = 0x110, /* expr > expr              */
-    NODE_EXPR_GE          = 0x120, /* expr >= expr             */
-    NODE_EXPR_LT          = 0x130, /* expr < expr              */
-    NODE_EXPR_LAND        = 0x140, /* expr && expr             */
-    NODE_EXPR_LOR         = 0x150, /* expr || expr             */
+    NODE_EXPR_BINARY_MATRIXMUL = 0x080, /* expr # expr              */
+    NODE_EXPR_BINARY_MUL       = 0x090, /* expr * expr              */
+    NODE_EXPR_BINARY_DIV       = 0x0a0, /* expr / expr              */
+    NODE_EXPR_BINARY_MOD       = 0x0b0, /* expr % expr              */
+    NODE_EXPR_BINARY_ADD       = 0x0c0, /* expr + expr              */
+    NODE_EXPR_BINARY_SUB       = 0x0d0, /* expr - expr              */
+    NODE_EXPR_BINARY_EQ        = 0x0e0, /* expr == expr             */
+    NODE_EXPR_BINARY_NE        = 0x0f0, /* expr != expr             */
+    NODE_EXPR_BINARY_LE        = 0x100, /* expr <= expr             */
+    NODE_EXPR_BINARY_GT        = 0x110, /* expr > expr              */
+    NODE_EXPR_BINARY_GE        = 0x120, /* expr >= expr             */
+    NODE_EXPR_BINARY_LT        = 0x130, /* expr < expr              */
+    NODE_EXPR_BINARY_LAND      = 0x140, /* expr && expr             */
+    NODE_EXPR_BINARY_LOR       = 0x150, /* expr || expr             */
     NODE_EXPR_TERNIF      = 0x160, /* expr ? expr : expr       */
     NODE_EXPR_ASSIGN_MUL  = 0x170, /* expr *= expr             */
     NODE_EXPR_ASSIGN_DIV  = 0x180, /* expr /= expr             */

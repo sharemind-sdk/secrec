@@ -363,6 +363,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         inline TreeNodeExprBinary(Type type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
+        const char *operatorString() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
         virtual ICode::Status generateCode(ICode::CodeList &code,
