@@ -1002,7 +1002,7 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
 
 
 /*******************************************************************************
-  TreeNodeExprPROCCALL
+  TreeNodeExprProcCall
 *******************************************************************************/
 
 ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
@@ -1135,6 +1135,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
         i->setDest(r);
     }
     i->setArg1(m_procedure);
+    i->setCallDest(m_procedure->decl()->firstImop());
     code.push_back(i);
     patchFirstImop(i);
 
@@ -1719,7 +1720,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICode::CodeList &code,
 
     std::ostringstream os;
     os << "Start of function: " << id->value();
-    code.push_comment(os.str());
+    setFirstImop(code.push_comment(os.str()));
     os.str("");
 
     // Add to symbol table:
@@ -1776,6 +1777,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICode::CodeList &code,
             }
             assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
             Imop *i = new Imop(Imop::RETURNVOID);
+            i->setReturnDestFirstImop(firstImop());
             body->patchNextList(i);
             code.push_back(i);
         }
@@ -1941,7 +1943,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = new Imop(Imop::PROCCALL, 0, 0);
+    Imop *mainCall = new Imop(Imop::PROCCALL, 0, 0, 0);
     code.push_back(mainCall);
     code.push_back(new Imop(Imop::END));
 
@@ -1950,7 +1952,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     if (s != ICode::OK) return s;
 
     // Check for "void main()":
-    Symbol *mainProc = st.findGlobalProcedure("main", SecTypeProcedureVoid(), DataTypeProcedureVoid());
+    SymbolProcedure *mainProc = st.findGlobalProcedure("main", SecTypeProcedureVoid(), DataTypeProcedureVoid());
     if (mainProc == 0) {
         es << "No function \"void main()\" found!" << std::endl;
         return ICode::E_NO_MAIN;
@@ -1958,6 +1960,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
 
     // Bind call to main(), i.e. mainCall:
     mainCall->setArg1(mainProc);
+    mainCall->setCallDest(mainProc->decl()->firstImop());
 
     return ICode::OK;
 }
@@ -2353,6 +2356,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
         assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
 
         Imop *i = new Imop(Imop::RETURNVOID);
+        i->setReturnDestFirstImop(containingProcedure()->firstImop());
         code.push_back(i);
         setFirstImop(i);
     } else {
@@ -2381,8 +2385,9 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
         setFirstImop(e->firstImop());
 
         Imop *i = new Imop(Imop::RETURN);
-        code.push_back(i);
         i->setArg1(e->result());
+        i->setReturnDestFirstImop(containingProcedure()->firstImop());
+        code.push_back(i);
         patchFirstImop(i);
     }
     setResultFlags(TreeNodeStmt::RETURN);

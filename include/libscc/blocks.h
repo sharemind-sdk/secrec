@@ -1,6 +1,7 @@
 #ifndef BLOCKS_H
 #define BLOCKS_H
 
+#include <map>
 #include <set>
 #include <vector>
 #include "intermediate.h"
@@ -9,32 +10,63 @@
 namespace SecreC {
 
 /*******************************************************************************
+  Blocks
+*******************************************************************************/
+
+class Block;
+
+class Blocks {
+    public: /* Types: */
+        enum Status { ERROR, OK };
+        typedef ICode::CodeList::const_iterator CCI;
+        typedef std::map<SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
+
+
+    public: /* Methods: */
+        Blocks(const ICode::CodeList &code);
+
+        std::string toString() const;
+        inline Status status() const { return m_status; }
+
+    protected: /* Methods: */
+         CCI endBlock(SecreC::Block &b, CCI end,
+                      IAB &from, IAB &to,
+                      IAB &callFrom, IAB &callTo);
+         bool canEliminate(const SecreC::Block &b) const;
+
+    private: /* Fields: */
+        std::vector<Block*> m_blocks;
+        Block *m_startBlock;
+        Status m_status;
+
+};
+
+/*******************************************************************************
   Block
 *******************************************************************************/
 
 struct Block {
-    inline Block(ICode::CodeList::const_iterator codestart)
-        : start(codestart), end(codestart) {}
+    enum Status { OK, REMOVED, GENERATED };
 
-    ICode::CodeList::const_iterator start;
-    ICode::CodeList::const_iterator end;
+    inline Block(ICode::CodeList::const_iterator codestart,
+                 unsigned long i)
+        : start(codestart), end(codestart), index(i), status(OK) {}
+
+    Blocks::CCI start;
+    Blocks::CCI end;
     std::set<Block*> predecessors;
+    std::set<Block*> predecessorsCall;
     std::set<Block*> successors;
-};
-
-
-/*******************************************************************************
-  Blocks
-*******************************************************************************/
-
-class Blocks {
-    public:
-        Blocks(const ICode::CodeList &code);
-
-    std::vector<Block*> m_blockList;
-    Block *m_startBlock;
+    std::set<Block*> successorsCall;
+    unsigned long index;
+    Status status;
 };
 
 } // namespace SecreC
+
+std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs) {
+    out << bs.toString();
+    return out;
+}
 
 #endif // BLOCKS_H

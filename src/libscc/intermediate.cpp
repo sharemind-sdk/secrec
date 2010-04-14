@@ -19,6 +19,7 @@ namespace SecreC {
 #define tname  (m_dest == 0 ? "_" : ulongToString(((SecreC::Imop*) m_dest)->index()) )
 #define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
 #define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
+#define cImop  (m_arg2 == 0 ? "_" : ulongToString(((SecreC::Imop*) m_arg2)->index()))
 
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
@@ -28,6 +29,10 @@ Imop::~Imop() {
     } else if ((m_type & JUMP_MASK) != 0x0) {
         if (m_dest != 0) {
             ((Imop*) m_dest)->removeIncoming(this);
+        }
+    } else if (m_type == PROCCALL) {
+        if (m_arg2 != 0) {
+            ((Imop*) m_arg2)->removeIncomingCall(this);
         }
     }
 
@@ -48,11 +53,11 @@ std::string Imop::toString() const {
         case PUTPARAM:     /* PUTPARAM arg1;                     */
             os << "PUTPARAM " << a1name;
             break;
-        case PROCCALL:     /*   d = arg1(PARAMS);                */
+        case PROCCALL:     /*   d = arg1(PARAMS);   (Imop *arg2) */
             if (m_dest != 0) {
                 os << dname << " = ";
             }
-            os << "CALL " << a1name;
+            os << "CALL " << a1name << " @ " << cImop;
             break;
         case WILDCARD:     /*   d = arg1[*];                     */
             os << dname << " = " << a1name << "[*]";
@@ -151,10 +156,9 @@ std::string Imop::toString() const {
             os << "TODO";
     }
 
+    typedef std::set<Imop*>::const_iterator ISCI;
+    typedef std::set<unsigned long>::const_iterator ULSCI;
     if (!m_incoming.empty()) {
-        typedef std::set<Imop*>::const_iterator ISCI;
-        typedef std::set<unsigned long>::const_iterator ULSCI;
-
         std::set<unsigned long> is;
         for (ISCI it(m_incoming.begin()); it != m_incoming.end(); it++) {
             is.insert((*it)->index());
@@ -168,6 +172,37 @@ std::string Imop::toString() const {
         }
         os << "]";
     }
+    if (!m_incomingCalls.empty()) {
+        std::set<unsigned long> is;
+        for (ISCI it(m_incomingCalls.begin()); it != m_incomingCalls.end(); it++) {
+            is.insert((*it)->index());
+        }
+        os << "    CALLEDBY[";
+        for (ULSCI it(is.begin()); it != is.end(); it++) {
+            if (it != is.begin()) {
+                os << ", ";
+            }
+            os << (*it);
+        }
+        os << "]";
+    }
+    if (m_arg2 != 0 && (m_type == RETURN || m_type == RETURNVOID)) {
+        Imop *i = (Imop*) m_arg2;
+        if (!i->m_incomingCalls.empty()) {
+            std::set<unsigned long> is;
+            for (ISCI it(i->m_incomingCalls.begin()); it != i->m_incomingCalls.end(); it++) {
+                is.insert((*it)->index());
+            }
+            os << "    RETURNSTO[";
+            for (ULSCI it(is.begin()); it != is.end(); it++) {
+                if (it != is.begin()) {
+                    os << ", ";
+                }
+                os << (*it);
+            }
+            os << "]";
+        }
+    }
     return os.str();
 }
 
@@ -177,7 +212,7 @@ ICode::CodeList::~CodeList() {
     }
 }
 
-void ICode::CodeList::resetIndexes() {
+void ICode::CodeList::resetIndexes() const {
     unsigned long i = 1;
     for (const_iterator it(begin()); it != end(); it++) {
         (*it)->setIndex(i);

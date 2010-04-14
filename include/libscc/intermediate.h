@@ -18,7 +18,7 @@ class Imop {
             ASSIGN     = 0x1,   /*   d = arg1;                        */
             CAST       = 0x2,   /*   d = (arg1) arg2;                 */
             PUTPARAM   = 0x3,   /* PUTPARAM arg1;                     */
-            PROCCALL   = 0x4,   /*   d = arg1(PARAMS);                */
+            PROCCALL   = 0x4,   /*   d = arg1(PARAMS);   (Imop *arg2) */
             WILDCARD   = 0x5,   /*   d = arg1[*];                     */
             SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
             UNEG       = 0x7,   /*   d = !arg1;                       */
@@ -38,8 +38,8 @@ class Imop {
             LAND       = 0x15,  /*   d = arg1 && arg2;                */
             LOR        = 0x16,  /*   d = arg1 || arg2;                */
 
-            RETURNVOID = 0x17,  /* RETURN;                            */
-            RETURN     = 0x18,  /* RETURN arg1;                       */
+            RETURNVOID = 0x17,  /* RETURN;               (Imop *arg2) */
+            RETURN     = 0x18,  /* RETURN arg1;          (Imop *arg2) */
             END        = 0x19,  /* END PROGRAM                        */
 
             JUMP       = 0x100, /* GOTO d;                            */
@@ -66,16 +66,30 @@ class Imop {
             : m_type(type), m_dest(dest), m_arg1(arg1), m_arg2(arg2) {}
         ~Imop();
 
-        inline const std::set<Imop*> incoming() const { return m_incoming; }
+        inline const std::set<Imop*> &incoming() const { return m_incoming; }
+        inline const std::set<Imop*> &incomingCalls() const { return m_incomingCalls; }
 
         inline Type    type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }
         inline void setJumpDest(Imop *dest) {
+            assert(dest != 0);
             assert((m_type & JUMP_MASK) != 0x0);
             m_dest = (SecreC::Symbol*) dest;
             dest->addIncoming(this);
         }
+        inline void setCallDest(Imop *dest) {
+            assert(dest != 0);
+            assert(m_type == PROCCALL);
+            m_arg2 = (SecreC::Symbol*) dest;
+            dest->addIncomingCall(this);
+        }
+        inline void setReturnDestFirstImop(Imop *firstImop) {
+            assert(firstImop != 0);
+            assert(firstImop->m_type == COMMENT);
+            m_arg2 = (SecreC::Symbol*) firstImop;
+        }
+
         inline const Symbol *arg1() const { return m_arg1; }
         inline void setArg1(const Symbol *arg1) { m_arg1 = arg1; }
         inline const Symbol *arg2() const { return m_arg2; }
@@ -88,10 +102,13 @@ class Imop {
 
     protected: /* Methods: */
         inline void addIncoming(Imop *jump) { m_incoming.insert(jump); }
+        inline void addIncomingCall(Imop *jump) { m_incomingCalls.insert(jump); }
         inline void removeIncoming(Imop *jump) { m_incoming.erase(jump); }
+        inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
 
     private: /* Fields: */
         std::set<Imop*> m_incoming;
+        std::set<Imop*> m_incomingCalls;
 
         const Type    m_type;
         const Symbol *m_dest;
@@ -111,7 +128,7 @@ class ICode {
             public: /* Methods: */
                 ~CodeList();
 
-                void resetIndexes();
+                void resetIndexes() const;
 
                 inline const_iterator begin() const { return m_list.begin(); }
                 inline iterator begin() { return m_list.begin(); }
@@ -121,8 +138,10 @@ class ICode {
                     m_list.push_back(i);
                     i->setIndex(m_list.size());
                 }
-                inline void push_comment(const std::string &comment) {
-                    push_back(new Imop(Imop::COMMENT, 0, (Symbol*) new std::string(comment)));
+                inline Imop *push_comment(const std::string &comment) {
+                    Imop *c = new Imop(Imop::COMMENT, 0, (Symbol*) new std::string(comment));
+                    push_back(c);
+                    return c;
                 }
 
             private: /* Fields: */
