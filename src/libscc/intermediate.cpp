@@ -177,6 +177,14 @@ ICode::CodeList::~CodeList() {
     }
 }
 
+void ICode::CodeList::resetIndexes() {
+    unsigned long i = 1;
+    for (const_iterator it(begin()); it != end(); it++) {
+        (*it)->setIndex(i);
+        i++;
+    }
+}
+
 ICode::ICode(TreeNodeProgram *program) {
     m_status = program->generateCode(m_code, m_symbols, m_errorStream);
 }

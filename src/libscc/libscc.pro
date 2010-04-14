@@ -5,6 +5,7 @@ TARGET = ../../lib/scc
 TEMPLATE = lib
 
 SOURCES = \
+    blocks.cpp \
     intermediate.cpp \
     misc.cpp \
     secrec/symboltable.cpp \
@@ -16,6 +17,7 @@ OTHER_FILES = \
     secrec.y
 
 HEADERS = \
+    ../../include/libscc/blocks.h \
     ../../include/libscc/intermediate.h \
     ../../include/libscc/misc.h \
     ../../include/libscc/sccobject.h \

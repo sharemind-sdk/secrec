@@ -66,6 +66,8 @@ class Imop {
             : m_type(type), m_dest(dest), m_arg1(arg1), m_arg2(arg2) {}
         ~Imop();
 
+        inline const std::set<Imop*> incoming() const { return m_incoming; }
+
         inline Type    type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }
@@ -87,7 +89,6 @@ class Imop {
     protected: /* Methods: */
         inline void addIncoming(Imop *jump) { m_incoming.insert(jump); }
         inline void removeIncoming(Imop *jump) { m_incoming.erase(jump); }
-        inline const std::set<Imop*> incoming() const { return m_incoming; }
 
     private: /* Fields: */
         std::set<Imop*> m_incoming;
@@ -109,6 +110,8 @@ class ICode {
 
             public: /* Methods: */
                 ~CodeList();
+
+                void resetIndexes();
 
                 inline const_iterator begin() const { return m_list.begin(); }
                 inline iterator begin() { return m_list.begin(); }
