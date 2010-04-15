@@ -86,8 +86,6 @@ namespace SecreC {
 *******************************************************************************/
 
 Blocks::Status Blocks::init(const ICodeList &code) {
-    m_status = OK;
-
     /// \todo Check for empty code
 
     code.resetIndexes();
@@ -143,6 +141,8 @@ Blocks::Status Blocks::init(const ICodeList &code) {
         }
     } while (!bs.empty());
 
+
+    if (m_status == NOT_READY) m_status = OK;
     return m_status;
 }
 
