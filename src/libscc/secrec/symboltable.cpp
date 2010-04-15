@@ -142,7 +142,7 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
     assert(dynamic_cast<const DTPV*>(&procdef.procedureType().dataType()) != 0);
     const DTPV &dt = static_cast<const DTPV&>(procdef.procedureType().dataType());
 
-    ns->setName(procdef.procedureName() + "$proc$" + st.mangle() + dt.mangle());
+    ns->setName("{proc}" + procdef.procedureName() + st.mangle() + dt.mangle());
     appendGlobalSymbol(ns);
 
     return ns;
@@ -151,14 +151,14 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
 SymbolTemporary *SymbolTable::appendTemporary(const Type &type) {
     SymbolTemporary *tmp = new SymbolTemporary(type);
     std::ostringstream os;
-    os << "$t$" << m_tempCount++;
+    os << "{t}" << m_tempCount++;
     tmp->setName(os.str());
     appendSymbol(tmp);
     return tmp;
 }
 
 SymbolConstantBool *SymbolTable::constantBool(bool value) {
-    const char *name = (value ? "$constBool$true" : "$constBool$false");
+    const char *name = (value ? "{constBool}true" : "{constBool}false");
     Symbol *s = findGlobal(name);
     if (s != 0) {
         assert(dynamic_cast<SymbolConstantBool*>(s) != 0);
@@ -173,7 +173,7 @@ SymbolConstantBool *SymbolTable::constantBool(bool value) {
 
 SymbolConstantInt *SymbolTable::constantInt(int value) {
     std::ostringstream os;
-    os << "$constInt$" << value;
+    os << "{constInt}" << value;
     Symbol *s = findGlobal(os.str());
     if (s != 0) {
         assert(dynamic_cast<SymbolConstantInt*>(s) != 0);
@@ -187,7 +187,7 @@ SymbolConstantInt *SymbolTable::constantInt(int value) {
 
 SymbolConstantUInt *SymbolTable::constantUInt(unsigned value) {
     std::ostringstream os;
-    os << "$constUInt$" << value;
+    os << "{constUInt}" << value;
     Symbol *s = findGlobal(os.str());
     if (s != 0) {
         assert(dynamic_cast<SymbolConstantUInt*>(s) != 0);
@@ -202,7 +202,7 @@ SymbolConstantUInt *SymbolTable::constantUInt(unsigned value) {
 
 SymbolConstantString *SymbolTable::constantString(const std::string &value) {
     /// \todo Implement hashing instead
-    std::string name("$constString$" + value);
+    std::string name("{constString}" + value);
     Symbol *s = findGlobal(name);
     if (s != 0) {
         assert(dynamic_cast<SymbolConstantString*>(s) != 0);
@@ -250,7 +250,7 @@ SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
 
     assert(name.empty() == false);
 
-    std::string fn(name + "$proc$" + st.mangle() + dt.mangle());
+    std::string fn("{proc}" + name + st.mangle() + dt.mangle());
 
     const Table &t(m_global->m_table);
     for (STI it(t.rbegin()); it != t.rend(); it++) {
