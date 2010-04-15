@@ -19,7 +19,7 @@ namespace SecreC {
 #define tname  (m_dest == 0 ? "_" : ulongToString(((SecreC::Imop*) m_dest)->index()) )
 #define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
 #define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
-#define cImop  (m_arg2 == 0 ? "_" : ulongToString(((SecreC::Imop*) m_arg2)->index()))
+#define cImop  (m_arg2 == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(m_arg1)->decl()->firstImop()->index()))
 
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
@@ -30,7 +30,7 @@ Imop::~Imop() {
         if (m_dest != 0) {
             ((Imop*) m_dest)->removeIncoming(this);
         }
-    } else if (m_type == PROCCALL) {
+    } else if (m_type == CALL) {
         if (m_arg2 != 0) {
             ((Imop*) m_arg2)->removeIncomingCall(this);
         }
@@ -41,9 +41,35 @@ Imop::~Imop() {
     }
 }
 
+const Imop *Imop::callDest() const {
+    assert(m_type == CALL);
+    assert(m_arg1->symbolType() == Symbol::PROCEDURE);
+    assert(dynamic_cast<const SymbolProcedure*>(m_arg1) != 0);
+
+    return static_cast<const SymbolProcedure*>(m_arg1)->decl()->firstImop();
+}
+
+void Imop::setCallDest(SymbolProcedure *proc, Imop *clean) {
+    assert(proc != 0);
+    assert(clean != 0);
+    assert(m_type == CALL);
+    assert(clean->m_type == RETCLEAN);
+    assert(proc->decl()->firstImop() != 0);
+    m_arg1 = proc;
+    m_arg2 = (SecreC::Symbol*) clean;
+    proc->decl()->firstImop()->addIncomingCall(this);
+    clean->m_arg2 = (SecreC::Symbol*) this;
+}
+
 std::string Imop::toString() const {
     std::ostringstream os;
     switch (m_type) {
+        case COMMENT:      /* // arg1                            */
+            os << "// " << *((std::string*) m_arg1);
+            break;
+        case VARINTRO:     /* d;          (variable declaration) */
+            os << "VARINTRO " << dname << ";";
+            break;
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
             break;
@@ -53,11 +79,14 @@ std::string Imop::toString() const {
         case PUTPARAM:     /* PUTPARAM arg1;                     */
             os << "PUTPARAM " << a1name;
             break;
-        case PROCCALL:     /*   d = arg1(PARAMS);   (Imop *arg2) */
+        case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
             if (m_dest != 0) {
                 os << dname << " = ";
             }
             os << "CALL " << a1name << " @ " << cImop;
+            break;
+        case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
+            os << "RETCLEAN;";
             break;
         case WILDCARD:     /*   d = arg1[*];                     */
             os << dname << " = " << a1name << "[*]";
@@ -113,6 +142,18 @@ std::string Imop::toString() const {
         case LOR:          /*   d = arg1 || arg2;                */
             os << dname << " = (" << a1name << " || " << a2name << ")";
             break;
+        case RETURNVOID:   /* RETURN;                            */
+            os << "RETURN";
+            break;
+        case RETURN:       /* RETURN arg1;                       */
+            os << "RETURN " << a1name;
+            break;
+        case END:          /* END PROGRAM                        */
+            os << "END";
+            break;
+        case JUMP:         /* GOTO d;                            */
+            os << "GOTO " << tname;
+            break;
         case JT:           /* if (arg1) GOTO d;                  */
             os << "if (" << a1name << ") GOTO " << tname;
             break;
@@ -136,21 +177,6 @@ std::string Imop::toString() const {
             break;
         case JGT:          /* if (arg1 >  arg2) GOTO d;          */
             os << "if (" << a1name << " > " << a2name << ") GOTO " << tname;
-            break;
-        case JUMP:         /* GOTO d;                            */
-            os << "GOTO " << tname;
-            break;
-        case RETURNVOID:   /* RETURN;                            */
-            os << "RETURN";
-            break;
-        case RETURN:       /* RETURN arg1;                       */
-            os << "RETURN " << a1name;
-            break;
-        case END:          /* END PROGRAM                        */
-            os << "END";
-            break;
-        case COMMENT:      /* // arg1                            */
-            os << "// " << *((std::string*) m_arg1);
             break;
         default:
             os << "TODO";

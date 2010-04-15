@@ -19,7 +19,7 @@ class Blocks {
     public: /* Types: */
         enum Status { ERROR, OK };
         typedef ICode::CodeList::const_iterator CCI;
-        typedef std::map<SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
+        typedef std::map<const SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
 
 
     public: /* Methods: */
@@ -31,7 +31,8 @@ class Blocks {
     protected: /* Methods: */
          CCI endBlock(SecreC::Block &b, CCI end,
                       IAB &from, IAB &to,
-                      IAB &callFrom, IAB &callTo);
+                      IAB &callFrom, IAB &callTo,
+                      IAB &returnFrom, IAB &returnTo);
          bool canEliminate(const SecreC::Block &b) const;
 
     private: /* Fields: */
@@ -56,8 +57,10 @@ struct Block {
     Blocks::CCI end;
     std::set<Block*> predecessors;
     std::set<Block*> predecessorsCall;
+    std::set<Block*> predecessorsRet;
     std::set<Block*> successors;
     std::set<Block*> successorsCall;
+    std::set<Block*> successorsRet;
     unsigned long index;
     Status status;
 };

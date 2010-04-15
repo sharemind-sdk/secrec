@@ -15,32 +15,41 @@ class Imop {
     public: /* Types: */
         enum Type {
             COMMENT    = 0x0,   /* // arg1                            */
-            ASSIGN     = 0x1,   /*   d = arg1;                        */
-            CAST       = 0x2,   /*   d = (arg1) arg2;                 */
-            PUTPARAM   = 0x3,   /* PUTPARAM arg1;                     */
-            PROCCALL   = 0x4,   /*   d = arg1(PARAMS);   (Imop *arg2) */
-            WILDCARD   = 0x5,   /*   d = arg1[*];                     */
-            SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
-            UNEG       = 0x7,   /*   d = !arg1;                       */
-            UMINUS     = 0x8,   /*   d = -arg1;                       */
-            MATRIXMUL  = 0x9,   /*   d = arg1 #  arg2;                */
-            MUL        = 0xa,   /*   d = arg1 *  arg2;                */
-            DIV        = 0xb,   /*   d = arg1 /  arg2;                */
-            MOD        = 0xc,   /*   d = arg1 %  arg2;                */
-            ADD        = 0xd,   /*   d = arg1 +  arg2;                */
-            SUB        = 0xe,   /*   d = arg1 -  arg2;                */
-            EQ         = 0xf,   /*   d = arg1 == arg2;                */
-            NE         = 0x10,  /*   d = arg1 != arg2;                */
-            LE         = 0x11,  /*   d = arg1 <= arg2;                */
-            LT         = 0x12,  /*   d = arg1 <  arg2;                */
-            GE         = 0x13,  /*   d = arg1 >= arg2;                */
-            GT         = 0x14,  /*   d = arg1 >  arg2;                */
-            LAND       = 0x15,  /*   d = arg1 && arg2;                */
-            LOR        = 0x16,  /*   d = arg1 || arg2;                */
+            VARINTRO   = 0x1,   /* d;          (variable declaration) */
+            ASSIGN     = 0x2,   /*   d = arg1;                        */
+            CAST       = 0x3,   /*   d = (arg1) arg2;                 */
+            WILDCARD   = 0x4,   /*   d = arg1[*];                     */
+            SUBSCRIPT  = 0x5,   /*   d = arg1[arg2];                  */
+            UNEG       = 0x6,   /*   d = !arg1;                       */
+            UMINUS     = 0x7,   /*   d = -arg1;                       */
+            MATRIXMUL  = 0x8,   /*   d = arg1 #  arg2;                */
+            MUL        = 0x9,   /*   d = arg1 *  arg2;                */
+            DIV        = 0xa,   /*   d = arg1 /  arg2;                */
+            MOD        = 0xb,   /*   d = arg1 %  arg2;                */
+            ADD        = 0xc,   /*   d = arg1 +  arg2;                */
+            SUB        = 0xd,   /*   d = arg1 -  arg2;                */
+            EQ         = 0xe,   /*   d = arg1 == arg2;                */
+            NE         = 0xf,   /*   d = arg1 != arg2;                */
+            LE         = 0x10,  /*   d = arg1 <= arg2;                */
+            LT         = 0x11,  /*   d = arg1 <  arg2;                */
+            GE         = 0x12,  /*   d = arg1 >= arg2;                */
+            GT         = 0x13,  /*   d = arg1 >  arg2;                */
+            LAND       = 0x14,  /*   d = arg1 && arg2;                */
+            LOR        = 0x15,  /*   d = arg1 || arg2;                */
 
-            RETURNVOID = 0x17,  /* RETURN;               (Imop *arg2) */
-            RETURN     = 0x18,  /* RETURN arg1;          (Imop *arg2) */
-            END        = 0x19,  /* END PROGRAM                        */
+            PUTPARAM   = 0x16,  /* PUTPARAM arg1;                     */
+            /* For CALL, arg2 is the corresponding RETCLEAN instruction. */
+            CALL       = 0x17,  /*   d = arg1(PARAMS);   (Imop *arg2) */
+            /* For RETCLEAN, arg2 is the corresponding CALL instruction. */
+            RETCLEAN   = 0x18,  /* RETCLEAN;             (Imop *arg2) */
+
+            /*
+              For RETURN and RETURNVOID, arg2 is the first Imop of the procedure
+              to return from.
+            */
+            RETURNVOID = 0x19,  /* RETURN;               (Imop *arg2) */
+            RETURN     = 0x20,  /* RETURN arg1;          (Imop *arg2) */
+            END        = 0x21,  /* END PROGRAM                        */
 
             JUMP       = 0x100, /* GOTO d;                            */
             JT         = 0x200, /* if (arg1) GOTO d;                  */
@@ -68,26 +77,27 @@ class Imop {
 
         inline const std::set<Imop*> &incoming() const { return m_incoming; }
         inline const std::set<Imop*> &incomingCalls() const { return m_incomingCalls; }
+        inline const std::set<Imop*> &returns() const { return m_returns; }
 
-        inline Type    type() const { return m_type; }
+        inline Type type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }
+
+        inline const Imop *jumpDest() const { return (Imop*) m_dest; }
         inline void setJumpDest(Imop *dest) {
             assert(dest != 0);
             assert((m_type & JUMP_MASK) != 0x0);
             m_dest = (SecreC::Symbol*) dest;
             dest->addIncoming(this);
         }
-        inline void setCallDest(Imop *dest) {
-            assert(dest != 0);
-            assert(m_type == PROCCALL);
-            m_arg2 = (SecreC::Symbol*) dest;
-            dest->addIncomingCall(this);
-        }
+
+        const Imop *callDest() const;
+        void setCallDest(SymbolProcedure *proc, Imop *clean);
         inline void setReturnDestFirstImop(Imop *firstImop) {
             assert(firstImop != 0);
             assert(firstImop->m_type == COMMENT);
             m_arg2 = (SecreC::Symbol*) firstImop;
+            firstImop->addReturn(this);
         }
 
         inline const Symbol *arg1() const { return m_arg1; }
@@ -103,12 +113,15 @@ class Imop {
     protected: /* Methods: */
         inline void addIncoming(Imop *jump) { m_incoming.insert(jump); }
         inline void addIncomingCall(Imop *jump) { m_incomingCalls.insert(jump); }
+        inline void addReturn(Imop *r) { m_returns.insert(r); }
         inline void removeIncoming(Imop *jump) { m_incoming.erase(jump); }
         inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
+        inline void removeReturn(Imop *r) { m_returns.erase(r); }
 
     private: /* Fields: */
         std::set<Imop*> m_incoming;
         std::set<Imop*> m_incomingCalls;
+        std::set<Imop*> m_returns;
 
         const Type    m_type;
         const Symbol *m_dest;

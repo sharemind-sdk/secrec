@@ -1,6 +1,7 @@
 #include "blocks.h"
-
+#include <iostream>
 #include <map>
+#include "secrec/treenode.h"
 
 
 typedef std::vector<SecreC::Block*>::const_iterator BVCI;
@@ -19,7 +20,8 @@ inline bool fallsThru(const SecreC::Block &b) {
     SecreC::Imop *last;
     do {
         last = *it;
-    } while (last->type() == SecreC::Imop::COMMENT && (--it) != b.start);
+    } while (last->type() == SecreC::Imop::COMMENT && (it--) != b.start);
+    if (last->type() == SecreC::Imop::CALL) return false;
     if (last->type() == SecreC::Imop::JUMP) return false;
     if (last->type() == SecreC::Imop::END) return false;
     if (last->type() == SecreC::Imop::RETURN) return false;
@@ -37,18 +39,37 @@ inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
     to.predecessorsCall.insert(&from);
 }
 
+inline void linkRetBlocks(SecreC::Block &from, SecreC::Block &to) {
+    from.successorsRet.insert(&to);
+    to.predecessorsRet.insert(&from);
+}
+
 inline void printBlockList(std::ostream &os, const char *prefix,
                            const std::set<SecreC::Block*> bl)
 {
     if (!bl.empty()) {
         os << prefix;
         std::set<unsigned long> is;
+        std::set<unsigned long> ris;
         for (BSCI jt(bl.begin()); jt != bl.end(); jt++) {
-            is.insert((*jt)->index);
+            if ((*jt)->status == SecreC::Block::REMOVED) {
+                ris.insert((*jt)->index);
+            } else {
+                is.insert((*jt)->index);
+            }
         }
         for (std::set<unsigned long>::const_iterator jt = is.begin(); jt != is.end(); jt++) {
             if (jt != is.begin()) os << ", ";
-             os << (*jt);
+            os << (*jt);
+        }
+        if (!is.empty() && !ris.empty()) os << " ";
+        if (!ris.empty()) {
+            os << "(";
+            for (std::set<unsigned long>::const_iterator jt = ris.begin(); jt != ris.end(); jt++) {
+                if (jt != ris.begin()) os << ", ";
+                os << (*jt);
+            }
+            os << ")";
         }
         os << std::endl;
     }
@@ -70,13 +91,13 @@ Blocks::Blocks(const ICode::CodeList &code)
 
     code.resetIndexes();
 
-    IAB from, to, callFrom, callTo;
+    IAB jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo;
     CCI next;
 
     unsigned long i = 1;
 
     Block *b = new Block(code.begin(), i++);
-    next = endBlock(*b, code.end(), from, to, callFrom, callTo);
+    next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
     m_blocks.push_back(b);
     m_startBlock = b;
 
@@ -84,7 +105,7 @@ Blocks::Blocks(const ICode::CodeList &code)
         Block *old = b;
 
         b = new Block(next, i++);
-        next = endBlock(*b, code.end(), from, to, callFrom, callTo);
+        next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
         m_blocks.push_back(b);
 
         if (fallsThru(*old)) {
@@ -92,17 +113,25 @@ Blocks::Blocks(const ICode::CodeList &code)
         }
     }
 
-    assert(!fallsThru(*b));
-    assert(from.empty());
-    assert(to.empty());
-    // assert(callFrom.empty()); We leave this for return code
-    assert(callTo.empty());
+    //assert(!fallsThru(*b));
 
-    for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
-        if (canEliminate(**it)) {
-            (*it)->status = Block::REMOVED;
+    assert(jumpFrom.empty());
+    // assert(to.empty());
+    assert(callFrom.empty());
+    // assert(callTo.empty());
+    // assert(retFrom.empty());
+    assert(retTo.empty());
+
+    bool changed;
+    do {
+        changed = false;
+        for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
+            if ((*it)->status != Block::REMOVED && canEliminate(**it)) {
+                (*it)->status = Block::REMOVED;
+                changed = true;
+            }
         }
-    }
+    } while (changed);
 }
 
 std::string Blocks::toString() const {
@@ -119,11 +148,12 @@ std::string Blocks::toString() const {
             os << " [GENERATED]";
         }
         os << std::endl;
-        printBlockList(os, "  .... From: ", (*it)->predecessors);
-        printBlockList(os, "  .FromCall: ", (*it)->predecessorsCall);
-        printBlockList(os, "  ...... To: ", (*it)->successors);
-        printBlockList(os, "  .. ToCall: ", (*it)->successorsCall);
-        // printBlockList(os, "  ReturnsTo: ", (*it)->successorsRet);
+        printBlockList(os, "  ..... From: ", (*it)->predecessors);
+        printBlockList(os, "  . FromCall: ", (*it)->predecessorsCall);
+        printBlockList(os, "  .. FromRet: ", (*it)->predecessorsRet);
+        printBlockList(os, "  ....... To: ", (*it)->successors);
+        printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
+        printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
         // os << "    Code:" << std::endl;
         for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
             os << "    " << (*jt)->index() << "  " << (**jt) << std::endl;
@@ -136,89 +166,193 @@ std::string Blocks::toString() const {
 
 
 Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
-                             Blocks::IAB &from, Blocks::IAB &to,
-                             Blocks::IAB &callFrom, Blocks::IAB &callTo)
+                             Blocks::IAB &jumpFrom, Blocks::IAB &jumpTo,
+                             Blocks::IAB &callFrom, Blocks::IAB &callTo,
+                             Blocks::IAB &retFrom, Blocks::IAB &retTo)
 {
     assert(b.start == b.end);
     assert(b.end != end);
 
-    CCI next = b.end;
-
+    // Patch incoming jumps for block:
     if (!(*b.end)->incoming().empty()) {
-        const IS &is = (*b.end)->incoming();
-        for (ISCI it(is.begin()); it != is.end(); it++) {
-            IAB::const_iterator itFrom = from.find(*it);
-            if (itFrom != from.end()) {
-                linkBlocks(*(*itFrom).second, b);
-                from.erase((*itFrom).first);
+        bool mustLeave = false;
+
+        // Iterate over all incoming jumps:
+        const IS &ij = (*b.end)->incoming();
+        for (ISCI it(ij.begin()); it != ij.end(); it++) {
+            // Check whether the jump source is already assigned to a block:
+            IAB::const_iterator itJumpFrom = jumpFrom.find(*it);
+            if (itJumpFrom != jumpFrom.end()) {
+                // Jump source is already assigned to block, lets link:
+                linkBlocks(*(*itJumpFrom).second, b);
+                // And remove the jump from the jump sources:
+                jumpFrom.erase(*it);
             } else {
-                to[*it] = &b;
+                // Jump source is not yet assigned to block, let assign target:
+                mustLeave = true;
             }
         }
+
+        /*
+          If some of the incoming jumps were not yet assigned to blocks, we must
+          keep the target assigned to the block for the future.
+        */
+        if (mustLeave) {
+            jumpTo[*b.end] = &b;
+        }
     }
+
+    // Patch incoming calls for block:
     if (!(*b.end)->incomingCalls().empty()) {
-        const IS &is = (*b.end)->incomingCalls();
-        for (ISCI it(is.begin()); it != is.end(); it++) {
-            IAB::const_iterator itFrom = callFrom.find(*it);
-            if (itFrom != callFrom.end()) {
-                linkCallBlocks(*(*itFrom).second, b);
-                callFrom.erase((*itFrom).first);
+        bool mustLeave = false;
+
+        // Iterate over all incoming calls:
+        const IS &ic = (*b.end)->incomingCalls();
+        for (ISCI it(ic.begin()); it != ic.end(); it++) {
+            // Check whether the call source is already assigned to a block:
+            IAB::const_iterator itCallFrom = callFrom.find(*it);
+            if (itCallFrom != callFrom.end()) {
+                // Call source is already assigned to block, lets link:
+                linkCallBlocks(*(*itCallFrom).second, b);
+                // And remove the call from the call sources:
+                callFrom.erase(*it);
             } else {
-                callTo[*it] = &b;
+                mustLeave = true;
             }
+        }
+
+        /*
+          If some of the incoming calls were not yet assigned to blocks, we must
+          keep the target assigned to the block for the future.
+        */
+        if (mustLeave) {
+            callTo[*b.end] = &b;
+        }
+    }
+
+    // Patch incoming returns for block:
+    if ((*b.end)->type() == Imop::RETCLEAN) {
+        Imop *call = (Imop*) (*b.end)->arg2();
+        assert(call != 0);
+        assert(call->type() == Imop::CALL);
+        assert(dynamic_cast<const SymbolProcedure*>(call->arg1()) != 0);
+        Imop *firstImop = static_cast<const SymbolProcedure*>(call->arg1())->decl()->firstImop();
+        assert(firstImop->type() == Imop::COMMENT);
+
+        bool mustLeave = false;
+
+        // Iterate over all incoming returns:
+        const IS &rs = firstImop->returns();
+        for (ISCI it(rs.begin()); it != rs.end(); it++) {
+            // Check whether the return source is already assigned to a block:
+            IAB::const_iterator itFromRet = retFrom.find(*it);
+            if (itFromRet != retFrom.end()) {
+                // Return source is assigned to a block, lets link:
+                linkRetBlocks(*(*itFromRet).second, b);
+            } else {
+                mustLeave = true;
+            }
+        }
+
+        /*
+          If some of the incoming returns were not yet assigned to blocks, we
+          must keep the target assigned to the block for the future.
+        */
+        if (mustLeave) {
+            retTo[*b.end] = &b;
         }
     }
 
     do {
-        next++;
-        assert(b.end == b.start || (*b.end)->incoming().empty());
+        assert(b.end == b.start
+               || ((*b.end)->incoming().empty()
+                   && (*b.end)->incomingCalls().empty()));
 
-        // If *b.end is a jump instruction, *next must be a leader:
+        // If *b.end is a jump instruction, *(b.end + 1) must be a leader:
         if (((*b.end)->type() & SecreC::Imop::JUMP_MASK) != 0
-            || (*b.end)->type() == SecreC::Imop::PROCCALL
+            || (*b.end)->type() == SecreC::Imop::CALL
             || (*b.end)->type() == SecreC::Imop::END
             || (*b.end)->type() == SecreC::Imop::RETURN
             || (*b.end)->type() == SecreC::Imop::RETURNVOID)
         {
             if (((*b.end)->type() & SecreC::Imop::JUMP_MASK) != 0) {
-                IAB::const_iterator itTo = to.find(*b.end);
-                if (itTo != to.end()) {
+                // Check whether the jump destination is already assigned to a block:
+                IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest());
+                if (itTo != jumpTo.end()) {
+                    // Jump destination is already assigned to block, lets link:
                     linkBlocks(b, *(*itTo).second);
-                    to.erase((*itTo).first);
                 } else {
-                    from[*b.end] = &b;
+                    // Destination not assigned to block, lets assign the source:
+                    jumpFrom[*b.end] = &b;
                 }
-            } else if ((*b.end)->type() == Imop::PROCCALL) {
-                IAB::const_iterator itToCall = callTo.find(*b.end);
+            } else if ((*b.end)->type() == Imop::CALL) {
+                assert((*(b.end + 1))->type() == Imop::RETCLEAN);
+                /*IAB::const_iterator itTo = jumpTo.find(*b.end);
+                if (itTo != jumpTo.end()) {
+                    linkBlocks(b, *(*itTo).second);
+                    // to.erase((*itTo).first);
+                } else {
+                    jumpFrom[*b.end] = &b;
+                }*/
+
+                // Check whether the call destination is already assigned to a block:
+                IAB::const_iterator itToCall = callTo.find((*b.end)->callDest());
                 if (itToCall != callTo.end()) {
+                    // Call destination is assigned to a block, lets link:
                     linkCallBlocks(b, *(*itToCall).second);
-                    callTo.erase((*itToCall).first);
                 } else {
                     callFrom[*b.end] = &b;
                 }
             } else if ((*b.end)->type() == Imop::RETURN
-                       || (*b.end)->type() == Imop::RETURN)
+                       || (*b.end)->type() == Imop::RETURNVOID)
             {
-                /// \todo
-            }
-            b.end++;
-            return next;
-        }
+                Imop *firstImop = (Imop*) (*b.end)->arg2();
+                typedef std::set<Imop*>::const_iterator ISCI;
 
-        // If *next is the target of some jump, *next must be a leader:
-        if (next != end && !(*next)->incoming().empty()) {
-            return next;
+                // Iterate over all incoming calls
+                const std::set<Imop*> &ic = firstImop->incomingCalls();
+                for (ISCI it(ic.begin()); it != ic.end(); it++) {
+                    assert((*it)->type() == Imop::CALL);
+
+                    // Get RETCLEAN instruction (the target of the return):
+                    Imop *clean = (Imop*) (*it)->arg2();
+                    assert(clean != 0);
+                    assert(clean->type() == Imop::RETCLEAN);
+
+                    // Check whether the target is already assigned to a block:
+                    IAB::const_iterator itToRet = retTo.find(clean);
+                    if (itToRet != retTo.end()) {
+                        // Target is assigned to a block, lets link:
+                        linkRetBlocks(b, *(*itToRet).second);
+                        // And remove the target from the list of return targets:
+                        retTo.erase(clean);
+                    } else {
+                        retFrom[*b.end] = &b;
+                    }
+                }
+            }
+            return ++(b.end);
         }
 
         b.end++;
-    } while (b.end != end);
-    return next;
+    } while (b.end != end && (*b.end)->incoming().empty() && (*b.end)->incomingCalls().empty());
+    return b.end;
 }
 
 bool Blocks::canEliminate(const SecreC::Block &b) const {
-    if (!b.predecessors.empty()) return false;
-    if (!b.predecessorsCall.empty()) return false;
+    typedef std::set<Block*>::const_iterator BSCI;
+
     if (m_startBlock == &b) return false;
+
+    for (BSCI it(b.predecessors.begin()); it != b.predecessors.end(); it++) {
+        if ((*it)->status != Block::REMOVED) return false;
+    }
+    for (BSCI it(b.predecessorsCall.begin()); it != b.predecessorsCall.end(); it++) {
+        if ((*it)->status != Block::REMOVED) return false;
+    }
+    for (BSCI it(b.predecessorsRet.begin()); it != b.predecessorsRet.end(); it++) {
+        if ((*it)->status != Block::REMOVED) return false;
+    }
     return true;
 }
 

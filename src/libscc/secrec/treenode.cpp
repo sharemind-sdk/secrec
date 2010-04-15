@@ -1125,7 +1125,8 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
     }
 
     // Do function call
-    Imop *i = new Imop(Imop::PROCCALL);
+    Imop *i = new Imop(Imop::CALL);
+    Imop *c = new Imop(Imop::RETCLEAN);
     if (r == 0) {
         // Generate temporary for the result of the unary expression
         SymbolTemporary *t = st.appendTemporary(resultType());
@@ -1134,10 +1135,10 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
     } else {
         i->setDest(r);
     }
-    i->setArg1(m_procedure);
-    i->setCallDest(m_procedure->decl()->firstImop());
+    i->setCallDest(m_procedure, c);
     code.push_back(i);
     patchFirstImop(i);
+    code.push_back(c);
 
     return ICode::OK;
 }
@@ -1943,8 +1944,10 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = new Imop(Imop::PROCCALL, 0, 0, 0);
+    Imop *mainCall = new Imop(Imop::CALL, 0, 0, 0);
+    Imop *retClean = new Imop(Imop::RETCLEAN);
     code.push_back(mainCall);
+    code.push_back(retClean);
     code.push_back(new Imop(Imop::END));
 
     // Handle functions:
@@ -1959,8 +1962,7 @@ ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
     }
 
     // Bind call to main(), i.e. mainCall:
-    mainCall->setArg1(mainProc);
-    mainCall->setCallDest(mainProc->decl()->firstImop());
+    mainCall->setCallDest(mainProc, retClean);
 
     return ICode::OK;
 }
@@ -2034,12 +2036,18 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0));
 
+    // Initialize the new symbol (for initializer target)
     SymbolSymbol *ns = new SymbolSymbol(resultType(), this);
     ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
     ns->setName(id->value());
 
-    // Secondly we generate code for the initializer:
+    // Create a VARINTRO instruction for later analysis:
+    Imop *i = new Imop(Imop::VARINTRO, ns);
+    code.push_back(i);
+    setFirstImop(i);
+
     if (children().size() > 2) {
+        // Then we generate code for the initializer:
         TreeNode *t = children().at(2);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
@@ -2049,9 +2057,10 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
             delete ns;
             return s;
         }
+        e->patchNextList(i);
     }
 
-    // Thirdly we add the symbol to the symbol table for use in expressions:
+    // Add the symbol to the symbol table for use in later expressions:
     st.appendSymbol(ns);
 
     setResultFlags(TreeNodeStmt::FALLTHRU);
