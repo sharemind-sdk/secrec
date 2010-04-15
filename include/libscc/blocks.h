@@ -37,7 +37,6 @@ class Blocks {
                       IAB &from, IAB &to,
                       IAB &callFrom, IAB &callTo,
                       IAB &returnFrom, IAB &returnTo);
-         bool canEliminate(const SecreC::Block &b) const;
 
     private: /* Fields: */
         std::vector<Block*> m_blocks;
@@ -51,10 +50,8 @@ class Blocks {
 *******************************************************************************/
 
 struct Block {
-    enum Status { OK, REMOVED, GENERATED };
-
     inline Block(ICodeList::const_iterator codestart, unsigned long i)
-        : start(codestart), end(codestart), index(i), status(OK) {}
+        : start(codestart), end(codestart), index(i), reachable(false) {}
 
     Blocks::CCI start;
     Blocks::CCI end;
@@ -65,7 +62,7 @@ struct Block {
     std::set<Block*> successorsCall;
     std::set<Block*> successorsRet;
     unsigned long index;
-    Status status;
+    bool reachable;
 };
 
 } // namespace SecreC

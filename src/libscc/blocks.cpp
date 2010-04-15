@@ -1,6 +1,7 @@
 #include "blocks.h"
 #include <iostream>
 #include <map>
+#include <stack>
 #include "treenode.h"
 
 
@@ -49,24 +50,24 @@ inline void printBlockList(std::ostream &os, const char *prefix,
 {
     if (!bl.empty()) {
         os << prefix;
-        std::set<unsigned long> is;
-        std::set<unsigned long> ris;
+        std::set<unsigned long> reachables;
+        std::set<unsigned long> unreachables;
         for (BSCI jt(bl.begin()); jt != bl.end(); jt++) {
-            if ((*jt)->status == SecreC::Block::REMOVED) {
-                ris.insert((*jt)->index);
+            if ((*jt)->reachable) {
+                reachables.insert((*jt)->index);
             } else {
-                is.insert((*jt)->index);
+                unreachables.insert((*jt)->index);
             }
         }
-        for (std::set<unsigned long>::const_iterator jt = is.begin(); jt != is.end(); jt++) {
-            if (jt != is.begin()) os << ", ";
+        for (std::set<unsigned long>::const_iterator jt = reachables.begin(); jt != reachables.end(); jt++) {
+            if (jt != reachables.begin()) os << ", ";
             os << (*jt);
         }
-        if (!is.empty() && !ris.empty()) os << " ";
-        if (!ris.empty()) {
+        if (!reachables.empty() && !unreachables.empty()) os << " ";
+        if (!unreachables.empty()) {
             os << "(";
-            for (std::set<unsigned long>::const_iterator jt = ris.begin(); jt != ris.end(); jt++) {
-                if (jt != ris.begin()) os << ", ";
+            for (std::set<unsigned long>::const_iterator jt = unreachables.begin(); jt != unreachables.end(); jt++) {
+                if (jt != unreachables.begin()) os << ", ";
                 os << (*jt);
             }
             os << ")";
@@ -122,16 +123,25 @@ Blocks::Status Blocks::init(const ICodeList &code) {
     // assert(retFrom.empty());
     assert(retTo.empty());
 
-    bool changed;
+    std::stack<Block*> bs;
+    bs.push(m_startBlock);
     do {
-        changed = false;
-        for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
-            if ((*it)->status != Block::REMOVED && canEliminate(**it)) {
-                (*it)->status = Block::REMOVED;
-                changed = true;
-            }
+        typedef std::set<Block*>::const_iterator BSCI;
+
+        Block *b = bs.top();
+        bs.pop();
+        b->reachable = true;
+
+        for (BSCI it(b->successors.begin()); it != b->successors.end(); it++) {
+            if (!(*it)->reachable) bs.push(*it);
         }
-    } while (changed);
+        for (BSCI it(b->successorsCall.begin()); it != b->successorsCall.end(); it++) {
+            if (!(*it)->reachable) bs.push(*it);
+        }
+        for (BSCI it(b->successorsRet.begin()); it != b->successorsRet.end(); it++) {
+            if (!(*it)->reachable) bs.push(*it);
+        }
+    } while (!bs.empty());
 
     return m_status;
 }
@@ -150,10 +160,8 @@ std::string Blocks::toString() const {
     unsigned long i = 1;
     for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
         os << "  Block " << i;
-        if ((*it)->status == Block::REMOVED) {
+        if (!(*it)->reachable) {
             os << " [REMOVED]";
-        } else if ((*it)->status == Block::GENERATED) {
-            os << " [GENERATED]";
         }
         os << std::endl;
         printBlockList(os, "  ..... From: ", (*it)->predecessors);
@@ -345,23 +353,6 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
         b.end++;
     } while (b.end != end && (*b.end)->incoming().empty() && (*b.end)->incomingCalls().empty());
     return b.end;
-}
-
-bool Blocks::canEliminate(const SecreC::Block &b) const {
-    typedef std::set<Block*>::const_iterator BSCI;
-
-    if (m_startBlock == &b) return false;
-
-    for (BSCI it(b.predecessors.begin()); it != b.predecessors.end(); it++) {
-        if ((*it)->status != Block::REMOVED) return false;
-    }
-    for (BSCI it(b.predecessorsCall.begin()); it != b.predecessorsCall.end(); it++) {
-        if ((*it)->status != Block::REMOVED) return false;
-    }
-    for (BSCI it(b.predecessorsRet.begin()); it != b.predecessorsRet.end(); it++) {
-        if ((*it)->status != Block::REMOVED) return false;
-    }
-    return true;
 }
 
 } // namespace SecreC
