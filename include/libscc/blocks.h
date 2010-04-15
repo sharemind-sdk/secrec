@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 #include <vector>
-#include "intermediate.h"
+#include "icodelist.h"
 
 
 namespace SecreC {
@@ -17,14 +17,17 @@ class Block;
 
 class Blocks {
     public: /* Types: */
-        enum Status { ERROR, OK };
-        typedef ICode::CodeList::const_iterator CCI;
+        enum Status { NOT_READY, ERROR, OK };
+        typedef ICodeList::const_iterator CCI;
         typedef std::map<const SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
 
 
     public: /* Methods: */
-        Blocks(const ICode::CodeList &code);
+        inline Blocks()
+            : m_status(NOT_READY) {};
         ~Blocks();
+
+        Status init(const ICodeList &code);
 
         std::string toString() const;
         inline Status status() const { return m_status; }
@@ -50,8 +53,7 @@ class Blocks {
 struct Block {
     enum Status { OK, REMOVED, GENERATED };
 
-    inline Block(ICode::CodeList::const_iterator codestart,
-                 unsigned long i)
+    inline Block(ICodeList::const_iterator codestart, unsigned long i)
         : start(codestart), end(codestart), index(i), status(OK) {}
 
     Blocks::CCI start;
@@ -68,9 +70,6 @@ struct Block {
 
 } // namespace SecreC
 
-std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs) {
-    out << bs.toString();
-    return out;
-}
+std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs);
 
 #endif // BLOCKS_H

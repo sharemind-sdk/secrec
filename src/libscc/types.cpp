@@ -1,4 +1,4 @@
-#include "secrec/types.h"
+#include "types.h"
 
 #include <cassert>
 #include <sstream>

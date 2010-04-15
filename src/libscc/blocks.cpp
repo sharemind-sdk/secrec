@@ -1,7 +1,7 @@
 #include "blocks.h"
 #include <iostream>
 #include <map>
-#include "secrec/treenode.h"
+#include "treenode.h"
 
 
 typedef std::vector<SecreC::Block*>::const_iterator BVCI;
@@ -84,9 +84,9 @@ namespace SecreC {
   Blocks
 *******************************************************************************/
 
-Blocks::Blocks(const ICode::CodeList &code)
-    : m_status(OK)
-{
+Blocks::Status Blocks::init(const ICodeList &code) {
+    m_status = OK;
+
     /// \todo Check for empty code
 
     code.resetIndexes();
@@ -132,6 +132,8 @@ Blocks::Blocks(const ICode::CodeList &code)
             }
         }
     } while (changed);
+
+    return m_status;
 }
 
 Blocks::~Blocks() {
@@ -363,3 +365,8 @@ bool Blocks::canEliminate(const SecreC::Block &b) const {
 }
 
 } // namespace SecreC
+
+std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs) {
+    out << bs.toString();
+    return out;
+}

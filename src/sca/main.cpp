@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
-#include <libscc/secrec/parser.h>
-#include <libscc/secrec/treenode.h>
+#include <libscc/parser.h>
+#include <libscc/treenode.h>
 #include <libscc/blocks.h>
 #include <libscc/intermediate.h>
 
@@ -34,15 +34,12 @@ int main(int argc, char *argv[]) {
         assert(parseTree != 0);
         cerr << parseTree->toString() << endl << endl;
 
-        SecreC::ICode icode(parseTree);
-        cout << icode;
+        SecreC::ICode icode;
+        icode.init(parseTree);
         if (icode.status() == SecreC::ICode::OK) {
-            SecreC::Blocks bs(icode.code());
-            if (bs.status() == SecreC::Blocks::OK) {
-                cout << bs;
-            } else {
-                cout << "Error generating valid basic blocks." << endl;
-            }
+            cout << icode.blocks();
+        } else {
+            cout << "Error generating valid intermediate code." << endl;
         }
     }
     delete parseTree;

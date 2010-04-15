@@ -1,11 +1,11 @@
-#include "secrec/treenode.h"
+#include "treenode.h"
 
 #include <algorithm>
 #include <sstream>
 #include <stack>
 #include <stdio.h>
 #include <stdlib.h>
-#include "secrec/symboltable.h"
+#include "symboltable.h"
 #include "misc.h"
 
 
@@ -401,7 +401,7 @@ void TreeNodeCodeable::addToNextList(const std::vector<Imop*> &nl) {
   TreeNodeStmtCompound
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtCompound::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
                                                  SymbolTable &st,
                                                  std::ostream &es)
 {
@@ -574,7 +574,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es,
                                                SymbolWithValue *r)
@@ -646,7 +646,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprAssign::generateBoolCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
                                                    SymbolTable &st,
                                                    std::ostream &es)
 {
@@ -785,7 +785,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
     return ICode::E_TYPE;
 }
 
-ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es,
                                                SymbolWithValue *r)
@@ -802,7 +802,10 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
         setResult(r);
     }
 
-    /// \todo Optimize && and || when first operand is public
+    /**
+      \todo If first sub-expression is public, then generate short-circuit code
+            for logical && and logical ||.
+    */
 
     // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
@@ -850,7 +853,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, SymbolTable &st,
+ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
+                                                   SymbolTable &st,
                                                    std::ostream &es)
 {
     // Type check:
@@ -869,6 +873,10 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICode::CodeList &code, Symbol
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
+    /*
+      If first sub-expression is public, then generate short-circuit code for
+      logical && and logical ||.
+    */
     if (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR) {
         assert(!e1->resultType().isVoid());
         assert(dynamic_cast<const TypeNonVoid*>(&e1->resultType()) != 0);
@@ -961,7 +969,7 @@ ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprBool::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprBool::generateCode(ICodeList &code,
                                              SymbolTable &st,
                                              std::ostream &es,
                                              SymbolWithValue *r)
@@ -981,7 +989,7 @@ ICode::Status TreeNodeExprBool::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprBool::generateBoolCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
                                                  SymbolTable &st,
                                                  std::ostream &es)
 {
@@ -1073,7 +1081,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
                                                  SymbolTable &st,
                                                  std::ostream &es,
                                                  SymbolWithValue *r)
@@ -1143,7 +1151,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprProcCall::generateBoolCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprProcCall::generateBoolCode(ICodeList &code,
                                                      SymbolTable &st,
                                                      std::ostream &es)
 {
@@ -1193,7 +1201,7 @@ ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprInt::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprInt::generateCode(ICodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es,
                                             SymbolWithValue *r)
@@ -1213,7 +1221,7 @@ ICode::Status TreeNodeExprInt::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprInt::generateBoolCode(ICode::CodeList &,
+ICode::Status TreeNodeExprInt::generateBoolCode(ICodeList &,
                                                 SymbolTable &,
                                                 std::ostream &es)
 {
@@ -1250,7 +1258,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
                                                   SymbolTable &st,
                                                   std::ostream &es,
                                                   SymbolWithValue *r)
@@ -1277,7 +1285,7 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprRVariable::generateBoolCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprRVariable::generateBoolCode(ICodeList &code,
                                                       SymbolTable &st,
                                                       std::ostream &es)
 {
@@ -1327,7 +1335,7 @@ ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprString::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprString::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es,
                                                SymbolWithValue *r)
@@ -1347,7 +1355,7 @@ ICode::Status TreeNodeExprString::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprString::generateBoolCode(ICode::CodeList &,
+ICode::Status TreeNodeExprString::generateBoolCode(ICodeList &,
                                                    SymbolTable &,
                                                    std::ostream &es)
 {
@@ -1412,7 +1420,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     return ICode::E_TYPE;
 }
 
-ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
                                                 SymbolTable &st,
                                                 std::ostream &es,
                                                 SymbolWithValue *r)
@@ -1460,7 +1468,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprTernary::generateBoolCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprTernary::generateBoolCode(ICodeList &code,
                                                     SymbolTable &st,
                                                     std::ostream &es)
 {
@@ -1525,7 +1533,7 @@ ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprUInt::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code,
                                              SymbolTable &st,
                                              std::ostream &es,
                                              SymbolWithValue *r)
@@ -1545,7 +1553,7 @@ ICode::Status TreeNodeExprUInt::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprUInt::generateBoolCode(ICode::CodeList &,
+ICode::Status TreeNodeExprUInt::generateBoolCode(ICodeList &,
                                                  SymbolTable &,
                                                  std::ostream &es)
 {
@@ -1602,7 +1610,7 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
     return ICode::E_TYPE;
 }
 
-ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code,
                                               SymbolTable &st,
                                               std::ostream &es,
                                               SymbolWithValue *r)
@@ -1640,7 +1648,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICode::CodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprUnary::generateBoolCode(ICode::CodeList &code, SymbolTable &st,
+ICode::Status TreeNodeExprUnary::generateBoolCode(ICodeList &code, SymbolTable &st,
                                                   std::ostream &es)
 {
     // Type check:
@@ -1709,7 +1717,7 @@ const SecreC::TypeNonVoid &TreeNodeProcDef::procedureType() const {
     return *m_cachedType;
 }
 
-ICode::Status TreeNodeProcDef::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es)
 {
@@ -1816,7 +1824,7 @@ void TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
   TreeNodeFundefs
 *******************************************************************************/
 
-ICode::Status TreeNodeProcDefs::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
                                              SymbolTable &st,
                                              std::ostream &es)
 {
@@ -1838,7 +1846,7 @@ ICode::Status TreeNodeProcDefs::generateCode(ICode::CodeList &code,
   TreeNodeGlobals
 *******************************************************************************/
 
-ICode::Status TreeNodeGlobals::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeGlobals::generateCode(ICodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es)
 {
@@ -1905,7 +1913,7 @@ std::string TreeNodeIdentifier::xmlHelper() const {
   TreeNodeProgram
 *******************************************************************************/
 
-ICode::Status TreeNodeProgram::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es)
 {
@@ -1989,7 +1997,7 @@ std::string TreeNodeSecTypeF::xmlHelper() const {
   TreeNodeStmtBreak
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtBreak::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtBreak::generateCode(ICodeList &code,
                                               SymbolTable &,
                                               std::ostream &)
 {
@@ -2007,7 +2015,7 @@ ICode::Status TreeNodeStmtBreak::generateCode(ICode::CodeList &code,
   TreeNodeStmtContinue
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtContinue::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code,
                                                  SymbolTable &,
                                                  std::ostream &)
 {
@@ -2024,7 +2032,7 @@ ICode::Status TreeNodeStmtContinue::generateCode(ICode::CodeList &code,
   TreeNodeStmtDecl
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtDecl::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
                                              SymbolTable &st,
                                              std::ostream &es)
 {
@@ -2099,7 +2107,7 @@ const SecreC::TypeNonVoid &TreeNodeStmtDecl::resultType() const {
   TreeNodeStmtDoWhile
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtDoWhile::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
                                                 SymbolTable &st,
                                                 std::ostream &es)
 {
@@ -2151,7 +2159,7 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICode::CodeList &code,
   TreeNodeStmtExpr
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtExpr::generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es)
 {
@@ -2173,7 +2181,7 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICode::CodeList &code,
   TreeNodeStmtFor
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
                                             SymbolTable &st,
                                             std::ostream &es)
 {
@@ -2265,7 +2273,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICode::CodeList &code,
   TreeNodeStmtIf
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es)
 {
@@ -2353,7 +2361,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICode::CodeList &code,
   TreeNodeStmtReturn
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es)
 {
@@ -2409,7 +2417,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICode::CodeList &code,
   TreeNodeStmtWhile
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtWhile::generateCode(ICode::CodeList &code,
+ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code,
                                               SymbolTable &st,
                                               std::ostream &es)
 {

@@ -1,5 +1,5 @@
-#include "secrec/symboltable.h"
-#include "secrec/treenode.h"
+#include "symboltable.h"
+#include "treenode.h"
 
 #include <cassert>
 #include <iostream>

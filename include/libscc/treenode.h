@@ -7,7 +7,7 @@
 #include <cassert>
 #include <deque>
 #include <string>
-#include "../intermediate.h"
+#include "intermediate.h"
 #include "types.h"
 
 namespace SecreC {
@@ -107,7 +107,7 @@ class TreeNodeCodeable: public TreeNode {
             : TreeNode(type, loc), m_firstImop(0) {}
         virtual inline ~TreeNodeCodeable() {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es) = 0;
 
@@ -247,11 +247,11 @@ class TreeNodeExpr: public TreeNode {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es) = 0;
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0) = 0;
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es) = 0;
 
@@ -344,11 +344,11 @@ class TreeNodeExprAssign: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 };
@@ -366,11 +366,11 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         const char *operatorString() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 };
@@ -394,11 +394,11 @@ class TreeNodeExprBool: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 
@@ -418,11 +418,11 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 
@@ -447,11 +447,11 @@ class TreeNodeExprInt: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 
@@ -471,11 +471,11 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 };
@@ -497,11 +497,11 @@ class TreeNodeExprString: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 
@@ -521,11 +521,11 @@ class TreeNodeExprTernary: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 };
@@ -547,11 +547,11 @@ class TreeNodeExprUInt: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 
@@ -571,11 +571,11 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   std::ostream &es);
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es,
                                            SymbolWithValue *result = 0);
-        virtual ICode::Status generateBoolCode(ICode::CodeList &code,
+        virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                std::ostream &es);
 };
@@ -601,7 +601,7 @@ class TreeNodeProcDef: public TreeNodeCodeable {
         const std::string &procedureName() const;
         const SecreC::TypeNonVoid &procedureType() const;
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 
@@ -622,7 +622,7 @@ class TreeNodeProcDefs: public TreeNodeCodeable {
         explicit inline TreeNodeProcDefs(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_PROCDEFS, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -637,7 +637,7 @@ class TreeNodeGlobals: public TreeNodeCodeable {
         explicit inline TreeNodeGlobals(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_GLOBALS, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -673,7 +673,7 @@ class TreeNodeProgram: public TreeNodeCodeable {
         explicit inline TreeNodeProgram(const YYLTYPE &loc)
             : TreeNodeCodeable(NODE_PROGRAM, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code, SymbolTable &st,
+        virtual ICode::Status generateCode(ICodeList &code, SymbolTable &st,
                                            std::ostream &es);
 };
 
@@ -732,7 +732,7 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
         explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -747,7 +747,7 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
         virtual inline ~TreeNodeStmtCompound() {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -762,7 +762,7 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
         explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -778,7 +778,7 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
             : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false) {}
         virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 
@@ -802,7 +802,7 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
         explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -817,7 +817,7 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
         explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -832,7 +832,7 @@ class TreeNodeStmtFor: public TreeNodeStmt {
         explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -847,7 +847,7 @@ class TreeNodeStmtIf: public TreeNodeStmt {
         explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -862,7 +862,7 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
         explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };
@@ -877,7 +877,7 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
         explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
-        virtual ICode::Status generateCode(ICode::CodeList &code,
+        virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            std::ostream &es);
 };

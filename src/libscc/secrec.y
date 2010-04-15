@@ -3,9 +3,9 @@
   struct TreeNode;
   #include <assert.h>
   #include <stdio.h>
-  #include "secrec/parser.h"
+  #include "parser.h"
   #include "lex_secrec.h"
-  #include "secrec/treenode.h"
+  #include "treenode.h"
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
