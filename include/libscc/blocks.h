@@ -24,6 +24,7 @@ class Blocks {
 
     public: /* Methods: */
         Blocks(const ICode::CodeList &code);
+        ~Blocks();
 
         std::string toString() const;
         inline Status status() const { return m_status; }

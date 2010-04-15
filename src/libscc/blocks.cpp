@@ -134,6 +134,12 @@ Blocks::Blocks(const ICode::CodeList &code)
     } while (changed);
 }
 
+Blocks::~Blocks() {
+    for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
+        delete *it;
+    }
+}
+
 std::string Blocks::toString() const {
 
     std::ostringstream os;
