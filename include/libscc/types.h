@@ -87,8 +87,10 @@ class SecTypeProcedureVoid: public SecType {
 
         virtual SecType *clone() const { return new SecTypeProcedureVoid(*this); }
         virtual std::string toString() const;
-        std::string mangle() const;
         virtual bool operator==(const SecType &other) const;
+
+    protected: /* Methods: */
+        std::string mangle() const;
 
     private: /* Fields: */
         std::vector<SecType*> m_params;

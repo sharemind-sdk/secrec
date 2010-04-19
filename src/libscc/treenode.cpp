@@ -1016,17 +1016,21 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
 ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
                                                         std::ostream &es)
 {
+    typedef SecTypeProcedureVoid STFV;
+    typedef DataTypeProcedureVoid DTFV;
     typedef SecTypeProcedure STF;
     typedef DataTypeProcedure DTF;
     typedef ChildrenListConstIterator CLCI;
 
     if (haveResultType()) return ICode::OK;
 
+    // Get identifier:
     assert(!children().empty());
     assert(children().at(0)->type() == NODE_IDENTIFIER);
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
+    // Check whether the function name is overridden by some variable name:
     Symbol *s = st.find(id->value());
     if (s != 0 && s->symbolType() != Symbol::PROCEDURE) {
         es << "Identifier " << id->value() << " is not a function at "
@@ -1036,8 +1040,11 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
 
     SecTypeProcedureVoid secType;
     DataTypeProcedureVoid dataType;
+    std::vector<TreeNodeExpr*> arguments(children().size() - 1);
 
-    for (CLCI it(children().begin() + 1); it != children().end(); it++) {
+    // Calculate the vector of types of the arguments:
+    int i = 0;
+    for (CLCI it(children().begin() + 1); it != children().end(); it++, i++) {
         assert(((*it)->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
@@ -1054,27 +1061,56 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
         secType.addParamType(t.secType());
         dataType.addParamType(t.dataType());
+        arguments[i] = e;
     }
 
-    m_procedure = st.findGlobalProcedure(id->value(), secType, dataType);
+    // Search for the procedure by its name and the data types of its arguments:
+    m_procedure = st.findGlobalProcedure(id->value(), dataType);
     if (m_procedure == 0) {
-        es << "No function of type (" << secType.mangle() << " -> ?, "
-           << dataType.mangle() << " -> ?) found in scope at " << location()
-           << std::endl;
+        es << "No function with parameter data types of (" << dataType.mangle()
+          << ") found in scope at " << location() << std::endl;
         return ICode::E_TYPE;
     }
 
     const TypeNonVoid &ft = m_procedure->decl()->procedureType();
+    assert(ft.kind() == TypeNonVoid::PROCEDURE
+           || ft.kind() == TypeNonVoid::PROCEDUREVOID);
+    assert(dynamic_cast<const STFV*>(&ft.secType()) != 0);
+    const STFV &rstv = static_cast<const STFV&>(ft.secType());
+
+    // Check security types of parameters:
+    assert(rstv.paramTypes().size() == children().size() - 1);
+    for (unsigned i = 0; i < rstv.paramTypes().size(); i++) {
+        assert(rstv.paramTypes().at(i)->kind() == SecType::BASIC);
+        assert(dynamic_cast<SecTypeBasic*>(rstv.paramTypes().at(i)) != 0);
+        SecTypeBasic *need = static_cast<SecTypeBasic*>(rstv.paramTypes()[i]);
+
+        assert(secType.paramTypes().at(i)->kind() == SecType::BASIC);
+        assert(dynamic_cast<SecTypeBasic*>(secType.paramTypes().at(i)) != 0);
+        SecTypeBasic *have = static_cast<SecTypeBasic*>(secType.paramTypes()[i]);
+
+        assert(need->secType() != SECTYPE_INVALID);
+        assert(have->secType() != SECTYPE_INVALID);
+
+        if (need->secType() == SECTYPE_PUBLIC
+            && have->secType() == SECTYPE_PRIVATE)
+        {
+            es << "Argument " << (i + 1) << " to function " << id->value()
+               << " at " << arguments[i]->location()
+               << " is expected to be of public type instead of private!"
+               << std::endl;
+            return ICode::E_TYPE;
+        }
+    }
+
+    // Set result type:
     if (ft.kind() == TypeNonVoid::PROCEDURE) {
-        assert(dynamic_cast<const STF*>(&ft.secType()) != 0);
-        const STF &rst = static_cast<const STF&>(ft.secType());
+        assert(dynamic_cast<const STF*>(&rstv) != 0);
+        const STF &rst = static_cast<const STF&>(rstv);
         assert(dynamic_cast<const DTF*>(&ft.dataType()) != 0);
         const DTF &rdt = static_cast<const DTF&>(ft.dataType());
-
         setResultType(new TypeNonVoid(rst.returnSecType(), rdt.returnType()));
     } else {
-        assert(ft.kind() == TypeNonVoid::PROCEDUREVOID);
-
         setResultType(new TypeVoid);
     }
 
@@ -1963,7 +1999,7 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
     if (s != ICode::OK) return s;
 
     // Check for "void main()":
-    SymbolProcedure *mainProc = st.findGlobalProcedure("main", SecTypeProcedureVoid(), DataTypeProcedureVoid());
+    SymbolProcedure *mainProc = st.findGlobalProcedure("main", DataTypeProcedureVoid());
     if (mainProc == 0) {
         es << "No function \"void main()\" found!" << std::endl;
         return ICode::E_NO_MAIN;

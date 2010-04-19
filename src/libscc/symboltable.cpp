@@ -137,12 +137,10 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
 
     assert(procdef.procedureType().kind() == TypeNonVoid::PROCEDURE
            || procdef.procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
-    assert(dynamic_cast<const STPV*>(&procdef.procedureType().secType()) != 0);
-    const STPV &st = static_cast<const STPV&>(procdef.procedureType().secType());
     assert(dynamic_cast<const DTPV*>(&procdef.procedureType().dataType()) != 0);
     const DTPV &dt = static_cast<const DTPV&>(procdef.procedureType().dataType());
 
-    ns->setName("{proc}" + procdef.procedureName() + st.mangle() + dt.mangle());
+    ns->setName("{proc}" + procdef.procedureName() + dt.mangle());
     appendGlobalSymbol(ns);
 
     return ns;
@@ -243,14 +241,13 @@ Symbol *SymbolTable::findGlobal(const std::string &name) const {
 }
 
 SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
-                                                const SecTypeProcedureVoid &st,
-                                                const DataTypeProcedureVoid &dt)
+                                                  const DataTypeProcedureVoid &dt)
 {
     typedef Table::const_reverse_iterator STI;
 
     assert(name.empty() == false);
 
-    std::string fn("{proc}" + name + st.mangle() + dt.mangle());
+    std::string fn("{proc}" + name + dt.mangle());
 
     const Table &t(m_global->m_table);
     for (STI it(t.rbegin()); it != t.rend(); it++) {

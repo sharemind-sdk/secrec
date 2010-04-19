@@ -166,7 +166,6 @@ class SymbolTable {
         Symbol *find(const std::string &name) const;
         Symbol *findGlobal(const std::string &name) const;
         SymbolProcedure *findGlobalProcedure(const std::string &name,
-                                             const SecTypeProcedureVoid &st,
                                              const DataTypeProcedureVoid &dt);
         SymbolTable *newScope();
 
