@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
             fclose(f);
         } else {
             cerr << "Unable to open file: " << filename << endl;
+            return 1;
         }
     }
     fflush(stdout);
@@ -40,6 +41,7 @@ int main(int argc, char *argv[]) {
             cout << icode.blocks();
         } else {
             cout << "Error generating valid intermediate code." << endl;
+            cout << icode.compileLog();
         }
     }
     delete parseTree;

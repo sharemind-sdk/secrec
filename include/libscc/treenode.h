@@ -12,6 +12,7 @@
 
 namespace SecreC {
 
+class CompileLog;
 class TreeNodeProcDef;
 
 class TreeNode {
@@ -93,8 +94,6 @@ struct TreeNode *treenode_init_dataTypeArray(unsigned value, YYLTYPE *loc);
 } /* extern "C" */
 } /* namespace SecreC */
 
-std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc);
-
 namespace SecreC {
 
 /******************************************************************
@@ -109,7 +108,7 @@ class TreeNodeCodeable: public TreeNode {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es) = 0;
+                                           CompileLog &log) = 0;
 
         inline const std::vector<Imop*> &breakList() const {
             return m_breakList;
@@ -246,14 +245,14 @@ class TreeNodeExpr: public TreeNode {
         }
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es) = 0;
+                                                  CompileLog &log) = 0;
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0) = 0;
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es) = 0;
+                                               CompileLog &log) = 0;
 
         inline SymbolWithValue *result() const {
             assert(m_result != 0);
@@ -343,14 +342,14 @@ class TreeNodeExprAssign: public TreeNodeExpr {
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 };
 
 
@@ -365,14 +364,14 @@ class TreeNodeExprBinary: public TreeNodeExpr {
 
         const char *operatorString() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 };
 
 
@@ -393,14 +392,14 @@ class TreeNodeExprBool: public TreeNodeExpr {
         }
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 
     private: /* Fields: */
         bool m_value;
@@ -417,14 +416,14 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
             : TreeNodeExpr(NODE_EXPR_PROCCALL, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 
     private: /* Fields: */
         SymbolProcedure *m_procedure;
@@ -446,14 +445,14 @@ class TreeNodeExprInt: public TreeNodeExpr {
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 
     private: /* Fields: */
         int m_value;
@@ -470,14 +469,14 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
             : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 };
 
 
@@ -496,14 +495,14 @@ class TreeNodeExprString: public TreeNodeExpr {
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 
     private: /* Fields: */
         std::string m_value;
@@ -520,14 +519,14 @@ class TreeNodeExprTernary: public TreeNodeExpr {
             : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 };
 
 
@@ -546,14 +545,14 @@ class TreeNodeExprUInt: public TreeNodeExpr {
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 
     private: /* Fields: */
         unsigned m_value;
@@ -570,14 +569,14 @@ class TreeNodeExprUnary: public TreeNodeExpr {
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  std::ostream &es);
+                                                  CompileLog &log);
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es,
+                                           CompileLog &log,
                                            SymbolWithValue *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es);
+                                               CompileLog &log);
 };
 
 
@@ -603,7 +602,7 @@ class TreeNodeProcDef: public TreeNodeCodeable {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 
     private: /* Methods: */
         void addParameters(SecTypeProcedureVoid &st, DataTypeProcedureVoid &dt) const;
@@ -624,7 +623,7 @@ class TreeNodeProcDefs: public TreeNodeCodeable {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -639,7 +638,7 @@ class TreeNodeGlobals: public TreeNodeCodeable {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -654,7 +653,7 @@ class TreeNodeIdentifier: public TreeNode {
 
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
-        SymbolSymbol *getSymbol(SymbolTable &st, std::ostream &es) const;
+        SymbolSymbol *getSymbol(SymbolTable &st, CompileLog &log) const;
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
@@ -674,7 +673,7 @@ class TreeNodeProgram: public TreeNodeCodeable {
             : TreeNodeCodeable(NODE_PROGRAM, loc) {}
 
         virtual ICode::Status generateCode(ICodeList &code, SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -734,7 +733,7 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 /******************************************************************
@@ -749,7 +748,7 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -764,7 +763,7 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -780,7 +779,7 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 
         const SecreC::TypeNonVoid &resultType() const;
 
@@ -804,7 +803,7 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -819,7 +818,7 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -834,7 +833,7 @@ class TreeNodeStmtFor: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -849,7 +848,7 @@ class TreeNodeStmtIf: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -864,7 +863,7 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 
@@ -879,7 +878,7 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es);
+                                           CompileLog &log);
 };
 
 

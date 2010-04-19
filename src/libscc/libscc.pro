@@ -23,6 +23,7 @@ HEADERS = \
     ../../include/libscc/icodelist.h \
     ../../include/libscc/imop.h \
     ../../include/libscc/intermediate.h \
+    ../../include/libscc/log.h \
     ../../include/libscc/misc.h \
     ../../include/libscc/parser.h \
     ../../include/libscc/sccobject.h \

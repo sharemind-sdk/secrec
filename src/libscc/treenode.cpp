@@ -359,13 +359,6 @@ extern "C" struct TreeNode *treenode_init_dataTypeArray(
     return (TreeNode*) new SecreC::TreeNodeDataTypeArray(value, *loc);
 }
 
-std::ostream &operator<<(std::ostream &out, const YYLTYPE &loc) {
-    /// \todo filename
-    out << "(" << loc.first_line << "," << loc.first_column
-        << ")(" << loc.last_line << "," << loc.last_column << ")";
-    return out;
-}
-
 namespace SecreC {
 
 
@@ -403,7 +396,7 @@ void TreeNodeCodeable::addToNextList(const std::vector<Imop*> &nl) {
 
 ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
                                                  SymbolTable &st,
-                                                 std::ostream &es)
+                                                 CompileLog &log)
 {
     typedef ChildrenListConstIterator CLCI;
 
@@ -413,14 +406,14 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert(dynamic_cast<TreeNodeStmt*>(*it) != 0);
         TreeNodeStmt *c = static_cast<TreeNodeStmt*>(*it);
-        ICode::Status s = c->generateCode(code, st, es);
+        ICode::Status s = c->generateCode(code, st, log);
         if (s != ICode::OK) return s;
 
         assert(c->resultFlags() != 0x0);
 
         if (c->firstImop() == 0) {
             if (c->type() != NODE_DECL) {
-                es << "Statement with no effect at " << c->location() << std::endl;
+                log.fatal() << "Statement with no effect at " << c->location();
                 return ICode::E_OTHER;
             }
         } else if (firstImop() == 0) {
@@ -432,7 +425,7 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
         if (last != 0) {
             // Static checking:
             if ((resultFlags() & TreeNodeStmt::FALLTHRU) == 0x0) {
-                es << "Unreachable statement at " << c->location() << std::endl;
+                log.fatal() << "Unreachable statement at " << c->location();
                 return ICode::E_OTHER;
             } else {
                 setResultFlags((resultFlags() & ~TreeNodeStmt::FALLTHRU) | c->resultFlags());
@@ -531,7 +524,7 @@ void TreeNodeExpr::addToNextList(const std::vector<Imop*> &nl) {
 *******************************************************************************/
 
 ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
-                                                      std::ostream &es)
+                                                      CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -541,13 +534,13 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     // Get symbol for l-value:
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
-    SymbolSymbol *dest = id->getSymbol(st, es);
+    SymbolSymbol *dest = id->getSymbol(st, log);
     if (dest == 0) return ICode::E_OTHER;
 
     // Calculate type of r-value:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *src = static_cast<TreeNodeExpr*>(children().at(1));
-    ICode::Status s = src->calculateResultType(st, es);
+    ICode::Status s = src->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Get types for destination and source:
@@ -557,12 +550,13 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
     // Check types:
     if (srcType.isVoid()) {
-        es << "Subexpression has type void at " << src->location() << std::endl;
+        log.fatal() << "Subexpression has type void at " << src->location();
         return ICode::E_TYPE;
     }
     if (!destType.canAssign(srcType)) {
-        es << "Invalid assignment from value of type " << srcType
-           << " to variable of type " << destType << ". At " << location() << std::endl;
+        log.fatal() << "Invalid assignment from value of type " << srcType
+                    << " to variable of type " << destType << ". At "
+                    << location();
 
         return ICode::E_TYPE;
     }
@@ -576,11 +570,11 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
 ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es,
+                                               CompileLog &log,
                                                SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Generate code for child expressions:
@@ -598,7 +592,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
     // Generate code for assignment
     if (type() == NODE_EXPR_ASSIGN) {
         // Simple assignment
-        s = e2->generateCode(code, st, es, destSymSym);
+        s = e2->generateCode(code, st, log, destSymSym);
         if (s != ICode::OK) return s;
         setFirstImop(e2->firstImop());
 
@@ -614,7 +608,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         }
     } else {
         // Calculating assignments
-        s = e2->generateCode(code, st, es);
+        s = e2->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e2->firstImop());
 
@@ -648,18 +642,18 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
                                                    SymbolTable &st,
-                                                   std::ostream &es)
+                                                   CompileLog &log)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     if (resultType() == TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL)) {
-        es << "Not a public boolean expression at " << location() << std::endl;
+        log.fatal() << "Not a public boolean expression at " << location();
         return ICode::E_TYPE;
     }
 
-    s = generateCode(code, st, es);
+    s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(Imop::JT, 0, result());
@@ -701,7 +695,7 @@ const char *TreeNodeExprBinary::operatorString() const {
 }
 
 ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
-                                                      std::ostream &es)
+                                                      CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -711,12 +705,12 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e1->calculateResultType(st, es);
+    ICode::Status s = e1->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->calculateResultType(st, es);
+    s = e2->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     const SecreC::Type &eType1 = e1->resultType();
@@ -771,27 +765,28 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
                 setResultType(new SecreC::TypeNonVoid(upperSecType(s1, s2), DATATYPE_BOOL));
                 return ICode::OK;
             case NODE_EXPR_BINARY_MATRIXMUL:
-                es << "Matrix multiplication not yet supported. At " << location() << std::endl;
+                log.fatal() << "Matrix multiplication not yet supported. At "
+                            << location();
                 return ICode::E_NOT_IMPLEMENTED;
             default:
                 assert(false);
         }
     }
 
-    es << "Invalid binary operation " << operatorString()
-       << " between operands of type " << eType1 << " and " << eType2
-       << " at " << location() << std::endl;
+    log.fatal() << "Invalid binary operation " << operatorString()
+                << " between operands of type " << eType1 << " and " << eType2
+                << " at " << location();
 
     return ICode::E_TYPE;
 }
 
 ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es,
+                                               CompileLog &log,
                                                SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
@@ -809,12 +804,12 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
 
     // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e1->generateCode(code, st, es);
+    s = e1->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
 
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->generateCode(code, st, es);
+    s = e2->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
 
@@ -835,8 +830,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         case NODE_EXPR_BINARY_LAND: i = new Imop(Imop::LAND); break;
         case NODE_EXPR_BINARY_LOR:  i = new Imop(Imop::LOR);  break;
         default:
-            es << "Binary " << operatorString() << " not yet implemented. At " << location()
-               << std::endl;
+            log.fatal() << "Binary " << operatorString()
+                        << " not yet implemented. At " << location();
             return ICode::E_NOT_IMPLEMENTED;
     }
 
@@ -855,10 +850,10 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                                                    SymbolTable &st,
-                                                   std::ostream &es)
+                                                   CompileLog &log)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(type() == NODE_EXPR_BINARY_EQ
@@ -882,11 +877,11 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
         assert(dynamic_cast<const TypeNonVoid*>(&e1->resultType()) != 0);
         if (static_cast<const TypeNonVoid&>(e1->resultType()).secType() == SecTypeBasic(SECTYPE_PUBLIC)) {
             // Generate code for child expressions:
-            s = e1->generateBoolCode(code, st, es);
+            s = e1->generateBoolCode(code, st, log);
             if (s != ICode::OK) return s;
             setFirstImop(e1->firstImop());
 
-            s = e2->generateBoolCode(code, st, es);
+            s = e2->generateBoolCode(code, st, log);
             if (s != ICode::OK) return s;
             patchFirstImop(e2->firstImop());
 
@@ -912,11 +907,11 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     }
 
     // Generate code for child expressions:
-    s = e1->generateCode(code, st, es);
+    s = e1->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
 
-    s = e2->generateCode(code, st, es);
+    s = e2->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
 
@@ -959,7 +954,7 @@ std::string TreeNodeExprBool::xmlHelper() const {
 }
 
 ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
-                                                    std::ostream &)
+                                                    CompileLog &)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -971,11 +966,11 @@ ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &,
 
 ICode::Status TreeNodeExprBool::generateCode(ICodeList &code,
                                              SymbolTable &st,
-                                             std::ostream &es,
+                                             CompileLog &log,
                                              SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     SymbolConstantBool *sym = st.constantBool(m_value);
@@ -991,10 +986,10 @@ ICode::Status TreeNodeExprBool::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
                                                  SymbolTable &st,
-                                                 std::ostream &es)
+                                                 CompileLog &log)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(Imop::JUMP, 0);
@@ -1014,7 +1009,7 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
 *******************************************************************************/
 
 ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
-                                                        std::ostream &es)
+                                                        CompileLog &log)
 {
     typedef SecTypeProcedureVoid STFV;
     typedef DataTypeProcedureVoid DTFV;
@@ -1033,8 +1028,8 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
     // Check whether the function name is overridden by some variable name:
     Symbol *s = st.find(id->value());
     if (s != 0 && s->symbolType() != Symbol::PROCEDURE) {
-        es << "Identifier " << id->value() << " is not a function at "
-           << location() << std::endl;
+        log.fatal() << "Identifier " << id->value() << " is not a function at "
+                    << location();
         return ICode::E_TYPE;
     }
 
@@ -1049,12 +1044,12 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
 
-        ICode::Status s = e->calculateResultType(st, es);
+        ICode::Status s = e->calculateResultType(st, log);
         if (s != ICode::OK) return s;
 
         if (e->resultType().isVoid()) {
-            es << "Can't pass argument of void type to function at "
-               << e->location() << std::endl;
+            log.fatal() << "Can't pass argument of void type to function at "
+                        << e->location();
             return ICode::E_TYPE;
         }
         assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
@@ -1067,8 +1062,9 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
     // Search for the procedure by its name and the data types of its arguments:
     m_procedure = st.findGlobalProcedure(id->value(), dataType);
     if (m_procedure == 0) {
-        es << "No function with parameter data types of (" << dataType.mangle()
-          << ") found in scope at " << location() << std::endl;
+        log.fatal() << "No function with parameter data types of ("
+                    << dataType.mangle() << ") found in scope at "
+                    << location();
         return ICode::E_TYPE;
     }
 
@@ -1095,10 +1091,9 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         if (need->secType() == SECTYPE_PUBLIC
             && have->secType() == SECTYPE_PRIVATE)
         {
-            es << "Argument " << (i + 1) << " to function " << id->value()
-               << " at " << arguments[i]->location()
-               << " is expected to be of public type instead of private!"
-               << std::endl;
+            log.fatal() << "Argument " << (i + 1) << " to function "
+                << id->value() << " at " << arguments[i]->location()
+                << " is expected to be of public type instead of private!";
             return ICode::E_TYPE;
         }
     }
@@ -1119,13 +1114,13 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
 
 ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
                                                  SymbolTable &st,
-                                                 std::ostream &es,
+                                                 CompileLog &log,
                                                  SymbolWithValue *r)
 {
     typedef ChildrenListConstIterator CLCI;
 
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     std::stack<SymbolWithValue*> resultList;
@@ -1136,7 +1131,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
         assert(((*it)->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
-        ICode::Status s = e->generateCode(code, st, es);
+        ICode::Status s = e->generateCode(code, st, log);
         if (s != ICode::OK) return s;
 
         if (e->firstImop() != 0) {
@@ -1189,13 +1184,13 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprProcCall::generateBoolCode(ICodeList &code,
                                                      SymbolTable &st,
-                                                     std::ostream &es)
+                                                     CompileLog &log)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    s = generateCode(code, st, es);
+    s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(Imop::JT, 0, result());
@@ -1227,7 +1222,7 @@ std::string TreeNodeExprInt::xmlHelper() const {
 }
 
 ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
-                                                   std::ostream &)
+                                                   CompileLog &)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1239,11 +1234,11 @@ ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &,
 
 ICode::Status TreeNodeExprInt::generateCode(ICodeList &code,
                                             SymbolTable &st,
-                                            std::ostream &es,
+                                            CompileLog &log,
                                             SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     SymbolConstantInt *sym = st.constantInt(m_value);
@@ -1259,10 +1254,10 @@ ICode::Status TreeNodeExprInt::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprInt::generateBoolCode(ICodeList &,
                                                 SymbolTable &,
-                                                std::ostream &es)
+                                                CompileLog &log)
 {
-    es << "Integer as boolean expression not implemented. At "
-       << location() << std::endl;
+    log.fatal() << "Integer as boolean expression not implemented. At "
+                << location();
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1272,7 +1267,7 @@ ICode::Status TreeNodeExprInt::generateBoolCode(ICodeList &,
 *******************************************************************************/
 
 ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
-                                                         std::ostream &es)
+                                                         CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1281,7 +1276,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
 
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
-    SymbolSymbol *s = id->getSymbol(st, es);
+    SymbolSymbol *s = id->getSymbol(st, log);
     if (s == 0) return ICode::E_OTHER;
 
     assert(s->secrecType().isVoid() == false);
@@ -1296,11 +1291,11 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
 
 ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
                                                   SymbolTable &st,
-                                                  std::ostream &es,
+                                                  CompileLog &log,
                                                   SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
@@ -1308,12 +1303,12 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
     if (r == 0) {
-        setResult(id->getSymbol(st, es));
+        setResult(id->getSymbol(st, log));
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
 
-        Imop *i = new Imop(Imop::ASSIGN, r, id->getSymbol(st, es));
+        Imop *i = new Imop(Imop::ASSIGN, r, id->getSymbol(st, log));
         code.push_back(i);
         setFirstImop(i);
     }
@@ -1323,16 +1318,16 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprRVariable::generateBoolCode(ICodeList &code,
                                                       SymbolTable &st,
-                                                      std::ostream &es)
+                                                      CompileLog &log)
 {
     // Type check
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
-    Imop *i = new Imop(Imop::JT, 0, id->getSymbol(st, es));
+    Imop *i = new Imop(Imop::JT, 0, id->getSymbol(st, log));
     code.push_back(i);
     setFirstImop(i);
     addToTrueList(i);
@@ -1361,7 +1356,7 @@ std::string TreeNodeExprString::xmlHelper() const {
 }
 
 ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
-                                                      std::ostream &)
+                                                      CompileLog &)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1373,11 +1368,11 @@ ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
 
 ICode::Status TreeNodeExprString::generateCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es,
+                                               CompileLog &log,
                                                SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     SymbolConstantString *sym = st.constantString(m_value);
@@ -1393,10 +1388,10 @@ ICode::Status TreeNodeExprString::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprString::generateBoolCode(ICodeList &,
                                                    SymbolTable &,
-                                                   std::ostream &es)
+                                                   CompileLog &log)
 {
-    es << "String as boolean expression not implemented. At "
-       << location() << std::endl;
+    log.fatal() << "String as boolean expression not implemented. At "
+                << location();
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1406,7 +1401,7 @@ ICode::Status TreeNodeExprString::generateBoolCode(ICodeList &,
 *******************************************************************************/
 
 ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
-                                                       std::ostream &es)
+                                                       CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1417,17 +1412,17 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e1->calculateResultType(st, es);
+    ICode::Status s = e1->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->calculateResultType(st, es);
+    s = e2->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
-    s = e3->calculateResultType(st, es);
+    s = e3->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     const SecreC::Type &eType1 = e1->resultType();
@@ -1451,18 +1446,18 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     }
 
     /// \todo Provide better error messages
-    es << "Invalid ternary operation at " << location() << std::endl;
+    log.fatal() << "Invalid ternary operation at " << location();
 
     return ICode::E_TYPE;
 }
 
 ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
                                                 SymbolTable &st,
-                                                std::ostream &es,
+                                                CompileLog &log,
                                                 SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
@@ -1475,12 +1470,12 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
 
     // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e1->generateBoolCode(code, st, es);
+    s = e1->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Generate code for first value child expression:
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->generateCode(code, st, es, result());
+    s = e2->generateCode(code, st, log, result());
     if (s != ICode::OK) return s;
 
     // Jump out of the ternary construct:
@@ -1490,7 +1485,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
 
     // Generate code for second value child expression:
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
-    s = e3->generateCode(code, st, es, result());
+    s = e3->generateCode(code, st, log, result());
     if (s != ICode::OK) return s;
 
     // Link boolean expression code to the rest of the code:
@@ -1506,27 +1501,27 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprTernary::generateBoolCode(ICodeList &code,
                                                     SymbolTable &st,
-                                                    std::ostream &es)
+                                                    CompileLog &log)
 {
     // Type check
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     /// \todo Write check that were have good return type
 
     // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e1->generateBoolCode(code, st, es);
+    s = e1->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Generate code for first value child expression:
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->generateBoolCode(code, st, es);
+    s = e2->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Generate code for second value child expression:
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
-    s = e3->generateCode(code, st, es);
+    s = e3->generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Link conditional expression code to the rest of the code:
@@ -1559,7 +1554,7 @@ std::string TreeNodeExprUInt::xmlHelper() const {
 }
 
 ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
-                                                    std::ostream &)
+                                                    CompileLog &)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1571,11 +1566,11 @@ ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &,
 
 ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code,
                                              SymbolTable &st,
-                                             std::ostream &es,
+                                             CompileLog &log,
                                              SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     SymbolConstantUInt *sym = st.constantUInt(m_value);
@@ -1591,10 +1586,10 @@ ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeExprUInt::generateBoolCode(ICodeList &,
                                                  SymbolTable &,
-                                                 std::ostream &es)
+                                                 CompileLog &log)
 {
-    es << "Unsigned int as boolean expression not implemented. At "
-       << location() << std::endl;
+    log.fatal() << "Unsigned int as boolean expression not implemented. At "
+                << location();
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1604,7 +1599,7 @@ ICode::Status TreeNodeExprUInt::generateBoolCode(ICodeList &,
 *******************************************************************************/
 
 ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
-                                                     std::ostream &es)
+                                                     CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
@@ -1614,7 +1609,7 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e->calculateResultType(st, es);
+    ICode::Status s = e->calculateResultType(st, log);
     if (s != ICode::OK) return s;
     const SecreC::Type &eType = e->resultType();
 
@@ -1639,20 +1634,21 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
         }
     }
 
-    es << "Invalid expression of type (" << eType << ") given to unary "
-       << (type() == NODE_EXPR_UNEG ? "negation" : "minus")
-       << "operator at " << location() << std::endl;
+    log.fatal() << "Invalid expression of type (" << eType
+                << ") given to unary "
+                << (type() == NODE_EXPR_UNEG ? "negation" : "minus")
+                << " operator at " << location();
 
     return ICode::E_TYPE;
 }
 
 ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code,
                                               SymbolTable &st,
-                                              std::ostream &es,
+                                              CompileLog &log,
                                               SymbolWithValue *r)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
@@ -1665,7 +1661,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code,
 
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateCode(code, st, es);
+    s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     setFirstImop(e->firstImop());
@@ -1685,17 +1681,17 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code,
 }
 
 ICode::Status TreeNodeExprUnary::generateBoolCode(ICodeList &code, SymbolTable &st,
-                                                  std::ostream &es)
+                                                  CompileLog &log)
 {
     // Type check:
-    ICode::Status s = calculateResultType(st, es);
+    ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
     assert(type() == NODE_EXPR_UNEG);
 
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateBoolCode(code, st, es);
+    s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     addToFalseList(e->trueList());
@@ -1755,7 +1751,7 @@ const SecreC::TypeNonVoid &TreeNodeProcDef::procedureType() const {
 
 ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es)
+                                           CompileLog &log)
 {
     typedef ChildrenListConstIterator CLCI;
 
@@ -1778,7 +1774,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
         for (CLCI it(children().begin() + 3); it != children().end(); it++) {
             assert((*it)->type() == NODE_DECL);
             assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
-            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, localScope, es);
+            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, localScope, log);
             if (s != ICode::OK) return s;
         }
     }
@@ -1786,7 +1782,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
     // Generate code for function body:
     assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(children().at(2));
-    ICode::Status s = body->generateCode(code, localScope, es);
+    ICode::Status s = body->generateCode(code, localScope, log);
     if (s != ICode::OK) return s;
     assert(body->resultFlags() != 0x0);
     assert((body->resultFlags() & ~TreeNodeStmt::MASK) == 0);
@@ -1798,14 +1794,17 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
     if (fType.kind() == TypeNonVoid::PROCEDURE) {
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
-                es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
+                log.fatal() << "Function at " << location()
+                    << " contains a break statement outside of any loop!";
                 return ICode::E_OTHER;
             } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
-                es << "Function at " << location() << " contains a continue statement outside of any loop!" << std::endl;
+                log.fatal() << "Function at " << location()
+                    << " contains a continue statement outside of any loop!";
                 return ICode::E_OTHER;
             } else {
                 assert((body->resultFlags() & TreeNodeStmt::FALLTHRU) != 0x0);
-                es << "Function at " << location() << " does not always return a value!" << std::endl;
+                log.fatal() << "Function at " << location()
+                            << " does not always return a value!";
                 return ICode::E_OTHER;
             }
         }
@@ -1814,10 +1813,12 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
         assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
         if (body->resultFlags() != TreeNodeStmt::RETURN) {
             if ((body->resultFlags() & TreeNodeStmt::BREAK) != 0x0) {
-                es << "Function at " << location() << " contains a break statement outside of any loop!" << std::endl;
+                log.fatal() << "Function at " << location()
+                    << " contains a break statement outside of any loop!";
                 return ICode::E_OTHER;
             } else if ((body->resultFlags() & TreeNodeStmt::CONTINUE) != 0x0) {
-                es << "Function at " << location() << " contains a continue statement outside of any loop!" << std::endl;
+                log.fatal() << "Function at " << location()
+                    << " contains a continue statement outside of any loop!";
                 return ICode::E_OTHER;
             }
             assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
@@ -1862,7 +1863,7 @@ void TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
 
 ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
                                              SymbolTable &st,
-                                             std::ostream &es)
+                                             CompileLog &log)
 {
     typedef ChildrenListConstIterator CLCI;
 
@@ -1872,7 +1873,7 @@ ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
         TreeNodeProcDef *fundef = static_cast<TreeNodeProcDef*>(*it);
 
         // Generate code:
-        ICode::Status s = fundef->generateCode(code, st, es);
+        ICode::Status s = fundef->generateCode(code, st, log);
         if (s != ICode::OK) return s;
     }
     return ICode::OK;
@@ -1884,7 +1885,7 @@ ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeGlobals::generateCode(ICodeList &code,
                                             SymbolTable &st,
-                                            std::ostream &es)
+                                            CompileLog &log)
 {
     typedef ChildrenListConstIterator CLCI;
 
@@ -1894,7 +1895,7 @@ ICode::Status TreeNodeGlobals::generateCode(ICodeList &code,
         assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
         TreeNodeStmtDecl *decl = static_cast<TreeNodeStmtDecl*>(*it);
         decl->setGlobal();
-        ICode::Status s = decl->generateCode(code, st, es);
+        ICode::Status s = decl->generateCode(code, st, log);
         if (s != ICode::OK) return s;
 
         if (decl->firstImop() != 0) {
@@ -1919,11 +1920,11 @@ ICode::Status TreeNodeGlobals::generateCode(ICodeList &code,
   TreeNodeIdentifier
 *******************************************************************************/
 
-SymbolSymbol *TreeNodeIdentifier::getSymbol(SymbolTable &st, std::ostream &es) const {
+SymbolSymbol *TreeNodeIdentifier::getSymbol(SymbolTable &st, CompileLog &log) const {
     Symbol *s = st.find(m_value);
     if (s == 0) {
-        es << "Undefined symbol \"" << m_value << "\" at " << location()
-           << std::endl;
+        log.fatal() << "Undefined symbol \"" << m_value << "\" at "
+                    << location();
         return 0;
     }
 
@@ -1951,10 +1952,10 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 
 ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
                                             SymbolTable &st,
-                                            std::ostream &es)
+                                            CompileLog &log)
 {
     if (children().empty()) {
-        es << "Program is empty" << std::endl;
+        log.fatal() << "Program is empty";
         return ICode::E_EMPTY_PROGRAM;
     }
 
@@ -1974,7 +1975,7 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
         assert(dynamic_cast<TreeNodeGlobals*>(children().at(0)) != 0);
         TreeNodeGlobals *gs = static_cast<TreeNodeGlobals*>(children().at(0));
 
-        ICode::Status s = gs->generateCode(code, st, es);
+        ICode::Status s = gs->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         code.push_comment("End of global declarations.");
 
@@ -1995,13 +1996,13 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
     code.push_back(new Imop(Imop::END));
 
     // Handle functions:
-    ICode::Status s = ps->generateCode(code, st, es);
+    ICode::Status s = ps->generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Check for "void main()":
     SymbolProcedure *mainProc = st.findGlobalProcedure("main", DataTypeProcedureVoid());
     if (mainProc == 0) {
-        es << "No function \"void main()\" found!" << std::endl;
+        log.fatal() << "No function \"void main()\" found!";
         return ICode::E_NO_MAIN;
     }
 
@@ -2035,7 +2036,7 @@ std::string TreeNodeSecTypeF::xmlHelper() const {
 
 ICode::Status TreeNodeStmtBreak::generateCode(ICodeList &code,
                                               SymbolTable &,
-                                              std::ostream &)
+                                              CompileLog &)
 {
     Imop *i = new Imop(Imop::JUMP, 0);
     code.push_back(i);
@@ -2053,7 +2054,7 @@ ICode::Status TreeNodeStmtBreak::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code,
                                                  SymbolTable &,
-                                                 std::ostream &)
+                                                 CompileLog &)
 {
     Imop *i = new Imop(Imop::JUMP, 0);
     code.push_back(i);
@@ -2070,7 +2071,7 @@ ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
                                              SymbolTable &st,
-                                             std::ostream &es)
+                                             CompileLog &log)
 {
     typedef TreeNodeIdentifier TNI;
 
@@ -2096,7 +2097,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
-        ICode::Status s = e->generateCode(code, st, es, ns);
+        ICode::Status s = e->generateCode(code, st, log, ns);
         if (s != ICode::OK) {
             delete ns;
             return s;
@@ -2145,7 +2146,7 @@ const SecreC::TypeNonVoid &TreeNodeStmtDecl::resultType() const {
 
 ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
                                                 SymbolTable &st,
-                                                std::ostream &es)
+                                                CompileLog &log)
 {
     assert(children().size() == 2);
     TreeNode *c0 = children().at(0);
@@ -2156,17 +2157,17 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
     SymbolTable &innerScope = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(c0) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c0);
-    ICode::Status s = body->generateCode(code, innerScope, es);
+    ICode::Status s = body->generateCode(code, innerScope, log);
     if (s != ICode::OK) return s;
 
     // Static checking:
     if (body->firstImop() == 0) {
-        es << "Empty loop body at " << body->location() << std::endl;
+        log.fatal() << "Empty loop body at " << body->location();
         return ICode::E_OTHER;
     }
     assert(body->resultFlags() != 0x0);
     if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
-        es << "Do-while loop at " << location() << " wont loop!" << std::endl;
+        log.fatal() << "Do-while loop at " << location() << " wont loop!";
         return ICode::E_OTHER;
     }
     setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
@@ -2175,7 +2176,7 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
     assert(c1->type() != NODE_EXPR_NONE);
     assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c1);
-    s = e->generateBoolCode(code, st, es);
+    s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
 
@@ -2197,12 +2198,12 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtExpr::generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es)
+                                           CompileLog &log)
 {
     assert(children().size() == 1);
     assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e->generateCode(code, st, es);
+    ICode::Status s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     setFirstImop(e->firstImop());
@@ -2219,7 +2220,7 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
                                             SymbolTable &st,
-                                            std::ostream &es)
+                                            CompileLog &log)
 {
     assert(children().size() == 4);
     TreeNode *c0 = children().at(0);
@@ -2235,7 +2236,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     if (children().at(0)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
         e0 = static_cast<TreeNodeExpr*>(c0);
-        ICode::Status s = e0->generateCode(code, st, es);
+        ICode::Status s = e0->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e0->firstImop());
     }
@@ -2245,7 +2246,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     if (children().at(1)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
         e1 = static_cast<TreeNodeExpr*>(c1);
-        ICode::Status s = e1->generateBoolCode(code, st, es);
+        ICode::Status s = e1->generateBoolCode(code, st, log);
         if (s != ICode::OK) return s;
         patchFirstImop(e1->firstImop());
         addToNextList(e1->falseList());
@@ -2255,7 +2256,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     SymbolTable &innerScope = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(c3) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c3);
-    ICode::Status s = body->generateCode(code, innerScope, es);
+    ICode::Status s = body->generateCode(code, innerScope, log);
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
     if (e1 != 0) e1->patchTrueList(body->firstImop());
@@ -2266,7 +2267,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     if (children().at(2)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
         e2 = static_cast<TreeNodeExpr*>(c2);
-        ICode::Status s = e2->generateCode(code, st, es);
+        ICode::Status s = e2->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         body->patchContinueList(e2->firstImop());
         body->patchNextList(e2->firstImop());
@@ -2283,11 +2284,11 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     // Static checking:
     assert(body->resultFlags() != 0x0);
     if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
-        es << "For loop at " << location() << " wont loop!" << std::endl;
+        log.fatal() << "For loop at " << location() << " wont loop!";
         return ICode::E_OTHER;
     }
     if (e1 == 0 && ((body->resultFlags() & (TreeNodeStmt::BREAK | TreeNodeStmt::RETURN)) == 0x0)) {
-        es << "For loop at " << location() << " is clearly infinite!" << std::endl;
+        log.fatal() << "For loop at " << location() << " is clearly infinite!";
         return ICode::E_OTHER;
     }
     setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
@@ -2311,7 +2312,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
                                            SymbolTable &st,
-                                           std::ostream &es)
+                                           CompileLog &log)
 {
     assert(children().size() == 2 || children().size() == 3);
     TreeNode *c0 = children().at(0);
@@ -2320,11 +2321,11 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
     assert((c0->type() & NODE_EXPR_MASK) != 0);
     assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
-    ICode::Status s = e->calculateResultType(st, es);
+    ICode::Status s = e->calculateResultType(st, log);
     if (s != ICode::OK) return s;
     if (e->resultType().isVoid()) {
-        es << "Conditional expression of the if statement can't have a void "
-              "type. At " << e->location() << std::endl;
+        log.fatal() << "Conditional expression of the if statement can't have a "
+                       "void type. At " << e->location();
         return ICode::E_TYPE;
     }
     assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
@@ -2339,14 +2340,14 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
         const DataTypeBasic &dt = static_cast<const DataTypeBasic&>(eType.dataType());
 
         if (st.secType() != SECTYPE_PUBLIC || dt.dataType() != DATATYPE_BOOL) {
-            es << "Conditional expression in if statement must be of type "
-                  "public bool." << std::endl;
+            log.fatal() << "Conditional expression in if statement must be of "
+                           "type public bool.";
             return ICode::E_TYPE;
         }
     }
 
     // Generate code for conditional expression:
-    s = e->generateBoolCode(code, st, es);
+    s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
     setFirstImop(e->firstImop());
@@ -2355,7 +2356,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
     SymbolTable &innerScope1 = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(children().at(1)) != 0);
     TreeNodeStmt *s1 = static_cast<TreeNodeStmt*>(children().at(1));
-    s = s1->generateCode(code, innerScope1, es);
+    s = s1->generateCode(code, innerScope1, log);
     if (s != ICode::OK) return s;
 
 
@@ -2378,7 +2379,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
         SymbolTable &innerScope2 = *st.newScope();
         assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
         TreeNodeStmt *s2 = static_cast<TreeNodeStmt*>(children().at(2));
-        s = s2->generateCode(code, innerScope2, es);
+        s = s2->generateCode(code, innerScope2, log);
         if (s != ICode::OK) return s;
 
         e->patchFalseList(s2->firstImop());
@@ -2399,11 +2400,12 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
                                                SymbolTable &st,
-                                               std::ostream &es)
+                                               CompileLog &log)
 {
     if (children().empty()) {
         if (containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDURE) {
-            es << "Cannot return from non-void function without value at " << location() << std::endl;
+            log.fatal() << "Cannot return from non-void function without value at "
+                        << location();
             return ICode::E_OTHER;
         }
         assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
@@ -2415,7 +2417,8 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
     } else {
         assert(children().size() == 1);
         if (containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID) {
-            es << "Cannot return value from void function at" << location() << std::endl;
+            log.fatal() << "Cannot return value from void function at"
+                        << location();
             return ICode::E_OTHER;
         }
         assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDURE);
@@ -2423,17 +2426,17 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
         assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-        ICode::Status s = e->calculateResultType(st, es);
+        ICode::Status s = e->calculateResultType(st, log);
         if (s != ICode::OK) return s;
         if (!containingProcedure()->procedureType().canAssign(e->resultType())) {
-            es << "Cannot return value of type " << e->resultType()
-               << " from function with type "
-               << containingProcedure()->procedureType() << ". At" << location()
-               << std::endl;
+            log.fatal() << "Cannot return value of type " << e->resultType()
+                        << " from function with type "
+                        << containingProcedure()->procedureType() << ". At"
+                        << location();
             return ICode::E_OTHER;
         }
 
-        s = e->generateCode(code, st, es);
+        s = e->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e->firstImop());
 
@@ -2455,7 +2458,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
 
 ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code,
                                               SymbolTable &st,
-                                              std::ostream &es)
+                                              CompileLog &log)
 {
     assert(children().size() == 2);
     TreeNode *c0 = children().at(0);
@@ -2466,7 +2469,7 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code,
     assert(c0->type() != NODE_EXPR_NONE);
     assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
-    ICode::Status s = e->generateBoolCode(code, st, es);
+    ICode::Status s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
 
@@ -2474,17 +2477,17 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code,
     SymbolTable &innerScope = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(c1) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c1);
-    s = body->generateCode(code, innerScope, es);
+    s = body->generateCode(code, innerScope, log);
     if (s != ICode::OK) return s;
 
     // Static checking:
     if (body->firstImop() == 0) {
-        es << "Empty loop body at " << body->location() << std::endl;
+        log.fatal() << "Empty loop body at " << body->location();
         return ICode::E_OTHER;
     }
     assert(body->resultFlags() != 0x0);
     if ((body->resultFlags() & (TreeNodeStmt::FALLTHRU | TreeNodeStmt::CONTINUE)) == 0x0) {
-        es << "While loop at " << location() << " wont loop!" << std::endl;
+        log.fatal() << "While loop at " << location() << " wont loop!";
         return ICode::E_OTHER;
     }
     setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);

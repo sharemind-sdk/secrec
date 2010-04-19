@@ -7,7 +7,7 @@
 namespace SecreC {
 
 ICode::Status ICode::init(TreeNodeProgram *program) {
-    ICode::Status s = program->generateCode(m_code, m_symbols, m_errorStream);
+    ICode::Status s = program->generateCode(m_code, m_symbols, m_log);
     if (s != OK) {
         m_status = s;
         return s;
@@ -53,9 +53,9 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICodeList &c) {
 std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode) {
     out << "ICode status: " << icode.status() << std::endl;
     // if (icode.status() == SecreC::ICode::OK) {
-        out << "ICode symbols:"  << std::endl << icode.symbols()  << std::endl
-            << "ICode code:"     << std::endl << icode.code()     << std::endl
-            << "ICode messages:" << std::endl << icode.messages() << std::endl;
+        out << "ICode symbols:" << std::endl << icode.symbols()  << std::endl
+            << "ICode code:"    << std::endl << icode.code()     << std::endl
+            << "ICode log:"     << std::endl << icode.compileLog() << std::endl;
     // }
     return out;
 }
