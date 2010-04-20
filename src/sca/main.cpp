@@ -41,8 +41,8 @@ int main(int argc, char *argv[]) {
             cout << icode.blocks();
         } else {
             cout << "Error generating valid intermediate code." << endl;
-            cout << icode.compileLog();
         }
+        cout << icode.compileLog();
     }
     delete parseTree;
 

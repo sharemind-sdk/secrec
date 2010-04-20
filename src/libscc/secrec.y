@@ -116,11 +116,6 @@
 %type <treenode> statement_list
 %type <treenode> statement
 %type <treenode> if_statement
-%type <treenode> compound_statement_l
-%type <treenode> statement_list_l
-%type <treenode> statement_l
-%type <treenode> if_statement_l
-%type <treenode> common_statement
 %type <treenode> for_statement
 %type <treenode> for_statement_expression
 %type <treenode> while_statement
@@ -364,11 +359,6 @@ compound_statement
  | '{' statement_list '}' { $$ = $2; treenode_setLocation($$, &@$); }
  ;
 
-compound_statement_l
- : '{' '}' { $$ = treenode_init(NODE_STMT_COMPOUND, &@$); }
- | '{' statement_list_l '}' { $$ = $2; treenode_setLocation($$, &@$); }
- ;
-
 statement_list
  : variable_declaration statement_list
    {
@@ -386,33 +376,21 @@ statement_list
  | statement
  ;
 
-statement_list_l
- : variable_declaration statement_list_l
-   {
-     $$ = add_vardecl($1, $2, &@$);
-   }
- | statement_l statement_list_l
-   {
-     $$ = add_stmt($1, $2, &@$);
-   }
- | variable_declaration
-   {
-     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-     treenode_appendChild($$, $1);
-   }
- | statement_l
- ;
-
 statement
  : compound_statement
  | if_statement
- | common_statement
- ;
-
-statement_l
- : compound_statement_l
- | if_statement_l
- | common_statement
+ | for_statement
+ | while_statement
+ | dowhile_statement
+ | RETURN expression ';'
+   {
+     $$ = treenode_init(NODE_STMT_RETURN, &@$);
+     treenode_appendChild($$, ensure_rValue($2));
+   }
+ | RETURN ';'
+   {
+     $$ = treenode_init(NODE_STMT_RETURN, &@$);
+   }
  | CONTINUE ';'
    {
      $$ = treenode_init(NODE_STMT_CONTINUE, &@$);
@@ -420,6 +398,15 @@ statement_l
  | BREAK ';'
    {
      $$ = treenode_init(NODE_STMT_BREAK, &@$);
+   }
+ | ';'
+   { /* We also use the compound statement construct for empty statements: */
+     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+   }
+ | expression ';'
+   {
+     $$ = treenode_init(NODE_STMT_EXPR, &@$);
+     treenode_appendChild($$, $1);
    }
  ;
 
@@ -439,50 +426,10 @@ if_statement
    }
  ;
 
-if_statement_l
- : IF '(' expression ')' statement_l ELSE statement_l
-   {
-     $$ = treenode_init(NODE_STMT_IF, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
-     treenode_appendChild($$, $5);
-     treenode_appendChild($$, $7);
-   }
- | IF '(' expression ')' statement_l
-   {
-     $$ = treenode_init(NODE_STMT_IF, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
-     treenode_appendChild($$, $5);
-   }
- ;
-
-common_statement
- : for_statement
- | while_statement
- | dowhile_statement
- | RETURN expression ';'
-   {
-     $$ = treenode_init(NODE_STMT_RETURN, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
-   }
- | RETURN ';'
-   {
-     $$ = treenode_init(NODE_STMT_RETURN, &@$);
-   }
- | expression ';'
-   {
-     $$ = treenode_init(NODE_STMT_EXPR, &@$);
-     treenode_appendChild($$, $1);
-   }
- | ';'
-   { /* We also use the compound statement construct for empty statements: */
-     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-   }
- ;
-
 for_statement
  : FOR '(' for_statement_expression ';'
            for_statement_expression ';'
-           for_statement_expression ')' statement_l
+           for_statement_expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_FOR, &@$);
      treenode_appendChild($$, ensure_rValue($3));
@@ -498,7 +445,7 @@ for_statement_expression /* Helper nonterminal for expression? */
  ;
 
 while_statement
- : WHILE '(' expression ')' statement_l
+ : WHILE '(' expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_WHILE, &@$);
      treenode_appendChild($$, ensure_rValue($3));
@@ -507,7 +454,7 @@ while_statement
  ;
 
 dowhile_statement
- : DO statement_l WHILE '(' expression ')'
+ : DO statement WHILE '(' expression ')'
    {
      $$ = treenode_init(NODE_STMT_DOWHILE, &@$);
      treenode_appendChild($$, $2);
