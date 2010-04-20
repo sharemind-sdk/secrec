@@ -71,8 +71,10 @@ class CompileLog {
 };
 
 
-CompileLogStream::~CompileLogStream() {
-   m_log.addMessage(CompileLogMessage(m_type, m_os.str()));
+inline CompileLogStream::~CompileLogStream() {
+    if (!m_os.str().empty()) {
+        m_log.addMessage(CompileLogMessage(m_type, m_os.str()));
+    }
 }
 
 inline CompileLogStream &CompileLogStream::operator<<(const YYLTYPE &v) {
