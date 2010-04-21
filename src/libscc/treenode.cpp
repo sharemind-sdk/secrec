@@ -1702,7 +1702,7 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICodeList &code, SymbolTable &
 
 
 /*******************************************************************************
-  TreeNodeFundef
+  TreeNodeProcDef
 *******************************************************************************/
 
 const std::string &TreeNodeProcDef::procedureName() const {
@@ -1858,7 +1858,7 @@ void TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
 }
 
 /*******************************************************************************
-  TreeNodeFundefs
+  TreeNodeProcDefs
 *******************************************************************************/
 
 ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
@@ -1870,10 +1870,10 @@ ICode::Status TreeNodeProcDefs::generateCode(ICodeList &code,
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert((*it)->type() == NODE_PROCDEF);
         assert(dynamic_cast<TreeNodeProcDef*>(*it) != 0);
-        TreeNodeProcDef *fundef = static_cast<TreeNodeProcDef*>(*it);
+        TreeNodeProcDef *procdef = static_cast<TreeNodeProcDef*>(*it);
 
         // Generate code:
-        ICode::Status s = fundef->generateCode(code, st, log);
+        ICode::Status s = procdef->generateCode(code, st, log);
         if (s != ICode::OK) return s;
     }
     return ICode::OK;
