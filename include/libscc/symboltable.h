@@ -48,20 +48,19 @@ class SymbolSymbol: public SymbolWithValue {
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolSymbol(const SecreC::Type &valueType,
-                     const TreeNodeStmtDecl *decl)
-            : SymbolWithValue(Symbol::SYMBOL, valueType), m_decl(decl),
+        SymbolSymbol(const SecreC::Type &valueType, const Imop *declImop)
+            : SymbolWithValue(Symbol::SYMBOL, valueType), m_declImop(declImop),
               m_scopeType(LOCAL) {}
 
-        inline const TreeNodeStmtDecl *decl() const { return m_decl; }
+        inline const Imop *declImop() const { return m_declImop; }
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
         virtual std::string toString() const;
 
     private: /* Fields: */
-        const TreeNodeStmtDecl *m_decl;
-        ScopeType               m_scopeType;
+        const Imop *m_declImop;
+        ScopeType   m_scopeType;
 };
 
 class SymbolTemporary: public SymbolWithValue {

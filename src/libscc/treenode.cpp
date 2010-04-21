@@ -2081,15 +2081,16 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0));
 
-    // Initialize the new symbol (for initializer target)
-    SymbolSymbol *ns = new SymbolSymbol(resultType(), this);
-    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
-    ns->setName(id->value());
-
     // Create a VARINTRO instruction for later analysis:
-    Imop *i = new Imop(this, Imop::VARINTRO, ns);
+    Imop *i = new Imop(this, Imop::VARINTRO);
     code.push_back(i);
     setFirstImop(i);
+
+    // Initialize the new symbol (for initializer target)
+    SymbolSymbol *ns = new SymbolSymbol(resultType(), i);
+    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
+    ns->setName(id->value());
+    i->setDest(ns);
 
     if (children().size() > 2) {
         // Then we generate code for the initializer:
