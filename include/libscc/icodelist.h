@@ -27,7 +27,7 @@ class ICodeList {
             i->setIndex(m_list.size());
         }
         inline Imop *push_comment(const std::string &comment) {
-            Imop *c = new Imop(Imop::COMMENT, 0, (Symbol*) new std::string(comment));
+            Imop *c = new Imop(0, Imop::COMMENT, 0, (Symbol*) new std::string(comment));
             push_back(c);
             return c;
         }

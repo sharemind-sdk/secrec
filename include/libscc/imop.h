@@ -10,6 +10,7 @@ namespace SecreC {
 
 class Symbol;
 class SymbolProcedure;
+class TreeNode;
 
 class Imop {
     public: /* Types: */
@@ -64,15 +65,17 @@ class Imop {
         };
 
     public: /* Methods: */
-        explicit inline Imop(Type type)
-            : m_type(type) {}
-        explicit inline Imop(Type type, Symbol *dest)
-            : m_type(type), m_dest(dest) {}
-        explicit inline Imop(Type type, Symbol *dest, Symbol *arg1)
-            : m_type(type), m_dest(dest), m_arg1(arg1) {}
-        explicit inline Imop(Type type, Symbol *dest, Symbol *arg1,
-                             Symbol *arg2)
-            : m_type(type), m_dest(dest), m_arg1(arg1), m_arg2(arg2) {}
+        explicit inline Imop(TreeNode *creator, Type type)
+            : m_creator(creator), m_type(type) {}
+        explicit inline Imop(TreeNode *creator, Type type, Symbol *dest)
+            : m_creator(creator), m_type(type), m_dest(dest) {}
+        explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
+                             Symbol *arg1)
+            : m_creator(creator), m_type(type), m_dest(dest), m_arg1(arg1) {}
+        explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
+                             Symbol *arg1, Symbol *arg2)
+            : m_creator(creator), m_type(type), m_dest(dest), m_arg1(arg1),
+              m_arg2(arg2) {}
         ~Imop();
 
         inline const std::set<Imop*> &incoming() const { return m_incoming; }
@@ -123,6 +126,7 @@ class Imop {
         std::set<Imop*> m_incomingCalls;
         std::set<Imop*> m_returns;
 
+        TreeNode     *m_creator;
         const Type    m_type;
         const Symbol *m_dest;
         const Symbol *m_arg1;

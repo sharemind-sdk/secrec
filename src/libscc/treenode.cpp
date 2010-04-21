@@ -597,7 +597,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         setFirstImop(e2->firstImop());
 
         if (r != 0) {
-            Imop *i = new Imop(Imop::ASSIGN, r, destSymSym);
+            Imop *i = new Imop(this, Imop::ASSIGN, r, destSymSym);
             code.push_back(i);
             patchFirstImop(i);
             e2->patchNextList(i);
@@ -623,13 +623,13 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                 assert(false); // shouldn't happen
         }
 
-        Imop *i = new Imop(iType, destSymSym, destSymSym, e2->result());
+        Imop *i = new Imop(this, iType, destSymSym, destSymSym, e2->result());
         code.push_back(i);
         patchFirstImop(i);
         e2->patchNextList(i);
 
         if (r != 0) {
-            i = new Imop(Imop::ASSIGN, r, destSymSym);
+            i = new Imop(this, Imop::ASSIGN, r, destSymSym);
             code.push_back(i);
             setResult(r);
         } else {
@@ -656,12 +656,12 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
     s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
-    Imop *i = new Imop(Imop::JT, 0, result());
+    Imop *i = new Imop(this, Imop::JT, 0, result());
     code.push_back(i);
     patchFirstImop(i);
     addToTrueList(i);
 
-    i = new Imop(Imop::JUMP, 0);
+    i = new Imop(this, Imop::JUMP, 0);
     code.push_back(i);
     addToFalseList(i);
 
@@ -816,19 +816,19 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     // Generate code for binary expression:
     Imop *i;
     switch (type()) {
-        case NODE_EXPR_BINARY_ADD:  i = new Imop(Imop::ADD);  break;
-        case NODE_EXPR_BINARY_SUB:  i = new Imop(Imop::SUB);  break;
-        case NODE_EXPR_BINARY_MUL:  i = new Imop(Imop::MUL);  break;
-        case NODE_EXPR_BINARY_DIV:  i = new Imop(Imop::DIV);  break;
-        case NODE_EXPR_BINARY_MOD:  i = new Imop(Imop::MOD);  break;
-        case NODE_EXPR_BINARY_EQ:   i = new Imop(Imop::EQ);   break;
-        case NODE_EXPR_BINARY_GE:   i = new Imop(Imop::GE);   break;
-        case NODE_EXPR_BINARY_GT:   i = new Imop(Imop::GT);   break;
-        case NODE_EXPR_BINARY_LE:   i = new Imop(Imop::LE);   break;
-        case NODE_EXPR_BINARY_LT:   i = new Imop(Imop::LT);   break;
-        case NODE_EXPR_BINARY_NE:   i = new Imop(Imop::NE);   break;
-        case NODE_EXPR_BINARY_LAND: i = new Imop(Imop::LAND); break;
-        case NODE_EXPR_BINARY_LOR:  i = new Imop(Imop::LOR);  break;
+        case NODE_EXPR_BINARY_ADD:  i = new Imop(this, Imop::ADD);  break;
+        case NODE_EXPR_BINARY_SUB:  i = new Imop(this, Imop::SUB);  break;
+        case NODE_EXPR_BINARY_MUL:  i = new Imop(this, Imop::MUL);  break;
+        case NODE_EXPR_BINARY_DIV:  i = new Imop(this, Imop::DIV);  break;
+        case NODE_EXPR_BINARY_MOD:  i = new Imop(this, Imop::MOD);  break;
+        case NODE_EXPR_BINARY_EQ:   i = new Imop(this, Imop::EQ);   break;
+        case NODE_EXPR_BINARY_GE:   i = new Imop(this, Imop::GE);   break;
+        case NODE_EXPR_BINARY_GT:   i = new Imop(this, Imop::GT);   break;
+        case NODE_EXPR_BINARY_LE:   i = new Imop(this, Imop::LE);   break;
+        case NODE_EXPR_BINARY_LT:   i = new Imop(this, Imop::LT);   break;
+        case NODE_EXPR_BINARY_NE:   i = new Imop(this, Imop::NE);   break;
+        case NODE_EXPR_BINARY_LAND: i = new Imop(this, Imop::LAND); break;
+        case NODE_EXPR_BINARY_LOR:  i = new Imop(this, Imop::LOR);  break;
         default:
             log.fatal() << "Binary " << operatorString()
                         << " not yet implemented. At " << location();
@@ -920,12 +920,12 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     e2->patchNextList(tj);
 
     switch (type()) {
-        case NODE_EXPR_BINARY_EQ: tj = new Imop(Imop::JE,  0); break;
-        case NODE_EXPR_BINARY_GE: tj = new Imop(Imop::JGE, 0); break;
-        case NODE_EXPR_BINARY_GT: tj = new Imop(Imop::JGT, 0); break;
-        case NODE_EXPR_BINARY_LE: tj = new Imop(Imop::JLE, 0); break;
-        case NODE_EXPR_BINARY_LT: tj = new Imop(Imop::JLT, 0); break;
-        case NODE_EXPR_BINARY_NE: tj = new Imop(Imop::JNE, 0); break;
+        case NODE_EXPR_BINARY_EQ: tj = new Imop(this, Imop::JE,  0); break;
+        case NODE_EXPR_BINARY_GE: tj = new Imop(this, Imop::JGE, 0); break;
+        case NODE_EXPR_BINARY_GT: tj = new Imop(this, Imop::JGT, 0); break;
+        case NODE_EXPR_BINARY_LE: tj = new Imop(this, Imop::JLE, 0); break;
+        case NODE_EXPR_BINARY_LT: tj = new Imop(this, Imop::JLT, 0); break;
+        case NODE_EXPR_BINARY_NE: tj = new Imop(this, Imop::JNE, 0); break;
         default:
             assert(false); // Shouldn't happen.
     }
@@ -936,7 +936,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     code.push_back(tj);
     patchFirstImop(tj);
 
-    Imop *fj = new Imop(Imop::JUMP, 0);
+    Imop *fj = new Imop(this, Imop::JUMP, 0);
     addToFalseList(fj);
     code.push_back(fj);
     return ICode::OK;
@@ -975,7 +975,7 @@ ICode::Status TreeNodeExprBool::generateCode(ICodeList &code,
 
     SymbolConstantBool *sym = st.constantBool(m_value);
     if (r != 0) {
-        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         code.push_back(i);
         setFirstImop(i);
     } else {
@@ -992,7 +992,7 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    Imop *i = new Imop(Imop::JUMP, 0);
+    Imop *i = new Imop(this, Imop::JUMP, 0);
     setFirstImop(i);
     if (m_value) {
         addToTrueList(i);
@@ -1149,7 +1149,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
 
     // Add them as arguments in a backward manner:
     while (!resultList.empty()) {
-        Imop *i = new Imop(Imop::PUTPARAM);
+        Imop *i = new Imop(this, Imop::PUTPARAM);
         i->setArg1(resultList.top());
         code.push_back(i);
 
@@ -1164,8 +1164,8 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
     }
 
     // Do function call
-    Imop *i = new Imop(Imop::CALL);
-    Imop *c = new Imop(Imop::RETCLEAN);
+    Imop *i = new Imop(this, Imop::CALL);
+    Imop *c = new Imop(this, Imop::RETCLEAN);
     if (r == 0) {
         // Generate temporary for the result of the unary expression
         SymbolTemporary *t = st.appendTemporary(resultType());
@@ -1193,11 +1193,11 @@ ICode::Status TreeNodeExprProcCall::generateBoolCode(ICodeList &code,
     s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
-    Imop *i = new Imop(Imop::JT, 0, result());
+    Imop *i = new Imop(this, Imop::JT, 0, result());
     code.push_back(i);
     addToTrueList(i);
 
-    i = new Imop(Imop::JUMP, 0);
+    i = new Imop(this, Imop::JUMP, 0);
     code.push_back(i);
     addToFalseList(i);
 
@@ -1243,7 +1243,7 @@ ICode::Status TreeNodeExprInt::generateCode(ICodeList &code,
 
     SymbolConstantInt *sym = st.constantInt(m_value);
     if (r != 0) {
-        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         setFirstImop(i);
         code.push_back(i);
     } else {
@@ -1308,7 +1308,7 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
 
-        Imop *i = new Imop(Imop::ASSIGN, r, id->getSymbol(st, log));
+        Imop *i = new Imop(this, Imop::ASSIGN, r, id->getSymbol(st, log));
         code.push_back(i);
         setFirstImop(i);
     }
@@ -1327,12 +1327,12 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICodeList &code,
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
 
-    Imop *i = new Imop(Imop::JT, 0, id->getSymbol(st, log));
+    Imop *i = new Imop(this, Imop::JT, 0, id->getSymbol(st, log));
     code.push_back(i);
     setFirstImop(i);
     addToTrueList(i);
 
-    i = new Imop(Imop::JUMP, 0);
+    i = new Imop(this, Imop::JUMP, 0);
     code.push_back(i);
     addToFalseList(i);
 
@@ -1377,7 +1377,7 @@ ICode::Status TreeNodeExprString::generateCode(ICodeList &code,
 
     SymbolConstantString *sym = st.constantString(m_value);
     if (r != 0) {
-        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         setFirstImop(i);
         code.push_back(i);
     } else {
@@ -1479,7 +1479,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
     if (s != ICode::OK) return s;
 
     // Jump out of the ternary construct:
-    Imop *j = new Imop(Imop::JUMP, 0);
+    Imop *j = new Imop(this, Imop::JUMP, 0);
     addToNextList(j);
     code.push_back(j);
 
@@ -1575,7 +1575,7 @@ ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code,
 
     SymbolConstantUInt *sym = st.constantUInt(m_value);
     if (r != 0) {
-        Imop *i = new Imop(Imop::ASSIGN, r, sym);
+        Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         setFirstImop(i);
         code.push_back(i);
     } else {
@@ -1668,7 +1668,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code,
 
     // Generate code for unary expression:
     /// \todo implement for matrixes also
-    Imop *i = new Imop(type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS);
+    Imop *i = new Imop(this, type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS);
     i->setDest(result());
     i->setArg1(static_cast<const TreeNodeExpr*>(e)->result());
     code.push_back(i);
@@ -1822,7 +1822,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
                 return ICode::E_OTHER;
             }
             assert(fType.kind() == TypeNonVoid::PROCEDUREVOID);
-            Imop *i = new Imop(Imop::RETURNVOID);
+            Imop *i = new Imop(this, Imop::RETURNVOID);
             i->setReturnDestFirstImop(firstImop());
             body->patchNextList(i);
             code.push_back(i);
@@ -1989,11 +1989,11 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code,
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = new Imop(Imop::CALL, 0, 0, 0);
-    Imop *retClean = new Imop(Imop::RETCLEAN);
+    Imop *mainCall = new Imop(this, Imop::CALL, 0, 0, 0);
+    Imop *retClean = new Imop(this, Imop::RETCLEAN);
     code.push_back(mainCall);
     code.push_back(retClean);
-    code.push_back(new Imop(Imop::END));
+    code.push_back(new Imop(this, Imop::END));
 
     // Handle functions:
     ICode::Status s = ps->generateCode(code, st, log);
@@ -2038,7 +2038,7 @@ ICode::Status TreeNodeStmtBreak::generateCode(ICodeList &code,
                                               SymbolTable &,
                                               CompileLog &)
 {
-    Imop *i = new Imop(Imop::JUMP, 0);
+    Imop *i = new Imop(this, Imop::JUMP, 0);
     code.push_back(i);
     setFirstImop(i);
     addToBreakList(i);
@@ -2056,7 +2056,7 @@ ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code,
                                                  SymbolTable &,
                                                  CompileLog &)
 {
-    Imop *i = new Imop(Imop::JUMP, 0);
+    Imop *i = new Imop(this, Imop::JUMP, 0);
     code.push_back(i);
     setFirstImop(i);
     addToContinueList(i);
@@ -2087,7 +2087,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
     ns->setName(id->value());
 
     // Create a VARINTRO instruction for later analysis:
-    Imop *i = new Imop(Imop::VARINTRO, ns);
+    Imop *i = new Imop(this, Imop::VARINTRO, ns);
     code.push_back(i);
     setFirstImop(i);
 
@@ -2294,7 +2294,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
     setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
 
     // Next iteration jump:
-    Imop *j = new Imop(Imop::JUMP, 0);
+    Imop *j = new Imop(this, Imop::JUMP, 0);
     if (e1 != 0) {
         j->setJumpDest(e2->firstImop());
     } else {
@@ -2371,7 +2371,7 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code,
         setResultFlags(s1->resultFlags() | TreeNodeStmt::FALLTHRU);
     } else {
         // Generate jump out of first branch:
-        Imop *i = new Imop(Imop::JUMP, 0);
+        Imop *i = new Imop(this, Imop::JUMP, 0);
         code.push_back(i);
         addToNextList(i);
 
@@ -2410,7 +2410,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
         }
         assert(containingProcedure()->procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
 
-        Imop *i = new Imop(Imop::RETURNVOID);
+        Imop *i = new Imop(this, Imop::RETURNVOID);
         i->setReturnDestFirstImop(containingProcedure()->firstImop());
         code.push_back(i);
         setFirstImop(i);
@@ -2440,7 +2440,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code,
         if (s != ICode::OK) return s;
         setFirstImop(e->firstImop());
 
-        Imop *i = new Imop(Imop::RETURN);
+        Imop *i = new Imop(this, Imop::RETURN);
         i->setArg1(e->result());
         i->setReturnDestFirstImop(containingProcedure()->firstImop());
         code.push_back(i);
@@ -2492,7 +2492,7 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code,
     }
     setResultFlags((body->resultFlags() & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE)) | TreeNodeStmt::FALLTHRU);
 
-    Imop *i = new Imop(Imop::JUMP);
+    Imop *i = new Imop(this, Imop::JUMP);
     code.push_back(i);
     i->setJumpDest(e->firstImop());
 
