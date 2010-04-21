@@ -35,6 +35,11 @@ inline void linkBlocks(SecreC::Block &from, SecreC::Block &to) {
     to.predecessors.insert(&from);
 }
 
+inline void linkBlocksCond(SecreC::Block &from, SecreC::Block &to) {
+    from.successorsCond.insert(&to);
+    to.predecessorsCond.insert(&from);
+}
+
 inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
     from.successorsCall.insert(&to);
     to.predecessorsCall.insert(&from);
@@ -133,6 +138,9 @@ Blocks::Status Blocks::init(const ICodeList &code) {
         for (BSCI it(b->successors.begin()); it != b->successors.end(); it++) {
             if (!(*it)->reachable) bs.push(*it);
         }
+        for (BSCI it(b->successorsCond.begin()); it != b->successorsCond.end(); it++) {
+            if (!(*it)->reachable) bs.push(*it);
+        }
         for (BSCI it(b->successorsCall.begin()); it != b->successorsCall.end(); it++) {
             if (!(*it)->reachable) bs.push(*it);
         }
@@ -165,9 +173,11 @@ std::string Blocks::toString() const {
         }
         os << std::endl;
         printBlockList(os, "  ..... From: ", (*it)->predecessors);
+        printBlockList(os, "  .... From?: ", (*it)->predecessorsCond);
         printBlockList(os, "  . FromCall: ", (*it)->predecessorsCall);
         printBlockList(os, "  .. FromRet: ", (*it)->predecessorsRet);
         printBlockList(os, "  ....... To: ", (*it)->successors);
+        printBlockList(os, "  ...... To?: ", (*it)->successorsCond);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
         // os << "    Code:" << std::endl;
@@ -200,7 +210,11 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
             IAB::const_iterator itJumpFrom = jumpFrom.find(*it);
             if (itJumpFrom != jumpFrom.end()) {
                 // Jump source is already assigned to block, lets link:
-                linkBlocks(*(*itJumpFrom).second, b);
+                if ((*it)->type() == Imop::JUMP) {
+                    linkBlocks(*(*itJumpFrom).second, b);
+                } else {
+                    linkBlocksCond(*(*itJumpFrom).second, b);
+                }
                 // And remove the jump from the jump sources:
                 jumpFrom.erase(*it);
             } else {
@@ -298,20 +312,17 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                 IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest());
                 if (itTo != jumpTo.end()) {
                     // Jump destination is already assigned to block, lets link:
-                    linkBlocks(b, *(*itTo).second);
+                    if ((*b.end)->type() == Imop::JUMP) {
+                        linkBlocks(b, *(*itTo).second);
+                    } else {
+                        linkBlocksCond(b, *(*itTo).second);
+                    }
                 } else {
                     // Destination not assigned to block, lets assign the source:
                     jumpFrom[*b.end] = &b;
                 }
             } else if ((*b.end)->type() == Imop::CALL) {
                 assert((*(b.end + 1))->type() == Imop::RETCLEAN);
-                /*IAB::const_iterator itTo = jumpTo.find(*b.end);
-                if (itTo != jumpTo.end()) {
-                    linkBlocks(b, *(*itTo).second);
-                    // to.erase((*itTo).first);
-                } else {
-                    jumpFrom[*b.end] = &b;
-                }*/
 
                 // Check whether the call destination is already assigned to a block:
                 IAB::const_iterator itToCall = callTo.find((*b.end)->callDest());
