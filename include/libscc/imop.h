@@ -8,6 +8,7 @@
 
 namespace SecreC {
 
+class Block;
 class Symbol;
 class SymbolProcedure;
 class TreeNode;
@@ -107,6 +108,8 @@ class Imop {
         inline void setArg1(const Symbol *arg1) { m_arg1 = arg1; }
         inline const Symbol *arg2() const { return m_arg2; }
         inline void setArg2(const Symbol *arg2) { m_arg2 = arg2; }
+        inline const Block *block() const { return m_block; }
+        inline void setBlock(const Block *block) { m_block = block; }
 
         inline unsigned long index() const { return m_index; }
         inline void setIndex(unsigned long index) { m_index = index; }
@@ -131,6 +134,7 @@ class Imop {
         const Symbol *m_dest;
         const Symbol *m_arg1;
         const Symbol *m_arg2;
+        const Block  *m_block;
         unsigned long m_index;
 };
 

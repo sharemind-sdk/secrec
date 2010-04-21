@@ -284,6 +284,8 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                || ((*b.end)->incoming().empty()
                    && (*b.end)->incomingCalls().empty()));
 
+        (*b.start)->setBlock(&b);
+
         // If *b.end is a jump instruction, *(b.end + 1) must be a leader:
         if (((*b.end)->type() & SecreC::Imop::JUMP_MASK) != 0
             || (*b.end)->type() == SecreC::Imop::CALL
