@@ -1778,7 +1778,9 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code,
         for (CLCI it(children().begin() + 3); it != children().end(); it++) {
             assert((*it)->type() == NODE_DECL);
             assert(dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
-            ICode::Status s = static_cast<TreeNodeStmtDecl*>(*it)->generateCode(code, localScope, log);
+            TreeNodeStmtDecl *paramDecl = static_cast<TreeNodeStmtDecl*>(*it);
+            paramDecl->setProcParam(true);
+            ICode::Status s = paramDecl->generateCode(code, localScope, log);
             if (s != ICode::OK) return s;
         }
     }
@@ -2085,8 +2087,8 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code,
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0));
 
-    // Create a VARINTRO instruction for later analysis:
-    Imop *i = new Imop(this, Imop::VARINTRO);
+    // Create a VARINTRO/PARAMINTRO instruction for later analysis:
+    Imop *i = new Imop(this, m_procParam ? Imop::PARAMINTRO : Imop::VARINTRO);
     code.push_back(i);
     setFirstImop(i);
 

@@ -775,7 +775,8 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
 class TreeNodeStmtDecl: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false) {}
+            : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false),
+              m_procParam(false) {}
         virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
         virtual ICode::Status generateCode(ICodeList &code,
@@ -786,10 +787,13 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
 
         inline bool global() const { return m_global; }
         inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
+        inline bool procParam() const { return m_procParam; }
+        inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
 
     private: /* Fields: */
         mutable SecreC::TypeNonVoid *m_type;
         bool m_global;
+        bool m_procParam;
 };
 
 
