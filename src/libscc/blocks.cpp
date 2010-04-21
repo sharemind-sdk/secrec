@@ -113,7 +113,12 @@ Blocks::Status Blocks::init(const ICodeList &code) {
         m_blocks.push_back(b);
 
         if (fallsThru(*old)) {
-            linkBlocks(*old, *b);
+            if (((*(old->end - 1))->type() & Imop::JUMP_MASK) == 0x0
+                || (*(old->end - 1))->type() == Imop::JUMP) {
+                linkBlocks(*old, *b);
+            } else {
+                linkBlocksCond(*old, *b);
+            }
         }
     }
 
