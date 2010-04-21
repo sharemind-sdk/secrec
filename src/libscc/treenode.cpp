@@ -353,10 +353,14 @@ extern "C" struct TreeNode *treenode_init_dataTypeF(
 }
 
 extern "C" struct TreeNode *treenode_init_dataTypeArray(
+        struct TreeNode *itemType,
         unsigned value,
         YYLTYPE *loc)
 {
-    return (TreeNode*) new SecreC::TreeNodeDataTypeArray(value, *loc);
+    typedef SecreC::TreeNodeDataTypeArray ATN;
+    ATN *t = new ATN(value, *loc);
+    t->appendChild((SecreC::TreeNode*) itemType);
+    return (TreeNode*) t;
 }
 
 namespace SecreC {

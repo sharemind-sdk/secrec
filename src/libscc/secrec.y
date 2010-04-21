@@ -269,8 +269,7 @@ datatype_fund_specifier
 datatype_specifier
  : datatype_specifier '[' ']'
    {
-     $$ = (struct TreeNode*) treenode_init_dataTypeArray(0, &@$);
-     treenode_appendChild($$, $1);
+     $$ = (struct TreeNode*) treenode_init_dataTypeArray($1, 0, &@$);
    }
  | datatype_fund_specifier
  ;

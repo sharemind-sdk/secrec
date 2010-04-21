@@ -88,7 +88,8 @@ struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
                                         YYLTYPE *loc);
 struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
                                          YYLTYPE *loc);
-struct TreeNode *treenode_init_dataTypeArray(unsigned value, YYLTYPE *loc);
+struct TreeNode *treenode_init_dataTypeArray(struct TreeNode *itemType,
+                                             unsigned value, YYLTYPE *loc);
 
 #ifdef __cplusplus
 } /* extern "C" */
