@@ -35,9 +35,14 @@ inline void linkBlocks(SecreC::Block &from, SecreC::Block &to) {
     to.predecessors.insert(&from);
 }
 
-inline void linkBlocksCond(SecreC::Block &from, SecreC::Block &to) {
-    from.successorsCond.insert(&to);
-    to.predecessorsCond.insert(&from);
+inline void linkBlocksCondFalse(SecreC::Block &from, SecreC::Block &to) {
+    from.successorsCondFalse.insert(&to);
+    to.predecessorsCondFalse.insert(&from);
+}
+
+inline void linkBlocksCondTrue(SecreC::Block &from, SecreC::Block &to) {
+    from.successorsCondTrue.insert(&to);
+    to.predecessorsCondTrue.insert(&from);
 }
 
 inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
@@ -117,7 +122,7 @@ Blocks::Status Blocks::init(const ICodeList &code) {
                 || (*(old->end - 1))->type() == Imop::JUMP) {
                 linkBlocks(*old, *b);
             } else {
-                linkBlocksCond(*old, *b);
+                linkBlocksCondFalse(*old, *b);
             }
         }
     }
@@ -143,7 +148,10 @@ Blocks::Status Blocks::init(const ICodeList &code) {
         for (BSCI it(b->successors.begin()); it != b->successors.end(); it++) {
             if (!(*it)->reachable) bs.push(*it);
         }
-        for (BSCI it(b->successorsCond.begin()); it != b->successorsCond.end(); it++) {
+        for (BSCI it(b->successorsCondFalse.begin()); it != b->successorsCondFalse.end(); it++) {
+            if (!(*it)->reachable) bs.push(*it);
+        }
+        for (BSCI it(b->successorsCondTrue.begin()); it != b->successorsCondTrue.end(); it++) {
             if (!(*it)->reachable) bs.push(*it);
         }
         for (BSCI it(b->successorsCall.begin()); it != b->successorsCall.end(); it++) {
@@ -178,11 +186,13 @@ std::string Blocks::toString() const {
         }
         os << std::endl;
         printBlockList(os, "  ..... From: ", (*it)->predecessors);
-        printBlockList(os, "  .... From?: ", (*it)->predecessorsCond);
+        printBlockList(os, "  ... From?-: ", (*it)->predecessorsCondFalse);
+        printBlockList(os, "  ... From?+: ", (*it)->predecessorsCondTrue);
         printBlockList(os, "  . FromCall: ", (*it)->predecessorsCall);
         printBlockList(os, "  .. FromRet: ", (*it)->predecessorsRet);
         printBlockList(os, "  ....... To: ", (*it)->successors);
-        printBlockList(os, "  ...... To?: ", (*it)->successorsCond);
+        printBlockList(os, "  ..... To?-: ", (*it)->successorsCondFalse);
+        printBlockList(os, "  ..... To?+: ", (*it)->successorsCondTrue);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
         // os << "    Code:" << std::endl;
@@ -218,7 +228,7 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                 if ((*it)->type() == Imop::JUMP) {
                     linkBlocks(*(*itJumpFrom).second, b);
                 } else {
-                    linkBlocksCond(*(*itJumpFrom).second, b);
+                    linkBlocksCondTrue(*(*itJumpFrom).second, b);
                 }
                 // And remove the jump from the jump sources:
                 jumpFrom.erase(*it);
@@ -320,7 +330,7 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                     if ((*b.end)->type() == Imop::JUMP) {
                         linkBlocks(b, *(*itTo).second);
                     } else {
-                        linkBlocksCond(b, *(*itTo).second);
+                        linkBlocksCondTrue(b, *(*itTo).second);
                     }
                 } else {
                     // Destination not assigned to block, lets assign the source:

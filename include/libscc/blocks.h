@@ -56,11 +56,13 @@ struct Block {
     Blocks::CCI start;
     Blocks::CCI end;
     std::set<Block*> predecessors;
-    std::set<Block*> predecessorsCond;
+    std::set<Block*> predecessorsCondFalse;
+    std::set<Block*> predecessorsCondTrue;
     std::set<Block*> predecessorsCall;
     std::set<Block*> predecessorsRet;
     std::set<Block*> successors;
-    std::set<Block*> successorsCond;
+    std::set<Block*> successorsCondFalse;
+    std::set<Block*> successorsCondTrue;
     std::set<Block*> successorsCall;
     std::set<Block*> successorsRet;
     unsigned long index;
