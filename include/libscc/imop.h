@@ -16,44 +16,37 @@ class TreeNode;
 class Imop {
     public: /* Types: */
         enum Type {
-            COMMENT    = 0x0,   /* // arg1                            */
-            VARINTRO   = 0x1,   /* d;          (variable declaration) */
-            PARAMINTRO = 0x2,   /* d;         (parameter declaration) */
-            ASSIGN     = 0x3,   /*   d = arg1;                        */
-            CAST       = 0x4,   /*   d = (arg1) arg2;                 */
-            WILDCARD   = 0x5,   /*   d = arg1[*];                     */
-            SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
-            UNEG       = 0x7,   /*   d = !arg1;                       */
-            UMINUS     = 0x8,   /*   d = -arg1;                       */
-            MATRIXMUL  = 0x9,   /*   d = arg1 #  arg2;                */
-            MUL        = 0xa,   /*   d = arg1 *  arg2;                */
-            DIV        = 0xb,   /*   d = arg1 /  arg2;                */
-            MOD        = 0xc,   /*   d = arg1 %  arg2;                */
-            ADD        = 0xd,   /*   d = arg1 +  arg2;                */
-            SUB        = 0xe,   /*   d = arg1 -  arg2;                */
-            EQ         = 0xf,   /*   d = arg1 == arg2;                */
-            NE         = 0x10,  /*   d = arg1 != arg2;                */
-            LE         = 0x11,  /*   d = arg1 <= arg2;                */
-            LT         = 0x12,  /*   d = arg1 <  arg2;                */
-            GE         = 0x13,  /*   d = arg1 >= arg2;                */
-            GT         = 0x14,  /*   d = arg1 >  arg2;                */
-            LAND       = 0x15,  /*   d = arg1 && arg2;                */
-            LOR        = 0x16,  /*   d = arg1 || arg2;                */
+            //-------------
+            // Expressions:
+            //-------------
+            ASSIGN     = 0x1,   /*   d = arg1;                        */
+            CAST       = 0x2,   /*   d = (arg1) arg2;                 */
+            WILDCARD   = 0x3,   /*   d = arg1[*];                     */
+            SUBSCRIPT  = 0x4,   /*   d = arg1[arg2];                  */
+            UNEG       = 0x5,   /*   d = !arg1;                       */
+            UMINUS     = 0x6,   /*   d = -arg1;                       */
+            MATRIXMUL  = 0x7,   /*   d = arg1 #  arg2;                */
+            MUL        = 0x8,   /*   d = arg1 *  arg2;                */
+            DIV        = 0x9,   /*   d = arg1 /  arg2;                */
+            MOD        = 0xa,   /*   d = arg1 %  arg2;                */
+            ADD        = 0xb,   /*   d = arg1 +  arg2;                */
+            SUB        = 0xc,   /*   d = arg1 -  arg2;                */
+            EQ         = 0xd,   /*   d = arg1 == arg2;                */
+            NE         = 0xe,   /*   d = arg1 != arg2;                */
+            LE         = 0xf,   /*   d = arg1 <= arg2;                */
+            LT         = 0x10,  /*   d = arg1 <  arg2;                */
+            GE         = 0x11,  /*   d = arg1 >= arg2;                */
+            GT         = 0x12,  /*   d = arg1 >  arg2;                */
+            LAND       = 0x13,  /*   d = arg1 && arg2;                */
+            LOR        = 0x14,  /*   d = arg1 || arg2;                */
 
-            PUTPARAM   = 0x17,  /* PUTPARAM arg1;                     */
-            /* For CALL, arg2 is the corresponding RETCLEAN instruction. */
-            CALL       = 0x18,  /*   d = arg1(PARAMS);   (Imop *arg2) */
-            /* For RETCLEAN, arg2 is the corresponding CALL instruction. */
-            RETCLEAN   = 0x19,  /* RETCLEAN;             (Imop *arg2) */
+            /* For CALL, arg2 is the corresponding RETCLEAN instruction: */
+            CALL       = 0x15,  /*   d = arg1(PARAMS);   (Imop *arg2) */
+                EXPR_MASK = 0xff,
 
-            /*
-              For RETURN and RETURNVOID, arg2 is the first Imop of the procedure
-              to return from.
-            */
-            RETURNVOID = 0x1a,  /* RETURN;               (Imop *arg2) */
-            RETURN     = 0x1b,  /* RETURN arg1;          (Imop *arg2) */
-            END        = 0x1c,  /* END PROGRAM                        */
-
+            //-------
+            // Jumps:
+            //-------
             JUMP       = 0x100, /* GOTO d;                            */
             JT         = 0x200, /* if (arg1) GOTO d;                  */
             JF         = 0x300, /* if (!arg1) GOTO d;                 */
@@ -63,7 +56,26 @@ class Imop {
             JLT        = 0x700, /* if (arg1 <  arg2) GOTO d;          */
             JGE        = 0x800, /* if (arg1 >= arg2) GOTO d;          */
             JGT        = 0x900, /* if (arg1 >  arg2) GOTO d;          */
-                JUMP_MASK  = 0xf00
+                JUMP_MASK  = 0xf00,
+
+            //--------------------
+            // Misc. instructions:
+            //--------------------
+            COMMENT    = 0x1000,  /* // arg1                            */
+            VARINTRO   = 0x2000,  /* d;          (variable declaration) */
+            PARAMINTRO = 0x3000,  /* d;         (parameter declaration) */
+            PUTPARAM   = 0x4000,  /* PUTPARAM arg1;                     */
+
+            /* For RETCLEAN, arg2 is the corresponding CALL instruction: */
+            RETCLEAN   = 0x5000,  /* RETCLEAN;             (Imop *arg2) */
+
+            /*
+              For RETURN and RETURNVOID, arg2 is the first Imop of the procedure
+              to return from.
+            */
+            RETURNVOID = 0x6000,  /* RETURN;               (Imop *arg2) */
+            RETURN     = 0x7000,  /* RETURN arg1;          (Imop *arg2) */
+            END        = 0x8000   /* END PROGRAM                        */
         };
 
     public: /* Methods: */
