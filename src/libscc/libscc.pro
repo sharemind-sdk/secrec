@@ -10,6 +10,7 @@ SOURCES = \
     imop.cpp \
     intermediate.cpp \
     misc.cpp \
+    reachingdefinitions.cpp \
     symboltable.cpp \
     treenode.cpp \
     types.cpp
@@ -26,6 +27,7 @@ HEADERS = \
     ../../include/libscc/log.h \
     ../../include/libscc/misc.h \
     ../../include/libscc/parser.h \
+    ../../include/libscc/reachingdefinitions.h \
     ../../include/libscc/sccobject.h \
     ../../include/libscc/sccpointer.h \
     ../../include/libscc/symboltable.h \
