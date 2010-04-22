@@ -7,33 +7,31 @@
 
 namespace SecreC {
 
-class ICodeList {
+class ICodeList: private std::vector<Imop*> {
     public: /* Types: */
-        typedef std::vector<Imop*> List;
-        typedef List::const_iterator const_iterator;
-        typedef List::iterator iterator;
+        typedef std::vector<Imop*>::const_iterator const_iterator;
+        typedef std::vector<Imop*>::const_reference const_reference;
 
     public: /* Methods: */
         ~ICodeList();
 
-        void resetIndexes() const;
+        inline const_iterator begin() const { return std::vector<Imop*>::begin(); }
+        inline const_iterator end() const { return std::vector<Imop*>::end(); }
+        inline const_reference operator[] (size_type n) const { return std::vector<Imop*>::operator[](n); }
+        inline size_t size() const { return std::vector<Imop*>::size(); }
 
-        inline const_iterator begin() const { return m_list.begin(); }
-        inline iterator begin() { return m_list.begin(); }
-        inline const_iterator end() const { return m_list.end(); }
-        inline iterator end() { return m_list.end(); }
-        inline void push_back(Imop *i) {
-            m_list.push_back(i);
-            i->setIndex(m_list.size());
+        inline void push_imop(Imop *i) {
+            std::vector<Imop*>::push_back(i);
+            i->setIndex(size());
         }
+
         inline Imop *push_comment(const std::string &comment) {
             Imop *c = new Imop(0, Imop::COMMENT, 0, (Symbol*) new std::string(comment));
-            push_back(c);
+            std::vector<Imop*>::push_back(c);
             return c;
         }
 
-    private: /* Fields: */
-        List m_list;
+        void resetIndexes() const;
 };
 
 } // namespace SecreC
