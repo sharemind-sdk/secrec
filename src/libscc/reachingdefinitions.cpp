@@ -37,7 +37,6 @@ ReachingDefinitions::ReachingDefinitions(const ICode &code)
 
 void ReachingDefinitions::run() {
     typedef std::set<Block*>::const_iterator BSCI;
-
     bool changed;
 
     const std::vector<Block*> &bs = m_code.blocks().blocks();
@@ -54,6 +53,16 @@ void ReachingDefinitions::run() {
             // Recalculate input set:
             m_ins[b].clear();
             for (BSCI it = b->predecessors.begin(); it != b->predecessors.end(); it++) {
+                for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
+                    m_ins[b][(*jt).first] += (*jt).second;
+                }
+            }
+            for (BSCI it = b->predecessorsCondFalse.begin(); it != b->predecessorsCondFalse.end(); it++) {
+                for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
+                    m_ins[b][(*jt).first] += (*jt).second;
+                }
+            }
+            for (BSCI it = b->predecessorsCondTrue.begin(); it != b->predecessorsCondTrue.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
                     m_ins[b][(*jt).first] += (*jt).second;
                 }
@@ -96,16 +105,18 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &r
     for (size_t i = 1; i < bs.size(); i++) {
         const SecreC::Block *b = bs[i];
         if (!b->reachable) continue;
-        out << "  " << b->index << ":" << std::endl;
         const SecreC::ReachingDefinitions::SDefs &sd = rd.getReaching(*b);
-        for (SDCI it = sd.begin(); it != sd.end(); it++) {
-            out << "    " << (*it).first << ": ";
-            const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
-            for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
-                if (jt != ds.begin()) out << ", ";
-                out << (*jt)->index();
+        if (!sd.empty()) {
+            out << "  " << b->index << ":" << std::endl;
+            for (SDCI it = sd.begin(); it != sd.end(); it++) {
+                out << "    " << *(*it).first << ": ";
+                const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
+                for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
+                    if (jt != ds.begin()) out << ", ";
+                    out << (*jt)->index();
+                }
+                out << std::endl;
             }
-            out << std::endl;
         }
     }
 
