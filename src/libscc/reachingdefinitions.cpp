@@ -85,3 +85,29 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
 }
 
 } // namespace SecreC
+
+std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &rd) {
+    typedef SecreC::ReachingDefinitions::SDefs::const_iterator SDCI;
+    typedef SecreC::ReachingDefinitions::Defs::const_iterator DCI;
+
+    out << "Reaching definitions result: " << std::endl;
+
+    const std::vector<SecreC::Block*> &bs = rd.icode().blocks().blocks();
+    for (size_t i = 1; i < bs.size(); i++) {
+        const SecreC::Block *b = bs[i];
+        if (!b->reachable) continue;
+        out << "  " << b->index << ":" << std::endl;
+        const SecreC::ReachingDefinitions::SDefs &sd = rd.getReaching(*b);
+        for (SDCI it = sd.begin(); it != sd.end(); it++) {
+            out << "    " << (*it).first << ": ";
+            const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
+            for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
+                if (jt != ds.begin()) out << ", ";
+                out << (*jt)->index();
+            }
+            out << std::endl;
+        }
+    }
+
+    return out;
+}

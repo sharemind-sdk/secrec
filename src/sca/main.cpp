@@ -1,9 +1,10 @@
 #include <cassert>
 #include <iostream>
-#include <libscc/parser.h>
-#include <libscc/treenode.h>
 #include <libscc/blocks.h>
 #include <libscc/intermediate.h>
+#include <libscc/parser.h>
+#include <libscc/reachingdefinitions.h>
+#include <libscc/treenode.h>
 
 using namespace std;
 
@@ -39,6 +40,10 @@ int main(int argc, char *argv[]) {
         icode.init(parseTree);
         if (icode.status() == SecreC::ICode::OK) {
             cout << icode.blocks();
+
+            SecreC::ReachingDefinitions rd(icode);
+            rd.run();
+            cout << rd;
         } else {
             cout << "Error generating valid intermediate code." << endl;
         }

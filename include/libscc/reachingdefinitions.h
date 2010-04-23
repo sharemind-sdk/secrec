@@ -1,7 +1,9 @@
 #ifndef REACHINGDEFINITIONS_H
 #define REACHINGDEFINITIONS_H
 
+#include <cassert>
 #include <map>
+#include <ostream>
 #include <set>
 
 
@@ -22,8 +24,14 @@ class ReachingDefinitions {
         ReachingDefinitions(const ICode &code);
         void run();
 
+        inline const ICode &icode() const { return m_code; }
+        inline const SDefs &getReaching(const Block &b) const {
+            assert(m_ins.find(&b) != m_ins.end());
+            return (*m_ins.find(&b)).second;
+        }
+
     private: /* Methods: */
-        bool makeOuts(const Block &i, const SDefs &in, SDefs &out);
+        bool makeOuts(const Block &b, const SDefs &in, SDefs &out);
 
     private: /* Fields: */
         const ICode &m_code;
@@ -32,5 +40,7 @@ class ReachingDefinitions {
 
 } // namespace SecreC
 
+
+std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &rd);
 
 #endif // REACHINGDEFINITIONS_H
