@@ -108,7 +108,7 @@ Blocks::Status Blocks::init(const ICodeList &code) {
     Block *b = new Block(code.begin(), i++);
     next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
     m_blocks.push_back(b);
-    m_startBlock = b;
+    m_entryBlock = b;
 
     while (next != code.end()) {
         Block *old = b;
@@ -137,7 +137,7 @@ Blocks::Status Blocks::init(const ICodeList &code) {
     assert(retTo.empty());
 
     std::stack<Block*> bs;
-    bs.push(m_startBlock);
+    bs.push(m_entryBlock);
     do {
         typedef std::set<Block*>::const_iterator BSCI;
 

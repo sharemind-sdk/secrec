@@ -29,6 +29,9 @@ class Blocks {
 
         Status init(const ICodeList &code);
 
+        const std::vector<Block*> &blocks() const { return m_blocks; }
+        const Block &entryBlock() const { return *m_entryBlock; }
+
         std::string toString() const;
         inline Status status() const { return m_status; }
 
@@ -40,7 +43,7 @@ class Blocks {
 
     private: /* Fields: */
         std::vector<Block*> m_blocks;
-        Block *m_startBlock;
+        Block *m_entryBlock;
         Status m_status;
 
 };
@@ -52,6 +55,11 @@ class Blocks {
 struct Block {
     inline Block(ICodeList::const_iterator codestart, unsigned long i)
         : start(codestart), end(codestart), index(i), reachable(false) {}
+
+    inline Imop *operator[](size_t n) const { return *(start + n); }
+    inline size_t size() const { return end - start; }
+    inline Imop *firstImop() const { return *start; }
+    inline Imop *lastImop() const { return *(end - 1); }
 
     Blocks::CCI start;
     Blocks::CCI end;
