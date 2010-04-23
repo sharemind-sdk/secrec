@@ -15,6 +15,7 @@ class ICodeList: private std::vector<Imop*> {
     public: /* Methods: */
         ~ICodeList();
 
+        inline const Imop *at(size_type n) const { return std::vector<Imop*>::at(n); }
         inline const_iterator begin() const { return std::vector<Imop*>::begin(); }
         inline const_iterator end() const { return std::vector<Imop*>::end(); }
         inline const_reference operator[] (size_type n) const { return std::vector<Imop*>::operator[](n); }
