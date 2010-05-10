@@ -147,7 +147,7 @@
 %%
 
 /*******************************************************************************
-  Program and variable declarations:
+  Program and variable declarations: TODO: sync with formal grammar
 *******************************************************************************/
 
 program
@@ -366,11 +366,6 @@ statement_list
  | statement statement_list
    {
      $$ = add_stmt($1, $2, &@$);
-   }
- | variable_declaration
-   {
-     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
-     treenode_appendChild($$, $1);
    }
  | statement
  ;

@@ -277,7 +277,7 @@ void TestParse::testStmtCompound_data() {
                                    XB("STMT_EXPR", XINT(3)))));
 
     QTest::newRow("compoundDecl")
-        << QString(SIMPLE("1;{public int a;}3;"))
+        << QString(SIMPLE("1;{public int a;;}3;"))
         << QString(SIMPLE_PARSE(XSTMTS(
                                    XB("STMT_EXPR", XINT(1))
                                    XB("STMT_COMPOUND",
@@ -683,7 +683,7 @@ void TestParse::testInlineDecls_data() {
                   )));
 
     QTest::newRow("simpleDeclAfter")
-        << QString(SIMPLE("f(); public int i;"))
+        << QString(SIMPLE("f(); public int i;;"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
@@ -722,7 +722,7 @@ void TestParse::testInlineDecls_data() {
                   )));
 
     QTest::newRow("simpleInlineDeclLonely")
-        << QString(SIMPLE("{ public int i; } f();"))
+        << QString(SIMPLE("{ public int i;; } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XSTMTS(
                           XB("DECL",
@@ -740,7 +740,7 @@ void TestParse::testInlineDecls_data() {
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyAfter")
-        << QString(SIMPLE("f(); { public int i; }"))
+        << QString(SIMPLE("f(); { public int i;; }"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XB("DECL",
@@ -759,7 +759,7 @@ void TestParse::testInlineDecls_data() {
                   )));
 
     QTest::newRow("simpleInlineDeclLonelyMiddle")
-        << QString(SIMPLE("f(); { public int i; } f();"))
+        << QString(SIMPLE("f(); { public int i;; } f();"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
                       XSTMTS(
