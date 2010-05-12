@@ -2102,19 +2102,27 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     TNI *id   = static_cast<TNI*>(children().at(0));
 
-    // Create a VARINTRO/PARAMINTRO instruction for later analysis:
-    Imop *i = new Imop(this, m_procParam ? Imop::PARAMINTRO : Imop::VARINTRO);
-    code.push_imop(i);
-    setFirstImop(i);
-
     // Initialize the new symbol (for initializer target)
-    SymbolSymbol *ns = new SymbolSymbol(resultType(), i);
+    SymbolSymbol *ns = new SymbolSymbol(resultType());
     ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
     ns->setName(id->value());
-    i->setDest(ns);
 
-    if (children().size() > 2) {
-        // Then we generate code for the initializer:
+    if (m_procParam) {
+        // Create a PARAMINTRO instruction for later analysis:
+        Imop *i = new Imop(this, Imop::PARAMINTRO, ns);
+        code.push_imop(i);
+        setFirstImop(i);
+        ns->setDeclImop(i);
+    } else if (children().size() > 2) {
+        // An initializer expression is present
+
+        // Generate VARINTRO instruction for later analysis:
+        Imop *i = new Imop(this, Imop::VARINTRO, ns);
+        code.push_imop(i);
+        setFirstImop(i);
+        ns->setDeclImop(i);
+
+        // Generate code for the initializer:
         TreeNode *t = children().at(2);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
@@ -2124,7 +2132,41 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
             delete ns;
             return s;
         }
-        e->patchNextList(i);
+        addToNextList(e->nextList());
+    } else {
+        // Otherwise assign the default value to the symbol:
+        Imop *i = new Imop(this, Imop::ASSIGN, ns);
+        code.push_imop(i);
+        setFirstImop(i);
+        ns->setDeclImop(i);
+
+        typedef DataTypeBasic DTB;
+        typedef DataTypeVar DTV;
+        assert(m_type->dataType().kind() == DataType::VAR);
+        assert(dynamic_cast<const DTV*>(&m_type->dataType()) != 0);
+        const DTV &dtv(static_cast<const DTV&>(m_type->dataType()));
+        assert(dtv.dataType().kind() == DataType::BASIC);
+        assert(dynamic_cast<const DTB*>(&dtv.dataType()) != 0);
+        const DTB &dtb(static_cast<const DTB&>(dtv.dataType()));
+
+        SymbolWithValue *def;
+        switch (dtb.dataType()) {
+            case DATATYPE_BOOL:
+                def = st.constantBool(false);
+                break;
+            case DATATYPE_INT:
+                def = st.constantInt(0);
+                break;
+            case DATATYPE_UINT:
+                def = st.constantUInt(0);
+                break;
+            case DATATYPE_STRING:
+                def = st.constantString("");
+                break;
+            default:
+                assert(false); // Shouldn't happen!
+        }
+        i->setArg1(def);
     }
 
     // Add the symbol to the symbol table for use in later expressions:

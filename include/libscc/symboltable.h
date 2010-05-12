@@ -48,11 +48,12 @@ class SymbolSymbol: public SymbolWithValue {
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolSymbol(const SecreC::Type &valueType, const Imop *declImop)
-            : SymbolWithValue(Symbol::SYMBOL, valueType), m_declImop(declImop),
+        SymbolSymbol(const SecreC::Type &valueType)
+            : SymbolWithValue(Symbol::SYMBOL, valueType),
               m_scopeType(LOCAL) {}
 
         inline const Imop *declImop() const { return m_declImop; }
+        inline void setDeclImop(const Imop *i) { m_declImop = i; }
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
