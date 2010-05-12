@@ -290,7 +290,7 @@ class Type {
         virtual std::string toString() const = 0;
 
         virtual inline bool operator==(const Type &other) const {
-            return other.isVoid();
+            return m_isVoid == other.m_isVoid;
         }
         virtual inline bool operator!=(const Type &other) const {
             return !operator==(other);
