@@ -81,7 +81,7 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     out = in;
 
     for (Blocks::CCI it = b.start; it != b.end; it++) {
-        if ((*it)->type() == Imop::PARAMINTRO
+        if ((*it)->type() == Imop::POPPARAM
             || ((*it)->type() & Imop::EXPR_MASK) != 0)
         {
             // Set this def:

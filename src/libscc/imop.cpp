@@ -69,8 +69,8 @@ std::string Imop::toString() const {
         case COMMENT:      /* // arg1                            */
             os << "// " << *((std::string*) m_arg1);
             break;
-        case PARAMINTRO:   /* d;         (parameter declaration) */
-            os << "PARAMINTRO " << dname << ";";
+        case POPPARAM:     /* POPPARAM d;                        */
+            os << "POPPARAM " << dname << ";";
             break;
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
@@ -78,8 +78,8 @@ std::string Imop::toString() const {
         case CAST:         /*   d = (arg1) arg2;                 */
             os << "TODO CAST";
             break;
-        case PUTPARAM:     /* PUTPARAM arg1;                     */
-            os << "PUTPARAM " << a1name;
+        case PUSHPARAM:    /* PUSHPARAM arg1;                    */
+            os << "PUSHPARAM " << a1name;
             break;
         case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
             if (m_dest != 0) {

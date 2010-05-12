@@ -61,9 +61,9 @@ class Imop {
             //--------------------
             // Misc. instructions:
             //--------------------
-            COMMENT    = 0x1000,  /* // arg1                            */
-            PARAMINTRO = 0x2000,  /* d;         (parameter declaration) */
-            PUTPARAM   = 0x3000,  /* PUTPARAM arg1;                     */
+            COMMENT    = 0x1000,  /* // arg1                          */
+            POPPARAM   = 0x2000,  /* POPPARAM d;                      */
+            PUSHPARAM  = 0x3000,  /* PUSHPARAM arg1;                  */
 
             /* For RETCLEAN, arg2 is the corresponding CALL instruction: */
             RETCLEAN   = 0x4000,  /* RETCLEAN;             (Imop *arg2) */

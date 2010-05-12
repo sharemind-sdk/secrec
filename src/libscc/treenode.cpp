@@ -1162,7 +1162,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
 
     // Add them as arguments in a backward manner:
     while (!resultList.empty()) {
-        Imop *i = new Imop(this, Imop::PUTPARAM);
+        Imop *i = new Imop(this, Imop::PUSHPARAM);
         i->setArg1(resultList.top());
         code.push_imop(i);
 
@@ -2107,8 +2107,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
     ns->setName(id->value());
 
     if (m_procParam) {
-        // Create a PARAMINTRO instruction for later analysis:
-        Imop *i = new Imop(this, Imop::PARAMINTRO, ns);
+        Imop *i = new Imop(this, Imop::POPPARAM, ns);
         code.push_imop(i);
         setFirstImop(i);
     } else if (children().size() > 2) {
