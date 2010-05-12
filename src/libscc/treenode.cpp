@@ -2405,10 +2405,12 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
         addToNextList(e->falseList());
         setResultFlags(s1->resultFlags() | TreeNodeStmt::FALLTHRU);
     } else {
-        // Generate jump out of first branch:
-        Imop *i = new Imop(this, Imop::JUMP, 0);
-        code.push_imop(i);
-        addToNextList(i);
+        // Generate jump out of first branch, if needed:
+        if ((s1->resultFlags() & TreeNodeStmt::FALLTHRU) != 0x0) {
+            Imop *i = new Imop(this, Imop::JUMP, 0);
+            code.push_imop(i);
+            addToNextList(i);
+        }
 
         // Generate code for second branch:
         SymbolTable &innerScope2 = *st.newScope();
