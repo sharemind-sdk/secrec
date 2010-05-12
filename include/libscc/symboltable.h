@@ -52,15 +52,12 @@ class SymbolSymbol: public SymbolWithValue {
             : SymbolWithValue(Symbol::SYMBOL, valueType),
               m_scopeType(LOCAL) {}
 
-        inline const Imop *declImop() const { return m_declImop; }
-        inline void setDeclImop(const Imop *i) { m_declImop = i; }
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
         virtual std::string toString() const;
 
     private: /* Fields: */
-        const Imop *m_declImop;
         ScopeType   m_scopeType;
 };
 

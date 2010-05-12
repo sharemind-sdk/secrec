@@ -1,5 +1,4 @@
 #include "treenode.h"
-
 #include <algorithm>
 #include <sstream>
 #include <stack>
@@ -1475,11 +1474,11 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the unary expression, if needed:
+    // Generate temporary for the result of the ternary expression, if needed:
     if (r == 0) {
         setResult(st.appendTemporary(resultType()));
     } else {
-        assert(r->secrecType() == resultType());
+        assert(r->secrecType().canAssign(resultType()));
         setResult(r);
     }
 
@@ -2112,17 +2111,11 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
         Imop *i = new Imop(this, Imop::PARAMINTRO, ns);
         code.push_imop(i);
         setFirstImop(i);
-        ns->setDeclImop(i);
     } else if (children().size() > 2) {
-        // An initializer expression is present
-
-        // Generate VARINTRO instruction for later analysis:
-        Imop *i = new Imop(this, Imop::VARINTRO, ns);
-        code.push_imop(i);
-        setFirstImop(i);
-        ns->setDeclImop(i);
-
-        // Generate code for the initializer:
+        /*
+          An initializer expression is present, lets generate code
+          for the initializer:
+        */
         TreeNode *t = children().at(2);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
@@ -2132,13 +2125,13 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
             delete ns;
             return s;
         }
+        setFirstImop(e->firstImop());
         addToNextList(e->nextList());
     } else {
         // Otherwise assign the default value to the symbol:
         Imop *i = new Imop(this, Imop::ASSIGN, ns);
         code.push_imop(i);
         setFirstImop(i);
-        ns->setDeclImop(i);
 
         typedef DataTypeBasic DTB;
         typedef DataTypeVar DTV;

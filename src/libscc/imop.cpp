@@ -69,9 +69,6 @@ std::string Imop::toString() const {
         case COMMENT:      /* // arg1                            */
             os << "// " << *((std::string*) m_arg1);
             break;
-        case VARINTRO:     /* d;          (variable declaration) */
-            os << "VARINTRO " << dname << ";";
-            break;
         case PARAMINTRO:   /* d;         (parameter declaration) */
             os << "PARAMINTRO " << dname << ";";
             break;
