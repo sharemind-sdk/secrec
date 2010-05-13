@@ -574,7 +574,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log,
-                                               SymbolWithValue *r)
+                                               Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -794,7 +794,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
 ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log,
-                                               SymbolWithValue *r)
+                                               Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -980,7 +980,7 @@ ICode::Status TreeNodeExprBool::calculateResultType(SymbolTable &, CompileLog &)
 
 ICode::Status TreeNodeExprBool::generateCode(ICodeList &code, SymbolTable &st,
                                              CompileLog &log,
-                                             SymbolWithValue *r)
+                                             Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1128,7 +1128,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
 ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
                                                  SymbolTable &st,
                                                  CompileLog &log,
-                                                 SymbolWithValue *r)
+                                                 Symbol *r)
 {
     typedef ChildrenListConstIterator CLCI;
 
@@ -1136,7 +1136,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    std::stack<SymbolWithValue*> resultList;
+    std::stack<Symbol*> resultList;
 
     // Initialize arguments
     TreeNodeExpr *last = 0;
@@ -1245,7 +1245,7 @@ ICode::Status TreeNodeExprInt::calculateResultType(SymbolTable &, CompileLog &)
 }
 
 ICode::Status TreeNodeExprInt::generateCode(ICodeList &code, SymbolTable &st,
-                                            CompileLog &log, SymbolWithValue *r)
+                                            CompileLog &log, Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1306,7 +1306,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
 ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
                                                   SymbolTable &st,
                                                   CompileLog &log,
-                                                  SymbolWithValue *r)
+                                                  Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1382,7 +1382,7 @@ ICode::Status TreeNodeExprString::calculateResultType(SymbolTable &,
 
 ICode::Status TreeNodeExprString::generateCode(ICodeList &code, SymbolTable &st,
                                                CompileLog &log,
-                                               SymbolWithValue *r)
+                                               Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1468,7 +1468,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
 ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
                                                 SymbolTable &st,
                                                 CompileLog &log,
-                                                SymbolWithValue *r)
+                                                Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1579,7 +1579,7 @@ ICode::Status TreeNodeExprUInt::calculateResultType(SymbolTable &, CompileLog &)
 
 ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code, SymbolTable &st,
                                              CompileLog &log,
-                                             SymbolWithValue *r)
+                                             Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1657,7 +1657,7 @@ ICode::Status TreeNodeExprUnary::calculateResultType(SymbolTable &st,
 
 ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
                                               CompileLog &log,
-                                              SymbolWithValue *r)
+                                              Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -2141,7 +2141,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
         assert(dynamic_cast<const DTB*>(&dtv.dataType()) != 0);
         const DTB &dtb(static_cast<const DTB&>(dtv.dataType()));
 
-        SymbolWithValue *def;
+        Symbol *def;
         switch (dtb.dataType()) {
             case DATATYPE_BOOL:
                 def = st.constantBool(false);

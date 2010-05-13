@@ -45,7 +45,7 @@ std::string SymbolTemporary::toString() const {
 *******************************************************************************/
 
 SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
-    : SymbolWithValue(Symbol::PROCEDURE, procdef->procedureType()), m_decl(procdef),
+    : Symbol(Symbol::PROCEDURE, procdef->procedureType()), m_decl(procdef),
       m_target(0)
 {
     // Intentionally empty

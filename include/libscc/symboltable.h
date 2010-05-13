@@ -15,42 +15,31 @@ class Symbol {
         enum Type { PROCEDURE, CONSTANT, SYMBOL, TEMPORARY };
 
     public: /* Methods: */
-        explicit inline Symbol(Type symbolType)
-            : m_symbolType(symbolType) {}
-        virtual inline ~Symbol() {}
+        explicit inline Symbol(Type symbolType,
+                               const SecreC::Type &valueType)
+            : m_symbolType(symbolType), m_type(valueType.clone()) {}
+        virtual inline ~Symbol() { delete m_type; }
 
         inline Type symbolType() const { return m_symbolType; }
         inline const std::string &name() const { return m_name; }
         inline void setName(const std::string &name) { m_name = name; }
+        inline const SecreC::Type &secrecType() const { return *m_type; }
 
         virtual std::string toString() const = 0;
 
     private: /* Fields: */
         const Type  m_symbolType;
         std::string m_name;
-};
-
-class SymbolWithValue: public Symbol {
-    public: /* Methods: */
-        explicit inline SymbolWithValue(Type symbolType,
-                                        const SecreC::Type &valueType)
-            : Symbol(symbolType), m_type(valueType.clone()) {}
-        virtual ~SymbolWithValue() { delete m_type; }
-
-        inline const SecreC::Type &secrecType() const { return *m_type; }
-
-    private: /* Fields: */
         SecreC::Type *m_type;
 };
 
-class SymbolSymbol: public SymbolWithValue {
+class SymbolSymbol: public Symbol {
     public: /* Types: */
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
         SymbolSymbol(const SecreC::Type &valueType)
-            : SymbolWithValue(Symbol::SYMBOL, valueType),
-              m_scopeType(LOCAL) {}
+            : Symbol(Symbol::SYMBOL, valueType), m_scopeType(LOCAL) {}
 
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
@@ -61,13 +50,13 @@ class SymbolSymbol: public SymbolWithValue {
         ScopeType   m_scopeType;
 };
 
-class SymbolTemporary: public SymbolWithValue {
+class SymbolTemporary: public Symbol {
     public: /* Types: */
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
         SymbolTemporary(const SecreC::Type &valueType)
-            : SymbolWithValue(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
+            : Symbol(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
 
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
@@ -77,7 +66,7 @@ class SymbolTemporary: public SymbolWithValue {
         ScopeType m_scopeType;
 };
 
-class SymbolProcedure: public SymbolWithValue {
+class SymbolProcedure: public Symbol {
     public: /* Methods: */
         SymbolProcedure(const TreeNodeProcDef *procdef);
 
@@ -92,10 +81,10 @@ class SymbolProcedure: public SymbolWithValue {
         const Imop           *m_target;
 };
 
-class SymbolConstantBool: public SymbolWithValue {
+class SymbolConstantBool: public Symbol {
     public: /* Methods: */
         explicit SymbolConstantBool(bool value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL)), m_value(value) {}
+            : Symbol(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL)), m_value(value) {}
 
         inline bool value() const { return m_value; }
 
@@ -105,10 +94,10 @@ class SymbolConstantBool: public SymbolWithValue {
         const bool m_value;
 };
 
-class SymbolConstantInt: public SymbolWithValue {
+class SymbolConstantInt: public Symbol {
     public: /* Methods: */
         explicit SymbolConstantInt(int value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT)), m_value(value) {}
+            : Symbol(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT)), m_value(value) {}
 
         inline int value() const { return m_value; }
 
@@ -118,10 +107,10 @@ class SymbolConstantInt: public SymbolWithValue {
         const int m_value;
 };
 
-class SymbolConstantUInt: public SymbolWithValue {
+class SymbolConstantUInt: public Symbol {
     public: /* Methods: */
         explicit SymbolConstantUInt(unsigned value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT)), m_value(value) {}
+            : Symbol(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT)), m_value(value) {}
 
         inline unsigned value() const { return m_value; }
 
@@ -131,10 +120,10 @@ class SymbolConstantUInt: public SymbolWithValue {
         const unsigned m_value;
 };
 
-class SymbolConstantString: public SymbolWithValue {
+class SymbolConstantString: public Symbol {
     public: /* Methods: */
         explicit SymbolConstantString(const std::string &value)
-            : SymbolWithValue(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_STRING)), m_value(value) {}
+            : Symbol(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_STRING)), m_value(value) {}
 
         inline const std::string &value() const { return m_value; }
 

@@ -250,12 +250,12 @@ class TreeNodeExpr: public TreeNode {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0) = 0;
+                                           Symbol *result = 0) = 0;
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log) = 0;
 
-        inline SymbolWithValue *result() const {
+        inline Symbol *result() const {
             assert(m_result != 0);
             return m_result;
         };
@@ -281,7 +281,7 @@ class TreeNodeExpr: public TreeNode {
         void patchNextList(Imop *dest);
 
     protected: /* Methods: */
-        inline void setResult(SymbolWithValue *r) {
+        inline void setResult(Symbol *r) {
             m_result = r;
         }
         inline void setFalseList(const std::vector<Imop*> &fl) {
@@ -322,7 +322,7 @@ class TreeNodeExpr: public TreeNode {
         }
 
     private: /* Fields: */
-        SymbolWithValue    *m_result;
+        Symbol    *m_result;
         SecreC::Type       *m_resultType;
         std::vector<Imop*>  m_falseList;
         std::vector<Imop*>  m_trueList;
@@ -347,7 +347,7 @@ class TreeNodeExprAssign: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -369,7 +369,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -397,7 +397,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -421,7 +421,7 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -450,7 +450,7 @@ class TreeNodeExprInt: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -474,7 +474,7 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -500,7 +500,7 @@ class TreeNodeExprString: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -524,7 +524,7 @@ class TreeNodeExprTernary: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -550,7 +550,7 @@ class TreeNodeExprUInt: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
@@ -574,7 +574,7 @@ class TreeNodeExprUnary: public TreeNodeExpr {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log,
-                                           SymbolWithValue *result = 0);
+                                           Symbol *result = 0);
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
