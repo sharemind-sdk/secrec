@@ -34,7 +34,7 @@
 ============================================================================= */
 DIGIT           [0-9]
 UNDERSCORE      _
-WHITESPACE      [ \n\r\t]
+WHITESPACE      [ \t]
 /* WHITESPACE      [[:space:]] */
 UPPERCASE       [ABCDEFGHIJKLMNOPQRSTUVWXYZ]
 LOWERCASE       [abcdefghijklmnopqrstuvwxyz]
