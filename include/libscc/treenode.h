@@ -28,6 +28,12 @@ class TreeNode {
 
         TreeNodeProcDef* containingProcedure();
         inline TreeNode* parent() const { return m_parent; }
+        inline bool hasParent() const { return m_parent != 0; }
+        inline bool isChildOf(TreeNode *parent) const {
+            for (TreeNode *p = m_parent; p != 0; p = p->m_parent)
+                if (p == parent) return true;
+            return false;
+        }
         inline Type type() const { return m_type; }
         inline const ChildrenList &children() const {
             return m_children;
