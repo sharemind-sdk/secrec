@@ -197,7 +197,13 @@ std::string Blocks::toString() const {
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
         // os << "    Code:" << std::endl;
         for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
-            os << "    " << (*jt)->index() << "  " << (**jt) << std::endl;
+            os << "    " << (*jt)->index() << "  " << (**jt);
+            if (((*jt)->type() & Imop::JUMP_MASK) != 0x0) {
+                assert((jt + 1) == (*it)->end);
+                os << " // At " << (*jt)->treeNode()->location() << std::endl;
+                break;
+            }
+            os << std::endl;
         }
         i++;
         os << std::endl;

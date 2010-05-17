@@ -95,6 +95,7 @@ class Imop {
         inline const std::set<Imop*> &incomingCalls() const { return m_incomingCalls; }
         inline const std::set<Imop*> &returns() const { return m_returns; }
 
+        inline TreeNode *treeNode() const { return m_creator; }
         inline Type type() const { return m_type; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }

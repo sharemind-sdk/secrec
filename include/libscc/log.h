@@ -4,7 +4,7 @@
 #include <cassert>
 #include <deque>
 #include <sstream>
-#include "parser.h"
+#include "misc.h"
 #include "types.h"
 
 namespace SecreC {
@@ -45,7 +45,7 @@ class CompileLogStream {
         inline CompileLogStream &operator<<(const std::string &v) { m_os << v; return *this; }
         inline CompileLogStream &operator<<(const char *v) { m_os << v; return *this; }
         inline CompileLogStream &operator<<(const void *v) { m_os << v; return *this; }
-        inline CompileLogStream &operator<<(const YYLTYPE &v);
+        inline CompileLogStream &operator<<(const YYLTYPE &v) { m_os << v; return *this; }
         inline CompileLogStream &operator<<(const Type &v) { m_os << v; return *this; }
 
     CompileLog             &m_log;
@@ -76,13 +76,6 @@ inline CompileLogStream::~CompileLogStream() {
         m_log.addMessage(CompileLogMessage(m_type, m_os.str()));
     }
 }
-
-inline CompileLogStream &CompileLogStream::operator<<(const YYLTYPE &v) {
-   m_os << "("  << v.first_line << "," << v.first_column
-        << ")(" << v.last_line  << "," << v.last_column << ")";
-   return *this;
-}
-
 
 } // namespace SecreC
 
