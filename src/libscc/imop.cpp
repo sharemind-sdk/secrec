@@ -214,7 +214,7 @@ std::string Imop::toString() const {
         }
         os << "]";
     }
-    if (m_arg2 != 0 && (m_type == RETURN || m_type == RETURNVOID)) {
+    if ((m_type == RETURN || m_type == RETURNVOID) && m_arg2 != 0) {
         Imop *i = (Imop*) m_arg2;
         if (!i->m_incomingCalls.empty()) {
             std::set<unsigned long> is;
