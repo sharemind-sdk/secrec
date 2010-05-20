@@ -1,6 +1,9 @@
 #include "reachingdefinitions.h"
 
+#include <utility>
 #include "intermediate.h"
+#include "misc.h"
+#include "treenode.h"
 
 
 namespace SecreC {
@@ -12,10 +15,20 @@ inline bool isFirstImop(const Imop *i) {
     return i->block()->firstImop() == i;
 }
 
+template <class T>
+inline std::set<T> &operator+=(std::set<T> &dest, const std::set<T> &src) {
+    dest.insert(src.begin(), src.end());
+    return dest;
+}
+
 inline ReachingDefinitions::Defs &operator+=(ReachingDefinitions::Defs &dest,
                                              const ReachingDefinitions::Defs &src)
 {
-    dest.insert(src.begin(), src.end());
+    typedef ReachingDefinitions::Defs::const_iterator DCI;
+
+    for (DCI it = src.begin(); it != src.end(); it++) {
+        dest[(*it).first] += (*it).second;
+    }
     return dest;
 }
 
@@ -37,7 +50,7 @@ ReachingDefinitions::ReachingDefinitions(const ICode &code)
 
 void ReachingDefinitions::run() {
     typedef std::set<Block*>::const_iterator BSCI;
-    bool changed;
+    bool changed = false;
 
     const std::vector<Block*> &bs = m_code.blocks().blocks();
 
@@ -46,6 +59,8 @@ void ReachingDefinitions::run() {
     makeOuts(*bs[0], m_ins[bs[0]], outs[bs[0]]);
     do {
         changed = false;
+
+        // For all reachable blocks:
         for (size_t i = 1; i < bs.size(); i++) {
             const Block *b = bs[i];
             if (!b->reachable) continue;
@@ -77,17 +92,38 @@ void ReachingDefinitions::run() {
 }
 
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
+    typedef SDefs::const_iterator SDCI;
+    typedef Defs::const_iterator DCI;
+    typedef SDefs::iterator SDI;
+    typedef Defs::iterator DI;
+
     SDefs old(out);
     out = in;
 
     for (Blocks::CCI it = b.start; it != b.end; it++) {
-        if ((*it)->type() == Imop::POPPARAM
+        if (((*it)->type() == Imop::POPPARAM
             || ((*it)->type() & Imop::EXPR_MASK) != 0)
+            && (*it)->dest() != 0)
         {
             // Set this def:
             Defs &d = out[(*it)->dest()];
+            CJumps jumps;
+            for (DCI jt = d.begin(); jt != d.end(); jt++) {
+                jumps += (*jt).second;
+            }
             d.clear();
-            d.insert(*it);
+            d.insert(make_pair(*it, jumps));
+        }
+    }
+
+    const Imop *lastImop = *(b.end - 1);
+    if ((lastImop->type() & Imop::JUMP_MASK)
+        && lastImop->type() != Imop::JUMP)
+    {
+        for (SDI it = out.begin(); it != out.end(); it++) {
+            for (DI jt = (*it).second.begin(); jt != (*it).second.end(); jt++) {
+                (*jt).second.insert(lastImop);
+            }
         }
     }
     return old != out;
@@ -98,6 +134,7 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
 std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &rd) {
     typedef SecreC::ReachingDefinitions::SDefs::const_iterator SDCI;
     typedef SecreC::ReachingDefinitions::Defs::const_iterator DCI;
+    typedef SecreC::ReachingDefinitions::CJumps::const_iterator JCI;
 
     out << "Reaching definitions result: " << std::endl;
 
@@ -113,7 +150,16 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &r
                 const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
                 for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
                     if (jt != ds.begin()) out << ", ";
-                    out << (*jt)->index();
+                    out << (*jt).first->index();
+                    const SecreC::ReachingDefinitions::CJumps &js = (*jt).second;
+                    if (!js.empty()) {
+                        out << " [CJUMPS: ";
+                        for (JCI kt = js.begin(); kt != js.end(); kt++) {
+                            if (kt != js.begin()) out << ", ";
+                            out << (*kt)->index() << " " << (*kt)->creator()->location();
+                        }
+                        out << "]";
+                    }
                 }
                 out << std::endl;
             }

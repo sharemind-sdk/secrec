@@ -200,7 +200,7 @@ std::string Blocks::toString() const {
             os << "    " << (*jt)->index() << "  " << (**jt);
             if (((*jt)->type() & Imop::JUMP_MASK) != 0x0) {
                 assert((jt + 1) == (*it)->end);
-                os << " // At " << (*jt)->treeNode()->location() << std::endl;
+                os << " // At " << (*jt)->creator()->location() << std::endl;
                 break;
             }
             os << std::endl;

@@ -6,7 +6,6 @@
 #include <ostream>
 #include <set>
 
-
 namespace SecreC {
 
 class Block;
@@ -16,9 +15,10 @@ class Imop;
 
 class ReachingDefinitions {
     public: /* Types: */
-        typedef std::set<const Imop*>        Defs;
-        typedef std::map<const Symbol*,Defs> SDefs;
-        typedef std::map<const Block*,SDefs> BDM;
+        typedef std::set<const Imop*>         CJumps;
+        typedef std::map<const Imop*, CJumps> Defs;
+        typedef std::map<const Symbol*, Defs> SDefs;
+        typedef std::map<const Block*, SDefs> BDM;
 
     public: /* Methods: */
         ReachingDefinitions(const ICode &code);
