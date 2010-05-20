@@ -138,27 +138,42 @@ Blocks::Status Blocks::init(const ICodeList &code) {
 
     std::stack<Block*> bs;
     bs.push(m_entryBlock);
+    m_entryBlock->reachable = true;
     do {
         typedef std::set<Block*>::const_iterator BSCI;
 
         Block *b = bs.top();
         bs.pop();
-        b->reachable = true;
 
         for (BSCI it(b->successors.begin()); it != b->successors.end(); it++) {
-            if (!(*it)->reachable) bs.push(*it);
+            if (!(*it)->reachable) {
+                (*it)->reachable = true;
+                bs.push(*it);
+            }
         }
         for (BSCI it(b->successorsCondFalse.begin()); it != b->successorsCondFalse.end(); it++) {
-            if (!(*it)->reachable) bs.push(*it);
+            if (!(*it)->reachable) {
+                (*it)->reachable = true;
+                bs.push(*it);
+            }
         }
         for (BSCI it(b->successorsCondTrue.begin()); it != b->successorsCondTrue.end(); it++) {
-            if (!(*it)->reachable) bs.push(*it);
+            if (!(*it)->reachable) {
+                (*it)->reachable = true;
+                bs.push(*it);
+            }
         }
         for (BSCI it(b->successorsCall.begin()); it != b->successorsCall.end(); it++) {
-            if (!(*it)->reachable) bs.push(*it);
+            if (!(*it)->reachable) {
+                (*it)->reachable = true;
+                bs.push(*it);
+            }
         }
         for (BSCI it(b->successorsRet.begin()); it != b->successorsRet.end(); it++) {
-            if (!(*it)->reachable) bs.push(*it);
+            if (!(*it)->reachable) {
+                (*it)->reachable = true;
+                bs.push(*it);
+            }
         }
     } while (!bs.empty());
 
@@ -186,13 +201,13 @@ std::string Blocks::toString() const {
         }
         os << std::endl;
         printBlockList(os, "  ..... From: ", (*it)->predecessors);
-        printBlockList(os, "  ... From?-: ", (*it)->predecessorsCondFalse);
-        printBlockList(os, "  ... From?+: ", (*it)->predecessorsCondTrue);
+        printBlockList(os, "  ... From -: ", (*it)->predecessorsCondFalse);
+        printBlockList(os, "  ... From +: ", (*it)->predecessorsCondTrue);
         printBlockList(os, "  . FromCall: ", (*it)->predecessorsCall);
         printBlockList(os, "  .. FromRet: ", (*it)->predecessorsRet);
         printBlockList(os, "  ....... To: ", (*it)->successors);
-        printBlockList(os, "  ..... To?-: ", (*it)->successorsCondFalse);
-        printBlockList(os, "  ..... To?+: ", (*it)->successorsCondTrue);
+        printBlockList(os, "  ..... To -: ", (*it)->successorsCondFalse);
+        printBlockList(os, "  ..... To +: ", (*it)->successorsCondTrue);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
         // os << "    Code:" << std::endl;
