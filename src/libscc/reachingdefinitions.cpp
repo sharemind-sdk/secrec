@@ -144,7 +144,7 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &r
         if (!b->reachable) continue;
         const SecreC::ReachingDefinitions::SDefs &sd = rd.getReaching(*b);
         if (!sd.empty()) {
-            out << "  " << b->index << ":" << std::endl;
+            out << "  Block " << b->index << ":" << std::endl;
             for (SDCI it = sd.begin(); it != sd.end(); it++) {
                 out << "    " << *(*it).first << ": ";
                 const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
@@ -153,10 +153,10 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &r
                     out << (*jt).first->index();
                     const SecreC::ReachingDefinitions::CJumps &js = (*jt).second;
                     if (!js.empty()) {
-                        out << " [CJUMPS: ";
+                        out << " [";
                         for (JCI kt = js.begin(); kt != js.end(); kt++) {
                             if (kt != js.begin()) out << ", ";
-                            out << (*kt)->index() << " " << (*kt)->creator()->location();
+                            out << (*kt)->index();
                         }
                         out << "]";
                     }
