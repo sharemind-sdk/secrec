@@ -1,5 +1,5 @@
-#ifndef SECREC_H
-#define SECREC_H
+#ifndef TYPES_H
+#define TYPES_H
 
 #include <cassert>
 #include <string>
