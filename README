@@ -1,0 +1,46 @@
+README
+======
+
+System requirements
+-------------------
+
+Compiling this code requires the following:
+ * Qt SDK version 4.4 or later with qmake
+ * A make tool (e.g. gmake) supported by the Qt SDK used
+ * Compilers for C and C++ code
+   * Some GNU Compiler Collection versions earlier than 4.3.4 are known not to
+     work at this moment.
+
+
+Compile instructions
+--------------------
+
+The root directory of the source code is the directory where the file scc.pro,
+COMPILING etc reside. To compile the code, the following commands must be run in
+that directory:
+
+  qmake
+  make
+
+*** NOTE: Under some systems one may have to run qmake-qt4 instead of qmake. ***
+
+If compiling was successful, the generated dynamic library should reside in the
+lib/ subdirectory and the generated command-line tools should reside in the bin/
+subdirectory.
+
+
+
+Running sca
+-----------
+
+A wrapper bash script for running the SecreC Analyzer (sca) is in the root
+directory of the source code. It can be used to run bin/sca from that directory
+without the hassle of manually setting the LD_LIBRARY_PATH variable to point to
+subdirectory lib/ in the root directory of the source code. Besides setting the
+LD_LIBRARY_PATH environment variable, running the wrapper should have the same
+functionality as running the analyzer directly.
+
+The analyzer (and hence also the wrapper script) can be invoked either by
+specifying a filename of the file to analyze as the first parameter on the
+command line or by running it with no parameters in which case the input is read
+from standard input.
