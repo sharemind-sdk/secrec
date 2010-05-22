@@ -147,6 +147,8 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
     if (!sh.empty())
         os << ' ' << sh;
 
+    os << " at " << location();
+
     for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
         os << std::endl;
         assert((*it)->parent() == this);

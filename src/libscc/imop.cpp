@@ -13,14 +13,22 @@ std::string ulongToString(unsigned long n) {
     return os.str();
 }
 
+std::string uniqueName(const SecreC::Symbol *s) {
+    assert(s != 0);
+    if (s->symbolType() == SecreC::Symbol::CONSTANT) return s->name();
+    std::ostringstream os;
+    os << s->name() << '{' << s << '}';
+    return os.str();
+}
+
 } // anonymous namespace
 
 namespace SecreC {
 
-#define dname  (m_dest == 0 ? "_" : m_dest->name())
+#define dname  (m_dest == 0 ? "_" : uniqueName(m_dest))
 #define tname  (m_dest == 0 ? "_" : ulongToString(((SecreC::Imop*) m_dest)->index()) )
-#define a1name (m_arg1 == 0 ? "_" : m_arg1->name())
-#define a2name (m_arg2 == 0 ? "_" : m_arg2->name())
+#define a1name (m_arg1 == 0 ? "_" : uniqueName(m_arg1))
+#define a2name (m_arg2 == 0 ? "_" : uniqueName(m_arg2))
 #define cImop  (m_arg2 == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(m_arg1)->decl()->firstImop()->index()))
 
 Imop::~Imop() {

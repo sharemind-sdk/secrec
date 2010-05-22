@@ -14,6 +14,7 @@ namespace SecreC {
 *******************************************************************************/
 
 class Block;
+class ReachingDefinitions;
 
 class Blocks {
     public: /* Types: */
@@ -32,7 +33,7 @@ class Blocks {
         const std::vector<Block*> &blocks() const { return m_blocks; }
         const Block &entryBlock() const { return *m_entryBlock; }
 
-        std::string toString() const;
+        std::string toString(const ReachingDefinitions *rd = 0) const;
         inline Status status() const { return m_status; }
 
     protected: /* Methods: */

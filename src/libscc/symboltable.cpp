@@ -25,7 +25,7 @@ namespace SecreC {
 std::string SymbolSymbol::toString() const {
     std::ostringstream os;
     os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' ' << secrecType()
-       << ' ' << name();
+       << ' ' << name() << '{' << this << '}';
     return os.str();
 }
 
@@ -36,7 +36,7 @@ std::string SymbolSymbol::toString() const {
 std::string SymbolTemporary::toString() const {
     std::ostringstream os;
     os << "TEMPORARY " << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
-       << secrecType() << ' ' << name();
+       << secrecType() << ' ' << name() << '{' << this << '}';
     return os.str();
 }
 

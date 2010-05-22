@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <stack>
+#include "reachingdefinitions.h"
 #include "treenode.h"
 
 
@@ -188,8 +189,7 @@ Blocks::~Blocks() {
     }
 }
 
-std::string Blocks::toString() const {
-
+std::string Blocks::toString(const ReachingDefinitions *rd) const {
     std::ostringstream os;
 
     os << "BLOCKS" << std::endl;
@@ -210,15 +210,50 @@ std::string Blocks::toString() const {
         printBlockList(os, "  ..... To +: ", (*it)->successorsCondTrue);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
-        // os << "    Code:" << std::endl;
+        if (rd != 0) {
+            os << "    Reaching definitions:";
+            if (!(*it)->reachable) {
+                os << " NOT CALCULATED (unreachable block)" << std::endl;
+            } else {
+                const SecreC::ReachingDefinitions::SDefs &sd = rd->getReaching(**it);
+                if (sd.empty()) {
+                    os << " NONE" << std::endl;
+                } else {
+                    typedef SecreC::ReachingDefinitions::SDefs::const_iterator SDCI;
+                    typedef SecreC::ReachingDefinitions::Defs::const_iterator DCI;
+                    typedef SecreC::ReachingDefinitions::CJumps::const_iterator JCI;
+
+                    os << std::endl;
+                    for (SDCI it = sd.begin(); it != sd.end(); it++) {
+                        os << "        " << *(*it).first << ": ";
+                        const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
+                        for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
+                            if (jt != ds.begin()) os << ", ";
+                            os << (*jt).first->index();
+                            const SecreC::ReachingDefinitions::CJumps &js = (*jt).second;
+                            if (!js.empty()) {
+                                os << " [";
+                                for (JCI kt = js.begin(); kt != js.end(); kt++) {
+                                    if (kt != js.begin()) os << ", ";
+                                    os << (*kt)->index();
+                                }
+                                os << "]";
+                            }
+                        }
+                        os << std::endl;
+                    }
+                }
+            }
+        }
+        os << "    Code:" << std::endl;
         for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
             os << "    " << (*jt)->index() << "  " << (**jt);
-            if (((*jt)->type() & Imop::JUMP_MASK) != 0x0) {
-                assert((jt + 1) == (*it)->end);
-                os << " // At " << (*jt)->creator()->location() << std::endl;
-                break;
+            if ((*jt)->creator() != 0) {
+                os << " // Created by "
+                   << TreeNode::typeName((*jt)->creator()->type())
+                   << " at "
+                   << (*jt)->creator()->location() << std::endl;
             }
-            os << std::endl;
         }
         i++;
         os << std::endl;

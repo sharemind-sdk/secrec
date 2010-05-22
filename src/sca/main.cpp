@@ -39,11 +39,9 @@ int main(int argc, char *argv[]) {
         SecreC::ICode icode;
         icode.init(parseTree);
         if (icode.status() == SecreC::ICode::OK) {
-            cout << icode.blocks();
-
             SecreC::ReachingDefinitions rd(icode);
             rd.run();
-            cout << rd;
+            cout << icode.blocks().toString(&rd);
         } else {
             cout << "Error generating valid intermediate code." << endl;
         }
