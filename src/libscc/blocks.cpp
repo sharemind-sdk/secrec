@@ -225,7 +225,7 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
 
                     os << std::endl;
                     for (SDCI it = sd.begin(); it != sd.end(); it++) {
-                        os << "        " << *(*it).first << ": ";
+                        os << "      " << *(*it).first << ": ";
                         const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
                         for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
                             if (jt != ds.begin()) os << ", ";
@@ -247,7 +247,7 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
         }
         os << "    Code:" << std::endl;
         for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
-            os << "    " << (*jt)->index() << "  " << (**jt);
+            os << "      " << (*jt)->index() << "  " << (**jt);
             if ((*jt)->creator() != 0) {
                 os << " // Created by "
                    << TreeNode::typeName((*jt)->creator()->type())
