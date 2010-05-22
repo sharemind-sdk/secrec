@@ -34,18 +34,19 @@ int main(int argc, char *argv[]) {
 
     if (parseResult == 0) {
         assert(parseTree != 0);
-        cerr << parseTree->toString() << endl << endl;
+        cout << parseTree->toString() << endl << endl;
 
         SecreC::ICode icode;
         icode.init(parseTree);
         if (icode.status() == SecreC::ICode::OK) {
             SecreC::ReachingDefinitions rd(icode);
             rd.run();
-            cout << icode.blocks().toString(&rd);
+            cout << icode.blocks().toString(&rd)
+                 << icode.compileLog();
         } else {
-            cout << "Error generating valid intermediate code." << endl;
+            cerr << "Error generating valid intermediate code." << endl
+                 << icode.compileLog();
         }
-        cout << icode.compileLog();
     }
     delete parseTree;
 
