@@ -165,28 +165,28 @@ std::string Imop::toString() const {
             os << "GOTO " << tname;
             break;
         case JT:           /* if (arg1) GOTO d;                  */
-            os << "if (" << a1name << ") GOTO " << tname;
+            os << "IF (" << a1name << ") GOTO " << tname;
             break;
         case JF:           /* if (!arg1) GOTO d;                 */
             os << "if (!" << a1name << ") GOTO " << tname;
             break;
         case JE:           /* if (arg1 == arg2) GOTO d;          */
-            os << "if (" << a1name << " == " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " == " << a2name << ") GOTO " << tname;
             break;
         case JNE:          /* if (arg1 != arg2) GOTO d;          */
-            os << "if (" << a1name << " != " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " != " << a2name << ") GOTO " << tname;
             break;
         case JLE:          /* if (arg1 <= arg2) GOTO d;          */
-            os << "if (" << a1name << " <= " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " <= " << a2name << ") GOTO " << tname;
             break;
         case JLT:          /* if (arg1 <  arg2) GOTO d;          */
-            os << "if (" << a1name << " < " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " < " << a2name << ") GOTO " << tname;
             break;
         case JGE:          /* if (arg1 >= arg2) GOTO d;          */
-            os << "if (" << a1name << " >= " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " >= " << a2name << ") GOTO " << tname;
             break;
         case JGT:          /* if (arg1 >  arg2) GOTO d;          */
-            os << "if (" << a1name << " > " << a2name << ") GOTO " << tname;
+            os << "IF (" << a1name << " > " << a2name << ") GOTO " << tname;
             break;
         default:
             os << "TODO";
