@@ -97,6 +97,9 @@ class Imop {
 
         inline TreeNode *creator() const { return m_creator; }
         inline Type type() const { return m_type; }
+        inline bool isJump() const { return (m_type & JUMP_MASK) != 0x0; }
+        inline bool isCondJump() const { return ((m_type & JUMP_MASK) != 0x0) && (m_type != JUMP); }
+        inline bool isExpr() const { return (m_type & EXPR_MASK) != 0x0; }
         inline const Symbol *dest() const { return m_dest; }
         inline void setDest(const Symbol *dest) { m_dest = dest; }
 
