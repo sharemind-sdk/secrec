@@ -213,6 +213,12 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
         printBlockList(os, "  ..... To +: ", (*it)->successorsCondTrue);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
+        if ((*it)->callPassFrom != 0) {
+            os << "  . PassFrom: " << (*it)->callPassFrom->index << std::endl;
+        }
+        if ((*it)->callPassTo != 0) {
+            os << "  ... PassTo: " << (*it)->callPassTo->index << std::endl;;
+        }
         if (rd != 0 && (*it)->reachable) {
             os << "    Reaching cond. jumps: ";
             typedef ReachingDefinitions::BJM::const_iterator BJMCI;
@@ -389,6 +395,10 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
         assert(dynamic_cast<const SymbolProcedure*>(call->arg1()) != 0);
         Imop *firstImop = static_cast<const SymbolProcedure*>(call->arg1())->decl()->firstImop();
         assert(firstImop->type() == Imop::COMMENT);
+
+        // Init call pass edge:
+        b.callPassFrom = call->block();
+        call->block()->callPassTo = &b;
 
         bool mustLeave = false;
 

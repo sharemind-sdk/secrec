@@ -55,7 +55,8 @@ class Blocks {
 
 struct Block {
     inline Block(ICodeList::const_iterator codestart, unsigned long i)
-        : start(codestart), end(codestart), index(i), reachable(false) {}
+        : start(codestart), end(codestart), callPassTo(0), callPassFrom(0),
+          index(i), reachable(false) {}
 
     inline Imop *operator[](size_t n) const { return *(start + n); }
     inline size_t size() const { return end - start; }
@@ -74,6 +75,8 @@ struct Block {
     std::set<Block*> successorsCondTrue;
     std::set<Block*> successorsCall;
     std::set<Block*> successorsRet;
+    Block *callPassTo;
+    Block *callPassFrom;
     unsigned long index;
     bool reachable;
 };
