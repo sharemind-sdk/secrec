@@ -275,7 +275,7 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
                         if (jt != ds.begin()) os << ", ";
                         os << (*jt)->index();
                     }
-                    const RD::Jumps &js = (*it).second.second;
+                    /*const RD::Jumps &js = (*it).second.second;
                     os << " (";
                     if (js.empty()) {
                         os << "no conds";
@@ -290,7 +290,8 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
                             os << (*jt);
                         }
                     }
-                    os << ')' << std::endl;
+                    os << ')' << std::endl; */
+                    os << std::endl;
                 }
             }
         }

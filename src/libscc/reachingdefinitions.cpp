@@ -21,24 +21,6 @@ inline std::set<T> &operator+=(std::set<T> &dest, const std::set<T> &src) {
     return dest;
 }
 
-template <class T>
-class CopyToSetExcept {
-    public:
-        inline CopyToSetExcept(std::set<T> &target, const T &except)
-            : m_target(target), m_except(except) {}
-        inline void operator()(const T &v) {
-            if (v != m_except) m_target.insert(v);
-        }
-    private:
-        std::set<T> &m_target;
-        const T      m_except;
-};
-
-template <class T>
-void setToSetExcept(std::set<T> &dest, const std::set<T> &src, const T &except) {
-    std::for_each(src.begin(), src.end(), CopyToSetExcept<T>(dest, except));
-}
-
 } // anonymous namespace
 
 
@@ -62,6 +44,8 @@ void ReachingDefinitions::run() {
     const std::vector<Block*> &bs = m_code.blocks().blocks();
 
     BDM outs;
+    BJM outNeg;
+    BJM outPos;
 
     const Block &entryBlock = *bs.at(0);
     makeOuts(entryBlock, m_ins[&entryBlock], outs[&entryBlock]);
@@ -76,13 +60,17 @@ void ReachingDefinitions::run() {
             const Block *b = bs[i];
             if (!b->reachable) continue;
 
+            m_ins[b].clear();
+            m_inNeg[b].clear();
+            m_inPos[b].clear();
+
             // Recalculate input set:
             for (BSCI it = b->predecessors.begin(); it != b->predecessors.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
                     m_ins[b][(*jt).first].first += (*jt).second.first;
                 }
-                m_inNeg[b] += m_inNeg[*it];
-                m_inPos[b] += m_inPos[*it];
+                m_inNeg[b] += outNeg[*it];
+                m_inPos[b] += outPos[*it];
             }
             for (BSCI it = b->predecessorsCondFalse.begin(); it != b->predecessorsCondFalse.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
@@ -91,11 +79,11 @@ void ReachingDefinitions::run() {
 
                 const Imop *cjump = (*it)->lastImop();
                 assert(cjump->isCondJump());
-                setToSetExcept(m_inPos[b], m_inPos[*it], cjump);
-                setToSetExcept(m_inNeg[b], m_inNeg[*it], cjump);
-                if (m_inNeg[b].insert(cjump).second) {
-                    changed = true;
-                }
+                Jumps inPosT = outPos[*it];
+                inPosT.erase(cjump);
+                m_inPos[b] += inPosT;
+                m_inNeg[b] += outNeg[*it];
+                m_inNeg[b].insert(cjump);
             }
             for (BSCI it = b->predecessorsCondTrue.begin(); it != b->predecessorsCondTrue.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
@@ -104,20 +92,29 @@ void ReachingDefinitions::run() {
 
                 const Imop *cjump = (*it)->lastImop();
                 assert(cjump->isCondJump());
-                setToSetExcept(m_inPos[b], m_inPos[*it], cjump);
-                setToSetExcept(m_inNeg[b], m_inNeg[*it], cjump);
-                if (m_inPos[b].insert(cjump).second) {
-                    changed = true;
-                }
+                Jumps inNegT = outNeg[*it];
+                inNegT.erase(cjump);
+                m_inNeg[b] += inNegT;
+                m_inPos[b] += outPos[*it];
+                m_inPos[b].insert(cjump);
             }
 
-            // Recalculate output set:
+            // Recalculate output sets:
             if (makeOuts(*b, m_ins[b], outs[b])) {
                 changed = true;
+            }
+            if (m_inNeg[b] != outNeg[b]) {
+                changed = true;
+                outNeg[b] = m_inNeg[b];
+            }
+            if (m_inPos[b] != outPos[b]) {
+                changed = true;
+                outPos[b] = m_inPos[b];
             }
         }
     } while (changed);
 
+    /*
     // For all reachable blocks:
     for (size_t i = 1; i < bs.size(); i++) {
         const Block *b = bs[i];
@@ -130,14 +127,14 @@ void ReachingDefinitions::run() {
             Jumps &validConds = (*sit).second.second;
             assert(validConds.empty());
 
-            /*
+            / *
                 Condition 1:
                     Discard cond. jumps in hotspot which don't have a definition
                     of symbol at their position.
                 Condition 2:
                     Discard cond. jump if reachable in hotspot by [+-] but in
                     definitions only with the opposite [-+].
-            */
+            * /
             for (Jumps::const_iterator jit = m_inPos[b].begin(); jit != m_inPos[b].end(); jit++) {
                 // Condition 1:
                 const Block *jb = (*jit)->block();
@@ -145,6 +142,7 @@ void ReachingDefinitions::run() {
                     continue;
 
                 // Condition 2:
+                /// \todo DOESN'T WORK
                 bool reachable = false;
                 for (Defs::const_iterator dit = defs.begin(); dit != defs.end(); dit++) {
                     const Block *db = (*dit)->block();
@@ -167,6 +165,7 @@ void ReachingDefinitions::run() {
                     continue;
 
                 // Condition 2:
+                /// \todo DOESN'T WORK
                 bool reachable = false;
                 for (Defs::const_iterator dit = defs.begin(); dit != defs.end(); dit++) {
                     const Block *db = (*dit)->block();
@@ -181,7 +180,7 @@ void ReachingDefinitions::run() {
                 }
             }
         }
-    }
+    } */
 }
 
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
