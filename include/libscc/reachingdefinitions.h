@@ -15,10 +15,12 @@ class Imop;
 
 class ReachingDefinitions {
     public: /* Types: */
-        typedef std::set<const Imop*>         CJumps;
-        typedef std::map<const Imop*, CJumps> Defs;
-        typedef std::map<const Symbol*, Defs> SDefs;
-        typedef std::map<const Block*, SDefs> BDM;
+        typedef std::set<const Imop*>           Defs;
+        typedef std::set<const Imop*>           Jumps;
+        typedef std::pair<Defs, Jumps>          SReach;
+        typedef std::map<const Symbol*, SReach> SDefs;
+        typedef std::map<const Block*, SDefs>   BDM;
+        typedef std::map<const Block*, Jumps>   BJM;
 
     public: /* Methods: */
         ReachingDefinitions(const ICode &code);
@@ -29,6 +31,8 @@ class ReachingDefinitions {
             assert(m_ins.find(&b) != m_ins.end());
             return (*m_ins.find(&b)).second;
         }
+        inline const BJM &getPosJumps() const { return m_inPos; }
+        inline const BJM &getNegJumps() const { return m_inNeg; }
 
     private: /* Methods: */
         bool makeOuts(const Block &b, const SDefs &in, SDefs &out);
@@ -36,11 +40,11 @@ class ReachingDefinitions {
     private: /* Fields: */
         const ICode &m_code;
         BDM          m_ins;
+        BJM          m_inPos;
+        BJM          m_inNeg;
 };
 
 } // namespace SecreC
 
-
-std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &rd);
 
 #endif // REACHINGDEFINITIONS_H

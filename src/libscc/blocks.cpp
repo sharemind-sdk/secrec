@@ -190,10 +190,13 @@ Blocks::~Blocks() {
 }
 
 std::string Blocks::toString(const ReachingDefinitions *rd) const {
+    typedef ReachingDefinitions RD;
+
     std::ostringstream os;
 
     os << "BLOCKS" << std::endl;
     unsigned long i = 1;
+
     for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
         os << "  Block " << i;
         if (!(*it)->reachable) {
@@ -210,38 +213,84 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
         printBlockList(os, "  ..... To +: ", (*it)->successorsCondTrue);
         printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
         printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
-        if (rd != 0) {
-            os << "    Reaching definitions:";
-            if (!(*it)->reachable) {
-                os << " NOT CALCULATED (unreachable block)" << std::endl;
-            } else {
-                const SecreC::ReachingDefinitions::SDefs &sd = rd->getReaching(**it);
-                if (sd.empty()) {
-                    os << " NONE" << std::endl;
-                } else {
-                    typedef SecreC::ReachingDefinitions::SDefs::const_iterator SDCI;
-                    typedef SecreC::ReachingDefinitions::Defs::const_iterator DCI;
-                    typedef SecreC::ReachingDefinitions::CJumps::const_iterator JCI;
+        if (rd != 0 && (*it)->reachable) {
+            os << "    Reaching cond. jumps: ";
+            typedef ReachingDefinitions::BJM::const_iterator BJMCI;
+            const ReachingDefinitions::BJM &poss = rd->getPosJumps();
+            const ReachingDefinitions::BJM &negs = rd->getNegJumps();
+            BJMCI posi = poss.find(*it);
+            BJMCI negi = negs.find(*it);
 
-                    os << std::endl;
-                    for (SDCI it = sd.begin(); it != sd.end(); it++) {
-                        os << "      " << *(*it).first << ": ";
-                        const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
-                        for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
-                            if (jt != ds.begin()) os << ", ";
-                            os << (*jt).first->index();
-                            const SecreC::ReachingDefinitions::CJumps &js = (*jt).second;
-                            if (!js.empty()) {
-                                os << " [";
-                                for (JCI kt = js.begin(); kt != js.end(); kt++) {
-                                    if (kt != js.begin()) os << ", ";
-                                    os << (*kt)->index();
-                                }
-                                os << "]";
-                            }
+            typedef std::set<const Imop*>::const_iterator ISCI;
+            typedef std::map<unsigned long, char>::iterator       LCMI;
+            typedef std::map<unsigned long, char>::const_iterator LCMCI;
+
+            std::map<unsigned long, char> jumps;
+
+            if (posi != poss.end()) {
+                for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); jt++) {
+                    jumps.insert(std::make_pair((*jt)->index(), '+'));
+                }
+                if (negi != negs.end()) {
+                    for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
+                        LCMI kt = jumps.find((*jt)->index());
+                        if (kt != jumps.end()) {
+                            (*kt).second = '*';
+                        } else {
+                            jumps.insert(std::make_pair((*jt)->index(), '-'));
                         }
-                        os << std::endl;
                     }
+                }
+            } else if (negi != negs.end()) {
+                for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
+                    jumps.insert(std::make_pair((*jt)->index(), '-'));
+                }
+            }
+
+            if (jumps.empty()) {
+                os << "NONE";
+            } else {
+                for (LCMCI jt = jumps.begin(); jt != jumps.end(); jt++) {
+                    if (jt != jumps.begin()) os << ", ";
+                    os << (*jt).first << (*jt).second;
+                }
+            }
+            os << std::endl;
+
+
+            os << "    Reaching definitions:";
+            const RD::SDefs &sd = rd->getReaching(**it);
+            if (sd.empty()) {
+                os << " NONE" << std::endl;
+            } else {
+                typedef RD::SDefs::const_iterator SDCI;
+                typedef RD::Defs::const_iterator DCI;
+                typedef RD::Jumps::const_iterator JCI;
+
+                os << std::endl;
+                for (SDCI it = sd.begin(); it != sd.end(); it++) {
+                    os << "      " << *(*it).first << ": ";
+                    const RD::Defs &ds = (*it).second.first;
+                    for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
+                        if (jt != ds.begin()) os << ", ";
+                        os << (*jt)->index();
+                    }
+                    const RD::Jumps &js = (*it).second.second;
+                    os << " (";
+                    if (js.empty()) {
+                        os << "no conds";
+                    } else {
+                        os << "conds ";
+                        std::set<unsigned long> jis;
+                        for (JCI jt = js.begin(); jt != js.end(); jt++) {
+                            jis.insert((*jt)->index());
+                        }
+                        for (std::set<unsigned long>::const_iterator jt = jis.begin(); jt != jis.end(); jt++) {
+                            if (jt != jis.begin()) os << ", ";
+                            os << (*jt);
+                        }
+                    }
+                    os << ')' << std::endl;
                 }
             }
         }
@@ -369,16 +418,16 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                || ((*b.end)->incoming().empty()
                    && (*b.end)->incomingCalls().empty()));
 
-        (*b.start)->setBlock(&b);
+        (*b.end)->setBlock(&b);
 
         // If *b.end is a jump instruction, *(b.end + 1) must be a leader:
-        if (((*b.end)->type() & SecreC::Imop::JUMP_MASK) != 0
+        if ((*b.end)->isJump()
             || (*b.end)->type() == SecreC::Imop::CALL
             || (*b.end)->type() == SecreC::Imop::END
             || (*b.end)->type() == SecreC::Imop::RETURN
             || (*b.end)->type() == SecreC::Imop::RETURNVOID)
         {
-            if (((*b.end)->type() & SecreC::Imop::JUMP_MASK) != 0) {
+            if ((*b.end)->isJump()) {
                 // Check whether the jump destination is already assigned to a block:
                 IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest());
                 if (itTo != jumpTo.end()) {

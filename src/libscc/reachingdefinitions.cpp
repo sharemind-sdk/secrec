@@ -1,10 +1,10 @@
 #include "reachingdefinitions.h"
 
+#include <algorithm>
 #include <utility>
 #include "intermediate.h"
 #include "misc.h"
 #include "treenode.h"
-
 
 namespace SecreC {
 namespace {
@@ -21,15 +21,22 @@ inline std::set<T> &operator+=(std::set<T> &dest, const std::set<T> &src) {
     return dest;
 }
 
-inline ReachingDefinitions::Defs &operator+=(ReachingDefinitions::Defs &dest,
-                                             const ReachingDefinitions::Defs &src)
-{
-    typedef ReachingDefinitions::Defs::const_iterator DCI;
+template <class T>
+class CopyToSetExcept {
+    public:
+        inline CopyToSetExcept(std::set<T> &target, const T &except)
+            : m_target(target), m_except(except) {}
+        inline void operator()(const T &v) {
+            if (v != m_except) m_target.insert(v);
+        }
+    private:
+        std::set<T> &m_target;
+        const T      m_except;
+};
 
-    for (DCI it = src.begin(); it != src.end(); it++) {
-        dest[(*it).first] += (*it).second;
-    }
-    return dest;
+template <class T>
+void setToSetExcept(std::set<T> &dest, const std::set<T> &src, const T &except) {
+    std::for_each(src.begin(), src.end(), CopyToSetExcept<T>(dest, except));
 }
 
 } // anonymous namespace
@@ -56,7 +63,11 @@ void ReachingDefinitions::run() {
 
     BDM outs;
 
-    makeOuts(*bs[0], m_ins[bs[0]], outs[bs[0]]);
+    const Block &entryBlock = *bs.at(0);
+    makeOuts(entryBlock, m_ins[&entryBlock], outs[&entryBlock]);
+    m_inPos.insert(std::make_pair(&entryBlock, Jumps()));
+    m_inNeg.insert(std::make_pair(&entryBlock, Jumps()));
+
     do {
         changed = false;
 
@@ -66,20 +77,37 @@ void ReachingDefinitions::run() {
             if (!b->reachable) continue;
 
             // Recalculate input set:
-            m_ins[b].clear();
             for (BSCI it = b->predecessors.begin(); it != b->predecessors.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
-                    m_ins[b][(*jt).first] += (*jt).second;
+                    m_ins[b][(*jt).first].first += (*jt).second.first;
                 }
+                m_inNeg[b] += m_inNeg[*it];
+                m_inPos[b] += m_inPos[*it];
             }
             for (BSCI it = b->predecessorsCondFalse.begin(); it != b->predecessorsCondFalse.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
-                    m_ins[b][(*jt).first] += (*jt).second;
+                    m_ins[b][(*jt).first].first += (*jt).second.first;
+                }
+
+                const Imop *cjump = (*it)->lastImop();
+                assert(cjump->isCondJump());
+                setToSetExcept(m_inPos[b], m_inPos[*it], cjump);
+                setToSetExcept(m_inNeg[b], m_inNeg[*it], cjump);
+                if (m_inNeg[b].insert(cjump).second) {
+                    changed = true;
                 }
             }
             for (BSCI it = b->predecessorsCondTrue.begin(); it != b->predecessorsCondTrue.end(); it++) {
                 for (SDefs::const_iterator jt = outs[*it].begin(); jt != outs[*it].end(); jt++) {
-                    m_ins[b][(*jt).first] += (*jt).second;
+                    m_ins[b][(*jt).first].first += (*jt).second.first;
+                }
+
+                const Imop *cjump = (*it)->lastImop();
+                assert(cjump->isCondJump());
+                setToSetExcept(m_inPos[b], m_inPos[*it], cjump);
+                setToSetExcept(m_inNeg[b], m_inNeg[*it], cjump);
+                if (m_inPos[b].insert(cjump).second) {
+                    changed = true;
                 }
             }
 
@@ -89,82 +117,90 @@ void ReachingDefinitions::run() {
             }
         }
     } while (changed);
+
+    // For all reachable blocks:
+    for (size_t i = 1; i < bs.size(); i++) {
+        const Block *b = bs[i];
+        if (!b->reachable) continue;
+
+        // For all symbols whose definitions are reachable in block:
+        for (SDefs::iterator sit = m_ins[b].begin(); sit != m_ins[b].end(); sit++) {
+            const Symbol *s = (*sit).first;
+            Defs &defs = (*sit).second.first;
+            Jumps &validConds = (*sit).second.second;
+            assert(validConds.empty());
+
+            /*
+                Condition 1:
+                    Discard cond. jumps in hotspot which don't have a definition
+                    of symbol at their position.
+                Condition 2:
+                    Discard cond. jump if reachable in hotspot by [+-] but in
+                    definitions only with the opposite [-+].
+            */
+            for (Jumps::const_iterator jit = m_inPos[b].begin(); jit != m_inPos[b].end(); jit++) {
+                // Condition 1:
+                const Block *jb = (*jit)->block();
+                if (outs[jb].find(s) == outs[jb].end())
+                    continue;
+
+                // Condition 2:
+                bool reachable = false;
+                for (Defs::const_iterator dit = defs.begin(); dit != defs.end(); dit++) {
+                    const Block *db = (*dit)->block();
+                    if (m_inNeg[db].find(*jit) != m_inNeg[db].end()) {
+                        reachable = true;
+                        break;
+                    }
+                }
+
+                if (reachable) {
+                    validConds.insert(*jit);
+                }
+            }
+            for (Jumps::const_iterator jit = m_inNeg[b].begin(); jit != m_inNeg[b].end(); jit++) {
+                if (validConds.find(*jit) != validConds.end()) continue;
+
+                // Condition 1:
+                const Block *jb = (*jit)->block();
+                if (outs[jb].find(s) == outs[jb].end())
+                    continue;
+
+                // Condition 2:
+                bool reachable = false;
+                for (Defs::const_iterator dit = defs.begin(); dit != defs.end(); dit++) {
+                    const Block *db = (*dit)->block();
+                    if (m_inPos[db].find(*jit) != m_inPos[db].end()) {
+                        reachable = true;
+                        break;
+                    }
+                }
+
+                if (reachable) {
+                    validConds.insert(*jit);
+                }
+            }
+        }
+    }
 }
 
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
-    typedef SDefs::const_iterator SDCI;
-    typedef Defs::const_iterator DCI;
-    typedef SDefs::iterator SDI;
-    typedef Defs::iterator DI;
-
-    SDefs old(out);
+    SDefs old = out;
     out = in;
-
     for (Blocks::CCI it = b.start; it != b.end; it++) {
-        if (((*it)->type() == Imop::POPPARAM
-            || ((*it)->type() & Imop::EXPR_MASK) != 0)
+        if (((*it)->isExpr() || ((*it)->type() == Imop::POPPARAM))
             && (*it)->dest() != 0)
         {
             // Set this def:
-            Defs &d = out[(*it)->dest()];
-            CJumps jumps;
-            for (DCI jt = d.begin(); jt != d.end(); jt++) {
-                jumps += (*jt).second;
-            }
-            d.clear();
-            d.insert(make_pair(*it, jumps));
-        }
-    }
+            Defs &d = out[(*it)->dest()].first;
+            if ((d.begin() != d.end()) && (*d.begin() == *it))
+                continue;
 
-    const Imop *lastImop = *(b.end - 1);
-    if ((lastImop->type() & Imop::JUMP_MASK)
-        && lastImop->type() != Imop::JUMP)
-    {
-        for (SDI it = out.begin(); it != out.end(); it++) {
-            for (DI jt = (*it).second.begin(); jt != (*it).second.end(); jt++) {
-                (*jt).second.insert(lastImop);
-            }
+            d.clear();
+            d.insert(*it);
         }
     }
     return old != out;
 }
 
 } // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::ReachingDefinitions &rd) {
-    typedef SecreC::ReachingDefinitions::SDefs::const_iterator SDCI;
-    typedef SecreC::ReachingDefinitions::Defs::const_iterator DCI;
-    typedef SecreC::ReachingDefinitions::CJumps::const_iterator JCI;
-
-    out << "Reaching definitions result: " << std::endl;
-
-    const std::vector<SecreC::Block*> &bs = rd.icode().blocks().blocks();
-    for (size_t i = 1; i < bs.size(); i++) {
-        const SecreC::Block *b = bs[i];
-        if (!b->reachable) continue;
-        const SecreC::ReachingDefinitions::SDefs &sd = rd.getReaching(*b);
-        if (!sd.empty()) {
-            out << "  Block " << b->index << ":" << std::endl;
-            for (SDCI it = sd.begin(); it != sd.end(); it++) {
-                out << "    " << *(*it).first << ": ";
-                const SecreC::ReachingDefinitions::Defs &ds = (*it).second;
-                for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
-                    if (jt != ds.begin()) out << ", ";
-                    out << (*jt).first->index();
-                    const SecreC::ReachingDefinitions::CJumps &js = (*jt).second;
-                    if (!js.empty()) {
-                        out << " [";
-                        for (JCI kt = js.begin(); kt != js.end(); kt++) {
-                            if (kt != js.begin()) out << ", ";
-                            out << (*kt)->index();
-                        }
-                        out << "]";
-                    }
-                }
-                out << std::endl;
-            }
-        }
-    }
-
-    return out;
-}
