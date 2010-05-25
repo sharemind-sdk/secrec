@@ -1,4 +1,4 @@
-#include "reachingdefinitions.h"
+#include "dataflowanalysis.h"
 
 #include <algorithm>
 #include <utility>
@@ -24,7 +24,7 @@ inline std::set<T> &operator+=(std::set<T> &dest, const std::set<T> &src) {
 } // anonymous namespace
 
 
-ReachingDefinitions::ReachingDefinitions(const ICode &code)
+DataFlowAnalysis::DataFlowAnalysis(const ICode &code)
     : m_code(code)
 {
     assert(code.status() == ICode::OK);
@@ -37,7 +37,7 @@ ReachingDefinitions::ReachingDefinitions(const ICode &code)
     assert(code.code()[0]->block()->predecessorsRet.empty());
 }
 
-void ReachingDefinitions::run() {
+void DataFlowAnalysis::run() {
     typedef std::set<Block*>::const_iterator BSCI;
     bool changed = false;
 
@@ -183,7 +183,7 @@ void ReachingDefinitions::run() {
     } */
 }
 
-bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
+bool DataFlowAnalysis::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
     SDefs old = out;
     out = in;
     for (Blocks::CCI it = b.start; it != b.end; it++) {

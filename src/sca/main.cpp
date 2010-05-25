@@ -3,7 +3,7 @@
 #include <libscc/blocks.h>
 #include <libscc/intermediate.h>
 #include <libscc/parser.h>
-#include <libscc/reachingdefinitions.h>
+#include <libscc/dataflowanalysis.h>
 #include <libscc/treenode.h>
 
 using namespace std;
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         SecreC::ICode icode;
         icode.init(parseTree);
         if (icode.status() == SecreC::ICode::OK) {
-            SecreC::ReachingDefinitions rd(icode);
+            SecreC::DataFlowAnalysis rd(icode);
             rd.run();
             cout << icode.blocks().toString(&rd)
                  << icode.compileLog();

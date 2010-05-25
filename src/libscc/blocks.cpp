@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 #include <stack>
-#include "reachingdefinitions.h"
+#include "dataflowanalysis.h"
 #include "treenode.h"
 
 
@@ -189,8 +189,8 @@ Blocks::~Blocks() {
     }
 }
 
-std::string Blocks::toString(const ReachingDefinitions *rd) const {
-    typedef ReachingDefinitions RD;
+std::string Blocks::toString(const DataFlowAnalysis *rd) const {
+    typedef DataFlowAnalysis RD;
 
     std::ostringstream os;
 
@@ -221,9 +221,9 @@ std::string Blocks::toString(const ReachingDefinitions *rd) const {
         }
         if (rd != 0 && (*it)->reachable) {
             os << "    Reaching cond. jumps: ";
-            typedef ReachingDefinitions::BJM::const_iterator BJMCI;
-            const ReachingDefinitions::BJM &poss = rd->getPosJumps();
-            const ReachingDefinitions::BJM &negs = rd->getNegJumps();
+            typedef DataFlowAnalysis::BJM::const_iterator BJMCI;
+            const DataFlowAnalysis::BJM &poss = rd->getPosJumps();
+            const DataFlowAnalysis::BJM &negs = rd->getNegJumps();
             BJMCI posi = poss.find(*it);
             BJMCI negi = negs.find(*it);
 

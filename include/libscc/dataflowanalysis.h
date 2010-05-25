@@ -13,7 +13,7 @@ class Symbol;
 class ICode;
 class Imop;
 
-class ReachingDefinitions {
+class DataFlowAnalysis {
     public: /* Types: */
         typedef std::set<const Imop*>           Defs;
         typedef std::set<const Imop*>           Jumps;
@@ -23,7 +23,7 @@ class ReachingDefinitions {
         typedef std::map<const Block*, Jumps>   BJM;
 
     public: /* Methods: */
-        ReachingDefinitions(const ICode &code);
+        DataFlowAnalysis(const ICode &code);
         void run();
 
         inline const ICode &icode() const { return m_code; }
