@@ -20,6 +20,7 @@ class DataFlowAnalysis {
         inline DataFlowAnalysis(bool forward, bool backward) : m_forward(forward), m_backward(backward) {}
 
         inline bool isForward() const { return m_forward; }
+        inline bool isBackward() const { return m_backward; }
 
         virtual void start(const Block & /* entry or exit block */) {}
         virtual void startBlock(const Block &) {}
@@ -54,21 +55,17 @@ class BackwardDataFlowAnalysis: public DataFlowAnalysis {
 };
 
 class DataFlowAnalysisRunner {
+    public: /* Types: */
+        typedef std::set<DataFlowAnalysis*>         AnalysisSet;
+        typedef std::set<BackwardDataFlowAnalysis*> BackwardAnalysisSet;
+        typedef std::set<ForwardDataFlowAnalysis*>  ForwardAnalysisSet;
+
     public: /* Methods: */
-        inline void addAnalysis(DataFlowAnalysis *a) {
-            if (a->isForward()) {
-                assert(dynamic_cast<ForwardDataFlowAnalysis*>(a));
-                m_forwards.insert(static_cast<ForwardDataFlowAnalysis*>(a));
-            } else {
-                assert(dynamic_cast<BackwardDataFlowAnalysis*>(a));
-                m_backwards.insert(static_cast<BackwardDataFlowAnalysis*>(a));
-            }
-        }
+        inline void addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); }
         void run(const Blocks &blocks);
 
     private: /* Fields: */
-        std::set<ForwardDataFlowAnalysis*> m_forwards;
-        std::set<BackwardDataFlowAnalysis*> m_backwards;
+        AnalysisSet m_as;
 };
 
 class ReachingDefinitions: public ForwardDataFlowAnalysis {

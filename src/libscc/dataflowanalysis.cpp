@@ -9,71 +9,127 @@
 namespace SecreC {
 namespace {
 
-template <class T>
-inline std::set<T> &operator+=(std::set<T> &dest, const std::set<T> &src) {
+template <class T, class U>
+inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
     dest.insert(src.begin(), src.end());
     return dest;
 }
 
 #define FOREACH_BLOCKS(it,bs) for (std::set<Block*>::const_iterator it = bs.begin(); it != bs.end(); it++)
-#define FOREACH_FORWARDS(it) for (std::set<ForwardDataFlowAnalysis*>::const_iterator it = m_forwards.begin(); it != m_forwards.end(); it++)
-#define FOREACH_BACKWARDS(it) for (std::set<BackwardDataFlowAnalysis*>::const_iterator it = m_backwards.begin(); it != m_backwards.end(); it++)
+#define FOREACH_ANALYSIS(it,as) for (std::set<DataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
+#define FOREACH_BANALYSIS(it,as) for (std::set<BackwardDataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
+#define FOREACH_FANALYSIS(it,as) for (std::set<ForwardDataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
 
 } // anonymous namespace
 
 
 void DataFlowAnalysisRunner::run(const Blocks &bs) {
-    typedef std::set<Block*>::const_iterator BSCI;
-    bool changed = false;
+    assert(!m_as.empty());
+
+    AnalysisSet aas;
+    BackwardAnalysisSet bas;
+    ForwardAnalysisSet fas;
 
     const Block &entryBlock = bs.entryBlock();
-    FOREACH_FORWARDS(it)
-        (*it)->start(entryBlock);
+    FOREACH_ANALYSIS(a, m_as) {
+        (*a)->start(entryBlock);
+        aas.insert(*a);
+        if ((*a)->isBackward()) {
+            assert(dynamic_cast<BackwardDataFlowAnalysis*>(*a) != 0);
+            bas.insert(static_cast<BackwardDataFlowAnalysis*>(*a));
+        }
+        if ((*a)->isForward()) {
+            assert(dynamic_cast<ForwardDataFlowAnalysis*>(*a) != 0);
+            fas.insert(static_cast<ForwardDataFlowAnalysis*>(*a));
+        }
+    }
 
-    do {
-        changed = false;
+    for (;;) {
+        AnalysisSet changed;
+        BackwardAnalysisSet bchanged;
+        ForwardAnalysisSet fchanged;
 
         // For all reachable blocks:
         for (size_t i = 1; i < bs.size(); i++) {
             const Block *b = bs[i];
             if (!b->reachable) continue;
 
-            FOREACH_FORWARDS(it)
-                (*it)->startBlock(*b);
+            FOREACH_ANALYSIS(a, aas)
+                (*a)->startBlock(*b);
 
             // Recalculate input sets:
-            FOREACH_BLOCKS(it,b->predecessors)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFrom(**it, *b);
+            if (!fas.empty()) {
+                FOREACH_BLOCKS(it,b->predecessors)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFrom(**it, *b);
 
-            FOREACH_BLOCKS(it,b->predecessorsCondFalse)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFromFalse(**it, *b);
+                FOREACH_BLOCKS(it,b->predecessorsCondFalse)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFromFalse(**it, *b);
 
-            FOREACH_BLOCKS(it,b->predecessorsCondTrue)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFromTrue(**it, *b);
+                FOREACH_BLOCKS(it,b->predecessorsCondTrue)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFromTrue(**it, *b);
 
-            FOREACH_BLOCKS(it,b->predecessorsCall)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFromCall(**it, *b);
+                FOREACH_BLOCKS(it,b->predecessorsCall)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFromCall(**it, *b);
 
-            FOREACH_BLOCKS(it,b->predecessorsRet)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFromRet(**it, *b);
+                FOREACH_BLOCKS(it,b->predecessorsRet)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFromRet(**it, *b);
 
-            if (b->callPassFrom != 0)
-                FOREACH_FORWARDS(a)
-                    (*a)->inFromCallPass(*b->callPassFrom, *b);
+                if (b->callPassFrom != 0)
+                    FOREACH_FANALYSIS(a, fas)
+                        (*a)->inFromCallPass(*b->callPassFrom, *b);
+            }
+            if (!bas.empty()) {
+                FOREACH_BLOCKS(it,b->successors)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outTo(**it, *b);
+
+                FOREACH_BLOCKS(it,b->successorsCondFalse)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToFalse(**it, *b);
+
+                FOREACH_BLOCKS(it,b->successorsCondTrue)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToTrue(**it, *b);
+
+                FOREACH_BLOCKS(it,b->successorsCall)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToCall(**it, *b);
+
+                FOREACH_BLOCKS(it,b->successorsRet)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToRet(**it, *b);
+
+                if (b->callPassTo != 0)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToCallPass(*b->callPassTo, *b);
+            }
 
             // Recalculate output sets:
-            FOREACH_FORWARDS(a)
-                if ((*a)->finishBlock(*b))
-                    changed = true;
+            FOREACH_ANALYSIS(a, aas)
+                if ((*a)->finishBlock(*b)) {
+                    changed.insert(*a);
+                    if ((*a)->isBackward()) {
+                        bas.insert(static_cast<BackwardDataFlowAnalysis*>(*a));
+                    }
+                    if ((*a)->isForward()) {
+                        fas.insert(static_cast<ForwardDataFlowAnalysis*>(*a));
+                    }
+                }
         }
-    } while (changed);
 
-    FOREACH_FORWARDS(a)
+        if (changed.empty()) return;
+
+        aas = changed;
+        bas = bchanged;
+        fas = fchanged;
+    }
+
+    FOREACH_ANALYSIS(a, aas)
         (*a)->finish();
 }
 
