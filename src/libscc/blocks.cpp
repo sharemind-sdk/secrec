@@ -6,7 +6,6 @@
 #include "treenode.h"
 
 
-typedef std::vector<SecreC::Block*>::const_iterator BVCI;
 typedef std::set<SecreC::Block*>::const_iterator BSCI;
 typedef std::set<SecreC::Imop*> IS;
 typedef IS::const_iterator ISCI;
@@ -96,7 +95,9 @@ namespace SecreC {
   Blocks
 *******************************************************************************/
 
-Blocks::Status Blocks::init(const ICodeList &code) {
+void Blocks::init(const ICodeList &code) {
+    clear();
+
     /// \todo Check for empty code
 
     code.resetIndexes();
@@ -108,7 +109,7 @@ Blocks::Status Blocks::init(const ICodeList &code) {
 
     Block *b = new Block(code.begin(), i++);
     next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
-    m_blocks.push_back(b);
+    push_back(b);
     m_entryBlock = b;
 
     while (next != code.end()) {
@@ -116,7 +117,7 @@ Blocks::Status Blocks::init(const ICodeList &code) {
 
         b = new Block(next, i++);
         next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
-        m_blocks.push_back(b);
+        push_back(b);
 
         if (fallsThru(*old)) {
             if (((*(old->end - 1))->type() & Imop::JUMP_MASK) == 0x0
@@ -177,19 +178,15 @@ Blocks::Status Blocks::init(const ICodeList &code) {
             }
         }
     } while (!bs.empty());
-
-
-    if (m_status == NOT_READY) m_status = OK;
-    return m_status;
 }
 
 Blocks::~Blocks() {
-    for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
+    for (const_iterator it(begin()); it != end(); it++) {
         delete *it;
     }
 }
 
-std::string Blocks::toString(const DataFlowAnalysis *rd) const {
+std::string Blocks::toString() const {
     typedef DataFlowAnalysis RD;
 
     std::ostringstream os;
@@ -197,7 +194,7 @@ std::string Blocks::toString(const DataFlowAnalysis *rd) const {
     os << "BLOCKS" << std::endl;
     unsigned long i = 1;
 
-    for (BVCI it(m_blocks.begin()); it != m_blocks.end(); it++) {
+    for (const_iterator it = begin(); it != end(); it++) {
         os << "  Block " << i;
         if (!(*it)->reachable) {
             os << " [REMOVED]";
@@ -219,88 +216,8 @@ std::string Blocks::toString(const DataFlowAnalysis *rd) const {
         if ((*it)->callPassTo != 0) {
             os << "  ... PassTo: " << (*it)->callPassTo->index << std::endl;;
         }
-        if (rd != 0 && (*it)->reachable) {
-            os << "    Reaching cond. jumps: ";
-            typedef DataFlowAnalysis::BJM::const_iterator BJMCI;
-            const DataFlowAnalysis::BJM &poss = rd->getPosJumps();
-            const DataFlowAnalysis::BJM &negs = rd->getNegJumps();
-            BJMCI posi = poss.find(*it);
-            BJMCI negi = negs.find(*it);
 
-            typedef std::set<const Imop*>::const_iterator ISCI;
-            typedef std::map<unsigned long, char>::iterator       LCMI;
-            typedef std::map<unsigned long, char>::const_iterator LCMCI;
-
-            std::map<unsigned long, char> jumps;
-
-            if (posi != poss.end()) {
-                for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); jt++) {
-                    jumps.insert(std::make_pair((*jt)->index(), '+'));
-                }
-                if (negi != negs.end()) {
-                    for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
-                        LCMI kt = jumps.find((*jt)->index());
-                        if (kt != jumps.end()) {
-                            (*kt).second = '*';
-                        } else {
-                            jumps.insert(std::make_pair((*jt)->index(), '-'));
-                        }
-                    }
-                }
-            } else if (negi != negs.end()) {
-                for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
-                    jumps.insert(std::make_pair((*jt)->index(), '-'));
-                }
-            }
-
-            if (jumps.empty()) {
-                os << "NONE";
-            } else {
-                for (LCMCI jt = jumps.begin(); jt != jumps.end(); jt++) {
-                    if (jt != jumps.begin()) os << ", ";
-                    os << (*jt).first << (*jt).second;
-                }
-            }
-            os << std::endl;
-
-
-            os << "    Reaching definitions:";
-            const RD::SDefs &sd = rd->getReaching(**it);
-            if (sd.empty()) {
-                os << " NONE" << std::endl;
-            } else {
-                typedef RD::SDefs::const_iterator SDCI;
-                typedef RD::Defs::const_iterator DCI;
-                typedef RD::Jumps::const_iterator JCI;
-
-                os << std::endl;
-                for (SDCI it = sd.begin(); it != sd.end(); it++) {
-                    os << "      " << *(*it).first << ": ";
-                    const RD::Defs &ds = (*it).second.first;
-                    for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
-                        if (jt != ds.begin()) os << ", ";
-                        os << (*jt)->index();
-                    }
-                    /*const RD::Jumps &js = (*it).second.second;
-                    os << " (";
-                    if (js.empty()) {
-                        os << "no conds";
-                    } else {
-                        os << "conds ";
-                        std::set<unsigned long> jis;
-                        for (JCI jt = js.begin(); jt != js.end(); jt++) {
-                            jis.insert((*jt)->index());
-                        }
-                        for (std::set<unsigned long>::const_iterator jt = jis.begin(); jt != jis.end(); jt++) {
-                            if (jt != jis.begin()) os << ", ";
-                            os << (*jt);
-                        }
-                    }
-                    os << ')' << std::endl; */
-                    os << std::endl;
-                }
-            }
-        }
+        // Print code:
         os << "    Code:" << std::endl;
         for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
             os << "      " << (*jt)->index() << "  " << (**jt);

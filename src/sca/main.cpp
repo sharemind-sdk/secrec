@@ -34,15 +34,30 @@ int main(int argc, char *argv[]) {
 
     if (parseResult == 0) {
         assert(parseTree != 0);
-        cout << parseTree->toString() << endl << endl;
+        // Print AST:
+        // cout << parseTree->toString() << endl << endl;
 
         SecreC::ICode icode;
         icode.init(parseTree);
+
         if (icode.status() == SecreC::ICode::OK) {
-            SecreC::DataFlowAnalysis rd(icode);
-            rd.run();
-            cout << icode.blocks().toString(&rd)
+            cerr << "Valid intermediate code generated." << endl
                  << icode.compileLog();
+
+            // Print basic blocks:
+            SecreC::Blocks bs;
+            bs.init(icode.code());
+            cout << bs.toString() << std::endl;
+
+            // Run data flow analysis and print the results:
+            SecreC::DataFlowAnalysisRunner runner;
+            SecreC::ReachingDefinitions rd;
+            SecreC::ReachingJumps rj;
+            runner.addAnalysis(&rd);
+            runner.addAnalysis(&rj);
+            runner.run(bs);
+            cout << rd.toString(bs) << std::endl;
+            cout << rj.toString(bs);
         } else {
             cerr << "Error generating valid intermediate code." << endl
                  << icode.compileLog();

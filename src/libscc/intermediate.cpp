@@ -13,12 +13,6 @@ ICode::Status ICode::init(TreeNodeProgram *program) {
         return s;
     }
 
-    Blocks::Status bs = m_blocks.init(m_code);
-    if (bs != Blocks::OK) {
-        m_status = E_BLOCKS;
-        return m_status;
-    }
-
     m_status = OK;
     return m_status;
 }

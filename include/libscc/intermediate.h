@@ -17,7 +17,7 @@ class TreeNodeProgram;
 class ICode {
     public: /* Types: */
         enum Status { NOT_READY, OK, E_NOT_IMPLEMENTED, E_EMPTY_PROGRAM,
-                      E_NO_MAIN, E_TYPE, E_OTHER, E_BLOCKS, E_NO_MEM };
+                      E_NO_MAIN, E_TYPE, E_OTHER, E_NO_MEM };
 
     public: /* Methods: */
         inline ICode()
@@ -27,14 +27,12 @@ class ICode {
 
         const SymbolTable &symbols() const { return m_symbols; }
         const ICodeList &code() const { return m_code; }
-        const Blocks &blocks() const { return m_blocks; }
         Status status() const { return m_status; }
         const CompileLog &compileLog() const { return m_log; }
 
     private: /* Fields: */
         SymbolTable m_symbols;
         ICodeList   m_code;
-        Blocks      m_blocks;
         Status      m_status;
         CompileLog  m_log;
 };

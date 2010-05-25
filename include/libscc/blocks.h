@@ -14,27 +14,22 @@ namespace SecreC {
 *******************************************************************************/
 
 class Block;
-class DataFlowAnalysis;
+class ReachingDefinitions;
+class ReachingJumps;
 
-class Blocks {
+class Blocks: public std::vector<Block*> {
     public: /* Types: */
-        enum Status { NOT_READY, ERROR, OK };
         typedef ICodeList::const_iterator CCI;
         typedef std::map<const SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
 
-
     public: /* Methods: */
-        inline Blocks()
-            : m_status(NOT_READY) {};
         ~Blocks();
 
-        Status init(const ICodeList &code);
+        void init(const ICodeList &code);
 
-        const std::vector<Block*> &blocks() const { return m_blocks; }
         const Block &entryBlock() const { return *m_entryBlock; }
 
-        std::string toString(const DataFlowAnalysis *rd = 0) const;
-        inline Status status() const { return m_status; }
+        std::string toString() const;
 
     protected: /* Methods: */
          CCI endBlock(SecreC::Block &b, CCI end,
@@ -43,9 +38,7 @@ class Blocks {
                       IAB &returnFrom, IAB &returnTo);
 
     private: /* Fields: */
-        std::vector<Block*> m_blocks;
         Block *m_entryBlock;
-        Status m_status;
 
 };
 
