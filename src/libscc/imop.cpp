@@ -83,6 +83,9 @@ std::string Imop::toString() const {
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
             break;
+        case DECLASSIFY:   /*   d = DECLASSIFY(arg1);            */
+            os << dname << " = " << a1name;
+            break;
         case CAST:         /*   d = (arg1) arg2;                 */
             os << "TODO CAST";
             break;

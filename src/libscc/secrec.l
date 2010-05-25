@@ -59,25 +59,26 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 <COMMENT_CPP>[^\n] { stepChar(yyget_lloc(yyscanner)); }
 <COMMENT_CPP>[\n]  { newline(yyget_lloc(yyscanner)); BEGIN(INITIAL); }
 
-"bool"     { stepLen(yyget_lloc(yyscanner), 4); return BOOL; }
-"break"    { stepLen(yyget_lloc(yyscanner), 5); return BREAK; }
-"continue" { stepLen(yyget_lloc(yyscanner), 8); return CONTINUE; }
-"do"       { stepLen(yyget_lloc(yyscanner), 2); return DO; }
+"bool"       { stepLen(yyget_lloc(yyscanner), 4); return BOOL; }
+"break"      { stepLen(yyget_lloc(yyscanner), 5); return BREAK; }
+"continue"   { stepLen(yyget_lloc(yyscanner), 8); return CONTINUE; }
+"declassify" { stepLen(yyget_lloc(yyscanner), 8); return DECLASSIFY; }
+"do"         { stepLen(yyget_lloc(yyscanner), 2); return DO; }
  /* "double"   { stepLen(yyget_lloc(yyscanner), 6); return DOUBLE; } */
-"else"     { stepLen(yyget_lloc(yyscanner), 4); return ELSE; }
-"false"    { stepLen(yyget_lloc(yyscanner), 5); return FALSE_B; }
-"for"      { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
-"if"       { stepLen(yyget_lloc(yyscanner), 2); return IF; }
-"int"      { stepLen(yyget_lloc(yyscanner), 3); return INT; }
-"private"  { stepLen(yyget_lloc(yyscanner), 7); return PRIVATE; }
-"public"   { stepLen(yyget_lloc(yyscanner), 6); return PUBLIC; }
-"return"   { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
-"signed"   { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; }
-"string"   { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
-"true"     { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
-"unsigned" { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; }
-"void"     { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
-"while"    { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
+"else"       { stepLen(yyget_lloc(yyscanner), 4); return ELSE; }
+"false"      { stepLen(yyget_lloc(yyscanner), 5); return FALSE_B; }
+"for"        { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
+"if"         { stepLen(yyget_lloc(yyscanner), 2); return IF; }
+"int"        { stepLen(yyget_lloc(yyscanner), 3); return INT; }
+"private"    { stepLen(yyget_lloc(yyscanner), 7); return PRIVATE; }
+"public"     { stepLen(yyget_lloc(yyscanner), 6); return PUBLIC; }
+"return"     { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
+"signed"     { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; }
+"string"     { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
+"true"       { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
+"unsigned"   { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; }
+"void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
+"while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

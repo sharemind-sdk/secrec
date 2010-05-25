@@ -20,28 +20,29 @@ class Imop {
             // Expressions:
             //-------------
             ASSIGN     = 0x1,   /*   d = arg1;                        */
-            CAST       = 0x2,   /*   d = (arg1) arg2;                 */
-            WILDCARD   = 0x3,   /*   d = arg1[*];                     */
-            SUBSCRIPT  = 0x4,   /*   d = arg1[arg2];                  */
-            UNEG       = 0x5,   /*   d = !arg1;                       */
-            UMINUS     = 0x6,   /*   d = -arg1;                       */
-            MATRIXMUL  = 0x7,   /*   d = arg1 #  arg2;                */
-            MUL        = 0x8,   /*   d = arg1 *  arg2;                */
-            DIV        = 0x9,   /*   d = arg1 /  arg2;                */
-            MOD        = 0xa,   /*   d = arg1 %  arg2;                */
-            ADD        = 0xb,   /*   d = arg1 +  arg2;                */
-            SUB        = 0xc,   /*   d = arg1 -  arg2;                */
-            EQ         = 0xd,   /*   d = arg1 == arg2;                */
-            NE         = 0xe,   /*   d = arg1 != arg2;                */
-            LE         = 0xf,   /*   d = arg1 <= arg2;                */
-            LT         = 0x10,  /*   d = arg1 <  arg2;                */
-            GE         = 0x11,  /*   d = arg1 >= arg2;                */
-            GT         = 0x12,  /*   d = arg1 >  arg2;                */
-            LAND       = 0x13,  /*   d = arg1 && arg2;                */
-            LOR        = 0x14,  /*   d = arg1 || arg2;                */
+            DECLASSIFY = 0x2,   /*   d = DECLASSIFY(arg1);            */
+            CAST       = 0x3,   /*   d = (arg1) arg2;                 */
+            WILDCARD   = 0x4,   /*   d = arg1[*];                     */
+            SUBSCRIPT  = 0x5,   /*   d = arg1[arg2];                  */
+            UNEG       = 0x6,   /*   d = !arg1;                       */
+            UMINUS     = 0x7,   /*   d = -arg1;                       */
+            MATRIXMUL  = 0x8,   /*   d = arg1 #  arg2;                */
+            MUL        = 0x9,   /*   d = arg1 *  arg2;                */
+            DIV        = 0xa,   /*   d = arg1 /  arg2;                */
+            MOD        = 0xb,   /*   d = arg1 %  arg2;                */
+            ADD        = 0xc,   /*   d = arg1 +  arg2;                */
+            SUB        = 0xd,   /*   d = arg1 -  arg2;                */
+            EQ         = 0xe,   /*   d = arg1 == arg2;                */
+            NE         = 0xf,   /*   d = arg1 != arg2;                */
+            LE         = 0x10,  /*   d = arg1 <= arg2;                */
+            LT         = 0x11,  /*   d = arg1 <  arg2;                */
+            GE         = 0x12,  /*   d = arg1 >= arg2;                */
+            GT         = 0x13,  /*   d = arg1 >  arg2;                */
+            LAND       = 0x14,  /*   d = arg1 && arg2;                */
+            LOR        = 0x15,  /*   d = arg1 || arg2;                */
 
             /* For CALL, arg2 is the corresponding RETCLEAN instruction: */
-            CALL       = 0x15,  /*   d = arg1(PARAMS);   (Imop *arg2) */
+            CALL       = 0x16,  /*   d = arg1(PARAMS);   (Imop *arg2) */
                 EXPR_MASK = 0xff,
 
             //-------

@@ -31,34 +31,35 @@ enum SecrecTreeNodeType {
     NODE_LITE_STRING      = 0x5,
         NODE_LITE_MASK    = 0xf,
     NODE_EXPR_NONE        = 0x010, /* void expression          */
-    NODE_EXPR_PROCCALL    = 0x020, /* expr(), expr(expr, ...)  */
-    NODE_EXPR_WILDCARD    = 0x030, /* expr[*]                  */
-    NODE_EXPR_SUBSCRIPT   = 0x040, /* expr[expr]               */
-    NODE_EXPR_UNEG        = 0x050, /* !expr                    */
-    NODE_EXPR_UMINUS      = 0x060, /* -expr                    */
-    NODE_EXPR_CAST        = 0x070, /* (type) expr              */
-    NODE_EXPR_BINARY_MATRIXMUL = 0x080, /* expr # expr              */
-    NODE_EXPR_BINARY_MUL       = 0x090, /* expr * expr              */
-    NODE_EXPR_BINARY_DIV       = 0x0a0, /* expr / expr              */
-    NODE_EXPR_BINARY_MOD       = 0x0b0, /* expr % expr              */
-    NODE_EXPR_BINARY_ADD       = 0x0c0, /* expr + expr              */
-    NODE_EXPR_BINARY_SUB       = 0x0d0, /* expr - expr              */
-    NODE_EXPR_BINARY_EQ        = 0x0e0, /* expr == expr             */
-    NODE_EXPR_BINARY_NE        = 0x0f0, /* expr != expr             */
-    NODE_EXPR_BINARY_LE        = 0x100, /* expr <= expr             */
-    NODE_EXPR_BINARY_GT        = 0x110, /* expr > expr              */
-    NODE_EXPR_BINARY_GE        = 0x120, /* expr >= expr             */
-    NODE_EXPR_BINARY_LT        = 0x130, /* expr < expr              */
-    NODE_EXPR_BINARY_LAND      = 0x140, /* expr && expr             */
-    NODE_EXPR_BINARY_LOR       = 0x150, /* expr || expr             */
-    NODE_EXPR_TERNIF      = 0x160, /* expr ? expr : expr       */
-    NODE_EXPR_ASSIGN_MUL  = 0x170, /* expr *= expr             */
-    NODE_EXPR_ASSIGN_DIV  = 0x180, /* expr /= expr             */
-    NODE_EXPR_ASSIGN_MOD  = 0x190, /* expr %= expr             */
-    NODE_EXPR_ASSIGN_ADD  = 0x1a0, /* expr += expr             */
-    NODE_EXPR_ASSIGN_SUB  = 0x1b0, /* expr -= expr             */
-    NODE_EXPR_ASSIGN      = 0x1c0, /* expr = expr              */
-    NODE_EXPR_RVARIABLE   = 0x1d0, /* x (R-value)              */
+    NODE_EXPR_DECLASSIFY  = 0x020, /* expr(), expr(expr, ...)  */
+    NODE_EXPR_PROCCALL    = 0x030, /* expr(), expr(expr, ...)  */
+    NODE_EXPR_WILDCARD    = 0x040, /* expr[*]                  */
+    NODE_EXPR_SUBSCRIPT   = 0x050, /* expr[expr]               */
+    NODE_EXPR_UNEG        = 0x060, /* !expr                    */
+    NODE_EXPR_UMINUS      = 0x070, /* -expr                    */
+    NODE_EXPR_CAST        = 0x080, /* (type) expr              */
+    NODE_EXPR_BINARY_MATRIXMUL = 0x090, /* expr # expr              */
+    NODE_EXPR_BINARY_MUL       = 0x0a0, /* expr * expr              */
+    NODE_EXPR_BINARY_DIV       = 0x0b0, /* expr / expr              */
+    NODE_EXPR_BINARY_MOD       = 0x0c0, /* expr % expr              */
+    NODE_EXPR_BINARY_ADD       = 0x0d0, /* expr + expr              */
+    NODE_EXPR_BINARY_SUB       = 0x0e0, /* expr - expr              */
+    NODE_EXPR_BINARY_EQ        = 0x0f0, /* expr == expr             */
+    NODE_EXPR_BINARY_NE        = 0x100, /* expr != expr             */
+    NODE_EXPR_BINARY_LE        = 0x110, /* expr <= expr             */
+    NODE_EXPR_BINARY_GT        = 0x120, /* expr > expr              */
+    NODE_EXPR_BINARY_GE        = 0x130, /* expr >= expr             */
+    NODE_EXPR_BINARY_LT        = 0x140, /* expr < expr              */
+    NODE_EXPR_BINARY_LAND      = 0x150, /* expr && expr             */
+    NODE_EXPR_BINARY_LOR       = 0x160, /* expr || expr             */
+    NODE_EXPR_TERNIF      = 0x170, /* expr ? expr : expr       */
+    NODE_EXPR_ASSIGN_MUL  = 0x180, /* expr *= expr             */
+    NODE_EXPR_ASSIGN_DIV  = 0x190, /* expr /= expr             */
+    NODE_EXPR_ASSIGN_MOD  = 0x1a0, /* expr %= expr             */
+    NODE_EXPR_ASSIGN_ADD  = 0x1b0, /* expr += expr             */
+    NODE_EXPR_ASSIGN_SUB  = 0x1c0, /* expr -= expr             */
+    NODE_EXPR_ASSIGN      = 0x1d0, /* expr = expr              */
+    NODE_EXPR_RVARIABLE   = 0x1e0, /* x (R-value)              */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x1000,
     NODE_STMT_FOR       = 0x2000,

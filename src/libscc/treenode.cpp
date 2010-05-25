@@ -78,6 +78,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_LITE_UINT: return "UINT";
         case NODE_LITE_STRING: return "STRING";
         case NODE_EXPR_NONE: return "EXPR_NONE";
+        case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
         case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
         case NODE_EXPR_WILDCARD: return "EXPR_WILDCARD";
         case NODE_EXPR_SUBSCRIPT: return "EXPR_SUBSCRIPT";
@@ -229,6 +230,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
         case NODE_EXPR_ASSIGN:
             return (TreeNode*) (new SecreC::TreeNodeExprAssign(type, *loc));
+        case NODE_EXPR_DECLASSIFY:
+            return (TreeNode*) (new SecreC::TreeNodeExprDeclassify(*loc));
         case NODE_EXPR_PROCCALL:
             return (TreeNode*) (new SecreC::TreeNodeExprProcCall(*loc));
         case NODE_EXPR_RVARIABLE:
@@ -1016,6 +1019,46 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
     }
     code.push_imop(i);
     return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeExprDeclassify
+*******************************************************************************/
+
+ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &,
+                                                          CompileLog &log)
+{
+    if (haveResultType()) return ICode::OK;
+
+    assert(children().size() == 1);
+
+    log.fatal() << "Declassification not yet implemented.";
+
+    /// \todo
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &,
+                                                   SymbolTable &st,
+                                                   CompileLog &log,
+                                                   Symbol *)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    log.fatal() << "Declassification not yet implemented.";
+
+    /// \todo
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+ICode::Status TreeNodeExprDeclassify::generateBoolCode(ICodeList &,
+                                                       SymbolTable &,
+                                                       CompileLog &)
+{
+    assert(false); // This function should not be called at all.
 }
 
 

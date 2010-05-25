@@ -81,8 +81,8 @@
 %token <str> IDENTIFIER
 
 /* Keywords: */
-%token BOOL BREAK CONTINUE DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC RETURN
-%token SIGNED STRING TRUE_B UNSIGNED VOID WHILE
+%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC
+%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -661,8 +661,14 @@ unary_expression
  ;
 
 postfix_expression
+: DECLASSIFY '(' expression ')'
+  {
+    $$ = treenode_init(NODE_EXPR_DECLASSIFY, &@$);
+    /* treenode_appendChild($$, ensure_rValue($1)); */
+    treenode_appendChild($$, $3);
+  }
 /* : postfix_expression '(' ')'*/
- : identifier '(' ')'
+ | identifier '(' ')'
    {
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      /* treenode_appendChild($$, ensure_rValue($1)); */
