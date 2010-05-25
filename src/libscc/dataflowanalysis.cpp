@@ -45,9 +45,9 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
     }
 
     for (;;) {
-        AnalysisSet changed;
-        BackwardAnalysisSet bchanged;
-        ForwardAnalysisSet fchanged;
+        AnalysisSet unchanged = aas;
+        BackwardAnalysisSet bunchanged = bas;
+        ForwardAnalysisSet funchanged = fas;
 
         // For all reachable blocks:
         for (size_t i = 1; i < bs.size(); i++) {
@@ -112,21 +112,26 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
             // Recalculate output sets:
             FOREACH_ANALYSIS(a, aas)
                 if ((*a)->finishBlock(*b)) {
-                    changed.insert(*a);
+                    unchanged.erase(*a);
                     if ((*a)->isBackward()) {
-                        bas.insert(static_cast<BackwardDataFlowAnalysis*>(*a));
+                        bunchanged.erase(static_cast<BackwardDataFlowAnalysis*>(*a));
                     }
                     if ((*a)->isForward()) {
-                        fas.insert(static_cast<ForwardDataFlowAnalysis*>(*a));
+                        funchanged.erase(static_cast<ForwardDataFlowAnalysis*>(*a));
                     }
                 }
         }
 
-        if (changed.empty()) return;
+        if (unchanged.size() == aas.size()) return;
 
-        aas = changed;
-        bas = bchanged;
-        fas = fchanged;
+        FOREACH_BANALYSIS(a, bunchanged) {
+            aas.erase(*a);
+            bas.erase(*a);
+        }
+        FOREACH_FANALYSIS(a, funchanged) {
+            aas.erase(*a);
+            fas.erase(*a);
+        }
     }
 
     FOREACH_ANALYSIS(a, aas)
