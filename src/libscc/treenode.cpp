@@ -593,13 +593,14 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
     assert(dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol *destSymSym = static_cast<SymbolSymbol*>(destSym);
 
-    // Generate code for righthand expression:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
     // Generate code for assignment
     if (type() == NODE_EXPR_ASSIGN) {
         // Simple assignment
+
+        // Generate code for righthand expression:
         s = e2->generateCode(code, st, log, destSymSym);
         if (s != ICode::OK) return s;
         setFirstImop(e2->firstImop());
@@ -615,7 +616,9 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
             setNextList(e2->nextList());
         }
     } else {
-        // Calculating assignments
+        // Arithmetic assignments
+
+        // Generate code for righthand expression:
         s = e2->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e2->firstImop());
@@ -1026,39 +1029,89 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
   TreeNodeExprDeclassify
 *******************************************************************************/
 
-ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &,
+ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &st,
                                                           CompileLog &log)
 {
     if (haveResultType()) return ICode::OK;
 
     assert(children().size() == 1);
 
-    log.fatal() << "Declassification not yet implemented.";
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
 
-    /// \todo
-    return ICode::E_NOT_IMPLEMENTED;
+    if (!e->resultType().isVoid()) {
+        assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
+        const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
+
+        assert(t.kind() == TypeNonVoid::BASIC || t.kind() == TypeNonVoid::VAR
+               || t.kind() == TypeNonVoid::ARRAY);
+        assert(t.secType().kind() == SecType::BASIC);
+
+        // Check whether argument is PRIVATE:
+        assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);
+        if (static_cast<const SecTypeBasic&>(t.secType()).secType() == SECTYPE_PRIVATE) {
+            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, t.dataType()));
+            return ICode::OK;
+        }
+    }
+
+    log.fatal() << "Argument of type " << e->resultType()
+                << " passed to declassify operator at " << location();
+
+    return ICode::E_TYPE;
 }
 
-ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &,
+ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
                                                    SymbolTable &st,
                                                    CompileLog &log,
-                                                   Symbol *)
+                                                   Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    log.fatal() << "Declassification not yet implemented.";
+    // Generate temporary for the result of the declassification, if needed:
+    if (r == 0) {
+        setResult(st.appendTemporary(resultType()));
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
 
-    /// \todo
-    return ICode::E_NOT_IMPLEMENTED;
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    setFirstImop(e->firstImop());
+
+    Imop *i = new Imop(this, Imop::DECLASSIFY, result(), static_cast<const TreeNodeExpr*>(e)->result());
+    code.push_imop(i);
+    patchFirstImop(i);
+
+    // Patch next list of child expression:
+    e->patchNextList(i);
+
+    return ICode::OK;
 }
 
-ICode::Status TreeNodeExprDeclassify::generateBoolCode(ICodeList &,
-                                                       SymbolTable &,
-                                                       CompileLog &)
+ICode::Status TreeNodeExprDeclassify::generateBoolCode(ICodeList &code,
+                                                       SymbolTable &st,
+                                                       CompileLog &log)
 {
-    assert(false); // This function should not be called at all.
+    ICode::Status s = generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(this, Imop::JT, 0, result());
+    code.push_imop(i);
+    patchFirstImop(i);
+    addToTrueList(i);
+
+    i = new Imop(this, Imop::JUMP, 0);
+    code.push_imop(i);
+    addToFalseList(i);
+
+    return ICode::OK;
 }
 
 
@@ -1726,9 +1779,9 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     // Generate code for unary expression:
     /// \todo implement for matrixes also
     Imop *i = new Imop(this,
-                       type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS);
-    i->setDest(result());
-    i->setArg1(static_cast<const TreeNodeExpr*>(e)->result());
+                       type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS,
+                       result(),
+                       static_cast<const TreeNodeExpr*>(e)->result());
     code.push_imop(i);
     patchFirstImop(i);
 
