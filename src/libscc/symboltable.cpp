@@ -146,8 +146,9 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
     return ns;
 }
 
-SymbolTemporary *SymbolTable::appendTemporary(const Type &type) {
-    SymbolTemporary *tmp = new SymbolTemporary(type);
+SymbolTemporary *SymbolTable::appendTemporary(const TypeNonVoid &type) {
+    // Initialize temporary
+    SymbolTemporary *tmp = new SymbolTemporary(TypeNonVoid(type.secType(), DataTypeVar(type.dataType())));
     std::ostringstream os;
     os << "{t}" << m_global->m_tempCount++;
     tmp->setName(os.str());

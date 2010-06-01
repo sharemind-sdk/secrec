@@ -16,7 +16,7 @@ class Symbol {
 
     public: /* Methods: */
         explicit inline Symbol(Type symbolType,
-                               const SecreC::Type &valueType)
+                               const SecreC::TypeNonVoid &valueType)
             : m_symbolType(symbolType), m_type(valueType.clone()) {}
         virtual inline ~Symbol() { delete m_type; }
 
@@ -38,7 +38,7 @@ class SymbolSymbol: public Symbol {
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolSymbol(const SecreC::Type &valueType)
+        SymbolSymbol(const SecreC::TypeNonVoid &valueType)
             : Symbol(Symbol::SYMBOL, valueType), m_scopeType(LOCAL) {}
 
         inline ScopeType scopeType() const { return m_scopeType; }
@@ -55,7 +55,7 @@ class SymbolTemporary: public Symbol {
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolTemporary(const SecreC::Type &valueType)
+        SymbolTemporary(const SecreC::TypeNonVoid &valueType)
             : Symbol(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
 
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
@@ -144,7 +144,7 @@ class SymbolTable {
         void appendSymbol(Symbol *symbol);
         void appendGlobalSymbol(Symbol *symbol);
         SymbolProcedure *appendProcedure(const TreeNodeProcDef &procdef);
-        SymbolTemporary *appendTemporary(const Type &type);
+        SymbolTemporary *appendTemporary(const TypeNonVoid &type);
         SymbolConstantBool *constantBool(bool value);
         SymbolConstantInt *constantInt(int value);
         SymbolConstantUInt *constantUInt(unsigned value);
