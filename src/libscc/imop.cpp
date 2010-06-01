@@ -74,32 +74,17 @@ void Imop::setCallDest(SymbolProcedure *proc, Imop *clean) {
 std::string Imop::toString() const {
     std::ostringstream os;
     switch (m_type) {
-        case COMMENT:      /* // arg1                            */
-            os << "// " << *((std::string*) m_arg1);
-            break;
-        case POPPARAM:     /* POPPARAM d;                        */
-            os << "POPPARAM " << dname << ";";
-            break;
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
+            break;
+        case CLASSIFY:     /*   d = CLASSIFY(arg1);              */
+            os << dname << " = CLASSIFY(" << a1name << ")";
             break;
         case DECLASSIFY:   /*   d = DECLASSIFY(arg1);            */
             os << dname << " = DECLASSIFY(" << a1name << ")";
             break;
         case CAST:         /*   d = (arg1) arg2;                 */
             os << "TODO CAST";
-            break;
-        case PUSHPARAM:    /* PUSHPARAM arg1;                    */
-            os << "PUSHPARAM " << a1name;
-            break;
-        case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
-            if (m_dest != 0) {
-                os << dname << " = ";
-            }
-            os << "CALL " << a1name << " @ " << cImop;
-            break;
-        case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
-            os << "RETCLEAN;";
             break;
         case WILDCARD:     /*   d = arg1[*];                     */
             os << dname << " = " << a1name << "[*]";
@@ -155,14 +140,11 @@ std::string Imop::toString() const {
         case LOR:          /*   d = arg1 || arg2;                */
             os << dname << " = (" << a1name << " || " << a2name << ")";
             break;
-        case RETURNVOID:   /* RETURN;                            */
-            os << "RETURN";
-            break;
-        case RETURN:       /* RETURN arg1;                       */
-            os << "RETURN " << a1name;
-            break;
-        case END:          /* END PROGRAM                        */
-            os << "END";
+        case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
+            if (m_dest != 0) {
+                os << dname << " = ";
+            }
+            os << "CALL " << a1name << " @ " << cImop;
             break;
         case JUMP:         /* GOTO d;                            */
             os << "GOTO " << tname;
@@ -190,6 +172,27 @@ std::string Imop::toString() const {
             break;
         case JGT:          /* if (arg1 >  arg2) GOTO d;          */
             os << "IF (" << a1name << " > " << a2name << ") GOTO " << tname;
+            break;
+        case COMMENT:      /* // arg1                            */
+            os << "// " << *((std::string*) m_arg1);
+            break;
+        case POPPARAM:     /* POPPARAM d;                        */
+            os << "POPPARAM " << dname << ";";
+            break;
+        case PUSHPARAM:    /* PUSHPARAM arg1;                    */
+            os << "PUSHPARAM " << a1name;
+            break;
+        case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
+            os << "RETCLEAN;";
+            break;
+        case RETURNVOID:   /* RETURN;                            */
+            os << "RETURN";
+            break;
+        case RETURN:       /* RETURN arg1;                       */
+            os << "RETURN " << a1name;
+            break;
+        case END:          /* END PROGRAM                        */
+            os << "END";
             break;
         default:
             os << "TODO";
