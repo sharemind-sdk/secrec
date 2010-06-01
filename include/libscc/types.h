@@ -298,6 +298,9 @@ class Type {
         virtual inline bool canAssign(const Type &) const {
             return false;
         }
+        inline const SecType &tnvSecType() const;
+        inline const DataType &tnvDataType() const;
+        inline SecrecSecType secrecSecType() const;
 
     private: /* Fields: */
         bool m_isVoid;
@@ -379,6 +382,34 @@ class TypeNonVoid: public Type {
         DataType *m_dataType;
 };
 
+inline const SecType &Type::tnvSecType() const {
+    assert(isVoid() == false);
+    assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
+    const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
+
+    return t.secType();
+}
+
+inline const DataType &Type::tnvDataType() const {
+    assert(isVoid() == false);
+    assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
+    const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
+
+    return t.dataType();
+}
+
+inline SecrecSecType Type::secrecSecType() const {
+    assert(isVoid() == false);
+    assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
+    const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
+    assert(t.kind() == TypeNonVoid::BASIC
+           || t.kind() == TypeNonVoid::VAR
+           || t.kind() == TypeNonVoid::ARRAY);
+
+    assert(t.secType().kind() == SecType::BASIC);
+    assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);
+    return static_cast<const SecTypeBasic &>(t.secType()).secType();
+}
 
 } // namespace SecreC
 
