@@ -226,6 +226,13 @@ std::string Blocks::toString() const {
                    << TreeNode::typeName((*jt)->creator()->type())
                    << " at "
                    << (*jt)->creator()->location();
+                if ((*jt)->creator()->type() == NODE_EXPR_CLASSIFY) {
+                    assert((*jt)->creator()->parent() != 0);
+                    os << " for "
+                       << TreeNode::typeName((*jt)->creator()->parent()->type())
+                       << " at "
+                       << (*jt)->creator()->parent()->location();
+                }
             }
             os << std::endl;
         }
