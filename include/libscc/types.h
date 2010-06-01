@@ -137,6 +137,7 @@ class DataType {
         virtual inline ~DataType() {}
 
         inline Kind kind() const { return m_kind; }
+        inline SecrecDataType secrecDataType() const;
 
         virtual DataType *clone() const = 0;
         virtual std::string toString() const = 0;
@@ -271,6 +272,26 @@ class DataTypeProcedure: public DataTypeProcedureVoid {
         const DataType *m_ret;
 };
 
+inline SecrecDataType DataType::secrecDataType() const {
+    switch (m_kind) {
+        case BASIC:
+            assert(dynamic_cast<const DataTypeBasic*>(this) != 0);
+            return static_cast<const DataTypeBasic*>(this)->dataType();
+        case VAR:
+            assert(dynamic_cast<const DataTypeVar*>(this) != 0);
+            return static_cast<const DataTypeVar*>(this)->dataType().secrecDataType();
+        case ARRAY:
+            assert(dynamic_cast<const DataTypeArray*>(this) != 0);
+            return static_cast<const DataTypeArray*>(this)->itemType().secrecDataType();
+        case PROCEDURE:
+            assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
+            return static_cast<const DataTypeProcedure*>(this)->returnType().secrecDataType();
+        case PROCEDUREVOID:
+        default:
+            return DATATYPE_INVALID;
+    }
+}
+
 
 /*******************************************************************************
   General types
@@ -301,6 +322,7 @@ class Type {
         inline const SecType &tnvSecType() const;
         inline const DataType &tnvDataType() const;
         inline SecrecSecType secrecSecType() const;
+        inline SecrecDataType secrecDataType() const;
 
     private: /* Fields: */
         bool m_isVoid;
@@ -402,13 +424,26 @@ inline SecrecSecType Type::secrecSecType() const {
     assert(isVoid() == false);
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
-    assert(t.kind() == TypeNonVoid::BASIC
+    if (t.kind() == TypeNonVoid::BASIC
            || t.kind() == TypeNonVoid::VAR
-           || t.kind() == TypeNonVoid::ARRAY);
+           || t.kind() == TypeNonVoid::ARRAY)
+    {
+        assert(t.secType().kind() == SecType::BASIC);
+        assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);
+        return static_cast<const SecTypeBasic &>(t.secType()).secType();
+    } else {
+        assert(t.kind() == TypeNonVoid::PROCEDURE);
+        assert(t.secType().kind() == SecType::PROCEDURE);
 
-    assert(t.secType().kind() == SecType::BASIC);
-    assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);
-    return static_cast<const SecTypeBasic &>(t.secType()).secType();
+        assert(dynamic_cast<const SecTypeProcedure*>(&t.secType()) != 0);
+        return static_cast<const SecTypeProcedure &>(t.secType()).returnSecType();
+    }
+}
+
+inline SecrecDataType Type::secrecDataType() const {
+    assert(isVoid() == false);
+    assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
+    return static_cast<const TypeNonVoid&>(*this).dataType().secrecDataType();
 }
 
 } // namespace SecreC
