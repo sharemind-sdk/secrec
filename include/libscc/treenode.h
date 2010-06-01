@@ -13,6 +13,7 @@
 namespace SecreC {
 
 class CompileLog;
+class TreeNodeExpr;
 class TreeNodeProcDef;
 
 class TreeNode {
@@ -60,6 +61,7 @@ class TreeNode {
             m_parent = parent;
             m_procedure = parent->m_procedure;
         }
+        TreeNodeExpr *classifyChildAtIfNeeded(int index, SecrecSecType otherSecType);
 
     private: /* Fields: */
         TreeNode        *m_parent;
@@ -261,10 +263,7 @@ class TreeNodeExpr: public TreeNode {
                                                SymbolTable &st,
                                                CompileLog &log) = 0;
 
-        inline Symbol *result() const {
-            assert(m_result != 0);
-            return m_result;
-        };
+        inline Symbol *result() const { return m_result; };
         inline bool haveResultType() const { return m_resultType != 0; }
         inline const SecreC::Type &resultType() const {
             assert(m_resultType != 0);
@@ -410,6 +409,27 @@ class TreeNodeExprBool: public TreeNodeExpr {
 
     private: /* Fields: */
         bool m_value;
+};
+
+
+/******************************************************************
+  TreeNodeExprClassify
+******************************************************************/
+
+class TreeNodeExprClassify: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprClassify(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
 };
 
 

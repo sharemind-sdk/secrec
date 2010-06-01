@@ -78,6 +78,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_LITE_UINT: return "UINT";
         case NODE_LITE_STRING: return "STRING";
         case NODE_EXPR_NONE: return "EXPR_NONE";
+        case NODE_EXPR_CLASSIFY: return "EXPR_CLASSIFY";
         case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
         case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
         case NODE_EXPR_WILDCARD: return "EXPR_WILDCARD";
@@ -182,6 +183,22 @@ std::string TreeNode::toXml(bool full) const {
         os << "</" << typeName(m_type) << '>';
     }
     return os.str();
+}
+
+TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index,
+                                                SecrecSecType otherSecType)
+{
+    TreeNode *&child = m_children.at(index);
+    assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
+    if (otherSecType == SECTYPE_PRIVATE
+        && static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType() == SECTYPE_PUBLIC)
+    {
+        TreeNodeExprClassify *ec = new TreeNodeExprClassify(child->location());
+        ec->appendChild(child);
+        ec->resetParent(this);
+        child = ec;
+    }
+    return static_cast<TreeNodeExpr*>(child);
 }
 
 } // namespace SecreC
@@ -567,6 +584,10 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
         return ICode::E_TYPE;
     }
+
+    // Add implicit classify node if needed:
+    classifyChildAtIfNeeded(1, destType.secrecSecType());
+
     assert(dynamic_cast<const TNV*>(&destType) != 0);
     const TNV &destTypeNV = static_cast<const TNV&>(destType);
     assert(destTypeNV.dataType().kind() == DataType::VAR);
@@ -716,42 +737,51 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
     assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
     assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e1->calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    const SecreC::Type *eType1, *eType2;
 
-    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->calculateResultType(st, log);
-    if (s != ICode::OK) return s;
-
-    const SecreC::Type &eType1 = e1->resultType();
-    const SecreC::Type &eType2 = e2->resultType();
+    {
+        assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
+        ICode::Status s = e1->calculateResultType(st, log);
+        if (s != ICode::OK) return s;
+        eType1 = &e1->resultType();
+    }
+    {
+        assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
+        ICode::Status s = e2->calculateResultType(st, log);
+        if (s != ICode::OK) return s;
+        eType2 = &e2->resultType();
+    }
 
     /// \todo implement more expressions
-    if (!eType1.isVoid() && !eType2.isVoid()
+    if (!eType1->isVoid() && !eType2->isVoid()
 #ifndef NDEBUG
-        && (assert(dynamic_cast<const TNV*>(&eType1) != 0), true)
-        && (assert(dynamic_cast<const TNV*>(&eType2) != 0), true)
+        && (assert(dynamic_cast<const TNV*>(eType1) != 0), true)
+        && (assert(dynamic_cast<const TNV*>(eType2) != 0), true)
 #endif
-        && static_cast<const TNV&>(eType1).kind() == TNV::BASIC
-        && static_cast<const TNV&>(eType2).kind() == TNV::BASIC)
+        && static_cast<const TNV*>(eType1)->kind() == TNV::BASIC
+        && static_cast<const TNV*>(eType2)->kind() == TNV::BASIC)
     {
-        const TNV &et1 = static_cast<const TNV&>(eType1);
-        const TNV &et2 = static_cast<const TNV&>(eType2);
-        assert(dynamic_cast<const DataTypeBasic*>(&et1.dataType()) != 0);
-        SecrecDataType d1 = static_cast<const DataTypeBasic*>(&et1.dataType())
-                                ->dataType();
-        assert(dynamic_cast<const SecTypeBasic*>(&et1.secType()) != 0);
-        SecrecSecType s1 = static_cast<const SecTypeBasic*>(&et1.secType())
-                               ->secType();
-        assert(dynamic_cast<const DataTypeBasic*>(&et2.dataType()) != 0);
-        SecrecDataType d2 = static_cast<const DataTypeBasic*>(&et2.dataType())
-                                ->dataType();
-        assert(dynamic_cast<const SecTypeBasic*>(&et2.secType()) != 0);
-        SecrecSecType s2 = static_cast<const SecTypeBasic*>(&et2.secType())
-                               ->secType();
+        // Add implicit classify nodes if needed:
+        {
+            TreeNodeExpr *e1 = classifyChildAtIfNeeded(0, eType2->secrecSecType());
+            ICode::Status s = e1->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+            eType1 = &e1->resultType();
+        }
+        {
+            TreeNodeExpr *e2 = classifyChildAtIfNeeded(1, eType1->secrecSecType());
+            ICode::Status s = e2->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+            eType2 = &e2->resultType();
+        }
+
+
+        SecrecDataType d1 = static_cast<const DataTypeBasic&>(eType1->tnvDataType()).dataType();
+        SecrecDataType d2 = static_cast<const DataTypeBasic&>(eType2->tnvDataType()).dataType();
+        SecrecSecType s1 = eType1->secrecSecType();
+        SecrecSecType s2 = eType2->secrecSecType();
 
         switch (type()) {
             case NODE_EXPR_BINARY_ADD:
@@ -808,9 +838,12 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the unary expression, if needed:
+    // Generate temporary for the result of the binary expression, if needed:
     if (r == 0) {
-        setResult(st.appendTemporary(resultType()));
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
+        }
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -1026,6 +1059,91 @@ ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
 
 
 /*******************************************************************************
+  TreeNodeExprClassify
+*******************************************************************************/
+
+ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
+                                                        CompileLog &log)
+{
+    if (haveResultType()) return ICode::OK;
+
+    assert(children().size() == 1);
+
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    if (e->resultType().isVoid()) {
+        log.fatal() << "Call to a void procedure used as a subexpression at "
+                    << location();
+        return ICode::E_TYPE;
+    }
+
+    assert(e->resultType().secrecSecType() == SECTYPE_PUBLIC);
+    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().tnvDataType()));
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
+                                                   SymbolTable &st,
+                                                   CompileLog &log,
+                                                   Symbol *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    // Generate temporary for the result of the classification, if needed:
+    if (r == 0) {
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
+        }
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
+
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    setFirstImop(e->firstImop());
+
+    Imop *i = new Imop(this,
+                       Imop::CLASSIFY,
+                       result(),
+                       static_cast<const TreeNodeExpr*>(e)->result());
+    code.push_imop(i);
+    patchFirstImop(i);
+
+    // Patch next list of child expression:
+    e->patchNextList(i);
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprClassify::generateBoolCode(ICodeList &code,
+                                                       SymbolTable &st,
+                                                       CompileLog &log)
+{
+    ICode::Status s = generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(this, Imop::JT, 0, result());
+    code.push_imop(i);
+    patchFirstImop(i);
+    addToTrueList(i);
+
+    i = new Imop(this, Imop::JUMP, 0);
+    code.push_imop(i);
+    addToFalseList(i);
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
   TreeNodeExprDeclassify
 *******************************************************************************/
 
@@ -1042,17 +1160,8 @@ ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &st,
     if (s != ICode::OK) return s;
 
     if (!e->resultType().isVoid()) {
-        assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
-        const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
-
-        assert(t.kind() == TypeNonVoid::BASIC || t.kind() == TypeNonVoid::VAR
-               || t.kind() == TypeNonVoid::ARRAY);
-        assert(t.secType().kind() == SecType::BASIC);
-
-        // Check whether argument is PRIVATE:
-        assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);
-        if (static_cast<const SecTypeBasic&>(t.secType()).secType() == SECTYPE_PRIVATE) {
-            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, t.dataType()));
+        if (e->resultType().secrecSecType() == SECTYPE_PRIVATE) {
+            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, e->resultType().tnvDataType()));
             return ICode::OK;
         }
     }
@@ -1074,7 +1183,10 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
 
     // Generate temporary for the result of the declassification, if needed:
     if (r == 0) {
-        setResult(st.appendTemporary(resultType()));
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
+        }
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -1207,6 +1319,9 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
                 << " is expected to be of public type instead of private!";
             return ICode::E_TYPE;
         }
+
+        // Add implicit classify node if needed:
+        classifyChildAtIfNeeded(i + 1, need->secType());
     }
 
     // Set result type:
@@ -1279,9 +1394,12 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
     Imop *c = new Imop(this, Imop::RETCLEAN);
     if (r == 0) {
         // Generate temporary for the result of the unary expression
-        SymbolTemporary *t = st.appendTemporary(resultType());
-        setResult(t);
-        i->setDest(t);
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            SymbolTemporary *t = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
+            setResult(t);
+            i->setDest(t);
+        }
     } else {
         i->setDest(r);
     }
@@ -1552,7 +1670,18 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
                    == SECTYPE_PUBLIC
             && eType2 == eType3)
         {
-            setResultType(eType2.clone());
+            // Add implicit classify nodes if needed:
+            e2 = classifyChildAtIfNeeded(1, eType3.secrecSecType());
+            s = e2->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+
+            e3 = classifyChildAtIfNeeded(2, eType2.secrecSecType());
+            s = e3->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+
+            assert(e2->resultType() == e3->resultType());
+
+            setResultType(e2->resultType().clone());
             return ICode::OK;
         }
     }
@@ -1574,7 +1703,10 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
 
     // Generate temporary for the result of the ternary expression, if needed:
     if (r == 0) {
-        setResult(st.appendTemporary(resultType()));
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
+        }
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -1584,6 +1716,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     s = e1->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
+    setFirstImop(e1->firstImop());
 
     // Generate code for first value child expression:
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
@@ -1763,7 +1896,10 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
-        setResult(st.appendTemporary(resultType()));
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
+        }
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -2610,6 +2746,8 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
                         << location();
             return ICode::E_OTHER;
         }
+        // Add implicit classify node if needed:
+        e = classifyChildAtIfNeeded(0, containingProcedure()->procedureType().secrecSecType());
 
         s = e->generateCode(code, st, log);
         if (s != ICode::OK) return s;
