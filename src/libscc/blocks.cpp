@@ -225,8 +225,9 @@ std::string Blocks::toString() const {
                 os << " // Created by "
                    << TreeNode::typeName((*jt)->creator()->type())
                    << " at "
-                   << (*jt)->creator()->location() << std::endl;
+                   << (*jt)->creator()->location();
             }
+            os << std::endl;
         }
         i++;
         os << std::endl;
