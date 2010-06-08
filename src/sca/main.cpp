@@ -53,11 +53,14 @@ int main(int argc, char *argv[]) {
             SecreC::DataFlowAnalysisRunner runner;
             SecreC::ReachingDefinitions rd;
             SecreC::ReachingJumps rj;
+            SecreC::ReachingDeclassify rdc;
             runner.addAnalysis(&rd);
             runner.addAnalysis(&rj);
+            runner.addAnalysis(&rdc);
             runner.run(bs);
             cout << rd.toString(bs) << std::endl;
-            cout << rj.toString(bs);
+            cout << rj.toString(bs) << std::endl;
+            cout << rdc.toString() << std::endl;
         } else {
             cerr << "Error generating valid intermediate code." << endl
                  << icode.compileLog();

@@ -30,9 +30,8 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
     BackwardAnalysisSet bas;
     ForwardAnalysisSet fas;
 
-    const Block &entryBlock = bs.entryBlock();
     FOREACH_ANALYSIS(a, m_as) {
-        (*a)->start(entryBlock);
+        (*a)->start(bs);
         aas.insert(*a);
         if ((*a)->isBackward()) {
             assert(dynamic_cast<BackwardDataFlowAnalysis*>(*a) != 0);
@@ -83,6 +82,8 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromCallPass(*b->callPassFrom, *b);
             }
+
+            // Recalculate output sets:
             if (!bas.empty()) {
                 FOREACH_BLOCKS(it,b->successors)
                     FOREACH_BANALYSIS(a, bas)
@@ -109,7 +110,7 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                         (*a)->outToCallPass(*b->callPassTo, *b);
             }
 
-            // Recalculate output sets:
+            // Recalculate the opposite sets:
             FOREACH_ANALYSIS(a, aas)
                 if ((*a)->finishBlock(*b)) {
                     unchanged.erase(*a);
@@ -122,7 +123,11 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                 }
         }
 
-        if (unchanged.size() == aas.size()) return;
+        if (unchanged.size() == aas.size()) {
+            FOREACH_ANALYSIS(a, m_as)
+                (*a)->finish();
+            return;
+        }
 
         FOREACH_BANALYSIS(a, bunchanged) {
             aas.erase(*a);
@@ -133,17 +138,6 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
             fas.erase(*a);
         }
     }
-
-    FOREACH_ANALYSIS(a, aas)
-        (*a)->finish();
-}
-
-void ReachingDefinitions::start(const Block &entryBlock) {
-    makeOuts(entryBlock, m_ins[&entryBlock], m_outs[&entryBlock]);
-}
-
-void ReachingDefinitions::startBlock(const Block &b) {
-    m_ins[&b].clear();
 }
 
 void ReachingDefinitions::inFrom(const Block &from, const Block &to) {
@@ -161,8 +155,6 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
         {
             // Set this def:
             Defs &d = out[(*it)->dest()].first;
-            if ((d.begin() != d.end()) && (*d.begin() == *it))
-                continue;
 
             d.clear();
             d.insert(*it);
@@ -201,9 +193,9 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
     return os.str();
 }
 
-void ReachingJumps::start(const Block &entryBlock) {
-    m_inPos.insert(std::make_pair(&entryBlock, Jumps()));
-    m_inNeg.insert(std::make_pair(&entryBlock, Jumps()));
+void ReachingJumps::start(const Blocks &bs) {
+    m_inPos.insert(std::make_pair(&bs.entryBlock(), Jumps()));
+    m_inNeg.insert(std::make_pair(&bs.entryBlock(), Jumps()));
 }
 
 void ReachingJumps::startBlock(const Block &b) {
@@ -297,6 +289,97 @@ std::string ReachingJumps::toString(const Blocks &bs) const {
             }
         }
         os << std::endl;
+    }
+    return os.str();
+}
+
+void ReachingDeclassify::inFrom(const Block &from, const Block &to) {
+    for (PDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
+        m_ins[&to][(*jt).first] += (*jt).second;
+    }
+}
+
+bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
+    PDefs old = out;
+    out = in;
+    for (Blocks::CCI it = b.start; it != b.end; it++) {
+        if ((*it)->type() == Imop::DECLASSIFY) {
+            m_ds[*it] = out[(*it)->arg1()];
+            continue;
+        }
+
+        if (!(*it)->isExpr() && (*it)->type() != Imop::POPPARAM) continue;
+        if ((*it)->dest() == 0) continue;
+        if ((*it)->dest()->secrecType().secrecSecType() == SECTYPE_PUBLIC) continue;
+
+        Defs &d = out[(*it)->dest()];
+
+        switch ((*it)->type()) {
+            case Imop::POPPARAM:
+            case Imop::CALL:
+                d.clear();
+                d.insert(*it);
+                break;
+            case Imop::ASSIGN:
+            case Imop::UMINUS:
+            case Imop::UNEG:
+                if ((*it)->arg1()->symbolType() != Symbol::CONSTANT
+                    && (*it)->dest() != (*it)->arg1())
+                {
+                    d = out[(*it)->arg1()];
+                }
+                break;
+            default:
+                d.clear();
+                break;
+        }
+    }
+    return old != out;
+}
+
+void ReachingDeclassify::finish() {
+    m_outs.clear();
+    m_ins.clear();
+
+    /// \todo optimize this:
+    DD oldDs(m_ds);
+    m_ds.clear();
+    for (DD::const_iterator it = oldDs.begin(); it != oldDs.end(); it++) {
+        if (!(*it).second.empty()) {
+            m_ds.insert(*it);
+        }
+    }
+}
+
+std::string ReachingDeclassify::toString() const {
+    assert(m_ins.empty());
+    std::ostringstream os;
+    os << "Trivial declassify analysis results:" << std::endl;
+    if (m_ds.empty()) {
+        os << "    No trivial leaks found! :)" << std::endl;
+        return os.str();
+    }
+    for (DD::const_iterator it = m_ds.begin(); it != m_ds.end(); it++) {
+        os << "    declassify at "
+           << (*it).first->creator()->location()
+           << " might fully leak the value from:" << std::endl;
+        for (Defs::const_iterator jt = (*it).second.begin(); jt != (*it).second.end(); jt++) {
+            os << "        ";
+            switch ((*jt)->type()) {
+                case Imop::POPPARAM:
+                    os << "parameter "
+                       << static_cast<TreeNodeStmtDecl*>((*jt)->creator())->variableName()
+                       << " declared at " << (*jt)->creator()->location();
+                    break;
+                case Imop::CALL:
+                    os << "call to " << (*jt)->arg1()->name()
+                       << " at " << (*jt)->creator()->location();
+                    break;
+                default:
+                    assert(false);
+            }
+            os << std::endl;
+        }
     }
     return os.str();
 }

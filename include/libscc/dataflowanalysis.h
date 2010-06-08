@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include "blocks.h"
 
 namespace SecreC {
 
@@ -22,7 +23,7 @@ class DataFlowAnalysis {
         inline bool isForward() const { return m_forward; }
         inline bool isBackward() const { return m_backward; }
 
-        virtual void start(const Block & /* entry or exit block */) {}
+        virtual void start(const Blocks &) {}
         virtual void startBlock(const Block &) {}
         virtual void inFrom(const Block & /* from */, const Block & /* to */) {}
         virtual void inFromTrue(const Block & /* from */, const Block & /* to */) {}
@@ -82,8 +83,11 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
             return (*m_ins.find(&b)).second;
         }
 
-        virtual void start(const Block &entryBlock);
-        virtual void startBlock(const Block &b);
+        virtual void start(const Blocks &bs) {
+            // Initialize the OUT set of the entry block:
+            makeOuts(bs.entryBlock(), m_ins[&bs.entryBlock()], m_outs[&bs.entryBlock()]);
+        }
+        virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
         virtual void inFrom(const Block &from, const Block &to);
         virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to); }
         virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to); }
@@ -102,7 +106,7 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
 };
 
 class ReachingJumps: public ForwardDataFlowAnalysis {
-public: /* Types: */
+    public: /* Types: */
         typedef std::set<const Imop*>         Jumps;
         typedef std::map<const Block*, Jumps> BJM;
 
@@ -110,7 +114,7 @@ public: /* Types: */
         inline const BJM &getPosJumps() const { return m_inPos; }
         inline const BJM &getNegJumps() const { return m_inNeg; }
 
-        virtual void start(const Block &entryBlock);
+        virtual void start(const Blocks &bs);
         virtual void startBlock(const Block &b);
         virtual void inFrom(const Block &from, const Block &to);
         virtual void inFromTrue(const Block &from, const Block &to);
@@ -126,6 +130,37 @@ public: /* Types: */
         BJM           m_inNeg;
         BJM           m_outPos;
         BJM           m_outNeg;
+};
+
+class ReachingDeclassify: public ForwardDataFlowAnalysis {
+    public: /* Types: */
+        typedef std::set<const Imop*> Defs;
+        typedef std::map<const Symbol*, Defs> PDefs;
+        typedef std::map<const Block*, PDefs> RD;
+        typedef std::map<const Imop*, Defs> DD;
+
+    public: /* Methods: */
+        virtual void start(const Blocks &bs) {
+            // Initialize the OUT set of the entry block:
+            makeOuts(bs.entryBlock(), m_ins[&bs.entryBlock()], m_outs[&bs.entryBlock()]);
+        }
+        virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
+        virtual void inFrom(const Block &from, const Block &to);
+        virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to); }
+        virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to); }
+        virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to); }
+        virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
+        virtual void finish();
+
+        std::string toString() const;
+
+    private: /* Methods: */
+        bool makeOuts(const Block &b, const PDefs &in, PDefs &out);
+
+    private: /* Fields: */
+        RD m_ins;
+        RD m_outs;
+        DD m_ds;
 };
 
 
