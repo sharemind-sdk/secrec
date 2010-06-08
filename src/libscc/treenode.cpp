@@ -2326,21 +2326,25 @@ ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code, SymbolTable &,
   TreeNodeStmtDecl
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
-                                             CompileLog &log)
-{
+const std::string &TreeNodeStmtDecl::variableName() const {
     typedef TreeNodeIdentifier TNI;
 
     assert(children().size() > 0 && children().size() <= 3);
     assert(children().at(0)->type() == NODE_IDENTIFIER);
 
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
-    TNI *id   = static_cast<TNI*>(children().at(0));
+    return static_cast<TNI*>(children().at(0))->value();
+}
+
+ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
+                                             CompileLog &log)
+{
+    assert(children().size() > 0 && children().size() <= 3);
 
     // Initialize the new symbol (for initializer target)
     SymbolSymbol *ns = new SymbolSymbol(resultType());
     ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
-    ns->setName(id->value());
+    ns->setName(variableName());
 
     if (m_procParam) {
         Imop *i = new Imop(this, Imop::POPPARAM, ns);

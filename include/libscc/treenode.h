@@ -826,6 +826,8 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
               m_procParam(false) {}
         virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
+        const std::string &variableName() const;
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
