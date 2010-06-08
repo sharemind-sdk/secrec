@@ -303,13 +303,15 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
     PDefs old = out;
     out = in;
     for (Blocks::CCI it = b.start; it != b.end; it++) {
-        if ((*it)->type() == Imop::DECLASSIFY) {
-            m_ds[*it] = out[(*it)->arg1()];
-            continue;
+        if (!(*it)->isExpr()) {
+            if ((*it)->type() != Imop::POPPARAM) continue;
+        } else {
+            if ((*it)->dest() == 0) continue;
+            if ((*it)->type() == Imop::DECLASSIFY) {
+                m_ds[*it] = out[(*it)->arg1()];
+                continue;
+            }
         }
-
-        if (!(*it)->isExpr() && (*it)->type() != Imop::POPPARAM) continue;
-        if ((*it)->dest() == 0) continue;
         if ((*it)->dest()->secrecType().secrecSecType() == SECTYPE_PUBLIC) continue;
 
         Defs &d = out[(*it)->dest()];
