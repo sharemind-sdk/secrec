@@ -6,6 +6,8 @@ System requirements
 
 Compiling this code requires the following:
  * Qt SDK version 4.4 or later with qmake
+ * GNU Bison (version 2.4.2 should do, earlier version may also work)
+ * Flex (version 2.5.35 should do, earlier version may also work)
  * A make tool (e.g. gmake) supported by the Qt SDK used
  * Compilers for C and C++ code
    * Some GNU Compiler Collection versions earlier than 4.3.4 are known not to
