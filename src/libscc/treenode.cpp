@@ -971,9 +971,9 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
 
+    /// \todo FINISH THIS METHOD!!!
+
     Imop *tj;
-    e1->patchNextList(e2->firstImop());
-    e2->patchNextList(tj);
 
     switch (type()) {
         case NODE_EXPR_BINARY_EQ: tj = new Imop(this, Imop::JE,  0); break;
@@ -991,6 +991,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     addToTrueList(tj);
     code.push_imop(tj);
     patchFirstImop(tj);
+    e1->patchNextList(e2->firstImop());
+    e2->patchNextList(tj);
 
     Imop *fj = new Imop(this, Imop::JUMP, 0);
     addToFalseList(fj);
