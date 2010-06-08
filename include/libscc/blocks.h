@@ -27,7 +27,9 @@ class Blocks: public std::vector<Block*> {
 
         void init(const ICodeList &code);
 
-        const Block &entryBlock() const { return *m_entryBlock; }
+        inline const Block &entryBlock() const { return *m_entryBlock; }
+        inline CCI imopsBegin() const;
+        inline CCI imopsEnd() const;
 
         std::string toString() const;
 
@@ -73,6 +75,9 @@ struct Block {
     unsigned long index;
     bool reachable;
 };
+
+inline Blocks::CCI Blocks::imopsBegin() const { return front()->start; }
+inline Blocks::CCI Blocks::imopsEnd() const { return back()->end; }
 
 } // namespace SecreC
 
