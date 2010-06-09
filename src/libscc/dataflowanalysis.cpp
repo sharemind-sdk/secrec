@@ -100,31 +100,37 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                     (*a)->startBlock(*b);
 
                 // Recalculate output sets:
-                if (!bas.empty()) {
-                    FOREACH_BLOCKS(it,b->successors)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outTo(**it, *b);
+                FOREACH_BLOCKS(it,b->successors)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outTo(**it, *b);
 
-                    FOREACH_BLOCKS(it,b->successorsCondFalse)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outToFalse(**it, *b);
+                FOREACH_BLOCKS(it,b->successorsCondFalse)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToFalse(**it, *b);
 
-                    FOREACH_BLOCKS(it,b->successorsCondTrue)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outToTrue(**it, *b);
+                FOREACH_BLOCKS(it,b->successorsCondTrue)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToTrue(**it, *b);
 
-                    FOREACH_BLOCKS(it,b->successorsCall)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outToCall(**it, *b);
+                FOREACH_BLOCKS(it,b->successorsCall)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToCall(**it, *b);
 
-                    FOREACH_BLOCKS(it,b->successorsRet)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outToRet(**it, *b);
+                FOREACH_BLOCKS(it,b->successorsRet)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToRet(**it, *b);
 
-                    if (b->callPassTo != 0)
-                        FOREACH_BANALYSIS(a, bas)
-                            (*a)->outToCallPass(*b->callPassTo, *b);
-                }
+                if (b->callPassTo != 0)
+                    FOREACH_BANALYSIS(a, bas)
+                        (*a)->outToCallPass(*b->callPassTo, *b);
+
+                // Recalculate the input sets:
+                FOREACH_BANALYSIS(a, bas)
+                    if ((*a)->finishBlock(*b)) {
+                        // Analysis didn't change output set for this block
+                        unchanged.erase(*a);
+                        bunchanged.erase(static_cast<BackwardDataFlowAnalysis*>(*a));
+                    }
             }
         }
 
