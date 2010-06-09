@@ -49,15 +49,17 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
         ForwardAnalysisSet funchanged = fas;
 
         // For all reachable blocks:
-        for (size_t i = 1; i < bs.size(); i++) {
+        for (size_t i = 0; i < bs.size(); i++) {
             const Block *b = bs[i];
             if (!b->reachable) continue;
 
-            FOREACH_ANALYSIS(a, aas)
-                (*a)->startBlock(*b);
+            // For forward analysis:
+            if (!fas.empty() && b != &bs.entryBlock()) {
+                // Notify of start of analyzing block:
+                FOREACH_FANALYSIS(a, fas)
+                    (*a)->startBlock(*b);
 
-            // Recalculate input sets:
-            if (!fas.empty()) {
+                // Recalculate input sets:
                 FOREACH_BLOCKS(it,b->predecessors)
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFrom(**it, *b);
@@ -81,54 +83,59 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                 if (b->callPassFrom != 0)
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromCallPass(*b->callPassFrom, *b);
-            }
 
-            // Recalculate output sets:
-            if (!bas.empty()) {
-                FOREACH_BLOCKS(it,b->successors)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outTo(**it, *b);
-
-                FOREACH_BLOCKS(it,b->successorsCondFalse)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToFalse(**it, *b);
-
-                FOREACH_BLOCKS(it,b->successorsCondTrue)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToTrue(**it, *b);
-
-                FOREACH_BLOCKS(it,b->successorsCall)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToCall(**it, *b);
-
-                FOREACH_BLOCKS(it,b->successorsRet)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToRet(**it, *b);
-
-                if (b->callPassTo != 0)
-                    FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToCallPass(*b->callPassTo, *b);
-            }
-
-            // Recalculate the opposite sets:
-            FOREACH_ANALYSIS(a, aas)
-                if ((*a)->finishBlock(*b)) {
-                    unchanged.erase(*a);
-                    if ((*a)->isBackward()) {
-                        bunchanged.erase(static_cast<BackwardDataFlowAnalysis*>(*a));
-                    }
-                    if ((*a)->isForward()) {
+                // Recalculate the output sets:
+                FOREACH_FANALYSIS(a, fas)
+                    if ((*a)->finishBlock(*b)) {
+                        // Analysis didn't change output set for this block
+                        unchanged.erase(*a);
                         funchanged.erase(static_cast<ForwardDataFlowAnalysis*>(*a));
                     }
+            }
+
+            // For backward analysis:
+            if (!bas.empty() && b != &bs.exitBlock()) {
+                // Notify of start of analyzing block:
+                FOREACH_BANALYSIS(a, bas)
+                    (*a)->startBlock(*b);
+
+                // Recalculate output sets:
+                if (!bas.empty()) {
+                    FOREACH_BLOCKS(it,b->successors)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outTo(**it, *b);
+
+                    FOREACH_BLOCKS(it,b->successorsCondFalse)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outToFalse(**it, *b);
+
+                    FOREACH_BLOCKS(it,b->successorsCondTrue)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outToTrue(**it, *b);
+
+                    FOREACH_BLOCKS(it,b->successorsCall)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outToCall(**it, *b);
+
+                    FOREACH_BLOCKS(it,b->successorsRet)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outToRet(**it, *b);
+
+                    if (b->callPassTo != 0)
+                        FOREACH_BANALYSIS(a, bas)
+                            (*a)->outToCallPass(*b->callPassTo, *b);
                 }
+            }
         }
 
+        // If all active analyses converged this round, finish all analyses that were run:
         if (unchanged.size() == aas.size()) {
             FOREACH_ANALYSIS(a, m_as)
                 (*a)->finish();
             return;
         }
 
+        // Purge the analyses that have finished from the list of active analyses:
         FOREACH_BANALYSIS(a, bunchanged) {
             aas.erase(*a);
             bas.erase(*a);
