@@ -28,6 +28,7 @@ class Blocks: public std::vector<Block*> {
         void init(const ICodeList &code);
 
         inline const Block &entryBlock() const { return *m_entryBlock; }
+        inline const Block &exitBlock() const { return *m_exitBlock; }
         inline CCI imopsBegin() const;
         inline CCI imopsEnd() const;
 
@@ -41,6 +42,7 @@ class Blocks: public std::vector<Block*> {
 
     private: /* Fields: */
         Block *m_entryBlock;
+        Block *m_exitBlock;
 
 };
 

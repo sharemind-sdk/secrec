@@ -111,6 +111,7 @@ void Blocks::init(const ICodeList &code) {
     next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
     push_back(b);
     m_entryBlock = b;
+    m_exitBlock = 0;
 
     while (next != code.end()) {
         Block *old = b;
@@ -118,6 +119,11 @@ void Blocks::init(const ICodeList &code) {
         b = new Block(next, i++);
         next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
         push_back(b);
+
+        if (b->lastImop()->type() == Imop::END) {
+            assert(m_exitBlock == 0);
+            m_exitBlock = b;
+        }
 
         if (fallsThru(*old)) {
             if (((*(old->end - 1))->type() & Imop::JUMP_MASK) == 0x0
