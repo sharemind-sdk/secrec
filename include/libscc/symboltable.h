@@ -58,6 +58,7 @@ class SymbolTemporary: public Symbol {
         SymbolTemporary(const SecreC::TypeNonVoid &valueType)
             : Symbol(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
 
+        inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
 
         virtual std::string toString() const;
