@@ -88,10 +88,13 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
             makeOuts(bs.entryBlock(), m_ins[&bs.entryBlock()], m_outs[&bs.entryBlock()]);
         }
         virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
-        virtual void inFrom(const Block &from, const Block &to);
-        virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to); }
-        virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to); }
-        virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to); }
+        virtual inline void inFrom(const Block &from, const Block &to) { inFrom(from, to, false); }
+        virtual void inFrom(const Block &from, const Block &to, bool globalOnly);
+        virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to, false); }
+        virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to, false); }
+        virtual inline void inFromCall(const Block &from, const Block &to) { inFrom(from, to, true); }
+        virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to, false); }
+        virtual inline void inFromRet(const Block &from, const Block &to) { inFrom(from, to, true); }
         virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
         virtual inline void finish() { m_outs.clear(); }
 

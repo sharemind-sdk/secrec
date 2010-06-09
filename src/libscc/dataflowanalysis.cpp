@@ -153,9 +153,22 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
     }
 }
 
-void ReachingDefinitions::inFrom(const Block &from, const Block &to) {
-    for (SDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
-        m_ins[&to][(*jt).first].first += (*jt).second.first;
+void ReachingDefinitions::inFrom(const Block &from, const Block &to, bool globalOnly) {
+    if (!globalOnly) {
+        for (SDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
+            m_ins[&to][(*jt).first].first += (*jt).second.first;
+        }
+    } else {
+        for (SDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
+            const Symbol *s = (*jt).first;
+            if (((s->symbolType() == Symbol::SYMBOL)
+                 && static_cast<const SymbolSymbol*>(s)->scopeType() == SymbolSymbol::GLOBAL)
+                || ((s->symbolType() == Symbol::TEMPORARY)
+                    && static_cast<const SymbolTemporary*>(s)->scopeType() == SymbolTemporary::GLOBAL))
+            {
+                m_ins[&to][s].first += (*jt).second.first;
+            }
+        }
     }
 }
 
