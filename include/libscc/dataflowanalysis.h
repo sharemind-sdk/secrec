@@ -137,7 +137,15 @@ class ReachingJumps: public ForwardDataFlowAnalysis {
 
 class ReachingDeclassify: public ForwardDataFlowAnalysis {
     public: /* Types: */
-        typedef std::set<const Imop*> Defs;
+        typedef std::set<const Imop*> ImopSet;
+        struct Defs {
+            ImopSet sensitive;
+            ImopSet nonsensitive;
+            inline bool operator==(const Defs &o) const {
+                return (sensitive == o.sensitive)
+                        && (nonsensitive == o.nonsensitive);
+            }
+        };
         typedef std::map<const Symbol*, Defs> PDefs;
         typedef std::map<const Block*, PDefs> RD;
         typedef std::map<const Imop*, Defs> DD;

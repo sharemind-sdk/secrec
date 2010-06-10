@@ -321,7 +321,8 @@ std::string ReachingJumps::toString(const Blocks &bs) const {
 
 void ReachingDeclassify::inFrom(const Block &from, const Block &to) {
     for (PDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
-        m_ins[&to][(*jt).first] += (*jt).second;
+        m_ins[&to][(*jt).first].nonsensitive += (*jt).second.nonsensitive;
+        m_ins[&to][(*jt).first].sensitive += (*jt).second.sensitive;
     }
 }
 
@@ -345,20 +346,27 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
         switch ((*it)->type()) {
             case Imop::POPPARAM:
             case Imop::CALL:
-                d.clear();
-                d.insert(*it);
+                d.nonsensitive.clear();
+                d.sensitive.clear();
+                d.sensitive.insert(*it);
                 break;
             case Imop::ASSIGN:
             case Imop::UMINUS:
             case Imop::UNEG:
-                if ((*it)->arg1()->symbolType() != Symbol::CONSTANT
-                    && (*it)->dest() != (*it)->arg1())
-                {
-                    d = out[(*it)->arg1()];
+                if ((*it)->arg1()->symbolType() != Symbol::CONSTANT) {
+                    if ((*it)->dest() != (*it)->arg1()) {
+                        d = out[(*it)->arg1()];
+                    }
+                } else {
+                    d.nonsensitive.clear();
+                    d.nonsensitive.insert(*it);
+                    d.sensitive.clear();
                 }
                 break;
             default:
-                d.clear();
+                d.nonsensitive.clear();
+                d.nonsensitive.insert(*it);
+                d.sensitive.clear();
                 break;
         }
     }
@@ -373,7 +381,7 @@ void ReachingDeclassify::finish() {
     DD oldDs(m_ds);
     m_ds.clear();
     for (DD::const_iterator it = oldDs.begin(); it != oldDs.end(); it++) {
-        if (!(*it).second.empty()) {
+        if (!(*it).second.sensitive.empty()) {
             m_ds.insert(*it);
         }
     }
@@ -390,8 +398,9 @@ std::string ReachingDeclassify::toString() const {
     for (DD::const_iterator it = m_ds.begin(); it != m_ds.end(); it++) {
         os << "    declassify at "
            << (*it).first->creator()->location()
-           << " might fully leak the value from:" << std::endl;
-        for (Defs::const_iterator jt = (*it).second.begin(); jt != (*it).second.end(); jt++) {
+           << ((*it).second.nonsensitive.empty() ? " leaks the value from:" : " might fully leak the value from:")
+           << std::endl;
+        for (std::set<const Imop*>::const_iterator jt = (*it).second.sensitive.begin(); jt != (*it).second.sensitive.end(); jt++) {
             os << "        ";
             switch ((*jt)->type()) {
                 case Imop::POPPARAM:
