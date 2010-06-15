@@ -823,7 +823,7 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
     }
 
     log.fatal() << "Invalid binary operation " << operatorString()
-                << " between operands of type " << eType1 << " and " << eType2
+                << " between operands of type " << *eType1 << " and " << *eType2
                 << " at " << location();
 
     return ICode::E_TYPE;
