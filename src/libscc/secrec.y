@@ -86,7 +86,8 @@
 
 /* Literals: */
 %token <str> STRING_LITERAL
-%token <str> DECIMAL_LITERAL
+%token <str> INT_LITERAL
+%token <str> UINT_LITERAL
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -731,11 +732,16 @@ primary_expression
  ;
 
 constant
- : DECIMAL_LITERAL
-   {
-     $$ = treenode_init_int(atoi($1), &@$);
-     free($1);
-   }
+ : INT_LITERAL
+  {
+    $$ = treenode_init_int(atoi($1), &@$);
+    free($1);
+  }
+ | UINT_LITERAL
+  {
+    $$ = treenode_init_uint(atoi($1), &@$);
+    free($1);
+  }
  | STRING_LITERAL
    {
      $$ = treenode_init_string($1, &@$);

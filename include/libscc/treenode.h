@@ -646,17 +646,26 @@ class TreeNodeProcDef: public TreeNodeCodeable {
         }
 
         const std::string &procedureName() const;
-        const SecreC::TypeNonVoid &procedureType() const;
+        ICode::Status calculateProcedureType(SymbolTable &st,
+                                             CompileLog &log);
+        inline bool haveProcedureType() const { return m_cachedType != 0; }
+        const SecreC::TypeNonVoid &procedureType() const {
+            assert(m_cachedType != 0);
+            return *m_cachedType;
+        }
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
 
     private: /* Methods: */
-        void addParameters(SecTypeProcedureVoid &st, DataTypeProcedureVoid &dt) const;
+        ICode::Status addParameters(SecTypeProcedureVoid &st,
+                                    DataTypeProcedureVoid &dt,
+                                    SymbolTable &stable,
+                                    CompileLog &log) const;
 
     private: /* Fields: */
-        mutable const SecreC::TypeNonVoid *m_cachedType;
+        const SecreC::TypeNonVoid *m_cachedType;
 };
 
 
@@ -832,7 +841,13 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
                                            SymbolTable &st,
                                            CompileLog &log);
 
-        const SecreC::TypeNonVoid &resultType() const;
+        ICode::Status calculateResultType(SymbolTable &st,
+                                          CompileLog &log);
+        inline const SecreC::TypeNonVoid &resultType() const {
+            assert(m_type != 0);
+            return *m_type;
+        }
+        inline bool haveResultType() const { return m_type != 0; }
 
         inline bool global() const { return m_global; }
         inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
@@ -840,7 +855,7 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
         inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
 
     private: /* Fields: */
-        mutable SecreC::TypeNonVoid *m_type;
+        SecreC::TypeNonVoid *m_type;
         bool m_global;
         bool m_procParam;
 };

@@ -82,7 +82,8 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 
-0|[1-9]{DIGIT}*   { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DECIMAL_LITERAL; }
+0|[1-9]{DIGIT}* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return INT_LITERAL; }
+0(0|[1-9]{DIGIT}*) { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return UINT_LITERAL; }
 \"(\\.|[^\\"])*\" { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return STRING_LITERAL; }
 
 "+=" { stepLen(yyget_lloc(yyscanner), 2); return ADD_ASSIGN; }
