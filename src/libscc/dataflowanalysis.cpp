@@ -219,6 +219,10 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
     return os.str();
 }
 
+/**
+  \todo ReachingJumps fails on "while (e1) if (e2) break;"
+*/
+
 void ReachingJumps::start(const Blocks &bs) {
     m_inPos.insert(std::make_pair(&bs.entryBlock(), Jumps()));
     m_inNeg.insert(std::make_pair(&bs.entryBlock(), Jumps()));
