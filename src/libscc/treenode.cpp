@@ -849,18 +849,43 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         setResult(r);
     }
 
-    /**
-      \todo If first sub-expression is public, then generate short-circuit code
-            for logical && and logical ||.
-    */
-
-    // Generate code for child expressions:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
+    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
+
+    /*
+      If first sub-expression is public, then generate short-circuit code for
+      logical && and logical ||.
+    */
+    if (e1->resultType().secrecSecType() == SECTYPE_PUBLIC
+        && (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR))
+    {
+        // Generate code for first child expression:
+        s = e1->generateCode(code, st, log, result()); /// \note not exactly as in semantics
+        if (s != ICode::OK) return s;
+        setFirstImop(e1->firstImop());
+
+        Imop *j = new Imop(this,
+                           type() == NODE_EXPR_BINARY_LAND ? Imop::JF : Imop::JT,
+                           0,
+                           result());
+        code.push_imop(j);
+        addToNextList(j);
+        e1->patchNextList(j);
+
+        // Generate code for second child expression:
+        s = e2->generateCode(code, st, log, result());
+        if (s != ICode::OK) return s;
+        patchFirstImop(e2->firstImop());
+
+        return ICode::OK;
+    }
+
+    // Generate code for first child expression:
     s = e1->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
 
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
+    // Generate code for second child expression:
     s = e2->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
@@ -910,93 +935,123 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    assert(type() == NODE_EXPR_BINARY_EQ
-           || type() == NODE_EXPR_BINARY_GE
-           || type() == NODE_EXPR_BINARY_GT
-           || type() == NODE_EXPR_BINARY_LAND
-           || type() == NODE_EXPR_BINARY_LE
-           || type() == NODE_EXPR_BINARY_LOR
-           || type() == NODE_EXPR_BINARY_LT
-           || type() == NODE_EXPR_BINARY_NE);
-
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
-    /*
-      If first sub-expression is public, then generate short-circuit code for
-      logical && and logical ||.
-    */
-    if (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR) {
-        assert(!e1->resultType().isVoid());
-        assert(dynamic_cast<const TNV*>(&e1->resultType()) != 0);
-        if (static_cast<const TNV&>(e1->resultType()).secType()
-                == SecTypeBasic(SECTYPE_PUBLIC))
+    switch (type()) {
+        case NODE_EXPR_BINARY_LAND: // fall through
+        case NODE_EXPR_BINARY_LOR:
+            assert(!e1->resultType().isVoid());
+            assert(dynamic_cast<const TNV*>(&e1->resultType()) != 0);
+
+            /*
+              If first sub-expression is public, then generate short-circuit
+              code for logical && and logical ||.
+            */
+            if (static_cast<const TNV&>(e1->resultType()).secType()
+                    == SecTypeBasic(SECTYPE_PUBLIC))
+            {
+                // Generate code for first child expression:
+                s = e1->generateBoolCode(code, st, log);
+                if (s != ICode::OK) return s;
+                setFirstImop(e1->firstImop());
+
+                // Generate code for second child expression:
+                s = e2->generateBoolCode(code, st, log);
+                if (s != ICode::OK) return s;
+                patchFirstImop(e2->firstImop());
+
+                // Short circuit the code:
+                if (type() == NODE_EXPR_BINARY_LAND) {
+                    e1->patchTrueList(e2->firstImop());
+                    setFalseList(e1->falseList());
+
+                    setTrueList(e2->trueList());
+                    addToFalseList(e2->falseList());
+                } else {
+                    assert(type() == NODE_EXPR_BINARY_LOR);
+
+                    e1->patchFalseList(e2->firstImop());
+                    setTrueList(e1->trueList());
+
+                    setFalseList(e2->falseList());
+                    addToTrueList(e2->trueList());
+                }
+            } else {
+                s = generateCode(code, st, log);
+                if (s != ICode::OK) return s;
+
+                Imop *j1, *j2;
+                if (type() == NODE_EXPR_BINARY_LAND) {
+                    j1 = new Imop(this, Imop::JF, 0);
+                    patchFirstImop(j1);
+                    addToFalseList(j1);
+
+                    j2 = new Imop(this, Imop::JUMP, 0);
+                    addToTrueList(j2);
+                } else {
+                    assert(type() == NODE_EXPR_BINARY_LOR);
+
+                    j1 = new Imop(this, Imop::JT, 0);
+                    patchFirstImop(j1);
+                    addToTrueList(j1);
+
+                    j2 = new Imop(this, Imop::JUMP, 0);
+                    addToFalseList(j2);
+                }
+                j1->setArg1(result());
+                code.push_imop(j1);
+                code.push_imop(j2);
+                patchNextList(j1);
+            }
+            break;
+        case NODE_EXPR_BINARY_EQ:   // fall through
+        case NODE_EXPR_BINARY_GE:   // fall through
+        case NODE_EXPR_BINARY_GT:   // fall through
+        case NODE_EXPR_BINARY_LE:   // fall through
+        case NODE_EXPR_BINARY_LT:   // fall through
+        case NODE_EXPR_BINARY_NE:   // fall through
         {
-            // Generate code for child expressions:
-            s = e1->generateBoolCode(code, st, log);
+            // Generate code for first child expression:
+            s = e1->generateCode(code, st, log);
             if (s != ICode::OK) return s;
             setFirstImop(e1->firstImop());
 
-            s = e2->generateBoolCode(code, st, log);
+            // Generate code for second child expression:
+            s = e2->generateCode(code, st, log);
             if (s != ICode::OK) return s;
             patchFirstImop(e2->firstImop());
 
-            // Short circuit the code:
-            if (type() == NODE_EXPR_BINARY_LAND) {
-                e1->patchTrueList(e2->firstImop());
-                setFalseList(e1->falseList());
-
-                setTrueList(e2->trueList());
-                addToFalseList(e2->falseList());
-            } else {
-                assert(type() == NODE_EXPR_BINARY_LOR);
-
-                e1->patchFalseList(e2->firstImop());
-                setTrueList(e1->trueList());
-
-                setFalseList(e2->falseList());
-                addToTrueList(e2->trueList());
+            Imop::Type cType;
+            switch (type()) {
+                case NODE_EXPR_BINARY_EQ: cType = Imop::JE; break;
+                case NODE_EXPR_BINARY_GE: cType = Imop::JGE; break;
+                case NODE_EXPR_BINARY_GT: cType = Imop::JGT; break;
+                case NODE_EXPR_BINARY_LE: cType = Imop::JLE; break;
+                case NODE_EXPR_BINARY_LT: cType = Imop::JLT; break;
+                case NODE_EXPR_BINARY_NE: cType = Imop::JNE; break;
+                default:
+                    assert(false); // Shouldn't happen.
             }
 
-            return ICode::OK;
+            Imop *tj = new Imop(this, Imop::JNE, 0);
+            tj->setArg1(e1->result());
+            tj->setArg2(e2->result());
+            code.push_imop(tj);
+            addToTrueList(tj);
+            patchFirstImop(tj);
+
+            e1->patchNextList(e2->firstImop());
+            e2->patchNextList(tj);
+
+            Imop *fj = new Imop(this, Imop::JUMP, 0);
+            addToFalseList(fj);
+            code.push_imop(fj);
         }
-    }
-
-    // Generate code for child expressions:
-    s = e1->generateCode(code, st, log);
-    if (s != ICode::OK) return s;
-    setFirstImop(e1->firstImop());
-
-    s = e2->generateCode(code, st, log);
-    if (s != ICode::OK) return s;
-    patchFirstImop(e2->firstImop());
-
-    /// \todo FINISH THIS METHOD!!!
-
-    Imop *tj;
-
-    switch (type()) {
-        case NODE_EXPR_BINARY_EQ: tj = new Imop(this, Imop::JE,  0); break;
-        case NODE_EXPR_BINARY_GE: tj = new Imop(this, Imop::JGE, 0); break;
-        case NODE_EXPR_BINARY_GT: tj = new Imop(this, Imop::JGT, 0); break;
-        case NODE_EXPR_BINARY_LE: tj = new Imop(this, Imop::JLE, 0); break;
-        case NODE_EXPR_BINARY_LT: tj = new Imop(this, Imop::JLT, 0); break;
-        case NODE_EXPR_BINARY_NE: tj = new Imop(this, Imop::JNE, 0); break;
         default:
-            assert(false); // Shouldn't happen.
+            assert(false);
+            break;
     }
-
-    tj->setArg1(e1->result());
-    tj->setArg2(e2->result());
-    addToTrueList(tj);
-    code.push_imop(tj);
-    patchFirstImop(tj);
-    e1->patchNextList(e2->firstImop());
-    e2->patchNextList(tj);
-
-    Imop *fj = new Imop(this, Imop::JUMP, 0);
-    addToFalseList(fj);
-    code.push_imop(fj);
     return ICode::OK;
 }
 
