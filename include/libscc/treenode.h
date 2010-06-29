@@ -265,6 +265,11 @@ class TreeNodeExpr: public TreeNode {
 
         inline Symbol *result() const { return m_result; };
         inline bool haveResultType() const { return m_resultType != 0; }
+        inline bool havePublicBoolType() const {
+            assert(m_resultType != 0);
+            return m_resultType->secrecDataType() == DATATYPE_BOOL
+                   && m_resultType->secrecSecType() == SECTYPE_PUBLIC;
+        }
         inline const SecreC::Type &resultType() const {
             assert(m_resultType != 0);
             return *m_resultType;

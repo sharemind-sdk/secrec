@@ -421,7 +421,7 @@ inline const DataType &Type::tnvDataType() const {
 }
 
 inline SecrecSecType Type::secrecSecType() const {
-    assert(isVoid() == false);
+    if (isVoid()) return SECTYPE_INVALID;
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
     if (t.kind() == TypeNonVoid::BASIC
@@ -441,7 +441,7 @@ inline SecrecSecType Type::secrecSecType() const {
 }
 
 inline SecrecDataType Type::secrecDataType() const {
-    assert(isVoid() == false);
+    if (isVoid()) return DATATYPE_INVALID;
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     return static_cast<const TypeNonVoid&>(*this).dataType().secrecDataType();
 }

@@ -676,16 +676,9 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
                                                    SymbolTable &st,
                                                    CompileLog &log)
 {
-    // Type check:
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    assert(havePublicBoolType());
 
-    if (resultType() == TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_BOOL)) {
-        log.fatal() << "Not a public boolean expression at " << location();
-        return ICode::E_TYPE;
-    }
-
-    s = generateCode(code, st, log);
+    ICode::Status s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(this, Imop::JT, 0, result());
@@ -937,9 +930,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
 {
     typedef TypeNonVoid TNV;
 
-    // Type check:
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    assert(havePublicBoolType());
 
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
@@ -958,7 +949,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                     == SecTypeBasic(SECTYPE_PUBLIC))
             {
                 // Generate code for first child expression:
-                s = e1->generateBoolCode(code, st, log);
+                ICode::Status s = e1->generateBoolCode(code, st, log);
                 if (s != ICode::OK) return s;
                 setFirstImop(e1->firstImop());
 
@@ -984,7 +975,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                     addToTrueList(e2->trueList());
                 }
             } else {
-                s = generateCode(code, st, log);
+                ICode::Status s = generateCode(code, st, log);
                 if (s != ICode::OK) return s;
 
                 Imop *j1, *j2;
@@ -1019,7 +1010,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
         case NODE_EXPR_BINARY_NE:   // fall through
         {
             // Generate code for first child expression:
-            s = e1->generateCode(code, st, log);
+            ICode::Status s = e1->generateCode(code, st, log);
             if (s != ICode::OK) return s;
             setFirstImop(e1->firstImop());
 
@@ -1053,6 +1044,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
             Imop *fj = new Imop(this, Imop::JUMP, 0);
             addToFalseList(fj);
             code.push_imop(fj);
+            break;
         }
         default:
             assert(false);
@@ -1102,12 +1094,10 @@ ICode::Status TreeNodeExprBool::generateCode(ICodeList &code, SymbolTable &st,
 }
 
 ICode::Status TreeNodeExprBool::generateBoolCode(ICodeList &code,
-                                                 SymbolTable &st,
-                                                 CompileLog &log)
+                                                 SymbolTable &,
+                                                 CompileLog &)
 {
-    // Type check:
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    assert(havePublicBoolType());
 
     Imop *i = new Imop(this, Imop::JUMP, 0);
     setFirstImop(i);
@@ -1186,23 +1176,11 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprClassify::generateBoolCode(ICodeList &code,
-                                                       SymbolTable &st,
-                                                       CompileLog &log)
+ICode::Status TreeNodeExprClassify::generateBoolCode(ICodeList &, SymbolTable &,
+                                                     CompileLog &)
 {
-    ICode::Status s = generateCode(code, st, log);
-    if (s != ICode::OK) return s;
-
-    Imop *i = new Imop(this, Imop::JT, 0, result());
-    code.push_imop(i);
-    patchFirstImop(i);
-    addToTrueList(i);
-
-    i = new Imop(this, Imop::JUMP, 0);
-    code.push_imop(i);
-    addToFalseList(i);
-
-    return ICode::OK;
+    assert(false); // This method shouldn't be called.
+    return ICode::E_NOT_IMPLEMENTED;
 }
 
 
@@ -1274,6 +1252,8 @@ ICode::Status TreeNodeExprDeclassify::generateBoolCode(ICodeList &code,
                                                        SymbolTable &st,
                                                        CompileLog &log)
 {
+    assert(havePublicBoolType());
+
     ICode::Status s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
@@ -1478,11 +1458,9 @@ ICode::Status TreeNodeExprProcCall::generateBoolCode(ICodeList &code,
                                                      SymbolTable &st,
                                                      CompileLog &log)
 {
-    // Type check:
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    assert(havePublicBoolType());
 
-    s = generateCode(code, st, log);
+    ICode::Status s = generateCode(code, st, log);
     if (s != ICode::OK) return s;
 
     Imop *i = new Imop(this, Imop::JT, 0, result());
@@ -1542,10 +1520,9 @@ ICode::Status TreeNodeExprInt::generateCode(ICodeList &code, SymbolTable &st,
 }
 
 ICode::Status TreeNodeExprInt::generateBoolCode(ICodeList &, SymbolTable &,
-                                                CompileLog &log)
+                                                CompileLog &)
 {
-    log.fatal() << "Integer as boolean expression not implemented. At "
-                << location();
+    assert(false); // This method shouldn't be called.
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1613,9 +1590,7 @@ ICode::Status TreeNodeExprRVariable::generateBoolCode(ICodeList &code,
                                                       SymbolTable &st,
                                                       CompileLog &log)
 {
-    // Type check
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
+    assert(havePublicBoolType());
 
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
@@ -1679,10 +1654,9 @@ ICode::Status TreeNodeExprString::generateCode(ICodeList &code, SymbolTable &st,
 }
 
 ICode::Status TreeNodeExprString::generateBoolCode(ICodeList &, SymbolTable &,
-                                                   CompileLog &log)
+                                                   CompileLog &)
 {
-    log.fatal() << "String as boolean expression not implemented. At "
-                << location();
+    assert(false); // This method shouldn't be called.
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1811,15 +1785,11 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICodeList &code,
                                                     SymbolTable &st,
                                                     CompileLog &log)
 {
-    // Type check
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
-
-    /// \todo Write check that were have good return type
+    assert(havePublicBoolType());
 
     // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e1->generateBoolCode(code, st, log);
+    ICode::Status s = e1->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     // Generate code for first value child expression:
@@ -1891,10 +1861,9 @@ ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code, SymbolTable &st,
 }
 
 ICode::Status TreeNodeExprUInt::generateBoolCode(ICodeList &, SymbolTable &,
-                                                 CompileLog &log)
+                                                 CompileLog &)
 {
-    log.fatal() << "Unsigned int as boolean expression not implemented. At "
-                << location();
+    assert(false); // This method shouldn't be called.
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1994,15 +1963,12 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICodeList &code,
                                                   SymbolTable &st,
                                                   CompileLog &log)
 {
-    // Type check:
-    ICode::Status s = calculateResultType(st, log);
-    if (s != ICode::OK) return s;
-
+    assert(havePublicBoolType());
     assert(type() == NODE_EXPR_UNEG);
 
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateBoolCode(code, st, log);
+    ICode::Status s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
 
     addToFalseList(e->trueList());
@@ -2589,6 +2555,13 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
     assert(c1->type() != NODE_EXPR_NONE);
     assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c1);
+    s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (!e->havePublicBoolType()) {
+        log.fatal() << "Conditional expression in if statement must be of "
+                       "type public bool in " << e->location();
+        return ICode::E_TYPE;
+    }
     s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
@@ -2657,7 +2630,14 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     if (children().at(1)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
         e1 = static_cast<TreeNodeExpr*>(c1);
-        ICode::Status s = e1->generateBoolCode(code, st, log);
+        ICode::Status s = e1->calculateResultType(st, log);
+        if (s != ICode::OK) return s;
+        if (!e1->havePublicBoolType()) {
+            log.fatal() << "Conditional expression in if statement must be of "
+                           "type public bool in " << e1->location();
+            return ICode::E_TYPE;
+        }
+        s = e1->generateBoolCode(code, st, log);
         if (s != ICode::OK) return s;
         patchFirstImop(e1->firstImop());
         addToNextList(e1->falseList());
@@ -2730,9 +2710,6 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
 ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
                                            CompileLog &log)
 {
-    typedef DataTypeBasic DTB;
-    typedef SecTypeBasic STB;
-
     assert(children().size() == 2 || children().size() == 3);
     TreeNode *c0 = children().at(0);
 
@@ -2742,27 +2719,10 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
     ICode::Status s = e->calculateResultType(st, log);
     if (s != ICode::OK) return s;
-    if (e->resultType().isVoid()) {
-        log.fatal() << "Conditional expression of the if statement can't have a "
-                       "void type. At " << e->location();
+    if (!e->havePublicBoolType()) {
+        log.fatal() << "Conditional expression in if statement must be of "
+                       "type public bool in " << e->location();
         return ICode::E_TYPE;
-    }
-    assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
-    const TypeNonVoid &eType = static_cast<const TypeNonVoid&>(e->resultType());
-    if (eType.kind() != TypeNonVoid::BASIC) {
-        assert(eType.secType().kind() == SecType::BASIC);
-        assert(dynamic_cast<const STB*>(&eType.secType()) != 0);
-        const STB &st = static_cast<const STB&>(eType.secType());
-
-        assert(eType.dataType().kind() == DataType::BASIC);
-        assert(dynamic_cast<const DTB*>(&eType.dataType()) != 0);
-        const DTB &dt = static_cast<const DTB&>(eType.dataType());
-
-        if (st.secType() != SECTYPE_PUBLIC || dt.dataType() != DATATYPE_BOOL) {
-            log.fatal() << "Conditional expression in if statement must be of "
-                           "type public bool.";
-            return ICode::E_TYPE;
-        }
     }
 
     // Generate code for conditional expression:
@@ -2897,7 +2857,14 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
     assert(c0->type() != NODE_EXPR_NONE);
     assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
-    ICode::Status s = e->generateBoolCode(code, st, log);
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (!e->havePublicBoolType()) {
+        log.fatal() << "Conditional expression in while statement must be of "
+                       "type public bool in " << e->location();
+        return ICode::E_TYPE;
+    }
+    s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
 
