@@ -860,7 +860,13 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         && (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR))
     {
         // Generate code for first child expression:
-        s = e1->generateCode(code, st, log, result()); /// \note not exactly as in semantics
+        /**
+          \note The short-circuit code generated here is not the exactly the
+                same as in the semantics paper. Namely to optimize some more, we
+                immediately assign the result of the first operator instead of
+                assigning first to a temporary.
+        */
+        s = e1->generateCode(code, st, log, result());
         if (s != ICode::OK) return s;
         setFirstImop(e1->firstImop());
 
