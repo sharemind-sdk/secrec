@@ -1031,7 +1031,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                     assert(false); // Shouldn't happen.
             }
 
-            Imop *tj = new Imop(this, Imop::JNE, 0);
+            Imop *tj = new Imop(this, cType, 0);
             tj->setArg1(e1->result());
             tj->setArg2(e2->result());
             code.push_imop(tj);
