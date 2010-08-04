@@ -13,16 +13,16 @@ using namespace std;
 
 void help (void) {
   cout << 
-  "Usage: sca [options] [file]\n"\
-  "Options:\n"\
-  "  -h, --help           this help\n"\
-  "  -v, --verbose        some extra information\n"\
-  "      --print_ast      print abstract syntax tree\n"\
-  "  -a, --analysis       select analysis that you wish to enable\n"\
-  "                       Possible comma seperated values are:\n"\
-  "                       \"rd\" for reaching definitions\n"\
-  "                       \"rj\" for reaching jumps\n"\
-  "                       \"rdc\" for reaching declassify\n"\
+  "Usage: sca [options] [file]\n"
+  "Options:\n"
+  "  -h, --help           this help\n"
+  "  -v, --verbose        some extra information\n"
+  "      --print_ast      print abstract syntax tree\n"
+  "  -a, --analysis       select analysis that you wish to enable\n"
+  "                       Possible comma seperated values are:\n"
+  "                       \"rd\" for reaching definitions\n"
+  "                       \"rj\" for reaching jumps\n"
+  "                       \"rdc\" for reaching declassify\n"
   << endl;
 }
 
