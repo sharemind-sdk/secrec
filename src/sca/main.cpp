@@ -19,7 +19,7 @@ void help (void) {
   "  -v, --verbose        some extra information\n"
   "      --print_ast      print abstract syntax tree\n"
   "  -a, --analysis       select analysis that you wish to enable\n"
-  "                       Possible comma seperated values are:\n"
+  "                       Possible comma separated values are:\n"
   "                       \"rd\" for reaching definitions\n"
   "                       \"rj\" for reaching jumps\n"
   "                       \"rdc\" for reaching declassify\n"
