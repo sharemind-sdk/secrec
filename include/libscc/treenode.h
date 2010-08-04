@@ -895,6 +895,19 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
                                            CompileLog &log);
 };
 
+/******************************************************************
+  TreeNodeStmtAssert
+******************************************************************/
+
+class TreeNodeStmtAssert: public TreeNodeStmt {
+    public:
+        explicit TreeNodeStmtAssert(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
+
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log);
+};
 
 /******************************************************************
   TreeNodeStmtFor

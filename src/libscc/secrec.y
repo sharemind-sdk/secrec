@@ -82,7 +82,7 @@
 
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC
-%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE
+%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -121,6 +121,7 @@
 %type <treenode> for_statement_expression
 %type <treenode> while_statement
 %type <treenode> dowhile_statement
+%type <treenode> assert_statement
 %type <treenode> expression
 %type <treenode> assignment_expression
 %type <treenode> lvalue
@@ -383,6 +384,7 @@ statement
  | for_statement
  | while_statement
  | dowhile_statement
+ | assert_statement
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
@@ -460,6 +462,14 @@ dowhile_statement
      $$ = treenode_init(NODE_STMT_DOWHILE, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, ensure_rValue($5));
+   }
+ ;
+
+assert_statement
+ : ASSERT '(' expression ')' ';'
+   {
+     $$ = treenode_init(NODE_STMT_ASSERT, &@$);
+     treenode_appendChild($$, ensure_rValue($3));
    }
  ;
 

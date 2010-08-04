@@ -117,6 +117,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_STMT_CONTINUE: return "STMT_CONTINUE";
         case NODE_STMT_BREAK: return "STMT_BREAK";
         case NODE_STMT_EXPR: return "STMT_EXPR";
+        case NODE_STMT_ASSERT: return "STMT_ASSERT";
         case NODE_DECL: return "DECL";
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_GLOBALS: return "DECL_GLOBALS";
@@ -263,6 +264,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtDoWhile(*loc));
         case NODE_STMT_EXPR:
             return (TreeNode*) (new SecreC::TreeNodeStmtExpr(*loc));
+        case NODE_STMT_ASSERT:
+            return (TreeNode*) (new SecreC::TreeNodeStmtAssert(*loc));
         case NODE_STMT_FOR:
             return (TreeNode*) (new SecreC::TreeNodeStmtFor(*loc));
         case NODE_STMT_IF:
@@ -2598,6 +2601,49 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICodeList &code, SymbolTable &st,
     return ICode::OK;
 }
 
+/*******************************************************************************
+  TreeNodeStmtExpr
+*******************************************************************************/
+
+
+ICode::Status TreeNodeStmtAssert::generateCode(ICodeList &code, SymbolTable &st,
+                                               CompileLog &log)
+{
+    assert(children().size() == 1);
+
+    TreeNode *c0 = children().at(0);
+
+    // Type check the expression
+    assert((c0->type() & NODE_EXPR_MASK) != 0);
+    assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (!e->havePublicBoolType()) {
+        log.fatal() << "Conditional expression in assert statement must be of "
+                       "type public bool in " << e->location();
+        return ICode::E_TYPE;
+    }
+
+    // Generate code for conditional expression:
+    s = e->generateBoolCode(code, st, log);
+    if (s != ICode::OK) return s;
+    assert(e->firstImop() != 0);
+    setFirstImop(e->firstImop());
+
+    std::ostringstream os;
+    os << "assert failed at " << location();
+    Imop *i = new Imop(0, Imop::ERROR, 0, (Symbol*) new std::string(os.str()));
+    code.push_imop(i);
+
+    e->patchNextList(i);
+    e->patchFalseList(i);
+    addToNextList(e->trueList());
+
+    setResultFlags(FALLTHRU);
+
+    return ICode::OK;
+}
 
 /*******************************************************************************
   TreeNodeStmtFor

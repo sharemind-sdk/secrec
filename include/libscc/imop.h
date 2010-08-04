@@ -64,19 +64,20 @@ class Imop {
             // Misc. instructions:
             //--------------------
             COMMENT    = 0x1000,  /* // arg1                          */
-            POPPARAM   = 0x2000,  /* POPPARAM d;                      */
-            PUSHPARAM  = 0x3000,  /* PUSHPARAM arg1;                  */
+            ERROR      = 0x2000,  /* // arg1                          */
+            POPPARAM   = 0x3000,  /* POPPARAM d;                      */
+            PUSHPARAM  = 0x4000,  /* PUSHPARAM arg1;                  */
 
             /* For RETCLEAN, arg2 is the corresponding CALL instruction: */
-            RETCLEAN   = 0x4000,  /* RETCLEAN;             (Imop *arg2) */
+            RETCLEAN   = 0x5000,  /* RETCLEAN;             (Imop *arg2) */
 
             /*
               For RETURN and RETURNVOID, arg2 is the first Imop of the procedure
               to return from.
             */
-            RETURNVOID = 0x5000,  /* RETURN;               (Imop *arg2) */
-            RETURN     = 0x6000,  /* RETURN arg1;          (Imop *arg2) */
-            END        = 0x7000   /* END PROGRAM                        */
+            RETURNVOID = 0x6000,  /* RETURN;               (Imop *arg2) */
+            RETURN     = 0x7000,  /* RETURN arg1;          (Imop *arg2) */
+            END        = 0x8000   /* END PROGRAM                        */
         };
 
     public: /* Methods: */

@@ -176,6 +176,9 @@ std::string Imop::toString() const {
         case COMMENT:      /* // arg1                            */
             os << "// " << *((std::string*) m_arg1);
             break;
+        case ERROR:        /* // arg1                            */
+            os << "ERROR \"" <<  *((std::string*) m_arg1) << "\"";
+            break;
         case POPPARAM:     /* POPPARAM d;                        */
             os << "POPPARAM " << dname << ";";
             break;
