@@ -231,6 +231,12 @@ type_specifier
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
+ | datatype_specifier
+   {
+     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$));
+     treenode_appendChild($$, $1);
+   }
  ;
 
 sectype_specifier
