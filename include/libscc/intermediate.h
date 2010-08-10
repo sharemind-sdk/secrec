@@ -13,6 +13,7 @@
 namespace SecreC {
 
 class TreeNodeProgram;
+class VirtualMachine;
 
 class ICode {
     public: /* Types: */
@@ -29,6 +30,8 @@ class ICode {
         const ICodeList &code() const { return m_code; }
         Status status() const { return m_status; }
         const CompileLog &compileLog() const { return m_log; }
+
+        void run (VirtualMachine&) const;
 
     private: /* Fields: */
         SymbolTable m_symbols;
