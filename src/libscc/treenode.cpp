@@ -2786,12 +2786,15 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
     s = s1->generateCode(code, innerScope1, log);
     if (s != ICode::OK) return s;
 
-
-    e->patchTrueList(s1->firstImop());
-    addToNextList(s1->nextList());
-    addToBreakList(s1->breakList());
-    addToContinueList(s1->continueList());
-    assert(s1->resultFlags() != 0x0);
+    if (s1->firstImop() != 0) {
+        e->patchTrueList(s1->firstImop());
+        addToNextList(s1->nextList());
+        addToBreakList(s1->breakList());
+        addToContinueList(s1->continueList());
+        assert(s1->resultFlags() != 0x0);
+    } else {
+        addToNextList(e->trueList());
+    }
 
     if (children().size() == 2) {
         addToNextList(e->falseList());
