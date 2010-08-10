@@ -2950,7 +2950,7 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
     setFirstImop(e->firstImop());
     e->patchTrueList(body->firstImop());
     setNextList(e->falseList());
-    addToBreakList(body->breakList());
+    addToNextList(body->breakList());
     body->patchContinueList(e->firstImop());
     body->patchNextList(e->firstImop());
 
