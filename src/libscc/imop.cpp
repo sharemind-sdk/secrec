@@ -29,7 +29,7 @@ namespace SecreC {
 #define tname  (m_dest == 0 ? "_" : ulongToString(((SecreC::Imop*) m_dest)->index()) )
 #define a1name (m_arg1 == 0 ? "_" : uniqueName(m_arg1))
 #define a2name (m_arg2 == 0 ? "_" : uniqueName(m_arg2))
-#define cImop  (m_arg2 == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(m_arg1)->decl()->firstImop()->index()))
+#define cImop  (m_arg1 == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(m_arg1)->decl()->firstImop()->index()))
 
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
@@ -67,6 +67,7 @@ void Imop::setCallDest(SymbolProcedure *proc, Imop *clean) {
     assert(proc->decl()->firstImop() != 0);
     m_arg1 = proc;
     m_arg2 = (SecreC::Symbol*) clean;
+    proc->setTarget(proc->decl()->firstImop());
     proc->decl()->firstImop()->addIncomingCall(this);
     clean->m_arg2 = (SecreC::Symbol*) this;
 }
