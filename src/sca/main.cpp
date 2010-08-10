@@ -8,6 +8,7 @@
 #include <libscc/parser.h>
 #include <libscc/dataflowanalysis.h>
 #include <libscc/treenode.h>
+#include <libscc/virtual_machine.h>
 
 using namespace std;
 
@@ -18,6 +19,7 @@ void help (void) {
   "  -h, --help           this help\n"
   "  -v, --verbose        some extra information\n"
   "      --print_ast      print abstract syntax tree\n"
+  "  -e, --eval           evaluate the code"
   "  -a, --analysis       select analysis that you wish to enable\n"
   "                       Possible comma separated values are:\n"
   "                       \"rd\" for reaching definitions\n"
@@ -29,6 +31,7 @@ void help (void) {
 int main(int argc, char *argv[]) {
     char* filename = 0;
     int verbose_flag = 0;
+    int eval_flag = 0;
     int help_flag = 0;
     int run_analysis = 1;
     int print_ast = 0;
@@ -42,6 +45,7 @@ int main(int argc, char *argv[]) {
         {"verbose",      no_argument,       0,                  'v'},
         {"help",         no_argument,       0,                  'h'},
         {"print_ast",    no_argument,       &print_ast,          1 },
+        {"eval",         no_argument,       0,                  'e'},
         {"analysis",     optional_argument, 0,                  'a'},
         {0, 0, 0, 0}
       };
@@ -58,6 +62,9 @@ int main(int argc, char *argv[]) {
         case 0:  /* intentionally empty */ break;
         case 'v':
           verbose_flag = 1;
+          break;
+        case 'e':
+          eval_flag = 1;
           break;
         case 'h':
           help_flag = 1;
@@ -129,8 +136,17 @@ int main(int argc, char *argv[]) {
             SecreC::Blocks bs;
             bs.init(icode.code());
 
+            if (eval_flag) {
+                cerr << "Evaluating the program.\n";
+                SecreC::VirtualMachine eval;
+                icode.run(eval);
+                if (verbose_flag) {
+                    cerr << eval.toString();
+                }
+            }
+
             if (verbose_flag) {
-              cout << bs.toString() << endl;
+                cerr << bs.toString() << endl;
             }
 
             // Run data flow analysis and print the results:
