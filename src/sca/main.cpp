@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
             if (eval_flag) {
                 cerr << "Evaluating the program.\n";
                 SecreC::VirtualMachine eval;
-                icode.run(eval);
+                eval.run(icode.code());
                 if (verbose_flag) {
                     cerr << eval.toString();
                 }

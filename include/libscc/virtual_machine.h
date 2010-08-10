@@ -10,13 +10,16 @@
 #include "types.h"
 #include "log.h"
 
+
 namespace SecreC {
+
+    class ICodeList;
 
     /// \todo write tests and test
     /// \todo performance tests
     /// \todo desnailify
     class VirtualMachine {
-    public:
+    private:
         union Value {
             int m_int_val;
             unsigned m_uint_val;
@@ -26,11 +29,16 @@ namespace SecreC {
 
         typedef std::map<Symbol const*, Value> Store;
         typedef std::stack<Value> ArgStack;
+
     public:
+
         inline VirtualMachine() : m_pc(0) { }
 
-        inline
-        size_t pc (void) { return m_pc; }
+        void run (ICodeList const&);
+
+        std::string toString(void);
+
+    private:
 
         inline
         void error (Symbol const* arg) {
@@ -301,41 +309,6 @@ namespace SecreC {
             ++ m_pc;
         }
 
-        std::string toString(void) {
-            std::stringstream os;
-
-            os << "Log:\n";
-            os << m_log;
-
-            os << "Store:\n";
-            for (Store::const_iterator i(m_store.begin()); i != m_store.end(); ++ i) {
-                Symbol const* sym = i->first;
-                Value val = i->second;
-                os << sym->toString() << " -> ";
-                switch (sym->secrecType().secrecDataType()) {
-                    case DATATYPE_BOOL:
-                        os << val.m_bool_val;
-                        break;
-                    case DATATYPE_INT:
-                        os << val.m_int_val;
-                        break;
-                    case DATATYPE_UINT:
-                        os << val.m_uint_val;
-                        break;
-                    case DATATYPE_STRING:
-                        os << *val.m_str_val;
-                        break;
-                    case DATATYPE_INVALID:
-                        assert (false);
-                }
-
-                os << '\n';
-            }
-
-            return os.str();
-        }
-
-    private:
 
         inline
         Value lookup (Symbol const* sym) const {

@@ -13,7 +13,8 @@ SOURCES = \
     dataflowanalysis.cpp \
     symboltable.cpp \
     treenode.cpp \
-    types.cpp
+    types.cpp \
+    virtual_machine.cpp
 
 OTHER_FILES = \
     secrec.l \
