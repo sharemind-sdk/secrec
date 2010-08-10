@@ -2604,7 +2604,7 @@ ICode::Status TreeNodeStmtExpr::generateCode(ICodeList &code, SymbolTable &st,
 }
 
 /*******************************************************************************
-  TreeNodeStmtExpr
+  TreeNodeStmtAssert
 *******************************************************************************/
 
 
