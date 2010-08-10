@@ -31,8 +31,6 @@ class ICode {
         Status status() const { return m_status; }
         const CompileLog &compileLog() const { return m_log; }
 
-        void run (VirtualMachine&) const;
-
     private: /* Fields: */
         SymbolTable m_symbols;
         ICodeList   m_code;
