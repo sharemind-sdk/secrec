@@ -34,6 +34,9 @@ namespace SecreC {
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
 
+    if (m_type == ERROR) {
+        delete (std::string*) m_arg1;
+    }
     if (m_type == COMMENT) {
         delete (std::string*) m_arg1;
     } else if ((m_type & JUMP_MASK) != 0x0) {
