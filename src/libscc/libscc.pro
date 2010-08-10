@@ -34,7 +34,7 @@ GENERATED_FILES += lex_secrec.h \
 SCC_LEX = flex
 SCC_YACC = bison
 SCC_LEX_FLAGS += -8
-SCC_YACC_FLAGS += 
+SCC_YACC_FLAGS +=
 target_yacc_h.target = yacc_secrec.tab.h
 target_yacc_h.depends = secrec.y \
     ../../include/libscc/parser.h

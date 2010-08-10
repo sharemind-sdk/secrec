@@ -13,7 +13,7 @@
 using namespace std;
 
 void help (void) {
-  cout << 
+  cout <<
   "Usage: sca [options] [file]\n"
   "Options:\n"
   "  -h, --help           this help\n"
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     fflush(stdout);
     fflush(stderr);
 
