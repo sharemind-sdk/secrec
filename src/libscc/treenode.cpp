@@ -426,10 +426,12 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
     TreeNodeStmt *last = 0;
     setResultFlags(TreeNodeStmt::FALLTHRU);
 
+    SymbolTable& innerScope = *st.newScope();
+
     for (CLCI it(children().begin()); it != children().end(); it++) {
         assert(dynamic_cast<TreeNodeStmt*>(*it) != 0);
         TreeNodeStmt *c = static_cast<TreeNodeStmt*>(*it);
-        ICode::Status s = c->generateCode(code, st, log);
+        ICode::Status s = c->generateCode(code, innerScope, log);
         if (s != ICode::OK) return s;
 
         assert(c->resultFlags() != 0x0);
