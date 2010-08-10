@@ -2635,7 +2635,7 @@ ICode::Status TreeNodeStmtAssert::generateCode(ICodeList &code, SymbolTable &st,
 
     std::ostringstream os;
     os << "assert failed at " << location();
-    Imop *i = new Imop(0, Imop::ERROR, 0, (Symbol*) new std::string(os.str()));
+    Imop *i = new Imop(this, Imop::ERROR, 0, (Symbol*) new std::string(os.str()));
     code.push_imop(i);
 
     e->patchNextList(i);
