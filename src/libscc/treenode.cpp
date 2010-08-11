@@ -2741,7 +2741,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     // Next iteration jump:
     Imop *j = new Imop(this, Imop::JUMP, 0);
     if (e1 != 0) {
-        j->setJumpDest(e2->firstImop());
+        j->setJumpDest(e1->firstImop());
     } else {
         j->setJumpDest(body->firstImop());
     }
