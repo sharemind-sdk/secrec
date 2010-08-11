@@ -2698,7 +2698,8 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     ICode::Status s = body->generateCode(code, innerScope, log);
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
-    if (e1 != 0) e1->patchTrueList(body->firstImop());
+    if (e1 != 0 && body->firstImop() != 0)
+        e1->patchTrueList(body->firstImop());
     addToNextList(body->breakList());
 
     // Iteration expression:
@@ -2708,6 +2709,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
         e2 = static_cast<TreeNodeExpr*>(c2);
         ICode::Status s = e2->generateCode(code, st, log);
         if (s != ICode::OK) return s;
+        if (e1 != 0 && body->firstImop() == 0) e1->patchTrueList(e2->firstImop());
         body->patchContinueList(e2->firstImop());
         body->patchNextList(e2->firstImop());
     } else {
