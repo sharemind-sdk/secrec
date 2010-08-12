@@ -457,7 +457,7 @@ while_statement
  ;
 
 dowhile_statement
- : DO statement WHILE '(' expression ')'
+ : DO statement WHILE '(' expression ')' ';'
    {
      $$ = treenode_init(NODE_STMT_DOWHILE, &@$);
      treenode_appendChild($$, $2);
