@@ -33,9 +33,9 @@ int main(int argc, char *argv[]) {
     int verbose_flag = 0;
     int eval_flag = 0;
     int help_flag = 0;
-    int run_analysis = 1;
+    int run_analysis = 0;
     int print_ast = 0;
-    int rd_flag = 1, rj_flag = 1, rdc_flag = 1;
+    int rd_flag = 0, rj_flag = 0, rdc_flag = 0;
     SecreC::TreeNodeProgram *parseTree = 0;
 
     int parseResult;
@@ -136,17 +136,16 @@ int main(int argc, char *argv[]) {
             SecreC::Blocks bs;
             bs.init(icode.code());
 
+            if (verbose_flag) {
+                cerr << bs.toString() << endl;
+            }
+
             if (eval_flag) {
-                cerr << "Evaluating the program.\n";
                 SecreC::VirtualMachine eval;
                 eval.run(icode.code());
                 if (verbose_flag) {
                     cerr << eval.toString();
                 }
-            }
-
-            if (verbose_flag) {
-                cerr << bs.toString() << endl;
             }
 
             // Run data flow analysis and print the results:
