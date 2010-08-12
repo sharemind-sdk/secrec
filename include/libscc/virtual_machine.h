@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <stack>
+#include <iostream>
 
 #include "symboltable.h"
 #include "imop.h"
@@ -14,6 +15,7 @@ namespace SecreC {
 
 class ICodeList;
 
+/// \todo a lot of polymorphic operations are still broken
 /// \todo write tests and test
 /// \todo performance tests
 /// \todo desnailify
@@ -42,8 +44,8 @@ private:
     inline
     void error (Symbol const* arg) {
         std::string const* str = (std::string const*) arg;
-        m_log.fatal() << "Reached ERROR instruction: "
-                      << str << " (at " << (m_pc + 1) << ").";
+        std::cout << *str << std::endl;
+        m_log.fatal() << *str;
         m_pc = -1;
     }
 
@@ -150,42 +152,76 @@ private:
 
     inline
     void eq (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val == lookup(arg2).m_bool_val };
-        m_store[dest] = val;
-        ++ m_pc;
+        SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        switch (dtype) {
+            case DATATYPE_BOOL:
+                m_store[dest].m_bool_val = lookup(arg1).m_bool_val == lookup(arg2).m_bool_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_INT:
+                m_store[dest].m_bool_val = lookup(arg1).m_int_val == lookup(arg2).m_int_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_UINT:
+                m_store[dest].m_bool_val = lookup(arg1).m_uint_val == lookup(arg2).m_uint_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_STRING:
+                m_store[dest].m_bool_val =  *lookup(arg1).m_str_val == *lookup(arg2).m_str_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_INVALID: assert (false);
+        }
     }
 
     inline
     void ne (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val != lookup(arg2).m_bool_val };
-        m_store[dest] = val;
-        ++ m_pc;
+        SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        switch (dtype) {
+            case DATATYPE_BOOL:
+                m_store[dest].m_bool_val = lookup(arg1).m_bool_val != lookup(arg2).m_bool_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_INT:
+                m_store[dest].m_bool_val = lookup(arg1).m_int_val != lookup(arg2).m_int_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_UINT:
+                m_store[dest].m_bool_val = lookup(arg1).m_uint_val != lookup(arg2).m_uint_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_STRING:
+                m_store[dest].m_bool_val =  *lookup(arg1).m_str_val != *lookup(arg2).m_str_val;
+                ++ m_pc;
+                return;
+            case DATATYPE_INVALID: assert (false);
+        }
     }
 
     inline
     void le (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val <= lookup(arg2).m_bool_val };
+        Value const val = { lookup(arg1).m_int_val <= lookup(arg2).m_int_val };
         m_store[dest] = val;
         ++ m_pc;
     }
 
     inline
     void lt (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val < lookup(arg2).m_bool_val };
+        Value const val = { lookup(arg1).m_int_val < lookup(arg2).m_int_val };
         m_store[dest] = val;
         ++ m_pc;
     }
 
     inline
     void ge (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val >= lookup(arg2).m_bool_val };
+        Value const val = { lookup(arg1).m_int_val >= lookup(arg2).m_int_val };
         m_store[dest] = val;
         ++ m_pc;
     }
 
     inline
     void gt (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
-        Value const val = { lookup(arg1).m_bool_val > lookup(arg2).m_bool_val };
+        Value const val = { lookup(arg1).m_int_val > lookup(arg2).m_int_val };
         m_store[dest] = val;
         ++ m_pc;
     }
@@ -223,9 +259,15 @@ private:
         Imop const* imop = (Imop const*) dest;
         Value const v1 = lookup(arg1);
         Value const v2 = lookup(arg2);
+        SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        size_t const jumpto = imop->index() - 1;
         ++ m_pc;
-        if (v1.m_int_val == v2.m_int_val) {
-            m_pc = imop->index() - 1;
+        switch (dtype) {
+            case DATATYPE_BOOL:   if (v1.m_bool_val == v2.m_bool_val) m_pc = jumpto; break;
+            case DATATYPE_INT:    if (v1.m_int_val  == v2.m_int_val)  m_pc = jumpto; break;
+            case DATATYPE_UINT:   if (v1.m_uint_val == v2.m_uint_val) m_pc = jumpto; break;
+            case DATATYPE_STRING: if (*v1.m_str_val == *v2.m_str_val) m_pc = jumpto; break;
+            case DATATYPE_INVALID: assert (false);
         }
     }
 
@@ -234,9 +276,15 @@ private:
         Imop const* imop = (Imop const*) dest;
         Value const v1 = lookup(arg1);
         Value const v2 = lookup(arg2);
+        SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        size_t const jumpto = imop->index() - 1;
         ++ m_pc;
-        if (v1.m_int_val != v2.m_int_val) {
-            m_pc = imop->index() - 1;
+        switch (dtype) {
+            case DATATYPE_BOOL:   if (v1.m_bool_val != v2.m_bool_val) m_pc = jumpto; break;
+            case DATATYPE_INT:    if (v1.m_int_val  != v2.m_int_val)  m_pc = jumpto; break;
+            case DATATYPE_UINT:   if (v1.m_uint_val != v2.m_uint_val) m_pc = jumpto; break;
+            case DATATYPE_STRING: if (*v1.m_str_val != *v2.m_str_val) m_pc = jumpto; break;
+            case DATATYPE_INVALID: assert (false);
         }
     }
 
@@ -307,7 +355,6 @@ private:
     inline void nop (void) {
         ++ m_pc;
     }
-
 
     inline
     Value lookup (Symbol const* sym) const {

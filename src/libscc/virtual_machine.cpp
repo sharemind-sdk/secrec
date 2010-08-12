@@ -61,8 +61,7 @@ void VirtualMachine::run (ICodeList const& code) {
 std::string VirtualMachine::toString(void) {
     std::stringstream os;
 
-    os << "Log:\n";
-    os << m_log;
+    os << "Log:\n" << m_log;
 
     os << "Store:\n";
     for (Store::const_iterator i(m_store.begin()); i != m_store.end(); ++ i) {
