@@ -923,8 +923,13 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     patchFirstImop(i);
 
     // Patch next lists of child expressions:
-    e1->patchNextList(e2->firstImop());
-    e2->patchNextList(i);
+    if (e2->firstImop() != 0) {
+        e1->patchNextList(e2->firstImop());
+        e2->patchNextList(i);
+    }
+    else {
+        e1->patchNextList(i);
+    }
 
     return ICode::OK;
 }
@@ -1043,8 +1048,14 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
             addToTrueList(tj);
             patchFirstImop(tj);
 
-            e1->patchNextList(e2->firstImop());
-            e2->patchNextList(tj);
+            /// \todo is this correct?
+            if (e2->firstImop()) {
+                e1->patchNextList(e2->firstImop());
+                e2->patchNextList(tj);
+            }
+            else {
+                e1->patchNextList(tj);
+            }
 
             Imop *fj = new Imop(this, Imop::JUMP, 0);
             addToFalseList(fj);
