@@ -49,7 +49,7 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::ERROR:      error(i.arg1()); return;
         case Imop::POPPARAM:   popparam(i.dest()); break;
         case Imop::PUSHPARAM:  pushparam(i.arg1()); break;
-        case Imop::RETCLEAN:   nop(); break;
+        case Imop::RETCLEAN:   retclean(); break;
         case Imop::RETURNVOID: ret(); break;
         case Imop::RETURN:     ret(i.arg1()); break;
         case Imop::END:        /* intentionally empty */ return;
@@ -64,7 +64,7 @@ std::string VirtualMachine::toString(void) {
     os << "Log:\n" << m_log;
 
     os << "Store:\n";
-    for (Store::const_iterator i(m_store.begin()); i != m_store.end(); ++ i) {
+    for (Store::const_iterator i(m_global.begin()); i != m_global.end(); ++ i) {
         Symbol const* sym = i->first;
         Value val = i->second;
         os << sym->toString() << " -> ";

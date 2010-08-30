@@ -31,6 +31,14 @@ private:
     typedef std::map<Symbol const*, Value> Store;
     typedef std::stack<Value> ArgStack;
 
+    struct Frame {
+        Store m_local; // local store
+        size_t m_old_pc; // where to jump
+        Symbol const* m_ret;
+        Frame(size_t old_pc, Symbol const* ret)
+            : m_old_pc(old_pc), m_ret(ret) { }
+    };
+
 public:
 
     inline VirtualMachine() : m_pc(0) { }
@@ -51,19 +59,19 @@ private:
 
     inline
     void assign (Symbol const* dest, Symbol const* arg) {
-        m_store[dest] = lookup(arg);
+        store (dest, lookup(arg));
         ++ m_pc;
     }
 
     inline
     void classify (Symbol const* dest, Symbol const* arg) {
-        m_store[dest] = lookup(arg);
+        store (dest, lookup(arg));
         ++ m_pc;
     }
 
     inline
     void declassify (Symbol const* dest, Symbol const* arg) {
-        m_store[dest] = lookup(arg);
+        store (dest, lookup(arg));
         ++ m_pc;
     }
 
@@ -72,102 +80,122 @@ private:
         assert (dynamic_cast<SymbolProcedure const*>(arg1) != 0);
         SymbolProcedure const* proc = static_cast<SymbolProcedure const*>(arg1);
         size_t const label = proc->target()->index();
-        m_ret_stack.push(std::make_pair(dest, m_pc + 1));
+        m_frames.push(Frame(m_pc + 1, dest));
         m_pc = label - 1;
     }
 
     inline
+    void retclean (void) {
+        ++ m_pc;
+    }
+
+    inline
+    void ret (void) {
+        assert (!m_frames.empty());
+        size_t label = m_frames.top().m_old_pc;
+        m_frames.pop();
+        m_pc = label;
+    }
+    
+    inline
+    void ret (Symbol const* arg) {
+        assert (!m_frames.empty());
+        Symbol const* dest = m_frames.top().m_ret;
+        size_t const label = m_frames.top().m_old_pc;
+        Value const v = lookup(arg);
+        m_frames.pop();
+        store (dest, v);
+        m_pc = label;
+    }
+
+    inline
     void pushparam (Symbol const* arg) {
-        m_arg_stack.push(lookup(arg));
+        Value const v = lookup(arg);
+        m_arg_stack.push(v);
         ++ m_pc;
     }
 
     inline
     void popparam (Symbol const* dest) {
         assert (!m_arg_stack.empty());
-        m_store[dest] = m_arg_stack.top();
+        Value const v = m_arg_stack.top();
         m_arg_stack.pop();
+        store (dest, v);
         ++ m_pc;
     }
 
     inline
-    void ret (Symbol const* val) {
-        assert (!m_ret_stack.empty());
-        Symbol const* dest = m_ret_stack.top().first;
-        size_t const label = m_ret_stack.top().second;
-        m_ret_stack.pop();
-        m_store[dest] = lookup(val);
-        m_pc = label;
-    }
-
-
-    inline
     void uneg (Symbol const* dest, Symbol const* arg) {
         Value const val = { ! lookup(arg).m_bool_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void uminus (Symbol const* dest, Symbol const* arg) {
         Value const val = { - lookup(arg).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void mul (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val * lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void div (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val / lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void mod (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val % lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void add (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val + lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void sub (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val - lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void eq (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        Value val;
         switch (dtype) {
             case DATATYPE_BOOL:
-                m_store[dest].m_bool_val = lookup(arg1).m_bool_val == lookup(arg2).m_bool_val;
+                val.m_bool_val = lookup(arg1).m_bool_val == lookup(arg2).m_bool_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_INT:
-                m_store[dest].m_bool_val = lookup(arg1).m_int_val == lookup(arg2).m_int_val;
+                val.m_bool_val = lookup(arg1).m_int_val == lookup(arg2).m_int_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_UINT:
-                m_store[dest].m_bool_val = lookup(arg1).m_uint_val == lookup(arg2).m_uint_val;
+                val.m_bool_val = lookup(arg1).m_uint_val == lookup(arg2).m_uint_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_STRING:
-                m_store[dest].m_bool_val =  *lookup(arg1).m_str_val == *lookup(arg2).m_str_val;
+                val.m_bool_val =  *lookup(arg1).m_str_val == *lookup(arg2).m_str_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_INVALID: assert (false);
@@ -177,21 +205,26 @@ private:
     inline
     void ne (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         SecrecDataType const& dtype = arg1->secrecType().secrecDataType();
+        Value val;
         switch (dtype) {
             case DATATYPE_BOOL:
-                m_store[dest].m_bool_val = lookup(arg1).m_bool_val != lookup(arg2).m_bool_val;
+                val.m_bool_val = lookup(arg1).m_bool_val != lookup(arg2).m_bool_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_INT:
-                m_store[dest].m_bool_val = lookup(arg1).m_int_val != lookup(arg2).m_int_val;
+                val.m_bool_val = lookup(arg1).m_int_val != lookup(arg2).m_int_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_UINT:
-                m_store[dest].m_bool_val = lookup(arg1).m_uint_val != lookup(arg2).m_uint_val;
+                val.m_bool_val = lookup(arg1).m_uint_val != lookup(arg2).m_uint_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_STRING:
-                m_store[dest].m_bool_val =  *lookup(arg1).m_str_val != *lookup(arg2).m_str_val;
+                val.m_bool_val =  *lookup(arg1).m_str_val != *lookup(arg2).m_str_val;
+                store (dest, val);
                 ++ m_pc;
                 return;
             case DATATYPE_INVALID: assert (false);
@@ -201,51 +234,43 @@ private:
     inline
     void le (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val <= lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void lt (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val < lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void ge (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val >= lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void gt (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_int_val > lookup(arg2).m_int_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void land (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_bool_val && lookup(arg2).m_bool_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
     }
 
     inline
     void lor (Symbol const* dest, Symbol const* arg1, Symbol const* arg2) {
         Value const val = { lookup(arg1).m_bool_val || lookup(arg2).m_bool_val };
-        m_store[dest] = val;
+        store (dest, val);
         ++ m_pc;
-    }
-
-    inline
-    void ret (void) {
-        assert (!m_ret_stack.empty());
-        size_t label = m_ret_stack.top().second;
-        m_ret_stack.pop();
-        m_pc = label;
     }
 
     inline
@@ -365,19 +390,19 @@ private:
                 assert (sym->secrecType().tnvDataType().kind() == DataType::BASIC);
                 switch (dtype) {
                     case DATATYPE_BOOL:
-                        assert (dynamic_cast<SymbolConstantBool const*>(sym));
+                        assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
                         out.m_bool_val = static_cast<SymbolConstantBool const*>(sym)->value();
                         break;
                     case DATATYPE_INT:
-                        assert (dynamic_cast<SymbolConstantInt const*>(sym));
+                        assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
                         out.m_int_val = static_cast<SymbolConstantInt const*>(sym)->value();
                         break;
                     case DATATYPE_UINT:
-                        assert (dynamic_cast<SymbolConstantUInt const*>(sym));
+                        assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
                         out.m_uint_val = static_cast<SymbolConstantUInt const*>(sym)->value();
                         break;
                     case DATATYPE_STRING:
-                        assert (dynamic_cast<SymbolConstantString const*>(sym));
+                        assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
                         out.m_str_val = &static_cast<SymbolConstantString const*>(sym)->value();
                         break;
                     case DATATYPE_INVALID:
@@ -387,8 +412,16 @@ private:
                 break;
 
             case Symbol::TEMPORARY:
+                out = m_frames.top().m_local.find(sym)->second;
+                break;
+
             case Symbol::SYMBOL:
-                out = m_store.find(sym)->second;
+                assert (dynamic_cast<SymbolSymbol const*>(sym) != 0);
+                switch (static_cast<SymbolSymbol const*>(sym)->scopeType()) {
+                    case SymbolSymbol::LOCAL: out = m_frames.top().m_local.find(sym)->second; break;
+                    case SymbolSymbol::GLOBAL: out = m_global.find(sym)->second; break;
+                }
+
                 break;
 
             case Symbol::PROCEDURE:
@@ -398,10 +431,32 @@ private:
         return out;
     }
 
+    inline
+    void store (Symbol const* sym, Value const val) {
+        SecrecDataType const& dtype = sym->secrecType().secrecDataType();
+        switch (sym->symbolType()) {
+        case Symbol::TEMPORARY:
+            m_frames.top().m_local[sym] = val;
+            break;
+        case Symbol::SYMBOL:
+            assert (dynamic_cast<SymbolSymbol const*>(sym) != 0);
+            switch (static_cast<SymbolSymbol const*>(sym)->scopeType()) {
+                case SymbolSymbol::LOCAL: m_frames.top().m_local[sym] = val; break;
+                case SymbolSymbol::GLOBAL: m_global[sym] = val; break;
+            }
+            break;
+
+        case Symbol::CONSTANT:
+        case Symbol::PROCEDURE:
+            assert (false);
+        }
+    }
+
+
 private:
-    ArgStack m_arg_stack;
-    std::stack<std::pair<Symbol const*, size_t> > m_ret_stack;
-    Store m_store;
+    std::stack<Value > m_arg_stack;
+    std::stack<Frame > m_frames;
+    Store m_global;
     size_t m_pc;
     CompileLog m_log;
 };
