@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#include <list>
+
 
 namespace SecreC {
 
@@ -134,6 +136,11 @@ class SymbolConstantString: public Symbol {
         const std::string m_value;
 };
 
+/**
+ * Currently does not track in which order symbols and scopes
+ * occur in code. This does not break code gen due to linear
+ * nature of the process.
+ */
 class SymbolTable {
     private: /* Types: */
         typedef std::vector<Symbol*> Table;
@@ -163,9 +170,7 @@ class SymbolTable {
         Table        m_table;
         SymbolTable *m_parent;
         SymbolTable *m_global;
-        SymbolTable *m_scope;
-        SymbolTable *m_cont;
-        SymbolTable *m_last;
+        std::list<SymbolTable* > m_scopes; ///< Used only for deleting and printing
         unsigned long m_tempCount;
         unsigned long m_constCount;
         unsigned long m_labelCount;

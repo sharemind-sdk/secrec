@@ -104,7 +104,7 @@ std::string SymbolConstantUInt::toString() const {
 
 SymbolTable::SymbolTable(SymbolTable *parent)
     : m_parent(parent), m_global(m_parent == 0 ? this : m_parent->m_global),
-      m_scope(0), m_cont(0), m_last(0), m_tempCount(0), m_constCount(0),
+      m_tempCount(0), m_constCount(0),
       m_labelCount(0)
 {
     // Intentionally empty
@@ -112,17 +112,19 @@ SymbolTable::SymbolTable(SymbolTable *parent)
 
 SymbolTable::~SymbolTable() {
     typedef std::vector<Symbol*>::const_iterator SVCI;
+    typedef std::list<SymbolTable*>::const_iterator STLCI;
 
     for (SVCI it(m_table.begin()); it != m_table.end(); it++) {
         delete (*it);
     }
 
-    delete m_scope;
-    delete m_cont;
+    for (STLCI it(m_scopes.begin()); it != m_scopes.end(); ++ it ) {
+        delete *(it);
+    }
 }
 
 void SymbolTable::appendSymbol(Symbol *symbol) {
-    (m_last == 0 ? m_table : m_last->m_table).push_back(symbol);
+    m_table.push_back(symbol);
 }
 
 void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
@@ -262,13 +264,7 @@ SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
 
 SymbolTable *SymbolTable::newScope() {
     SymbolTable *scope = new SymbolTable(this);
-    if (m_last == 0) {
-        m_scope = scope;
-        m_last = m_cont = new SymbolTable(this);
-    } else {
-        m_last->m_scope = scope;
-        m_last = m_last->m_last = m_last->m_cont = new SymbolTable(this);
-    }
+    m_scopes.push_back(scope);
     return scope;
 }
 
@@ -276,6 +272,7 @@ std::string SymbolTable::toString(unsigned level, unsigned indent,
                                   bool newScope) const
 {
     typedef Table::const_iterator STCI;
+    typedef std::list<SymbolTable*>::const_iterator STLCI;
 
     std::ostringstream os;
 
@@ -283,17 +280,16 @@ std::string SymbolTable::toString(unsigned level, unsigned indent,
         printIndent(os, level, indent);
         os << "--- NEW SCOPE ---" << std::endl;
     }
+
     for (STCI it(m_table.begin()); it != m_table.end(); it++) {
         printIndent(os, level, indent);
         os << ' ' << (**it) << std::endl;
     }
 
-    if (m_scope != 0) {
-        os << m_scope->toString(level + 1, indent);
+    for (STLCI it(m_scopes.begin()); it != m_scopes.end(); it++) {
+        os << (*it)->toString(level+1, indent);
     }
-    if (m_cont != 0) {
-        os << m_cont->toString(level, indent, false);
-    }
+
     return os.str();
 }
 
