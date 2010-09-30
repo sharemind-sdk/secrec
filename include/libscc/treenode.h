@@ -264,6 +264,8 @@ class TreeNodeExpr: public TreeNode {
                                                SymbolTable &st,
                                                CompileLog &log) = 0;
 
+        bool checkAndLogIfVoid(CompileLog& log);
+
         inline Symbol *result() const { return m_result; };
         inline bool haveResultType() const { return m_resultType != 0; }
         inline bool havePublicBoolType() const {

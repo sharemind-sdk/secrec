@@ -211,6 +211,18 @@ TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index,
     return static_cast<TreeNodeExpr*>(child);
 }
 
+bool TreeNodeExpr::checkAndLogIfVoid(CompileLog& log) {
+    assert (haveResultType());
+    if (resultType().isVoid()) {
+        log.fatal() << "Subexpression has type void at "
+                    << location();
+        return true;
+    }
+
+    return false;
+}
+
+
 } // namespace SecreC
 
 /*******************************************************************************
@@ -570,11 +582,6 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     SymbolSymbol *dest = id->getSymbol(st, log);
     if (dest == 0) return ICode::E_OTHER;
 
-    // In case of subscript.
-    if (e1->children().size() == 2) {
-        assert (false); // \todo
-    }
-
     // Calculate type of r-value:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *src = static_cast<TreeNodeExpr*>(children().at(1));
@@ -583,14 +590,37 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
     // Get types for destination and source:
     const SecreC::Type &destType = dest->secrecType();
+    SecrecDimType destDim = dest->secrecType().secrecDimType();
     assert(destType.isVoid() == false);
     const SecreC::Type &srcType = src->resultType();
+    SecrecDimType srcDim = src->resultType().secrecDimType();
 
-    // Check types:
-    if (srcType.isVoid()) {
-        log.fatal() << "Subexpression has type void at " << src->location();
+    // typecheck the indices if given
+    if (e1->children().size() == 2) {
+        destDim = 0;
+        TreeNode* t = e1->children().at(1);
+        assert (t->type() == NODE_SUBSCRIPT);
+        TreeNode::ChildrenListConstIterator
+                i = t->children().begin(),
+                end = t->children().end();
+        for (; i != end; ++ i) {
+            switch ((*i)->type()) {
+                case NODE_INDEX_INT: break;
+                case NODE_INDEX_SLICE: destDim += 1; break;
+                default: assert (false);
+            }
+        }
+    }
+
+    if (!(srcDim == destDim || srcDim == 0)) {
+        log.fatal() << "Incompatible dimensionalities in assignemnt at "
+                    << location();
         return ICode::E_TYPE;
     }
+
+    // Check types:
+    if (src->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
     if (!destType.canAssign(srcType)) {
         log.fatal() << "Invalid assignment from value of type " << srcType
                     << " to variable of type " << destType << ". At "
@@ -717,10 +747,72 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
   TreeNodeExprIndex
 ******************************************************************/
 
-ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &,
-                                                     CompileLog &)
+ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &st,
+                                                     CompileLog &log)
 {
-    assert (false); // \todo
+    typedef TypeNonVoid TNV;
+
+    if (haveResultType()) return ICode::OK;
+
+    assert (children().size() == 2);
+    assert (dynamic_cast<TreeNodeExpr* >(children().at(0)));
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+
+    TNV const* eType = static_cast<TNV const*>(&e->resultType());
+    SecrecDimType k = 0;
+    SecrecDimType n = eType->secrecDimType();
+    TreeNode::ChildrenListConstIterator
+            i = children().at(1)->children().begin(),
+            iend = children().at(1)->children().end();
+
+    if (std::distance(i, iend) != n) {
+        log.fatal() << "Incorrent number of indices at"
+                    << e->location();
+        return ICode::E_TYPE;
+    }
+
+    // for all indices
+    for (; i != iend; ++ i) {
+        TreeNode::Type type = (*i)->type();
+        switch (type) {
+            case NODE_INDEX_INT: break;
+            case NODE_INDEX_SLICE: k += 1; break;
+            default: assert (false);
+        }
+
+        TreeNode::ChildrenListConstIterator
+                j = (*i)->children().begin(),
+                jend = (*i)->children().end();
+        // check both INT and SLICE cases at the same time
+        // we iterate the subexpressions like: [e1,e2,e3:e4,...]
+        for (; j != jend; ++ j) {
+            assert (dynamic_cast<TreeNodeExpr*>(*j) != 0);
+            TreeNodeExpr* ej = static_cast<TreeNodeExpr*>(*j);
+            s = ej->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+            if (ej->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+
+            TNV const* ejType = static_cast<TNV const*>(&ej->resultType());
+
+            if (ejType->secrecSecType() != SECTYPE_PUBLIC) {
+                log.fatal() << "Index of non-public type at " << ej->location();
+                return ICode::E_TYPE;
+            }
+
+            if (ejType->secrecDataType() != DATATYPE_INT) {
+                log.fatal() << "Index of non-integer type at " << ej->location();
+                return ICode::E_TYPE;
+            }
+        }
+    }
+
+    setResultType(new TNV(eType->secrecSecType(), eType->secrecDataType(), k));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprIndex::generateCode(ICodeList &,
@@ -742,10 +834,22 @@ ICode::Status TreeNodeExprIndex::generateBoolCode(ICodeList &,
   TreeNodeExprSize
 ******************************************************************/
 
-ICode::Status TreeNodeExprSize::calculateResultType(SymbolTable &,
-                                                     CompileLog &)
+ICode::Status TreeNodeExprSize::calculateResultType(SymbolTable &st,
+                                                    CompileLog &log)
 {
-    assert (false); // \todo
+    typedef TypeNonVoid TNV;
+
+    if (haveResultType()) return ICode::OK;
+
+    assert (children().size() == 1);
+    assert (dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+    setResultType(new TNV(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprSize::generateCode(ICodeList &,
@@ -767,10 +871,22 @@ ICode::Status TreeNodeExprSize::generateBoolCode(ICodeList &,
   TreeNodeExprShape
 ******************************************************************/
 
-ICode::Status TreeNodeExprShape::calculateResultType(SymbolTable &,
-                                                     CompileLog &)
+ICode::Status TreeNodeExprShape::calculateResultType(SymbolTable &st,
+                                                     CompileLog &log)
 {
-    assert (false); // \todo
+    typedef TypeNonVoid TNV;
+
+    if (haveResultType()) return ICode::OK;
+
+    assert (children().size() == 1);
+    assert (dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+    setResultType(new TNV(SECTYPE_PUBLIC, DATATYPE_INT, 1));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprShape::generateCode(ICodeList &,
@@ -792,10 +908,70 @@ ICode::Status TreeNodeExprShape::generateBoolCode(ICodeList &,
   TreeNodeExprCat
 ******************************************************************/
 
-ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &,
-                                                   CompileLog &)
+ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &st,
+                                                   CompileLog &log)
 {
-    assert (false); // \todo
+    typedef TypeNonVoid TNV;
+
+    if (haveResultType()) return ICode::OK;
+
+    assert (children().size() == 3);
+
+    TNV const* eTypes[2];
+
+    // check that first subexpressions 2 are arrays and of equal dimensionalities
+    for (int i = 0; i < 2; ++ i) {
+        assert (dynamic_cast<TreeNodeExpr*>(children().at(i)) != 0);
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(i));
+        ICode::Status s = e->calculateResultType(st, log);
+        if (s != ICode::OK) return s;
+        if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+        eTypes[i] = static_cast<TNV const*>(&e->resultType());
+        if (eTypes[i]->secrecDimType() == 0) {
+            log.fatal() << "Concatenation of scalar values at "
+                        << e->location();
+            return ICode::E_TYPE;
+        }
+    }
+
+    if (eTypes[0]->secrecDataType() != eTypes[1]->secrecDataType()) {
+        log.fatal() << "Data types mismatch at "
+                    << children().at(0)->location() << " and "
+                    << children().at(1)->location();
+        return ICode::E_TYPE;
+    }
+
+    if (eTypes[0]->secrecDimType() != eTypes[1]->secrecDimType()) {
+        log.fatal() << "Dimensionalities mismatch at "
+                    << children().at(0)->location() << " and "
+                    << children().at(1)->location();
+        return ICode::E_TYPE;
+    }
+
+    assert (dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
+    TreeNodeExpr* e3 = static_cast<TreeNodeExpr*>(children().at(2));
+    ICode::Status s = e3->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e3->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+
+    TNV const* e3Type = static_cast<TNV const*>(&e3->resultType());
+    if (e3Type->secrecDimType() != 0 ||
+        e3Type->secrecDataType() != DATATYPE_INT ||
+        e3Type->secrecSecType() != SECTYPE_PUBLIC) {
+        log.fatal() << "Expected public scalar integer at "
+                    << children().at(2)->location()
+                    << " got " << *e3Type;
+        return ICode::E_TYPE;
+    }
+
+
+    setResultType(new TNV(
+            upperSecType(eTypes[0]->secrecSecType(), eTypes[1]->secrecSecType()),
+            eTypes[0]->secrecDataType(),
+            eTypes[0]->secrecDimType()));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprCat::generateCode(ICodeList &,
@@ -817,10 +993,47 @@ ICode::Status TreeNodeExprCat::generateBoolCode(ICodeList &,
   TreeNodeExprReshape
 ******************************************************************/
 
-ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &,
-                                                       CompileLog &)
+ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &st,
+                                                       CompileLog &log)
 {
-    assert (false); // \todo
+    typedef TypeNonVoid TNV;
+
+    if (haveResultType()) return ICode::OK;
+
+    assert (children().size() >= 1);
+    assert (dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+    TNV const* eType = static_cast<TNV const*>(&e->resultType());
+    SecrecDimType resDim = 0;
+    for (size_t i = 1; i < children().size(); ++ i, ++ resDim) {
+        assert (dynamic_cast<TreeNodeExpr*>(children().at(i)) != 0);
+        TreeNodeExpr* ei = static_cast<TreeNodeExpr*>(children().at(i));
+        s = ei->calculateResultType(st, log);
+        if (s != ICode::OK) return s;
+        if (ei->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+        TNV const* eiType = static_cast<TNV const*>(&e->resultType());
+        if (eiType->secrecDataType() != DATATYPE_INT ||
+            eiType->secrecSecType() != SECTYPE_PUBLIC ||
+            eiType->secrecDimType() != 0) {
+            log.fatal() << "Expected public integer scalar at "
+                        << ei->location()
+                        << " got " << eiType->toString();
+            return ICode::E_TYPE;
+        }
+    }
+
+    if (resDim == 0) {
+        log.fatal() << "Conversion from non-scalar to scalar at "
+                    << location();
+        return ICode::E_TYPE;
+    }
+
+    setResultType(new TNV(eType->secrecSecType(), eType->secrecDataType(), resDim));
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprReshape::generateCode(ICodeList &,
@@ -919,43 +1132,47 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
         SecrecDataType d2 = eType2->secrecDataType();
         SecrecSecType s1 = eType1->secrecSecType();
         SecrecSecType s2 = eType2->secrecSecType();
+        SecrecDimType n1 = eType1->secrecDimType();
+        SecrecDimType n2 = eType2->secrecDimType();
 
-        switch (type()) {
-            case NODE_EXPR_BINARY_ADD:
-                if (d1 != d2) break;
-                if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0)
-                    break;
+        if (n1 == 0 || n2 == 0 || n1 == n2) {
+            switch (type()) {
+                case NODE_EXPR_BINARY_ADD:
+                    if (d1 != d2) break;
+                    if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0)
+                        break;
 
-                setResultType(new TNV(upperSecType(s1, s2), d1));
-                return ICode::OK;
-            case NODE_EXPR_BINARY_SUB:
-            case NODE_EXPR_BINARY_MUL:
-            case NODE_EXPR_BINARY_MOD:
-            case NODE_EXPR_BINARY_DIV:
-                if (d1 != d2) break;
-                if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
-                setResultType(new TNV(upperSecType(s1, s2), d1));
-                return ICode::OK;
-            case NODE_EXPR_BINARY_EQ:
-            case NODE_EXPR_BINARY_GE:
-            case NODE_EXPR_BINARY_GT:
-            case NODE_EXPR_BINARY_LE:
-            case NODE_EXPR_BINARY_LT:
-            case NODE_EXPR_BINARY_NE:
-                if (d1 != d2) break;
-                setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL));
-                return ICode::OK;
-            case NODE_EXPR_BINARY_LAND:
-            case NODE_EXPR_BINARY_LOR:
-                if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
-                setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL));
-                return ICode::OK;
-            case NODE_EXPR_BINARY_MATRIXMUL:
-                log.fatal() << "Matrix multiplication not yet supported. At "
-                            << location();
-                return ICode::E_NOT_IMPLEMENTED;
-            default:
-                assert(false);
+                    setResultType(new TNV(upperSecType(s1, s2), d1, upperDimType(n1, n2)));
+                    return ICode::OK;
+                case NODE_EXPR_BINARY_SUB:
+                case NODE_EXPR_BINARY_MUL:
+                case NODE_EXPR_BINARY_MOD:
+                case NODE_EXPR_BINARY_DIV:
+                    if (d1 != d2) break;
+                    if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
+                    setResultType(new TNV(upperSecType(s1, s2), d1, upperDimType(n1, n2)));
+                    return ICode::OK;
+                case NODE_EXPR_BINARY_EQ:
+                case NODE_EXPR_BINARY_GE:
+                case NODE_EXPR_BINARY_GT:
+                case NODE_EXPR_BINARY_LE:
+                case NODE_EXPR_BINARY_LT:
+                case NODE_EXPR_BINARY_NE:
+                    if (d1 != d2) break;
+                    setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL, upperDimType(n1, n2)));
+                    return ICode::OK;
+                case NODE_EXPR_BINARY_LAND:
+                case NODE_EXPR_BINARY_LOR:
+                    if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
+                    setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL, upperDimType(n1, n2)));
+                    return ICode::OK;
+                case NODE_EXPR_BINARY_MATRIXMUL:
+                    log.fatal() << "Matrix multiplication not yet supported. At "
+                                << location();
+                    return ICode::E_NOT_IMPLEMENTED;
+                default:
+                    assert(false);
+            }
         }
     }
 
@@ -1281,13 +1498,7 @@ ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e->calculateResultType(st, log);
     if (s != ICode::OK) return s;
-
-    if (e->resultType().isVoid()) {
-        log.fatal() << "Call to a void procedure used as a subexpression at "
-                    << location();
-        return ICode::E_TYPE;
-    }
-
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
     assert(e->resultType().secrecSecType() == SECTYPE_PUBLIC);
     setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().secrecDataType()));
     return ICode::OK;
@@ -1464,12 +1675,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
 
         ICode::Status s = e->calculateResultType(st, log);
         if (s != ICode::OK) return s;
-
-        if (e->resultType().isVoid()) {
-            log.fatal() << "Can't pass argument of void type to function at "
-                        << e->location();
-            return ICode::E_TYPE;
-        }
+        if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
         assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
         const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
         dataType.addParamType(t.dataType());
@@ -1511,6 +1717,13 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
             log.fatal() << "Argument " << (i + 1) << " to function "
                 << id->value() << " at " << arguments[i]->location()
                 << " is expected to be of public type instead of private!";
+            return ICode::E_TYPE;
+        }
+
+        if (need->dimType() != have->dimType()) {
+            log.fatal() << "Argument " << (i + 1) << " to function "
+                << id->value() << " at " << arguments[i]->location()
+                << " has mismatching dimensionality!";
             return ICode::E_TYPE;
         }
 
@@ -1826,6 +2039,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     ICode::Status s = e1->calculateResultType(st, log);
+    if (e1->checkAndLogIfVoid(log)) return ICode::E_TYPE;
     if (s != ICode::OK) return s;
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
@@ -1842,39 +2056,75 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     const SecreC::Type &eType2 = e2->resultType();
     const SecreC::Type &eType3 = e3->resultType();
 
-    if (!eType1.isVoid()) {
-        assert(dynamic_cast<const TypeNonVoid*>(&eType1) != 0);
-        const TypeNonVoid &cType = static_cast<const TypeNonVoid&>(eType1);
+    assert(dynamic_cast<const TypeNonVoid*>(&eType1) != 0);
+    const TypeNonVoid &cType = static_cast<const TypeNonVoid&>(eType1);
 
-        if (cType.kind() == TypeNonVoid::BASIC
-            && cType.dataType().kind() == DataType::BASIC
-            && cType.secType().kind() == SecType::BASIC
-            && static_cast<const DataTypeBasic&>(cType.dataType()).dataType()
-                   == DATATYPE_BOOL
-            && static_cast<const SecTypeBasic&>(cType.secType()).secType()
-                   == SECTYPE_PUBLIC
-            && eType2 == eType3)
-        {
-            // Add implicit classify nodes if needed:
-            e2 = classifyChildAtIfNeeded(1, eType3.secrecSecType());
-            s = e2->calculateResultType(st, log);
-            if (s != ICode::OK) return s;
+    // check if conditional expression is of public boolean type
+    if (cType.kind() != TypeNonVoid::BASIC
+        || cType.dataType().kind() != DataType::BASIC
+        //|| cType.secType().kind() != SecType::BASIC
+        || static_cast<const DataTypeBasic&>(cType.dataType()).dataType()
+            != DATATYPE_BOOL
+        || static_cast<const DataTypeBasic&>(cType.dataType()).secType()
+            != SECTYPE_PUBLIC)
+    {
+        log.fatal() << "Conditional subexpression at " << e1->location()
+                    << " of ternary expression has to be public boolean, got "
+                    << cType;
+        return ICode::E_TYPE;
+    }
 
-            e3 = classifyChildAtIfNeeded(2, eType2.secrecSecType());
-            s = e3->calculateResultType(st, log);
-            if (s != ICode::OK) return s;
+    // check the types of results
+    if (eType2.isVoid() != eType3.isVoid()) {
+        log.fatal() << "Subxpression at " << e2->location() << " is "
+                    << (eType2.isVoid() ? "" : "not")
+                    << " void while subexpression at " << e3->location()
+                    << (eType3.isVoid() ? " is" : " isn't");
+        return ICode::E_TYPE;
 
-            assert(e2->resultType() == e3->resultType());
+    }
 
-            setResultType(e2->resultType().clone());
-            return ICode::OK;
+    if (!eType2.isVoid()) {
+        if (eType2.secrecDataType() != eType3.secrecDataType()) {
+            log.fatal() << "Results of ternary expression  at "
+                        << location()
+                        << " have to be of equal data types, got "
+                        << eType2 << " and " << eType3;
+            return ICode::E_TYPE;
+        }
+
+        SecrecDimType n1 = eType1.secrecDimType();
+        SecrecDimType n2 = eType2.secrecDimType();
+        SecrecDimType n3 = eType2.secrecDimType();
+
+        if (n2 != n3) {
+            log.fatal() << "Results of ternary expression at "
+                        << location()
+                        << " aren't of equal dimensionalities";
+            return ICode::E_TYPE;
+        }
+
+        if (n1 != 0 && n1 != n2) {
+            log.fatal() << "Conditional expression at "
+                        << e1->location()
+                        << " is non-scalar and doesn't match resulting subexpressions";
+            return ICode::E_TYPE;
         }
     }
 
-    /// \todo Provide better error messages
-    log.fatal() << "Invalid ternary operation at " << location();
+    // Add implicit classify nodes if needed:
+    e2 = classifyChildAtIfNeeded(1, eType3.secrecSecType());
+    s = e2->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
 
-    return ICode::E_TYPE;
+    e3 = classifyChildAtIfNeeded(2, eType2.secrecSecType());
+    s = e3->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    assert(e2->resultType() == e3->resultType());
+
+    setResultType(e2->resultType().clone());
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
@@ -2139,7 +2389,6 @@ const std::string &TreeNodeProcDef::procedureName() const {
 ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
                                                       CompileLog &log)
 {
-    typedef SecTypeBasic STB;
     typedef TypeNonVoid TNV;
 
     if (m_cachedType != 0) return ICode::OK;
