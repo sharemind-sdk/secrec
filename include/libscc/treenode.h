@@ -364,6 +364,105 @@ class TreeNodeExprAssign: public TreeNodeExpr {
                                                CompileLog &log);
 };
 
+/******************************************************************
+  TreeNodeExprIndex
+******************************************************************/
+
+class TreeNodeExprIndex: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprIndex(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_INDEX, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
+  TreeNodeExprSize
+******************************************************************/
+
+class TreeNodeExprSize: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprSize(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_SIZE, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
+  TreeNodeExprShape
+******************************************************************/
+
+class TreeNodeExprShape: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprShape(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_SHAPE, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
+  TreeNodeExprCat
+******************************************************************/
+
+class TreeNodeExprCat: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprCat(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_CAT, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
+  TreeNodeExprReshape
+******************************************************************/
+
+class TreeNodeExprReshape: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprReshape(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
 
 /******************************************************************
   TreeNodeExprBinary

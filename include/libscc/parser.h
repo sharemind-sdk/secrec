@@ -35,7 +35,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_DECLASSIFY  = 0x030, /* declassify(expr)         */
     NODE_EXPR_PROCCALL    = 0x040, /* expr(), expr(expr, ...)  */
     NODE_EXPR_WILDCARD    = 0x050, /* expr[*]                  */
-    NODE_EXPR_SUBSCRIPT   = 0x060, /* expr[expr]               */
+    NODE_EXPR_INDEX       = 0x060, /* expr[expr,...]           */
     NODE_EXPR_UNEG        = 0x070, /* !expr                    */
     NODE_EXPR_UMINUS      = 0x080, /* -expr                    */
     NODE_EXPR_CAST        = 0x090, /* (type) expr              */
@@ -61,6 +61,10 @@ enum SecrecTreeNodeType {
     NODE_EXPR_ASSIGN_SUB  = 0x1d0, /* expr -= expr             */
     NODE_EXPR_ASSIGN      = 0x1e0, /* expr = expr              */
     NODE_EXPR_RVARIABLE   = 0x1f0, /* x (R-value)              */
+    NODE_EXPR_SIZE        = 0x200, /* size(expr)               */
+    NODE_EXPR_SHAPE       = 0x210, /* shape(expr)              */
+    NODE_EXPR_CAT         = 0x220, /* cat(expr)                */
+    NODE_EXPR_RESHAPE     = 0x230, /* reshape(expr, ...        */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x01000,
     NODE_STMT_FOR       = 0x02000,
@@ -78,6 +82,11 @@ enum SecrecTreeNodeType {
     NODE_PROCDEF        = 0x0e000,
     NODE_PROCDEFS       = 0x0f000,
     NODE_PROGRAM        = 0x10000,
+    NODE_DIMENSIONS     = 0x11000,
+    NODE_INDEX_INT      = 0x12000,
+    NODE_INDEX_SLICE    = 0x13000,
+    NODE_LVALUE         = 0x14000,
+    NODE_SUBSCRIPT      = 0x15000,
 
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,

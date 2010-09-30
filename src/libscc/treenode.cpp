@@ -82,7 +82,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
         case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
         case NODE_EXPR_WILDCARD: return "EXPR_WILDCARD";
-        case NODE_EXPR_SUBSCRIPT: return "EXPR_SUBSCRIPT";
+        case NODE_EXPR_INDEX: return "EXPR_INDEX";
         case NODE_EXPR_UNEG: return "EXPR_UNEG";
         case NODE_EXPR_UMINUS: return "EXPR_UMINUS";
         case NODE_EXPR_CAST: return "EXPR_CAST";
@@ -108,6 +108,10 @@ const char *TreeNode::typeName(Type type) {
         case NODE_EXPR_ASSIGN_SUB: return "EXPR_ASSIGN_SUB";
         case NODE_EXPR_ASSIGN: return "EXPR_ASSIGN";
         case NODE_EXPR_RVARIABLE: return "RVARIABLE";
+        case NODE_EXPR_SIZE: return "SIZE";
+        case NODE_EXPR_SHAPE: return "SHAPE";
+        case NODE_EXPR_CAT: return "CAT";
+        case NODE_EXPR_RESHAPE: return "RESHAPE";
         case NODE_STMT_IF: return "STMT_IF";
         case NODE_STMT_FOR: return "STMT_FOR";
         case NODE_STMT_WHILE: return "STMT_WHILE";
@@ -124,6 +128,11 @@ const char *TreeNode::typeName(Type type) {
         case NODE_PROCDEF: return "PROCDEF";
         case NODE_PROCDEFS: return "PROCDEFS";
         case NODE_PROGRAM: return "PROGRAM";
+        case NODE_DIMENSIONS: return "DIMENSIONS";
+        case NODE_INDEX_INT: return "NODE_INDEX_INT";
+        case NODE_INDEX_SLICE: return "NODE_INDEX_SLICE";
+        case NODE_LVALUE: return "NODE_LVALUE";
+        case NODE_SUBSCRIPT: return "NODE_SUBSCRIPT";
 
         case NODE_TYPETYPE: return "TYPETYPE";
         case NODE_TYPEVOID: return "TYPEVOID";
@@ -254,6 +263,16 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprProcCall(*loc));
         case NODE_EXPR_RVARIABLE:
             return (TreeNode*) (new SecreC::TreeNodeExprRVariable(*loc));
+        case NODE_EXPR_INDEX:
+            return (TreeNode*) (new SecreC::TreeNodeExprIndex(*loc));
+        case NODE_EXPR_SIZE:
+            return (TreeNode*) (new SecreC::TreeNodeExprSize(*loc));
+        case NODE_EXPR_SHAPE:
+            return (TreeNode*) (new SecreC::TreeNodeExprShape(*loc));
+        case NODE_EXPR_CAT:
+            return (TreeNode*) (new SecreC::TreeNodeExprCat(*loc));
+        case NODE_EXPR_RESHAPE:
+            return (TreeNode*) (new SecreC::TreeNodeExprReshape(*loc));
         case NODE_STMT_BREAK:
             return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
         case NODE_STMT_CONTINUE:
@@ -280,8 +299,6 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeTypeType(*loc));
         case NODE_TYPEVOID:
             return (TreeNode*) (new SecreC::TreeNodeTypeVoid(*loc));
-        case NODE_EXPR_SUBSCRIPT:
-            /// \todo
         case NODE_EXPR_CAST:
             /// \todo
         case NODE_DECL_VSUFFIX:
@@ -544,10 +561,19 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
 
     // Get symbol for l-value:
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
+    TreeNode *e1 = children().at(0);
+    assert(e1 != 0);
+    assert(e1->type() == NODE_LVALUE);
+    assert(e1->children().size() > 0 && e1->children().size() <= 2);
+    assert(dynamic_cast<TreeNodeIdentifier*>(e1->children().at(0)) != 0);
+    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(e1->children().at(0));
     SymbolSymbol *dest = id->getSymbol(st, log);
     if (dest == 0) return ICode::E_OTHER;
+
+    // In case of subscript.
+    if (e1->children().size() == 2) {
+        assert (false); // \todo
+    }
 
     // Calculate type of r-value:
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
@@ -595,12 +621,18 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
     if (s != ICode::OK) return s;
 
     // Generate code for child expressions:
-    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
-    TreeNodeIdentifier *e1 = static_cast<TreeNodeIdentifier*>(children().at(0));
+    TreeNode *lval = children().at(0);
+    assert (lval != 0);
+    assert(dynamic_cast<TreeNodeIdentifier*>(lval->children().at(0)) != 0);
+    TreeNodeIdentifier *e1 = static_cast<TreeNodeIdentifier*>(lval->children().at(0));
     Symbol *destSym = st.find(e1->value());
     assert(destSym->symbolType() == Symbol::SYMBOL);
     assert(dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol *destSymSym = static_cast<SymbolSymbol*>(destSym);
+
+    if (lval->children().size() == 2) {
+        assert (false); // \todo
+    }
 
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
@@ -681,6 +713,130 @@ ICode::Status TreeNodeExprAssign::generateBoolCode(ICodeList &code,
     return ICode::OK;
 }
 
+/******************************************************************
+  TreeNodeExprIndex
+******************************************************************/
+
+ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &,
+                                                     CompileLog &)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprIndex::generateCode(ICodeList &,
+                                              SymbolTable &,
+                                              CompileLog &,
+                                              Symbol *)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprIndex::generateBoolCode(ICodeList &,
+                                                  SymbolTable &,
+                                                  CompileLog &)
+{
+    assert (false); // \todo
+}
+
+/******************************************************************
+  TreeNodeExprSize
+******************************************************************/
+
+ICode::Status TreeNodeExprSize::calculateResultType(SymbolTable &,
+                                                     CompileLog &)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprSize::generateCode(ICodeList &,
+                                              SymbolTable &,
+                                              CompileLog &,
+                                              Symbol *)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprSize::generateBoolCode(ICodeList &,
+                                                  SymbolTable &,
+                                                  CompileLog &)
+{
+    assert (false); // \todo
+}
+
+/******************************************************************
+  TreeNodeExprShape
+******************************************************************/
+
+ICode::Status TreeNodeExprShape::calculateResultType(SymbolTable &,
+                                                     CompileLog &)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprShape::generateCode(ICodeList &,
+                                              SymbolTable &,
+                                              CompileLog &,
+                                              Symbol *)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprShape::generateBoolCode(ICodeList &,
+                                                  SymbolTable &,
+                                                  CompileLog &)
+{
+    assert (false); // \todo
+}
+
+/******************************************************************
+  TreeNodeExprCat
+******************************************************************/
+
+ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &,
+                                                   CompileLog &)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprCat::generateCode(ICodeList &,
+                                            SymbolTable &,
+                                            CompileLog &,
+                                            Symbol *)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprCat::generateBoolCode(ICodeList &,
+                                                SymbolTable &,
+                                                CompileLog &)
+{
+    assert (false); // \todo
+}
+
+/******************************************************************
+  TreeNodeExprReshape
+******************************************************************/
+
+ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &,
+                                                       CompileLog &)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprReshape::generateCode(ICodeList &,
+                                                SymbolTable &,
+                                                CompileLog &,
+                                                Symbol *)
+{
+    assert (false); // \todo
+}
+
+ICode::Status TreeNodeExprReshape::generateBoolCode(ICodeList &,
+                                                    SymbolTable &,
+                                                    CompileLog &)
+{
+    assert (false); // \todo
+}
 
 /*******************************************************************************
   TreeNodeExprBinary
@@ -2368,7 +2524,7 @@ ICode::Status TreeNodeStmtContinue::generateCode(ICodeList &code, SymbolTable &,
 const std::string &TreeNodeStmtDecl::variableName() const {
     typedef TreeNodeIdentifier TNI;
 
-    assert(children().size() > 0 && children().size() <= 3);
+    assert(children().size() > 0 && children().size() <= 4);
     assert(children().at(0)->type() == NODE_IDENTIFIER);
 
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
@@ -2378,7 +2534,7 @@ const std::string &TreeNodeStmtDecl::variableName() const {
 ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                                              CompileLog &log)
 {
-    assert(children().size() > 0 && children().size() <= 3);
+    assert(children().size() > 0 && children().size() <= 4);
 
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
@@ -2392,12 +2548,12 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
         Imop *i = new Imop(this, Imop::POPPARAM, ns);
         code.push_imop(i);
         setFirstImop(i);
-    } else if (children().size() > 2) {
+    } else if (children().size() > 3) {
         /*
           An initializer expression is present, lets generate code
           for the initializer:
         */
-        TreeNode *t = children().at(2);
+        TreeNode *t = children().at(3);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
@@ -2477,8 +2633,8 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
     const STB &secType = static_cast<const STB&>(justType.secType());
 
 
-    if (children().size() > 2) {
-        TreeNode *t = children().at(2);
+    if (children().size() > 3) {
+        TreeNode *t = children().at(3);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);

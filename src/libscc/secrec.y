@@ -110,6 +110,9 @@
 %type <treenode> datatype_specifier
 %type <treenode> sectype_specifier
 %type <treenode> dimtype_specifier
+%type <treenode> subscript
+%type <treenode> indices
+%type <treenode> index
 %type <treenode> procedure_definitions
 %type <treenode> procedure_definition
 %type <treenode> procedure_parameter_list
@@ -188,12 +191,14 @@ variable_declaration /* NB! Uses type_specifier directly */
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
    }
  | type_specifier identifier '=' initializer ';'
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
      treenode_appendChild($$, ensure_rValue($4));
    }
  | type_specifier identifier dimensions ';'
@@ -225,7 +230,7 @@ dimension_list
    }
  | expression
    {
-     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     $$ = treenode_init(NODE_DIMENSIONS, &@$);
      treenode_appendChild($$, $1);
    }
 
@@ -301,7 +306,7 @@ datatype_specifier
  ;
 
 dimtype_specifier
-  : '[' '[' UINT_LITERAL ']' ']'
+  : '[' '[' INT_LITERAL ']' ']'
     {
         $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
         free ($3);
@@ -498,6 +503,48 @@ assert_statement
  ;
 
 /*******************************************************************************
+  Indices: not strictly expressions as they only appear in specific context
+*******************************************************************************/
+
+subscript
+  : '[' indices ']'
+    {
+      $$ = $2;
+      treenode_setLocation($$, &@$);
+    }
+  ;
+
+indices
+  : indices ',' index
+    {
+      $$ = $1;
+      treenode_setLocation($$, &@$);
+      treenode_appendChild($$, $3);
+    }
+  | index
+    {
+      $$ = treenode_init(NODE_SUBSCRIPT, &@$);
+      treenode_appendChild($$, $1);
+    }
+
+/* Precedence of slicing operator? Right now it binds weakest as it can appear
+ * in very specific context. However, if we ever wish for "foo : bar" evaluate
+ * to value in some other context we need to figure out sane precedence.
+ */
+index
+  : expression ':' expression
+    {
+      $$ = treenode_init(NODE_INDEX_SLICE, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+      treenode_appendChild($$, ensure_rValue($3));
+    }
+  | expression
+    {
+      $$ = treenode_init(NODE_INDEX_INT, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+    }
+
+/*******************************************************************************
   Expressions:
 *******************************************************************************/
 
@@ -551,8 +598,18 @@ lvalue
      $$ = treenode_init(NODE_EXPR_LVARIABLE, &@$);
      treenode_appendChild($$, $1);
    }*/
- : identifier
- ;
+  : identifier
+    {
+      $$ = treenode_init(NODE_LVALUE, &@$);
+      treenode_appendChild($$, $1);
+    }
+  | identifier subscript
+    {
+      $$ = treenode_init(NODE_LVALUE, &@$);
+      treenode_appendChild($$, $1);
+      treenode_appendChild($$, $2);
+    }
+  ;
 
 conditional_expression
  : logical_or_expression '?' expression ':' expression
@@ -708,6 +765,35 @@ postfix_expression
     /* treenode_appendChild($$, ensure_rValue($1)); */
     treenode_appendChild($$, $3);
   }
+ | SIZE '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_SIZE, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | SHAPE '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_SHAPE, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | CAT '(' expression ',' expression ',' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_CAT, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+     treenode_appendChild($$, $7);
+   }
+ | RESHAPE '(' argument_list ')'
+   {
+     unsigned i;
+     unsigned n;
+
+     $$ = treenode_init(NODE_EXPR_RESHAPE, &@$);
+     n = treenode_numChildren($3);
+     for (i = 0; i < n; i++) {
+         treenode_appendChild($$, ensure_rValue(treenode_childAt($3, i)));
+     }
+     treenode_free($3);
+   }
 /* : postfix_expression '(' ')'*/
  | identifier '(' ')'
    {
@@ -735,11 +821,11 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_WILDCARD, &@$);
      treenode_appendChild($$, $1);
    }
- | postfix_expression '[' expression ']'
+ | postfix_expression subscript
    {
-     $$ = treenode_init(NODE_EXPR_SUBSCRIPT, &@$);
+     $$ = treenode_init(NODE_EXPR_INDEX, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $2);
    }
  | primary_expression
  ;
