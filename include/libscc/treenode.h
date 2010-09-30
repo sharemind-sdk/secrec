@@ -764,8 +764,7 @@ class TreeNodeProcDef: public TreeNodeCodeable {
                                            CompileLog &log);
 
     private: /* Methods: */
-        ICode::Status addParameters(SecTypeProcedureVoid &st,
-                                    DataTypeProcedureVoid &dt,
+        ICode::Status addParameters(DataTypeProcedureVoid &dt,
                                     SymbolTable &stable,
                                     CompileLog &log) const;
 

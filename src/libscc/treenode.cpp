@@ -607,7 +607,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     assert(destTypeNV.dataType().kind() == DataType::VAR);
     assert(dynamic_cast<const DTV*>(&destTypeNV.dataType()) != 0);
     const DTV &ddtv = static_cast<const DTV&>(destTypeNV.dataType());
-    setResultType(new TNV(destTypeNV.secType(), ddtv.dataType()));
+    setResultType(new TNV(ddtv.dataType()));
     return ICode::OK;
 }
 
@@ -915,8 +915,8 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
         }
 
 
-        SecrecDataType d1 = static_cast<const DataTypeBasic&>(eType1->tnvDataType()).dataType();
-        SecrecDataType d2 = static_cast<const DataTypeBasic&>(eType2->tnvDataType()).dataType();
+        SecrecDataType d1 = eType1->secrecDataType();
+        SecrecDataType d2 = eType2->secrecDataType();
         SecrecSecType s1 = eType1->secrecSecType();
         SecrecSecType s2 = eType2->secrecSecType();
 
@@ -1094,8 +1094,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
               If first sub-expression is public, then generate short-circuit
               code for logical && and logical ||.
             */
-            if (static_cast<const TNV&>(e1->resultType()).secType()
-                    == SecTypeBasic(SECTYPE_PUBLIC))
+            if (static_cast<const TNV&>(e1->resultType()).secrecSecType()
+                    == SECTYPE_PUBLIC)
             {
                 // Generate code for first child expression:
                 ICode::Status s = e1->generateBoolCode(code, st, log);
@@ -1289,7 +1289,7 @@ ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
     }
 
     assert(e->resultType().secrecSecType() == SECTYPE_PUBLIC);
-    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().tnvDataType()));
+    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().secrecDataType()));
     return ICode::OK;
 }
 
@@ -1357,7 +1357,7 @@ ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &st,
 
     if (!e->resultType().isVoid()) {
         if (e->resultType().secrecSecType() == SECTYPE_PRIVATE) {
-            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, e->resultType().tnvDataType()));
+            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, e->resultType().secrecDataType()));
             return ICode::OK;
         }
     }
@@ -1432,9 +1432,7 @@ ICode::Status TreeNodeExprDeclassify::generateBoolCode(ICodeList &code,
 ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
                                                         CompileLog &log)
 {
-    typedef SecTypeProcedureVoid STFV;
     typedef DataTypeProcedureVoid DTFV;
-    typedef SecTypeProcedure STF;
     typedef DataTypeProcedure DTF;
     typedef ChildrenListConstIterator CLCI;
 
@@ -1454,7 +1452,6 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         return ICode::E_TYPE;
     }
 
-    SecTypeProcedureVoid secType;
     DataTypeProcedureVoid dataType;
     std::vector<TreeNodeExpr*> arguments(children().size() - 1);
 
@@ -1475,7 +1472,6 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         }
         assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
         const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
-        secType.addParamType(t.secType());
         dataType.addParamType(t.dataType());
         arguments[i] = e;
     }
@@ -1492,19 +1488,19 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
     const TypeNonVoid &ft = m_procedure->decl()->procedureType();
     assert(ft.kind() == TypeNonVoid::PROCEDURE
            || ft.kind() == TypeNonVoid::PROCEDUREVOID);
-    assert(dynamic_cast<const STFV*>(&ft.secType()) != 0);
-    const STFV &rstv = static_cast<const STFV&>(ft.secType());
+    assert(dynamic_cast<const DTFV*>(&ft.dataType()) != 0);
+    const DTFV &rstv = static_cast<const DTFV&>(ft.dataType());
 
     // Check security types of parameters:
     assert(rstv.paramTypes().size() == children().size() - 1);
     for (unsigned i = 0; i < rstv.paramTypes().size(); i++) {
-        assert(rstv.paramTypes().at(i)->kind() == SecType::BASIC);
-        assert(dynamic_cast<SecTypeBasic*>(rstv.paramTypes().at(i)) != 0);
-        SecTypeBasic *need = static_cast<SecTypeBasic*>(rstv.paramTypes()[i]);
+        assert(rstv.paramTypes().at(i)->kind() == DataType::BASIC);
+        assert(dynamic_cast<DataTypeBasic*>(rstv.paramTypes().at(i)) != 0);
+        DataTypeBasic *need = static_cast<DataTypeBasic*>(rstv.paramTypes()[i]);
 
-        assert(secType.paramTypes().at(i)->kind() == SecType::BASIC);
-        assert(dynamic_cast<SecTypeBasic*>(secType.paramTypes().at(i)) != 0);
-        SecTypeBasic *have = static_cast<SecTypeBasic*>(secType.paramTypes()[i]);
+        assert(dataType.paramTypes().at(i)->kind() == DataType::BASIC);
+        assert(dynamic_cast<DataTypeBasic*>(dataType.paramTypes().at(i)) != 0);
+        DataTypeBasic *have = static_cast<DataTypeBasic*>(dataType.paramTypes()[i]);
 
         assert(need->secType() != SECTYPE_INVALID);
         assert(have->secType() != SECTYPE_INVALID);
@@ -1524,11 +1520,9 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
 
     // Set result type:
     if (ft.kind() == TypeNonVoid::PROCEDURE) {
-        assert(dynamic_cast<const STF*>(&rstv) != 0);
-        const STF &rst = static_cast<const STF&>(rstv);
         assert(dynamic_cast<const DTF*>(&ft.dataType()) != 0);
         const DTF &rdt = static_cast<const DTF&>(ft.dataType());
-        setResultType(new TypeNonVoid(rst.returnSecType(), rdt.returnType()));
+        setResultType(new TypeNonVoid(rdt.returnType()));
     } else {
         setResultType(new TypeVoid);
     }
@@ -1707,8 +1701,7 @@ ICode::Status TreeNodeExprRVariable::calculateResultType(SymbolTable &st,
     const TNV *type = static_cast<const TNV*>(&s->secrecType());
     assert(type->dataType().kind() == DataType::VAR);
     assert(dynamic_cast<const DTV*>(&type->dataType()) != 0);
-    setResultType(new TNV(type->secType(),
-                          static_cast<const DTV&>(type->dataType()).dataType())
+    setResultType(new TNV(static_cast<const DTV&>(type->dataType()).dataType())
                   );
 
     return ICode::OK;
@@ -2157,32 +2150,22 @@ ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
     if (rt->type() == NODE_TYPEVOID) {
         assert(rt->secrecType().isVoid());
 
-        SecTypeProcedureVoid st;
         DataTypeProcedureVoid dt;
-
-        ICode::Status s = addParameters(st, dt, stable, log);
+        ICode::Status s = addParameters(dt, stable, log);
         if (s != ICode::OK) return s;
-
-        m_cachedType = new TNV(st, dt);
+        m_cachedType = new TNV(dt);
     } else {
         assert(rt->type() == NODE_TYPETYPE);
         assert(!rt->secrecType().isVoid());
         assert(dynamic_cast<const TNV*>(&rt->secrecType()) != 0);
         const TNV &tt = static_cast<const TNV&>(rt->secrecType());
-
-        assert(tt.secType().kind() == SecType::BASIC);
         assert(tt.dataType().kind() == DataType::BASIC);
 
-        assert(dynamic_cast<const STB*>(&tt.secType()) != 0);
-        const STB &tts = static_cast<const STB&>(tt.secType());
-
-        SecTypeProcedure st(tts.secType());
         DataTypeProcedure dt(tt.dataType());
-
-        ICode::Status s = addParameters(st, dt, stable, log);
+        ICode::Status s = addParameters(dt, stable, log);
         if (s != ICode::OK) return s;
 
-        m_cachedType = new TNV(st, dt);
+        m_cachedType = new TNV(dt);
     }
 
     return ICode::OK;
@@ -2283,8 +2266,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code, SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
-                                             DataTypeProcedureVoid &dt,
+ICode::Status TreeNodeProcDef::addParameters(DataTypeProcedureVoid &dt,
                                              SymbolTable &stable,
                                              CompileLog &log) const
 {
@@ -2302,7 +2284,6 @@ ICode::Status TreeNodeProcDef::addParameters(SecTypeProcedureVoid &st,
         if (s != ICode::OK) return s;
 
         const TypeNonVoid &pt = d->resultType();
-        st.addParamType(pt.secType());
         assert(pt.dataType().kind() == DataType::VAR);
         assert(dynamic_cast<const DTV*>(&pt.dataType()) != 0);
         dt.addParamType(static_cast<const DTV&>(pt.dataType()).dataType());
@@ -2608,7 +2589,6 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
 
 ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog &log) {
     typedef DataTypeBasic DTB;
-    typedef SecTypeBasic STB;
     typedef TreeNodeType TNT;
     typedef TypeNonVoid TNV;
 
@@ -2629,9 +2609,6 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
     assert(dynamic_cast<const DTB*>(&justType.dataType()) != 0);
     const DTB &dataType = static_cast<const DTB&>(justType.dataType());
 
-    assert(dynamic_cast<const STB*>(&justType.secType()) != 0);
-    const STB &secType = static_cast<const STB&>(justType.secType());
-
 
     if (children().size() > 3) {
         TreeNode *t = children().at(3);
@@ -2649,21 +2626,21 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
         }
 
         if (e->resultType().secrecSecType() == SECTYPE_PRIVATE
-            && secType.secType() == SECTYPE_PUBLIC)
+            && justType.secrecSecType() == SECTYPE_PUBLIC)
         {
             log.fatal() << "Public variable is given a private initializer at "
                         << e->location();
             return ICode::E_TYPE;
         }
         if (e->resultType().secrecDataType() != dataType.secrecDataType()) {
-            log.fatal() << "Variable of type " << TNV(secType, DataTypeVar(dataType))
+            log.fatal() << "Variable of type " << TNV(DataTypeVar(dataType))
                         << " is given an initializer expression of type "
                         << e->resultType() << " at " << location();
             return ICode::E_TYPE;
         }
     }
 
-    m_type = new TNV(secType, DataTypeVar(dataType));
+    m_type = new TNV(DataTypeVar(dataType));
 
     return ICode::OK;
 }
@@ -3091,7 +3068,7 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
     }
     setResultFlags((body->resultFlags()
                     & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE))
-                   | TreeNodeStmt::FALLTHRU);
+                    | TreeNodeStmt::FALLTHRU);
 
     Imop *i = new Imop(this, Imop::JUMP);
     code.push_imop(i);

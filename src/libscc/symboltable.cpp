@@ -132,7 +132,6 @@ void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
 }
 
 SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
-    typedef SecTypeProcedureVoid STPV;
     typedef DataTypeProcedureVoid DTPV;
 
     SymbolProcedure *ns = new SymbolProcedure(&procdef);
@@ -150,7 +149,7 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
 
 SymbolTemporary *SymbolTable::appendTemporary(const TypeNonVoid &type) {
     // Initialize temporary
-    SymbolTemporary *tmp = new SymbolTemporary(TypeNonVoid(type.secType(), DataTypeVar(type.dataType())));
+    SymbolTemporary *tmp = new SymbolTemporary(DataTypeVar(type.dataType()));
     std::ostringstream os;
     os << "{t}" << m_global->m_tempCount++;
     tmp->setName(os.str());

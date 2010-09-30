@@ -100,6 +100,7 @@ enum SecrecSecType { SECTYPE_INVALID = 0x00, SECTYPE_PUBLIC = 0x01,
 enum SecrecDataType { DATATYPE_INVALID = 0x00, DATATYPE_BOOL = 0x01,
                       DATATYPE_INT = 0x02, DATATYPE_UINT = 0x04,
                       DATATYPE_STRING = 0x08 };
+typedef unsigned SecrecDimType;
 
 /**
     Parses SecreC from the standard input.
