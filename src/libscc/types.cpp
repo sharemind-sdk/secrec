@@ -132,7 +132,9 @@ inline bool SecTypeProcedure::operator==(const SecType &other) const {
 *******************************************************************************/
 
 std::string DataTypeBasic::toString() const {
-    return SecrecFundDataTypeToString(m_dataType);
+    std::ostringstream os;
+    os << SecrecFundDataTypeToString(m_dataType) << "," << m_dimType;
+    return os.str();
 }
 
 

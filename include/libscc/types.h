@@ -155,6 +155,8 @@ class DataType {
         Kind m_kind;
 };
 
+/* \todo think about moving dimnesionality into different class
+   I think that fundamental types should be defined by a triple */
 class DataTypeBasic: public DataType {
     public: /* Methods: */
         explicit DataTypeBasic(SecrecDataType dataType, unsigned dim = 0)
