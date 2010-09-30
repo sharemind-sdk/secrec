@@ -2,6 +2,27 @@
 
 #include "icodelist.h"
 
+/**
+ * \todo a lot of polymorphic operations are still broken
+ * \todo write tests and test
+ * \todo this includes performance tests
+ * \todo make it fast, some ideas:
+ * \todo in VM move away from Symbol to something better, for that
+ *       we need extra pass to compute offsets in stack, also figure
+ *       out what to do with constants.
+ * \todo move instruction callbacks from header to source file
+ * \todo move to direct threaded code
+ * \todo don't use std::stack and std::map
+ * \todo figure out how difficult it would be to generate lvm code
+ *
+ * Problems:
+ *   - We know statically if symbol is global, local or constant, but
+ *     instructions operate on any kind of symbols freely. The stupidest
+ *     way to make this fast would be to have at most 8 callbacks for
+ *     every instruction, but that's just not feasible if we want to keep
+ *     the vm simple and easy to understand.
+ */
+
 namespace SecreC {
 
 void VirtualMachine::run (ICodeList const& code) {

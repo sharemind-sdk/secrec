@@ -15,10 +15,6 @@ namespace SecreC {
 
 class ICodeList;
 
-/// \todo a lot of polymorphic operations are still broken
-/// \todo write tests and test
-/// \todo performance tests
-/// \todo desnailify
 class VirtualMachine {
 private:
     union Value {
@@ -433,7 +429,6 @@ private:
 
     inline
     void store (Symbol const* sym, Value const val) {
-        SecrecDataType const& dtype = sym->secrecType().secrecDataType();
         switch (sym->symbolType()) {
         case Symbol::TEMPORARY:
             m_frames.top().m_local[sym] = val;
