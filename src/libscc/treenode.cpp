@@ -128,7 +128,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_TYPETYPE: return "TYPETYPE";
         case NODE_TYPEVOID: return "TYPEVOID";
         case NODE_DATATYPE_F: return "DATATYPE_F";
-        case NODE_DATATYPE_ARRAY: return "DATATYPE_ARRAY";
+        case NODE_DIMTYPE_F: return "DIMTYPE_F";
         case NODE_SECTYPE_F: return "SECTYPE_F";
         default: return "UNKNOWN";
     }
@@ -371,15 +371,11 @@ extern "C" struct TreeNode *treenode_init_dataTypeF(
     return (TreeNode*) new SecreC::TreeNodeDataTypeF(dataType, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_dataTypeArray(
-        struct TreeNode *itemType,
-        unsigned value,
+extern "C" struct TreeNode *treenode_init_dimTypeF(
+        unsigned dimType,
         YYLTYPE *loc)
 {
-    typedef SecreC::TreeNodeDataTypeArray ATN;
-    ATN *t = new ATN(value, *loc);
-    t->appendChild((SecreC::TreeNode*) itemType);
-    return (TreeNode*) t;
+    return (TreeNode*) new SecreC::TreeNodeDimTypeF(dimType, *loc);
 }
 
 namespace SecreC {
@@ -470,35 +466,6 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
     return ICode::OK;
 }
 
-/*******************************************************************************
-  TreeNodeDataTypeArray
-*******************************************************************************/
-
-const DataType &TreeNodeDataTypeArray::dataType() const {
-    typedef TreeNodeDataType TNDT;
-
-    assert(children().size() == 1);
-    if (m_cachedType != 0) return *m_cachedType;
-
-    assert(dynamic_cast<TNDT*>(children().at(0)) != 0);
-    TNDT *t = static_cast<TNDT*>(children().at(0));
-
-    m_cachedType = new SecreC::DataTypeArray(t->dataType(), m_dim);
-    return *m_cachedType;
-}
-
-std::string TreeNodeDataTypeArray::stringHelper() const {
-    std::ostringstream os;
-    os << m_dim;
-    return os.str();
-}
-
-std::string TreeNodeDataTypeArray::xmlHelper() const {
-    std::ostringstream os;
-    os << "dim=\"" << m_dim << "\"";
-    return os.str();
-}
-
 
 /*******************************************************************************
   TreeNodeDataTypeF
@@ -506,13 +473,29 @@ std::string TreeNodeDataTypeArray::xmlHelper() const {
 
 std::string TreeNodeDataTypeF::stringHelper() const {
     std::ostringstream os;
-    os << m_cachedType;
+    os << m_dataType;
     return os.str();
 }
 
 std::string TreeNodeDataTypeF::xmlHelper() const {
     std::ostringstream os;
-    os << "type=\"" << m_cachedType << "\"";
+    os << "type=\"" << m_dataType << "\"";
+    return os.str();
+}
+
+/*******************************************************************************
+  TreeNodeDimTypeF
+*******************************************************************************/
+
+std::string TreeNodeDimTypeF::stringHelper() const {
+    std::ostringstream os;
+    os << m_dimType;
+    return os.str();
+}
+
+std::string TreeNodeDimTypeF::xmlHelper() const {
+    std::ostringstream os;
+    os << "dim=\"" << m_dimType << "\"";
     return os.str();
 }
 
@@ -2032,8 +2015,7 @@ ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
         const TNV &tt = static_cast<const TNV&>(rt->secrecType());
 
         assert(tt.secType().kind() == SecType::BASIC);
-        assert(tt.dataType().kind() == DataType::BASIC
-               || tt.dataType().kind() == DataType::ARRAY);
+        assert(tt.dataType().kind() == DataType::BASIC);
 
         assert(dynamic_cast<const STB*>(&tt.secType()) != 0);
         const STB &tts = static_cast<const STB&>(tt.secType());
@@ -2975,18 +2957,21 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
 *******************************************************************************/
 
 const SecreC::Type &TreeNodeTypeType::secrecType() const {
-    typedef TreeNodeDataType TNDT;
+    typedef TreeNodeDataTypeF TNDT;
     typedef TreeNodeSecTypeF TNST;
+    typedef TreeNodeDimTypeF TNDimT;
 
-    assert(children().size() == 2);
+    assert(children().size() == 3);
     if (m_cachedType != 0) return *m_cachedType;
 
     assert(dynamic_cast<TNST*>(children().at(0)) != 0);
     TNST *st = static_cast<TNST*>(children().at(0));
     assert(dynamic_cast<TNDT*>(children().at(1)) != 0);
     TNDT *dt = static_cast<TNDT*>(children().at(1));
+    assert(dynamic_cast<TNDimT*>(children().at(2)) != 0);
+    TNDimT *dimt = static_cast<TNDimT*>(children().at(2));
 
-    m_cachedType = new SecreC::TypeNonVoid(st->secType(), dt->dataType());
+    m_cachedType = new SecreC::TypeNonVoid(st->secType(), dt->dataType(), dimt->dimType());
     return *m_cachedType;
 }
 

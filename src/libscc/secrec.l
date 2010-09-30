@@ -80,6 +80,10 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
 "assert"     { stepLen(yyget_lloc(yyscanner), 6); return ASSERT; }
+"size"       { stepLen(yyget_lloc(yyscanner), 4); return SIZE; }
+"shape"      { stepLen(yyget_lloc(yyscanner), 5); return SHAPE; }
+"reshape"    { stepLen(yyget_lloc(yyscanner), 7); return RESHAPE; }
+"cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

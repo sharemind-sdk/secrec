@@ -127,7 +127,7 @@ class SecTypeProcedure: public SecTypeProcedureVoid {
 
 class DataType {
     public: /* Types: */
-        enum Kind { BASIC, VAR, ARRAY, PROCEDURE, PROCEDUREVOID };
+        enum Kind { BASIC, VAR, PROCEDURE, PROCEDUREVOID };
 
     public: /* Methods: */
         explicit DataType(Kind kind)
@@ -157,22 +157,25 @@ class DataType {
 
 class DataTypeBasic: public DataType {
     public: /* Methods: */
-        explicit DataTypeBasic(SecrecDataType dataType)
-            : DataType(DataType::BASIC), m_dataType(dataType) {}
+        explicit DataTypeBasic(SecrecDataType dataType, unsigned dim = 0)
+            : DataType(DataType::BASIC), m_dataType(dataType), m_dimType(dim) {}
         explicit DataTypeBasic(const DataTypeBasic &copy)
-            : DataType(copy), m_dataType(copy.m_dataType) {}
+            : DataType(copy), m_dataType(copy.m_dataType), m_dimType(copy.m_dimType) {}
 
         inline SecrecDataType dataType() const { return m_dataType; }
+        inline unsigned dimType() const { return m_dimType; }
 
         virtual inline DataType *clone() const { return new DataTypeBasic(*this); }
         virtual std::string toString() const;
         virtual bool operator==(const DataType &other) const {
             return DataType::operator==(other)
-                   && m_dataType == static_cast<const DataTypeBasic &>(other).m_dataType;
+                   && m_dataType == static_cast<const DataTypeBasic &>(other).m_dataType
+                   && m_dimType == static_cast<const DataTypeBasic &>(other).m_dimType;
         }
 
     private: /* Fields: */
         SecrecDataType m_dataType;
+        unsigned m_dimType;
 };
 
 class DataTypeVar: public DataType {
@@ -199,35 +202,6 @@ class DataTypeVar: public DataType {
 
     private: /* Fields: */
         DataType *m_dataType;
-};
-
-class DataTypeArray: public DataType {
-    public: /* Methods: */
-        DataTypeArray(const DataType &itemType, unsigned size)
-            : DataType(DataType::ARRAY), m_itemType(itemType.clone()), m_size(size)
-        {
-            assert(itemType.kind() == DataType::BASIC || itemType.kind() == DataType::ARRAY);
-        }
-        explicit DataTypeArray(const DataTypeArray &copy)
-            : DataType(copy), m_itemType(copy.m_itemType->clone()),
-              m_size(copy.m_size) {}
-        virtual inline ~DataTypeArray() { delete m_itemType; }
-
-        virtual inline DataType *clone() const { return new DataTypeArray(*this); }
-        virtual std::string toString() const;
-
-        inline const DataType &itemType() const { return *m_itemType; }
-        inline unsigned size() const { return m_size; }
-
-        virtual bool operator==(const DataType &other) const {
-            return DataType::operator==(other)
-                   && m_size == static_cast<const DataTypeArray &>(other).m_size
-                   && m_itemType == static_cast<const DataTypeArray &>(other).m_itemType;
-        }
-
-    private: /* Fields: */
-        DataType *m_itemType;
-        unsigned m_size;
 };
 
 class DataTypeProcedureVoid: public DataType {
@@ -280,9 +254,6 @@ inline SecrecDataType DataType::secrecDataType() const {
         case VAR:
             assert(dynamic_cast<const DataTypeVar*>(this) != 0);
             return static_cast<const DataTypeVar*>(this)->dataType().secrecDataType();
-        case ARRAY:
-            assert(dynamic_cast<const DataTypeArray*>(this) != 0);
-            return static_cast<const DataTypeArray*>(this)->itemType().secrecDataType();
         case PROCEDURE:
             assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
             return static_cast<const DataTypeProcedure*>(this)->returnType().secrecDataType();
@@ -344,24 +315,19 @@ class TypeNonVoid: public Type {
         enum Kind {
             BASIC,        /**< SecTypeBasic         + SecTypeBasic.          */
             VAR,          /**< SecTypeBasic         + DataTypeVar.           */
-            ARRAY,        /**< SecTypeBasic         + DataTypeArray.         */
             PROCEDURE,    /**< SecTypeProcedure     + DataTypeProcedure.     */
             PROCEDUREVOID /**< SecTypeProcedureVoid + DataTypeProcedureVoid. */
         };
 
     public: /* Methods: */
-        TypeNonVoid(SecrecSecType secType, SecrecDataType dataType)
+        TypeNonVoid(SecrecSecType secType, SecrecDataType dataType, unsigned dimType = 0)
             : Type(false), m_kind(BASIC), m_secType(new SecTypeBasic(secType)),
-              m_dataType(new DataTypeBasic(dataType)) {}
+              m_dataType(new DataTypeBasic(dataType, dimType)) {}
         TypeNonVoid(const SecTypeBasic &secType, const DataTypeBasic &dataType)
             : Type(false), m_kind(BASIC), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
         TypeNonVoid(const SecTypeBasic &secType, const DataTypeVar &dataType)
             : Type(false), m_kind(VAR), m_secType(secType.clone()),
-              m_dataType(dataType.clone()) {}
-        TypeNonVoid(const SecTypeBasic &secType,
-                    const DataTypeArray &dataType)
-            : Type(false), m_kind(ARRAY), m_secType(secType.clone()),
               m_dataType(dataType.clone()) {}
         TypeNonVoid(const SecTypeProcedure &secType,
                     const DataTypeProcedure &dataType)
@@ -425,8 +391,7 @@ inline SecrecSecType Type::secrecSecType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     const TypeNonVoid &t = static_cast<const TypeNonVoid&>(*this);
     if (t.kind() == TypeNonVoid::BASIC
-           || t.kind() == TypeNonVoid::VAR
-           || t.kind() == TypeNonVoid::ARRAY)
+           || t.kind() == TypeNonVoid::VAR)
     {
         assert(t.secType().kind() == SecType::BASIC);
         assert(dynamic_cast<const SecTypeBasic*>(&t.secType()) != 0);

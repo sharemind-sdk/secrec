@@ -96,8 +96,8 @@ struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
                                         YYLTYPE *loc);
 struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
                                          YYLTYPE *loc);
-struct TreeNode *treenode_init_dataTypeArray(struct TreeNode *itemType,
-                                             unsigned value, YYLTYPE *loc);
+struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
+                                        YYLTYPE *loc);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -177,65 +177,66 @@ class TreeNodeCodeable: public TreeNode {
         Imop              *m_firstImop;
 };
 
+/******************************************************************
+  TreeNodeSecTypeF
+******************************************************************/
+
+class TreeNodeSecTypeF: public TreeNode {
+    public: /* Methods: */
+        inline TreeNodeSecTypeF(SecrecSecType secType, const YYLTYPE &loc)
+            : TreeNode(NODE_SECTYPE_F, loc), m_secType(secType) {}
+
+        SecrecSecType secType() const { return m_secType; }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+
+    private: /* Fields: */
+        SecrecSecType m_secType;
+};
+
 
 /******************************************************************
   TreeNodeDataType
 ******************************************************************/
 
-class TreeNodeDataType: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeDataType(Type type, const YYLTYPE &loc)
-            : TreeNode(type, loc) {}
-
-        virtual const DataType &dataType() const = 0;
-};
-
-/******************************************************************
-  TreeNodeDataTypeArray
-******************************************************************/
-
-class TreeNodeDataTypeArray: public TreeNodeDataType {
-    public: /* Methods: */
-        inline TreeNodeDataTypeArray(unsigned dim, const YYLTYPE &loc)
-            : TreeNodeDataType(NODE_DATATYPE_ARRAY, loc),
-              m_dim(dim), m_cachedType(0) {}
-        inline ~TreeNodeDataTypeArray() {
-            delete m_cachedType;
-        }
-
-        virtual const DataType &dataType() const;
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        unsigned m_dim;
-        mutable DataType *m_cachedType;
-};
-
-
-/******************************************************************
-  TreeNodeDataTypeF
-******************************************************************/
-
-class TreeNodeDataTypeF: public TreeNodeDataType {
+class TreeNodeDataTypeF: public TreeNode {
     public: /* Methods: */
         inline TreeNodeDataTypeF(SecrecDataType dataType,
                                  const YYLTYPE &loc)
-            : TreeNodeDataType(NODE_DATATYPE_F, loc),
-              m_cachedType(dataType) {}
+            : TreeNode(NODE_DATATYPE_F, loc), m_dataType(dataType) {}
 
-        virtual inline const DataType &dataType() const {
-            return m_cachedType;
+        const SecrecDataType &dataType() const {
+            return m_dataType;
         }
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
 
-    private: /* Fields: */
-        DataTypeBasic m_cachedType;
+    private:
+        SecrecDataType m_dataType;
 };
 
+/******************************************************************
+  TreeNodeDimType
+******************************************************************/
+
+class TreeNodeDimTypeF: public TreeNode {
+    public: /* Methods: */
+        inline TreeNodeDimTypeF(unsigned dimType,
+                                const YYLTYPE &loc)
+            : TreeNode(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
+
+        unsigned dimType() const {
+            return m_dimType;
+        }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+
+    private:
+        unsigned m_dimType;
+};
 
 /******************************************************************
   TreeNodeExpr
@@ -736,25 +737,6 @@ class TreeNodeProgram: public TreeNodeCodeable {
 
         virtual ICode::Status generateCode(ICodeList &code, SymbolTable &st,
                                            CompileLog &log);
-};
-
-
-/******************************************************************
-  TreeNodeSecTypeF
-******************************************************************/
-
-class TreeNodeSecTypeF: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeSecTypeF(SecrecSecType secType, const YYLTYPE &loc)
-            : TreeNode(NODE_SECTYPE_F, loc), m_secType(secType) {}
-
-        SecrecSecType secType() const { return m_secType; }
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        SecrecSecType m_secType;
 };
 
 

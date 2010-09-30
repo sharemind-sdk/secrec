@@ -146,22 +146,6 @@ std::string DataTypeVar::toString() const {
 
 
 /*******************************************************************************
-  DataTypeArray
-*******************************************************************************/
-
-std::string DataTypeArray::toString() const {
-    assert(m_itemType != 0);
-
-    std::ostringstream os;
-    os << *m_itemType << "[";
-    if (m_size > 0)
-        os << m_size;
-    os << "]";
-    return os.str();
-}
-
-
-/*******************************************************************************
   DataTypeProcedureVoid
 *******************************************************************************/
 
@@ -258,10 +242,6 @@ TypeNonVoid::TypeNonVoid(const SecType &secType,
             assert(secType.kind() == SecType::BASIC);
             m_kind = TypeNonVoid::VAR;
             break;
-        case DataType::ARRAY:
-            assert(secType.kind() == SecType::BASIC);
-            m_kind = TypeNonVoid::ARRAY;
-            break;
         case DataType::PROCEDURE:
             assert(secType.kind() == SecType::PROCEDURE);
             m_kind = TypeNonVoid::PROCEDURE;
@@ -286,9 +266,6 @@ TypeNonVoid::TypeNonVoid(SecrecSecType secType,
             break;
         case DataType::VAR:
             m_kind = TypeNonVoid::VAR;
-            break;
-        case DataType::ARRAY:
-            m_kind = TypeNonVoid::ARRAY;
             break;
         default:
             assert(false); // Shouldn't happen

@@ -82,7 +82,7 @@
 
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC
-%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT
+%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -103,12 +103,13 @@
 %type <treenode> variable_declarations
 %type <treenode> variable_declaration
 %type <treenode> initializer
-%type <treenode> vector_suffix
+%type <treenode> dimensions
+%type <treenode> dimension_list
 %type <treenode> type_specifier
 %type <treenode> procedure_type_specifier
 %type <treenode> datatype_specifier
-%type <treenode> datatype_fund_specifier
 %type <treenode> sectype_specifier
+%type <treenode> dimtype_specifier
 %type <treenode> procedure_definitions
 %type <treenode> procedure_definition
 %type <treenode> procedure_parameter_list
@@ -195,7 +196,7 @@ variable_declaration /* NB! Uses type_specifier directly */
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($4));
    }
- | type_specifier identifier vector_suffix ';'
+ | type_specifier identifier dimensions ';'
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
@@ -208,27 +209,50 @@ initializer
  : expression
  ;
 
-vector_suffix
- : vector_suffix '[' expression ']'
+dimensions
+ : '[' dimension_list ']'
    {
-     $$ = $1;
-     treenode_appendChild($$, $3);
-   }
- | '[' expression ']'
-   {
-     $$ = treenode_init(NODE_DECL_VSUFFIX, &@$);
-     treenode_appendChild($$, $2);
+     $$ = $2
    }
  ;
+
+dimension_list
+ : dimension_list ',' expression
+   {
+     $$ = $1;
+     treenode_setLocation($$, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | expression
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+   }
+
 
 /*******************************************************************************
   Types:
 *******************************************************************************/
 
 type_specifier
- : sectype_specifier datatype_specifier
+ : sectype_specifier datatype_specifier dimtype_specifier
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $3);
+   }
+ | sectype_specifier datatype_specifier
+   {
+     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_dimTypeF(0, &@$));
+   }
+ | datatype_specifier dimtype_specifier
+   {
+     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$));
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
@@ -237,8 +261,10 @@ type_specifier
      $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$));
      treenode_appendChild($$, $1);
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_dimTypeF(0, &@$));
    }
  ;
+
 
 sectype_specifier
  : PRIVATE
@@ -251,7 +277,7 @@ sectype_specifier
    }
  ;
 
-datatype_fund_specifier
+datatype_specifier
  : BOOL
    {
      $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_BOOL, &@$);
@@ -274,14 +300,12 @@ datatype_fund_specifier
    }
  ;
 
-datatype_specifier
- : datatype_specifier '[' ']'
-   {
-     $$ = (struct TreeNode*) treenode_init_dataTypeArray($1, 0, &@$);
-   }
- | datatype_fund_specifier
- ;
-
+dimtype_specifier
+  : '[' '[' UINT_LITERAL ']' ']'
+    {
+        $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
+        free ($3);
+    }
 
 /*******************************************************************************
   Procedures:

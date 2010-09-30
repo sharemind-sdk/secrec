@@ -82,7 +82,7 @@ enum SecrecTreeNodeType {
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,
     NODE_DATATYPE_F     = 0x300000,
-    NODE_DATATYPE_ARRAY = 0x400000,
+    NODE_DIMTYPE_F      = 0x400000,
     NODE_SECTYPE_F      = 0x500000
 };
 
