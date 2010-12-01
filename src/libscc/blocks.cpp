@@ -27,6 +27,7 @@ inline bool fallsThru(const SecreC::Block &b) {
     if (last->type() == SecreC::Imop::END) return false;
     if (last->type() == SecreC::Imop::RETURN) return false;
     if (last->type() == SecreC::Imop::RETURNVOID) return false;
+    if (last->type() == SecreC::Imop::ERROR) return false;
     return true;
 }
 
@@ -83,6 +84,23 @@ inline void printBlockList(std::ostream &os, const char *prefix,
             os << ")";
         }
         os << std::endl;
+    }
+}
+
+/**
+ * @brief Visits all blocks in @a blockSet and marks unvisited ones visited and adds them to @a reachableBlocks stack
+ */
+static void markAllReachable (std::stack<SecreC::Block*>& reachableBlocks, std::set<SecreC::Block*>& blockSet) {
+    using SecreC::Block;
+    typedef std::set<Block*>::const_iterator BSCI;
+    BSCI it = blockSet.begin();
+    BSCI it_end = blockSet.end();
+    for (; it != it_end; ++ it) {
+        Block* block = *it;
+        if (!block->reachable) {
+            block->reachable = true;
+            reachableBlocks.push(block);
+        }
     }
 }
 
@@ -148,41 +166,13 @@ void Blocks::init(const ICodeList &code) {
     bs.push(m_entryBlock);
     m_entryBlock->reachable = true;
     do {
-        typedef std::set<Block*>::const_iterator BSCI;
-
         Block *b = bs.top();
         bs.pop();
-
-        for (BSCI it(b->successors.begin()); it != b->successors.end(); it++) {
-            if (!(*it)->reachable) {
-                (*it)->reachable = true;
-                bs.push(*it);
-            }
-        }
-        for (BSCI it(b->successorsCondFalse.begin()); it != b->successorsCondFalse.end(); it++) {
-            if (!(*it)->reachable) {
-                (*it)->reachable = true;
-                bs.push(*it);
-            }
-        }
-        for (BSCI it(b->successorsCondTrue.begin()); it != b->successorsCondTrue.end(); it++) {
-            if (!(*it)->reachable) {
-                (*it)->reachable = true;
-                bs.push(*it);
-            }
-        }
-        for (BSCI it(b->successorsCall.begin()); it != b->successorsCall.end(); it++) {
-            if (!(*it)->reachable) {
-                (*it)->reachable = true;
-                bs.push(*it);
-            }
-        }
-        for (BSCI it(b->successorsRet.begin()); it != b->successorsRet.end(); it++) {
-            if (!(*it)->reachable) {
-                (*it)->reachable = true;
-                bs.push(*it);
-            }
-        }
+        markAllReachable(bs, b->successors);
+        markAllReachable(bs, b->successorsCondFalse);
+        markAllReachable(bs, b->successorsCondTrue);
+        markAllReachable(bs, b->successorsCall);
+        markAllReachable(bs, b->successorsRet);
     } while (!bs.empty());
 }
 
