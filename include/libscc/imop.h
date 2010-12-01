@@ -106,7 +106,7 @@ class Imop {
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
                              Symbol *arg1)
             : m_creator(creator), m_type(type), m_args(2)
-        { m_args[0] = dest; m_args[1] = arg1; m_args[2] = 0; }
+        { m_args[0] = dest; m_args[1] = arg1; }
 
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
                              Symbol *arg1, Symbol *arg2)
