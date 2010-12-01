@@ -19,7 +19,7 @@ void help (void) {
   "  -h, --help           this help\n"
   "  -v, --verbose        some extra information\n"
   "      --print_ast      print abstract syntax tree\n"
-  "  -e, --eval           evaluate the code"
+  "  -e, --eval           evaluate the code\n"
   "  -a, --analysis       select analysis that you wish to enable\n"
   "                       Possible comma separated values are:\n"
   "                       \"rd\" for reaching definitions\n"
