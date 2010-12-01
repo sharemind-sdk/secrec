@@ -221,24 +221,22 @@ bool TreeNodeExpr::checkAndLogIfVoid(CompileLog& log) {
     return false;
 }
 
+// figure out how to compute that less often
 ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
     assert (haveResultType() &&
             "ICE: TreeNodeExpr::computeSize called on expression without type.");
 
-    if (resultType().isVoid()) return ICode::OK;
-    if (resultType().isScalar()) return ICode::OK;
-
     assert (result() != 0 &&
             "ICE: TreeNodeExpr::computeSize called on expression with non-void type but no result.");
 
-    Symbol* size = 0;
-    if (result()->getSizeSym() != 0) {
-        size = result()->getSizeSym();
-    }
-    else {
-        size = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-    }
+    if (resultType().isVoid()) return ICode::OK;
+    if (resultType().isScalar()) return ICode::OK;
 
+    assert ((result()->getSizeSym() != 0) &&
+            "ICE: TreeNodeExpr::computeSize called on expression without size symbol.");
+
+
+    Symbol* size = result()->getSizeSym();
     Imop* i = new Imop (this, Imop::ASSIGN, size, st.constantInt(1));
     code.push_imop(i);
     patchFirstImop(i);
@@ -746,8 +744,6 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
 
     // Generate code for righthand side:
     s = e2->generateCode(code, st, log);
-    if (s != ICode::OK) return s;
-    s = e2->computeSize(code, st);
     if (s != ICode::OK) return s;
     setFirstImop(e2->firstImop());
 
@@ -1559,8 +1555,6 @@ ICode::Status TreeNodeExprSize::generateCode(ICodeList &code,
     TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
-    s = e->computeSize(code, st);
-    if (s != ICode::OK) return s;
     if (e->firstImop() != 0) setFirstImop(e->firstImop());
 
     Symbol* size = e->resultType().isScalar() ? st.constantInt(1) : e->result()->getSizeSym();
@@ -1654,6 +1648,8 @@ ICode::Status TreeNodeExprShape::generateCode(ICodeList &code,
         code.push_imop(i);
         patchFirstImop(i);
     }
+
+    computeSize(code, st);
 
     return ICode::OK;
 }
@@ -1818,8 +1814,6 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
     TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
-    s = e->computeSize(code, st);
-    if (s != ICode::OK) return s;
     if (e->firstImop() != 0) {
         setFirstImop(e->firstImop());
     }
@@ -1880,6 +1874,9 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
     i = new Imop(this, Imop::ASSIGN, result(), rhs, s_new);
     code.push_imop(i);
     patchNextList(i);
+
+    i = new Imop(this, Imop::ASSIGN, result()->getSizeSym(), s_new);
+    code.push_imop(i);
 
     return ICode::OK;
 }
@@ -2081,15 +2078,11 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     // Generate code for first child expression:
     s = e1->generateCode(code, st, log);
     if (s != ICode::OK) return s;
-    s = e1->computeSize(code, st);
-    if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
     Symbol* e1result = e1->result();
 
     // Generate code for second child expression:
     s = e2->generateCode(code, st, log);
-    if (s != ICode::OK) return s;
-    s = e2->computeSize(code, st);
     if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
     Symbol* e2result = e2->result();
@@ -2414,8 +2407,6 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
-    s = e->computeSize(code, st);
-    if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the classification, if needed:
     if (r == 0) {
@@ -2498,8 +2489,6 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
-    s = e->computeSize(code, st);
-    if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the declassification, if needed:
     if (r == 0) {
@@ -2670,15 +2659,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
 
     // generate temporary result, if needed
     if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            SymbolTemporary *t = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
-            for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
-                Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-                t->setDim(i, sym);
-            }
-            setResult(t);
-        }
+        generateResultSymbol(st);
     } else {
         setResult(r);
     }
@@ -2692,8 +2673,6 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
         assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
         ICode::Status s = e->generateCode(code, st, log);
-        if (s != ICode::OK) return s;
-        s = e->computeSize(code, st);
         if (s != ICode::OK) return s;
 
         if (e->firstImop() != 0) {
@@ -2761,7 +2740,6 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
             code.push_imop(i);
         }
 
-        result()->setSizeSym((Symbol*) 0); /// \todo this is ugly!
         computeSize(code, st);
         if (resultType().isScalar())
             i = new Imop(this, Imop::POP, result());
@@ -3146,8 +3124,6 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         // Evaluate subexpressions:
         s = e1->generateCode(code, st, log);
         if (s != ICode::OK) return s;
-        s = e1->computeSize(code, st);
-        if (s != ICode::OK) return s;
         setFirstImop(e1->firstImop());
 
         s = e2->generateCode(code, st, log);
@@ -3398,8 +3374,6 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
-    s = e->computeSize(code, st);
-    if (s != ICode::OK) return s;
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
@@ -3965,8 +3939,6 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
             }
             else {
                 assert (resultType().secrecDimType() == e->resultType().secrecDimType());
-                s = e->computeSize(code, st);
-                if (s != ICode::OK) return s;
 
                 Symbol::dim_iterator
                         di = ns->dim_begin(),
@@ -4553,8 +4525,6 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         s = e->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e->firstImop());
-        s = e->computeSize(code, st);
-        if (s != ICode::OK) return s;
 
         // Push data and then shape
         Imop* i = 0;
