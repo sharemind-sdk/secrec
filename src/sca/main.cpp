@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
       };
 
       int option_index = 0;
-      int c = getopt_long (argc, argv, "vha::", options, &option_index);
+      int c = getopt_long (argc, argv, "vhea::", options, &option_index);
       char *str = optarg;
 
       if (c == -1) {
