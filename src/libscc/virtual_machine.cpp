@@ -112,7 +112,6 @@ class ValueStack {
         }
 };
 
-// store
 typedef std::map<SecreC::Symbol const*, Register> Store;
 
 struct Instruction {
@@ -121,8 +120,8 @@ struct Instruction {
 };
 
 struct Frame {
-    Store m_local; // local store
-    Instruction* const m_old_ip; // where to jump
+    Store m_local;
+    Instruction* const m_old_ip;
     SecreC::Symbol const* const m_ret;
     Frame* m_prev_frame;
 
@@ -255,6 +254,12 @@ static inline void pop_frame (void)
     assert (m_frames != 0);
     Frame* temp = m_frames;
     m_frames = temp->m_prev_frame;
+
+    for (Store::iterator it(temp->m_local.begin()); it != temp->m_local.end(); ++ it) {
+        Register r = it->second;
+        free (r.m_arr);
+    }
+
     delete temp;
 }
 
@@ -354,13 +359,9 @@ CALLBACK(DECLASSIFY_vec, i) {
 }
 
 CALLBACK(CALL, i) {
-  Symbol const* arg1 = i->args[1];
+  Instruction* new_ip = (Instruction*) i->args[1];
   Symbol const* dest = i->args[0];
-  assert (dynamic_cast<SymbolProcedure const*>(arg1) != 0);
-  SymbolProcedure const* proc = static_cast<SymbolProcedure const*>(arg1);
-  size_t const label = proc->target()->index();
   push_frame(i + 1, dest);
-  Instruction* new_ip = &m_code[label - 1];
   new_ip->callback (new_ip);
 }
 
@@ -375,29 +376,6 @@ CALLBACK(RETVOID, i) {
   pop_frame();
   new_i->callback (new_i);
 }
-
-///// \todo remove
-//CALLBACK(RET, i) {
-//  assert (m_frames != 0);
-//  Instruction* const new_i = m_frames->m_old_ip;
-//  FETCH1(dest, i);
-//  FETCH2(arg, i);
-//  pop_frame();
-//  ASSIGN_operator (fetch_val(dest), fetch_val(arg));
-//  new_i->callback (new_i);
-//}
-
-///// \todo remove
-//CALLBACK(RET_vec, i) {
-//  assert (m_frames != 0);
-//  Instruction* const new_i = m_frames->m_old_ip;
-//  FETCH1(dest, i);
-//  FETCH2(arg, i);
-//  FETCH3(size, i);
-//  pop_frame();
-//  ASSIGN_vec_operator (dest, arg, size);
-//  new_i->callback (new_i);
-//}
 
 CALLBACK(PUSH, i) {
   FETCH2(arg, i);
@@ -782,164 +760,149 @@ CALLBACK(LOR_vec, i) {
 }
 
 CALLBACK(JUMP, i) {
-  Imop const* imop = (Imop const*) i->args[0];
-  Instruction* new_i = &m_code[imop->index() - 1];
+  Instruction* new_i = (Instruction*) i->args[0];
   new_i->callback (new_i);
 }
 
 CALLBACK(JEBOOL, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val == fetch_val(arg2).m_bool_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JEINT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val == fetch_val(arg2).m_int_val) {
-      new_i =  &m_code[imop->index() - 1];
+      new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JEUINT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_uint_val == fetch_val(arg2).m_uint_val) {
-      new_i =  &m_code[imop->index() - 1];
+      new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JESTR, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (*fetch_val(arg1).m_str_val == *fetch_val(arg2).m_str_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JNEBOOL, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val != fetch_val(arg2).m_bool_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JNEINT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val != fetch_val(arg2).m_int_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JNEUINT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_uint_val != fetch_val(arg2).m_uint_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JNESTR, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (*fetch_val(arg1).m_str_val != *fetch_val(arg2).m_str_val) {
-      new_i =  &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
     new_i->callback (new_i);
 }
 
 CALLBACK(JLE, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val <= fetch_val(arg2).m_int_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
 }
 
 CALLBACK(JLT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val < fetch_val(arg2).m_int_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
 }
 
 CALLBACK(JGE, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val >= fetch_val(arg2).m_int_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
 }
 
 CALLBACK(JGT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val > fetch_val(arg2).m_int_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
 }
 
 CALLBACK(JT, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
 }
 
 CALLBACK(JF, i) {
-    Imop const* imop = (Imop const*) i->args[0];
     FETCH2(arg1, i);
     Instruction* new_i = i + 1;
     if (!fetch_val(arg1).m_bool_val) {
-        new_i = &m_code[imop->index() - 1];
+        new_i = (Instruction*) i->args[0];
     }
 
     new_i->callback (new_i);
@@ -997,6 +960,21 @@ void VirtualMachine::run (ICodeList const& code) {
       unsigned nArgs;
       for (nArgs = 0; nArgs < imop.nArgs(); ++ nArgs) {
         i.args[nArgs] = imop.arg(nArgs);
+      }
+
+      // compute jump destination for calls
+      if (imop.type() == Imop::CALL) {
+          Symbol const* arg1 = i.args[1];
+          assert (dynamic_cast<SymbolProcedure const*>(arg1) != 0);
+          SymbolProcedure const* proc = static_cast<SymbolProcedure const*>(arg1);
+          size_t const label = proc->target()->index();
+          i.args[1] = (Symbol const*) &m_code[label - 1];
+      }
+
+      // compute jump destination for jumps
+      if ((imop.type() & Imop::JUMP_MASK) != 0x0) {
+          Imop const* arg = (Imop const*) i.args[0];
+          i.args[0] = (Symbol const*) &m_code[arg->index() - 1];
       }
 
       // compile the code into sequence of instructions
@@ -1071,7 +1049,6 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::PUSH:           i.callback = CONDVCALLBACK (PUSH, nArgs == 3); break;
         case Imop::RETCLEAN:       i.callback = RETCLEAN_callback; break;
         case Imop::RETURNVOID:     i.callback = RETVOID_callback; break;
-        //case Imop::RETURN:         i.callback = CONDVCALLBACK (RET, nArgs == 2); break;
         case Imop::FILL:           i.callback = FILL_callback; break;
         case Imop::STORE:          i.callback = STORE_callback; break;
         case Imop::LOAD:           i.callback = LOAD_callback; break;
