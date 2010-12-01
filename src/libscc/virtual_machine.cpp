@@ -60,10 +60,10 @@ static inline void store (Register& reg, Register const& src, unsigned n) {
     reserve (reg, n);
     memcpy (reg.m_arr, src.m_arr, sizeof(Value) * n);
 }
-static inline void store (Register& reg, unsigned const i, Value const& val) {
+static inline void store (Register& reg, unsigned i, Value const& val) {
     reg.m_arr[i] = val;
 }
-static inline void store (Value& val, Register const& reg, unsigned const i) {
+static inline void store (Value& val, Register const& reg, unsigned i) {
     val = reg.m_arr[i];
 }
 
