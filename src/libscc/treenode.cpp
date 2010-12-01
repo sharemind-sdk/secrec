@@ -1376,11 +1376,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
         for (unsigned count = 0; it != it_end; ++ it, ++ count) {
             int k = *it;
             Symbol* sym = result()->getDim(count);
-            if (sym == 0) {
-                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
-                result()->setDim(count, sym);
-            }
-
+            assert (sym != 0);
             Imop* i = new Imop(this, Imop::SUB, sym, spv[k].second, spv[k].first);
             code.push_imop(i);
         }
@@ -1633,7 +1629,6 @@ ICode::Status TreeNodeExprShape::generateCode(ICodeList &code,
     TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
-    //Symbol* d = st.appendTemporary(static_cast<TypeNonVoid const&>(resultType()));
     Symbol* n = st.constantInt(e->resultType().secrecDimType());
     Imop* i = 0;
 
@@ -2037,14 +2032,6 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the binary expression, if needed:
-    if (r == 0) {
-        generateResultSymbol(st);
-    } else {
-        assert(r->secrecType().canAssign(resultType()));
-        setResult(r);
-    }
-
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
@@ -2057,6 +2044,13 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         && (e2->resultType().isScalar())
         && (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR))
     {
+        if (r == 0) {
+            generateResultSymbol(st);
+        } else {
+            assert(r->secrecType().canAssign(resultType()));
+            setResult(r);
+        }
+
         // Generate code for first child expression:
         /**
           \note The short-circuit code generated here is not the exactly the
@@ -2138,7 +2132,15 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         addToNextList(jmp);
     }
 
-    copyShapeFrom(e1result, code);
+    // Generate temporary for the result of the binary expression, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+        result()->inheritShape(e1result);
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+        copyShapeFrom(e1result, code);
+    }
 
     // Generate code for binary expression:
     Imop *i;
@@ -2407,24 +2409,24 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the classification, if needed:
-    if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
-        }
-    } else {
-        assert(r->secrecType().canAssign(resultType()));
-        setResult(r);
-    }
-
+    // Generate code for child expression
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
     s = e->computeSize(code, st);
     if (s != ICode::OK) return s;
-    copyShapeFrom(e->result(), code);
+
+    // Generate temporary for the result of the classification, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+        result()->inheritShape(e->result());
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+        copyShapeFrom(e->result(), code);
+    }
+
 
     Imop *i = 0;
     if (resultType().isScalar()) {
@@ -2491,21 +2493,23 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the declassification, if needed:
-    if (r == 0) {
-        generateResultSymbol(st);
-    } else {
-        assert(r->secrecType().canAssign(resultType()));
-        setResult(r);
-    }
-
+    // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
     s = e->computeSize(code, st);
     if (s != ICode::OK) return s;
-    copyShapeFrom(e->result(), code);
+
+    // Generate temporary for the result of the declassification, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+        result()->inheritShape(e->result());
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+        copyShapeFrom(e->result(), code);
+    }
 
     Imop *i = 0;
     if (resultType().isScalar()) {
@@ -3098,21 +3102,21 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the ternary expression, if needed:
-    if (r == 0) {
-        generateResultSymbol(st);
-    } else {
-        assert(r->secrecType().canAssign(resultType()));
-        setResult(r);
-    }
-
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
 
     if (e1->havePublicBoolType()) {
-        // Generate code for boolean expression:
 
+        // Generate temporary for the result of the ternary expression, if needed:
+        if (r == 0) {
+            generateResultSymbol(st);
+        } else {
+            assert(r->secrecType().canAssign(resultType()));
+            setResult(r);
+        }
+
+        // Generate code for boolean expression:
         s = e1->generateBoolCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e1->firstImop());
@@ -3145,7 +3149,6 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         s = e1->computeSize(code, st);
         if (s != ICode::OK) return s;
         setFirstImop(e1->firstImop());
-        copyShapeFrom(e1->result(), code);
 
         s = e2->generateCode(code, st, log);
         if (s != ICode::OK) return s;
@@ -3154,6 +3157,16 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         s = e3->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         e2->patchNextList(e3->firstImop());
+
+        // Generate temporary for the result of the ternary expression, if needed:
+        if (r == 0) {
+            generateResultSymbol(st);
+            result()->inheritShape(e1->result());
+        } else {
+            assert(r->secrecType().canAssign(resultType()));
+            setResult(r);
+            copyShapeFrom(e1->result(), code);
+        }
 
         // check that shapes match
         Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
@@ -3380,14 +3393,6 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the unary expression, if needed:
-    if (r == 0) {
-        generateResultSymbol(st);
-    } else {
-        assert(r->secrecType().canAssign(resultType()));
-        setResult(r);
-    }
-
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
@@ -3395,7 +3400,16 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     setFirstImop(e->firstImop());
     s = e->computeSize(code, st);
     if (s != ICode::OK) return s;
-    copyShapeFrom(e->result(), code);
+
+    // Generate temporary for the result of the unary expression, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+        result()->inheritShape(e->result());
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+        copyShapeFrom(e->result(), code);
+    }
 
     // Generate code for unary expression:
     Imop *i = 0;
