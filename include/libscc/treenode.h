@@ -105,14 +105,66 @@ struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
 
 namespace SecreC {
 
+
+/******************************************************************
+  TreeNodeBase
+******************************************************************/
+
+class TreeNodeBase : public TreeNode {
+    public: /* Methods: */
+        inline TreeNodeBase (Type type, const YYLTYPE &loc)
+            : TreeNode(type, loc), m_nextList(), m_firstImop(0), m_prevSubexpr(0) { }
+        virtual inline ~TreeNodeBase () { }
+
+        inline const std::vector<Imop*> &nextList() const {
+            return m_nextList;
+        }
+
+        inline Imop *firstImop() const {
+            return m_firstImop;
+        }
+
+        void patchNextList(Imop *dest);
+
+    protected:
+
+        ICode::Status generateSubexprCode (TreeNodeExpr* e, ICodeList& code, SymbolTable& st, CompileLog& log, Symbol* r = 0);
+
+        inline void setNextList(const std::vector<Imop*> &nl) {
+            assert(m_nextList.empty());
+            m_nextList = nl;
+        }
+        inline void addToNextList(Imop *i) {
+            m_nextList.push_back(i);
+        }
+        void addToNextList(const std::vector<Imop*> &nl);
+        inline void setFirstImop(Imop *imop) {
+            assert(m_firstImop == 0);
+            m_firstImop = imop;
+        }
+        inline void patchFirstImop(Imop *imop) {
+            if (m_firstImop != 0) return;
+            m_firstImop = imop;
+        }
+
+        TreeNodeExpr* prevSubexpr () { return m_prevSubexpr; }
+        void setPrevSubexpr (TreeNodeExpr* prev) { m_prevSubexpr = prev; }
+        void prevPatchNextList (Imop* i);
+
+    private: /* Fields: */
+        std::vector<Imop*> m_nextList;
+        Imop              *m_firstImop;
+        TreeNodeExpr      *m_prevSubexpr;
+};
+
 /******************************************************************
   TreeNodeCodeable
 ******************************************************************/
 
-class TreeNodeCodeable: public TreeNode {
+class TreeNodeCodeable: public TreeNodeBase {
     public: /* Methods: */
         inline TreeNodeCodeable(Type type, const YYLTYPE &loc)
-            : TreeNode(type, loc), m_firstImop(0) {}
+            : TreeNodeBase(type, loc) {}
         virtual inline ~TreeNodeCodeable() {}
 
         virtual ICode::Status generateCode(ICodeList &code,
@@ -125,16 +177,9 @@ class TreeNodeCodeable: public TreeNode {
         inline const std::vector<Imop*> &continueList() const {
             return m_continueList;
         }
-        inline const std::vector<Imop*> &nextList() const {
-            return m_nextList;
-        }
-        inline Imop *firstImop() const {
-            return m_firstImop;
-        }
 
         void patchBreakList(Imop *dest);
         void patchContinueList(Imop *dest);
-        void patchNextList(Imop *dest);
 
     protected: /* Methods: */
         inline void setBreakList(const std::vector<Imop*> &bl) {
@@ -153,28 +198,10 @@ class TreeNodeCodeable: public TreeNode {
             m_continueList.push_back(i);
         }
         void addToContinueList(const std::vector<Imop*> &cl);
-        inline void setNextList(const std::vector<Imop*> &nl) {
-            assert(m_nextList.empty());
-            m_nextList = nl;
-        }
-        inline void addToNextList(Imop *i) {
-            m_nextList.push_back(i);
-        }
-        void addToNextList(const std::vector<Imop*> &nl);
-        inline void setFirstImop(Imop *imop) {
-            assert(m_firstImop == 0);
-            m_firstImop = imop;
-        }
-        inline void patchFirstImop(Imop *imop) {
-            if (m_firstImop != 0) return;
-            m_firstImop = imop;
-        }
 
     private: /* Fields: */
         std::vector<Imop*> m_breakList;
         std::vector<Imop*> m_continueList;
-        std::vector<Imop*> m_nextList;
-        Imop              *m_firstImop;
 };
 
 /******************************************************************
@@ -242,14 +269,13 @@ class TreeNodeDimTypeF: public TreeNode {
   TreeNodeExpr
 ******************************************************************/
 
-class TreeNodeExpr: public TreeNode {
+class TreeNodeExpr: public TreeNodeBase {
     public: /* Types: */
         enum Flags { CONSTANT = 0x01, PARENTHESIS = 0x02 };
 
     public: /* Methods: */
         inline TreeNodeExpr(Type type, const YYLTYPE &loc)
-            : TreeNode(type, loc), m_result(0), m_resultType(0),
-              m_firstImop(0) {}
+            : TreeNodeBase(type, loc), m_result(0), m_resultType(0) { }
         virtual ~TreeNodeExpr() {
             delete m_resultType;
         }
@@ -264,8 +290,12 @@ class TreeNodeExpr: public TreeNode {
                                                SymbolTable &st,
                                                CompileLog &log) = 0;
 
+        /// @brief common usage is: if (checkAndLogIfVoid(log)) return ICode::E_TYPE;
+        /// @return true if type is void, otherwise false
         bool checkAndLogIfVoid(CompileLog& log);
-        void copyShapeFrom(Symbol*, ICodeList &code);
+
+        /// @return first added Imop or NULL if none were added
+        void copyShapeFrom(Symbol* st, ICodeList &code);
         ICode::Status computeSize(ICodeList& code, SymbolTable& st);
         void generateResultSymbol(SymbolTable& st);
 
@@ -287,19 +317,16 @@ class TreeNodeExpr: public TreeNode {
         inline const std::vector<Imop*> &trueList() const {
             return m_trueList;
         }
-        inline const std::vector<Imop*> &nextList() const {
-            return m_nextList;
-        }
-        inline Imop *firstImop() const {
-            return m_firstImop;
-        }
         void patchTrueList(Imop *dest);
         void patchFalseList(Imop *dest);
-        void patchNextList(Imop *dest);
 
     protected: /* Methods: */
         inline void setResult(Symbol *r) {
             m_result = r;
+        }
+        inline void setResultType(SecreC::Type *type) {
+            assert(m_resultType == 0);
+            m_resultType = type;
         }
         inline void setFalseList(const std::vector<Imop*> &fl) {
             assert(m_falseList.empty());
@@ -317,34 +344,12 @@ class TreeNodeExpr: public TreeNode {
             m_trueList.push_back(i);
         }
         void addToTrueList(const std::vector<Imop*> &bl);
-        inline void setNextList(const std::vector<Imop*> &nl) {
-            assert(m_nextList.empty());
-            m_nextList = nl;
-        }
-        inline void addToNextList(Imop *i) {
-            m_nextList.push_back(i);
-        }
-        void addToNextList(const std::vector<Imop*> &bl);
-        inline void setResultType(SecreC::Type *type) {
-            assert(m_resultType == 0);
-            m_resultType = type;
-        }
-        inline void setFirstImop(Imop *imop) {
-            assert(m_firstImop == 0);
-            m_firstImop = imop;
-        }
-        inline void patchFirstImop(Imop *imop) {
-            if (m_firstImop != 0) return;
-            m_firstImop = imop;
-        }
 
     private: /* Fields: */
         Symbol             *m_result;
         SecreC::Type       *m_resultType;
         std::vector<Imop*>  m_falseList;
         std::vector<Imop*>  m_trueList;
-        std::vector<Imop*>  m_nextList;
-        Imop               *m_firstImop;
 
         /// \todo Add flags.
 };
