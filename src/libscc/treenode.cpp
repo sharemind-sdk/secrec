@@ -2470,7 +2470,8 @@ ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &st,
 
     if (!e->resultType().isVoid()) {
         if (e->resultType().secrecSecType() == SECTYPE_PRIVATE) {
-            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, e->resultType().secrecDataType()));
+            setResultType(new TypeNonVoid(SECTYPE_PUBLIC, e->resultType().secrecDataType(),
+                                                          e->resultType().secrecDimType()));
             return ICode::OK;
         }
     }
