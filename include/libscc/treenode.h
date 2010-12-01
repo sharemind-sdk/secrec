@@ -265,13 +265,17 @@ class TreeNodeExpr: public TreeNode {
                                                CompileLog &log) = 0;
 
         bool checkAndLogIfVoid(CompileLog& log);
+        void copyShapeFrom(Symbol*, ICodeList &code);
+        ICode::Status computeSize(ICodeList& code, SymbolTable& st);
+        void generateResultSymbol(SymbolTable& st);
 
-        inline Symbol *result() const { return m_result; };
+        inline Symbol *result() const { return m_result; }
         inline bool haveResultType() const { return m_resultType != 0; }
         inline bool havePublicBoolType() const {
             assert(m_resultType != 0);
             return m_resultType->secrecDataType() == DATATYPE_BOOL
-                   && m_resultType->secrecSecType() == SECTYPE_PUBLIC;
+                   && m_resultType->secrecSecType() == SECTYPE_PUBLIC
+                   && m_resultType->isScalar();
         }
         inline const SecreC::Type &resultType() const {
             assert(m_resultType != 0);
@@ -335,7 +339,7 @@ class TreeNodeExpr: public TreeNode {
         }
 
     private: /* Fields: */
-        Symbol    *m_result;
+        Symbol             *m_result;
         SecreC::Type       *m_resultType;
         std::vector<Imop*>  m_falseList;
         std::vector<Imop*>  m_trueList;

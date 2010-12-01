@@ -13,7 +13,6 @@
 namespace SecreC {
 
 class TreeNodeProgram;
-class VirtualMachine;
 
 class ICode {
     public: /* Types: */

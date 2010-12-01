@@ -281,6 +281,7 @@ class Type {
         inline SecrecSecType secrecSecType() const;
         inline SecrecDataType secrecDataType() const;
         inline SecrecDimType secrecDimType() const;
+        inline bool isScalar () const { return secrecDimType() == 0; }
 
     private: /* Fields: */
         bool m_isVoid;

@@ -176,7 +176,7 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     SDefs old = out;
     out = in;
     for (Blocks::CCI it = b.start; it != b.end; it++) {
-        if (((*it)->isExpr() || ((*it)->type() == Imop::POPPARAM))
+        if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
             && (*it)->dest() != 0)
         {
             // Set this def:
@@ -335,7 +335,7 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
     out = in;
     for (Blocks::CCI it = b.start; it != b.end; it++) {
         if (!(*it)->isExpr()) {
-            if ((*it)->type() != Imop::POPPARAM) continue;
+            if ((*it)->type() != Imop::POP) continue;
         } else {
             if ((*it)->dest() == 0) continue;
             if ((*it)->type() == Imop::DECLASSIFY) {
@@ -348,7 +348,7 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
         Defs &d = out[(*it)->dest()];
 
         switch ((*it)->type()) {
-            case Imop::POPPARAM:
+            case Imop::POP:
             case Imop::CALL:
                 d.nonsensitive.clear();
                 d.sensitive.clear();
@@ -407,7 +407,7 @@ std::string ReachingDeclassify::toString() const {
         for (std::set<const Imop*>::const_iterator jt = (*it).second.sensitive.begin(); jt != (*it).second.sensitive.end(); jt++) {
             os << "        ";
             switch ((*jt)->type()) {
-                case Imop::POPPARAM:
+                case Imop::POP:
                     os << "parameter "
                        << static_cast<TreeNodeStmtDecl*>((*jt)->creator())->variableName()
                        << " declared at " << (*jt)->creator()->location();

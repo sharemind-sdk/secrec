@@ -4,6 +4,7 @@
 #include <cassert>
 #include <set>
 #include <string>
+#include <vector>
 
 
 namespace SecreC {
@@ -13,62 +14,77 @@ class Symbol;
 class SymbolProcedure;
 class TreeNode;
 
+/**
+ * Intermediated code instructions.
+ * Many of the instructions have optional argument denoting size
+ * of an array. For example if addition operator gets arrays as argument
+ * it will also get the size of argument and resulting arrays.
+ *
+ * - Size param is always denoted between curly bracers { and } in comments.
+ * - If instruction is performed on scalar no size argument is required.
+ * - Destination is always denoted with letter d.
+ * - RETURN instruction is now only used to return non-arrays, to return arrays
+ *   one must use stack.
+ */
 class Imop {
     public: /* Types: */
         enum Type {
             //-------------
             // Expressions:
             //-------------
-            ASSIGN     = 0x1,   /*   d = arg1;                        */
-            CLASSIFY   = 0x2,   /*   d = CLASSIFY(arg1);              */
-            DECLASSIFY = 0x3,   /*   d = DECLASSIFY(arg1);            */
-            CAST       = 0x4,   /*   d = (arg1) arg2;                 */
-            WILDCARD   = 0x5,   /*   d = arg1[*];                     */
-            SUBSCRIPT  = 0x6,   /*   d = arg1[arg2];                  */
-            UNEG       = 0x7,   /*   d = !arg1;                       */
-            UMINUS     = 0x8,   /*   d = -arg1;                       */
-            MATRIXMUL  = 0x9,   /*   d = arg1 #  arg2;                */
-            MUL        = 0xa,   /*   d = arg1 *  arg2;                */
-            DIV        = 0xb,   /*   d = arg1 /  arg2;                */
-            MOD        = 0xc,   /*   d = arg1 %  arg2;                */
-            ADD        = 0xd,   /*   d = arg1 +  arg2;                */
-            SUB        = 0xe,   /*   d = arg1 -  arg2;                */
-            EQ         = 0xf,   /*   d = arg1 == arg2;                */
-            NE         = 0x10,  /*   d = arg1 != arg2;                */
-            LE         = 0x11,  /*   d = arg1 <= arg2;                */
-            LT         = 0x12,  /*   d = arg1 <  arg2;                */
-            GE         = 0x13,  /*   d = arg1 >= arg2;                */
-            GT         = 0x14,  /*   d = arg1 >  arg2;                */
-            LAND       = 0x15,  /*   d = arg1 && arg2;                */
-            LOR        = 0x16,  /*   d = arg1 || arg2;                */
+            ASSIGN     = 0x1,   /*   d = arg1 {arg2};                   */
+            CLASSIFY   = 0x2,   /*   d = CLASSIFY(arg1 {, arg2});       */
+            DECLASSIFY = 0x3,   /*   d = DECLASSIFY(arg1 {, arg2});     */
+            UNEG       = 0x7,   /*   d = !arg1 {arg2};                  */
+            UMINUS     = 0x8,   /*   d = -arg1 {arg2};                  */
+            MUL        = 0xa,   /*   d = arg1 *  arg2 {arg3};           */
+            DIV        = 0xb,   /*   d = arg1 /  arg2 {arg3};           */
+            MOD        = 0xc,   /*   d = arg1 %  arg2 {arg3};           */
+            ADD        = 0xd,   /*   d = arg1 +  arg2 {arg3};           */
+            SUB        = 0xe,   /*   d = arg1 -  arg2 {arg3};           */
+            EQ         = 0xf,   /*   d = arg1 == arg2 {arg3};           */
+            NE         = 0x10,  /*   d = arg1 != arg2 {arg3};           */
+            LE         = 0x11,  /*   d = arg1 <= arg2 {arg3};           */
+            LT         = 0x12,  /*   d = arg1 <  arg2 {arg3};           */
+            GE         = 0x13,  /*   d = arg1 >= arg2 {arg3};           */
+            GT         = 0x14,  /*   d = arg1 >  arg2 {arg3};           */
+            LAND       = 0x15,  /*   d = arg1 && arg2 {arg3};           */
+            LOR        = 0x16,  /*   d = arg1 || arg2 {arg3};           */
 
-            /* For CALL, arg2 is the corresponding RETCLEAN instruction: */
-            CALL       = 0x17,  /*   d = arg1(PARAMS);   (Imop *arg2) */
+            //-------------------
+            // Array expressions:
+            //-------------------
+            STORE      = 0x17, /*    d[arg1] = arg2;                    */
+            LOAD       = 0x18, /*    d = arg1[arg2];                    */
+            FILL       = 0x20, /*    d = FILL(arg1, arg2)               */
+
+            /* For CALL, arg2 is the corresponding RETCLEAN instruction:*/
+            CALL       = 0x21,  /*   d = arg1(PARAMS);   (Imop *arg2)   */
                 EXPR_MASK = 0xff,
 
             //-------
             // Jumps:
             //-------
-            JUMP       = 0x100, /* GOTO d;                            */
-            JT         = 0x200, /* if (arg1) GOTO d;                  */
-            JF         = 0x300, /* if (!arg1) GOTO d;                 */
-            JE         = 0x400, /* if (arg1 == arg2) GOTO d;          */
-            JNE        = 0x500, /* if (arg1 != arg2) GOTO d;          */
-            JLE        = 0x600, /* if (arg1 <= arg2) GOTO d;          */
-            JLT        = 0x700, /* if (arg1 <  arg2) GOTO d;          */
-            JGE        = 0x800, /* if (arg1 >= arg2) GOTO d;          */
-            JGT        = 0x900, /* if (arg1 >  arg2) GOTO d;          */
+            JUMP       = 0x100, /* GOTO d;                              */
+            JT         = 0x200, /* if (arg1) GOTO d;                    */
+            JF         = 0x300, /* if (!arg1) GOTO d;                   */
+            JE         = 0x400, /* if (arg1 == arg2) GOTO d;            */
+            JNE        = 0x500, /* if (arg1 != arg2) GOTO d;            */
+            JLE        = 0x600, /* if (arg1 <= arg2) GOTO d;            */
+            JLT        = 0x700, /* if (arg1 <  arg2) GOTO d;            */
+            JGE        = 0x800, /* if (arg1 >= arg2) GOTO d;            */
+            JGT        = 0x900, /* if (arg1 >  arg2) GOTO d;            */
                 JUMP_MASK  = 0xf00,
 
             //--------------------
             // Misc. instructions:
             //--------------------
-            COMMENT    = 0x1000,  /* // arg1                          */
-            ERROR      = 0x2000,  /* // arg1                          */
-            POPPARAM   = 0x3000,  /* POPPARAM d;                      */
-            PUSHPARAM  = 0x4000,  /* PUSHPARAM arg1;                  */
+            COMMENT    = 0x1000,  /* // arg1                            */
+            ERROR      = 0x2000,  /* // arg1                            */
+            POP        = 0x3000,  /* d = POP {arg1};                    */
+            PUSH       = 0x4000,  /* PUSH arg1 {arg2};                  */
 
-            /* For RETCLEAN, arg2 is the corresponding CALL instruction: */
+            /* For RETCLEAN, arg2 is the corresponding CALL instruction:*/
             RETCLEAN   = 0x5000,  /* RETCLEAN;             (Imop *arg2) */
 
             /*
@@ -82,16 +98,26 @@ class Imop {
 
     public: /* Methods: */
         explicit inline Imop(TreeNode *creator, Type type)
-            : m_creator(creator), m_type(type) {}
+            : m_creator(creator), m_type(type), m_args() {}
+
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest)
-            : m_creator(creator), m_type(type), m_dest(dest) {}
+            : m_creator(creator), m_type(type), m_args(1, dest) {}
+
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
                              Symbol *arg1)
-            : m_creator(creator), m_type(type), m_dest(dest), m_arg1(arg1) {}
+            : m_creator(creator), m_type(type), m_args(2)
+        { m_args[0] = dest; m_args[1] = arg1; m_args[2] = 0; }
+
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
                              Symbol *arg1, Symbol *arg2)
-            : m_creator(creator), m_type(type), m_dest(dest), m_arg1(arg1),
-              m_arg2(arg2) {}
+            : m_creator(creator), m_type(type), m_args(3)
+        { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; }
+
+        explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
+                             Symbol *arg1, Symbol *arg2, Symbol *arg3)
+            : m_creator(creator), m_type(type), m_args(4)
+        { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
+
         ~Imop();
 
         inline const std::set<Imop*> &incoming() const { return m_incoming; }
@@ -103,14 +129,38 @@ class Imop {
         inline bool isJump() const { return (m_type & JUMP_MASK) != 0x0; }
         inline bool isCondJump() const { return ((m_type & JUMP_MASK) != 0x0) && (m_type != JUMP); }
         inline bool isExpr() const { return (m_type & EXPR_MASK) != 0x0; }
-        inline const Symbol *dest() const { return m_dest; }
-        inline void setDest(const Symbol *dest) { m_dest = dest; }
+        unsigned nArgs() const { return m_args.size(); }
 
-        inline const Imop *jumpDest() const { return (Imop*) m_dest; }
+        inline const Symbol *dest() const { return arg(0); }
+        inline const Symbol *arg1() const { return arg(1); }
+        inline const Symbol *arg2() const { return arg(2); }
+        inline const Symbol *arg3() const { return arg(3); }
+
+        inline void setDest(const Symbol *dest) { setArg(0, dest); }
+        inline void setArg1(const Symbol *arg1) { setArg(1, arg1); }
+        inline void setArg2(const Symbol *arg2) { setArg(2, arg2); }
+        inline void setArg3(const Symbol* arg3) { setArg(3, arg3); }
+
+        inline const Symbol* arg(unsigned i) const {
+            assert (i < m_args.size() &&
+                    "Imop::arg(unsigned i): index i out of bounds.");
+            return m_args[i];
+        }
+
+        inline void setArg(unsigned i, const Symbol* arg) {
+            assert (i < m_args.size() &&
+                    "Imop::setArg(unsigned i, const Symbol* arg): index i out of bounds.");
+            m_args[i] = arg;
+        }
+
+        inline const Imop *jumpDest() const {
+            return (Imop*) dest();
+        }
+
         inline void setJumpDest(Imop *dest) {
             assert(dest != 0);
             assert((m_type & JUMP_MASK) != 0x0);
-            m_dest = (SecreC::Symbol*) dest;
+            setDest((SecreC::Symbol*) dest);
             dest->addIncoming(this);
         }
 
@@ -119,14 +169,10 @@ class Imop {
         inline void setReturnDestFirstImop(Imop *firstImop) {
             assert(firstImop != 0);
             assert(firstImop->m_type == COMMENT);
-            m_arg2 = (SecreC::Symbol*) firstImop;
+            setArg2((SecreC::Symbol*) firstImop);
             firstImop->addReturn(this);
         }
 
-        inline const Symbol *arg1() const { return m_arg1; }
-        inline void setArg1(const Symbol *arg1) { m_arg1 = arg1; }
-        inline const Symbol *arg2() const { return m_arg2; }
-        inline void setArg2(const Symbol *arg2) { m_arg2 = arg2; }
         inline Block *block() const { return m_block; }
         inline void setBlock(Block *block) { m_block = block; }
 
@@ -150,10 +196,8 @@ class Imop {
 
         TreeNode     *m_creator;
         const Type    m_type;
-        const Symbol *m_dest;
-        const Symbol *m_arg1;
-        const Symbol *m_arg2;
-              Block  *m_block;
+        std::vector<Symbol const* > m_args;
+        Block        *m_block;
         unsigned long m_index;
 };
 

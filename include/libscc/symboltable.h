@@ -15,11 +15,17 @@ class TreeNodeProcDef;
 class Symbol {
     public: /* Types: */
         enum Type { PROCEDURE, CONSTANT, SYMBOL, TEMPORARY };
+        typedef std::vector<Symbol* >::iterator dim_iterator;
+        typedef std::vector<Symbol* >::reverse_iterator dim_reverese_iterator;
+        typedef std::vector<Symbol* >::const_iterator const_dim_iterator;
 
     public: /* Methods: */
         explicit inline Symbol(Type symbolType,
                                const SecreC::TypeNonVoid &valueType)
-            : m_symbolType(symbolType), m_type(valueType.clone()) {}
+            : m_symbolType(symbolType),
+              m_type(valueType.clone()),
+              m_dims(valueType.secrecDimType(), (Symbol*) 0),
+              m_size((Symbol*) 0) {}
         virtual inline ~Symbol() { delete m_type; }
 
         inline Type symbolType() const { return m_symbolType; }
@@ -27,12 +33,25 @@ class Symbol {
         inline void setName(const std::string &name) { m_name = name; }
         inline const SecreC::Type &secrecType() const { return *m_type; }
 
+        inline Symbol* getDim (unsigned i) { return m_dims[i]; }
+        inline void setDim (unsigned i, Symbol* sym) { m_dims[i] = sym; }
+        dim_iterator dim_begin () { return m_dims.begin(); }
+        dim_reverese_iterator dim_rbegin() { return m_dims.rbegin(); }
+        dim_reverese_iterator dim_rend() { return m_dims.rend(); }
+        const_dim_iterator dim_begin () const { return m_dims.begin(); }
+        dim_iterator dim_end () { return m_dims.end(); }
+        const_dim_iterator dim_end () const { return m_dims.end(); }
+        Symbol* getSizeSym () { return m_size; }
+        void setSizeSym (Symbol* sym) { m_size = sym; }
+        void inheritShape (Symbol* from);
         virtual std::string toString() const = 0;
 
     private: /* Fields: */
         const Type  m_symbolType;
         std::string m_name;
         SecreC::Type *m_type;
+        std::vector<Symbol* > m_dims;
+        Symbol* m_size;
 };
 
 class SymbolSymbol: public Symbol {

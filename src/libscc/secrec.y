@@ -208,6 +208,14 @@ variable_declaration /* NB! Uses type_specifier directly */
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
+ | type_specifier identifier dimensions '=' initializer ';'
+   {
+     $$ = treenode_init(NODE_DECL, &@$);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, ensure_rValue($5));
+   }
  ;
 
 initializer

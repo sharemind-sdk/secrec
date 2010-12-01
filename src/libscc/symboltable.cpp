@@ -19,6 +19,15 @@ void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
 namespace SecreC {
 
 /*******************************************************************************
+  Symbol
+*******************************************************************************/
+
+void Symbol::inheritShape (Symbol* from) {
+    setSizeSym(from->getSizeSym());
+    std::copy (from->dim_begin(), from->dim_end(), dim_begin());
+}
+
+/*******************************************************************************
   SymbolSymbol
 *******************************************************************************/
 

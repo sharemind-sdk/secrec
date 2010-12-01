@@ -7,7 +7,6 @@
 #include "symboltable.h"
 #include "misc.h"
 
-
 namespace {
 
 void patchList(std::vector<SecreC::Imop*> &list, SecreC::Imop *dest) {
@@ -220,6 +219,86 @@ bool TreeNodeExpr::checkAndLogIfVoid(CompileLog& log) {
     }
 
     return false;
+}
+
+ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
+    assert (haveResultType() &&
+            "ICE: TreeNodeExpr::computeSize called on expression without type.");
+
+    if (resultType().isVoid()) return ICode::OK;
+    if (resultType().isScalar()) return ICode::OK;
+
+    assert (result() != 0 &&
+            "ICE: TreeNodeExpr::computeSize called on expression with non-void type but no result.");
+
+    Symbol* size = 0;
+    if (result()->getSizeSym() != 0) {
+        size = result()->getSizeSym();
+    }
+    else {
+        size = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    }
+
+    Imop* i = new Imop (this, Imop::ASSIGN, size, st.constantInt(1));
+    code.push_imop(i);
+    patchFirstImop(i);
+    patchNextList(i);
+
+    Symbol::dim_iterator
+            di = result()->dim_begin(),
+            de = result()->dim_end();
+    for (; di != de; ++ di) {
+        assert (*di != 0 &&
+                "ICE: TreeNodeExpr::computeSize called on expression with corrupt shape.");
+        Imop* i = new Imop (this, Imop::MUL, size, size, *di);
+        code.push_imop(i);
+    }
+
+    result()->setSizeSym(size);
+    return ICode::OK;
+}
+
+void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code) {
+    assert (haveResultType());
+    assert (sym != 0);
+
+    if (resultType().isScalar()) {
+        return;
+    }
+
+    Symbol::dim_iterator
+            di = sym->dim_begin(),
+            de = sym->dim_end();
+    Symbol::dim_iterator
+            dj = result()->dim_begin();
+    for (; di != de; ++ di, ++ dj) {
+        Imop* i = new Imop(this, Imop::ASSIGN, *dj, *di);
+        code.push_imop(i);
+        patchFirstImop(i);
+        patchNextList(i);
+    }
+
+    Symbol* sl = result()->getSizeSym();
+    Symbol* sr = sym->getSizeSym();
+    Imop* i = new Imop(this, Imop::ASSIGN, sl, sr);
+    code.push_imop(i);
+    patchFirstImop(i);
+    patchNextList(i);
+
+}
+
+void TreeNodeExpr::generateResultSymbol(SymbolTable& st) {
+    assert (haveResultType());
+    if (!resultType().isVoid()) {
+        assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+        Symbol* sym = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
+        setResult(sym);
+        for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
+            sym->setDim(i, st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
+        }
+
+        sym->setSizeSym(st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
+    }
 }
 
 
@@ -607,7 +686,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
             switch ((*i)->type()) {
                 case NODE_INDEX_INT: break;
                 case NODE_INDEX_SLICE: destDim += 1; break;
-                default: assert (false);
+                default: assert (false && "Reached an index that isn't int or a slice.");
             }
         }
     }
@@ -620,7 +699,6 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
 
     // Check types:
     if (src->checkAndLogIfVoid(log)) return ICode::E_TYPE;
-
     if (!destType.canAssign(srcType)) {
         log.fatal() << "Invalid assignment from value of type " << srcType
                     << " to variable of type " << destType << ". At "
@@ -641,11 +719,14 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
+/// \todo this and TreeNodeExprIndex have a lot of duplicate code, figure out how to fix that
 ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log,
                                                Symbol *r)
 {
+    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV; // symbol pair vector
+
     // Type check:
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
@@ -660,39 +741,326 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
     assert(dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol *destSymSym = static_cast<SymbolSymbol*>(destSym);
 
-    if (lval->children().size() == 2) {
-        assert (false); // \todo
-    }
-
     assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
 
-    // Generate code for assignment
-    if (type() == NODE_EXPR_ASSIGN) {
-        // Simple assignment
+    // Generate code for righthand side:
+    s = e2->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    s = e2->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    setFirstImop(e2->firstImop());
 
-        // Generate code for righthand expression:
-        s = e2->generateCode(code, st, log, destSymSym);
-        if (s != ICode::OK) return s;
-        setFirstImop(e2->firstImop());
+    // x[e1,...,ek] = e
+    if (lval->children().size() == 2) {
+        SPV spv;
+        std::vector<unsigned > slices;
+        TreeNodeExpr* last = e2;
 
-        if (r != 0) {
-            Imop *i = new Imop(this, Imop::ASSIGN, r, destSymSym);
+        { // evaluate indices
+            TreeNode::ChildrenListConstIterator
+                    it = lval->children().at(1)->children().begin(),
+                    it_end = lval->children().at(1)->children().end();
+            for (unsigned count = 0; it != it_end; ++ it, ++ count) {
+                TreeNode* t = *it;
+                TreeNodeExpr* e_lo = 0;
+                TreeNodeExpr* e_hi = 0;
+
+                // lower bound
+                e_lo = static_cast<TreeNodeExpr*>(t->children().at(0));
+                s = e_lo->generateCode(code, st, log);
+                if (s != ICode::OK) return s;
+                if (e_lo->firstImop() != 0) {
+                    patchFirstImop(e_lo->firstImop());
+                    last->patchNextList(e_lo->firstImop());
+                    last = e_lo;
+                }
+
+                // upper bound
+                if (t->type() == NODE_INDEX_SLICE) {
+                    e_hi = static_cast<TreeNodeExpr*>(t->children().at(1));
+                    s = e_hi->generateCode(code, st, log);
+                    if (s != ICode::OK) return s;
+                    if (e_hi->firstImop() != 0) {
+                        patchFirstImop(e_hi->firstImop());
+                        last->patchNextList(e_hi->firstImop());
+                        last = e_hi;
+                    }
+
+                    slices.push_back(count);
+                    spv.push_back(std::make_pair(e_lo->result(), e_hi->result()));
+                }
+                else {
+                    // if there is no upper bound then make one up
+                    Symbol* s_hi = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+                    Imop* i = new Imop(this, Imop::ADD, s_hi, e_lo->result(), st.constantInt(1));
+                    code.push_imop(i);
+                    patchFirstImop(i);
+                    last->patchNextList(i);
+                    spv.push_back(std::make_pair(e_lo->result(), s_hi));
+                }
+            }
+        }
+
+        // 2. check that indices are legal
+
+        {
+            Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
+            Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+                                 (Symbol*) new std::string("Index out of bounds."));
+
+            // check lower indices
+            Symbol::dim_iterator di = destSym->dim_begin();
+            for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it, ++ di) {
+                code.push_comment("checking s_lo");
+                Symbol* s_lo = it->first;
+                Imop* i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, *di);
+                code.push_imop(i);
+                patchFirstImop(i);
+                last->patchNextList(i);
+                i->setJumpDest(err);
+            }
+
+            // check upper indices
+            for (std::vector<unsigned>::const_iterator it(slices.begin()); it != slices.end(); ++ it) {
+                code.push_comment("checking s_hi");
+                unsigned k = *it;
+                Symbol* s_hi = spv[k].second;
+                Symbol* d = destSym->getDim(k);
+                Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
+                code.push_imop(i);
+                patchFirstImop(i);
+                last->patchNextList(i);
+                i->setJumpDest(err);
+
+                Symbol* s_lo = spv[k].first;
+                i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, s_hi);
+                code.push_imop(i);
+                i->setJumpDest(err);
+            }
+
+            // check that rhs has correct dimensions
+            if (!e2->resultType().isScalar()) {
+                assert (e2->resultType().secrecDimType() == slices.size());
+                for (unsigned k = 0; k < e2->resultType().secrecDimType(); ++ k) {
+                    Symbol* tsym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+                    Imop* i = new Imop(this, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
+                    code.push_imop(i);
+                    patchFirstImop(i);
+                    last->patchNextList(i);
+
+                    i = new Imop(this, Imop::JNE, (Symbol*) 0, tsym, e2->result()->getDim(k));
+                    code.push_imop(i);
+                    i->setJumpDest(err);
+                }
+            }
+
+            code.push_imop(jmp);
+            patchFirstImop(jmp);
+            last->patchNextList(jmp);
+            addToNextList(jmp); /// \todo not sure about that...
+
+            code.push_imop(err);
+        }
+
+        // 3. initialize stride: s[0] = 1; ...; s[n+1] = s[n] * d[n];
+        // - Note that after this point next lists and first imop are patched!
+        // - size of 'x' is stored as last element of the stride
+        std::vector<Symbol* > stride;
+        {
+            code.push_comment("Computing stride:");
+            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+            Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantUInt(1));
+            stride.push_back(sym);
             code.push_imop(i);
             patchFirstImop(i);
-            e2->patchNextList(i);
-            setResult(r);
-        } else {
-            setResult(destSymSym);
-            setNextList(e2->nextList());
-        }
-    } else {
-        // Arithmetic assignments
+            patchNextList(i);
+            last->patchNextList(i);
 
-        // Generate code for righthand expression:
-        s = e2->generateCode(code, st, log);
-        if (s != ICode::OK) return s;
-        setFirstImop(e2->firstImop());
+            Symbol* prev = sym;
+            for (Symbol::dim_iterator it(destSym->dim_begin()); it != destSym->dim_end(); ++ it) {
+                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+                i = new Imop(this, Imop::MUL, sym, prev, *it);
+                stride.push_back(sym);
+                code.push_imop(i);
+                prev = sym;
+            }
+        }
+
+        // 4. initialze running indices
+        std::vector<Symbol* > indices;
+        for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
+            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+            indices.push_back(sym);
+        }
+
+        // 6. initialze symbols for offsets and temporary results
+        Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* old_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+
+        // 7. start
+        {
+            SPV::iterator
+                    spv_it = spv.begin(),
+                    spv_it_end = spv.end();
+            std::vector<Symbol* >::iterator
+                    it_it = indices.begin();
+            std::stack<Imop*> tmp;
+
+            // offset = 0
+            Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantUInt(0));
+            code.push_imop(i);
+            patchNextList(i);
+
+            for (; spv_it != spv_it_end; ++ spv_it, ++ it_it) {
+                Symbol* i_lo = spv_it->first;
+                Symbol* i_hi = spv_it->second;
+                Symbol* idx  = *it_it;
+
+                // i = i_lo;
+                i = new Imop(this, Imop::ASSIGN, idx, i_lo);
+                code.push_imop(i);
+
+                // L1: IF (i >= i_hi) GOTO O1;
+                Imop* l1 = new Imop(this, Imop::JGE, (Symbol*) 0, idx, i_hi);
+                code.push_imop(l1);
+                tmp.push(l1);
+            }
+
+            // 8. compute offset for RHS
+            // old_ffset = 0
+            i = new Imop(this, Imop::ASSIGN, old_offset, st.constantUInt(0));
+            code.push_imop(i);
+
+            std::vector<Symbol* >::iterator stride_it = stride.begin();
+            std::vector<Symbol* >::iterator it_end = indices.end();
+            it_it = indices.begin();
+            for (; it_it != it_end; ++ stride_it, ++ it_it) {
+                // tmp_result2 = s[k] * idx[k]
+                i = new Imop(this, Imop::MUL, tmp_result2, *stride_it, *it_it);
+                code.push_imop(i);
+
+                // old_offset = old_offset + tmp_result2
+                i = new Imop(this, Imop::ADD, old_offset, old_offset, tmp_result2);
+                code.push_imop(i);
+            }
+
+            // 9. load and store
+            if (type() == NODE_EXPR_ASSIGN) {
+                if (!e2->resultType().isScalar()) {
+                    Symbol* t1 = st.appendTemporary(TypeNonVoid(resultType().secrecSecType(), resultType().secrecDataType(), 0));
+
+                    i = new Imop(this, Imop::LOAD, t1, e2->result(), offset);
+                    code.push_imop(i);
+
+                    i = new Imop(this, Imop::STORE, destSymSym, old_offset, t1);
+                    code.push_imop(i);
+                }
+                else {
+                    i = new Imop(this, Imop::STORE, destSymSym, old_offset, e2->result());
+                    code.push_imop(i);
+                }
+            }
+            else {
+                Symbol* t1 = st.appendTemporary(TypeNonVoid(resultType().secrecSecType(), resultType().secrecDataType(), 0));
+                Symbol* t2 = st.appendTemporary(TypeNonVoid(resultType().secrecSecType(), resultType().secrecDataType(), 0));
+                Imop::Type iType;
+
+                switch (type()) {
+                    case NODE_EXPR_ASSIGN_MUL: iType = Imop::MUL; break;
+                    case NODE_EXPR_ASSIGN_DIV: iType = Imop::DIV; break;
+                    case NODE_EXPR_ASSIGN_MOD: iType = Imop::MOD; break;
+                    case NODE_EXPR_ASSIGN_ADD: iType = Imop::ADD; break;
+                    case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
+                    default:
+                        assert(false); // shouldn't happen
+                }
+
+                i = new Imop(this, Imop::LOAD, t1, destSymSym, old_offset);
+                code.push_imop(i);
+
+                if (!e2->resultType().isScalar()) {
+                    i = new Imop(this, Imop::LOAD, t2, e2->result(), offset);
+                    code.push_imop(i);
+
+                    i = new Imop(this, iType, t1, t1, t2);
+                    code.push_imop(i);
+
+                    i = new Imop(this, Imop::STORE, destSymSym, old_offset, t1);
+                    code.push_imop(i);
+                }
+                else {
+                    i = new Imop(this, iType, t1, t1, e2->result());
+                    code.push_imop(i);
+
+                    i = new Imop(this, Imop::STORE, destSymSym, old_offset, t1);
+                    code.push_imop(i);
+                }
+            }
+
+            // offset = offset + 1
+            i = new Imop(this, Imop::ADD, offset, offset, st.constantUInt(1));
+            code.push_imop(i);
+
+            // 9. loop exit
+            code.push_comment("Tail of indexing loop:");
+            std::vector<Symbol* >::reverse_iterator
+                    rit = indices.rbegin(),
+                    rit_end = indices.rend();
+            Imop* prev = 0;
+            for (; rit != rit_end; ++ rit) {
+                Symbol* idx = *rit;
+
+                // i = i + 1
+                Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantUInt(1));
+                code.push_imop(i);
+                if (prev != 0) prev->setJumpDest(i);
+
+                // GOTO L1;
+                i = new Imop(this, Imop::JUMP, (Symbol*) 0);
+                code.push_imop(i);
+                i->setJumpDest(tmp.top());
+                prev = tmp.top();
+                tmp.pop();
+
+                // O1:
+            }
+
+            if (prev != 0) addToNextList(prev);
+        }
+
+        return ICode::OK;
+    }
+
+    // regular x = e assignment
+
+    // Generate code for assignment
+    if (type() == NODE_EXPR_ASSIGN) {
+
+        if (r != 0)
+            setResult(r);
+         else
+            setResult(destSymSym);
+
+        if (!e2->resultType().isScalar()) {
+            copyShapeFrom(e2->result(), code);
+        }
+
+        Imop *i = 0;
+        if (resultType().isScalar())
+            i = new Imop(this, Imop::ASSIGN, result(), e2->result());
+        else {
+            Imop::Type iType = e2->resultType().isScalar() ? Imop::FILL : Imop::ASSIGN;
+            i = new Imop(this, iType, result(), e2->result(), result()->getSizeSym());
+        }
+        code.push_imop(i);
+        patchFirstImop(i);
+        e2->patchNextList(i);
+        setNextList(e2->nextList());
+    } else {
+        /// \todo doesn't support arrays
+        // Arithmetic assignments
 
         Imop::Type iType;
         switch (type()) {
@@ -781,7 +1149,7 @@ ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &st,
         switch (type) {
             case NODE_INDEX_INT: break;
             case NODE_INDEX_SLICE: k += 1; break;
-            default: assert (false);
+            default: assert (false && "Index that isn't int or slice.");
         }
 
         TreeNode::ChildrenListConstIterator
@@ -808,6 +1176,11 @@ ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &st,
                 log.fatal() << "Index of non-integer type at " << ej->location();
                 return ICode::E_TYPE;
             }
+
+            if (ejType->secrecDimType() != 0) {
+                log.fatal() << "Indexof non-scalar at " << ej->location();
+                return ICode::E_TYPE;
+            }
         }
     }
 
@@ -815,19 +1188,326 @@ ICode::Status TreeNodeExprIndex::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprIndex::generateCode(ICodeList &,
-                                              SymbolTable &,
-                                              CompileLog &,
-                                              Symbol *)
+ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
+                                              SymbolTable &st,
+                                              CompileLog &log,
+                                              Symbol *r)
 {
-    assert (false); // \todo
+    typedef TreeNode::ChildrenListConstIterator CLCI; // children list const iterator
+    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV; // symbol pair vector
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    // 0. possibly create symbol for result
+
+    // Generate temporary for the result of the binary expression, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
+
+    // 1. evaluate subexpressions
+
+    bool isScalar = resultType().isScalar();
+    SPV spv; // store symbols corresponding to upper and lower indices
+    std::vector<int > slices; // which of the indices are slices
+
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    Symbol* x = e->result();
+    setFirstImop(e->firstImop());
+
+    TreeNodeExpr* last = e;
+    {
+        CLCI it = children().at(1)->children().begin();
+        CLCI it_end = children().at(1)->children().end();
+        for (unsigned count = 0; it != it_end; ++ it, ++ count) {
+            TreeNode* t = *it;
+            assert (t->type() == NODE_INDEX_INT ||
+                    t->type() == NODE_INDEX_SLICE);
+            TreeNodeExpr* e_lo = 0;
+            TreeNodeExpr* e_hi = 0;
+
+            // lower bound
+            e_lo = static_cast<TreeNodeExpr*>(t->children().at(0));
+            s = e_lo->generateCode(code, st, log);
+            if (s != ICode::OK) return s;
+            if (e_lo->firstImop() != 0) {
+                patchFirstImop(e_lo->firstImop());
+                last->patchNextList(e_lo->firstImop());
+                last = e_lo;
+            }
+
+            // upper bound
+            if (t->type() == NODE_INDEX_SLICE) {
+                e_hi = static_cast<TreeNodeExpr*>(t->children().at(1));
+                s = e_hi->generateCode(code, st, log);
+                if (s != ICode::OK) return s;
+                if (e_hi->firstImop() != 0) {
+                    patchFirstImop(e_hi->firstImop());
+                    last->patchNextList(e_hi->firstImop());
+                    last = e_hi;
+                }
+
+                slices.push_back(count);
+                spv.push_back(std::make_pair(e_lo->result(), e_hi->result()));
+            }
+            else {
+                // if there is no upper bound then make one up
+                Symbol* s_hi = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+                Imop* i = new Imop(this, Imop::ADD, s_hi, e_lo->result(), st.constantInt(1));
+                code.push_imop(i);
+                patchFirstImop(i);
+                last->patchNextList(i);
+                spv.push_back(std::make_pair(e_lo->result(), s_hi));
+            }
+        }
+    }
+
+    // 2. check that indices are legal
+
+    {
+        code.push_comment("Validating indices:");
+
+        Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
+        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+                             (Symbol*) new std::string("Index out of bounds."));
+
+        // check lower indices
+        Symbol::dim_iterator di = x->dim_begin();
+        for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it, ++ di) {
+            code.push_comment("checking s_lo");
+            Symbol* s_lo = it->first;
+            Imop* i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, *di);
+            code.push_imop(i);
+            patchFirstImop(i);
+            last->patchNextList(i);
+            i->setJumpDest(err);
+        }
+
+        // check upper indices
+        for (std::vector<int>::const_iterator it(slices.begin()); it != slices.end(); ++ it) {
+            code.push_comment("checking s_hi");
+            unsigned k = *it;
+            Symbol* s_hi = spv[k].second;
+            Symbol* d = x->getDim(k);
+            Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
+            code.push_imop(i);
+            patchFirstImop(i);
+            last->patchNextList(i);
+            i->setJumpDest(err);
+
+            code.push_comment("checking s_lo < s_hi");
+            Symbol* s_lo = spv[k].first;
+            i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, s_hi);
+            code.push_imop(i);
+            i->setJumpDest(err);
+        }
+
+        code.push_imop(jmp);
+        patchFirstImop(jmp);
+        last->patchNextList(jmp);
+        addToNextList(jmp); /// \todo not sure about that...
+
+        code.push_imop(err);
+    }
+
+
+    // 3. initialize stride: s[0] = 1; ...; s[n+1] = s[n] * d[n];
+    // - Note that after this point next lists and first imop are patched!
+    // - size of 'x' is stored as last element of the stride
+    std::vector<Symbol* > stride;
+    {
+        code.push_comment("Computing stride:");
+        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantUInt(1));
+        stride.push_back(sym);
+        code.push_imop(i);
+        patchFirstImop(i);
+        patchNextList(i);
+        last->patchNextList(i);
+
+        Symbol* prev = sym;
+        for (Symbol::dim_iterator it(x->dim_begin()); it != x->dim_end(); ++ it) {
+            sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+            i = new Imop(this, Imop::MUL, sym, prev, *it);
+            stride.push_back(sym);
+            code.push_imop(i);
+            prev = sym;
+        }
+    }
+
+    // 4. initialze running indices
+    std::vector<Symbol* > indices;
+    for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
+        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        indices.push_back(sym);
+    }
+
+    // 5. compute resulting shape
+    {
+        code.push_comment("Computing shape:");
+        std::vector<int>::const_iterator
+                it = slices.begin(),
+                it_end = slices.end();
+        for (unsigned count = 0; it != it_end; ++ it, ++ count) {
+            int k = *it;
+            Symbol* sym = result()->getDim(count);
+            if (sym == 0) {
+                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+                result()->setDim(count, sym);
+            }
+
+            Imop* i = new Imop(this, Imop::SUB, sym, spv[k].second, spv[k].first);
+            code.push_imop(i);
+        }
+
+        s = computeSize(code, st);
+        if (s != ICode::OK) return s;
+    }
+
+    // r = FILL def size
+    if (!isScalar) {
+        Imop* i = new Imop(this, Imop::FILL, result(), (Symbol*) 0, result()->getSizeSym());
+        switch (resultType().secrecDataType()) {
+            case DATATYPE_BOOL: i->setArg1(st.constantBool(false)); break;
+            case DATATYPE_INT: i->setArg1(st.constantInt(0)); break;
+            case DATATYPE_UINT: i->setArg1(st.constantUInt(0)); break;
+            case DATATYPE_STRING: i->setArg1(st.constantString("")); break;
+            default: assert (false);
+        }
+
+        code.push_imop(i);
+        patchFirstImop(i);
+    }
+
+
+    // 6. initialze symbols for offsets and temporary results
+    Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+    Symbol* old_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+    Symbol* tmp_result = st.appendTemporary(TypeNonVoid(e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0));
+    Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+
+    // 7. start
+    {
+        SPV::iterator
+                spv_it = spv.begin(),
+                spv_it_end = spv.end();
+        std::vector<Symbol* >::iterator
+                it_it = indices.begin();
+        std::stack<Imop*> tmp;
+        code.push_comment("Head of indexing loop:");
+
+        // offset = 0
+        Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantUInt(0));
+        code.push_imop(i);
+        patchNextList(i);
+
+        for (; spv_it != spv_it_end; ++ spv_it, ++ it_it) {
+            Symbol* i_lo = spv_it->first;
+            Symbol* i_hi = spv_it->second;
+            Symbol* idx  = *it_it;
+
+            // i = i_lo;
+            i = new Imop(this, Imop::ASSIGN, idx, i_lo);
+            code.push_imop(i);
+
+            // L1: IF (i >= i_hi) GOTO O1;
+            Imop* l1 = new Imop(this, Imop::JGE, (Symbol*) 0, idx, i_hi);
+            code.push_imop(l1);
+            tmp.push(l1);
+        }
+
+        // 8. compute offset for RHS
+        // old_ffset = 0
+        code.push_comment("Compute offset:");
+        i = new Imop(this, Imop::ASSIGN, old_offset, st.constantUInt(0));
+        code.push_imop(i);
+
+        std::vector<Symbol* >::iterator stride_it = stride.begin();
+        std::vector<Symbol* >::iterator it_end = indices.end();
+        it_it = indices.begin();
+        for (; it_it != it_end; ++ stride_it, ++ it_it) {
+            // tmp_result2 = s[k] * idx[k]
+            i = new Imop(this, Imop::MUL, tmp_result2, *stride_it, *it_it);
+            code.push_imop(i);
+
+            // old_offset = old_offset + tmp_result2
+            i = new Imop(this, Imop::ADD, old_offset, old_offset, tmp_result2);
+            code.push_imop(i);
+        }
+
+        // 9. load and store
+        code.push_comment("Load and store:");
+        // tmp = x[old_offset] or r = x[old_offset] if scalar
+        i = new Imop(this, Imop::LOAD, (isScalar ? result() : tmp_result), x, old_offset);
+        code.push_imop(i);
+
+        // r[offset] = tmp is not scalar
+        if (!isScalar) {
+            i = new Imop(this, Imop::STORE, result(), offset, tmp_result);
+            code.push_imop(i);
+        }
+
+        // offset = offset + 1
+        i = new Imop(this, Imop::ADD, offset, offset, st.constantUInt(1));
+        code.push_imop(i);
+
+        // 9. loop exit
+        code.push_comment("Tail of indexing loop:");
+        std::vector<Symbol* >::reverse_iterator
+                rit = indices.rbegin(),
+                rit_end = indices.rend();
+        Imop* prev = 0;
+        for (; rit != rit_end; ++ rit) {
+            Symbol* idx = *rit;
+
+            // i = i + 1
+            Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantUInt(1));
+            code.push_imop(i);
+            if (prev != 0) prev->setJumpDest(i);
+
+            // GOTO L1;
+            i = new Imop(this, Imop::JUMP, (Symbol*) 0);
+            code.push_imop(i);
+            i->setJumpDest(tmp.top());
+            prev = tmp.top();
+            tmp.pop();
+
+            // O1:
+        }
+
+        if (prev != 0) addToNextList(prev);
+    }
+
+    return ICode::OK;
 }
 
-ICode::Status TreeNodeExprIndex::generateBoolCode(ICodeList &,
-                                                  SymbolTable &,
-                                                  CompileLog &)
+/// \todo generate specialized code here
+ICode::Status TreeNodeExprIndex::generateBoolCode(ICodeList &code,
+                                                  SymbolTable &st,
+                                                  CompileLog &log)
 {
-    assert (false); // \todo
+    assert(havePublicBoolType());
+
+    ICode::Status s = generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+
+    Imop *i = new Imop(this, Imop::JT, 0, result());
+    code.push_imop(i);
+    patchFirstImop(i);
+    patchNextList(i);
+    addToTrueList(i);
+
+    i = new Imop(this, Imop::JUMP, 0);
+    code.push_imop(i);
+    addToFalseList(i);
+
+    return ICode::OK;
 }
 
 /******************************************************************
@@ -852,19 +1532,45 @@ ICode::Status TreeNodeExprSize::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprSize::generateCode(ICodeList &,
-                                              SymbolTable &,
-                                              CompileLog &,
-                                              Symbol *)
+ICode::Status TreeNodeExprSize::generateCode(ICodeList &code,
+                                             SymbolTable &st,
+                                             CompileLog &log,
+                                             Symbol *r)
 {
-    assert (false); // \todo
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    s = e->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    if (e->firstImop() != 0) setFirstImop(e->firstImop());
+
+    Symbol* size = e->resultType().isScalar() ? st.constantInt(1) : e->result()->getSizeSym();
+
+    if (r != 0) {
+        assert (r->secrecType().canAssign(resultType()));
+        Imop* i = new Imop(this, Imop::ASSIGN, r, size);
+        code.push_imop(i);
+        patchFirstImop(i);
+        e->patchNextList(i);
+        setResult(r);
+    }
+    else {
+        addToNextList(e->nextList());
+        setResult(size);
+    }
+
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprSize::generateBoolCode(ICodeList &,
                                                   SymbolTable &,
                                                   CompileLog &)
 {
-    assert (false); // \todo
+    assert (false && "TreeNodeExprSize::generateBoolCode called.");
 }
 
 /******************************************************************
@@ -889,19 +1595,60 @@ ICode::Status TreeNodeExprShape::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprShape::generateCode(ICodeList &,
-                                              SymbolTable &,
-                                              CompileLog &,
-                                              Symbol *)
+ICode::Status TreeNodeExprShape::generateCode(ICodeList &code,
+                                              SymbolTable &st,
+                                              CompileLog &log,
+                                              Symbol *r)
 {
-    assert (false); // \todo
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    if (r == 0) {
+        generateResultSymbol(st);
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
+
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    //Symbol* d = st.appendTemporary(static_cast<TypeNonVoid const&>(resultType()));
+    Symbol* n = st.constantInt(e->resultType().secrecDimType());
+    Imop* i = 0;
+
+    if (e->resultType().isScalar())
+        i = new Imop(this, Imop::ASSIGN, result(), st.constantInt(0));
+    else
+        i = new Imop(this, Imop::FILL, result(), st.constantInt(0), n);
+    code.push_imop(i);
+    e->patchNextList(i);
+    if (e->firstImop()) {
+        setFirstImop(e->firstImop());
+    }
+
+    i = new Imop(this, Imop::ASSIGN, result()->getDim(0), n);
+    code.push_imop(i);
+    patchFirstImop(i);
+
+    Symbol::dim_iterator
+            dti = e->result()->dim_begin(),
+            dte = e->result()->dim_end();
+    for (unsigned count = 0; dti != dte; ++ dti, ++ count) {
+        Imop* i = new Imop(this, Imop::STORE, result(), st.constantInt(count), *dti);
+        code.push_imop(i);
+        patchFirstImop(i);
+    }
+
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprShape::generateBoolCode(ICodeList &,
                                                   SymbolTable &,
                                                   CompileLog &)
 {
-    assert (false); // \todo
+    assert (false && "TreeNodeExprShape::generateBoolCode called.");
 }
 
 /******************************************************************
@@ -928,7 +1675,7 @@ ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &st,
         if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
 
         eTypes[i] = static_cast<TNV const*>(&e->resultType());
-        if (eTypes[i]->secrecDimType() == 0) {
+        if (eTypes[i]->isScalar()) {
             log.fatal() << "Concatenation of scalar values at "
                         << e->location();
             return ICode::E_TYPE;
@@ -957,7 +1704,7 @@ ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &st,
 
 
     TNV const* e3Type = static_cast<TNV const*>(&e3->resultType());
-    if (e3Type->secrecDimType() != 0 ||
+    if (!e3Type->isScalar() ||
         e3Type->secrecDataType() != DATATYPE_INT ||
         e3Type->secrecSecType() != SECTYPE_PUBLIC) {
         log.fatal() << "Expected public scalar integer at "
@@ -986,7 +1733,7 @@ ICode::Status TreeNodeExprCat::generateBoolCode(ICodeList &,
                                                 SymbolTable &,
                                                 CompileLog &)
 {
-    assert (false); // \todo
+    assert (false && "TreeNodeExprCat::generateBoolCode called.");
 }
 
 /******************************************************************
@@ -1015,10 +1762,10 @@ ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &st,
         s = ei->calculateResultType(st, log);
         if (s != ICode::OK) return s;
         if (ei->checkAndLogIfVoid(log)) return ICode::E_TYPE;
-        TNV const* eiType = static_cast<TNV const*>(&e->resultType());
+        TNV const* eiType = static_cast<TNV const*>(&ei->resultType());
         if (eiType->secrecDataType() != DATATYPE_INT ||
             eiType->secrecSecType() != SECTYPE_PUBLIC ||
-            eiType->secrecDimType() != 0) {
+            !eiType->isScalar()) {
             log.fatal() << "Expected public integer scalar at "
                         << ei->location()
                         << " got " << eiType->toString();
@@ -1036,19 +1783,98 @@ ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
-ICode::Status TreeNodeExprReshape::generateCode(ICodeList &,
-                                                SymbolTable &,
-                                                CompileLog &,
-                                                Symbol *)
+ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
+                                                SymbolTable &st,
+                                                CompileLog &log,
+                                                Symbol *r)
 {
-    assert (false); // \todo
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    // Generate temporary result if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
+
+    // Evaluate subexpressions:
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = e->generateCode(code, st, log);
+    if (s != ICode::OK) return s;
+    s = e->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    if (e->firstImop() != 0) {
+        setFirstImop(e->firstImop());
+    }
+
+    TreeNodeExpr* last = e;
+    {
+        TreeNode::ChildrenListConstIterator it = children().begin() + 1;
+        Symbol::dim_iterator dim_it = result()->dim_begin();
+        for (; it != children().end(); ++ it, ++ dim_it) {
+            TreeNodeExpr* ei = static_cast<TreeNodeExpr*>(*it);
+            s = ei->generateCode(code, st, log, *dim_it);
+            if (s != ICode::OK) return s;
+            if (ei->firstImop() != 0) {
+                patchFirstImop(ei->firstImop());
+                last->patchNextList(ei->firstImop());
+                last = ei;
+            }
+        }
+    }
+
+    // Compute new size:
+    Symbol* s_new = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC,DATATYPE_INT,0));
+    Imop* i = new Imop(this, Imop::ASSIGN, s_new, st.constantInt(1));
+    code.push_imop(i);
+    last->patchNextList(i);
+    patchFirstImop(i);
+    Symbol::dim_iterator
+            dim_it = result()->dim_begin(),
+            dim_end = result()->dim_end();
+    for (; dim_it != dim_end; ++ dim_it) {
+        Imop* i = new Imop(this, Imop::MUL, s_new, s_new, *dim_it);
+        code.push_imop(i);
+    }
+
+    Symbol* rhs = e->result();
+
+    if (!e->resultType().isScalar()) {
+        // Check that new and old sizes are equal:
+        Imop* jmp = new Imop (this, Imop::JE, (Symbol*) 0, rhs->getSizeSym(), s_new);
+        code.push_imop(jmp);
+        addToNextList(jmp);
+
+        Imop* err = new Imop (this, Imop::ERROR, (Symbol*) 0,
+                          (Symbol*) new std::string("ERROR: Mismatching sizes in reshape!"));
+        code.push_imop(err);
+
+    }
+    else {
+        // Convert scalar to constant array:
+        rhs = st.appendTemporary(TypeNonVoid(e->resultType().secrecSecType(),
+                                             e->resultType().secrecDataType(),
+                                             resultType().secrecDimType()));
+        Imop* i = new Imop(this, Imop::FILL, rhs, e->result(), s_new);
+        code.push_imop(i);
+    }
+
+    // Copy result:
+    i = new Imop(this, Imop::ASSIGN, result(), rhs, s_new);
+    code.push_imop(i);
+    patchNextList(i);
+
+    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprReshape::generateBoolCode(ICodeList &,
                                                     SymbolTable &,
                                                     CompileLog &)
 {
-    assert (false); // \todo
+    assert (false && "TreeNodeExprReshape::generateBoolCode called.");
 }
 
 /*******************************************************************************
@@ -1194,10 +2020,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
 
     // Generate temporary for the result of the binary expression, if needed:
     if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
-        }
+        generateResultSymbol(st);
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -1211,6 +2034,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
       logical && and logical ||.
     */
     if (e1->resultType().secrecSecType() == SECTYPE_PUBLIC
+        && (e1->resultType().isScalar())
+        && (e2->resultType().isScalar())
         && (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR))
     {
         // Generate code for first child expression:
@@ -1243,40 +2068,92 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     // Generate code for first child expression:
     s = e1->generateCode(code, st, log);
     if (s != ICode::OK) return s;
+    s = e1->computeSize(code, st);
+    if (s != ICode::OK) return s;
     setFirstImop(e1->firstImop());
+    Symbol* e1result = e1->result();
 
     // Generate code for second child expression:
     s = e2->generateCode(code, st, log);
     if (s != ICode::OK) return s;
+    s = e2->computeSize(code, st);
+    if (s != ICode::OK) return s;
     patchFirstImop(e2->firstImop());
+    Symbol* e2result = e2->result();
+
+    // Implicitly convert scalar to array if needed:
+    Imop* jmp = 0;
+    if (e1->resultType().secrecDimType() > e2->resultType().secrecDimType()) {
+        e2result = st.appendTemporary(static_cast<TypeNonVoid const&>(e1->resultType()));
+        e2result->inheritShape(e1result);
+        Imop* i = new Imop(this, Imop::FILL, e2result, e2->result(), e1result->getSizeSym());
+        code.push_imop(i);
+        patchFirstImop(i);
+    }
+    else
+    if (e2->resultType().secrecDimType() > e1->resultType().secrecDimType()) {
+        e1result = st.appendTemporary(static_cast<TypeNonVoid const&>(e2->resultType()));
+        e1result->inheritShape(e2result);
+        Imop* i = new Imop(this, Imop::FILL, e1result, e1->result(), e2result->getSizeSym());
+        code.push_imop(i);
+        patchFirstImop(i);
+    }
+    else {
+        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+                             (Symbol*) new std::string("Mismaching shapes in addition!"));
+        Symbol::dim_iterator
+                di = e1result->dim_begin(),
+                dj = e2result->dim_begin(),
+                de = e1result->dim_end();
+        for (; di != de; ++ di, ++ dj) {
+            Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
+            i->setJumpDest(err);
+            patchFirstImop(i);
+            code.push_imop(i);
+        }
+
+        jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
+        code.push_imop(jmp);
+        patchFirstImop(jmp);
+        code.push_imop(err);
+        addToNextList(jmp);
+    }
+
+    copyShapeFrom(e1result, code);
 
     // Generate code for binary expression:
     Imop *i;
+    Imop::Type cType;
     switch (type()) {
-        case NODE_EXPR_BINARY_ADD:  i = new Imop(this, Imop::ADD);  break;
-        case NODE_EXPR_BINARY_SUB:  i = new Imop(this, Imop::SUB);  break;
-        case NODE_EXPR_BINARY_MUL:  i = new Imop(this, Imop::MUL);  break;
-        case NODE_EXPR_BINARY_DIV:  i = new Imop(this, Imop::DIV);  break;
-        case NODE_EXPR_BINARY_MOD:  i = new Imop(this, Imop::MOD);  break;
-        case NODE_EXPR_BINARY_EQ:   i = new Imop(this, Imop::EQ);   break;
-        case NODE_EXPR_BINARY_GE:   i = new Imop(this, Imop::GE);   break;
-        case NODE_EXPR_BINARY_GT:   i = new Imop(this, Imop::GT);   break;
-        case NODE_EXPR_BINARY_LE:   i = new Imop(this, Imop::LE);   break;
-        case NODE_EXPR_BINARY_LT:   i = new Imop(this, Imop::LT);   break;
-        case NODE_EXPR_BINARY_NE:   i = new Imop(this, Imop::NE);   break;
-        case NODE_EXPR_BINARY_LAND: i = new Imop(this, Imop::LAND); break;
-        case NODE_EXPR_BINARY_LOR:  i = new Imop(this, Imop::LOR);  break;
+        case NODE_EXPR_BINARY_ADD:  cType = Imop::ADD;  break;
+        case NODE_EXPR_BINARY_SUB:  cType = Imop::SUB;  break;
+        case NODE_EXPR_BINARY_MUL:  cType = Imop::MUL;  break;
+        case NODE_EXPR_BINARY_DIV:  cType = Imop::DIV;  break;
+        case NODE_EXPR_BINARY_MOD:  cType = Imop::MOD;  break;
+        case NODE_EXPR_BINARY_EQ:   cType = Imop::EQ;   break;
+        case NODE_EXPR_BINARY_GE:   cType = Imop::GE;   break;
+        case NODE_EXPR_BINARY_GT:   cType = Imop::GT;   break;
+        case NODE_EXPR_BINARY_LE:   cType = Imop::LE;   break;
+        case NODE_EXPR_BINARY_LT:   cType = Imop::LT;   break;
+        case NODE_EXPR_BINARY_NE:   cType = Imop::NE;   break;
+        case NODE_EXPR_BINARY_LAND: cType = Imop::LAND; break;
+        case NODE_EXPR_BINARY_LOR:  cType = Imop::LOR;  break;
         default:
             log.fatal() << "Binary " << operatorString()
                         << " not yet implemented. At " << location();
             return ICode::E_NOT_IMPLEMENTED;
     }
 
-    i->setDest(result());
-    i->setArg1(static_cast<const TreeNodeExpr*>(e1)->result());
-    i->setArg2(static_cast<const TreeNodeExpr*>(e2)->result());
+    if (!resultType().isScalar()) {
+        i = new Imop(this, cType, result(), e1result, e2result, result()->getSizeSym());
+    }
+    else {
+        i = new Imop(this, cType, result(), e1result, e2result);
+    }
+
     code.push_imop(i);
     patchFirstImop(i);
+    patchNextList(i);
 
     // Patch next lists of child expressions:
     if (e2->firstImop() != 0) {
@@ -1397,14 +2274,12 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                     assert(false); // Shouldn't happen.
             }
 
-            Imop *tj = new Imop(this, cType, 0);
-            tj->setArg1(e1->result());
-            tj->setArg2(e2->result());
+            Imop *tj = new Imop(this, cType, (Symbol*) 0,
+                                e1->result(), e2->result());
             code.push_imop(tj);
             addToTrueList(tj);
             patchFirstImop(tj);
 
-            /// \todo is this correct?
             if (e2->firstImop()) {
                 e1->patchNextList(e2->firstImop());
                 e2->patchNextList(tj);
@@ -1505,9 +2380,9 @@ ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
 }
 
 ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
-                                                   SymbolTable &st,
-                                                   CompileLog &log,
-                                                   Symbol *r)
+                                                 SymbolTable &st,
+                                                 CompileLog &log,
+                                                 Symbol *r)
 {
     // Type check:
     ICode::Status s = calculateResultType(st, log);
@@ -1528,15 +2403,22 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
+    s = e->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    copyShapeFrom(e->result(), code);
 
-    Imop *i = new Imop(this,
-                       Imop::CLASSIFY,
-                       result(),
-                       static_cast<const TreeNodeExpr*>(e)->result());
+    Imop *i = 0;
+    if (resultType().isScalar()) {
+        i = new Imop(this, Imop::CLASSIFY,
+                       result(), e->result());
+    }
+    else {
+        i = new Imop(this, Imop::CLASSIFY,
+                       result(), e->result(), result()->getSizeSym());
+    }
+
     code.push_imop(i);
     patchFirstImop(i);
-
-    // Patch next list of child expression:
     e->patchNextList(i);
 
     return ICode::OK;
@@ -1545,7 +2427,8 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
 ICode::Status TreeNodeExprClassify::generateBoolCode(ICodeList &, SymbolTable &,
                                                      CompileLog &)
 {
-    assert(false); // This method shouldn't be called.
+    assert(false &&
+           "ICE: TreeNodeExprClassify::generateBoolCode called.");
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1590,10 +2473,7 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
 
     // Generate temporary for the result of the declassification, if needed:
     if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
-        }
+        generateResultSymbol(st);
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -1603,12 +2483,22 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
     setFirstImop(e->firstImop());
+    s = e->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    copyShapeFrom(e->result(), code);
 
-    Imop *i = new Imop(this, Imop::DECLASSIFY, result(), static_cast<const TreeNodeExpr*>(e)->result());
+    Imop *i = 0;
+    if (resultType().isScalar()) {
+        i = new Imop(this, Imop::DECLASSIFY,
+                     result(), e->result());
+    }
+    else {
+        i = new Imop(this, Imop::DECLASSIFY,
+                     result(), e->result(), result()->getSizeSym());
+    }
+
     code.push_imop(i);
     patchFirstImop(i);
-
-    // Patch next list of child expression:
     e->patchNextList(i);
 
     return ICode::OK;
@@ -1754,7 +2644,22 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    std::stack<Symbol*> resultList;
+    // generate temporary result, if needed
+    if (r == 0) {
+        if (!resultType().isVoid()) {
+            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
+            SymbolTemporary *t = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
+            for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
+                Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+                t->setDim(i, sym);
+            }
+            setResult(t);
+        }
+    } else {
+        setResult(r);
+    }
+
+    std::stack<TreeNodeExpr*> resultList;
 
     // Initialize arguments
     TreeNodeExpr *last = 0;
@@ -1763,6 +2668,8 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
         assert(dynamic_cast<TreeNodeExpr*>(*it) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(*it);
         ICode::Status s = e->generateCode(code, st, log);
+        if (s != ICode::OK) return s;
+        s = e->computeSize(code, st);
         if (s != ICode::OK) return s;
 
         if (e->firstImop() != 0) {
@@ -1775,43 +2682,69 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
         }
 
         assert(e->result() != 0);
-        resultList.push(e->result());
+        resultList.push(e);
     }
 
     // Add them as arguments in a backward manner:
     while (!resultList.empty()) {
-        Imop *i = new Imop(this, Imop::PUSHPARAM);
-        i->setArg1(resultList.top());
-        code.push_imop(i);
+        TreeNodeExpr* e = resultList.top();
+        Symbol* sym = e->result();
+        Imop *i = 0;
+        if (!e->resultType().isScalar()) {
+            i = new Imop(this, Imop::PUSH, 0, sym, sym->getSizeSym());
+        }
+        else {
+            i = new Imop(this, Imop::PUSH, 0, sym);
+        }
+
+        code.push_imop(i);     
 
         if (last != 0) {
             last->patchNextList(i);
+            patchFirstImop(i);
             last = 0;
         } else {
             patchFirstImop(i);
+        }
+
+        // push shape in reverse order
+        Symbol::dim_reverese_iterator
+                di = sym->dim_rbegin(),
+                de = sym->dim_rend();
+        for (; di != de; ++ di) {
+            Imop* i = new Imop(this, Imop::PUSH, (Symbol*) 0, *di);
+            code.push_imop(i);
         }
 
         resultList.pop();
     }
 
     // Do function call
-    Imop *i = new Imop(this, Imop::CALL);
-    Imop *c = new Imop(this, Imop::RETCLEAN);
-    if (r == 0) {
-        // Generate temporary for the result of the unary expression
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            SymbolTemporary *t = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
-            setResult(t);
-            i->setDest(t);
-        }
-    } else {
-        i->setDest(r);
-    }
+    Imop *i = new Imop(this, Imop::CALL, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+    Imop *c = new Imop(this, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
     i->setCallDest(m_procedure, c);
     code.push_imop(i);
-    patchFirstImop(i);
     code.push_imop(c);
+    patchFirstImop(i);
+
+    // pop shape, recompute size, and pop data
+    if (!resultType().isVoid()) {
+        Symbol::dim_iterator
+                di = result()->dim_begin(),
+                de = result()->dim_end();
+        for (; di != de; ++ di) {
+            Imop* i = new Imop(this, Imop::POP, *di);
+            code.push_imop(i);
+        }
+
+        result()->setSizeSym((Symbol*) 0); /// \todo this is ugly!
+        computeSize(code, st);
+        if (resultType().isScalar())
+            i = new Imop(this, Imop::POP, result());
+        else
+            i = new Imop(this, Imop::POP, result(), result()->getSizeSym());
+        code.push_imop(i);
+    }
 
     return ICode::OK;
 }
@@ -1875,6 +2808,7 @@ ICode::Status TreeNodeExprInt::generateCode(ICodeList &code, SymbolTable &st,
         Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         setFirstImop(i);
         code.push_imop(i);
+        setResult(r);
     } else {
         setResult(sym);
     }
@@ -1884,7 +2818,8 @@ ICode::Status TreeNodeExprInt::generateCode(ICodeList &code, SymbolTable &st,
 ICode::Status TreeNodeExprInt::generateBoolCode(ICodeList &, SymbolTable &,
                                                 CompileLog &)
 {
-    assert(false); // This method shouldn't be called.
+    assert(false &&
+           "ICE: TreeNodeExprInt::generateBoolCode called.");
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -1929,19 +2864,26 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    // Generate temporary for the result of the unary expression, if needed:
     assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(children().at(0));
+    Symbol* src = id->getSymbol(st, log);
 
     if (r == 0) {
-        setResult(id->getSymbol(st, log));
+        setResult(src);
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
+        copyShapeFrom(src, code);
 
-        Imop *i = new Imop(this, Imop::ASSIGN, r, id->getSymbol(st, log));
+        Imop *i = 0;
+        if (!resultType().isScalar()) {
+            i = new Imop(this, Imop::ASSIGN, r, src, src->getSizeSym());
+        }
+        else {
+            i = new Imop(this, Imop::ASSIGN, r, src);
+        }
         code.push_imop(i);
-        setFirstImop(i);
+        patchFirstImop(i);
     }
 
     return ICode::OK;
@@ -2088,7 +3030,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
         if (eType2.secrecDataType() != eType3.secrecDataType()) {
             log.fatal() << "Results of ternary expression  at "
                         << location()
-                        << " have to be of equal data types, got "
+                        << " have to be of same data types, got "
                         << eType2 << " and " << eType3;
             return ICode::E_TYPE;
         }
@@ -2138,43 +3080,135 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
 
     // Generate temporary for the result of the ternary expression, if needed:
     if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
-        }
+        generateResultSymbol(st);
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
     }
 
-    // Generate code for boolean expression:
     TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e1->generateBoolCode(code, st, log);
-    if (s != ICode::OK) return s;
-    setFirstImop(e1->firstImop());
-
-    // Generate code for first value child expression:
     TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(children().at(1));
-    s = e2->generateCode(code, st, log, result());
-    if (s != ICode::OK) return s;
-
-    // Jump out of the ternary construct:
-    Imop *j = new Imop(this, Imop::JUMP, 0);
-    addToNextList(j);
-    code.push_imop(j);
-
-    // Generate code for second value child expression:
     TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(children().at(2));
-    s = e3->generateCode(code, st, log, result());
-    if (s != ICode::OK) return s;
 
-    // Link boolean expression code to the rest of the code:
-    e1->patchTrueList(e2->firstImop());
-    e1->patchFalseList(e3->firstImop());
+    if (e1->havePublicBoolType()) {
+        // Generate code for boolean expression:
 
-    // Handle next lists of value child expressions:
-    addToNextList(e2->nextList());
-    addToNextList(e3->nextList());
+        s = e1->generateBoolCode(code, st, log);
+        if (s != ICode::OK) return s;
+        setFirstImop(e1->firstImop());
+
+        // Generate code for first value child expression:
+        s = e2->generateCode(code, st, log, result());
+        if (s != ICode::OK) return s;
+
+        // Jump out of the ternary construct:
+        Imop *j = new Imop(this, Imop::JUMP, 0);
+        addToNextList(j);
+        code.push_imop(j);
+
+        // Generate code for second value child expression:
+        s = e3->generateCode(code, st, log, result());
+        if (s != ICode::OK) return s;
+
+        // Link boolean expression code to the rest of the code:
+        e1->patchTrueList(e2->firstImop());
+        e1->patchFalseList(e3->firstImop());
+
+        // Handle next lists of value child expressions:
+        addToNextList(e2->nextList());
+        addToNextList(e3->nextList());
+    }
+    else {
+        // Evaluate subexpressions:
+        s = e1->generateCode(code, st, log);
+        if (s != ICode::OK) return s;
+        s = e1->computeSize(code, st);
+        if (s != ICode::OK) return s;
+        setFirstImop(e1->firstImop());
+        copyShapeFrom(e1->result(), code);
+
+        s = e2->generateCode(code, st, log);
+        if (s != ICode::OK) return s;
+        e1->patchNextList(e2->firstImop());
+
+        s = e3->generateCode(code, st, log);
+        if (s != ICode::OK) return s;
+        e2->patchNextList(e3->firstImop());
+
+        // check that shapes match
+        Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
+        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+                             (Symbol*) new std::string("Mismatching shapes!"));
+        Symbol::dim_iterator
+                di = e1->result()->dim_begin(),
+                dj = e2->result()->dim_begin(),
+                dk = e3->result()->dim_begin(),
+                de = e1->result()->dim_end();
+        for (; di != de; ++ di, ++ dj, ++ dk) {
+            Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
+            code.push_imop(i);
+            i->setJumpDest(err);
+            e3->patchNextList(i);
+            i = new Imop(this, Imop::JNE, (Symbol*) 0, *dj, *dk);
+            code.push_imop(i);
+            i->setJumpDest(err);
+        }
+
+        e3->patchNextList(jmp);
+        code.push_imop(jmp);
+        code.push_imop(err);
+
+        // loop to set all values of resulting array
+        Symbol* counter = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* b = st.appendTemporary(static_cast<TypeNonVoid const&>(e1->resultType()));
+        Symbol* t = st.appendTemporary(static_cast<TypeNonVoid const&>(resultType()));
+
+        // counter = 0
+        Imop* i = new Imop(this, Imop::ASSIGN, counter, st.constantUInt(0));
+        code.push_imop(i);
+        jmp->setJumpDest(i);
+
+        // L0: if (counter >= size) goto next;
+        Imop* jge = new Imop(this, Imop::JGE, (Symbol*) 0, counter, result()->getSizeSym());
+        code.push_imop(jge);
+        addToNextList(jge);
+
+        // b = e1[counter]
+        i = new Imop(this, Imop::LOAD, b, e1->result(), counter);
+        code.push_imop(i);
+
+        Imop* t0 = new Imop(this, Imop::LOAD, t, e2->result(), counter);
+        Imop* t1 = new Imop(this, Imop::STORE, result(), counter, t);
+
+        // if b goto T0
+        i = new Imop(this, Imop::JT, (Symbol*) 0, b);
+        code.push_imop(i);
+        i->setJumpDest(t0);
+
+        // t = e3[counter]
+        i = new Imop(this, Imop::LOAD, t, e3->result(), counter);
+        code.push_imop(i);
+
+        // goto T1
+        i = new Imop(this, Imop::JUMP, (Symbol*) 0);
+        code.push_imop(i);
+        i->setJumpDest(t1);
+
+        // T0: t = e2[counter]
+        code.push_imop(t0);
+
+        // T1: result[counter] = t
+        code.push_imop(t1);
+
+        // counter = counter + 1
+        i = new Imop(this, Imop::ADD, counter, counter, st.constantUInt(1));
+        code.push_imop(i);
+
+        // goto L0
+        i = new Imop(this, Imop::JUMP, (Symbol*) 0);
+        code.push_imop(i);
+        i->setJumpDest(jge);
+    }
 
     return ICode::OK;
 }
@@ -2252,6 +3286,7 @@ ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code, SymbolTable &st,
         Imop *i = new Imop(this, Imop::ASSIGN, r, sym);
         setFirstImop(i);
         code.push_imop(i);
+        setResult(r);
     } else {
         setResult(sym);
     }
@@ -2261,7 +3296,8 @@ ICode::Status TreeNodeExprUInt::generateCode(ICodeList &code, SymbolTable &st,
 ICode::Status TreeNodeExprUInt::generateBoolCode(ICodeList &, SymbolTable &,
                                                  CompileLog &)
 {
-    assert(false); // This method shouldn't be called.
+    assert(false
+           && "ICE: TreeNodeExprUInt::generateBoolCode called.");
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -2326,10 +3362,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
-        if (!resultType().isVoid()) {
-            assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-            setResult(st.appendTemporary(static_cast<const TypeNonVoid&>(resultType())));
-        }
+        generateResultSymbol(st);
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
@@ -2339,19 +3372,26 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
     s = e->generateCode(code, st, log);
     if (s != ICode::OK) return s;
-
     setFirstImop(e->firstImop());
+    s = e->computeSize(code, st);
+    if (s != ICode::OK) return s;
+    copyShapeFrom(e->result(), code);
 
     // Generate code for unary expression:
-    /// \todo implement for matrixes also
-    Imop *i = new Imop(this,
-                       type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS,
-                       result(),
-                       static_cast<const TreeNodeExpr*>(e)->result());
+    Imop *i = 0;
+    if (resultType().isScalar()) {
+        i = new Imop(this,
+                     type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS,
+                     result(), e->result());
+    }
+    else {
+        i = new Imop(this,
+                     type() == NODE_EXPR_UNEG ? Imop::UNEG : Imop::UMINUS,
+                     result(), e->result(), result()->getSizeSym());
+    }
+
     code.push_imop(i);
     patchFirstImop(i);
-
-    // Patch next list of child expression:
     e->patchNextList(i);
 
     return ICode::OK;
@@ -2499,7 +3539,7 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code, SymbolTable &st,
                 return ICode::E_OTHER;
             }
             assert(fType.kind() == TNV::PROCEDUREVOID);
-            Imop *i = new Imop(this, Imop::RETURNVOID);
+            Imop *i = new Imop(this, Imop::RETURNVOID, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
             i->setReturnDestFirstImop(firstImop());
             body->patchNextList(i);
             code.push_imop(i);
@@ -2674,7 +3714,7 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code, SymbolTable &st,
 
     // Insert main call into the beginning of the program:
     Imop *mainCall = new Imop(this, Imop::CALL, 0, 0, 0);
-    Imop *retClean = new Imop(this, Imop::RETCLEAN);
+    Imop *retClean = new Imop(this, Imop::RETCLEAN, 0, 0, 0);
     code.push_imop(mainCall);
     code.push_imop(retClean);
     code.push_imop(new Imop(this, Imop::END));
@@ -2761,6 +3801,19 @@ const std::string &TreeNodeStmtDecl::variableName() const {
     return static_cast<TNI*>(children().at(0))->value();
 }
 
+/*
+ * We have 6 cases depending on wether shape is present and if
+ * right hand side is scalar or array. In addition we have to take account that
+ * RHS may be missing. The cases are as follows:
+ * - type x = scalar;
+ * - type x = array;
+ * - type x shape = scalar;
+ * - type x shape = array;
+ * - type x;
+ * - type x shape;
+ *
+ * \todo too many if (last != 0) checks
+ */
 ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                                              CompileLog &log)
 {
@@ -2774,31 +3827,208 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
     ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
     ns->setName(variableName());
 
+    TreeNodeExpr* last = 0;
+    bool isScalar = resultType().isScalar();
+    unsigned n = 0;
+
+    // Initialize temporaries for all variables corresponding to shape
+    for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
+        ns->setDim(i, st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
+    }
+
+    ns->setSizeSym(st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
+
+    // evaluate shape if given, also compute size
+    if (children().size() > 2) {
+        if (!isScalar) {
+            Imop* i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), st.constantInt(1));
+            code.push_imop(i);
+            patchFirstImop(i);
+        }
+
+        TreeNode::ChildrenListConstIterator
+                ei = children().at(2)->children().begin(),
+                ee = children().at(2)->children().end();
+        for (; ei != ee; ++ ei, ++ n) {
+            assert (dynamic_cast<TreeNodeExpr*>(*ei) != 0);
+            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(*ei);
+            s = e->generateCode(code, st, log, ns->getDim(n));
+            if (s != ICode::OK) return s;
+            Imop* i = new Imop(this, Imop::MUL, ns->getSizeSym(), ns->getSizeSym(), e->result());
+            code.push_imop(i);
+            e->patchNextList(i);
+
+            if (e->firstImop() != 0) {
+                patchFirstImop(e->firstImop());
+                last = e;
+            }
+        }
+    }
+    else {
+        if (!isScalar) {
+            Imop* i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), st.constantInt(0));
+            code.push_imop(i);
+            patchFirstImop(i);
+        }
+
+        for (unsigned it = 0; it < resultType().secrecDimType(); ++ it) {
+            Imop* i = new Imop(this, Imop::ASSIGN, ns->getDim(it), st.constantInt(0));
+            code.push_imop(i);
+        }
+    }
+
     if (m_procParam) {
-        Imop *i = new Imop(this, Imop::POPPARAM, ns);
+        Imop *i = 0;
+        Symbol::dim_iterator
+                di = ns->dim_begin(),
+                de = ns->dim_end();
+
+        if (!isScalar) {
+            i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), st.constantInt(1));
+            code.push_imop(i);
+            patchFirstImop(i);
+        }
+
+        for (; di != de; ++ di) {
+            i = new Imop(this, Imop::POP, *di);
+            code.push_imop(i);
+            i = new Imop(this, Imop::MUL, ns->getSizeSym(), ns->getSizeSym(), *di);
+            code.push_imop(i);
+        }
+
+        if (isScalar)
+            i = new Imop(this, Imop::POP, ns);
+        else
+            i = new Imop(this, Imop::POP, ns, ns->getSizeSym());
         code.push_imop(i);
-        setFirstImop(i);
+        patchFirstImop(i);
     } else if (children().size() > 3) {
-        /*
-          An initializer expression is present, lets generate code
-          for the initializer:
-        */
+
+        // evaluate rhs
         TreeNode *t = children().at(3);
         assert((t->type() & NODE_EXPR_MASK) != 0x0);
         assert(dynamic_cast<TreeNodeExpr*>(t) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
-        ICode::Status s = e->generateCode(code, st, log, ns);
-        if (s != ICode::OK) {
-            delete ns;
-            return s;
+        ICode::Status s = e->generateCode(code, st, log);
+        if (s != ICode::OK) return s;
+        if (e->firstImop() != 0) {
+            if (last != 0) {
+                last->patchNextList(e->firstImop());
+            } else {
+                patchFirstImop(e->firstImop());
+            }
+
+            last = e;
         }
-        setFirstImop(e->firstImop());
-        addToNextList(e->nextList());
+
+        // type x = foo;
+        if (resultType().secrecDimType() > 0 && n == 0) {
+            if (resultType().secrecDimType() > e->resultType().secrecDimType()) {
+                Imop* i = new Imop(this, Imop::FILL, ns, e->result(), ns->getSizeSym());
+                code.push_imop(i);
+                patchFirstImop(i);
+                if (last != 0) last->patchNextList(i);
+            }
+            else {
+                assert (resultType().secrecDimType() == e->resultType().secrecDimType());
+                s = e->computeSize(code, st);
+                if (s != ICode::OK) return s;
+
+                Symbol::dim_iterator
+                        di = ns->dim_begin(),
+                        dj = e->result()->dim_begin(),
+                        de = ns->dim_end();
+                for (; di != de; ++ di, ++ dj) {
+                    Imop* i = new Imop(this, Imop::ASSIGN, *di, *dj);
+                    code.push_imop(i);
+                    patchFirstImop(i);
+                    if (last != 0) last->patchNextList(i);
+                }
+                if (!isScalar) {
+                    Imop* i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), e->result()->getSizeSym());
+                    code.push_imop(i);
+                }
+
+                Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result(), e->result()->getSizeSym());
+                code.push_imop(i);
+                patchFirstImop(i);
+                if (last != 0) last->patchNextList(i);
+            }
+        }
+
+        // arr x[e1,...,en] = foo;
+        if (n > 0 && resultType().secrecDimType() == n) {
+            if (resultType().secrecDimType() > e->resultType().secrecDimType()) {
+                // fill lhs with constant value
+                Imop* i = new Imop(this, Imop::FILL, ns, e->result(), ns->getSizeSym());
+                code.push_imop(i);
+                patchFirstImop(i);
+                if (last != 0) last->patchNextList(i);
+            }
+            else {
+                // check that shapes match and assign
+                Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0, (Symbol*) new std::string("Shape mismatch!"));
+                Symbol::dim_iterator
+                        di = e->result()->dim_begin(),
+                        dj = ns->dim_begin(),
+                        de = e->result()->dim_end();
+                for (; di != de; ++ di, ++ dj) {
+                    Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
+                    i->setJumpDest(err);
+                    code.push_imop(i);
+                    patchFirstImop(i);
+                    last->patchNextList(i);
+                }
+                Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
+                Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result(), ns->getSizeSym());
+                jmp->setJumpDest(i);
+                code.push_imop(jmp);
+                code.push_imop(err);
+                code.push_imop(i);
+                patchFirstImop(jmp);
+                if (last != 0) last->patchNextList(jmp);
+            }
+        }
+
+        // scalar_type x = scalar;
+        if (resultType().isScalar()) {
+            Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result());
+            code.push_imop(i);
+            patchFirstImop(i);
+            if (last != 0) last->patchNextList(i);
+        }
+
+        if (last != 0) addToNextList(last->nextList()); // uh oh...
     } else {
-        // Otherwise assign the default value to the symbol:
-        Imop *i = new Imop(this, Imop::ASSIGN, ns);
+
+        if (!isScalar && n == 0) {
+            Imop* i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), st.constantInt(0));
+            code.push_imop(i);
+            patchFirstImop(i);
+
+            for (unsigned it = 0; it < resultType().secrecDimType(); ++ it) {
+                Imop* i = new Imop(this, Imop::ASSIGN, ns->getDim(it), st.constantInt(0));
+                code.push_imop(i);
+            }
+        }
+
+        Imop *i = 0;
+        if (isScalar) {
+            i = new Imop(this, Imop::ASSIGN, ns, (Symbol*) 0);
+        }
+        else {
+            i = new Imop(this, Imop::FILL, ns, (Symbol*) 0, (Symbol*) 0);
+            if (n == 0) {
+                i->setArg2(st.constantUInt(0));
+            }
+            else {
+                i->setArg2(ns->getSizeSym());
+            }
+        }
+
         code.push_imop(i);
-        setFirstImop(i);
+        patchFirstImop(i);
+        if (last != 0) last->patchNextList(i);
 
         typedef DataTypeBasic DTB;
         typedef DataTypeVar DTV;
@@ -2809,29 +4039,20 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
         assert(dynamic_cast<const DTB*>(&dtv.dataType()) != 0);
         const DTB &dtb(static_cast<const DTB&>(dtv.dataType()));
 
-        Symbol *def;
+        Symbol *def = 0;
         switch (dtb.dataType()) {
-            case DATATYPE_BOOL:
-                def = st.constantBool(false);
-                break;
-            case DATATYPE_INT:
-                def = st.constantInt(0);
-                break;
-            case DATATYPE_UINT:
-                def = st.constantUInt(0);
-                break;
-            case DATATYPE_STRING:
-                def = st.constantString("");
-                break;
-            default:
-                assert(false); // Shouldn't happen!
+            case DATATYPE_BOOL: def = st.constantBool(false); break;
+            case DATATYPE_INT: def = st.constantInt(0); break;
+            case DATATYPE_UINT: def = st.constantUInt(0); break;
+            case DATATYPE_STRING: def = st.constantString(""); break;
+            default: assert(false); // Shouldn't happen!
         }
+
         i->setArg1(def);
     }
 
     // Add the symbol to the symbol table for use in later expressions:
     st.appendSymbol(ns);
-
     setResultFlags(TreeNodeStmt::FALLTHRU);
     return ICode::OK;
 }
@@ -2858,6 +4079,33 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
     assert(dynamic_cast<const DTB*>(&justType.dataType()) != 0);
     const DTB &dataType = static_cast<const DTB&>(justType.dataType());
 
+    unsigned n = 0;
+    if (children().size() > 2) {
+        TreeNode::ChildrenListConstIterator
+                ei = children().at(2)->children().begin(),
+                ee = children().at(2)->children().end();
+        for (; ei != ee; ++ ei, ++ n) {
+            assert(((*ei)->type() & NODE_EXPR_MASK) != 0);
+            assert(dynamic_cast<TreeNodeExpr*>(*ei) != 0);
+            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(*ei);
+            ICode::Status s = e->calculateResultType(st, log);
+            if (s != ICode::OK) return s;
+            if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+            if (   !e->resultType().secrecDataType() == DATATYPE_INT
+                || !e->resultType().isScalar()
+                || !e->resultType().secrecSecType() == SECTYPE_PUBLIC ) {
+                log.fatal() << "Expecting public unsigned integer scalar at "
+                            << e->location();
+                return ICode::E_TYPE;
+            }
+        }
+    }
+
+    if (n > 0 && n != justType.secrecDimType()) {
+        log.fatal() << "Mismatching number of shape components in declaration at "
+                    << location();
+        return ICode::E_TYPE;
+    }
 
     if (children().size() > 3) {
         TreeNode *t = children().at(3);
@@ -2868,23 +4116,35 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
         if (s != ICode::OK) return s;
 
         assert(e->haveResultType());
-        if (e->resultType().isVoid()) {
-            log.fatal() << "Initializer expression is a void expression at "
-                        << e->location();
+        if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+
+        if (n == 0 && e->resultType().isScalar() && justType.secrecDimType() > 0) {
+            log.fatal() << "Defining array without shape annotation with scalar at "
+                        << location();
             return ICode::E_TYPE;
+
         }
 
         if (e->resultType().secrecSecType() == SECTYPE_PRIVATE
             && justType.secrecSecType() == SECTYPE_PUBLIC)
         {
             log.fatal() << "Public variable is given a private initializer at "
-                        << e->location();
+                        << location();
             return ICode::E_TYPE;
         }
-        if (e->resultType().secrecDataType() != dataType.secrecDataType()) {
+
+        if (e->resultType().secrecDataType() != justType.secrecDataType()) {
             log.fatal() << "Variable of type " << TNV(DataTypeVar(dataType))
                         << " is given an initializer expression of type "
                         << e->resultType() << " at " << location();
+            return ICode::E_TYPE;
+        }
+
+        if (!e->resultType().isScalar() &&
+            e->resultType().secrecDimType() != justType.secrecDimType()) {
+            log.fatal() << "Variable of dimensionality " << dataType.secrecDimType()
+                        << " is given an initializer expression of dimensionality "
+                        << e->resultType().secrecDimType() << " at " << location();
             return ICode::E_TYPE;
         }
     }
@@ -3006,12 +4266,15 @@ ICode::Status TreeNodeStmtAssert::generateCode(ICodeList &code, SymbolTable &st,
     s = e->generateBoolCode(code, st, log);
     if (s != ICode::OK) return s;
     assert(e->firstImop() != 0);
-    setFirstImop(e->firstImop());
+    if (e->firstImop()) {
+        setFirstImop(e->firstImop());
+    }
 
     std::ostringstream os;
     os << "assert failed at " << location();
     Imop *i = new Imop(this, Imop::ERROR, 0, (Symbol*) new std::string(os.str()));
     code.push_imop(i);
+    patchFirstImop(i);
 
     e->patchNextList(i);
     e->patchFalseList(i);
@@ -3221,7 +4484,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         assert(containingProcedure()->procedureType().kind()
                == TypeNonVoid::PROCEDUREVOID);
 
-        Imop *i = new Imop(this, Imop::RETURNVOID);
+        Imop *i = new Imop(this, Imop::RETURNVOID, 0, 0, 0);
         i->setReturnDestFirstImop(containingProcedure()->firstImop());
         code.push_imop(i);
         setFirstImop(i);
@@ -3256,12 +4519,30 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         s = e->generateCode(code, st, log);
         if (s != ICode::OK) return s;
         setFirstImop(e->firstImop());
+        s = e->computeSize(code, st);
+        if (s != ICode::OK) return s;
 
-        Imop *i = new Imop(this, Imop::RETURN);
-        i->setArg1(e->result());
-        i->setReturnDestFirstImop(containingProcedure()->firstImop());
+        // Push data and then shape
+        Imop* i = 0;
+        if (e->resultType().isScalar())
+            i = new Imop(this, Imop::PUSH, 0, e->result());
+        else
+            i = new Imop(this, Imop::PUSH, 0, e->result(), e->result()->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
+        e->patchNextList(i);
+
+        Symbol::dim_reverese_iterator
+                di = e->result()->dim_rbegin(),
+                de = e->result()->dim_rend();
+        for (; di != de; ++ di) {
+            i = new Imop(this, Imop::PUSH, 0, *di);
+            code.push_imop(i);
+        }
+
+        i = new Imop(this, Imop::RETURNVOID, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+        i->setReturnDestFirstImop(containingProcedure()->firstImop());
+        code.push_imop(i);
     }
     setResultFlags(TreeNodeStmt::RETURN);
 
@@ -3319,7 +4600,7 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
                     & ~(TreeNodeStmt::BREAK | TreeNodeStmt::CONTINUE))
                     | TreeNodeStmt::FALLTHRU);
 
-    Imop *i = new Imop(this, Imop::JUMP);
+    Imop *i = new Imop(this, Imop::JUMP, 0);
     code.push_imop(i);
     i->setJumpDest(e->firstImop());
 
