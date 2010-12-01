@@ -1073,13 +1073,32 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                 assert(false); // shouldn't happen
         }
 
-        Imop *i = new Imop(this, iType, destSymSym, destSymSym, e2->result());
+        Imop *i = 0;
+        if (resultType().isScalar()) {
+            i = new Imop(this, iType, destSymSym, destSymSym, e2->result());
+        }
+        else {
+            Symbol* tmp = st.appendTemporary(static_cast<TypeNonVoid const&>(resultType()));
+            i = new Imop(this, Imop::FILL, tmp, e2->result(), destSym->getSizeSym());
+            code.push_imop(i);
+            patchFirstImop(i);
+            e2->patchNextList(i);
+
+            i = new Imop(this, iType, destSymSym, destSymSym, tmp, destSym->getSizeSym());
+        }
+
         code.push_imop(i);
         patchFirstImop(i);
         e2->patchNextList(i);
 
         if (r != 0) {
-            i = new Imop(this, Imop::ASSIGN, r, destSymSym);
+            i = 0;
+            if (resultType().isScalar()) {
+                i = new Imop(this, Imop::ASSIGN, r, destSymSym);
+            }
+            else {
+                i = new Imop(this, Imop::ASSIGN, r, destSymSym, destSym->getSizeSym());
+            }
             code.push_imop(i);
             setResult(r);
         } else {
