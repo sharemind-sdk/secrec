@@ -122,7 +122,7 @@
 %type <treenode> statement
 %type <treenode> if_statement
 %type <treenode> for_statement
-%type <treenode> for_statement_expression
+%type <treenode> maybe_expression
 %type <treenode> while_statement
 %type <treenode> dowhile_statement
 %type <treenode> assert_statement
@@ -144,6 +144,10 @@
 %type <treenode> primary_expression
 %type <treenode> constant
 %type <treenode> identifier
+%type <treenode> uint_literal
+%type <treenode> int_literal
+%type <treenode> string_literal
+%type <treenode> bool_literal
 
 %type <nothing> program
 
@@ -467,9 +471,9 @@ if_statement
  ;
 
 for_statement
- : FOR '(' for_statement_expression ';'
-           for_statement_expression ';'
-           for_statement_expression ')' statement
+ : FOR '(' maybe_expression ';'
+           maybe_expression ';'
+           maybe_expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_FOR, &@$);
      treenode_appendChild($$, ensure_rValue($3));
@@ -479,7 +483,7 @@ for_statement
    }
  ;
 
-for_statement_expression /* Helper nonterminal for expression? */
+maybe_expression /* Helper nonterminal for expression? */
  : /* empty */ { $$ = treenode_init(NODE_EXPR_NONE, &@$); }
  | expression
  ;
@@ -540,7 +544,7 @@ indices
  * to value in some other context we need to figure out sane precedence.
  */
 index
-  : expression ':' expression
+  : maybe_expression ':' maybe_expression
     {
       $$ = treenode_init(NODE_INDEX_SLICE, &@$);
       treenode_appendChild($$, ensure_rValue($1));
@@ -783,7 +787,7 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_SHAPE, &@$);
      treenode_appendChild($$, $3);
    }
- | CAT '(' expression ',' expression ',' expression ')'
+ | CAT '(' expression ',' expression ',' int_literal ')'
    {
      $$ = treenode_init(NODE_EXPR_CAT, &@$);
      treenode_appendChild($$, $3);
@@ -865,23 +869,29 @@ primary_expression
  | constant
  ;
 
-constant
+uint_literal
+  : UINT_LITERAL
+   {
+     $$ = treenode_init_uint(atoi($1), &@$);
+     free($1);
+   }
+
+int_literal
  : INT_LITERAL
   {
     $$ = treenode_init_int(atoi($1), &@$);
     free($1);
   }
- | UINT_LITERAL
-  {
-    $$ = treenode_init_uint(atoi($1), &@$);
-    free($1);
-  }
- | STRING_LITERAL
+
+string_literal
+ : STRING_LITERAL
    {
      $$ = treenode_init_string($1, &@$);
      free($1);
    }
- | TRUE_B
+
+bool_literal
+ : TRUE_B
    {
      $$ = treenode_init_bool(0 == 0, &@$);
    }
@@ -889,6 +899,13 @@ constant
    {
      $$ = treenode_init_bool(1 != 1, &@$);
    }
+ ;
+
+constant
+ : int_literal
+ | uint_literal
+ | string_literal
+ | bool_literal
  ;
 
 identifier
