@@ -2043,11 +2043,8 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
 
     // Evaluate subexpressions:
     TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateCode(code, st, log);
+    s = generateSubexprCode(e, code, st, log);
     if (s != ICode::OK) return s;
-    if (e->firstImop() != 0) {
-        setFirstImop(e->firstImop());
-    }
 
     {
         TreeNode::ChildrenListConstIterator it = children().begin() + 1;
@@ -2262,8 +2259,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
       logical && and logical ||.
     */
     if (e1->resultType().secrecSecType() == SECTYPE_PUBLIC
-        && (e1->resultType().isScalar())
-        && (e2->resultType().isScalar())
+        && e1->resultType().isScalar()
+        && e2->resultType().isScalar()
         && (type() == NODE_EXPR_BINARY_LAND || type() == NODE_EXPR_BINARY_LOR))
     {
         if (r == 0) {
@@ -2301,15 +2298,13 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     }
 
     // Generate code for first child expression:
-    s = e1->generateCode(code, st, log);
+    s = generateSubexprCode(e1, code, st, log);
     if (s != ICode::OK) return s;
-    setFirstImop(e1->firstImop());
     Symbol* e1result = e1->result();
 
     // Generate code for second child expression:
-    s = e2->generateCode(code, st, log);
+    s = generateSubexprCode(e2, code, st, log);
     if (s != ICode::OK) return s;
-    patchFirstImop(e2->firstImop());
     Symbol* e2result = e2->result();
 
     // Implicitly convert scalar to array if needed:
@@ -2320,6 +2315,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         Imop* i = new Imop(this, Imop::FILL, e2result, e2->result(), e1result->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
+        prevPatchNextList(i);
     }
     else
     if (e2->resultType().secrecDimType() > e1->resultType().secrecDimType()) {
@@ -2328,6 +2324,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         Imop* i = new Imop(this, Imop::FILL, e1result, e1->result(), e2result->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
+        prevPatchNextList(i);
     }
     else {
         Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
@@ -2340,14 +2337,17 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
             Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
             i->setJumpDest(err);
             patchFirstImop(i);
+            prevPatchNextList(i);
             code.push_imop(i);
         }
 
         jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
         code.push_imop(jmp);
         patchFirstImop(jmp);
-        code.push_imop(err);
+        prevPatchNextList(jmp);
         addToNextList(jmp);
+
+        code.push_imop(err);
     }
 
     // Generate temporary for the result of the binary expression, if needed:
@@ -2393,15 +2393,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     code.push_imop(i);
     patchFirstImop(i);
     patchNextList(i);
-
-    // Patch next lists of child expressions:
-    if (e2->firstImop() != 0) {
-        e1->patchNextList(e2->firstImop());
-        e2->patchNextList(i);
-    }
-    else {
-        e1->patchNextList(i);
-    }
+    prevPatchNextList(i);
 
     return ICode::OK;
 }
@@ -2629,9 +2621,8 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
 
     // Generate code for child expression
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateCode(code, st, log);
+    s = generateSubexprCode(e, code, st, log);
     if (s != ICode::OK) return s;
-    setFirstImop(e->firstImop());
 
     // Generate temporary for the result of the classification, if needed:
     if (r == 0) {
@@ -2642,7 +2633,6 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
         setResult(r);
         copyShapeFrom(e->result(), code);
     }
-
 
     Imop *i = 0;
     if (resultType().isScalar()) {
@@ -2656,7 +2646,7 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
 
     code.push_imop(i);
     patchFirstImop(i);
-    e->patchNextList(i);
+    prevPatchNextList(i);
 
     return ICode::OK;
 }
@@ -2711,9 +2701,8 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
 
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateCode(code, st, log);
+    s = generateSubexprCode(e, code, st, log);
     if (s != ICode::OK) return s;
-    setFirstImop(e->firstImop());
 
     // Generate temporary for the result of the declassification, if needed:
     if (r == 0) {
@@ -2737,7 +2726,7 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
 
     code.push_imop(i);
     patchFirstImop(i);
-    e->patchNextList(i);
+    prevPatchNextList(i);
 
     return ICode::OK;
 }
@@ -3331,17 +3320,14 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
     }
     else {
         // Evaluate subexpressions:
-        s = e1->generateCode(code, st, log);
+        s = generateSubexprCode(e1, code, st, log);
         if (s != ICode::OK) return s;
-        setFirstImop(e1->firstImop());
 
-        s = e2->generateCode(code, st, log);
+        s = generateSubexprCode(e2, code, st, log);
         if (s != ICode::OK) return s;
-        e1->patchNextList(e2->firstImop());
 
-        s = e3->generateCode(code, st, log);
+        s = generateSubexprCode(e3, code, st, log);
         if (s != ICode::OK) return s;
-        e2->patchNextList(e3->firstImop());
 
         // Generate temporary for the result of the ternary expression, if needed:
         if (r == 0) {
@@ -3371,7 +3357,7 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
             i->setJumpDest(err);
         }
 
-        e3->patchNextList(jmp);
+        prevPatchNextList(jmp);
         code.push_imop(jmp);
         code.push_imop(err);
 
@@ -3574,9 +3560,8 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
 
     // Generate code for child expression:
     TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
-    s = e->generateCode(code, st, log);
+    s = generateSubexprCode(e, code, st, log);
     if (s != ICode::OK) return s;
-    setFirstImop(e->firstImop());
 
     // Generate temporary for the result of the unary expression, if needed:
     if (r == 0) {
@@ -3603,7 +3588,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
 
     code.push_imop(i);
     patchFirstImop(i);
-    e->patchNextList(i);
+    prevPatchNextList(i);
 
     return ICode::OK;
 }
@@ -4706,12 +4691,11 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
                         << location();
             return ICode::E_OTHER;
         }
+
         // Add implicit classify node if needed:
         e = classifyChildAtIfNeeded(0, containingProcedure()->procedureType().secrecSecType());
-
-        s = e->generateCode(code, st, log);
+        s = generateSubexprCode(e, code, st, log);
         if (s != ICode::OK) return s;
-        setFirstImop(e->firstImop());
 
         // Push data and then shape
         Imop* i = 0;
@@ -4721,7 +4705,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
             i = new Imop(this, Imop::PUSH, 0, e->result(), e->result()->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
-        e->patchNextList(i);
+        prevPatchNextList(i);
 
         Symbol::dim_reverese_iterator
                 di = e->result()->dim_rbegin(),

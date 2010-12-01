@@ -110,25 +110,29 @@ namespace SecreC {
   TreeNodeBase
 ******************************************************************/
 
+/// \todo Figure out better name!
 class TreeNodeBase : public TreeNode {
     public: /* Methods: */
         inline TreeNodeBase (Type type, const YYLTYPE &loc)
             : TreeNode(type, loc), m_nextList(), m_firstImop(0), m_prevSubexpr(0) { }
         virtual inline ~TreeNodeBase () { }
 
-        inline const std::vector<Imop*> &nextList() const {
-            return m_nextList;
-        }
-
-        inline Imop *firstImop() const {
-            return m_firstImop;
-        }
-
+        inline const std::vector<Imop*> &nextList() const { return m_nextList; }
+        inline Imop *firstImop() const { return m_firstImop; }
         void patchNextList(Imop *dest);
 
     protected:
 
-        ICode::Status generateSubexprCode (TreeNodeExpr* e, ICodeList& code, SymbolTable& st, CompileLog& log, Symbol* r = 0);
+        /**
+         * @brief Generates code of subexpression. It links evaluated expression together
+         * with previous one if needed, and updates the previous subexpression pointer.
+         * @return Status of subexpression code generation.
+         */
+        ICode::Status generateSubexprCode (TreeNodeExpr* e,
+                                           ICodeList& code,
+                                           SymbolTable& st,
+                                           CompileLog& log,
+                                           Symbol* r = 0);
 
         inline void setNextList(const std::vector<Imop*> &nl) {
             assert(m_nextList.empty());
@@ -152,9 +156,9 @@ class TreeNodeBase : public TreeNode {
         void prevPatchNextList (Imop* i);
 
     private: /* Fields: */
-        std::vector<Imop*> m_nextList;
-        Imop              *m_firstImop;
-        TreeNodeExpr      *m_prevSubexpr;
+        std::vector<Imop*> m_nextList;     ///< List of operands that jump to next instruction.
+        Imop              *m_firstImop;    ///< Pointer to first Imop, 0 if none exist.
+        TreeNodeExpr      *m_prevSubexpr;  ///< Previously evaluated subexpression, initially 0
 };
 
 /******************************************************************
