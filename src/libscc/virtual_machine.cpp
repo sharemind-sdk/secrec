@@ -40,8 +40,8 @@ union Value {
 // registers
 struct Register {
     Value* m_arr;
-    Register () : m_arr((Value*) malloc (sizeof(Value))) { }
-    ~Register () { }
+    inline Register () : m_arr((Value*) malloc (sizeof(Value))) { }
+    inline ~Register () { }
 };
 
 static inline Value& fetch_val (Register const& reg) {
@@ -242,6 +242,17 @@ Frame* m_frames = 0;
 Store m_global;
 Instruction* m_code = 0;
 
+static void free_store (Store& store) {
+    Store::iterator it = store.begin();
+    Store::iterator it_end = store.end();
+    for (; it != it_end; ++ it) {
+        Register& r = it->second;
+        free (r.m_arr);
+    }
+
+    store.clear();
+}
+
 static inline void push_frame (Instruction* const old_ip, SecreC::Symbol const* ret)
 {
     Frame* new_frame = new Frame (old_ip, ret);
@@ -251,24 +262,17 @@ static inline void push_frame (Instruction* const old_ip, SecreC::Symbol const* 
 
 static inline void pop_frame (void)
 {
-    assert (m_frames != 0);
+    assert (m_frames != 0 && "No frames to pop!");
     Frame* temp = m_frames;
     m_frames = temp->m_prev_frame;
-
-    for (Store::iterator it(temp->m_local.begin()); it != temp->m_local.end(); ++ it) {
-        Register r = it->second;
-        free (r.m_arr);
-    }
-
+    free_store (temp->m_local);
     delete temp;
 }
 
-// \todo this is too complicated and slow
+/// \todo this is too slow
 static Register& lookup (Symbol const* const sym) {
-  SecrecDataType const& dtype = sym->secrecType().secrecDataType();
   switch (sym->symbolType()) {
-    case Symbol::TEMPORARY:
-      return m_frames->m_local[sym];
+    case Symbol::TEMPORARY: return m_frames->m_local[sym];
     case Symbol::SYMBOL:
       assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
           && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
@@ -276,31 +280,8 @@ static Register& lookup (Symbol const* const sym) {
         case SymbolSymbol::LOCAL: return m_frames->m_local[sym];
         case SymbolSymbol::GLOBAL: return m_global[sym];
       }
-    case Symbol::CONSTANT: {
-      Register& reg = *(new Register()); // ugh
-      switch (dtype) {
-        case DATATYPE_BOOL:
-          assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
-          store (reg, static_cast<SymbolConstantBool const*>(sym)->value());
-          break;
-        case DATATYPE_INT:
-          assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
-          store (reg, static_cast<SymbolConstantInt const*>(sym)->value());
-          break;
-        case DATATYPE_UINT:
-          assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
-          store (reg, static_cast<SymbolConstantUInt const*>(sym)->value());
-          break;
-        case DATATYPE_STRING:
-          assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
-          store (reg, &static_cast<SymbolConstantString const*>(sym)->value());
-          break;
-        case DATATYPE_INVALID:
-          assert (false && "VM: reached invalid data type.");
-      }
-      return reg;}
-    case Symbol::PROCEDURE:
-      assert (false);
+    case Symbol::CONSTANT: return m_global[sym];
+    case Symbol::PROCEDURE: assert (false && "Trying to look up procedure name.");
   }
 }
 
@@ -959,7 +940,38 @@ void VirtualMachine::run (ICodeList const& code) {
       // copy args
       unsigned nArgs;
       for (nArgs = 0; nArgs < imop.nArgs(); ++ nArgs) {
-        i.args[nArgs] = imop.arg(nArgs);
+          Symbol const* sym = imop.arg(nArgs);
+          i.args[nArgs] = sym;
+
+          // Store constants in global store:
+          if (sym == 0) continue;
+          if (imop.type() == Imop::COMMENT) continue;
+          if (imop.type() == Imop::ERROR) continue;
+          if (sym->symbolType() == Symbol::CONSTANT) {
+              SecrecDataType const& dtype = sym->secrecType().secrecDataType();
+              Store::iterator it = m_global.find(sym);
+              if (it != m_global.end()) continue;
+              Register& reg = m_global[sym];
+              switch (dtype) {
+                  case DATATYPE_BOOL:
+                      assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
+                      store (reg, static_cast<SymbolConstantBool const*>(sym)->value());
+                      break;
+                  case DATATYPE_INT:
+                      assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
+                      store (reg, static_cast<SymbolConstantInt const*>(sym)->value());
+                      break;
+                  case DATATYPE_UINT:
+                      assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
+                      store (reg, static_cast<SymbolConstantUInt const*>(sym)->value());
+                      break;
+                  case DATATYPE_STRING:
+                      assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
+                      store (reg, &static_cast<SymbolConstantString const*>(sym)->value());
+                      break;
+                  case DATATYPE_INVALID: assert (false && "VM: reached invalid data type.");
+              }
+          }
       }
 
       // compute jump destination for calls
@@ -1059,7 +1071,11 @@ void VirtualMachine::run (ICodeList const& code) {
 
     // execute
     m_code->callback (m_code);
+
+    // free memory
+    pop_frame ();
     free (m_code);
+    free_store (m_global);
 }
 
 std::string VirtualMachine::toString(void) {
