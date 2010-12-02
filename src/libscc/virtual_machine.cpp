@@ -9,11 +9,11 @@
 
 #include "icodelist.h"
 
+namespace { // anonymous namespace
+
 using namespace SecreC;
 
 /**
- * \todo we are leaking memory!
- * \todo array regression test 22-ternary-bug crashes the evaluator with double free or corruption
  * \todo way too many lookups!
  * \todo lock the state of interpreter
  * \todo performance tests
@@ -112,26 +112,88 @@ class ValueStack {
         }
 };
 
-typedef std::map<SecreC::Symbol const*, Register> Store;
+typedef void* Location;
+
+struct VMSym {
+    bool isLocal : 1;
+    Location loc;
+    inline VMSym (bool isLocal, Location loc)
+        : isLocal(isLocal), loc(loc) { }
+};
+
+typedef std::map<Location, Register> Store;
 
 struct Instruction {
-  Symbol const* args[4];
+  VMSym args[4];
   void (*callback)(Instruction*);
 };
 
 struct Frame {
     Store m_local;
     Instruction* const m_old_ip;
-    SecreC::Symbol const* const m_ret;
+    VMSym const m_ret;
     Frame* m_prev_frame;
 
-    Frame(Instruction* const old_ip, SecreC::Symbol const* ret)
+    Frame(Instruction* const old_ip, VMSym ret)
         : m_old_ip(old_ip), m_ret(ret), m_prev_frame(0) { }
 
 private:
     Frame(Frame const&);
     Frame& operator = (Frame const&);
 };
+
+
+/**
+ * State of the interpreter.
+ * We have:
+ * - stack for function arguments and return values
+ * - frame stack
+ * - one register for temporary values, for example constants are stored in it
+ * - store for global variables
+ * - pointer to code
+ */
+
+ValueStack m_stack;
+Frame* m_frames = 0;
+Store m_global;
+Instruction* m_code = 0;
+
+static void free_store (Store& store) {
+    Store::iterator it = store.begin();
+    Store::iterator it_end = store.end();
+    for (; it != it_end; ++ it) {
+        Register& r = it->second;
+        free (r.m_arr);
+    }
+
+    store.clear();
+}
+
+static inline void push_frame (Instruction* const old_ip, VMSym ret)
+{
+    Frame* new_frame = new Frame (old_ip, ret);
+    new_frame->m_prev_frame = m_frames;
+    m_frames = new_frame;
+}
+
+static inline void pop_frame (void)
+{
+    assert (m_frames != 0 && "No frames to pop!");
+    Frame* temp = m_frames;
+    m_frames = temp->m_prev_frame;
+    free_store (temp->m_local);
+    delete temp;
+}
+
+/// \todo this is too slow
+/// This would have to be constant time. In order to
+/// achieve this the global and local stores would have to be
+/// stacks and locations offsets in those stacks. The offsets would
+/// have to be precomputed. This would need some work.
+static Register& lookup (VMSym const sym) {
+    Store& store = sym.isLocal ? m_frames->m_local : m_global;
+    return store[sym.loc];
+}
 
 /**
  * Macros to simplify code generation:
@@ -228,69 +290,12 @@ DECLVECOP2 (NEQBOOL)
 DECLVECOP2 (NEQSTRING)
 
 /**
- * State of the interpreter.
- * We have:
- * - stack for function arguments and return values
- * - frame stack
- * - one register for temporary values, for example constants are stored in it
- * - store for global variables
- * - pointer to code
- */
-
-ValueStack m_stack;
-Frame* m_frames = 0;
-Store m_global;
-Instruction* m_code = 0;
-
-static void free_store (Store& store) {
-    Store::iterator it = store.begin();
-    Store::iterator it_end = store.end();
-    for (; it != it_end; ++ it) {
-        Register& r = it->second;
-        free (r.m_arr);
-    }
-
-    store.clear();
-}
-
-static inline void push_frame (Instruction* const old_ip, SecreC::Symbol const* ret)
-{
-    Frame* new_frame = new Frame (old_ip, ret);
-    new_frame->m_prev_frame = m_frames;
-    m_frames = new_frame;
-}
-
-static inline void pop_frame (void)
-{
-    assert (m_frames != 0 && "No frames to pop!");
-    Frame* temp = m_frames;
-    m_frames = temp->m_prev_frame;
-    free_store (temp->m_local);
-    delete temp;
-}
-
-/// \todo this is too slow
-static Register& lookup (Symbol const* const sym) {
-  switch (sym->symbolType()) {
-    case Symbol::TEMPORARY: return m_frames->m_local[sym];
-    case Symbol::SYMBOL:
-      assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
-          && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
-      switch (static_cast<SymbolSymbol const*>(sym)->scopeType()) {
-        case SymbolSymbol::LOCAL: return m_frames->m_local[sym];
-        case SymbolSymbol::GLOBAL: return m_global[sym];
-      }
-    case Symbol::CONSTANT: return m_global[sym];
-    case Symbol::PROCEDURE: assert (false && "Trying to look up procedure name.");
-  }
-}
-
-/**
- * callbacks for instructions
+ * Callbacks for instructions:
+ * \todo quite a lot of repeated code
  */
 
 CALLBACK(ERROR, i) {
-  std::string const* str = (std::string const*) i->args[1];
+  std::string const* str = (std::string const*) i->args[1].loc;
   std::cout << *str << std::endl;
 }
 
@@ -340,8 +345,8 @@ CALLBACK(DECLASSIFY_vec, i) {
 }
 
 CALLBACK(CALL, i) {
-  Instruction* new_ip = (Instruction*) i->args[1];
-  Symbol const* dest = i->args[0];
+  Instruction* new_ip = (Instruction*) i->args[1].loc;
+  VMSym dest = i->args[0];
   push_frame(i + 1, dest);
   new_ip->callback (new_ip);
 }
@@ -741,7 +746,7 @@ CALLBACK(LOR_vec, i) {
 }
 
 CALLBACK(JUMP, i) {
-  Instruction* new_i = (Instruction*) i->args[0];
+  Instruction* new_i = (Instruction*) i->args[0].loc;
   new_i->callback (new_i);
 }
 
@@ -750,7 +755,7 @@ CALLBACK(JEBOOL, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val == fetch_val(arg2).m_bool_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -760,7 +765,7 @@ CALLBACK(JEINT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val == fetch_val(arg2).m_int_val) {
-      new_i = (Instruction*) i->args[0];
+      new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -770,7 +775,7 @@ CALLBACK(JEUINT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_uint_val == fetch_val(arg2).m_uint_val) {
-      new_i = (Instruction*) i->args[0];
+      new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -780,7 +785,7 @@ CALLBACK(JESTR, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (*fetch_val(arg1).m_str_val == *fetch_val(arg2).m_str_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -790,7 +795,7 @@ CALLBACK(JNEBOOL, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val != fetch_val(arg2).m_bool_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -800,7 +805,7 @@ CALLBACK(JNEINT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val != fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -810,7 +815,7 @@ CALLBACK(JNEUINT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_uint_val != fetch_val(arg2).m_uint_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -820,7 +825,7 @@ CALLBACK(JNESTR, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (*fetch_val(arg1).m_str_val != *fetch_val(arg2).m_str_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
     new_i->callback (new_i);
 }
@@ -830,7 +835,7 @@ CALLBACK(JLE, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val <= fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -841,7 +846,7 @@ CALLBACK(JLT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val < fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -852,7 +857,7 @@ CALLBACK(JGE, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val >= fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -863,7 +868,7 @@ CALLBACK(JGT, i) {
     FETCH3(arg2, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_int_val > fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -873,7 +878,7 @@ CALLBACK(JT, i) {
     FETCH2(arg1, i);
     Instruction* new_i = i + 1;
     if (fetch_val(arg1).m_bool_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -883,7 +888,7 @@ CALLBACK(JF, i) {
     FETCH2(arg1, i);
     Instruction* new_i = i + 1;
     if (!fetch_val(arg1).m_bool_val) {
-        new_i = (Instruction*) i->args[0];
+        new_i = (Instruction*) i->args[0].loc;
     }
 
     new_i->callback (new_i);
@@ -924,6 +929,8 @@ CALLBACK(END, i) {
   (void) i;
 }
 
+} // end of anonymous namespace
+
 // vectorized callback if condition holds
 #define CONDVCALLBACK(NAME, cond) ((cond) ? NAME##_vec_callback : NAME##_callback)
 
@@ -931,7 +938,7 @@ namespace SecreC {
 
 void VirtualMachine::run (ICodeList const& code) {
     m_code = (Instruction*) calloc(sizeof(Instruction), code.size());
-    push_frame(0, 0); // for temporaries in global scope... ugh...
+    push_frame(0, VMSym(false, 0)); // for temporaries in global scope... ugh...
 
     for (unsigned k = 0; k < code.size(); ++ k) {
       Imop const& imop = *code.at(k);
@@ -941,52 +948,63 @@ void VirtualMachine::run (ICodeList const& code) {
       unsigned nArgs;
       for (nArgs = 0; nArgs < imop.nArgs(); ++ nArgs) {
           Symbol const* sym = imop.arg(nArgs);
-          i.args[nArgs] = sym;
+          Location loc = (void*) sym;
+          i.args[nArgs].isLocal = true;
+          i.args[nArgs].loc = loc;
 
-          // Store constants in global store:
+          // Correct isLocal and store constants in global store:
           if (sym == 0) continue;
           if (imop.type() == Imop::COMMENT) continue;
           if (imop.type() == Imop::ERROR) continue;
-          if (sym->symbolType() == Symbol::CONSTANT) {
-              SecrecDataType const& dtype = sym->secrecType().secrecDataType();
-              Store::iterator it = m_global.find(sym);
-              if (it != m_global.end()) continue;
-              Register& reg = m_global[sym];
-              switch (dtype) {
-                  case DATATYPE_BOOL:
-                      assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
-                      store (reg, static_cast<SymbolConstantBool const*>(sym)->value());
-                      break;
-                  case DATATYPE_INT:
-                      assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
-                      store (reg, static_cast<SymbolConstantInt const*>(sym)->value());
-                      break;
-                  case DATATYPE_UINT:
-                      assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
-                      store (reg, static_cast<SymbolConstantUInt const*>(sym)->value());
-                      break;
-                  case DATATYPE_STRING:
-                      assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
-                      store (reg, &static_cast<SymbolConstantString const*>(sym)->value());
-                      break;
-                  case DATATYPE_INVALID: assert (false && "VM: reached invalid data type.");
-              }
+          switch (sym->symbolType()) {
+              case Symbol::SYMBOL:
+                  assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
+                          && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
+                  if (static_cast<SymbolSymbol const*>(sym)->scopeType() == SymbolSymbol::GLOBAL)
+                      i.args[nArgs].isLocal = false;
+                  break;
+              case Symbol::CONSTANT: {
+                  SecrecDataType const& dtype = sym->secrecType().secrecDataType();
+                  Store::iterator it = m_global.find(loc);
+                  i.args[nArgs].isLocal = false;
+                  if (it != m_global.end()) continue;
+                  Register& reg = m_global[loc];
+                  switch (dtype) {
+                      case DATATYPE_BOOL:
+                          assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
+                          store (reg, static_cast<SymbolConstantBool const*>(sym)->value());
+                          break;
+                      case DATATYPE_INT:
+                          assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
+                          store (reg, static_cast<SymbolConstantInt const*>(sym)->value());
+                          break;
+                      case DATATYPE_UINT:
+                          assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
+                          store (reg, static_cast<SymbolConstantUInt const*>(sym)->value());
+                          break;
+                      case DATATYPE_STRING:
+                          assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
+                          store (reg, &static_cast<SymbolConstantString const*>(sym)->value());
+                          break;
+                      case DATATYPE_INVALID: assert (false && "VM: reached invalid data type.");
+                  }}
+              default: break;
           }
       }
 
-      // compute jump destination for calls
+      // compute destinations for calls
       if (imop.type() == Imop::CALL) {
-          Symbol const* arg1 = i.args[1];
+          Symbol const* arg1 = (Symbol const*) i.args[1].loc;
           assert (dynamic_cast<SymbolProcedure const*>(arg1) != 0);
           SymbolProcedure const* proc = static_cast<SymbolProcedure const*>(arg1);
           size_t const label = proc->target()->index();
-          i.args[1] = (Symbol const*) &m_code[label - 1];
+          i.args[1].loc = (void*) &m_code[label - 1];
       }
 
-      // compute jump destination for jumps
+      // compute destinations for jumps
       if ((imop.type() & Imop::JUMP_MASK) != 0x0) {
-          Imop const* arg = (Imop const*) i.args[0];
-          i.args[0] = (Symbol const*) &m_code[arg->index() - 1];
+          Imop const* arg = (Imop const*) i.args[0].loc;
+          i.args[0].loc = (void*) &m_code[arg->index() - 1];
       }
 
       // compile the code into sequence of instructions
@@ -1006,7 +1024,7 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::ADD:            i.callback = CONDVCALLBACK(ADD, nArgs == 4); break;
         case Imop::SUB:            i.callback = CONDVCALLBACK(SUB, nArgs == 4); break;
         case Imop::EQ:
-          switch (i.args[1]->secrecType().secrecDataType()) {
+          switch (imop.arg1()->secrecType().secrecDataType()) {
             case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(EQBOOL, nArgs == 4); break;
             case DATATYPE_INT:     i.callback = CONDVCALLBACK(EQINT, nArgs == 4); break;
             case DATATYPE_UINT:    i.callback = CONDVCALLBACK(EQUINT, nArgs == 4); break;
@@ -1015,7 +1033,7 @@ void VirtualMachine::run (ICodeList const& code) {
           }
           break;
         case Imop::NE:
-          switch (i.args[1]->secrecType().secrecDataType()) {
+          switch (imop.arg1()->secrecType().secrecDataType()) {
             case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(NEQBOOL, nArgs == 4); break;
             case DATATYPE_INT:     i.callback = CONDVCALLBACK(NEQINT, nArgs == 4); break;
             case DATATYPE_UINT:    i.callback = CONDVCALLBACK(NEQUINT, nArgs == 4); break;
@@ -1034,7 +1052,7 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::JT:             i.callback = JT_callback; break;
         case Imop::JF:             i.callback = JF_callback; break;
         case Imop::JE:
-          switch (i.args[1]->secrecType().secrecDataType()) {
+          switch (imop.arg1()->secrecType().secrecDataType()) {
             case DATATYPE_BOOL:    i.callback = JEBOOL_callback; break;
             case DATATYPE_INT:     i.callback = JEINT_callback; break;
             case DATATYPE_UINT:    i.callback = JEUINT_callback; break;
@@ -1043,7 +1061,7 @@ void VirtualMachine::run (ICodeList const& code) {
           }
           break;
         case Imop::JNE:
-          switch (i.args[1]->secrecType().secrecDataType()) {
+          switch (imop.arg1()->secrecType().secrecDataType()) {
             case DATATYPE_BOOL:    i.callback = JNEBOOL_callback; break;
             case DATATYPE_INT:     i.callback = JNEINT_callback; break;
             case DATATYPE_UINT:    i.callback = JNEUINT_callback; break;
@@ -1082,7 +1100,7 @@ std::string VirtualMachine::toString(void) {
     std::stringstream os;
     os << "Store:\n";
     for (Store::const_iterator i(m_global.begin()); i != m_global.end(); ++ i) {
-        Symbol const* sym = i->first;
+        Symbol const* sym = (Symbol const*) i->first;
         Value& val = *i->second.m_arr;
         os << sym->toString() << " -> ";
         switch (sym->secrecType().secrecDataType()) {
