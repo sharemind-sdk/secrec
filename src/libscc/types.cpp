@@ -89,9 +89,12 @@ std::string DataTypeProcedureVoid::mangle() const {
     os << "(";
     if (m_params.size() > 0) {
         os << SecrecFundDataTypeToString(m_params.at(0)->secrecDataType());
+        os << m_params.at(0)->secrecDimType();
         if (m_params.size() > 1) {
             for (TVCI it(++(m_params.begin())); it != m_params.end(); it++) {
                 os << ", " << SecrecFundDataTypeToString((*it)->secrecDataType());
+                os << (*it)->secrecDimType();
+
             }
         }
     }

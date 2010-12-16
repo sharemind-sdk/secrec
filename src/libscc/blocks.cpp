@@ -88,7 +88,7 @@ inline void printBlockList(std::ostream &os, const char *prefix,
 }
 
 /**
- * @brief Visits all blocks in @a blockSet and marks unvisited ones visited and adds them to @a reachableBlocks stack
+ * @brief Visits all blocks in @a blockSet and marks unvisited ones visited and add them to @a reachableBlocks stack
  */
 static void markAllReachable (std::stack<SecreC::Block*>& reachableBlocks, std::set<SecreC::Block*>& blockSet) {
     using SecreC::Block;
@@ -144,8 +144,8 @@ void Blocks::init(const ICodeList &code) {
         }
 
         if (fallsThru(*old)) {
-            if (((*(old->end - 1))->type() & Imop::JUMP_MASK) == 0x0
-                || (*(old->end - 1))->type() == Imop::JUMP) {
+            if ((old->lastImop()->type() & Imop::JUMP_MASK) == 0x0
+                || old->lastImop()->type() == Imop::JUMP) {
                 linkBlocks(*old, *b);
             } else {
                 linkBlocksCondFalse(*old, *b);

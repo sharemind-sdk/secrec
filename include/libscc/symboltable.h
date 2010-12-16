@@ -100,7 +100,7 @@ class SymbolProcedure: public Symbol {
 
     private: /* Fields: */
         const TreeNodeProcDef *m_decl;
-        const Imop           *m_target;
+        const Imop            *m_target;
 };
 
 class SymbolConstantBool: public Symbol {
