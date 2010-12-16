@@ -93,7 +93,9 @@ class Imop {
             */
             RETURNVOID = 0x6000,  /* RETURN;               (Imop *arg2) */
             RETURN     = 0x7000,  /* RETURN arg1;          (Imop *arg2) */
-            END        = 0x8000   /* END PROGRAM                        */
+            END        = 0x8000,  /* END PROGRAM                        */
+
+            PRINT      = 0x9000   /* PRINT arg1; */
         };
 
     public: /* Methods: */

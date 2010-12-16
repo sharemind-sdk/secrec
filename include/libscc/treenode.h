@@ -1065,6 +1065,20 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
 
 
 /******************************************************************
+  TreeNodeStmtPrint
+******************************************************************/
+
+class TreeNodeStmtPrint: public TreeNodeStmt {
+    public: /* Methods: */
+        explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
+            : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
+
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log);
+};
+
+/******************************************************************
   TreeNodeType
 ******************************************************************/
 

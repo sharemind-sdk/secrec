@@ -56,6 +56,7 @@ static inline void store (Register& reg, Value const& val) { *reg.m_arr = val; }
 static inline void store (Register& reg, int val) { reg.m_arr->m_int_val = val; }
 static inline void store (Register& reg, bool val) { reg.m_arr->m_bool_val = val; }
 static inline void store (Register& reg, unsigned val) { reg.m_arr->m_uint_val = val; }
+static inline void store (Register& reg, std::string const* val) { reg.m_arr->m_str_val = val; }
 static inline void store (Register& reg, Register const& src, unsigned n) {
     reserve (reg, n);
     memcpy (reg.m_arr, src.m_arr, sizeof(Value) * n);
@@ -203,7 +204,7 @@ static Register& lookup (VMSym const sym) {
 #define FETCH2(name, i) Register const& name = lookup((i)->args[1])
 #define FETCH3(name, i) Register const& name = lookup((i)->args[2])
 #define FETCH4(name, i) Register const& name = lookup((i)->args[3])
-#define NEXT(i) (i + 1)->callback (i + 1)
+#define NEXT(i) ((i) + 1)->callback ((i) + 1)
 
 #define DECLOP1(NAME) static inline void NAME##_operator (Value& dest, Value const& arg1)
 #define DECLOP2(NAME) static inline void NAME##_operator (Value& dest, Value const& arg1, Value const& arg2)
@@ -241,6 +242,7 @@ DECLOP1 (DECLASSIFY) { dest = arg1; }
 DECLOP1 (UNEG)       { dest.m_bool_val = !arg1.m_bool_val; }
 DECLOP1 (UMINUS)     { dest.m_int_val  = -arg1.m_int_val; }
 DECLOP2 (ADD)        { dest.m_int_val  = arg1.m_int_val + arg2.m_int_val; }
+DECLOP2 (ADDSTR)     { dest.m_str_val  = new std::string (*arg1.m_str_val + *arg2.m_str_val); }
 DECLOP2 (SUB)        { dest.m_int_val  = arg1.m_int_val - arg2.m_int_val; }
 DECLOP2 (MUL)        { dest.m_int_val  = arg1.m_int_val * arg2.m_int_val; }
 DECLOP2 (DIV)        { dest.m_int_val  = arg1.m_int_val / arg2.m_int_val; }
@@ -270,6 +272,7 @@ DECLVECOP1 (DECLASSIFY)
 DECLVECOP1 (UNEG)
 DECLVECOP1 (UMINUS)
 DECLVECOP2 (ADD)
+DECLVECOP2 (ADDSTR)
 DECLVECOP2 (SUB)
 DECLVECOP2 (MUL)
 DECLVECOP2 (DIV)
@@ -297,6 +300,12 @@ DECLVECOP2 (NEQSTRING)
 CALLBACK(ERROR, i) {
   std::string const* str = (std::string const*) i->args[1].loc;
   std::cout << *str << std::endl;
+}
+
+CALLBACK(PRINT, i) {
+  FETCH2(arg, i);
+  std::cout << *fetch_val(arg).m_str_val << std::endl;
+  NEXT(i);
 }
 
 CALLBACK(ASSIGN, i) {
@@ -487,6 +496,23 @@ CALLBACK(ADD_vec, i) {
   FETCH3(arg2, i);
   FETCH4(size, i);
   ADD_vec_operator (dest, arg1, arg2, size);
+  NEXT(i);
+}
+
+CALLBACK(ADDSTR, i) {
+  FETCH1(dest, i);
+  FETCH2(arg1, i);
+  FETCH3(arg2, i);
+  ADDSTR_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
+  NEXT(i);
+}
+
+CALLBACK(ADDSTR_vec, i) {
+  FETCH1(dest, i);
+  FETCH2(arg1, i);
+  FETCH3(arg2, i);
+  FETCH4(size, i);
+  ADDSTR_vec_operator (dest, arg1, arg2, size);
   NEXT(i);
 }
 
@@ -1021,7 +1047,12 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::MUL:            i.callback = CONDVCALLBACK(MUL, nArgs == 4); break;
         case Imop::DIV:            i.callback = CONDVCALLBACK(DIV, nArgs == 4); break;
         case Imop::MOD:            i.callback = CONDVCALLBACK(MOD, nArgs == 4); break;
-        case Imop::ADD:            i.callback = CONDVCALLBACK(ADD, nArgs == 4); break;
+        case Imop::ADD:
+          switch (imop.arg1()->secrecType().secrecDataType()) {
+            case DATATYPE_STRING:  i.callback = CONDVCALLBACK(ADDSTR, nArgs == 4); break;
+            default:               i.callback = CONDVCALLBACK(ADD, nArgs == 4); break;
+          }
+          break;
         case Imop::SUB:            i.callback = CONDVCALLBACK(SUB, nArgs == 4); break;
         case Imop::EQ:
           switch (imop.arg1()->secrecType().secrecDataType()) {
@@ -1083,6 +1114,7 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::STORE:          i.callback = STORE_callback; break;
         case Imop::LOAD:           i.callback = LOAD_callback; break;
         case Imop::END:            i.callback = END_callback; break;
+        case Imop::PRINT:            i.callback = PRINT_callback; break;
         default: assert (false && "VM: Reached unfamiliar instruction.");
       }
     }

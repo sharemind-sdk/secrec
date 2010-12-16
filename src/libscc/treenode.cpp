@@ -121,6 +121,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_STMT_BREAK: return "STMT_BREAK";
         case NODE_STMT_EXPR: return "STMT_EXPR";
         case NODE_STMT_ASSERT: return "STMT_ASSERT";
+        case NODE_STMT_PRINT: return "NODE_STMT_PRINT";
         case NODE_DECL: return "DECL";
         case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
         case NODE_GLOBALS: return "DECL_GLOBALS";
@@ -382,6 +383,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtReturn(*loc));
         case NODE_STMT_WHILE:
             return (TreeNode*) (new SecreC::TreeNodeStmtWhile(*loc));
+        case NODE_STMT_PRINT:
+            return (TreeNode*) (new SecreC::TreeNodeStmtPrint(*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:
@@ -1870,12 +1873,11 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
         }
     }
 
-
     Symbol* rhs_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT));
     Symbol* tmp_int = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT));
     Symbol* tmp_elem = st.appendTemporary(TypeNonVoid(resultType().secrecSecType(), resultType().secrecDataType()));
 
-    // j = 0
+    // j = 0 (right hand side index)
     i = new Imop(this, Imop::ASSIGN, rhs_offset, st.constantInt(0));
     code.push_imop(i);
 
@@ -1884,7 +1886,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     code.push_imop(i);
     addToNextList(i);
 
-    { // compute j if i < d
+    { // compute j if i < d (for e1)
         std::vector<Symbol* >::iterator
                 it = strides[0].begin(),
                 it_end = strides[0].end();
@@ -1905,7 +1907,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     Imop* jump_out = new Imop(this, Imop::JUMP, (Symbol*) 0);
     code.push_imop(jump_out);
 
-    { // compute j if i >= d
+    { // compute j if i >= d (for e2)
         std::vector<Symbol* >::iterator
                 it = strides[1].begin(),
                 it_end = strides[1].end();
@@ -1935,7 +1937,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     code.push_imop(i);
     jump_out->setJumpDest(i);
 
-    // offset = offset + 1
+    // i = i + 1
     i = new Imop(this, Imop::ADD, offset, offset, st.constantUInt(1));
     code.push_imop(i);
 
@@ -3159,7 +3161,7 @@ ICode::Status TreeNodeExprString::generateCode(ICodeList &code, SymbolTable &st,
 ICode::Status TreeNodeExprString::generateBoolCode(ICodeList &, SymbolTable &,
                                                    CompileLog &)
 {
-    assert(false); // This method shouldn't be called.
+    assert(false && "TreeNodeExprString::generateBoolCode called."); // This method shouldn't be called.
     return ICode::E_NOT_IMPLEMENTED;
 }
 
@@ -4786,6 +4788,44 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
     addToNextList(body->breakList());
     body->patchContinueList(e->firstImop());
     body->patchNextList(e->firstImop());
+
+    return ICode::OK;
+}
+
+
+/*******************************************************************************
+  TreeNodeStmtWhile
+*******************************************************************************/
+
+ICode::Status TreeNodeStmtPrint::generateCode(ICodeList &code, SymbolTable &st,
+                                              CompileLog &log)
+{
+    assert(children().size() == 1);
+    TreeNode* c0 = children().at(0);
+
+    assert(c0->type() != NODE_EXPR_NONE);
+    assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
+
+    // Type check:
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->resultType().secrecDataType() != DATATYPE_STRING || e->resultType().secrecSecType() != SECTYPE_PUBLIC   ||
+        !e->resultType().isScalar()) {
+        log.fatal() << "Argument to print statement has to be public string scalar, got "
+                    << e->resultType() << " at " << location();
+        return ICode::E_TYPE;
+    }
+
+    setResultFlags(TreeNodeStmt::FALLTHRU);
+
+    // Generate code:
+    s = generateSubexprCode(e, code, st, log);
+    if (s != ICode::OK) return s;
+    Imop* i = new Imop(this, Imop::PRINT, (Symbol*) 0, e->result());
+    code.push_imop(i);
+    patchFirstImop(i);
+    e->patchNextList(i);
 
     return ICode::OK;
 }

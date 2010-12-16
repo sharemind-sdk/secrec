@@ -81,7 +81,7 @@
 %token <str> IDENTIFIER
 
 /* Keywords: */
-%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC
+%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC PRINT
 %token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 
 /* Literals: */
@@ -124,6 +124,7 @@
 %type <treenode> for_statement
 %type <treenode> maybe_expression
 %type <treenode> while_statement
+%type <treenode> print_statement
 %type <treenode> dowhile_statement
 %type <treenode> assert_statement
 %type <treenode> expression
@@ -426,6 +427,7 @@ statement
  | while_statement
  | dowhile_statement
  | assert_statement
+ | print_statement
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
@@ -496,6 +498,14 @@ while_statement
      treenode_appendChild($$, $5);
    }
  ;
+
+print_statement
+ : PRINT '(' expression ')'
+   {
+     $$ = treenode_init(NODE_STMT_PRINT, &@$);
+     treenode_appendChild($$, $3);
+   }
+;
 
 dowhile_statement
  : DO statement WHILE '(' expression ')' ';'

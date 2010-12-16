@@ -212,7 +212,9 @@ std::string Imop::toString() const {
         case PUSH:    /* PUSH arg1;                    */
             os << "PUSH " << a1name;
             if (nArgs() == 3) os << " (" << a2name << ")";
-
+            break;
+        case PRINT:
+            os << "PRINT " << a1name << ";";
             break;
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";

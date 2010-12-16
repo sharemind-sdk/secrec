@@ -87,6 +87,7 @@ enum SecrecTreeNodeType {
     NODE_INDEX_SLICE    = 0x13000,
     NODE_LVALUE         = 0x14000,
     NODE_SUBSCRIPT      = 0x15000,
+    NODE_STMT_PRINT     = 0x16000,
 
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,
