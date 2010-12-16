@@ -6,4 +6,6 @@ void main () {
 
   crr = cat (arr, brr, 0);
   assert (size(crr) == 10);
+  assert (crr[0] == 0);
+  assert (crr[5] == 1);
 }
