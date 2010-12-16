@@ -82,7 +82,7 @@
 
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC PRINT
-%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
+%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT FREAD
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -141,6 +141,8 @@
 %type <treenode> cast_expression
 %type <treenode> unary_expression
 %type <treenode> postfix_expression
+%type <treenode> cat_expression
+%type <treenode> fread_expression
 %type <treenode> argument_list
 %type <treenode> primary_expression
 %type <treenode> constant
@@ -500,7 +502,7 @@ while_statement
  ;
 
 print_statement
- : PRINT '(' expression ')'
+ : PRINT '(' expression ')' ';'
    {
      $$ = treenode_init(NODE_STMT_PRINT, &@$);
      treenode_appendChild($$, $3);
@@ -780,6 +782,30 @@ unary_expression
  | postfix_expression
  ;
 
+fread_expression
+ : FREAD '(' expression ')'
+   {
+    $$ = treenode_init(NODE_EXPR_FREAD, &@$);
+    treenode_appendChild($$, $3);
+   }
+ ;
+
+cat_expression
+ : CAT '(' expression ',' expression ',' int_literal ')'
+   {
+     $$ = treenode_init(NODE_EXPR_CAT, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+     treenode_appendChild($$, $7);
+   }
+ | CAT '(' expression ',' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_CAT, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+   }
+ ;
+
 postfix_expression
 : DECLASSIFY '(' expression ')'
   {
@@ -797,13 +823,8 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_SHAPE, &@$);
      treenode_appendChild($$, $3);
    }
- | CAT '(' expression ',' expression ',' int_literal ')'
-   {
-     $$ = treenode_init(NODE_EXPR_CAT, &@$);
-     treenode_appendChild($$, $3);
-     treenode_appendChild($$, $5);
-     treenode_appendChild($$, $7);
-   }
+ | cat_expression
+ | fread_expression
  | RESHAPE '(' argument_list ')'
    {
      unsigned i;

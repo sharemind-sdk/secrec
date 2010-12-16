@@ -480,6 +480,26 @@ class TreeNodeExprReshape: public TreeNodeExpr {
 };
 
 /******************************************************************
+  TreeNodeExprFRead
+******************************************************************/
+
+class TreeNodeExprFRead: public TreeNodeExpr {
+    public:
+        inline TreeNodeExprFRead(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
   TreeNodeExprBinary
 ******************************************************************/
 

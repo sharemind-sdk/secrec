@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #include "icodelist.h"
 
@@ -101,11 +102,14 @@ class ValueStack {
             return vals.empty();
         }
 
-        void push (Value const& val) {
+        void push (Value const& val) { vals.push_back(val); }
+        void push (int n) {
+            Value val = { n };
             vals.push_back(val);
         }
 
         void push (Register const& reg, unsigned n) {
+            if (n == 0) return;
           vals.reserve (vals.size() + n);
           for (Value* i = reg.m_arr + n - 1; i >= reg.m_arr; -- i) {
             vals.push_back(*i);
@@ -306,6 +310,61 @@ CALLBACK(PRINT, i) {
   FETCH2(arg, i);
   std::cout << *fetch_val(arg).m_str_val << std::endl;
   NEXT(i);
+}
+
+CALLBACK(FREAD, i) {
+    FETCH2(arg, i);
+    std::string const& str = *fetch_val(arg).m_str_val;
+    std::ifstream fhandle;
+    std::string line;
+    std::vector<int > values;
+    fhandle.open (str.c_str(), std::ios::in);
+    int rowCount = 0;
+    int colCount = 0;
+    int tmp = 0;
+    int n;
+
+
+    if (!fhandle.is_open()) {
+        std::cout << "Unable to open file named \"" << str << "\"." << std::endl;
+        return;
+    }
+
+    while (std::getline (fhandle, line)) {
+        std::stringstream ss (line.c_str());
+        tmp = 0;
+        while (ss.good()) {
+            if (ss >> n) {
+                values.push_back(n);
+                ++ tmp;
+            }
+        }
+
+        if (rowCount == 0 || tmp == rowCount) {
+            rowCount = tmp;
+        }
+        else {
+            fhandle.close();
+            std::cout << "Every line of \"" << str << "\" has to have equal number of values." << std::endl;
+            std::cout << "Mismatch at line " << colCount + 1 << std::endl;
+            return;
+        }
+
+        ++ colCount;
+    }
+
+    fhandle.close();
+
+    for (int i = 0; i < rowCount; ++ i) {
+        for (int j = 0; j < colCount; ++ j) {
+            m_stack.push(values[(rowCount - i - 1) + (colCount - j - 1)*rowCount]);
+        }
+    }
+
+    m_stack.push(colCount);
+    m_stack.push(rowCount);
+
+    NEXT(i);
 }
 
 CALLBACK(ASSIGN, i) {
@@ -1114,7 +1173,8 @@ void VirtualMachine::run (ICodeList const& code) {
         case Imop::STORE:          i.callback = STORE_callback; break;
         case Imop::LOAD:           i.callback = LOAD_callback; break;
         case Imop::END:            i.callback = END_callback; break;
-        case Imop::PRINT:            i.callback = PRINT_callback; break;
+        case Imop::PRINT:          i.callback = PRINT_callback; break;
+        case Imop::FREAD:          i.callback = FREAD_callback; break;
         default: assert (false && "VM: Reached unfamiliar instruction.");
       }
     }

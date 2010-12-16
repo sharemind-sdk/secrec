@@ -214,7 +214,10 @@ std::string Imop::toString() const {
             if (nArgs() == 3) os << " (" << a2name << ")";
             break;
         case PRINT:
-            os << "PRINT " << a1name << ";";
+            os << "PRINT \"" << a1name << "\";";
+            break;
+        case FREAD:
+            os << "FREAD \"" << a1name << "\";";
             break;
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";

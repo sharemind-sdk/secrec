@@ -63,8 +63,9 @@ enum SecrecTreeNodeType {
     NODE_EXPR_RVARIABLE   = 0x1f0, /* x (R-value)              */
     NODE_EXPR_SIZE        = 0x200, /* size(expr)               */
     NODE_EXPR_SHAPE       = 0x210, /* shape(expr)              */
-    NODE_EXPR_CAT         = 0x220, /* cat(expr)                */
+    NODE_EXPR_CAT         = 0x220, /* cat(expr, expr {, expr}) */
     NODE_EXPR_RESHAPE     = 0x230, /* reshape(expr, ...        */
+    NODE_EXPR_FREAD       = 0x240, /* fread(expr)              */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x01000,
     NODE_STMT_FOR       = 0x02000,

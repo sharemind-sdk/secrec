@@ -363,6 +363,8 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprCat(*loc));
         case NODE_EXPR_RESHAPE:
             return (TreeNode*) (new SecreC::TreeNodeExprReshape(*loc));
+        case NODE_EXPR_FREAD:
+            return (TreeNode*) (new SecreC::TreeNodeExprFRead(*loc));
         case NODE_STMT_BREAK:
             return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
         case NODE_STMT_CONTINUE:
@@ -1682,7 +1684,14 @@ ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &st,
 
     if (haveResultType()) return ICode::OK;
 
-    assert (children().size() == 3);
+    assert (children().size() == 3 ||
+            children().size() == 2);
+
+    // missing argument is interpreted as 0
+    if (children().size() == 2) {
+        TreeNode* e = new TreeNodeExprInt(0, location());
+        appendChild(e);
+    }
 
     TNV const* eTypes[2];
 
@@ -1772,8 +1781,10 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     unsigned n = resultType().secrecDimType();
 
     // Compute resulting shape and perform sanity check:
+    std::stringstream ss;
+    ss << "Different sized dimensions in concat at " << location() << ".";
     Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                         (Symbol*) new std::string("Different sized dimensions in concat."));
+                         (Symbol*) new std::string(ss.str()));
     for (unsigned it = 0; it < resultType().secrecDimType(); ++ it) {
         Symbol* s1 = e1->result()->getDim(it);
         Symbol* s2 = e2->result()->getDim(it);
@@ -2110,6 +2121,91 @@ ICode::Status TreeNodeExprReshape::generateBoolCode(ICodeList &,
                                                     CompileLog &)
 {
     assert (false && "TreeNodeExprReshape::generateBoolCode called.");
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+/*******************************************************************************
+  TreeNodeExprFRead
+*******************************************************************************/
+
+ICode::Status TreeNodeExprFRead::calculateResultType(SymbolTable &st,
+                                                      CompileLog &log)
+{
+    typedef TypeNonVoid TNV;
+    if (haveResultType()) return ICode::OK;
+    assert (children().size() == 1);
+    assert (dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
+    ICode::Status s = e->calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
+    TypeNonVoid const* eType = static_cast<TypeNonVoid const*>(&e->resultType());
+
+    if (!eType->isScalar() ||
+         eType->secrecDataType() != DATATYPE_STRING ||
+         eType->secrecSecType() != SECTYPE_PUBLIC) {
+        log.fatal() << "fread expression at " << location() << " has to take public scalar string as argument, got "
+                    << *eType;
+        return ICode::E_TYPE;
+    }
+
+    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, DATATYPE_INT, 2));
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprFRead::generateCode(ICodeList &code,
+                                              SymbolTable &st,
+                                              CompileLog &log,
+                                              Symbol *r)
+{
+    // Type check:
+    ICode::Status s = calculateResultType(st, log);
+    if (s != ICode::OK) return s;
+
+    // Generate code for child expression
+    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
+    s = generateSubexprCode(e, code, st, log);
+    if (s != ICode::OK) return s;
+
+    // Generate temporary for the result of the classification, if needed:
+    if (r == 0) {
+        generateResultSymbol(st);
+    } else {
+        assert(r->secrecType().canAssign(resultType()));
+        setResult(r);
+    }
+
+    Imop* i = 0;
+
+    i = new Imop(this, Imop::FREAD, (Symbol*) 0, e->result());
+    code.push_imop(i);
+    patchFirstImop(i);
+    prevPatchNextList(i);
+
+    i = new Imop(this, Imop::POP, result()->getDim(1));
+    code.push_imop(i);
+
+    i = new Imop(this, Imop::POP, result()->getDim(0));
+    code.push_imop(i);
+
+    computeSize(code, st);
+
+    i = new Imop(this, Imop::FILL, result(), st.constantInt(0), result()->getSizeSym());
+    code.push_imop(i);
+
+    i = new Imop(this, Imop::POP, result(), result()->getSizeSym());
+    code.push_imop(i);
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprFRead::generateBoolCode(ICodeList &,
+                                                    SymbolTable &,
+                                                    CompileLog &)
+{
+    assert (false && "TreeNodeExprFRead::generateBoolCode called.");
+    return ICode::E_NOT_IMPLEMENTED;
 }
 
 /*******************************************************************************

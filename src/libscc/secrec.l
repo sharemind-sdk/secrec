@@ -85,6 +85,7 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "reshape"    { stepLen(yyget_lloc(yyscanner), 7); return RESHAPE; }
 "cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 "print"      { stepLen(yyget_lloc(yyscanner), 5); return PRINT; }
+"fread"      { stepLen(yyget_lloc(yyscanner), 5); return FREAD; }
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

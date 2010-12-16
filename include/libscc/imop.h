@@ -57,6 +57,7 @@ class Imop {
             STORE      = 0x17, /*    d[arg1] = arg2;                    */
             LOAD       = 0x18, /*    d = arg1[arg2];                    */
             FILL       = 0x20, /*    d = FILL(arg1, arg2)               */
+            FREAD      = 0x30, /*    FREAD(arg1)                        */
 
             /* For CALL, arg2 is the corresponding RETCLEAN instruction:*/
             CALL       = 0x21,  /*   d = arg1(PARAMS);   (Imop *arg2)   */
