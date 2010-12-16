@@ -2756,7 +2756,7 @@ ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
     if (s != ICode::OK) return s;
     if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
     assert(e->resultType().secrecSecType() == SECTYPE_PUBLIC);
-    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().secrecDataType()));
+    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().secrecDataType(), e->resultType().secrecDimType()));
     return ICode::OK;
 }
 
