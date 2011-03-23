@@ -408,13 +408,19 @@ std::string ReachingDeclassify::toString() const {
             os << "        ";
             switch ((*jt)->type()) {
                 case Imop::POP:
-                    os << "parameter "
-                       << static_cast<TreeNodeStmtDecl*>((*jt)->creator())->variableName()
-                       << " declared at " << (*jt)->creator()->location();
-                    break;
                 case Imop::CALL:
-                    os << "call to " << (*jt)->arg1()->name()
-                       << " at " << (*jt)->creator()->location();
+                    if (dynamic_cast<TreeNodeStmtDecl*>((*jt)->creator()) != 0) {
+                        os << "parameter "
+                           << static_cast<TreeNodeStmtDecl*>((*jt)->creator())->variableName()
+                           << " declared at " << (*jt)->creator()->location();
+                    } else {
+                        assert(dynamic_cast<TreeNodeExprProcCall*>((*jt)->creator()) != 0);
+                        TreeNodeExprProcCall *c = static_cast<TreeNodeExprProcCall*>((*jt)->creator());
+                        assert(c->symbolProcedure() != 0);
+                        assert(c->symbolProcedure()->decl() != 0);
+                        os << "call to " << c->symbolProcedure()->decl()->procedureName()
+                           << " at " << c->location();
+                    }
                     break;
                 default:
                     assert(false);

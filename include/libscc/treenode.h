@@ -613,6 +613,9 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
                                                SymbolTable &st,
                                                CompileLog &log);
 
+        inline SymbolProcedure *symbolProcedure() const
+            { return m_procedure; }
+
     private: /* Fields: */
         SymbolProcedure *m_procedure;
 };
