@@ -1,11 +1,10 @@
-DOC=semantics
+all: semantics.pdf
 
-all: $(DOC).pdf
-
-$(DOC).pdf:
-	latex $(DOC)
-	latex $(DOC)
-	pdflatex $(DOC)
+semantics.pdf: semantics.tex references.bib
+	latex semantics
+	bibtex semantics
+	latex semantics
+	pdflatex semantics
 
 distclean: clean
 	rm -f *.pdf
