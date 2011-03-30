@@ -40,6 +40,8 @@ class DataFlowAnalysis {
         virtual bool finishBlock(const Block &) { return false; }
         virtual void finish() {}
 
+        virtual std::string toString (const Blocks& bs) const = 0;
+
     private: /* Fields: */
         bool m_forward;
         bool m_backward;
@@ -108,6 +110,38 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
         BDM           m_outs;
 };
 
+/**
+ * @brief This analysis computes: used variables, defined variables
+ * and set of live-on-exit variables for every basic block.
+ */
+class LiveVariables : public BackwardDataFlowAnalysis {
+    public:
+        typedef std::set<Symbol const* > Symbols;
+    public:
+        virtual void start (const Blocks &bs);
+        virtual void startBlock(const Block &);
+        virtual void outTo(const Block &from, const Block &to);
+        virtual void outToTrue(const Block &from, const Block &to) { outTo (from, to); }
+        virtual void outToFalse(const Block &from, const Block &to) { outTo (from, to); }
+        virtual void outToCall(const Block &from, const Block &to) { outTo (from, to); }
+        virtual void outToCallPass(const Block &from, const Block &to) { outTo (from, to); }
+        virtual void outToRet(const Block &from, const Block &to) { outTo (from, to); }
+        virtual bool finishBlock(const Block &b);
+        virtual void finish();
+
+        std::string toString(const Blocks &bs) const;
+
+        const Symbols& use (const Block* block) { return m_use[block]; }
+        const Symbols& defs (const Block* block) { return m_defs[block]; }
+        const Symbols& liveAtExit (const Block* block) { return m_outs[block]; }
+
+    private:
+        std::map<const Block*, Symbols > m_use;
+        std::map<const Block*, Symbols > m_defs;
+        std::map<const Block*, Symbols > m_outs;
+        std::map<const Block*, Symbols > m_ins;
+};
+
 class ReachingJumps: public ForwardDataFlowAnalysis {
     public: /* Types: */
         typedef std::set<const Imop*>         Jumps;
@@ -163,7 +197,7 @@ class ReachingDeclassify: public ForwardDataFlowAnalysis {
         virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
         virtual void finish();
 
-        std::string toString() const;
+        std::string toString(const Blocks& bs) const;
 
     private: /* Methods: */
         bool makeOuts(const Block &b, const PDefs &in, PDefs &out);

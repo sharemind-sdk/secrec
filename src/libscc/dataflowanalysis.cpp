@@ -1,7 +1,9 @@
 #include "dataflowanalysis.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <utility>
+
 #include "intermediate.h"
 #include "misc.h"
 #include "treenode.h"
@@ -219,6 +221,90 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
     return os.str();
 }
 
+void LiveVariables::start (const Blocks &bs) {
+    for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
+        const Block* block = *bi;
+        Symbols& use = m_use [block];
+        Symbols& defs = m_defs [block];
+        for (Blocks::CCI it (block->start); it != block->end; ++ it) {
+            const Imop* imop = *it;
+
+            if (imop->type() == Imop::COMMENT) {
+                continue;
+            }
+
+            for (unsigned i = 0; i < imop->nArgs (); ++ i) {
+                const Symbol* sym = imop->arg (i);
+                if (sym == 0) {
+                    continue;
+                }
+
+                switch (sym->symbolType ()) {
+                case Symbol::SYMBOL:
+                case Symbol::TEMPORARY:
+                    if (i == 0) {
+                        defs.insert (sym); // destination
+                    }
+                    else {
+                        use.insert (sym); // argument
+                    }
+                    break;
+                default:
+                    break;
+                }
+
+            }
+        }
+    }
+}
+
+void LiveVariables::startBlock (const Block&) { }
+
+void LiveVariables::outTo (const Block &from, const Block &to) {
+    m_outs[&to] += m_ins[&from];
+}
+
+bool LiveVariables::finishBlock (const Block &b) {
+    Symbols& in = m_ins [&b];
+    const Symbols& out = m_outs [&b];
+    const Symbols  old = in;
+    in.clear (); // = m_outs [&b];
+    for (Symbols::const_iterator it (out.begin ()); it != out.end (); ++ it) {
+        if (m_defs[&b].find (*it) == m_defs[&b].end ()) {
+            in.insert (*it);
+        }
+    }
+
+    in += m_use[&b];
+    return old != in;
+}
+
+void LiveVariables::finish () {
+    m_ins.clear ();
+}
+
+std::string LiveVariables::toString (const Blocks &bs) const {
+    std::stringstream ss;
+    ss << "Live variables at exit:\n";
+    for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
+        const Block* block = *bi;
+        std::map<const Block*, Symbols >::const_iterator li = m_outs.find (block);
+        if (li != m_outs.end ()) {
+            const Symbols& live = li->second;
+            if (live.empty ()) continue;
+            ss << "Block " << std::setw (3) << block->index << ": ";
+            for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
+                if (it != live.begin ()) ss << ", ";
+                ss << (*it)->name ();
+            }
+
+            ss << '\n';
+        }
+    }
+
+    return ss.str ();
+}
+
 /**
   \todo ReachingJumps fails on "while (e1) if (e2) break;"
 */
@@ -391,7 +477,7 @@ void ReachingDeclassify::finish() {
     }
 }
 
-std::string ReachingDeclassify::toString() const {
+std::string ReachingDeclassify::toString(const Blocks&) const {
     assert(m_ins.empty());
     std::ostringstream os;
     os << "Trivial declassify analysis results:" << std::endl;
