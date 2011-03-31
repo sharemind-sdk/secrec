@@ -361,7 +361,7 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
         {
             if ((*b.end)->isJump()) {
                 // Check whether the jump destination is already assigned to a block:
-                IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest());
+                IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest()->target ());
                 if (itTo != jumpTo.end()) {
                     // Jump destination is already assigned to block, lets link:
                     if ((*b.end)->type() == Imop::JUMP) {
