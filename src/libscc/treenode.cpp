@@ -9,7 +9,7 @@
 
 namespace {
 
-void patchList(std::vector<SecreC::Imop*> &list, SecreC::Imop *dest) {
+void patchList(std::vector<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
     typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
     for (IVCI it(list.begin()); it != list.end(); it++) {
         (*it)->setJumpDest(dest);
@@ -222,6 +222,12 @@ bool TreeNodeExpr::checkAndLogIfVoid(CompileLog& log) {
     return false;
 }
 
+Imop* newError (const std::string& msg, TreeNode* node, SymbolTable& st) {
+    Symbol* sym = st.constantString (msg);
+    Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, sym);
+    return imop;
+}
+
 // figure out how to compute that less often
 ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
     assert (haveResultType() &&
@@ -240,8 +246,8 @@ ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
     Imop* i = new Imop (this, Imop::ASSIGN, size, st.constantInt(1));
     code.push_imop(i);
     patchFirstImop(i);
-    patchNextList(i);
-    prevPatchNextList(i);
+    patchNextList(i, st);
+    prevPatchNextList(i, st);
 
     Symbol::dim_iterator
             di = result()->dim_begin(),
@@ -256,7 +262,7 @@ ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
     return ICode::OK;
 }
 
-void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code) {
+void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code, SymbolTable& st) {
     assert (haveResultType());
     assert (sym != 0);
 
@@ -273,8 +279,8 @@ void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code) {
         Imop* i = new Imop(this, Imop::ASSIGN, *dj, *di);
         code.push_imop(i);
         patchFirstImop(i);
-        patchNextList(i);
-        prevPatchNextList(i);
+        patchNextList(i, st);
+        prevPatchNextList(i, st);
     }
 
     Symbol* sl = result()->getSizeSym();
@@ -282,8 +288,8 @@ void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code) {
     Imop* i = new Imop(this, Imop::ASSIGN, sl, sr);
     code.push_imop(i);
     patchFirstImop(i);
-    patchNextList(i);
-    prevPatchNextList(i);
+    patchNextList(i, st);
+    prevPatchNextList(i, st);
 }
 
 void TreeNodeExpr::generateResultSymbol(SymbolTable& st) {
@@ -495,8 +501,13 @@ namespace SecreC {
   TreeNodeBase
 *******************************************************************************/
 
-void TreeNodeBase::patchNextList(Imop *dest) {
-    patchList(m_nextList, dest);
+void TreeNodeBase::patchNextList(Imop* i, SymbolTable& st) {
+    SymbolLabel* label = st.label(i);
+    patchList (m_nextList, label);
+}
+
+void TreeNodeBase::patchNextList (SymbolLabel* label) {
+    patchList (m_nextList, label);
 }
 
 void TreeNodeBase::addToNextList(const std::vector<Imop*> &nl) {
@@ -509,29 +520,29 @@ ICode::Status TreeNodeBase::generateSubexprCode (TreeNodeExpr* e, ICodeList& cod
     if (e->firstImop() != 0) {
         Imop* i = e->firstImop();
         patchFirstImop(i);
-        patchNextList(i);
+        patchNextList(i, st);
         if (prevSubexpr() != 0)
-            prevSubexpr()->patchNextList(i);
+            prevSubexpr()->patchNextList(i, st);
         setPrevSubexpr(e);
     }
 
     return ICode::OK;
 }
 
-void TreeNodeBase::prevPatchNextList (Imop* i) {
+void TreeNodeBase::prevPatchNextList (Imop* i, SymbolTable& st) {
     if (prevSubexpr())
-        prevSubexpr()->patchNextList(i);
+        prevSubexpr()->patchNextList(i, st);
 }
 
 /*******************************************************************************
   TreeNodeCodeable
 *******************************************************************************/
 
-void TreeNodeCodeable::patchBreakList(Imop *dest) {
+void TreeNodeCodeable::patchBreakList(SymbolLabel *dest) {
     patchList(m_breakList, dest);
 }
 
-void TreeNodeCodeable::patchContinueList(Imop *dest) {
+void TreeNodeCodeable::patchContinueList(SymbolLabel *dest) {
     patchList(m_continueList, dest);
 }
 
@@ -587,7 +598,7 @@ ICode::Status TreeNodeStmtCompound::generateCode(ICodeList &code,
                                | c->resultFlags());
             }
 
-            last->patchNextList(c->firstImop());
+            last->patchNextList(c->firstImop(), st);
         } else {
             setResultFlags(c->resultFlags());
         }
@@ -638,11 +649,11 @@ std::string TreeNodeDimTypeF::xmlHelper() const {
   TreeNodeExpr
 *******************************************************************************/
 
-void TreeNodeExpr::patchTrueList(Imop *dest) {
+void TreeNodeExpr::patchTrueList(SymbolLabel *dest) {
     patchList(m_trueList, dest);
 }
 
-void TreeNodeExpr::patchFalseList(Imop *dest) {
+void TreeNodeExpr::patchFalseList(SymbolLabel *dest) {
     patchList(m_falseList, dest);
 }
 
@@ -813,7 +824,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                     Imop* i = new Imop(this, Imop::ADD, r_hi, r_lo, st.constantInt(1));
                     code.push_imop(i);
                     patchFirstImop(i);
-                    prevPatchNextList(i);
+                    prevPatchNextList(i, st);
                 }
 
                 spv.push_back(std::make_pair(r_lo, r_hi));
@@ -826,8 +837,10 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
             std::stringstream ss;
             ss << "Index out of bounds at " << location() << ".";
             Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
-            Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                                 (Symbol*) new std::string(ss.str()));
+            Imop* err = newError (ss.str (), this, st);
+            // new Imop(this, Imop::ERROR, (Symbol*) 0,
+            //                     (Symbol*) new std::string(ss.str()));
+            SymbolLabel* errLabel = st.label (err);
 
             // check lower indices
             Symbol::dim_iterator di = destSym->dim_begin();
@@ -837,8 +850,8 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                 Imop* i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, *di);
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
-                i->setJumpDest(err);
+                prevPatchNextList(i, st);
+                i->setJumpDest(errLabel);
             }
 
             // check upper indices
@@ -850,13 +863,13 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                 Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
-                i->setJumpDest(err);
+                prevPatchNextList(i, st);
+                i->setJumpDest(errLabel);
 
                 Symbol* s_lo = spv[k].first;
                 i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, s_hi);
                 code.push_imop(i);
-                i->setJumpDest(err);
+                i->setJumpDest(errLabel);
             }
 
             // check that rhs has correct dimensions
@@ -867,17 +880,17 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                     Imop* i = new Imop(this, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
                     code.push_imop(i);
                     patchFirstImop(i);
-                    prevPatchNextList(i);
+                    prevPatchNextList(i, st);
 
                     i = new Imop(this, Imop::JNE, (Symbol*) 0, tsym, e2->result()->getDim(k));
                     code.push_imop(i);
-                    i->setJumpDest(err);
+                    i->setJumpDest(errLabel);
                 }
             }
 
             code.push_imop(jmp);
             patchFirstImop(jmp);
-            prevPatchNextList(jmp);
+            prevPatchNextList(jmp, st);
             addToNextList(jmp); /// \todo not sure about that...
 
             code.push_imop(err);
@@ -889,17 +902,17 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         std::vector<Symbol* > stride;
         {
             code.push_comment("Computing stride:");
-            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
-            Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantUInt(1));
+            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+            Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantInt(1));
             stride.push_back(sym);
             code.push_imop(i);
             patchFirstImop(i);
-            patchNextList(i);
-            prevPatchNextList(i);
+            patchNextList(i, st);
+            prevPatchNextList(i, st);
 
             Symbol* prev = sym;
             for (Symbol::dim_iterator it(destSym->dim_begin()); it != destSym->dim_end(); ++ it) {
-                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
                 i = new Imop(this, Imop::MUL, sym, prev, *it);
                 stride.push_back(sym);
                 code.push_imop(i);
@@ -910,14 +923,14 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         // 4. initialze running indices
         std::vector<Symbol* > indices;
         for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
-            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
             indices.push_back(sym);
         }
 
         // 6. initialze symbols for offsets and temporary results
-        Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
-        Symbol* old_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
-        Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Symbol* old_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
 
         // 7. start
         std::stack<Imop*> jump_stack;
@@ -929,9 +942,9 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                     it_it = indices.begin();
 
             // offset = 0
-            Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantUInt(0));
+            Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantInt(0));
             code.push_imop(i);
-            patchNextList(i);
+            patchNextList(i, st);
 
             for (; spv_it != spv_it_end; ++ spv_it, ++ it_it) {
                 Symbol* i_lo = spv_it->first;
@@ -952,7 +965,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         // 8. compute offset for RHS
         {
             // old_ffset = 0
-            Imop* i = new Imop(this, Imop::ASSIGN, old_offset, st.constantUInt(0));
+            Imop* i = new Imop(this, Imop::ASSIGN, old_offset, st.constantInt(0));
             code.push_imop(i);
 
             std::vector<Symbol* >::iterator stride_it = stride.begin();
@@ -1024,7 +1037,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
             }
 
             // offset = offset + 1
-            Imop* i = new Imop(this, Imop::ADD, offset, offset, st.constantUInt(1));
+            Imop* i = new Imop(this, Imop::ADD, offset, offset, st.constantInt(1));
             code.push_imop(i);
        }
 
@@ -1039,14 +1052,16 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                 Symbol* idx = *rit;
 
                 // i = i + 1
-                Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantUInt(1));
+                Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantInt(1));
                 code.push_imop(i);
-                if (prev_jump != 0) prev_jump->setJumpDest(i);
+                if (prev_jump != 0) {
+                    prev_jump->setJumpDest(st.label(i));
+                }
 
                 // GOTO L1;
                 i = new Imop(this, Imop::JUMP, (Symbol*) 0);
                 code.push_imop(i);
-                i->setJumpDest(jump_stack.top());
+                i->setJumpDest(st.label(jump_stack.top()));
                 prev_jump = jump_stack.top();
                 jump_stack.pop();
 
@@ -1068,7 +1083,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
             setResult(destSymSym);
 
         if (!e2->resultType().isScalar()) {
-            copyShapeFrom(e2->result(), code);
+            copyShapeFrom(e2->result(), code, st);
         }
 
         Imop *i = 0;
@@ -1080,7 +1095,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         }
         code.push_imop(i);
         patchFirstImop(i);
-        e2->patchNextList(i);
+        e2->patchNextList(i, st);
         setNextList(e2->nextList());
     } else {
         // Arithmetic assignments
@@ -1105,14 +1120,14 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
             i = new Imop(this, Imop::FILL, tmp, e2->result(), destSym->getSizeSym());
             code.push_imop(i);
             patchFirstImop(i);
-            e2->patchNextList(i);
+            e2->patchNextList(i, st);
 
             i = new Imop(this, iType, destSymSym, destSymSym, tmp, destSym->getSizeSym());
         }
 
         code.push_imop(i);
         patchFirstImop(i);
-        e2->patchNextList(i);
+        e2->patchNextList(i, st);
 
         if (r != 0) {
             i = 0;
@@ -1300,7 +1315,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
                 Imop* i = new Imop(this, Imop::ADD, r_hi, r_lo, st.constantInt(1));
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
+                prevPatchNextList(i, st);
             }
 
             spv.push_back(std::make_pair(r_lo, r_hi));
@@ -1314,8 +1329,10 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
         std::stringstream ss;
         ss << "Index out of bounds at " << location() << ".";
         Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
-        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                             (Symbol*) new std::string(ss.str()));
+        Imop* err = newError (ss.str (), this, st);
+        // new Imop(this, Imop::ERROR, (Symbol*) 0,
+        //                     (Symbol*) new std::string(ss.str()));
+        SymbolLabel* errLabel = st.label(err);
 
         Symbol::dim_iterator dit = x->dim_begin();
         for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it, ++ dit) {
@@ -1329,21 +1346,21 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
             Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, st.constantInt(0), s_lo);
             code.push_imop(i);
             patchFirstImop(i);
-            prevPatchNextList(i);
-            i->setJumpDest(err);
+            prevPatchNextList(i, st);
+            i->setJumpDest(errLabel);
 
             i = new Imop(this, Imop::JGT, (Symbol*) 0, s_lo, s_hi);
             code.push_imop(i);
-            i->setJumpDest(err);
+            i->setJumpDest(errLabel);
 
             i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
             code.push_imop(i);
-            i->setJumpDest(err);
+            i->setJumpDest(errLabel);
         }
 
         code.push_imop(jmp);
         patchFirstImop(jmp);
-        prevPatchNextList(jmp);
+        prevPatchNextList(jmp, st);
         addToNextList(jmp); /// \todo not sure about that...
 
         code.push_imop(err);
@@ -1361,8 +1378,8 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
             assert (sym != 0);
             Imop* i = new Imop(this, Imop::SUB, sym, spv[k].second, spv[k].first);
             code.push_imop(i);
-            patchNextList(i);
-            prevPatchNextList(i);
+            patchNextList(i, st);
+            prevPatchNextList(i, st);
         }
 
         s = computeSize(code, st);
@@ -1387,33 +1404,33 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
     // 4. initialze required temporary symbols
     std::vector<Symbol* > indices;
     for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
-        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
         indices.push_back(sym);
     }
 
-    Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+    Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
     Symbol* tmp_result = st.appendTemporary(TypeNonVoid(e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0));
-    Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+    Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
 
     // 3. initialize strides: s[0] = 1; ...; s[n+1] = s[n] * d[n];
     std::vector<Symbol* > strides [2];
     //code.push_imop(new Imop(this, Imop::PRINT, (Symbol*) 0, st.constantString("<STRIDES ")));
     for (unsigned j = 0; j < 2; ++ j){
         code.push_comment("Computing stride:");
-        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
-        Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantUInt(1));
+        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantInt(1));
         strides[j].push_back(sym);
         code.push_imop(i);
         patchFirstImop(i);
-        patchNextList(i);
-        prevPatchNextList(i);
+        patchNextList(i, st);
+        prevPatchNextList(i, st);
 
         Symbol* prevSym = sym;
         Symbol* resSym = 0;
         if (j == 0) resSym = x;
         if (j == 1) resSym = result();
         for (Symbol::dim_iterator it(resSym->dim_begin()); it != resSym->dim_end(); ++ it) {
-            sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+            sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
             i = new Imop(this, Imop::MUL, sym, prevSym, *it);
             strides[j].push_back(sym);
             code.push_imop(i);
@@ -1451,7 +1468,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
     {
         // old_ffset = 0
         code.push_comment("Compute offset:");
-        Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantUInt(0));
+        Imop* i = new Imop(this, Imop::ASSIGN, offset, st.constantInt(0));
         code.push_imop(i);
 
 
@@ -1515,14 +1532,16 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
             Symbol* idx = *rit;
 
             // i = i + 1
-            Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantUInt(1));
+            Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantInt(1));
             code.push_imop(i);
-            if (prevJump != 0) prevJump->setJumpDest(i);
+            if (prevJump != 0) {
+                prevJump->setJumpDest(st.label(i));
+            }
 
             // GOTO L1;
             i = new Imop(this, Imop::JUMP, (Symbol*) 0);
             code.push_imop(i);
-            i->setJumpDest(jump_stack.top());
+            i->setJumpDest(st.label(jump_stack.top()));
             prevJump = jump_stack.top();
             jump_stack.pop();
 
@@ -1548,7 +1567,7 @@ ICode::Status TreeNodeExprIndex::generateBoolCode(ICodeList &code,
     Imop *i = new Imop(this, Imop::JT, 0, result());
     code.push_imop(i);
     patchFirstImop(i);
-    patchNextList(i);
+    patchNextList(i, st);
     addToTrueList(i);
 
     i = new Imop(this, Imop::JUMP, 0);
@@ -1600,7 +1619,7 @@ ICode::Status TreeNodeExprSize::generateCode(ICodeList &code,
         Imop* i = new Imop(this, Imop::ASSIGN, r, size);
         code.push_imop(i);
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
         setResult(r);
     }
     else {
@@ -1668,7 +1687,7 @@ ICode::Status TreeNodeExprShape::generateCode(ICodeList &code,
     else
         i = new Imop(this, Imop::FILL, result(), st.constantInt(0), n);
     code.push_imop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
 
     i = new Imop(this, Imop::ASSIGN, result()->getDim(0), n);
     code.push_imop(i);
@@ -1804,8 +1823,10 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
     ss << "Different sized dimensions in concat at " << location() << ".";
-    Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                         (Symbol*) new std::string(ss.str()));
+    Imop* err = newError (ss.str (), this, st);
+    //new Imop(this, Imop::ERROR, (Symbol*) 0,
+    //                     (Symbol*) new std::string(ss.str()));
+    SymbolLabel* errLabel = st.label(err);
     for (unsigned it = 0; it < resultType().secrecDimType(); ++ it) {
         Symbol* s1 = e1->result()->getDim(it);
         Symbol* s2 = e2->result()->getDim(it);
@@ -1813,14 +1834,14 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
             Imop* i = new Imop(this, Imop::ADD, result()->getDim(it), s1, s2);
             code.push_imop(i);
             patchFirstImop(i);
-            prevPatchNextList(i);
+            prevPatchNextList(i, st);
         }
         else {
             Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, s1, s2);
             code.push_imop(i);
             patchFirstImop(i);
-            i->setJumpDest(err);
-            prevPatchNextList(i);
+            i->setJumpDest(errLabel);
+            prevPatchNextList(i, st);
 
             i = new Imop(this, Imop::ASSIGN, result()->getDim(it), s1);
             code.push_imop(i);
@@ -1830,7 +1851,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
     code.push_imop(jmp);
     patchFirstImop(jmp);
-    prevPatchNextList(jmp);
+    prevPatchNextList(jmp, st);
     addToNextList(jmp);
 
     code.push_imop(err);
@@ -1847,7 +1868,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
 
             i = new Imop(this, Imop::ASSIGN, strides[j][0], st.constantInt(1));
             code.push_imop(i);
-            patchNextList(i);
+            patchNextList(i, st);
 
             for (unsigned it = 1; it < n; ++ it) {
                 Symbol* sym = 0;
@@ -1949,7 +1970,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
             if (count == k) {
                 i = new Imop(this, Imop::SUB, tmp_int, indices[count], e1->result()->getDim(k));
                 code.push_imop(i);
-                patchNextList(i);
+                patchNextList(i, st);
 
                 i = new Imop(this, Imop::MUL, tmp_int, *it, tmp_int);
                 code.push_imop(i);
@@ -1957,7 +1978,7 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
             else {
                 i = new Imop(this, Imop::MUL, tmp_int, *it, indices[count]);
                 code.push_imop(i);
-                patchNextList(i);
+                patchNextList(i, st);
             }
 
             i = new Imop(this, Imop::ADD, offset, offset, tmp_int);
@@ -1969,12 +1990,12 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     // t = y[j]
     i = new Imop(this, Imop::LOAD, tmp_elem, e2->result(), offset);
     code.push_imop(i);
-    patchNextList(i);
+    patchNextList(i, st);
 
     // out: r[i] = t
     i = new Imop(this, Imop::ASSIGN, offset, st.constantInt(0));
     code.push_imop(i);
-    jump_out->setJumpDest(i);
+    jump_out->setJumpDest(st.label(i));
 
     { // compute j if i < d (for e1)
         code.push_comment("START LHS offset:");
@@ -2011,14 +2032,14 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
             Symbol* idx = *rit;
 
             // i = i + 1
-            Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantUInt(1));
+            Imop* i = new Imop(this, Imop::ADD, idx, idx, st.constantInt(1));
             code.push_imop(i);
-            if (prevJump != 0) prevJump->setJumpDest(i);
+            if (prevJump != 0) prevJump->setJumpDest(st.label(i));
 
             // GOTO L1;
             i = new Imop(this, Imop::JUMP, (Symbol*) 0);
             code.push_imop(i);
-            i->setJumpDest(imop_stack.top());
+            i->setJumpDest(st.label(imop_stack.top()));
             prevJump = imop_stack.top();
             imop_stack.pop();
 
@@ -2123,7 +2144,7 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
     Symbol* s_new = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC,DATATYPE_INT,0));
     Imop* i = new Imop(this, Imop::ASSIGN, s_new, st.constantInt(1));
     code.push_imop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
     patchFirstImop(i);
     Symbol::dim_iterator
             dim_it = result()->dim_begin(),
@@ -2140,9 +2161,10 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
         Imop* jmp = new Imop (this, Imop::JE, (Symbol*) 0, rhs->getSizeSym(), s_new);
         code.push_imop(jmp);
         addToNextList(jmp);
-
-        Imop* err = new Imop (this, Imop::ERROR, (Symbol*) 0,
-                          (Symbol*) new std::string("ERROR: Mismatching sizes in reshape!"));
+        std::stringstream ss;
+        ss << "ERROR: Mismatching sizes in reshape at " << location();
+        Imop* err = newError (ss.str (), this, st);
+        //new Imop (this, Imop::ERROR, (Symbol*) 0, (Symbol*) new std::string(ss.str()));
         code.push_imop(err);
 
     }
@@ -2158,7 +2180,7 @@ ICode::Status TreeNodeExprReshape::generateCode(ICodeList &code,
     // Copy result:
     i = new Imop(this, Imop::ASSIGN, result(), rhs, s_new);
     code.push_imop(i);
-    patchNextList(i);
+    patchNextList(i, st);
 
     i = new Imop(this, Imop::ASSIGN, result()->getSizeSym(), s_new);
     code.push_imop(i);
@@ -2231,7 +2253,7 @@ ICode::Status TreeNodeExprFRead::generateCode(ICodeList &code,
     i = new Imop(this, Imop::FREAD, (Symbol*) 0, e->result());
     code.push_imop(i);
     patchFirstImop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
 
     i = new Imop(this, Imop::POP, result()->getDim(1));
     code.push_imop(i);
@@ -2437,7 +2459,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
                            result());
         code.push_imop(j);
         addToNextList(j);
-        e1->patchNextList(j);
+        e1->patchNextList(j, st);
 
         // Generate code for second child expression:
         s = e2->generateCode(code, st, log, result());
@@ -2465,7 +2487,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         Imop* i = new Imop(this, Imop::FILL, e2result, e2->result(), e1result->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
     }
     else
     if (e2->resultType().secrecDimType() > e1->resultType().secrecDimType()) {
@@ -2474,27 +2496,31 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
         Imop* i = new Imop(this, Imop::FILL, e1result, e1->result(), e2result->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
     }
     else {
-        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                             (Symbol*) new std::string("Mismaching shapes in addition!"));
+        std::stringstream ss;
+        ss << "Mismaching shapes in addition at " << location();
+//        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+//                             (Symbol*) new std::string(ss.str()));
+        Imop* err = newError (ss.str (), this, st);
+        SymbolLabel* errLabel = st.label(err);
         Symbol::dim_iterator
                 di = e1result->dim_begin(),
                 dj = e2result->dim_begin(),
                 de = e1result->dim_end();
         for (; di != de; ++ di, ++ dj) {
             Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
-            i->setJumpDest(err);
+            i->setJumpDest(errLabel);
             patchFirstImop(i);
-            prevPatchNextList(i);
+            prevPatchNextList(i, st);
             code.push_imop(i);
         }
 
         jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
         code.push_imop(jmp);
         patchFirstImop(jmp);
-        prevPatchNextList(jmp);
+        prevPatchNextList(jmp, st);
         addToNextList(jmp);
 
         code.push_imop(err);
@@ -2507,7 +2533,7 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
-        copyShapeFrom(e1result, code);
+        copyShapeFrom(e1result, code, st);
     }
 
     // Generate code for binary expression:
@@ -2542,8 +2568,8 @@ ICode::Status TreeNodeExprBinary::generateCode(ICodeList &code,
 
     code.push_imop(i);
     patchFirstImop(i);
-    patchNextList(i);
-    prevPatchNextList(i);
+    patchNextList(i, st);
+    prevPatchNextList(i, st);
 
     return ICode::OK;
 }
@@ -2584,7 +2610,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
 
                 // Short circuit the code:
                 if (type() == NODE_EXPR_BINARY_LAND) {
-                    e1->patchTrueList(e2->firstImop());
+                    e1->patchTrueList(
+                                st.label(e2->firstImop()));
                     setFalseList(e1->falseList());
 
                     setTrueList(e2->trueList());
@@ -2592,7 +2619,8 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                 } else {
                     assert(type() == NODE_EXPR_BINARY_LOR);
 
-                    e1->patchFalseList(e2->firstImop());
+                    e1->patchFalseList(
+                                st.label(e2->firstImop()));
                     setTrueList(e1->trueList());
 
                     setFalseList(e2->falseList());
@@ -2623,7 +2651,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                 j1->setArg1(result());
                 code.push_imop(j1);
                 code.push_imop(j2);
-                patchNextList(j1);
+                patchNextList(j1, st);
             }
             break;
         case NODE_EXPR_BINARY_EQ:   // fall through
@@ -2662,11 +2690,11 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
             patchFirstImop(tj);
 
             if (e2->firstImop()) {
-                e1->patchNextList(e2->firstImop());
-                e2->patchNextList(tj);
+                e1->patchNextList(e2->firstImop(), st);
+                e2->patchNextList(tj, st);
             }
             else {
-                e1->patchNextList(tj);
+                e1->patchNextList(tj, st);
             }
 
             Imop *fj = new Imop(this, Imop::JUMP, 0);
@@ -2781,7 +2809,7 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
-        copyShapeFrom(e->result(), code);
+        copyShapeFrom(e->result(), code, st);
     }
 
     Imop *i = 0;
@@ -2796,7 +2824,7 @@ ICode::Status TreeNodeExprClassify::generateCode(ICodeList &code,
 
     code.push_imop(i);
     patchFirstImop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
 
     return ICode::OK;
 }
@@ -2861,7 +2889,7 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
-        copyShapeFrom(e->result(), code);
+        copyShapeFrom(e->result(), code, st);
     }
 
     Imop *i = 0;
@@ -2876,7 +2904,7 @@ ICode::Status TreeNodeExprDeclassify::generateCode(ICodeList &code,
 
     code.push_imop(i);
     patchFirstImop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
 
     return ICode::OK;
 }
@@ -3056,7 +3084,7 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
 
         code.push_imop(i);     
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
 
         // push shape in reverse order
         Symbol::dim_reverese_iterator
@@ -3073,7 +3101,8 @@ ICode::Status TreeNodeExprProcCall::generateCode(ICodeList &code,
     // Do function call
     Imop *i = new Imop(this, Imop::CALL, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
     Imop *c = new Imop(this, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    i->setCallDest(m_procedure, c);
+    i->setCallDest(m_procedure, st.label(c));
+    c->setArg2(st.label(i));
     code.push_imop(i);
     code.push_imop(c);
     patchFirstImop(i);
@@ -3223,7 +3252,7 @@ ICode::Status TreeNodeExprRVariable::generateCode(ICodeList &code,
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
-        copyShapeFrom(src, code);
+        copyShapeFrom(src, code, st);
 
         Imop *i = 0;
         if (!resultType().isScalar()) {
@@ -3461,8 +3490,8 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         if (s != ICode::OK) return s;
 
         // Link boolean expression code to the rest of the code:
-        e1->patchTrueList(e2->firstImop());
-        e1->patchFalseList(e3->firstImop());
+        e1->patchTrueList(st.label(e2->firstImop()));
+        e1->patchFalseList(st.label(e3->firstImop()));
 
         // Handle next lists of value child expressions:
         addToNextList(e2->nextList());
@@ -3486,13 +3515,17 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         } else {
             assert(r->secrecType().canAssign(resultType()));
             setResult(r);
-            copyShapeFrom(e1->result(), code);
+            copyShapeFrom(e1->result(), code, st);
         }
 
         // check that shapes match
+        std::stringstream ss;
+        ss << "Mismatching shapes at " << location();
         Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
-        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
-                             (Symbol*) new std::string("Mismatching shapes!"));
+//        Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0,
+//                             (Symbol*) new std::string(ss.str()));
+        Imop* err = newError (ss.str (), this, st);
+        SymbolLabel* errLabel = st.label(err);
         Symbol::dim_iterator
                 di = e1->result()->dim_begin(),
                 dj = e2->result()->dim_begin(),
@@ -3501,28 +3534,28 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         for (; di != de; ++ di, ++ dj, ++ dk) {
             Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
             code.push_imop(i);
-            i->setJumpDest(err);
+            i->setJumpDest(errLabel);
             i = new Imop(this, Imop::JNE, (Symbol*) 0, *dj, *dk);
             code.push_imop(i);
-            i->setJumpDest(err);
+            i->setJumpDest(errLabel);
         }
 
-        prevPatchNextList(jmp);
+        prevPatchNextList(jmp, st);
         code.push_imop(jmp);
         code.push_imop(err);
 
         // loop to set all values of resulting array
-        Symbol* counter = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_UINT, 0));
+        Symbol* counter = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
         Symbol* b = st.appendTemporary(static_cast<TypeNonVoid const&>(e1->resultType()));
         Symbol* t = st.appendTemporary(static_cast<TypeNonVoid const&>(resultType()));
 
         // r = e1
         Imop* i = new Imop(this, Imop::ASSIGN, result(), e2->result(), result()->getSizeSym());
         code.push_imop(i);
-        jmp->setJumpDest(i);
+        jmp->setJumpDest(st.label(i));
 
         // counter = 0
-        i = new Imop(this, Imop::ASSIGN, counter, st.constantUInt(0));
+        i = new Imop(this, Imop::ASSIGN, counter, st.constantInt(0));
         code.push_imop(i);
 
         // L0: if (counter >= size) goto next;
@@ -3534,13 +3567,13 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         i = new Imop(this, Imop::LOAD, b, e1->result(), counter);
         code.push_imop(i);
 
-        Imop* t0 = new Imop(this, Imop::ADD, counter, counter, st.constantUInt(1));
+        Imop* t0 = new Imop(this, Imop::ADD, counter, counter, st.constantInt(1));
         Imop* t1 = new Imop(this, Imop::STORE, result(), counter, t);
 
         // if b goto T0
         i = new Imop(this, Imop::JT, (Symbol*) 0, b);
         code.push_imop(i);
-        i->setJumpDest(t0);
+        i->setJumpDest(st.label(t0));
 
         // t = e3[counter]
         // T1: result[counter] = t
@@ -3549,13 +3582,13 @@ ICode::Status TreeNodeExprTernary::generateCode(ICodeList &code,
         code.push_imop(t1);
 
         // T0: counter = counter + 1
-        i = new Imop(this, Imop::ADD, counter, counter, st.constantUInt(1));
+        i = new Imop(this, Imop::ADD, counter, counter, st.constantInt(1));
         code.push_imop(t0);
 
         // goto L0
         i = new Imop(this, Imop::JUMP, (Symbol*) 0);
         code.push_imop(i);
-        i->setJumpDest(jge);
+        i->setJumpDest(st.label(jge));
     }
 
     return ICode::OK;
@@ -3583,8 +3616,8 @@ ICode::Status TreeNodeExprTernary::generateBoolCode(ICodeList &code,
     if (s != ICode::OK) return s;
 
     // Link conditional expression code to the rest of the code:
-    e1->patchTrueList(e2->firstImop());
-    e1->patchFalseList(e3->firstImop());
+    e1->patchTrueList(st.label(e2->firstImop()));
+    e1->patchFalseList(st.label(e3->firstImop()));
 
     addToTrueList(e2->trueList());
     addToTrueList(e3->trueList());
@@ -3720,7 +3753,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
     } else {
         assert(r->secrecType().canAssign(resultType()));
         setResult(r);
-        copyShapeFrom(e->result(), code);
+        copyShapeFrom(e->result(), code, st);
     }
 
     // Generate code for unary expression:
@@ -3738,7 +3771,7 @@ ICode::Status TreeNodeExprUnary::generateCode(ICodeList &code, SymbolTable &st,
 
     code.push_imop(i);
     patchFirstImop(i);
-    prevPatchNextList(i);
+    prevPatchNextList(i, st);
 
     return ICode::OK;
 }
@@ -3886,8 +3919,9 @@ ICode::Status TreeNodeProcDef::generateCode(ICodeList &code, SymbolTable &st,
             }
             assert(fType.kind() == TNV::PROCEDUREVOID);
             Imop *i = new Imop(this, Imop::RETURNVOID, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-            i->setReturnDestFirstImop(firstImop());
-            body->patchNextList(i);
+            i->setReturnDestFirstImop(
+                        st.label(firstImop()));
+            body->patchNextList(i, st);
             code.push_imop(i);
         }
     }
@@ -3969,7 +4003,7 @@ ICode::Status TreeNodeGlobals::generateCode(ICodeList &code, SymbolTable &st,
             if (last == 0) {
                 setFirstImop(decl->firstImop());
             } else {
-                last->patchNextList(decl->firstImop());
+                last->patchNextList(decl->firstImop(), st);
             }
             last = decl;
         } else {
@@ -4077,7 +4111,8 @@ ICode::Status TreeNodeProgram::generateCode(ICodeList &code, SymbolTable &st,
     }
 
     // Bind call to main(), i.e. mainCall:
-    mainCall->setCallDest(mainProc, retClean);
+    mainCall->setCallDest(mainProc, st.label(retClean));
+    retClean->setArg2(st.label(mainCall));
 
     return ICode::OK;
 }
@@ -4168,7 +4203,8 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
 
     // Initialize the new symbol (for initializer target)
     SymbolSymbol *ns = new SymbolSymbol(resultType());
-    ns->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
+    SymbolSymbol::ScopeType scopeType = m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL;
+    ns->setScopeType(scopeType);
     ns->setName(variableName());
 
     bool isScalar = resultType().isScalar();
@@ -4178,7 +4214,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
     TypeNonVoid const& dimType = TypeNonVoid(DataTypeVar(DataTypeBasic(SECTYPE_PUBLIC, DATATYPE_INT)));
     for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol(dimType);
-        sym->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
+        sym->setScopeType(scopeType);
         std::stringstream ss;
         ss << variableName() << "{d" << i << "}";
         sym->setName(ss.str());
@@ -4188,7 +4224,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
 
     { // set size symbol
         SymbolSymbol* sizeSym = new SymbolSymbol(dimType);
-        sizeSym->setScopeType(m_global ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL);
+        sizeSym->setScopeType(scopeType);
         std::stringstream ss;
         ss << variableName() << "{size}";
         sizeSym->setName(ss.str());
@@ -4215,7 +4251,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
             Imop* i = new Imop(this, Imop::MUL, ns->getSizeSym(), ns->getSizeSym(), e->result());
             code.push_imop(i);
             patchFirstImop(i);
-            prevPatchNextList(i);
+            prevPatchNextList(i, st);
         }
     }
     else {
@@ -4272,7 +4308,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                 Imop* i = new Imop(this, Imop::FILL, ns, e->result(), ns->getSizeSym());
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
+                prevPatchNextList(i, st);
             }
             else {
                 assert (resultType().secrecDimType() == e->resultType().secrecDimType());
@@ -4285,7 +4321,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                     Imop* i = new Imop(this, Imop::ASSIGN, *di, *dj);
                     code.push_imop(i);
                     patchFirstImop(i);
-                    prevPatchNextList(i);
+                    prevPatchNextList(i, st);
                 }
                 if (!isScalar) {
                     Imop* i = new Imop(this, Imop::ASSIGN, ns->getSizeSym(), e->result()->getSizeSym());
@@ -4295,7 +4331,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                 Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result(), e->result()->getSizeSym());
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
+                prevPatchNextList(i, st);
             }
         }
 
@@ -4306,30 +4342,34 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
                 Imop* i = new Imop(this, Imop::FILL, ns, e->result(), ns->getSizeSym());
                 code.push_imop(i);
                 patchFirstImop(i);
-                prevPatchNextList(i);
+                prevPatchNextList(i, st);
             }
             else {
                 // check that shapes match and assign
-                Imop* err = new Imop(this, Imop::ERROR, (Symbol*) 0, (Symbol*) new std::string("Shape mismatch!"));
+                std::stringstream ss;
+                ss << "Shape mismatch at " << location();
+                Imop* err = newError (ss.str (), this, st);
+                // new Imop(this, Imop::ERROR, (Symbol*) 0, (Symbol*) new std::string(ss.str()));
+                SymbolLabel* errLabel = st.label (err);
                 Symbol::dim_iterator
                         di = e->result()->dim_begin(),
                         dj = ns->dim_begin(),
                         de = e->result()->dim_end();
                 for (; di != de; ++ di, ++ dj) {
                     Imop* i = new Imop(this, Imop::JNE, (Symbol*) 0, *di, *dj);
-                    i->setJumpDest(err);
+                    i->setJumpDest(errLabel);
                     code.push_imop(i);
                     patchFirstImop(i);
-                    prevPatchNextList(i);
+                    prevPatchNextList(i, st);
                 }
                 Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
                 Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result(), ns->getSizeSym());
-                jmp->setJumpDest(i);
+                jmp->setJumpDest(st.label(i));
                 code.push_imop(jmp);
                 code.push_imop(err);
                 code.push_imop(i);
                 patchFirstImop(jmp);
-                prevPatchNextList(jmp);
+                prevPatchNextList(jmp, st);
             }  
         }
 
@@ -4338,7 +4378,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
             Imop* i = new Imop(this, Imop::ASSIGN, ns, e->result());
             code.push_imop(i);
             patchFirstImop(i);
-            prevPatchNextList(i);
+            prevPatchNextList(i, st);
         }
 
         if (prevSubexpr() != 0) addToNextList(prevSubexpr()->nextList()); // uh oh...
@@ -4362,7 +4402,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
         else {
             i = new Imop(this, Imop::FILL, ns, (Symbol*) 0, (Symbol*) 0);
             if (n == 0) {
-                i->setArg2(st.constantUInt(0));
+                i->setArg2(st.constantInt(0));
             }
             else {
                 i->setArg2(ns->getSizeSym());
@@ -4371,7 +4411,7 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
 
         code.push_imop(i);
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
 
         typedef DataTypeBasic DTB;
         typedef DataTypeVar DTV;
@@ -4552,10 +4592,10 @@ ICode::Status TreeNodeStmtDoWhile::generateCode(ICodeList &code,
     // Patch jump lists:
     setFirstImop(body->firstImop());
     setNextList(body->breakList());
-    e->patchTrueList(body->firstImop());
+    e->patchTrueList(st.label(body->firstImop()));
     addToNextList(e->falseList());
-    body->patchContinueList(e->firstImop());
-    body->patchNextList(e->firstImop());
+    body->patchContinueList(st.label(e->firstImop()));
+    body->patchNextList(e->firstImop(), st);
 
     return ICode::OK;
 }
@@ -4613,14 +4653,15 @@ ICode::Status TreeNodeStmtAssert::generateCode(ICodeList &code, SymbolTable &st,
         setFirstImop(e->firstImop());
     }
 
-    std::ostringstream os;
-    os << "assert failed at " << location();
-    Imop *i = new Imop(this, Imop::ERROR, 0, (Symbol*) new std::string(os.str()));
+    std::ostringstream ss;
+    ss << "assert failed at " << location();
+    Imop *i = newError (ss.str (), this, st);
+    // new Imop(this, Imop::ERROR, 0, (Symbol*) new std::string(ss.str()));
     code.push_imop(i);
     patchFirstImop(i);
 
-    e->patchNextList(i);
-    e->patchFalseList(i);
+    e->patchNextList(i, st);
+    e->patchFalseList(st.label(i));
     addToNextList(e->trueList());
 
     setResultFlags(FALLTHRU);
@@ -4680,7 +4721,7 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
     if (e1 != 0 && body->firstImop() != 0)
-        e1->patchTrueList(body->firstImop());
+        e1->patchTrueList(st.label(body->firstImop()));
     addToNextList(body->breakList());
 
     // Iteration expression:
@@ -4689,17 +4730,20 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
         assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
         e2 = static_cast<TreeNodeExpr*>(c2);
         ICode::Status s = e2->generateCode(code, st, log);
+        SymbolLabel* jumpDest = st.label(e2->firstImop());
         if (s != ICode::OK) return s;
-        if (e1 != 0 && body->firstImop() == 0) e1->patchTrueList(e2->firstImop());
-        body->patchContinueList(e2->firstImop());
-        body->patchNextList(e2->firstImop());
+        if (e1 != 0 && body->firstImop() == 0) e1->patchTrueList(jumpDest);
+        body->patchContinueList(jumpDest);
+        body->patchNextList(jumpDest);
     } else {
         if (e1 != 0) {
-            body->patchContinueList(e1->firstImop());
-            body->patchNextList(e1->firstImop());
+            SymbolLabel* jumpDest = st.label(e1->firstImop());
+            body->patchContinueList(jumpDest);
+            body->patchNextList(jumpDest);
         } else {
-            body->patchContinueList(body->firstImop());
-            body->patchNextList(body->firstImop());
+            SymbolLabel* jumpDest = st.label(body->firstImop());
+            body->patchContinueList(jumpDest);
+            body->patchNextList(jumpDest);
         }
     }
 
@@ -4724,9 +4768,9 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     // Next iteration jump:
     Imop *j = new Imop(this, Imop::JUMP, 0);
     if (e1 != 0) {
-        j->setJumpDest(e1->firstImop());
+        j->setJumpDest(st.label(e1->firstImop()));
     } else {
-        j->setJumpDest(body->firstImop());
+        j->setJumpDest(st.label(body->firstImop()));
     }
     code.push_imop(j);
 
@@ -4770,7 +4814,8 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
     if (s != ICode::OK) return s;
 
     if (s1->firstImop() != 0) {
-        e->patchTrueList(s1->firstImop());
+        e->patchTrueList(
+                    st.label(s1->firstImop()));
         addToNextList(s1->nextList());
         addToBreakList(s1->breakList());
         addToContinueList(s1->continueList());
@@ -4797,7 +4842,8 @@ ICode::Status TreeNodeStmtIf::generateCode(ICodeList &code, SymbolTable &st,
         s = s2->generateCode(code, innerScope2, log);
         if (s != ICode::OK) return s;
 
-        e->patchFalseList(s2->firstImop());
+        e->patchFalseList(
+                    st.label(s2->firstImop()));
         addToNextList(s2->nextList());
         addToBreakList(s2->breakList());
         addToContinueList(s2->continueList());
@@ -4828,7 +4874,8 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
                == TypeNonVoid::PROCEDUREVOID);
 
         Imop *i = new Imop(this, Imop::RETURNVOID, 0, 0, 0);
-        i->setReturnDestFirstImop(containingProcedure()->firstImop());
+        i->setReturnDestFirstImop(
+                    st.label(containingProcedure()->firstImop()));
         code.push_imop(i);
         setFirstImop(i);
     } else {
@@ -4848,7 +4895,13 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(children().at(0));
         ICode::Status s = e->calculateResultType(st, log);
         if (s != ICode::OK) return s;
-        if (!containingProcedure()->procedureType().canAssign(e->resultType()))
+        const SecreC::TypeNonVoid& procType = containingProcedure()->procedureType();
+
+        // check that we can assign return type to proc type and also verify that
+        // dimensionalities check as we can not to implicit conversion to array
+        // with return statement
+        if (!procType.canAssign(e->resultType()) ||
+             procType.secrecDimType() != e->resultType().secrecDimType())
         {
             log.fatal() << "Cannot return value of type " << e->resultType()
                         << " from function with type "
@@ -4860,7 +4913,9 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         // Add implicit classify node if needed:
         e = classifyChildAtIfNeeded(0, containingProcedure()->procedureType().secrecSecType());
         s = generateSubexprCode(e, code, st, log);
-        if (s != ICode::OK) return s;
+        if (s != ICode::OK) {
+            return s;
+        }
 
         // Push data and then shape
         Imop* i = 0;
@@ -4870,7 +4925,7 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
             i = new Imop(this, Imop::PUSH, 0, e->result(), e->result()->getSizeSym());
         code.push_imop(i);
         patchFirstImop(i);
-        prevPatchNextList(i);
+        prevPatchNextList(i, st);
 
         Symbol::dim_reverese_iterator
                 di = e->result()->dim_rbegin(),
@@ -4881,9 +4936,11 @@ ICode::Status TreeNodeStmtReturn::generateCode(ICodeList &code, SymbolTable &st,
         }
 
         i = new Imop(this, Imop::RETURNVOID, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-        i->setReturnDestFirstImop(containingProcedure()->firstImop());
+        i->setReturnDestFirstImop(
+                    st.label(containingProcedure()->firstImop()));
         code.push_imop(i);
     }
+
     setResultFlags(TreeNodeStmt::RETURN);
 
     return ICode::OK;
@@ -4942,15 +4999,16 @@ ICode::Status TreeNodeStmtWhile::generateCode(ICodeList &code, SymbolTable &st,
 
     Imop *i = new Imop(this, Imop::JUMP, 0);
     code.push_imop(i);
-    i->setJumpDest(e->firstImop());
+    i->setJumpDest(st.label(e->firstImop()));
 
     // Patch jump lists:
     setFirstImop(e->firstImop());
-    e->patchTrueList(body->firstImop());
+    e->patchTrueList(st.label(body->firstImop()));
     setNextList(e->falseList());
     addToNextList(body->breakList());
-    body->patchContinueList(e->firstImop());
-    body->patchNextList(e->firstImop());
+    SymbolLabel* jumpDest = st.label(e->firstImop());
+    body->patchContinueList(jumpDest);
+    body->patchNextList(jumpDest);
 
     return ICode::OK;
 }
@@ -4988,7 +5046,7 @@ ICode::Status TreeNodeStmtPrint::generateCode(ICodeList &code, SymbolTable &st,
     Imop* i = new Imop(this, Imop::PRINT, (Symbol*) 0, e->result());
     code.push_imop(i);
     patchFirstImop(i);
-    e->patchNextList(i);
+    e->patchNextList(i, st);
 
     return ICode::OK;
 }

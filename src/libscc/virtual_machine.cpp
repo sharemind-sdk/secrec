@@ -32,8 +32,8 @@ using namespace SecreC;
 
 // primitive values
 union Value {
-    int m_int_val;
-    unsigned m_uint_val;
+    long m_int_val;
+    unsigned long m_uint_val;
     bool m_bool_val;
     std::string const* m_str_val;
 };
@@ -302,14 +302,14 @@ DECLVECOP2 (NEQSTRING)
  */
 
 CALLBACK(ERROR, i) {
-  std::string const* str = (std::string const*) i->args[1].loc;
-  std::cout << *str << std::endl;
+    FETCH2(arg, i);
+    std::cerr << *fetch_val(arg).m_str_val << std::endl;
 }
 
 CALLBACK(PRINT, i) {
-  FETCH2(arg, i);
-  std::cout << *fetch_val(arg).m_str_val << std::endl;
-  NEXT(i);
+    FETCH2(arg, i);
+    std::cout << *fetch_val(arg).m_str_val << std::endl;
+    NEXT(i);
 }
 
 CALLBACK(FREAD, i) {
@@ -355,9 +355,9 @@ CALLBACK(FREAD, i) {
 
     fhandle.close();
 
-    for (int i = 0; i < rowCount; ++ i) {
-        for (int j = 0; j < colCount; ++ j) {
-            m_stack.push(values[(rowCount - i - 1) + (colCount - j - 1)*rowCount]);
+    for (int row = 0; row < rowCount; ++ row) {
+        for (int col = 0; col < colCount; ++ col) {
+            m_stack.push(values[(rowCount - row - 1) + (colCount - col - 1)*rowCount]);
         }
     }
 
@@ -1040,7 +1040,6 @@ void VirtualMachine::run (ICodeList const& code) {
           // Correct isLocal and store constants in global store:
           if (sym == 0) continue;
           if (imop.type() == Imop::COMMENT) continue;
-          if (imop.type() == Imop::ERROR) continue;
           switch (sym->symbolType()) {
               case Symbol::SYMBOL:
                   assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
@@ -1088,8 +1087,10 @@ void VirtualMachine::run (ICodeList const& code) {
 
       // compute destinations for jumps
       if ((imop.type() & Imop::JUMP_MASK) != 0x0) {
-          Imop const* arg = (Imop const*) i.args[0].loc;
-          i.args[0].loc = (void*) &m_code[arg->index() - 1];
+          Symbol const* arg = (Symbol const*) i.args[0].loc;
+          assert (dynamic_cast<SymbolLabel const*>(arg) != 0);
+          Imop const* targetImop = static_cast<SymbolLabel const*>(arg)->target ();
+          i.args[0].loc = (void*) &m_code[targetImop->index() - 1];
       }
 
       // compile the code into sequence of instructions

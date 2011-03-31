@@ -14,7 +14,7 @@ class TreeNodeProcDef;
 
 class Symbol {
     public: /* Types: */
-        enum Type { PROCEDURE, CONSTANT, SYMBOL, TEMPORARY };
+        enum Type { PROCEDURE, CONSTANT, LABEL, SYMBOL, TEMPORARY };
         typedef std::vector<Symbol* >::iterator dim_iterator;
         typedef std::vector<Symbol* >::reverse_iterator dim_reverese_iterator;
         typedef std::vector<Symbol* >::const_iterator const_dim_iterator;
@@ -26,8 +26,14 @@ class Symbol {
               m_type(valueType.clone()),
               m_dims(valueType.secrecDimType(), (Symbol*) 0),
               m_size((Symbol*) 0) {}
+        explicit inline Symbol (Type symbolType)
+            : m_symbolType(symbolType),
+              m_type(TypeVoid ().clone ()),
+              m_dims(),
+              m_size((Symbol*) 0) {}
         virtual inline ~Symbol() { delete m_type; }
 
+        inline bool isConstant () const { return m_symbolType == CONSTANT; }
         inline Type symbolType() const { return m_symbolType; }
         inline const std::string &name() const { return m_name; }
         inline void setName(const std::string &name) { m_name = name; }
@@ -103,6 +109,15 @@ class SymbolProcedure: public Symbol {
         const Imop            *m_target;
 };
 
+class SymbolLabel: public Symbol {
+    public:
+        SymbolLabel (Imop* target);
+        inline Imop* target () const { return m_target; }
+        virtual std::string toString () const;
+    private:
+        Imop* m_target;
+};
+
 class SymbolConstantBool: public Symbol {
     public: /* Methods: */
         explicit SymbolConstantBool(bool value)
@@ -176,6 +191,7 @@ class SymbolTable {
         SymbolConstantInt *constantInt(int value);
         SymbolConstantUInt *constantUInt(unsigned value);
         SymbolConstantString *constantString(const std::string &value);
+        SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;
         Symbol *findGlobal(const std::string &name) const;
         SymbolProcedure *findGlobalProcedure(const std::string &name,

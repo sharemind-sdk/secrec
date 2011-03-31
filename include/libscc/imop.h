@@ -12,6 +12,7 @@ namespace SecreC {
 class Block;
 class Symbol;
 class SymbolProcedure;
+class SymbolLabel;
 class TreeNode;
 
 /**
@@ -19,12 +20,21 @@ class TreeNode;
  * Many of the instructions have optional argument denoting size
  * of an array. For example if addition operator gets arrays as argument
  * it will also get the size of argument and resulting arrays.
- *
  * - Size param is always denoted between curly bracers { and } in comments.
  * - If instruction is performed on scalar no size argument is required.
  * - Destination is always denoted with letter d.
  * - RETURN instruction is now only used to return non-arrays, to return arrays
  *   one must use stack.
+ *
+ * \todo no unsafe C style casting into Symbol* should ever happen.
+ *       Only such use remaining is "COMMENT" instruction, I think this
+ *       instruction should be removed and there should be another way of
+ *       attaching comments to intermediate code.
+ * \todo instead of "newing" instructions all the constructors should be
+ *       private and there should be special functions for creating new
+ *       instructions with proper type safe parameters.
+ *       For example:
+ *       static Imop* newJump (TreeNode* node, SymbolLabel* target) { ... }
  */
 class Imop {
     public: /* Types: */
@@ -57,7 +67,7 @@ class Imop {
             STORE      = 0x17, /*    d[arg1] = arg2;                    */
             LOAD       = 0x18, /*    d = arg1[arg2];                    */
             FILL       = 0x20, /*    d = FILL(arg1, arg2)               */
-            FREAD      = 0x30, /*    FREAD(arg1)                        */
+            FREAD      = 0x30, /*    FREAD                              */
 
             /* For CALL, arg2 is the corresponding RETCLEAN instruction:*/
             CALL       = 0x21,  /*   d = arg1(PARAMS);   (Imop *arg2)   */
@@ -98,8 +108,6 @@ class Imop {
 
             PRINT      = 0x9000   /* PRINT arg1; */
         };
-
-    public: /* Methods: */
         explicit inline Imop(TreeNode *creator, Type type)
             : m_creator(creator), m_type(type), m_args() {}
 
@@ -120,7 +128,6 @@ class Imop {
                              Symbol *arg1, Symbol *arg2, Symbol *arg3)
             : m_creator(creator), m_type(type), m_args(4)
         { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
-
         ~Imop();
 
         inline const std::set<Imop*> &incoming() const { return m_incoming; }
@@ -132,55 +139,60 @@ class Imop {
         inline bool isJump() const { return (m_type & JUMP_MASK) != 0x0; }
         inline bool isCondJump() const { return ((m_type & JUMP_MASK) != 0x0) && (m_type != JUMP); }
         inline bool isExpr() const { return (m_type & EXPR_MASK) != 0x0; }
-        unsigned nArgs() const { return m_args.size(); }
+        inline unsigned nArgs() const { return m_args.size(); }
 
         inline const Symbol *dest() const { return arg(0); }
         inline const Symbol *arg1() const { return arg(1); }
         inline const Symbol *arg2() const { return arg(2); }
         inline const Symbol *arg3() const { return arg(3); }
-
-        inline void setDest(const Symbol *dest) { setArg(0, dest); }
-        inline void setArg1(const Symbol *arg1) { setArg(1, arg1); }
-        inline void setArg2(const Symbol *arg2) { setArg(2, arg2); }
-        inline void setArg3(const Symbol* arg3) { setArg(3, arg3); }
-
         inline const Symbol* arg(unsigned i) const {
             assert (i < m_args.size() &&
                     "Imop::arg(unsigned i): index i out of bounds.");
             return m_args[i];
         }
 
+        inline void setDest(const Symbol *dest) { setArg(0, dest); }
+        inline void setArg1(const Symbol *arg1) { setArg(1, arg1); }
+        inline void setArg2(const Symbol *arg2) { setArg(2, arg2); }
+        inline void setArg3(const Symbol* arg3) { setArg(3, arg3); }
         inline void setArg(unsigned i, const Symbol* arg) {
             assert (i < m_args.size() &&
                     "Imop::setArg(unsigned i, const Symbol* arg): index i out of bounds.");
             m_args[i] = arg;
         }
 
-        inline const Imop *jumpDest() const {
-            return (Imop*) dest();
-        }
-
-        inline void setJumpDest(Imop *dest) {
-            assert(dest != 0);
-            assert((m_type & JUMP_MASK) != 0x0);
-            setDest((SecreC::Symbol*) dest);
-            dest->addIncoming(this);
-        }
-
+        // everything to do with jumping to labels and calling functions
+        SymbolLabel const* jumpDest() const;
+        void setJumpDest (SymbolLabel *dest);
         const Imop *callDest() const;
-        void setCallDest(SymbolProcedure *proc, Imop *clean);
-        inline void setReturnDestFirstImop(Imop *firstImop) {
-            assert(firstImop != 0);
-            assert(firstImop->m_type == COMMENT);
-            setArg2((SecreC::Symbol*) firstImop);
-            firstImop->addReturn(this);
-        }
+        void setCallDest(SymbolProcedure *proc, SymbolLabel *clean);
+        void setReturnDestFirstImop(SymbolLabel *label);
 
         inline Block *block() const { return m_block; }
         inline void setBlock(Block *block) { m_block = block; }
 
         inline unsigned long index() const { return m_index; }
         inline void setIndex(unsigned long index) { m_index = index; }
+
+        inline bool isComment (void) const {
+            return m_type == COMMENT;
+        }
+
+        /// \brief Checks if instruction ends a basic block.
+        /// \todo is Imop::CALL actually a terminator?
+        /// for example llvm doesn't consider it to be one
+        inline bool isTerminator (void) const {
+            switch (m_type) {
+            case END:
+            case ERROR:
+            case RETURN:
+            case RETURNVOID:
+            case CALL:
+                return true;
+            default:
+                return isJump ();
+            }
+        }
 
         std::string toString() const;
 

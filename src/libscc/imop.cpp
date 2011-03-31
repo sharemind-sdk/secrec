@@ -27,7 +27,7 @@ std::string uniqueName(const SecreC::Symbol *s) {
 namespace SecreC {
 
 #define dname  (dest() == 0 ? "_" : uniqueName(dest()))
-#define tname  (dest() == 0 ? "_" : ulongToString(((SecreC::Imop*) dest())->index()) )
+#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<SymbolLabel const*>(dest())->target()->index()) )
 #define a1name (arg1() == 0 ? "_" : uniqueName(arg1()))
 #define a2name (arg2() == 0 ? "_" : uniqueName(arg2()))
 #define a3name (arg3() == 0 ? "_" : uniqueName(arg3()))
@@ -37,15 +37,17 @@ Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
     typedef std::vector<Symbol const* >::iterator SVI;
 
-    if (m_type == COMMENT || m_type == ERROR) {
+    if (m_type == COMMENT) {
         delete (std::string*) arg1();
     } else if ((m_type & JUMP_MASK) != 0x0) {
         if (dest() != 0) {
-            ((Imop*) dest())->removeIncoming(this);
+            assert (dynamic_cast<SymbolLabel const*>(dest()) != 0);
+            static_cast<SymbolLabel const*>(dest())->target()->removeIncoming(this);
         }
     } else if (m_type == CALL) {
         if (arg2() != 0) {
-            ((Imop*) arg2())->removeIncomingCall(this);
+            assert (dynamic_cast<SymbolLabel const*>(arg2()) != 0);
+            static_cast<SymbolLabel const*>(arg2())->target()->removeIncoming(this);
         }
     }
 
@@ -66,17 +68,38 @@ const Imop *Imop::callDest() const {
     return static_cast<const SymbolProcedure*>(arg1())->decl()->firstImop();
 }
 
-void Imop::setCallDest(SymbolProcedure *proc, Imop *clean) {
+SymbolLabel const* Imop::jumpDest() const {
+    Symbol const* sym = dest ();
+    assert (dynamic_cast<SymbolLabel const*>(sym) != 0);
+    return static_cast<SymbolLabel const*>(sym);
+}
+
+void Imop::setJumpDest (SymbolLabel *dest) {
+    assert(dest != 0);
+    assert((m_type & JUMP_MASK) != 0x0);
+    setDest(dest);
+    dest->target()->addIncoming(this);
+}
+
+void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
     assert(proc != 0);
     assert(clean != 0);
     assert(m_type == CALL);
-    assert(clean->m_type == RETCLEAN);
+    assert(clean->target()->m_type == RETCLEAN);
     assert(proc->decl()->firstImop() != 0);
     setArg1(proc);
-    setArg2((SecreC::Symbol*) clean);
+    setArg2(clean);
     proc->setTarget(proc->decl()->firstImop());
     proc->decl()->firstImop()->addIncomingCall(this);
-    clean->setArg2((SecreC::Symbol*) this);
+    //clean->setArg2((SecreC::Symbol*) this);
+}
+
+void Imop::setReturnDestFirstImop (SymbolLabel *label) {
+    assert(label != 0);
+    Imop* firstImop = label->target ();
+    assert(firstImop->m_type == COMMENT);
+    setArg2(label);
+    firstImop->addReturn(this);
 }
 
 /// \todo make this pretty
@@ -203,7 +226,7 @@ std::string Imop::toString() const {
             os << "// " << *((std::string*) arg1());
             break;
         case ERROR:        /* // arg1                            */
-            os << "ERROR \"" <<  *((std::string*) arg1()) << "\"";
+            os << "ERROR \"" <<  a1name << "\"";
             break;
         case POP:     /* POP d;                        */
             os << "POP " << dname << ";";
@@ -266,7 +289,8 @@ std::string Imop::toString() const {
         os << "]";
     }
     if ((m_type == RETURN || m_type == RETURNVOID) && arg2() != 0) {
-        Imop *i = (Imop*) arg2();
+        assert (dynamic_cast<SymbolLabel const*>(arg2()) != 0);
+        Imop const* i = static_cast<SymbolLabel const*>(arg2())->target ();
         if (!i->m_incomingCalls.empty()) {
             std::set<unsigned long> is;
             for (ISCI it(i->m_incomingCalls.begin()); it != i->m_incomingCalls.end(); it++) {

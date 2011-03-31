@@ -67,6 +67,29 @@ std::string SymbolProcedure::toString() const {
 }
 
 /*******************************************************************************
+  SymbolLabel
+*******************************************************************************/
+
+SymbolLabel::SymbolLabel (Imop *target)
+    : Symbol (Symbol::LABEL),
+      m_target (target)
+{
+}
+
+std::string SymbolLabel::toString() const {
+    std::ostringstream os;
+    os << "Lable to ";
+    if (m_target->block () != 0) {
+        os << "block " << m_target->block()->index;
+    }
+    else {
+        os << "imop " << m_target->index ();
+    }
+
+    return os.str ();
+}
+
+/*******************************************************************************
   SymbolConstantBool
 *******************************************************************************/
 
@@ -222,6 +245,22 @@ SymbolConstantString *SymbolTable::constantString(const std::string &value) {
     sc->setName(name);
     appendGlobalSymbol(sc);
     return sc;
+}
+
+SymbolLabel* SymbolTable::label (Imop* imop) {
+    assert (imop != 0);
+    std::ostringstream os;
+    os << "{label}" << imop;
+    Symbol *s = findGlobal (os.str ());
+    if (s != 0) {
+        assert (dynamic_cast<SymbolLabel*>(s) != 0);
+        return static_cast<SymbolLabel*>(s);
+    }
+
+    SymbolLabel* sl = new SymbolLabel (imop);
+    sl->setName (os.str ());
+    appendGlobalSymbol (sl);
+    return sl;
 }
 
 Symbol *SymbolTable::find(const std::string &name) const {

@@ -15,6 +15,39 @@ namespace SecreC {
 class CompileLog;
 class TreeNodeExpr;
 class TreeNodeProcDef;
+class TreeNode;
+
+// C interface
+extern "C" {
+
+#endif /* #ifdef __cplusplus */
+
+/* C interface for yacc: */
+
+struct TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
+void treenode_free(struct TreeNode *node);
+enum SecrecTreeNodeType treenode_type(struct TreeNode *node);
+const YYLTYPE *treenode_location(const struct TreeNode *node);
+unsigned treenode_numChildren(struct TreeNode *node);
+struct TreeNode *treenode_childAt(struct TreeNode *node, unsigned index);
+void treenode_appendChild(struct TreeNode *parent, struct TreeNode *child);
+void treenode_prependChild(struct TreeNode *parent, struct TreeNode *child);
+void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc);
+
+struct TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
+struct TreeNode *treenode_init_int(int value, YYLTYPE *loc);
+struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
+struct TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
+struct TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
+struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
+                                        YYLTYPE *loc);
+struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
+                                         YYLTYPE *loc);
+struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
+                                        YYLTYPE *loc);
+
+#ifdef __cplusplus
+} /* extern "C" */
 
 class TreeNode {
     public: /* Types: */
@@ -71,41 +104,6 @@ class TreeNode {
         YYLTYPE          m_location;
 };
 
-extern "C" {
-
-#endif /* #ifdef __cplusplus */
-
-/* C interface for yacc: */
-
-struct TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
-void treenode_free(struct TreeNode *node);
-enum SecrecTreeNodeType treenode_type(struct TreeNode *node);
-const YYLTYPE *treenode_location(const struct TreeNode *node);
-unsigned treenode_numChildren(struct TreeNode *node);
-struct TreeNode *treenode_childAt(struct TreeNode *node, unsigned index);
-void treenode_appendChild(struct TreeNode *parent, struct TreeNode *child);
-void treenode_prependChild(struct TreeNode *parent, struct TreeNode *child);
-void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc);
-
-struct TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
-struct TreeNode *treenode_init_int(int value, YYLTYPE *loc);
-struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
-struct TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
-struct TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
-struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
-                                        YYLTYPE *loc);
-struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
-                                         YYLTYPE *loc);
-struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
-                                        YYLTYPE *loc);
-
-#ifdef __cplusplus
-} /* extern "C" */
-} /* namespace SecreC */
-
-namespace SecreC {
-
-
 /******************************************************************
   TreeNodeBase
 ******************************************************************/
@@ -119,7 +117,8 @@ class TreeNodeBase : public TreeNode {
 
         inline const std::vector<Imop*> &nextList() const { return m_nextList; }
         inline Imop *firstImop() const { return m_firstImop; }
-        void patchNextList(Imop *dest);
+        void patchNextList(Imop* i, SymbolTable& st);
+        void patchNextList(SymbolLabel* label);
 
     protected:
 
@@ -153,7 +152,7 @@ class TreeNodeBase : public TreeNode {
 
         TreeNodeExpr* prevSubexpr () { return m_prevSubexpr; }
         void setPrevSubexpr (TreeNodeExpr* prev) { m_prevSubexpr = prev; }
-        void prevPatchNextList (Imop* i);
+        void prevPatchNextList (Imop* i, SymbolTable& st);
 
     private: /* Fields: */
         std::vector<Imop*> m_nextList;     ///< List of operands that jump to next instruction.
@@ -182,8 +181,8 @@ class TreeNodeCodeable: public TreeNodeBase {
             return m_continueList;
         }
 
-        void patchBreakList(Imop *dest);
-        void patchContinueList(Imop *dest);
+        void patchBreakList(SymbolLabel *dest);
+        void patchContinueList(SymbolLabel *dest);
 
     protected: /* Methods: */
         inline void setBreakList(const std::vector<Imop*> &bl) {
@@ -299,7 +298,7 @@ class TreeNodeExpr: public TreeNodeBase {
         bool checkAndLogIfVoid(CompileLog& log);
 
         /// @return first added Imop or NULL if none were added
-        void copyShapeFrom(Symbol* st, ICodeList &code);
+        void copyShapeFrom(Symbol* s, ICodeList &code, SymbolTable &st);
         ICode::Status computeSize(ICodeList& code, SymbolTable& st);
         void generateResultSymbol(SymbolTable& st);
 
@@ -321,8 +320,8 @@ class TreeNodeExpr: public TreeNodeBase {
         inline const std::vector<Imop*> &trueList() const {
             return m_trueList;
         }
-        void patchTrueList(Imop *dest);
-        void patchFalseList(Imop *dest);
+        void patchTrueList(SymbolLabel *dest);
+        void patchFalseList(SymbolLabel *dest);
 
     protected: /* Methods: */
         inline void setResult(Symbol *r) {
