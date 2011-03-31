@@ -1,9 +1,11 @@
 #ifndef BLOCKS_H
 #define BLOCKS_H
 
+#include <list>
 #include <map>
 #include <set>
 #include <vector>
+
 #include "icodelist.h"
 
 
@@ -14,54 +16,79 @@ namespace SecreC {
 *******************************************************************************/
 
 class Block;
+class Imop;
 class ReachingDefinitions;
 class ReachingJumps;
 
+/**
+ * \brief In essense this is the control flow graph.
+ * It deallocates all blocks on exit.
+ * \todo Need something better for CFG construction and
+ * manipulation (which in essense \a Blocks class is).
+ */
 class Blocks: public std::vector<Block*> {
-    public: /* Types: */
+    private:
+        Blocks (const Blocks&); // do not implement
+        void operator = (const Blocks&); // do not implement
         typedef ICodeList::const_iterator CCI;
-        typedef std::map<const SecreC::Imop*, SecreC::Block*> IAB; // Imop assignment block
+    public: /* Types: */
+        typedef std::map<const Imop*, Block*> IAB; // Imop assignment block
 
     public: /* Methods: */
+        Blocks ()
+            : m_entryBlock (0), m_exitBlock (0)
+        { }
         ~Blocks();
 
         void init(const ICodeList &code);
 
-        inline const Block &entryBlock() const { return *m_entryBlock; }
-        inline const Block &exitBlock() const { return *m_exitBlock; }
-        inline CCI imopsBegin() const;
-        inline CCI imopsEnd() const;
+        inline Block& entryBlock () const { return *m_entryBlock; }
+        inline Block& exitBlock () const { return *m_exitBlock; }
 
         std::string toString() const;
 
     protected: /* Methods: */
-         CCI endBlock(SecreC::Block &b, CCI end,
-                      IAB &from, IAB &to,
-                      IAB &callFrom, IAB &callTo,
-                      IAB &returnFrom, IAB &returnTo);
+        CCI endBlock(Block &b,
+                     CCI start, CCI end,
+                     IAB &from, IAB &to,
+                     IAB &callFrom, IAB &callTo,
+                     IAB &returnFrom, IAB &returnTo);
 
     private: /* Fields: */
         Block *m_entryBlock;
         Block *m_exitBlock;
-
 };
 
 /*******************************************************************************
   Block
 *******************************************************************************/
 
-struct Block {
-    inline Block(ICodeList::const_iterator codestart, unsigned long i)
-        : start(codestart), end(codestart), callPassTo(0), callPassFrom(0),
-          index(i), reachable(false) {}
+/**
+ * \brief Representation of intermediate code basic block.
+ * \a Block doesn't own \a Imop and does not destroy them. \a ICodeList
+ * is responsible of destroying all instructions.
+ */
+class Block : public std::list<Imop* > {
+    Block (const Block&); // do not implement
+    void operator = (const Block&); // do not implement
+public:
 
-    inline Imop *operator[](size_t n) const { return *(start + n); }
-    inline size_t size() const { return end - start; }
-    inline Imop *firstImop() const { return *start; }
-    inline Imop *lastImop() const { return *(end - 1); }
+    Block (unsigned long i)
+        : callPassTo (0),
+          callPassFrom (0),
+          index (i),
+          reachable (false)
+    { }
 
-    Blocks::CCI start;
-    Blocks::CCI end;
+    ~Block ();
+
+    /// \brief unlink block from CFG
+    void unlink ();
+
+    inline Imop* firstImop() const { return front (); }
+    inline Imop* lastImop() const { return back (); }
+
+    std::set<Block*> users;
     std::set<Block*> predecessors;
     std::set<Block*> predecessorsCondFalse;
     std::set<Block*> predecessorsCondTrue;
@@ -77,9 +104,6 @@ struct Block {
     unsigned long index;
     bool reachable;
 };
-
-inline Blocks::CCI Blocks::imopsBegin() const { return front()->start; }
-inline Blocks::CCI Blocks::imopsEnd() const { return back()->end; }
 
 } // namespace SecreC
 

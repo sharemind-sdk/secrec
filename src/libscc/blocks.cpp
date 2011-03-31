@@ -1,7 +1,10 @@
 #include "blocks.h"
+
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <stack>
+
 #include "dataflowanalysis.h"
 #include "treenode.h"
 
@@ -14,14 +17,18 @@ typedef IS::const_iterator ISCI;
 namespace {
 
 inline bool fallsThru(const SecreC::Block &b) {
-    assert(b.start != b.end);
+    assert (!b.empty () &&
+            "Empty basic block.");
 
-    SecreC::Blocks::CCI it = b.end - 1;
+    SecreC::Block::const_reverse_iterator i, e;
+    SecreC::Imop* last = 0;
+    for (i = b.rbegin (), e = b.rend (); i != e; ++ i) {
+        last = *i;
+        if ((*i)->type () != SecreC::Imop::COMMENT) {
+            break;
+        }
+    }
 
-    SecreC::Imop *last;
-    do {
-        last = *it;
-    } while (last->type() == SecreC::Imop::COMMENT && (it--) != b.start);
     if (last->type() == SecreC::Imop::CALL) return false;
     if (last->type() == SecreC::Imop::JUMP) return false;
     if (last->type() == SecreC::Imop::END) return false;
@@ -31,29 +38,39 @@ inline bool fallsThru(const SecreC::Block &b) {
     return true;
 }
 
+inline void addMutualUse (SecreC::Block &from, SecreC::Block &to) {
+    from.users.insert (&to);
+    to.users.insert (&from);
+}
+
 inline void linkBlocks(SecreC::Block &from, SecreC::Block &to) {
     from.successors.insert(&to);
     to.predecessors.insert(&from);
+    addMutualUse (from, to);
 }
 
 inline void linkBlocksCondFalse(SecreC::Block &from, SecreC::Block &to) {
     from.successorsCondFalse.insert(&to);
     to.predecessorsCondFalse.insert(&from);
+    addMutualUse (from, to);
 }
 
 inline void linkBlocksCondTrue(SecreC::Block &from, SecreC::Block &to) {
     from.successorsCondTrue.insert(&to);
     to.predecessorsCondTrue.insert(&from);
+    addMutualUse (from, to);
 }
 
 inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
     from.successorsCall.insert(&to);
     to.predecessorsCall.insert(&from);
+    addMutualUse (from, to);
 }
 
 inline void linkRetBlocks(SecreC::Block &from, SecreC::Block &to) {
     from.successorsRet.insert(&to);
     to.predecessorsRet.insert(&from);
+    addMutualUse (from, to);
 }
 
 inline void printBlockList(std::ostream &os, const char *prefix,
@@ -88,18 +105,18 @@ inline void printBlockList(std::ostream &os, const char *prefix,
 }
 
 /**
- * @brief Visits all blocks in @a blockSet and marks unvisited ones visited and add them to @a reachableBlocks stack
+ * @brief Visits all blocks in @a blockSet and marks unvisited
+ * ones visited and add them to @a reachableBlocks stack
  */
-static void markAllReachable (std::stack<SecreC::Block*>& reachableBlocks, std::set<SecreC::Block*>& blockSet) {
+static void markAllReachable (std::stack<SecreC::Block*>& reachableBlocks,
+                              std::set<SecreC::Block*>& blockSet) {
     using SecreC::Block;
-    typedef std::set<Block*>::const_iterator BSCI;
-    BSCI it = blockSet.begin();
-    BSCI it_end = blockSet.end();
-    for (; it != it_end; ++ it) {
-        Block* block = *it;
+    std::set<Block*>::const_iterator i, e;
+    for (i = blockSet.begin (), e = blockSet.end (); i != e; ++ i) {
+        Block* block = *i;
         if (!block->reachable) {
             block->reachable = true;
-            reachableBlocks.push(block);
+            reachableBlocks.push (block);
         }
     }
 }
@@ -113,20 +130,20 @@ namespace SecreC {
   Blocks
 *******************************************************************************/
 
-void Blocks::init(const ICodeList &code) {
-    clear();
+void Blocks::init (const ICodeList &code) {
+    clear ();
 
     /// \todo Check for empty code
 
-    code.resetIndexes();
+    code.resetIndexes ();
 
     IAB jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo;
     CCI next;
 
     unsigned long i = 1;
 
-    Block *b = new Block(code.begin(), i++);
-    next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
+    Block *b = new Block (i ++);
+    next = endBlock(*b, code.begin (), code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
     push_back(b);
     m_entryBlock = b;
     m_exitBlock = 0;
@@ -134,8 +151,8 @@ void Blocks::init(const ICodeList &code) {
     while (next != code.end()) {
         Block *old = b;
 
-        b = new Block(next, i++);
-        next = endBlock(*b, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
+        b = new Block (i ++);
+        next = endBlock(*b, next, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
         push_back(b);
 
         if (b->lastImop()->type() == Imop::END) {
@@ -153,27 +170,22 @@ void Blocks::init(const ICodeList &code) {
         }
     }
 
-    //assert(!fallsThru(*b));
-
-    assert(jumpFrom.empty());
-    // assert(to.empty());
-    assert(callFrom.empty());
-    // assert(callTo.empty());
-    // assert(retFrom.empty());
-    assert(retTo.empty());
+    assert (jumpFrom.empty());
+    assert (callFrom.empty());
+    assert (retTo.empty());
 
     std::stack<Block*> bs;
     bs.push(m_entryBlock);
     m_entryBlock->reachable = true;
-    do {
-        Block *b = bs.top();
+    while (!bs.empty ()) {
+        Block* b = bs.top();
         bs.pop();
         markAllReachable(bs, b->successors);
         markAllReachable(bs, b->successorsCondFalse);
         markAllReachable(bs, b->successorsCondTrue);
         markAllReachable(bs, b->successorsCall);
         markAllReachable(bs, b->successorsRet);
-    } while (!bs.empty());
+    }
 }
 
 Blocks::~Blocks() {
@@ -215,7 +227,7 @@ std::string Blocks::toString() const {
 
         // Print code:
         os << "    Code:" << std::endl;
-        for (CCI jt((*it)->start); jt != (*it)->end; jt++) {
+        for (Block::iterator jt((*it)->begin ()); jt != (*it)->end (); jt++) {
             os << "      " << (*jt)->index() << "  " << (**jt);
             if ((*jt)->creator() != 0) {
                 os << " // Created by "
@@ -239,20 +251,23 @@ std::string Blocks::toString() const {
 }
 
 
-Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
+Blocks::CCI Blocks::endBlock(SecreC::Block &b,
+                             Blocks::CCI start, Blocks::CCI end,
                              Blocks::IAB &jumpFrom, Blocks::IAB &jumpTo,
                              Blocks::IAB &callFrom, Blocks::IAB &callTo,
                              Blocks::IAB &retFrom, Blocks::IAB &retTo)
 {
-    assert(b.start == b.end);
-    assert(b.end != end);
+    assert (b.empty () &&
+            "Initializing non-empty block.");
+    assert (start != end &&
+            "Initializing block from empty code sequence.");
 
     // Patch incoming jumps for block:
-    if (!(*b.end)->incoming().empty()) {
+    if (!(*start)->incoming().empty()) {
         bool mustLeave = false;
 
         // Iterate over all incoming jumps:
-        const IS &ij = (*b.end)->incoming();
+        const IS &ij = (*start)->incoming();
         for (ISCI it(ij.begin()); it != ij.end(); it++) {
             // Check whether the jump source is already assigned to a block:
             IAB::const_iterator itJumpFrom = jumpFrom.find(*it);
@@ -276,16 +291,16 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
           keep the target assigned to the block for the future.
         */
         if (mustLeave) {
-            jumpTo[*b.end] = &b;
+            jumpTo[*start] = &b;
         }
     }
 
     // Patch incoming calls for block:
-    if (!(*b.end)->incomingCalls().empty()) {
+    if (!(*start)->incomingCalls().empty()) {
         bool mustLeave = false;
 
         // Iterate over all incoming calls:
-        const IS &ic = (*b.end)->incomingCalls();
+        const IS &ic = (*start)->incomingCalls();
         for (ISCI it(ic.begin()); it != ic.end(); it++) {
             // Check whether the call source is already assigned to a block:
             IAB::const_iterator itCallFrom = callFrom.find(*it);
@@ -304,13 +319,14 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
           keep the target assigned to the block for the future.
         */
         if (mustLeave) {
-            callTo[*b.end] = &b;
+            callTo[*start] = &b;
         }
     }
 
     // Patch incoming returns for block:
-    if ((*b.end)->type() == Imop::RETCLEAN) {
-        Imop *call = (Imop*) (*b.end)->arg2();
+    if ((*start)->type() == Imop::RETCLEAN) {
+        assert (dynamic_cast<const SymbolLabel*>((*start)->arg2()) != 0);
+        Imop const* call = static_cast<const SymbolLabel*>((*start)->arg2())->target ();
         assert(call != 0);
         assert(call->type() == Imop::CALL);
         assert(dynamic_cast<const SymbolProcedure*>(call->arg1()) != 0);
@@ -320,6 +336,8 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
         // Init call pass edge:
         b.callPassFrom = call->block();
         call->block()->callPassTo = &b;
+        b.users.insert (call->block ());
+        call->block ()->users.insert (&b);
 
         bool mustLeave = false;
 
@@ -341,62 +359,63 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
           must keep the target assigned to the block for the future.
         */
         if (mustLeave) {
-            retTo[*b.end] = &b;
+            retTo[*start] = &b;
         }
     }
 
+    Blocks::CCI blockEnd = start;
     do {
-        assert(b.end == b.start
-               || ((*b.end)->incoming().empty()
-                   && (*b.end)->incomingCalls().empty()));
+        assert(b.empty ()
+               || ((*blockEnd)->incoming().empty()
+                   && (*blockEnd)->incomingCalls().empty()));
 
-        (*b.end)->setBlock(&b);
+        Imop* imop = *blockEnd;
+        b.push_back (imop);
+        imop->setBlock(&b);
 
         // If *b.end is a jump instruction, *(b.end + 1) must be a leader:
-        if ((*b.end)->isJump()
-            || (*b.end)->type() == SecreC::Imop::CALL
-            || (*b.end)->type() == SecreC::Imop::END
-            || (*b.end)->type() == SecreC::Imop::RETURN
-            || (*b.end)->type() == SecreC::Imop::RETURNVOID)
-        {
-            if ((*b.end)->isJump()) {
+        if (imop->isTerminator ()) {
+            if (imop->isJump()) {
                 // Check whether the jump destination is already assigned to a block:
-                IAB::const_iterator itTo = jumpTo.find((*b.end)->jumpDest()->target ());
+                IAB::const_iterator itTo = jumpTo.find(imop->jumpDest()->target());
                 if (itTo != jumpTo.end()) {
                     // Jump destination is already assigned to block, lets link:
-                    if ((*b.end)->type() == Imop::JUMP) {
+                    if (imop->type() == Imop::JUMP) {
                         linkBlocks(b, *(*itTo).second);
                     } else {
                         linkBlocksCondTrue(b, *(*itTo).second);
                     }
                 } else {
                     // Destination not assigned to block, lets assign the source:
-                    jumpFrom[*b.end] = &b;
+                    jumpFrom[imop] = &b;
                 }
-            } else if ((*b.end)->type() == Imop::CALL) {
-                assert((*(b.end + 1))->type() == Imop::RETCLEAN);
+            } else if (imop->type() == Imop::CALL) {
+                assert((*(blockEnd + 1))->type() == Imop::RETCLEAN);
 
                 // Check whether the call destination is already assigned to a block:
-                IAB::const_iterator itToCall = callTo.find((*b.end)->callDest());
+                IAB::const_iterator itToCall = callTo.find(imop->callDest());
                 if (itToCall != callTo.end()) {
                     // Call destination is assigned to a block, lets link:
                     linkCallBlocks(b, *(*itToCall).second);
                 } else {
-                    callFrom[*b.end] = &b;
+                    callFrom[imop] = &b;
                 }
-            } else if ((*b.end)->type() == Imop::RETURN
-                       || (*b.end)->type() == Imop::RETURNVOID)
+            } else if (imop->type() == Imop::RETURN
+                       || imop->type() == Imop::RETURNVOID)
             {
-                Imop *firstImop = (Imop*) (*b.end)->arg2();
+                assert (dynamic_cast<const SymbolLabel*>(imop->arg2()) != 0);
+                Imop const* firstImop = static_cast<const SymbolLabel*>(imop->arg2())->target();
                 typedef std::set<Imop*>::const_iterator ISCI;
 
                 // Iterate over all incoming calls
                 const std::set<Imop*> &ic = firstImop->incomingCalls();
                 for (ISCI it(ic.begin()); it != ic.end(); it++) {
                     assert((*it)->type() == Imop::CALL);
+                    assert (dynamic_cast<const SymbolLabel*>((*it)->arg2()) != 0);
+                    Imop const* clean = static_cast<const SymbolLabel*>((*it)->arg2())->target();
 
                     // Get RETCLEAN instruction (the target of the return):
-                    Imop *clean = (Imop*) (*it)->arg2();
+                    //Imop *clean = (Imop*) (*it)->arg2();
                     assert(clean != 0);
                     assert(clean->type() == Imop::RETCLEAN);
 
@@ -408,16 +427,51 @@ Blocks::CCI Blocks::endBlock(SecreC::Block &b, Blocks::CCI end,
                         // And remove the target from the list of return targets:
                         retTo.erase(clean);
                     } else {
-                        retFrom[*b.end] = &b;
+                        retFrom[imop] = &b;
                     }
                 }
             }
-            return ++(b.end);
+            return ++ blockEnd;
         }
 
-        b.end++;
-    } while (b.end != end && (*b.end)->incoming().empty() && (*b.end)->incomingCalls().empty());
-    return b.end;
+        blockEnd ++;
+    } while (blockEnd != end && (*blockEnd)->incoming().empty() && (*blockEnd)->incomingCalls().empty());
+    return blockEnd;
+}
+
+/*******************************************************************************
+  Block
+*******************************************************************************/
+
+class UnlinkFrom {
+public:
+    UnlinkFrom (Block* block) : m_block (block) { }
+    void operator () (Block* that) const {
+        that->users.erase (m_block);
+        that->predecessors.erase (m_block);
+        that->predecessorsCondFalse.erase (m_block);
+        that->predecessorsCondTrue.erase (m_block);
+        that->predecessorsCall.erase (m_block);
+        that->predecessorsRet.erase (m_block);
+        that->successors.erase (m_block);
+        that->successorsCondFalse.erase (m_block);
+        that->successorsCondTrue.erase (m_block);
+        that->successorsCall.erase (m_block);
+        that->successorsRet.erase (m_block);
+        if (that->callPassFrom == m_block) that->callPassFrom = 0;
+        if (that->callPassTo == m_block) that->callPassTo = 0;
+    }
+
+private:
+    Block* m_block;
+};
+
+void Block::unlink () {
+    std::for_each (users.begin (), users.end (), UnlinkFrom (this));
+}
+
+Block::~Block () {
+    unlink ();
 }
 
 } // namespace SecreC

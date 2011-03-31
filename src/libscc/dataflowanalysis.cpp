@@ -177,7 +177,7 @@ void ReachingDefinitions::inFrom(const Block &from, const Block &to, bool global
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
     SDefs old = out;
     out = in;
-    for (Blocks::CCI it = b.start; it != b.end; it++) {
+    for (Block::const_iterator it = b.begin (); it != b.end (); it++) {
         if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
             && (*it)->dest() != 0)
         {
@@ -226,7 +226,7 @@ void LiveVariables::start (const Blocks &bs) {
         const Block* block = *bi;
         Symbols& use = m_use [block];
         Symbols& defs = m_defs [block];
-        for (Blocks::CCI it (block->start); it != block->end; ++ it) {
+        for (Block::const_iterator it (block->begin ()); it != block->end (); ++ it) {
             const Imop* imop = *it;
 
             if (imop->type() == Imop::COMMENT) {
@@ -419,7 +419,7 @@ void ReachingDeclassify::inFrom(const Block &from, const Block &to) {
 bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
     PDefs old = out;
     out = in;
-    for (Blocks::CCI it = b.start; it != b.end; it++) {
+    for (Block::const_iterator it = b.begin (); it != b.end (); ++ it) {
         if (!(*it)->isExpr()) {
             if ((*it)->type() != Imop::POP) continue;
         } else {
