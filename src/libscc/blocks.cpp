@@ -104,23 +104,6 @@ inline void printBlockList(std::ostream &os, const char *prefix,
     }
 }
 
-/**
- * @brief Visits all blocks in @a blockSet and marks unvisited
- * ones visited and add them to @a reachableBlocks stack
- */
-static void markAllReachable (std::stack<SecreC::Block*>& reachableBlocks,
-                              std::set<SecreC::Block*>& blockSet) {
-    using SecreC::Block;
-    std::set<Block*>::const_iterator i, e;
-    for (i = blockSet.begin (), e = blockSet.end (); i != e; ++ i) {
-        Block* block = *i;
-        if (!block->reachable) {
-            block->reachable = true;
-            reachableBlocks.push (block);
-        }
-    }
-}
-
 } // anonymous namespace
 
 
@@ -136,56 +119,10 @@ void Blocks::init (const ICodeList &code) {
     /// \todo Check for empty code
 
     code.resetIndexes ();
-
-    IAB jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo;
-    CCI next;
-
-    unsigned long i = 1;
-
-    Block *b = new Block (i ++);
-    next = endBlock(*b, code.begin (), code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
-    push_back(b);
-    m_entryBlock = b;
-    m_exitBlock = 0;
-
-    while (next != code.end()) {
-        Block *old = b;
-
-        b = new Block (i ++);
-        next = endBlock(*b, next, code.end(), jumpFrom, jumpTo, callFrom, callTo, retFrom, retTo);
-        push_back(b);
-
-        if (b->lastImop()->type() == Imop::END) {
-            assert(m_exitBlock == 0);
-            m_exitBlock = b;
-        }
-
-        if (fallsThru(*old)) {
-            if ((old->lastImop()->type() & Imop::JUMP_MASK) == 0x0
-                || old->lastImop()->type() == Imop::JUMP) {
-                linkBlocks(*old, *b);
-            } else {
-                linkBlocksCondFalse(*old, *b);
-            }
-        }
-    }
-
-    assert (jumpFrom.empty());
-    assert (callFrom.empty());
-    assert (retTo.empty());
-
-    std::stack<Block*> bs;
-    bs.push(m_entryBlock);
-    m_entryBlock->reachable = true;
-    while (!bs.empty ()) {
-        Block* b = bs.top();
-        bs.pop();
-        markAllReachable(bs, b->successors);
-        markAllReachable(bs, b->successorsCondFalse);
-        markAllReachable(bs, b->successorsCondTrue);
-        markAllReachable(bs, b->successorsCall);
-        markAllReachable(bs, b->successorsRet);
-    }
+    std::map<Block*, Block*> nextBlock;
+    assignToBlocks (code.begin (), code.end (), nextBlock);
+    assert (!empty ());
+    propagate (nextBlock);
 }
 
 Blocks::~Blocks() {
@@ -200,10 +137,10 @@ std::string Blocks::toString() const {
     std::ostringstream os;
 
     os << "BLOCKS" << std::endl;
-    unsigned long i = 1;
 
     for (const_iterator it = begin(); it != end(); it++) {
-        os << "  Block " << i;
+        const Block* block = *it;
+        os << "  Block " << block->index;
         if (!(*it)->reachable) {
             os << " [REMOVED]";
         }
@@ -244,199 +181,139 @@ std::string Blocks::toString() const {
             }
             os << std::endl;
         }
-        i++;
+
         os << std::endl;
     }
     return os.str();
 }
 
+// Assigns all instructions to blocks
+void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextBlock) {
+    unsigned blockCount = 1;
 
-Blocks::CCI Blocks::endBlock(SecreC::Block &b,
-                             Blocks::CCI start, Blocks::CCI end,
-                             Blocks::IAB &jumpFrom, Blocks::IAB &jumpTo,
-                             Blocks::IAB &callFrom, Blocks::IAB &callTo,
-                             Blocks::IAB &retFrom, Blocks::IAB &retTo)
-{
-    assert (b.empty () &&
-            "Initializing non-empty block.");
-    assert (start != end &&
-            "Initializing block from empty code sequence.");
+    // 1. find leaders
+    std::set<const Imop*> leaders;
+    bool nextIsLeader = true;  // first instruction is leader
+    for (CCI i = start ; i != end; ++ i) {
+        const Imop* imop = *i;
 
-    // Patch incoming jumps for block:
-    if (!(*start)->incoming().empty()) {
-        bool mustLeave = false;
-
-        // Iterate over all incoming jumps:
-        const IS &ij = (*start)->incoming();
-        for (ISCI it(ij.begin()); it != ij.end(); it++) {
-            // Check whether the jump source is already assigned to a block:
-            IAB::const_iterator itJumpFrom = jumpFrom.find(*it);
-            if (itJumpFrom != jumpFrom.end()) {
-                // Jump source is already assigned to block, lets link:
-                if ((*it)->type() == Imop::JUMP) {
-                    linkBlocks(*(*itJumpFrom).second, b);
-                } else {
-                    linkBlocksCondTrue(*(*itJumpFrom).second, b);
-                }
-                // And remove the jump from the jump sources:
-                jumpFrom.erase(*it);
-            } else {
-                // Jump source is not yet assigned to block, let assign target:
-                mustLeave = true;
-            }
+        if (nextIsLeader) {
+            leaders.insert (imop);
+            nextIsLeader = false;
         }
 
-        /*
-          If some of the incoming jumps were not yet assigned to blocks, we must
-          keep the target assigned to the block for the future.
-        */
-        if (mustLeave) {
-            jumpTo[*start] = &b;
-        }
-    }
-
-    // Patch incoming calls for block:
-    if (!(*start)->incomingCalls().empty()) {
-        bool mustLeave = false;
-
-        // Iterate over all incoming calls:
-        const IS &ic = (*start)->incomingCalls();
-        for (ISCI it(ic.begin()); it != ic.end(); it++) {
-            // Check whether the call source is already assigned to a block:
-            IAB::const_iterator itCallFrom = callFrom.find(*it);
-            if (itCallFrom != callFrom.end()) {
-                // Call source is already assigned to block, lets link:
-                linkCallBlocks(*(*itCallFrom).second, b);
-                // And remove the call from the call sources:
-                callFrom.erase(*it);
-            } else {
-                mustLeave = true;
-            }
+        // destination of jump is leader
+        if (imop->isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(imop->dest ()) != 0);
+            const SymbolLabel* dest = static_cast<const SymbolLabel*>(imop->dest ());
+            leaders.insert (dest->target ());
         }
 
-        /*
-          If some of the incoming calls were not yet assigned to blocks, we must
-          keep the target assigned to the block for the future.
-        */
-        if (mustLeave) {
-            callTo[*start] = &b;
-        }
-    }
-
-    // Patch incoming returns for block:
-    if ((*start)->type() == Imop::RETCLEAN) {
-        assert (dynamic_cast<const SymbolLabel*>((*start)->arg2()) != 0);
-        Imop const* call = static_cast<const SymbolLabel*>((*start)->arg2())->target ();
-        assert(call != 0);
-        assert(call->type() == Imop::CALL);
-        assert(dynamic_cast<const SymbolProcedure*>(call->arg1()) != 0);
-        Imop *firstImop = static_cast<const SymbolProcedure*>(call->arg1())->decl()->firstImop();
-        assert(firstImop->type() == Imop::COMMENT);
-
-        // Init call pass edge:
-        b.callPassFrom = call->block();
-        call->block()->callPassTo = &b;
-        b.users.insert (call->block ());
-        call->block ()->users.insert (&b);
-
-        bool mustLeave = false;
-
-        // Iterate over all incoming returns:
-        const IS &rs = firstImop->returns();
-        for (ISCI it(rs.begin()); it != rs.end(); it++) {
-            // Check whether the return source is already assigned to a block:
-            IAB::const_iterator itFromRet = retFrom.find(*it);
-            if (itFromRet != retFrom.end()) {
-                // Return source is assigned to a block, lets link:
-                linkRetBlocks(*(*itFromRet).second, b);
-            } else {
-                mustLeave = true;
-            }
-        }
-
-        /*
-          If some of the incoming returns were not yet assigned to blocks, we
-          must keep the target assigned to the block for the future.
-        */
-        if (mustLeave) {
-            retTo[*start] = &b;
-        }
-    }
-
-    Blocks::CCI blockEnd = start;
-    do {
-        assert(b.empty ()
-               || ((*blockEnd)->incoming().empty()
-                   && (*blockEnd)->incomingCalls().empty()));
-
-        Imop* imop = *blockEnd;
-        b.push_back (imop);
-        imop->setBlock(&b);
-
-        // If *b.end is a jump instruction, *(b.end + 1) must be a leader:
+        // anything following terminator is leader
         if (imop->isTerminator ()) {
-            if (imop->isJump()) {
-                // Check whether the jump destination is already assigned to a block:
-                IAB::const_iterator itTo = jumpTo.find(imop->jumpDest()->target());
-                if (itTo != jumpTo.end()) {
-                    // Jump destination is already assigned to block, lets link:
-                    if (imop->type() == Imop::JUMP) {
-                        linkBlocks(b, *(*itTo).second);
-                    } else {
-                        linkBlocksCondTrue(b, *(*itTo).second);
-                    }
-                } else {
-                    // Destination not assigned to block, lets assign the source:
-                    jumpFrom[imop] = &b;
-                }
-            } else if (imop->type() == Imop::CALL) {
-                assert((*(blockEnd + 1))->type() == Imop::RETCLEAN);
-
-                // Check whether the call destination is already assigned to a block:
-                IAB::const_iterator itToCall = callTo.find(imop->callDest());
-                if (itToCall != callTo.end()) {
-                    // Call destination is assigned to a block, lets link:
-                    linkCallBlocks(b, *(*itToCall).second);
-                } else {
-                    callFrom[imop] = &b;
-                }
-            } else if (imop->type() == Imop::RETURN
-                       || imop->type() == Imop::RETURNVOID)
-            {
-                assert (dynamic_cast<const SymbolLabel*>(imop->arg2()) != 0);
-                Imop const* firstImop = static_cast<const SymbolLabel*>(imop->arg2())->target();
-                typedef std::set<Imop*>::const_iterator ISCI;
-
-                // Iterate over all incoming calls
-                const std::set<Imop*> &ic = firstImop->incomingCalls();
-                for (ISCI it(ic.begin()); it != ic.end(); it++) {
-                    assert((*it)->type() == Imop::CALL);
-                    assert (dynamic_cast<const SymbolLabel*>((*it)->arg2()) != 0);
-                    Imop const* clean = static_cast<const SymbolLabel*>((*it)->arg2())->target();
-
-                    // Get RETCLEAN instruction (the target of the return):
-                    //Imop *clean = (Imop*) (*it)->arg2();
-                    assert(clean != 0);
-                    assert(clean->type() == Imop::RETCLEAN);
-
-                    // Check whether the target is already assigned to a block:
-                    IAB::const_iterator itToRet = retTo.find(clean);
-                    if (itToRet != retTo.end()) {
-                        // Target is assigned to a block, lets link:
-                        linkRetBlocks(b, *(*itToRet).second);
-                        // And remove the target from the list of return targets:
-                        retTo.erase(clean);
-                    } else {
-                        retFrom[imop] = &b;
-                    }
-                }
-            }
-            return ++ blockEnd;
+            nextIsLeader = true;
         }
 
-        blockEnd ++;
-    } while (blockEnd != end && (*blockEnd)->incoming().empty() && (*blockEnd)->incomingCalls().empty());
-    return blockEnd;
+        // call destinations are leaders
+        if (imop->type () == Imop::CALL) {
+            leaders.insert (imop->callDest ());
+            nextIsLeader = true; // RETCLEAN is leader too
+        }
+    }
+
+    // 2. assign all instructions to basic blocks
+    // Anything in range [leader, nextLeader) is a basic block.
+    Block* cur = 0;
+    for (CCI i = start ; i != end; ++ i) {
+        Imop* imop = *i;
+        if (leaders.find (imop) != leaders.end ()) {
+            // Leader starts a new block
+            Block* newBlock = new Block (blockCount ++);
+            nextBlock[cur] = newBlock;
+            cur = newBlock;
+            push_back (cur);
+        }
+
+        assert (cur != 0 && "First instruction not leader?");
+        imop->setBlock (cur);
+        cur->push_back (imop);
+    }
+}
+
+// propagate successor/predecessor info
+void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
+    std::set<Block* > visited;
+    std::stack<Block* > todo;
+
+    m_entryBlock = front ();
+    todo.push (m_entryBlock);
+
+    while (!todo.empty ()) {
+        Block* cur = todo.top ();
+        todo.pop ();
+
+        if (visited.find (cur) != visited.end ()) continue;
+        cur->reachable = true;
+        Imop* lastImop = cur->lastImop ();
+
+        // if block falls through we set its successor to be next block
+        if (fallsThru (*cur)) {
+            Block* next = nextBlock.find (cur)->second;
+            todo.push (next);
+            assert (lastImop->type () != Imop::JUMP);
+            if (!lastImop->isJump ()) {
+                linkBlocks (*cur, *next);
+            } else {
+                linkBlocksCondFalse (*cur, *next);
+            }
+        }
+
+        // if last instruction is jump, link current block with its destination
+        if (lastImop->isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(lastImop->dest ()) != 0);
+            const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop->dest ());
+            Block* next = jumpDest->target ()->block ();
+            todo.push (next);
+            if (lastImop->type () == Imop::JUMP) {
+                linkBlocks (*cur, *next);
+            }
+            else {
+                linkBlocksCondTrue (*cur, *next);
+            }
+        }
+
+        if (lastImop->type () == Imop::END) {
+            m_exitBlock = lastImop->block ();
+        }
+
+        // link call with its destination
+        if (lastImop->type () == Imop::CALL) {
+            Block* next = lastImop->callDest ()->block ();
+            todo.push (next);
+            linkCallBlocks (*cur, *next);
+
+            Block* cleanBlock = nextBlock.find (cur)->second;
+            todo.push (cleanBlock);
+            cleanBlock->callPassFrom = cur;
+            cur->callPassTo = cleanBlock;
+        }
+
+        // link returning block with all the possible places it may return to
+        if (lastImop->type () == Imop::RETURN ||
+                lastImop->type () == Imop::RETURNVOID) {
+            assert (dynamic_cast<const SymbolLabel*>(lastImop->arg2()) != 0);
+            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop->arg2())->target();
+            const IS& ic = firstImop->incomingCalls();
+            for (ISCI it(ic.begin()); it != ic.end(); ++ it) {
+                assert((*it)->type() == Imop::CALL);
+                assert (dynamic_cast<const SymbolLabel*>((*it)->arg2()) != 0);
+                Imop const* clean = static_cast<const SymbolLabel*>((*it)->arg2())->target();
+                linkRetBlocks (*cur, *clean->block ());
+            }
+        }
+
+        visited.insert (cur);
+    }
 }
 
 /*******************************************************************************
@@ -468,6 +345,7 @@ private:
 
 void Block::unlink () {
     std::for_each (users.begin (), users.end (), UnlinkFrom (this));
+    users.clear ();
 }
 
 Block::~Block () {

@@ -31,9 +31,6 @@ class Blocks: public std::vector<Block*> {
         Blocks (const Blocks&); // do not implement
         void operator = (const Blocks&); // do not implement
         typedef ICodeList::const_iterator CCI;
-    public: /* Types: */
-        typedef std::map<const Imop*, Block*> IAB; // Imop assignment block
-
     public: /* Methods: */
         Blocks ()
             : m_entryBlock (0), m_exitBlock (0)
@@ -48,11 +45,15 @@ class Blocks: public std::vector<Block*> {
         std::string toString() const;
 
     protected: /* Methods: */
-        CCI endBlock(Block &b,
-                     CCI start, CCI end,
-                     IAB &from, IAB &to,
-                     IAB &callFrom, IAB &callTo,
-                     IAB &returnFrom, IAB &returnTo);
+
+        /// \brief Assign each instruction to basic block, and constructs the basic blocks.
+        /// \todo get rid of nextBlock argument
+        void assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextBlock);
+
+        /// \brief Traverse the blocks and propagate successor/predecessor information
+        /// to visited blocks. \a nextBlock maps each block to it's successor if it happens
+        /// to fall through.
+        void propagate (const std::map<Block*, Block*>& nextBlock);
 
     private: /* Fields: */
         Block *m_entryBlock;
