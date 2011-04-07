@@ -130,9 +130,7 @@ class Imop {
         { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
         ~Imop();
 
-        inline const std::set<Imop*> &incoming() const { return m_incoming; }
         inline const std::set<Imop*> &incomingCalls() const { return m_incomingCalls; }
-        inline const std::set<Imop*> &returns() const { return m_returns; }
 
         inline TreeNode *creator() const { return m_creator; }
         inline Type type() const { return m_type; }
@@ -197,17 +195,11 @@ class Imop {
         std::string toString() const;
 
     protected: /* Methods: */
-        inline void addIncoming(Imop *jump) { m_incoming.insert(jump); }
         inline void addIncomingCall(Imop *jump) { m_incomingCalls.insert(jump); }
-        inline void addReturn(Imop *r) { m_returns.insert(r); }
-        inline void removeIncoming(Imop *jump) { m_incoming.erase(jump); }
         inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
-        inline void removeReturn(Imop *r) { m_returns.erase(r); }
 
     private: /* Fields: */
-        std::set<Imop*> m_incoming;
         std::set<Imop*> m_incomingCalls;
-        std::set<Imop*> m_returns;
 
         TreeNode     *m_creator;
         const Type    m_type;

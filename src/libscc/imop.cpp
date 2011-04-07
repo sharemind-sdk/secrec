@@ -39,20 +39,6 @@ Imop::~Imop() {
 
     if (m_type == COMMENT) {
         delete (std::string*) arg1();
-    } else if ((m_type & JUMP_MASK) != 0x0) {
-        if (dest() != 0) {
-            assert (dynamic_cast<SymbolLabel const*>(dest()) != 0);
-            static_cast<SymbolLabel const*>(dest())->target()->removeIncoming(this);
-        }
-    } else if (m_type == CALL) {
-        if (arg2() != 0) {
-            assert (dynamic_cast<SymbolLabel const*>(arg2()) != 0);
-            static_cast<SymbolLabel const*>(arg2())->target()->removeIncoming(this);
-        }
-    }
-
-    for (ISCI it(m_incoming.begin()); it != m_incoming.end(); it++) {
-        (*it)->setDest(0);
     }
 
     for (SVI it(m_args.begin()); it != m_args.end(); ++ it) {
@@ -78,7 +64,6 @@ void Imop::setJumpDest (SymbolLabel *dest) {
     assert(dest != 0);
     assert((m_type & JUMP_MASK) != 0x0);
     setDest(dest);
-    dest->target()->addIncoming(this);
 }
 
 void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
@@ -99,7 +84,6 @@ void Imop::setReturnDestFirstImop (SymbolLabel *label) {
     Imop* firstImop = label->target ();
     assert(firstImop->m_type == COMMENT);
     setArg2(label);
-    firstImop->addReturn(this);
 }
 
 /// \todo make this pretty
@@ -260,20 +244,6 @@ std::string Imop::toString() const {
 
     typedef std::set<Imop*>::const_iterator ISCI;
     typedef std::set<unsigned long>::const_iterator ULSCI;
-    if (!m_incoming.empty()) {
-        std::set<unsigned long> is;
-        for (ISCI it(m_incoming.begin()); it != m_incoming.end(); it++) {
-            is.insert((*it)->index());
-        }
-        os << "    IN[";
-        for (ULSCI it(is.begin()); it != is.end(); it++) {
-            if (it != is.begin()) {
-                os << ", ";
-            }
-            os << (*it);
-        }
-        os << "]";
-    }
     if (!m_incomingCalls.empty()) {
         std::set<unsigned long> is;
         for (ISCI it(m_incomingCalls.begin()); it != m_incomingCalls.end(); it++) {
