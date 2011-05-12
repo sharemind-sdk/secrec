@@ -3,9 +3,11 @@
 \usepackage{ucs}
 \usepackage[utf8x]{inputenc}
 \usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{ae, aecompl}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{ae}
 \usepackage{bussproofs}
 \usepackage{semantic}
 \usepackage{listings}
@@ -15,6 +17,7 @@
 \usepackage{multirow} % lahtrid mitmes veerus/reas
 \usepackage{setspace}
 \usepackage{longtable}
+\usepackage{tikz}
 
 \DeclareMathOperator*{\basis}{basis}
 \DeclareMathOperator*{\goodguard}{goodguard}
@@ -23,7 +26,10 @@
 \DeclareMathOperator*{\up}{up}
 \DeclareMathOperator*{\lo}{lo}
 \DeclareMathOperator*{\newloc}{newloc}
+\DeclareMathOperator*{\force}{\mathit{force}}
+\DeclareMathOperator*{\noforce}{\mathit{noforce}}
 \newcommand{\mycode}[1]{\ensuremath{\mbox{\lstinline{#1}}}}
+\newcommand{\cast}[1]{\ensuremath{\mycode{cast}_{#1}}}
 
 % Literaalid:
 \newcommand{\litQuote}[1]{\textcolor{black}{\texttt{'#1'}}}
@@ -179,9 +185,9 @@ optionally the sizes of dimensions:
 }
 where dimensions are given by comma separated expressions between brackets:
 \grammarRules{
-  \bnfNT{dimensions} ::=&\ \bnfT{[}\ \bnfNT{dimension\_list}?\ \bnfT{]}\\
-  \bnfNT{expression\_list} ::=&\ \bnfNT{expression} \\
-                            |&\ \bnfNT{expression}\ \bnfT{,}\ \bnfNT{expression\_list}
+  \bnfNT{dimensions} ::=&\ \bnfT{[}\ \bnfNT{expression\_list}?\ \bnfT{]}\\
+  \bnfNT{expression\_list} ::=&\ \bnfNT{expression}\ \bnfT{,}\ \bnfNT{expression\_list} \\
+                            |&\ \bnfNT{expression}
 }
 
 Variables are defined by declaring them and optionally initializing them:
@@ -396,82 +402,59 @@ The type system used for static checking of SecreC programs provides means to
 denote certain properties of interest for SecreC programs and parts thereof. We
 consider the aforementioned three strata separately in the following sections.
 
-\subsection{Regular types}
+\subsection{Data types}
 
-The lower layer of the type system for SecreC defines properties for values and
-variables in the language itself. Namely, each constant and expression, as well
-as each defined variable and procedure in any valid SecreC program has a type
-from the lower layer of this type system used for static checking.
+In SecreC all values have three types: security type, fundamental data type,
+and dimensionality type. Formally data type is triple of those $(\tau, \delta,
+n)$, and is denoted by meta-variable $\alpha$.
 
-Let's have a meta-variable $\rho$ to denote these types. Each such type either
-consists of an abstract security type $\rho^\tau$ and an abstract data type
-$\rho^\nu$, or is \mycode{void}:
+Each of the types is structured into partial order, and a type is less than or
+equal to some other type if any value of the former may be implicitly casted
+into a value of the latter type.
+
+\subsubsection{Fundamental data types}
+
+The SecreC programming language has four fundamental data types, denoted by the
+meta-variable $\delta$: booleans (\mycode{bool}), signed integers
+(\mycode{int}), unsigned integers (\mycode{uint}) and strings
+(\mycode{string}). Additionally we support 8, 16 and 32 bit signed and unsigned
+integer types: \mycode{uint8}, \mycode{uint16}, \mycode{uint32}, \mycode{int8},
+\mycode{int16} and \mycode{int32}.
+
+Partial ordering relation on fundamental data types is denoted with
+$\sqsubseteq$ relation operator. Following diagram defines the poset of types:
 \[
-  \rho ::= \left( \rho^\tau, \rho^\nu \right)\ |\ \mycode{void}.
+\begin{tikzpicture}
+  \tikzstyle{EdgeStyle}=[->,>=stealth,thick]
+  % nodes
+  \node (UINT)                     {$\mycode{uint}$};
+  \node (INT)    [right of=UINT]   {$\mycode{int}$};
+  \node (STRING) [right of=INT]    {$\mycode{string}$};
+  \node (UINT32) [below of=UINT]   {$\mycode{uint32}$};
+  \node (INT32)  [right of=UINT32] {$\mycode{int32}$};
+  \node (UINT16) [below of=UINT32] {$\mycode{uint16}$};
+  \node (INT16)  [right of=UINT16] {$\mycode{int16}$};
+  \node (UINT8)  [below of=UINT16] {$\mycode{uint8}$};
+  \node (INT8)   [right of=UINT8]  {$\mycode{int8}$};
+  \node (BOOL)   [below of=UINT8]  {$\mycode{bool}$};
+  \node (BOT)    [below of=BOOL, below of=INT8]   {$\bot$};
+  % edges
+  \draw[EdgeStyle] (BOT) to node {} (BOOL);
+  \draw[EdgeStyle] (BOT) to node {} (STRING);
+  \draw[EdgeStyle] (BOT) to node {} (INT8);
+  \draw[EdgeStyle] (BOOL) to node {} (UINT8);
+  \draw[EdgeStyle] (BOOL) to node {} (INT8);
+  \draw[EdgeStyle] (INT8) to node {} (INT16);
+  \draw[EdgeStyle] (UINT8) to node {} (UINT16);
+  \draw[EdgeStyle] (INT16) to node {} (INT32);
+  \draw[EdgeStyle] (UINT16) to node {} (UINT32);
+  \draw[EdgeStyle] (INT32) to node {} (INT);
+  \draw[EdgeStyle] (UINT32) to node {} (UINT);
+  \draw[EdgeStyle] (UINT8) to node {} (INT16);
+  \draw[EdgeStyle] (UINT16) to node {} (INT32);
+  \draw[EdgeStyle] (UINT32) to node {} (INT);
+\end{tikzpicture}
 \]
-
-The type \mycode{void} (also know as the \textit{unit type}) denotes data
-holding no information, i.e., allows only one possible value. It is not possible
-in SecreC to define variables of type \mycode{void}, or to work on values of
-type \mycode{void}. However, the return type of procedures may be defined to be
-\mycode{void}. In the latter case the procedure does not return a value, and
-such a procedure call can not be used as a subexpression, but only as a
-separate expression statement.
-
-\subsubsection{Data types}
-Data types are further stratified into two layers. The lower layer data types
-are called fundamental data types and the higher level data types are referred
-to as abstract data types.
-
-The SecreC programming language has four primitive data types, denoted by the
-meta-variable $\delta$: booleans (\mycode{bool}), 32-bit signed integers
-(\mycode{int}), 32-bit unsigned integers (\mycode{unsigned int}) and strings
-(\mycode{string}). Fundametal data types $\nu$ are primitive data $\delta$
-tagged with non-negative integer that we call dimensionality. Fundamental data
-types denote multi-dimensional arrays of primitive data. Formally:
-\begin{align*}
-  \delta & ::= \mycode{bool}\ |\ \mycode{int}\ |\ \mycode{unsigned int}\ |\ \mycode{string} \\
-  \nu & ::= \delta\ n,\ {where}\ n \in \left\{ 0, 1, \ldots \right\}
-\end{align*}
-Primitive data itself is subset of fundamental data for the simple reason that
-scalar values can be viewed as zero dimensional arrays.
-
-An abstract data type, denoted by the meta-variable $\rho^\nu$, is either
-\begin{itemize}
-  \item
-  a fundamental data type $\nu$ denoting the types of values,
-
-  \item
-  a variable type $\nu\ var$ denoting the type of variables holding values of
-  fundamental data type $\nu$, i.e. the abstract data type of the
-  \textit{l-value} for such variables\footnote{The primary reason for
-  specifying a separate variable data type is for future purposes when
-  support for references will be added to SecreC.},
-
-  \item
-  a procedure type $\left(\nu_1 \times \ldots \times \nu_n\right) -> \nu$
-  denoting procedures taking $n$ parameters (values) of fundamental data types
-  $\nu_1,\ldots,\nu_n$ and returning a value of fundamental data type $\nu$,
-
-  \item
-  a procedure type $\left(\nu_1 \times \ldots \times \nu_n\right) -> ()$
-  denoting procedures taking $n$ parameters (values) of fundamental data types
-  $\nu_1,\ldots,\nu_n$ and returning no value.
-\end{itemize}
-More formally:
-\[ \rho^\nu ::= \nu\ |\ \nu\ var\ |\ \left(\nu_1 \times \ldots \times \nu_n\right) -> \nu\ |\ \left(\nu_1 \times \ldots \times \nu_n\right) -> (). \]
-
-% TODO sõnastus
-In order to allow implicit conversions from scalar values to higher-dimensional
-arrays, where context allows, we define ordering on dimensionalities. We define
-that $0 \sqsubseteq n$ and $n \sqsubseteq n$ for every dimensionality $n$.
-Operator $n \sqcup m$ is defined as least upper bound of set $\left\{ n, m
-\right\}$, if it exists. Intuition behind the ordering is that $n$-dimensional
-array is allowed to be converted into $m$-dimensional array only if $n
-\sqsubseteq m$, and both $n$ and $m$ are allowed to be converted to $n \sqcup
-m$ dimensional array if the upper bound exists. The conversion may still fail
-at run-time if it turns out that shapes of the array mismatch, and for that
-reason we will later define similar ordering on shapes.
 
 \subsubsection{Security types}
 Data in SecreC is classified into the public and private domains. Hence, we use
@@ -481,45 +464,23 @@ to form a lattice. We denote the security classes using the meta-variable
 $\tau$:
 \[ \tau ::= \mycode{public}\ |\ \mycode{private}. \]
 
-An abstract security type, denoted by the meta-variable $\rho^\tau$, is
-(similarly to abstract data types) one of the following:
-\begin{itemize}
-  \item 
-  a security class $\tau$ denoting the security class of data held as values
-  and data held by variables,
-  
-  \item
-  a procedure type $\left(\tau_1 \times \ldots \times \tau_n\right) -> \tau$
-  denoting procedures taking $n$ parameters (values) of security classes
-  $\tau_1,\ldots,\tau_n$ and returning a value of security class $\tau$,
-
-  \item
-  a procedure type $\left(\tau_1 \times \ldots \times \tau_n\right) -> ()$
-  denoting procedures taking $n$ parameters (values) of security classes
-  $\tau_1,\ldots,\tau_n$ and returning no value.
-\end{itemize}
-More formally:
-\[ \rho^\tau ::= \tau\ |\ \left(\tau_1 \times \ldots \times \tau_n\right) -> \tau\ |\ \left(\tau_1 \times \ldots \times \tau_n\right) -> (). \]
-
 In addition, we define the binary $\oplus$ operator which is similar to the
 $\oplus$ operator in \cite{DENNING76}. It is used in the static checking rules
 in Subsection \ref{sec:checking:typing:expressions} to infer security types for
 results of certain kinds of expressions. Although both return identical results
 for security types, the latter is a total binary operation on the set of
 security classes $\tau$ while on the other hand our $\oplus$ operator is a
-partial binary operation on the set of abstract security types. Currently, we
-define the exact domain of $\oplus$ only to include security classes:
+binary operation on security types. Currently, we define the exact domain of
+$\oplus$ only to include security classes:
 \[
-  \oplus : \rho^\tau \times \rho^\tau -> \rho^\tau
+  \oplus : \tau \times \tau -> \tau
 \]\[
-  \rho^\tau_1 \oplus \rho^\tau_2 = \left\{\begin{array}{ll}
+\tau_1 \oplus \tau_2 = \begin{cases}
     \mycode{public}  &
-      \quad \text{if $\rho^\tau_1 = \mycode{public}$ and $\rho^\tau_2 = \mycode{public}$} \\
+      \text{if $\tau_1 = \mycode{public}$ and $\tau_2 = \mycode{public}$} \\
     \mycode{private} &
-      \quad \text{if $\rho^\tau_1 = \mycode{private}$ and $\rho^\tau_2 = \mycode{public}$} \\
-      & \qquad \text{or $\rho^\tau_1 = \mycode{public}$ and $\rho^\tau_2 = \mycode{private}$} \\
-      & \qquad \text{or $\rho^\tau_1 = \mycode{private}$ and $\rho^\tau_2 = \mycode{private}$} \\
-  \end{array}\right.
+      \text{if $\tau_1 = \mycode{private}$ or $\tau_2 = \mycode{private}$}. \\
+  \end{cases}
 \]
 
 The relation $->$ between security types defines the allowed direction of data
@@ -531,6 +492,82 @@ flow. For our security types, only the following hold:
 \end{align*}
 meaning that data can flow in its own domain, and public data can flow into the
 private domain.
+
+\subsubsection{Dimensionality types}
+
+Most of the data in SecreC can be multi-dimensional, and for that reason all
+data types are supplied with dimensionality type. Scalar values are considered
+to be 0-dimensional, vectors are 1-dimensional, matrices 2-dimensional, etc.
+Formally dimensionality type is non-negative integer, and is denoted by either
+$n$ or $m$.
+
+In order to allow implicit conversions from scalar values to higher-dimensional
+arrays, where context allows, we define partial ordering on dimensionalities.
+We define that $0 \sqsubseteq n$ and $n \sqsubseteq n$ for every dimensionality
+$n$.  Operator $n \sqcup m$ is defined as least upper bound of set $\left\{ n,
+m \right\}$, if it exists. Intuition behind the ordering $n \sqsubseteq m$ is
+that $n$-dimensional array is allowed to be converted into $m$-dimensional
+array, and both $n$ and $m$ are allowed to be converted to $n \sqcup m$
+dimensional array. The conversion may still fail at run-time if it turns out
+that shapes of the arrays mismatch, and for that reason we will later define
+similar ordering on shapes.
+
+% Because we can use previous ordering on lattice only if the context allows, for
+% example arithmetic operators, and not in all cases we need to also define flat
+% ordering for dimensionalities. The second lattice is flat, and $n \preceq m$
+% iff $n = m$, and $\bot \preceq n$ for every $n$ and $m$. The partial ordering
+% relation also defines join $\vee$ and meet $\wedge$ if they exist. This might
+% seem redundant to rename equality on non-negative numbers in such way, but
+% later we overload the $\preceq$ relation for all data types.
+%
+% \subsection{The poset of data types}
+%
+% As previously mentioned it's easy to construct cartesian product from
+% fundamental data type, security type and dimensionality type partially ordered
+% lattices, but it's complicated by the fact that we are
+
+
+\subsection{Regular types}
+
+The lower layer of the type system for SecreC defines properties for values and
+variables in the language itself. Namely, each constant and expression, as well
+as each defined variable and procedure in any valid SecreC program has a type
+from the lower layer of this type system used for static checking.
+
+An abstract type, denoted by the meta-variable $\rho$, is one of the following:
+\begin{itemize}
+  \item
+    type $\mycode{void}$, also know as the \textit{unit type}, denotes data
+    holding no information, i.e., allows only one possible value. It is not
+    possible in SecreC to define variables of type \mycode{void}, or to work on
+    values of type \mycode{void}. However, the return type of procedures may be
+    defined to be \mycode{void}. In the latter case the procedure does not
+    return a value, and such a procedure call can not be used as a
+    subexpression, but only as a separate expression statement.
+
+  \item data type $\alpha$ denoting the type of data held as values.
+
+  \item  a variable type $\alpha\ var$ denoting the type of variables holding
+    values of data type $\alpha$, i.e., the abstract data type of the
+    \textit{l-value} for such variables\footnote{The primary reason for
+    specifying a separate variable data type is for future purposes when
+    support for references will be added to SecreC.}.
+
+  \item a procedure type $\left(\alpha_1 \times \cdots \times \alpha_n\right)
+    -> \alpha$ denoting procedures taking $n$ parameters (values) of types
+    $\alpha_1,\cdots,\alpha_n$ and returning a value of type $\alpha$,
+
+  \item a procedure type $\left(\alpha_1 \times \cdots \times \alpha_n\right) ->
+    ()$ denoting procedures taking $n$ parameters (values) of types
+    $\alpha_1,\cdots,\alpha_n$ and returning no value.
+
+Formally:
+\[
+  \rho ::= \mycode{void}\ |\ \alpha\ |\ \alpha\ var\ |\  \left(\alpha_1 \times \cdots \times \alpha_n\right) -> \alpha\ |\ \left(\alpha_1 \times \cdots \times \alpha_n\right) -> ().
+\]
+
+\end{itemize}
+
 
 \subsection{Statement types}
 The middle layer of the type system for static checking deals with statements.
@@ -601,19 +638,21 @@ For procedure overloading, we define a bijective function $\mathcal{M}$ for
 procedure name mangling, which takes an identifier as returned by the scanner
 and the list of data types of the procedure parameters, and returns a mangled
 identifier:
-
 \[
-\mathcal{M} : \operatorname{id}_S \times \left(\nu_1 \times \ldots \times \nu_n \right) \rightarrow \operatorname{id}_M.
+\mathcal{M} : \operatorname{id}_S \times \left(\alpha_1 \times \ldots \times \alpha_n \right) \rightarrow \operatorname{id}_M.
 \]
 
-The procedure overloading mechanism in this paper allows several procedures
-with the same name to be present in SecreC programs under some conditions.
+The procedure overloading mechanism in this paper
+allows several procedures with the same name to be present in SecreC programs.
 Namely, for each two procedures with the same name, they must either take a
 different number of parameters, or if they both take $n$ parameters then the
-data type of the $i$\textsuperscript{th} parameter must differ, where $n > 0$
-and $i\in\{1\ldots n\}$. This is a reasonable way to solve the ambiguity
-introduced by \cite{SECREC} which also allows overloading on security types in
-the context where the security types of the arguments can implicitly change.
+data type of the $i$\textsuperscript{th} parameter must differ, and
+$i\in\{1\ldots n\}$.
+
+In addition to overloading we support subtype polymorphism.  This is a
+reasonable way to solve the ambiguity introduced by \cite{SECREC} which also
+allows overloading on security types in the context where the security types of
+the arguments can implicitly change.
 
 \subsection{Type environment}\label{sec:checking:typing:environment}
 
@@ -637,15 +676,23 @@ variable definitions, which also hide all previous definitions for their scope.
 Let $\gamma$ be a type environment, a partial function from the set of all
 identifiers to the set of types
 \[
-\gamma: \operatorname{id} \hookrightarrow \rho \uplus \left\{\mycode{proc}\right\},
+\gamma: \operatorname{id} \hookrightarrow \rho \uplus \left\{A\ \mycode{proc}\ |\ A \subseteq A^0 \cup A^1 \cup \dots \right\},
 \]
-where \mycode{proc} denotes that the identifier given to $\gamma$ points to
-some procedure. The rationale behind this is that when in some scope the last
-definition of the identifier $i\in\operatorname{id}_S$ is a procedure
-definition, i.e., when $\gamma\!\left(i\right)=\mycode{proc}$ for the type
-environment $\gamma$ of that scope, then $\gamma$ also returns the full type of
-the procedure (including the security types of the parameters and the return
-  type) when given some mangled identifier of the procedure.
+where $A\ \mycode{proc}$ denotes that the identifier given to $\gamma$ points
+to some procedure defined on arguments of types in set $A$. The rationale
+behind this is that when in some scope the last definition of the identifier
+$i\in\operatorname{id}_S$ is a procedure definition, i.e., when
+$\gamma\!\left(i\right)=A\ \mycode{proc}$ for the type environment $\gamma$ of
+that scope, then $\gamma$ also returns the full type of the procedure
+(including the security types of the parameters and the return type) when given
+some mangled identifier of the procedure. Set of all valid argument types is
+defined as follows:
+\[
+\begin{array}{ll}
+  A^{0} &= \left\{ () \right\} \\
+  A^{n+1} &= \left\{ (\alpha, \alpha_1, \dots, \alpha_n)\ |\ \left( \alpha_1, \dots, \alpha_n \right) \in A^n, \text{$\alpha$ is a data type} \right\} \\
+\end{array}
+\]
 
 Updating a type environment $\gamma$ with a definition of $x$ having type $t$,
 where $t \in \rho \uplus \left\{\mycode{proc}\right\}$, is denoted by
@@ -672,7 +719,7 @@ programmer such as decimal or string literals and keywords \mycode{true} and
 \[ \inference[$\eta$EConst]{
   \operatorname{validLiteral}(v)
 }{
-  \gamma |- v : (\mycode{public}, \operatorname{datatype}(v)\ 0)
+  \gamma |- v : (\mycode{public}, \operatorname{datatype}(v), 0)
 } \]
 where function $\operatorname{datatype}\!\left(v\right)$ is the data type of
 value or literal $v$, and the predicate $\operatorname{validLiteral}$ checks
@@ -696,10 +743,24 @@ $\operatorname{datatype}$ is defined as follows:
                                            \end{array}\right.
 \]
 
-For variables appearing as \textit{r-values}, the $\eta$ERValue can be used,
-which infers the type of the value held by some variable.
-\[ 
-\inference[$\eta$ERValue]{\gamma(x) = (\tau, \delta\ n\ var)}{\gamma |- x : (\tau, \delta\ n)}
+For variables or functions symbols appearing as \textit{r-values}, the
+$\eta$ERValue and $\eta$ERProc can be used, which infers the type of the value
+held by some symbol.
+\[
+\inference[$\eta$ERValue]{
+  \gamma(x) = \alpha\ var
+}
+{
+  \gamma |- x : \alpha
+}
+\]
+\[
+\inference[$\eta$ERProc]{
+  \gamma(f) = A\ \mycode{proc}
+}
+{
+  \gamma |- f :  A\ \mycode{proc}
+}
 \]
 
 According to $\eta$EBinary, the data type of binary expressions depends on the
@@ -717,13 +778,13 @@ This allows for scalar value to appear in expressions where it can be implicitly
 converted into higer dimensional array.
 \[ \inference[$\eta$EBinary]
 {
-  \gamma |- e_1 : \left(\tau_1, \delta_1\ n_1\right) \\
-  \gamma |- e_2 : \left(\tau_2, \delta_2\ n_2\right) \\
-  \tau = \tau_1 \oplus \tau_2,\ 
-  \delta = \operatorname{BOT}_{\anyop}(\delta_1, \delta_2),\ 
+  \gamma |- e_1 : \left(\tau_1, \delta_1, n_1\right) \\
+  \gamma |- e_2 : \left(\tau_2, \delta_2, n_2\right) \\
+  \tau = \tau_1 \oplus \tau_2&
+  \delta = \operatorname{BOT}_{\anyop}(\delta_1, \delta_2)&
   n = n_1 \sqcup n_2
 }{
-  \gamma |- e_1 \circledast e_2 : \left(\tau, \delta\ n\right)
+  \gamma |- e_1 \circledast e_2 : \left(\tau, \delta, n\right)
 } \]
 
 % ETernary
@@ -739,12 +800,11 @@ point-wise and has to evaluate both arguments only if the conditional
 expression is non-scalar.
 \[ \inference[$\eta$ETernary]
 {
-    \gamma |- e : \left(\mycode{public}, \mycode{bool}\ n_0\right) \\
-    \gamma |- e_1 : \left(\tau_1, \delta\ n\right),\  \gamma |- e_2 : \left(\tau_2, \delta\ n \right) \\
-    n_0 \sqsubseteq n,\ 
-    \tau = \tau_1 \oplus \tau_2
+    \gamma |- e : \left(\mycode{public}, \mycode{bool}, n_0\right) \\
+    \gamma |- e_1 : \left(\tau_1, \delta_1, n\right),\  \gamma |- e_2 : \left(\tau_2, \delta_2, n \right) \\
+    \tau = \tau_1 \oplus \tau_2,\ \delta = \delta_1 \sqcup \delta_2,\ n_0 \sqsubseteq n \\
 }{
-  \gamma |- e\ \mycode{?}\ e_1\ \mycode{:}\ e_2\ :\ \left(\tau, \delta\ n\right)
+  \gamma |- e\ \mycode{?}\ e_1\ \mycode{:}\ e_2\ :\ \left(\tau, \delta, n\right)
 } \]
 
 For a ternary expression a simple optimization is to calculate one branch,
@@ -768,28 +828,27 @@ looser security type and is allowed to be scalar value even if left hand side
 is not.
 \[ \inference[$\eta$EAssignOp]
 {
-  \gamma(x) = \left(\tau, \delta\ n\ \mathit{var}\right) &
-  \gamma |- e : \left(\tau', \delta\ n'\right) &
-  \tau' \to \tau  &
-  n' \sqsubseteq n
+  \gamma(x) = \left(\tau, \delta, n \right) \mathit{var} \\
+  \gamma |- e : \left(\tau', \delta', n'\right) \\
+  \tau' \to \tau,\ \delta' \sqsubseteq \delta,\ n' \sqsubseteq n
 }
 {
-  \gamma |- x\ \mycode{=}\ e : \left(\tau, \delta\ n\right)
+  \gamma |- x\ \mycode{=}\ e : \left(\tau, \delta, n\right)
 } \]
 
-% EAssignOp2 
+% EAssignOp2
 For arithmetic assignment expressions that perform calculations based on the
 current value of the variable, $\eta$EAssignOp2 requires that the corresponding
 binary arithmetic operation between the l-value and the r-value is typeable,
 and that the variable being assigned to can hold the result of this operation.
 \[ \inference[$\eta$EAssignOp2]
 {
-  \gamma(x) = \left(\tau, \delta\ n\ var\right) &
-  \gamma |- x \circledast e : \left(\tau', \delta\ n\right) &
-  \tau' \to \tau
+  \gamma(x) = \left(\tau, \delta, n\right) \mathit{var} \\
+  \gamma |- x \circledast e : \left(\tau', \delta', n\right) \\
+  \tau' \to \tau,\ \delta' \sqsubseteq \delta
 }
 {
-  \gamma |- x\  \circledast \mycode{=}\ e : \left(\tau, \delta\ n\right)
+  \gamma |- x\  \circledast \mycode{=}\ e : \left(\tau, \delta, n\right)
 } \]
 
 % ENeg ENot
@@ -798,9 +857,21 @@ operands, namely the $\eta$ENot rule for logical negation and the $\eta$ENeg
 for numerical negation require their operands to be of data types \mycode{bool}
 or \mycode{int} respectively.
 \[\begin{array}{c}
-\inference[$\eta$ENot]{\gamma |- e : (\tau, \mycode{bool}\ n)}{\gamma |- \mycode{!}e : (\tau, \mycode{bool}\ n)} \\[2em]
-\inference[$\eta$ENeg]{\gamma |- e : (\tau, \mycode{int}\ n)}{\gamma |- \mycode{-}e : (\tau, \mycode{int}\ n)}
+\inference[$\eta$ENot]{\gamma |- e : (\tau, \mycode{bool}, n)}{\gamma |- \mycode{!}e : (\tau, \mycode{bool}, n)} \\[2em]
+
+\inference[$\eta$ENeg]{
+  \gamma |- e : (\tau, \delta, n) \\
+  \delta' = \min \left\{ \delta'\in\mathtt{Signed}\ |\ \delta \sqsubseteq \delta' \right\}
+}{
+  \gamma |- \mycode{-}e : (\tau, \delta', n)
+}
 \end{array} \]
+As unary negation is only defined on signed integer types we define set
+$\mathtt{Signed} = \left\{ \mycode{int8}, \mycode{int16}, \mycode{int32}, \mycode{int} \right\}$ to enumerate all
+types negation can be called directly called on. In the inference rule we
+compute the smallest type we can cast the argument to, and use that as
+resulting type. Type checking may fail if the unique minimal element does not
+exist.
 
 % EDeclassify
 The $\eta$EDeclassify rule is used to convert \mycode{private} data into
@@ -809,7 +880,7 @@ information from \mycode{private} values to \mycode{public} variables or
 output. By requiring the argument to be of \mycode{private} security type,
 expressions like \mycode{declassify(declassify(e))} are not possible.
 \[
-\inference[$\eta$EDeclassify]{\gamma |- e : (\mycode{private}, \delta\ n)}{\gamma |- \mycode{declassify(e)} : (\mycode{public}, \delta\ n)}
+\inference[$\eta$EDeclassify]{\gamma |- e : (\mycode{private}, \delta, n)}{\gamma |- \mycode{declassify(e)} : (\mycode{public}, \delta, n)}
 \]
 
 % EProcCall
@@ -823,22 +894,15 @@ of the procedure overloading mechanism. The result type for the procedure call
 can also be calculated from the procedure type returned from the type
 environment by its mangled identifier.
 \[ \inference[$\eta$EProcCall]{
-  \gamma |- f : \mycode{proc}\\
-  \gamma |- e_1 : (\tau_1, \nu_1) \\
+  \gamma |- f : A\ \mycode{proc}\\
+  \gamma |- e_1 : (\tau_1, \delta_1, n_1) \\
   \vdots \\
-  \gamma |- e_m : (\tau_m, \nu_n) \\
-  \gamma |- \mathcal{M}(f, \nu_1, \ldots, \nu_n)
-    : ((\underline{\tau_1}\times\ldots\times\underline{\tau_n}) \to \tau,
-       (\nu_1 \times \ldots \times \nu_n) \to \nu) \\
-  \tau_1 \to \underline{\tau_1} \\
-  \vdots \\
-  \tau_n \to \underline{\tau_n} \\
-}{\gamma |- f\mycode{(}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{)} : \rho}
-\] where \[
-\rho = \begin{cases}
-  (\rho^\tau, \rho^\nu) & \text{ if } \rho^\tau \neq () \text{ and } \rho^\nu \neq () \\
-  \mycode{void}         & \text{ if } \rho^\tau   =  () \text{ and } \rho^\nu   =  ().
-\end{cases}
+  \gamma |- e_m : (\tau_m, \delta_m, n_m) \\
+  A_f = \left\{ (\underline{\alpha}_1, \dots, \underline{\alpha}_m) \in A\ |\ \underline{\alpha}_i = (\underline{\tau}_i, \underline{\delta}_i, n_i), \tau_i \to \underline{\tau}_i, \delta_i \sqsubseteq \underline{\delta}_i, 1 \le i \le m \right\}\\
+  (\alpha_1, \dots, \alpha_m) = \min A_f \\
+  \gamma |- \mathcal{M}(f, \alpha_1, \ldots, \alpha_m)
+  : \left( \alpha_1 \times \ldots \times \alpha_m \right)  \to \rho \\
+}{\gamma |- f\mycode{(}e_1\mycode{,}\ldots\mycode{,}e_m\mycode{)} : \rho}
 \]
 
 % EIndex
@@ -852,12 +916,14 @@ expression can be computed by simply counting all the slices.
 \[
 \inference[$\eta$EIndex]
 {
-  \gamma |- e : \left( \tau, \delta\ n \right) \\
-  \gamma |- e_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \mycode{int}\ 0 \right)\\
-  \gamma |- e'_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \mycode{int}\ 0 \right)
-} 
+  \gamma |- e : \left( \tau, \delta, n \right) \\
+  \gamma |- e_1 : \left(\mycode{public}, \delta_1, 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \delta_n, 0 \right)\\
+  \gamma |- e'_1 : \left(\mycode{public}, \delta'_1, 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \delta'_k, 0 \right) \\
+  \delta_i \sqsubseteq \mycode{int}, 1 \le i \le n \\
+  \delta'_j \sqsubseteq \mycode{int}, 1 \le j \le k
+}
 {
-  \gamma |- e \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} : \left(\tau, \delta\ k\right)
+  \gamma |- e \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} : \left(\tau, \delta, k\right)
 }
 \]
 
@@ -874,52 +940,49 @@ types. We allow for right hand side to have laxer security type and for scalar
 to appear in right hand side.
 \[ \inference[$\eta$EAssignArray]
 {
-  \gamma(x) = \left( \tau, \delta\ n\ \mathit{var} \right) \\
-  \gamma |- e : \left(\tau', \delta\ k'\right) \\
-  \gamma |- e_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \mycode{int}\ 0 \right)\\
-  \gamma |- e'_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \mycode{int}\ 0 \right)\\
-  \tau' \to \tau,\ k' \sqsubseteq k
-} 
+  \gamma(x) = \left( \tau, \delta, n \right)\ \mathit{var}  \\
+  \gamma |- e : \left(\tau', \delta', k'\right) \\
+  \gamma |- e_1 : \left(\mycode{public}, \delta_1, 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \delta_n, 0 \right)\\
+  \gamma |- e'_1 : \left(\mycode{public}, \delta'_1, 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \delta'_k, 0 \right) \\
+  \delta_i \sqsubseteq \mycode{int}, 1 \le i \le n \\
+  \delta'_j \sqsubseteq \mycode{int}, 1 \le j \le k \\
+  \tau' \to \tau, \delta' \sqsubseteq \delta, k' \sqsubseteq k
+}
 {
-  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \mycode{=}\ e : \left(\tau, \delta\ k\right)
+  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \mycode{=}\ e : \left(\tau, \delta, k\right)
 } \]
 
 % EAssignArrayOp
 Array assignment with operator is similar to $\eta$AssignOp2 rule.
 \[ \inference[$\eta$EAssignArrayOp]
 {
-  %\gamma(x) = \left( \tau, \delta\ n\ \mathit{var} \right) \\
-  %\gamma |- e : \left(\tau', \delta\ k'\right) \\
-  %\gamma |- e_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \mycode{int}\ 0 \right)\\
-  %\gamma |- e'_1 : \left(\mycode{public}, \mycode{int}\ 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \mycode{int}\ 0 \right)\\
-  %\tau' \to \tau,\ k' \sqsubseteq k
-  \gamma(x) = \left(\tau, \delta\ n\ var\right) \\
-  \gamma |-  x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} \circledast e : \left(\tau', \delta\ k\right) \\
-  \tau' \to \tau
-} 
+\gamma(x) = \left(\tau, \delta, n\right) \mathit{var} \\
+  \gamma |-  x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} \circledast e : \left(\tau', \delta', k\right) \\
+  \tau' \to \tau, \delta' \sqsubseteq \delta
+}
 {
-  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \circledast \mycode{=}\ e : \left(\tau, \delta\ k\right)
+  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \circledast \mycode{=}\ e : \left(\tau, \delta, k\right)
 } \]
 
 % EShape, ESize
 Two similar rules $\eta$EShape and $\eta$ESize  can be used to query the shape
 and size of arrays, they return either public vector of integers or public
 integer respecively. The rules don't impose any restrictions on the
-type of the arguments. 
+type of the arguments.
 \[ \inference[$\eta$EShape]
 {
-  \gamma |- e : \left(\tau, \delta\ n\right)
-} 
+  \gamma |- e : \alpha
+}
 {
-  \gamma |- \mycode{shape(} e \mycode{)} : \left(\mycode{public}, \mycode{int}\ 1\right)
+  \gamma |- \mycode{shape(} e \mycode{)} : \left(\mycode{public}, \mycode{int}, 1\right)
 } \]
 \[ \inference[$\eta$ESize]
 {
-  \gamma |- e : \left(\tau, \delta\ n\right)
-} 
+  \gamma |- e : \alpha
+}
 {
-  \gamma |- \mycode{size(} e \mycode{)} : \left(\mycode{public}, \mycode{int}\ 0\right)
-} \] 
+  \gamma |- \mycode{size(} e \mycode{)} : \left(\mycode{public}, \mycode{int}, 0\right)
+} \]
 % EReshape
 
 The $\eta$EReshape rule allows to construct new arrays with different shape and
@@ -929,12 +992,12 @@ Resulting expression has same security type and same data type as first
 argument, but the new dimensionality.
 \[ \inference[$\eta$EReshape]
 {
-  \gamma |- e : \left(\tau, \delta\ n\right) \\
-  \gamma |- e_1 : \left(\mycode{public}, \mycode{int}\ 0\right) \\
+  \gamma |- e : \left(\tau, \delta, n\right) \\
+  \gamma |- e_1 : \left(\mycode{public}, \delta_1, 0\right) & \delta_1 \sqsubseteq \mycode{int} \\
   \vdots \\
-  \gamma |- e_k : \left(\mycode{public}, \mycode{int}\ 0\right)      } 
+  \gamma |- e_k : \left(\mycode{public}, \delta_k, 0\right) & \delta_k \sqsubseteq \mycode{int}     }
 {
-  \gamma |- \mycode{reshape(} e , e_1, \ldots, e_k \mycode{)} : \left(\tau, \delta\ k\right)
+  \gamma |- \mycode{reshape(} e , e_1, \ldots, e_k \mycode{)} : \left(\tau, \delta, k\right)
 } \]
 
 % ECat
@@ -945,13 +1008,13 @@ Resulting array has same data type and dimensionality as first two and stricter
 of the security types.
 \[ \inference[$\eta$ECat]
 {
-  \gamma |- e_0 : \left(\tau_0, \delta\ n \right) \\
-  \gamma |- e_1 : \left(\tau_1, \delta\ n \right) \\
-%  \gamma |- e_2 : \left(\mycode{public}, \mycode{int}\ 0\right) \\
-  \tau = \tau_0 \oplus \tau_1, 0 \leq k < n
+  \gamma |- e_0 : \left(\tau_0, \delta_0, n \right) \\
+  \gamma |- e_1 : \left(\tau_1, \delta_1, n \right) \\
+  \tau = \tau_0 \oplus \tau_1, \delta = \delta_0 \sqcup \delta_1 \\
+  0 \leq k < n
 } 
 {
-  \gamma |- \mycode{cat(} e_0 , e_1, k \mycode{)} : \left(\tau, \delta\ n\right)
+  \gamma |- \mycode{cat(} e_0 , e_1, k \mycode{)} : \left(\tau, \delta, n\right)
 } \]
 
 
@@ -984,14 +1047,14 @@ $\eta$SEmpty is $\emptyset$.
 \inference[$\eta$SContinue]{}{\gamma |- \mycode{continue;} : \left\{ continue\right\} } \\[2em]
 \inference[$\eta$SEmpty]{}{\gamma |- \varepsilon\mycode{;} : \emptyset } \\[2em]
 \inference[$\eta$SReturnVoid]{
-  \gamma(\mycode{thisproc}) = ( (\tau_1,\ldots,\tau_n)\to(),(\nu_1,\ldots,\nu_n)\to())
+  \gamma(\mycode{thisproc}) = (\alpha_1\times\dots\times\alpha_n)\to()
 }{
   \gamma |- \mycode{return;} : \left\{ return \right\}
 } \\[2em]
 \inference[$\eta$SReturn]{
-  \gamma |- e : \left( \tau', \nu \right)  \\
-  \gamma(\mycode{thisproc}) = ( (\tau_1,\ldots,\tau_n)\to\tau,(\nu_1,\ldots,\nu_n)\to\nu) \\
-  \tau' \to \tau
+  \gamma |- e : \left( \tau', \delta', n \right)  \\
+  \gamma(\mycode{thisproc}) = (\alpha_1\times\dots\times\alpha_m)\to(\tau,\delta,n) \\
+  \tau' \to \tau,\ \delta' \sqsubseteq \delta
 }{
   \gamma |- \mycode{return}\ e \mycode{;} : \left\{ return \right\}
 }
@@ -1011,23 +1074,24 @@ initializer expression is also checked to correspond to the type of the
 variable being defined.
 \[\begin{array}{c}
 \inference[$\eta$SCompoundVarDef]{
-  \gamma |- e_1 : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right)\\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
-  \gamma[x \mapsto (\tau, \delta\ n\ var)] |- S : \Gamma_S \\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right)\\
+  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int}\\
+  \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- S : \Gamma_S \\
   \Gamma_S \neq \emptyset
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n \mycode{];} S : \Gamma_S
 } \\[2em]
 \inference[$\eta$SCompoundVarDefInit]{
-  \gamma |- e_1 : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
-  \gamma |- e : \left( \tau', \delta\ n' \right) \\
-  \gamma[x \mapsto (\tau, \delta\ n\ var)] |- S : \Gamma_S \\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
+  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int}\\
+  \gamma |- e : \left( \tau', \delta', n' \right) \\
+  \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- S : \Gamma_S \\
   \Gamma_S \neq \emptyset \\
-  \tau' \to \tau \\
-  n' \sqsubseteq n
+  \tau' \to \tau,\ \delta' \sqsubseteq \delta,\ n' \sqsubseteq n
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n  \mycode{]=}\ e\mycode{;} S : \Gamma_S
 }
@@ -1181,10 +1245,11 @@ subexpressions denoting shape of declared variable are public integers,
 type environment $\gamma$ is updated with the variable being defined, and the
 rest of the program is checked in the updated type environment:
 \[ \inference[$\eta$VarDef]{
-  \gamma |- e_1 : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
-  \gamma[x \mapsto \left( \tau, \delta\ n \right)] |- P : \Gamma_P
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
+  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int} \\
+  \gamma[x \mapsto \left( \tau, \delta, n \right) \mathit{var}] |- P : \Gamma_P
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n  \mycode{];} P : \Gamma_P
 } \]
@@ -1194,13 +1259,13 @@ performed as without initializer expressions, with the only exception, that the
 initializer expression is first checked in the type environment before updating
 it.
 \[ \inference[$\eta$VarDefInit]{
-  \gamma |- e_1 : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \mycode{int}\ 0 \right) \\
-  \gamma |- e : \left( \tau', \delta\ n' \right) \\
-  \tau' \to \tau \\
-  n' \sqsubseteq n \\
-  \gamma[x \mapsto (\tau, \delta\ n\ var)] |- P : \Gamma_P
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
+  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int} \\
+  \gamma |- e : \left( \tau', \delta', n' \right) \\
+  \tau' \to \tau,\ \delta' \sqsubseteq \delta,\ n' \sqsubseteq n \\
+  \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- P : \Gamma_P
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n  \mycode{]=}\ e\mycode{;} P : \Gamma_P
 } \]
@@ -1239,7 +1304,7 @@ of type $fallthru$. An additional check ensures that a procedure named
     \gamma_c |- S : \left\{ return \right\} \\
     \gamma' |- P : \Gamma_P
 }{
-  \gamma |- \tau\ \nu\ f\mycode{(} \tau_1\ \nu_1\ p_1 \mycode{,} \ldots \mycode{,}\ \tau_n\ \nu_n\ p_n\mycode{) \{}S\mycode{\}}\ P : \Gamma_P
+  \gamma |- \alpha\ f\mycode{(} \alpha_1\ p_1 \mycode{,} \ldots \mycode{,}\ \alpha_n\ p_n\mycode{) \{}S\mycode{\}}\ P : \Gamma_P
 } \\[2em]
 \inference[$\eta$ProcdefVoid]{
   \mathcal{M}^f \notin \operatorname{dom}\left( \gamma \right) \\
@@ -1247,17 +1312,20 @@ of type $fallthru$. An additional check ensures that a procedure named
     \Gamma_S \subseteq \left\{ fallthru, return \right\} \\
     \gamma' |- P : \Gamma_P
 }{
-  \gamma |- \mycode{void}\ f\mycode{(} \tau_1\ \nu_1\ p_1 \mycode{,} \ldots \mycode{,}\ \tau_n\ \nu_n\ p_n\mycode{) \{}S\mycode{\}}\ P : \Gamma_P
+  \gamma |- \mycode{void}\ f\mycode{(} \alpha_1\ p_1 \mycode{,} \ldots \mycode{,}\ \alpha_n\ p_n\mycode{) \{}S\mycode{\}}\ P : \Gamma_P
 }
 \end{array} \]
 where \[\begin{array}{rcl}
-  \mathcal{M}^f & = & \mathcal{M}(f,\nu_1,\ldots,\nu_n) \\
-    \gamma'     & = & \gamma[f \mapsto \mycode{proc}]\left[ \mathcal{M}^f \mapsto \rho \right] \\
+  \mathcal{M}^f & = & \mathcal{M}(f,\alpha_1,\ldots,\alpha_n) \\
+    A           & = & 
+      \left\{ (\alpha_1,\ldots,\alpha_n) \right\} \cup 
+      \left\{ \overline{\alpha} \in A'\ |\ \gamma(f) = A'\ \mycode{proc} \right\} \\
+    \gamma'     & = & \gamma[f \mapsto A\ \mycode{proc}]\left[ \mathcal{M}^f \mapsto \rho \right] \\
     \gamma_c    & = & \gamma'[\mycode{thisproc} \mapsto \rho]
-                             [p_1 \mapsto (\tau_1, \nu_1)]\dots[p_n \mapsto (\tau_n, \nu_n)] \\
+                             [p_1 \mapsto \alpha_1]\dots[p_n \mapsto \alpha_n] \\
     \rho        & = & \begin{cases} 
-      ( (\tau_1\times\ldots\times\tau_n)\to\tau, (\nu_1\times\ldots\times\nu_n)\to\nu) & \text{if Procdef} \\
-      ( (\tau_1\times\ldots\times\tau_n)\to(), (\nu_1\times\ldots\times\nu_n)\to()) & \text{if ProcdefVoid}. \\
+       (\alpha_1\times\ldots\times\alpha_n)\to\alpha & \text{if Procdef} \\
+       (\alpha_1\times\ldots\times\alpha_n)\to() & \text{if ProcdefVoid}. \\
     \end{cases}
 \end{array}\]
 \vspace{0.5cm}
@@ -1266,7 +1334,7 @@ After checking whether all the top-level definitions in the SecreC program are
 correct, static checking verifies that a function called "main" taking no
 parameters and returning no value exists:
 \[ \inference[$\eta$ProgEnd]{
-  \gamma(\mathcal{M}(\mycode{main}, ())) = ( ()\to(), ()\to())
+  \gamma(\mathcal{M}(\mycode{main}, ())) = ()\to()
 }{
   \gamma |- \varepsilon : prog
 } \]
@@ -1307,7 +1375,7 @@ to the primitive base type:
 \[
   \operatorname{val} : \underbrace{\mycode{int},\ldots,\mycode{int}}_{n} \hookrightarrow \sigma
 \]
-This aproach works on scalar values as per well known result that $A$ is isomorphic to $() \to A$.
+This aproach works on scalar values as per well known fact that $A$ is isomorphic to $() \to A$.
 
 % TODO row major order
 For every shape $s \equiv (d_1, \ldots, d_n)$ we define set of legal indices:
@@ -1388,16 +1456,16 @@ it would make rules significantly more difficult to read, and notion of store
 would become more complicated. For now we just treat shape as public values
 regardless if it's read from public or private memory.
 
-Let the function $\operatorname{newloc}_{pub}\left(\mu\right)$ return a new
-public location, that is not yet in the domain of $\mu$ and let the function
-$\operatorname{newloc}_{pri}\left(\mu\right)$ return a new private location,
-that is not in the domain of $\mu$. We also define a helper function named
-$\operatorname{newloc}$:
+Let the function $\newloc_{pub}\left(\delta, s, \mu\right)$ return a new public
+block of memory with shape $s$ for data of type $\delta$, that is not yet in
+the domain of $\mu$ and let the function $\newloc_{pri}\left(\delta, s,
+\mu\right)$ return a new private location, that is not in the domain of $\mu$.
+We also define a helper function named $\newloc$:
 \[
- \operatorname{newloc}\!\left(\tau, \mu\right) = \left\{
+ \newloc\!\left(\tau, \delta, s, \mu\right) = \left\{
     \begin{array}{ll}
-       \operatorname{newloc}_{pub}\!\left(\mu\right) & \qquad \mbox{if}\ \tau = \mycode{public} \\
-       \operatorname{newloc}_{pri}\!\left(\mu\right) & \qquad \mbox{if}\ \tau = \mycode{private}. \\
+       \newloc_{pub}\!\left(\delta, s, \mu\right) & \qquad \mbox{if}\ \tau = \mycode{public} \\
+       \newloc_{pri}\!\left(\delta, s, \mu\right) & \qquad \mbox{if}\ \tau = \mycode{private}. \\
     \end{array}
  \right.
 \]
@@ -1514,11 +1582,11 @@ private value, moves the value to public data space and returns it. To do so, a
 new public location $l'\in \operatorname{loc}_{pub}$ must be utilized:
 \[ \inference[EDeclassify]
 {
-  \gamma |- e : \left(\mycode{private}, \delta\ n \right) \\
+  \gamma |- e : \left(\mycode{private}, \delta, n \right) \\
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to \left< l_0, \mu_0\right> \\
-  l' = \newloc_{pub}(\mu_0),\ \mu' = \mu_0[l' \mapsto \mu_0(l_0)]
+  (s, f) = \mu_0(l_0),\ l' = \newloc_{pub}(\delta, s, \mu_0)
 }{
-  \gamma, \env_V, \env_P |- \left< \mycode{declassify(}e\mycode{)}, \mu \right> \to_E \left< l', \mu' \right>
+  \gamma, \env_V, \env_P |- \left< \mycode{declassify(}e\mycode{)}, \mu \right> \to_E \left< l', \mu_0[l' \mapsto (s, f)] \right>
 } \]
 
 Contrary to declassification, classification of data (or moving data from
@@ -1532,54 +1600,53 @@ transition and a number of transition rules. These state transitions are in the
 form of
 \[
   \gamma |- \left\langle
-    \tau, e, l, l', \mu, F
+    \alpha, e, l, \mu, F
   \right\rangle ->_C \left\langle
-    l'', \mu'
+    l', \mu'
   \right\rangle
 \]
-where $\tau$ is a security class, $e$ is an expression, $l$, $l'$ and $l''$ are
-locations, $\mu$ and $\mu'$ are stores and $F \in \{force,noforce\}$. It is
+where $\alpha$ is a data type, $e$ is an expression, $l$ and $l'$ are
+locations, $\mu$ and $\mu'$ are stores and $F \in \{\force,\noforce\}$. It is
 presumed, that $l$ holds the value of the expression $e$ at some point during
 the evaluation, so that if $e$ is of a \mycode{public} security type, then
 $l \in \operatorname{loc}_{pub}$, otherwise $l \in \operatorname{loc}_{pri}$.
-If $F = noforce$, then location $l'$ is the location where the classified value
-must be written to, should classification be needed. If $F = force$ then the
-value at $l$ should be written to $l'$ regardless of whether it was classified
+If $F = \force$ then the
+value at $l$ should be written to new location $l'$ regardless of whether it was classified
 or not. The resulting state consists of a potentially changed store $\mu'$, and
-a location $l''$ which holds the classified value. Depending on $F$ and whether
+a location $l'$ which holds the classified value. Depending on $F$ and whether
 classification was performed, $l''$ is either $l$ or $l'$.
 
-
-The EClassify rule denotes that if $\tau$ is \mycode{private}, but the
-expression $e$ is of a \mycode{public} security type, then the value
-$\mu\!\left(l\right)$ should be classified. The classification occurs by
-copying the value to the location $l' \in \operatorname{loc}_{pri}$ in store
-$\mu$. The resulting state consists of $l'$ and the changed store:
-\[ \inference[EClassify]
+The ECast rule denotes that if either security type or data type differs for
+expression from the expected type then we need to reallocate the value
+$\mu(l)$. Weather we need to cast data type or not we also need to take into
+consideration the resulting security type of the resulting data. To do that we
+allocate the memory in correct security domain.
+%The EClassify rule denotes that if security type of $\alpha$ is
+%\mycode{private}, but the expression $e$ is of a \mycode{public} security type,
+%then the value $\mu\!\left(l\right)$ should be classified. The classification
+%occurs by copying the value to the location $l' \in \operatorname{loc}_{pri}$
+%in store $\mu$. The resulting state consists of $l'$ and the changed store:
+\[ \inference[ECast]
 {
-  \gamma |- e : \left(\mycode{public}, \delta\ n \right)  \\ 
-  \mu' = \mu[l' \mapsto \mu(l)] 
+  \gamma |- e : \left(\tau, \delta, n \right)  & \tau \to \tau' & \delta \sqsubseteq \delta' & n \sqsubseteq n' \\ 
+  (s, f) = \mu(l) & l' = \newloc(\tau', \delta', s, \mu) \\
+  \mu' = \mu [l' \mapsto (s, \cast{\delta'}(f))]
 }{
-  \gamma |- \left<\mycode{private}, e, l, l', \mu, F \right> \to_C \left< l', \mu' \right>
+  \gamma |- \left<(\tau', \delta', n'), e, l, \mu, F \right> \to_C \left< l', \mu' \right>
 } \]
 
-In other cases, when the security type of expression $e$ is equal to $\tau$,
-classification is not needed. However, depending on the parameter $F$, we
-might still need to copy the value to $l'$. The EDontClassify rule deals
-with all these cases:
+In case where casting and classification is not needed and $\noforce$ is
+defined no reallocation has to be performed. As the rules are non-deterministic
+the first rule is allowed to be called even if given and expected types are
+equal and $\noforce$ is defined. However, implementation usually optimizes
+those cases to not reallocate memory.
 \[
-\inference[EDontClassify]
+\inference[EDontCast]
 {
-  \gamma |- e : \left(\tau, \delta\ n \right) \\
+  \gamma |- e : \alpha & \alpha \equiv \alpha' \\
 }{
-  \gamma |- \left<\tau, e, l, l', \mu, F \right> \to_C \left<l'', \mu' \right>
-} \]
-where \[
-(l'', \mu') = 
-\begin{cases}
-(l, \mu) & \text{if}\ F \equiv \textit{noforce} \\
-(l', \mu [ l' \mapsto \mu(l)]) & \text{if}\ F \equiv \textit{force}.
-\end{cases}
+  \gamma |- \left<\alpha', e, l, \mu, \noforce \right> \to_C \left<l, \mu \right>
+}
 \]
 
 
@@ -1619,11 +1686,11 @@ the corresponding unary operation $\anyop \in \left\{\mycode{-},
 subexpression using the helper function $\mathcal{E}$. The result is stored
 in a new memory location $l'\in \operatorname{getloc}\!\left(l\right)$:
 \[\inference[EUnary]{
-  \gamma |- e : (\tau, \delta\ n) \\
+  \gamma |- e : (\tau, \delta, n) \\
   \gamma, \env_V, \env_P |- \left<e, \mu \right> \to_E \left<l, \mu_0 \right> \\
   (s, f) = \mu_0(l) \\
-  l' = \newloc(\tau, \mu_0) \\
-  g(i\!v) = \mathcal{E}(\anyop(f(i\!v))), \forall i\!v \in \mathcal{J}(s) \\
+  l' = \newloc(\tau, \delta, s, \mu_0) \\
+  g(\overline{i}) = \mathcal{E}(\anyop(f(\overline{i}))), \forall \overline{i} \in \mathcal{J}(s) \\
   \mu' = \mu_0[l' \mapsto (s, g)]
 }{
   \gamma, \env_V, \env_P |- \left<\anyop e, \mu \right> \to_E \left<l', \mu'\right>
@@ -1640,15 +1707,15 @@ upper bound of subexpression shapes and by carefully reindexing with $\theta$
 we allow for binary expressions where one argument is scalar while other is not.
 \[\inference[EArithBinary]
 {
-    \gamma |- e_0 : \left(\tau_0, \delta_0\ n_0 \right) \\
-    \gamma |- e_1 : \left(\tau_1, \delta_1\ n_1 \right) \\
+    \gamma |- e_0 \circledast e_1 : \alpha,\ \left( \tau, \delta, n \right) = \alpha \\
     \gamma,\env_V,\env_P |- \left< e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
     \gamma,\env_V,\env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-    \gamma |- \left< \tau_1, e_0, l_0, \newloc_{pri}(\mu_1), \mu_1, \mathit{noforce} \right> \to_C \left<l'_0, \mu_2 \right> \\
-    \gamma |- \left< \tau_0, e_1, l_1, \newloc_{pri}(\mu_2), \mu_2, \mathit{noforce} \right> \to_C \left<l'_1, \mu_3 \right> \\
+    \gamma |- \left< \alpha, e_0, l_0, \mu_1, \mathit{noforce} \right> \to_C \left<l'_0, \mu_2 \right> \\
+    \gamma |- \left< \alpha, e_1, l_1, \mu_2, \mathit{noforce} \right> \to_C \left<l'_1, \mu_3 \right> \\
     (s_0, f_0) = \mu_3(l'_0), (s_1,f_1) = \mu_3(l'_1) \\
-    l' = \newloc(\tau_0 \oplus \tau_1, \mu_3), s' = s_0 \sqcup s_1 \\
-    g(i\!v) = \mathcal{E}(f_0(\theta_{s'_0}^{s'}\!(i\!v)) \circledast f_1(\theta_{s'_1}^{s'}\!(i\!v))), \forall i\!v \in \mathcal{J}(s') \\
+    s' = s_0 \sqcup s_1 \\
+    l' = \newloc(\tau, \delta, s' , \mu_3) \\
+    g(\overline{i}) = \mathcal{E}(f_0(\theta_{s'_0}^{s'}\!(\overline{i})) \circledast f_1(\theta_{s'_1}^{s'}\!(\overline{i}))), \forall \overline{i} \in \mathcal{J}(s') \\
     \mu' = \mu_3[l' \mapsto (s', g) ]
 }{
   \gamma,\env_V,\env_P |- \left< e_0 \circledast e_1, \mu \right> \to_E \left< l', \mu' \right>
@@ -1684,36 +1751,24 @@ the result as for arithmetic operations. The result is analogously stored in a
 new memory location $l'$:
 \[\begin{array}{c}
 \inference[EAndPrivate]{
-  \gamma |- e_0 : (\tau_0, \mycode{bool}\ n_0) \\
-  \gamma |- e_1 : (\tau_1, \mycode{bool}\ n_1) \\
-  \tau_0 \equiv \mycode{private} \lor n_0 > 0 \lor n_1 > 0 \\
+  \gamma |- e_0\ \mycode{&&}\ e_1 : \alpha,\ \left( \tau, \mycode{bool} , n \right) = \alpha \\
+  \tau \equiv \mycode{private} \lor n > 0 \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left<l_0, \mu_0 \right> \\
   \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left<l_1, \mu_1 \right> \\
-  \gamma |- \left<\tau_1, e_0, l_0, \newloc_{pri}(\mu_1), \mu_1, noforce \right> \to_C \left<l_2, \mu_2 \right> \\
-  \gamma |- \left<\tau_0, e_1, l_1, \newloc_{pri}(\mu_2), \mu_2, noforce \right> \to_C \left<l_3, \mu_3 \right> \\
+  \gamma |- \left<\alpha, e_0, l_0, \mu_1, noforce \right> \to_C \left<l_2, \mu_2 \right> \\
+  \gamma |- \left<\alpha, e_1, l_1, \mu_2, noforce \right> \to_C \left<l_3, \mu_3 \right> \\
   (s_0,f_0) = \mu_3(l_2), (s_1,f_1) = \mu_3(l_3) \\
-  s' = s_0 \sqcup s_2, l' = \newloc(\tau_0 \oplus \tau_1, \mu_3) \\
-  g(i\!v) = \mathcal{E}(f_0(\theta_{s_0}^{s'}(i\!v))\ \mycode{&&}\ f_1(\theta_{s_1}^{s'}(i\!v))), \forall i\!v \in \mathcal{J}(s') \\
+  s' = s_0 \sqcup s_2, l' = \newloc(\tau, \mycode{bool}, s', \mu_3) \\
+  g(\overline{i}) = \mathcal{E}(f_0(\theta_{s_0}^{s'}(\overline{i}))\ \mycode{&&}\ f_1(\theta_{s_1}^{s'}(\overline{i}))), \forall \overline{i} \in \mathcal{J}(s') \\
   \mu' = \mu_3[l' \mapsto (s',g)]
 }{
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{&&}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
-}\\[2em]
-\inference[EOrPrivate]{
-  \gamma |- e_0 : (\tau_0, \mycode{bool}\ n_0) \\
-  \gamma |- e_1 : (\tau_1, \mycode{bool}\ n_1) \\
-  \tau_0 \equiv \mycode{private} \lor n_0 > 0 \lor n_1 > 0 \\
-  \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left<l_0, \mu_0 \right> \\
-  \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left<l_1, \mu_1 \right> \\
-  \gamma |- \left<\tau_1, e_0, l_0, \newloc_{pri}(\mu_1), \mu_1, noforce \right> \to_C \left<l_2, \mu_2 \right> \\
-  \gamma |- \left<\tau_0, e_1, l_1, \newloc_{pri}(\mu_2), \mu_2, noforce \right> \to_C \left<l_3, \mu_3 \right> \\
-  (s_0,f_0) = \mu_3(l_2), (s_1,f_1) = \mu_3(l_3) \\
-  s' = s_0 \sqcup s_2, l' = \newloc(\tau_0 \oplus \tau_1, \mu_3) \\
-  g(i\!v) = \mathcal{E}(f_0(\theta_{s_0}^{s'}(i\!v))\ \mycode{||}\ f_1(\theta_{s_1}^{s'}(i\!v))), \forall i\!v \in \mathcal{J}(s') \\
-  \mu' = \mu_3[l' \mapsto (s',g)]
-}{
-  \gamma, \env_V, \env_P |- \left<e_0\ \mycode{||}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 }
+
 \end{array}\]
+Almost identical rule is defined for logical or operator named EOrPrivate, and
+only difference is that every occurrence of $\mycode{&&}$ is replaced by
+$\mycode{||}$.
 
 In case of logical conjunction (disjunction) where first subexpression is
 scalar \mycode{true} (\mycode{false}) and second is non-scalar array we are
@@ -1727,20 +1782,20 @@ for disjunction we return the result without evaluating the second
 subexpression:
 \[\begin{array}{c}
 \inference[EAnd]{
-  \gamma |- e_0 : (\mycode{public}, \mycode{bool}\ 0) \\
-  \gamma |- e_1 : (\tau, \mycode{bool}\ 0) \\
+  \gamma |- e_0 : (\mycode{public}, \mycode{bool}, 0) \\
+  \gamma |- e_1 : (\tau, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{false} \\
-  \gamma |- \left< \tau, e_0, l_0, \newloc_{pri}(\mu_0), \mu_0, noforce \right> \to_C \left<l', \mu' \right>
+  \gamma |- \left<  (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, noforce \right> \to_C \left<l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{&&}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 } \\[2em]
 \inference[EOr]{
-  \gamma |- e_0 : (\mycode{public}, \mycode{bool}\ 0) \\
-  \gamma |- e_1 : (\tau, \mycode{bool}\ 0) \\
+  \gamma |- e_0 : (\mycode{public}, \mycode{bool}, 0) \\
+  \gamma |- e_1 : (\tau, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{true} \\
-  \gamma |- \left< \tau, e_0, l_0, \newloc_{pri}(\mu_0), \mu_0, noforce \right> \to_C \left<l', \mu' \right>
+  \gamma |- \left< (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, noforce \right> \to_C \left<l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{||}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 }
@@ -1754,7 +1809,7 @@ expression:
 \[
 \begin{array}{c}
 \inference[EAnd2]{
-  \gamma |- e_0 : (\mycode{public}, \mycode{bool}\ 0) \\
+  \gamma |- e_0 : (\mycode{public}, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{true} \\
   \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left< l', \mu' \right> \\
@@ -1762,7 +1817,7 @@ expression:
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{&&}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 } \\[2em]
 \inference[EOr2]{
-  \gamma |- e_0 : (\mycode{public}, \mycode{bool}\ 0) \\
+  \gamma |- e_0 : (\mycode{public}, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{false} \\
   \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left< l', \mu' \right> \\
@@ -1786,11 +1841,12 @@ subexpression is scalar, the conditional expression is evaluated, and if its
 value was \mycode{true}, then the second subexpression is evaluated and its
 value is returned:
 \[\inference[ETernaryTrue]{
+  \gamma |- e_0 : \left( \mycode{public}, \mycode{bool}, 0 \right) \\
+  \gamma |- e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2 : \alpha \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{true}\\
   \gamma, \env_V, \env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-  \gamma |- e_2 : \left( \tau_2, \nu \right) \\
-  \gamma |- \left< \tau_2, e_1, l_1, \newloc_{pri}(\mu_2), \mu_2, noforce \right> \to_C \left< l', \mu' \right>
+  \gamma |- \left< \alpha, e_1, l_1, \mu_1, noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', \mu' \right>
 }\]
@@ -1799,11 +1855,12 @@ Otherwise, if the value of the conditional expression evaluated to
 \mycode{false}, then the third subexpression is evaluated and its value is
 returned:
 \[\inference[ETernaryFalse]{
+  \gamma |- e_0 : \left( \mycode{public}, \mycode{bool}, 0 \right) \\
+  \gamma |- e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2 : \alpha \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{false}\\
-  \gamma, \env_V, \env_P |- \left< e_2, \mu_0 \right> \to_E \left< l_2, \mu_1 \right> \\
-  \gamma |- e_1 : \left( \tau_1, \delta \ n \right) \\
-  \gamma |- \left< \tau_1, e_2, l_2, \newloc_{pri}(\mu_2), \mu_2, noforce \right> \to_C \left< l', \mu' \right>
+  \gamma, \env_V, \env_P |- \left< e_2, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
+  \gamma |- \left< \alpha, e_2, l_1, \mu_1, noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', \mu' \right>
 }\]
@@ -1814,27 +1871,25 @@ moved to same memory space. Resulting array is defined by choosing values from
 either result of second or third subexpression based on value of conditional
 expression, similarly to first two rules:
 \[ \inference[ETernaryArray]{
-  \gamma |- e_0 : (\mycode{public}, \mycode{bool}\ n) \\
-    \gamma |- e_1 : (\tau_1, \delta\ n), \gamma |- e_2 : (\tau_2, \delta\ n) \\
-    \tau = \tau_1 \oplus \tau_2 \\
+    \gamma |- e_0 : (\mycode{public}, \mycode{bool}, n) \\
+    \gamma |- e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2 : \alpha,\ (\tau, \delta, n) = \alpha \\
     \gamma, \env_V, \env_P |- \left<e_0, \mu   \right> \to_E \left< l_0, \mu_0 \right> \\
     \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
     \gamma, \env_V, \env_P |- \left<e_2, \mu_1 \right> \to_E \left< l_2, \mu_2 \right> \\
-    \gamma |- \left< \tau , e_0, l_0, \newloc_{pri}(\mu_2), \mu_2 , noforce \right> \to_C \left< l_3, \mu_3 \right> \\
-    \gamma |- \left< \tau , e_1, l_1, \newloc_{pri}(\mu_3), \mu_3 , noforce \right> \to_C \left< l_4, \mu_4 \right> \\
-    \gamma |- \left< \tau , e_2, l_2, \newloc_{pri}(\mu_4), \mu_4 , noforce \right> \to_C \left< l_5, \mu_5 \right> \\
-    (s, f_0) = \mu_5(l_3), (s, f_1) = \mu_5(l_4), (s,f_2) = \mu_5(l_5) \\
-    l' = \newloc(\tau, \mu_5) \\
-    \mu' = \mu_5[l' \mapsto (s, g)],
+    \gamma |- \left< \alpha , e_1, l_1, \mu_2 , \noforce \right> \to_C \left< l_3, \mu_3 \right> \\
+    \gamma |- \left< \alpha , e_2, l_2, \mu_3 , \noforce \right> \to_C \left< l_4, \mu_4 \right> \\
+    (s, f_0) = \mu_4(l_0), (s, f_1) = \mu_5(l_4), (s,f_2) = \mu_4(l_4) \\
+    l' = \newloc(\tau, \delta, s, \mu_4) \\
+    \mu' = \mu_4[l' \mapsto (s, g)],
 }{
-  \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', s, \mu' \right>
+  \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', \mu' \right>
 }\]
 where \[
-g(i\!v) = \begin{cases}
-f_1(i\!v) & \text{if}\ f_0(i\!v) = \mycode{true} \\
-f_2(i\!v) & \text{if}\ f_0(i\!v) = \mycode{false}
+g(\overline{i}) = \begin{cases}
+f_1(\overline{i}) & \text{if}\ f_0(\overline{i}) = \mycode{true} \\
+f_2(\overline{i}) & \text{if}\ f_0(\overline{i}) = \mycode{false}
 \end{cases}
-\] for all $ i\!v \in \mathcal{J}(s)$.
+\] for all $ \overline{i} \in \mathcal{J}(s)$.
 \vspace{0.5cm}
 
 
@@ -1851,11 +1906,11 @@ assignment. Note that the shape and number of values of left hand side variable
 may change as the result of assignment.
 \[\inference[EAssign]
 {
-  \gamma |- e : (\tau, \delta\ n), n > 0 \\
-  \gamma(x) = (\tau, \delta\ n\ var) \\
+  \gamma |- e : (\tau, \delta, n), n > 0 \\
+  \gamma(x) = (\tau', \delta', n)\ \mathit{var} \\
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   l' = \env_V(x) \\
-  \gamma |- \left< \tau, e, l_0, \newloc(\tau, \mu_0), \mu_0, force \right> \to_C \left<l_2, \mu_1 \right> \\
+  \gamma |- \left< (\tau', \delta', n), e, l_0, \mu_0, force \right> \to_C \left<l_2, \mu_1 \right> \\
   \mu' = \mu_1[l' \mapsto \mu_1(l_2)]
 }{
   \gamma, \env_V, \env_P |- \left< x\ \mycode{=}\ e, \mu \right> \to_E \left< l', \mu' \right>
@@ -1864,12 +1919,12 @@ For scalar assignment that we simply set all of left-hand side array values to
 the right hand side scalar. Again we may have to classify right hand side.
 \[\inference[EAssignScalar]
 {
-  \gamma |- e : (\tau, \delta\ 0) \\
-  \gamma(x) = (\tau, \delta\ n\ var) \\
+  \gamma |- e : (\tau, \delta, 0) \\
+  \gamma(x) = (\tau', \delta', n)\ \mathit{var} \\
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
-  \gamma |- \left< \tau, e, l_0, \newloc(\tau, \mu_0), \mu_0, force \right> \to_C \left<l_2, \mu_1 \right> \\
-  l' = \env_V(x) \\
-  \mu' = \mu_1[l' \mapsto i\!v \mapsto \mu_1(l_2)], \forall i\!v \in \mathcal{J}(s')
+  \gamma |- \left< (\tau', \delta', 0), e, l_0, \mu_0, \force \right> \to_C \left<l_1, \mu_1 \right> \\
+  l' = \env_V(x), (s, f) = \mu_1(l') \\
+  \mu' = \mu_1[l' \mapsto \overline{i} \mapsto \mu_1(l_1)], \forall \overline{i} \in \mathcal{J}(s)
 }{
   \gamma, \env_V, \env_P |- \left< x\ \mycode{=}\ e, \mu \right> \to_E \left< l', \mu' \right>
 }\]
@@ -1892,27 +1947,33 @@ For generic indexing we introduce two helper rules to evaluate indices, the two
 cases correspond to evaluating regular integer valued index expression:
 \[ \inference[EIndexInt]
 {
-  \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l, \mu' \right>
+  \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
+  \gamma |- \left< \left( \mycode{public}, \mycode{int}, 0 \right), e, l_0, \mu_0, \noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_I \left< \mu'\!(l), \mu'\!(l) + 1, \mu' \right>
 } \]
 and to evaluating a slice:
 \[ \inference[EIndexSlice]
 {
-  \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l, \mu_0\right> \\
-  \gamma, \env_V, \env_P |- \left< e', \mu_0 \right> \to_E \left< l', \mu'\right>
+  \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0\right> \\
+  \gamma, \env_V, \env_P |- \left< e', \mu_0 \right> \to_E \left< l_1, \mu_1\right> \\
+  \gamma |- \left< \left( \mycode{public}, \mycode{int}, 0 \right), e, l_0, \mu_1, \noforce \right> \to_C \left< l, \mu_2 \right> \\
+  \gamma |- \left< \left( \mycode{public}, \mycode{int}, 0 \right), e', l_1, \mu_2, \noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e\mycode{:}e', \mu \right> \to_I \left< \mu'\!(l), \mu'\!(l'), \mu' \right>
 } \]
-In both cases we evaluate subexpressions and return the corresponding region and potentially modified store.
+In both cases we evaluate subexpressions and return the corresponding region
+and potentially modified store. Type checker has guaranteed that the index
+range evaluation rules are only applied to expressions that can be casted to
+public integer scalars.
 
-In case of indexing expression occuring at right hand side we evaluate all
+In case of indexing expression occurring at right hand side we evaluate all
 subexpressions from left to right and construct new array taking only values
 specified by the indices. No implicit classification is required as indices
 need to be of public security type. The rule stands as:
 \[\inference[EIndex]
 { % peal
-  \gamma |- e : \left(\tau, \delta\ n\right) \\
+  \gamma |- e : \left(\tau, \delta, n\right) \\
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to \left< l_0, \mu_0 \right> \\
   \gamma, \env_V, \env_P |- \left< \iota_1, \mu_0 \right> \to_I \left< \lo_1, \up_1, \mu_1 \right> \\
   \vdots \\
@@ -1920,7 +1981,7 @@ need to be of public security type. The rule stands as:
   d_1 = \up_1 - \lo_1, \ldots, d_n = \up_n - \lo_n\\
   (s, f) = \mu_n(l_0) \\
   s' = (d_{\sigma(1)}, \ldots, d_{\sigma(k)}) \\
-  l' = \newloc(\tau, \mu_n),\ \mu' = \mu_n\left[ l' \mapsto (s', g) \right]
+  l' = \newloc(\tau, \delta, s', \mu_n),\ \mu' = \mu_n\left[ l' \mapsto (s', g) \right]
 } { % all
   \gamma, \env_V, \env_P |- \left< e \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}, \mu \right> \to_E
             \left< l', \mu'\right>
@@ -1939,12 +2000,12 @@ rule is similar to both regular indexing and assignment. Right hand side is
 evaluated before other subexpressions and resulting value is classified.
 \[ \inference[EIndexAssign]
 {
-  \gamma(x) = (\tau, \delta\ n\ var) \\
+  \gamma(x) = \alpha\ \textit{var}, \left( \tau, \delta, n \right) = \alpha \\
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \gamma, \env_V, \env_P |- \left< \iota_1, \mu_0 \right> \to_I \left< \lo_1, \up_1, \mu_1 \right> \\
   \vdots \\
   \gamma, \env_V, \env_P |- \left< \iota_n, \mu_{n-1} \right> \to_I \left< \lo_n, \up_n, \mu_n \right> \\
-  \gamma |- \left< \tau, e, l_0, \newloc(\tau, \mu_n), \mu_n, force \right> \to_C \left<l_2, \mu_{n+1} \right> \\
+  \gamma |- \left< \alpha, e, l_0, \mu_n, \force \right> \to_C \left<l_2, \mu_{n+1} \right> \\
   d_1 = \up_1 - \lo_1, \ldots, d_n = \up_n - \lo_n \\
   (s_0,f_{new}) = \mu_{n+1}(l_2) \\
   l' = \env_V(x), (s',f_{old}) = \mu_{n+1}(l') \\
@@ -1974,10 +2035,10 @@ For querying size of array we evaluate subexpression and return product of its
 shape in new public memory location:
 \[ \inference[ESize]
 {
-    \gamma |- e : \left(\tau, \delta\ n \right) \\
+    \gamma |- e : \left(\tau, \delta, n \right) \\
     \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
     ( \left( d_1,\ldots,d_n \right), v ) = \mu_0(l_0) \\
-    l' = \newloc_{pub}(\mu_0) \\
+    l' = \newloc_{pub}(\mycode{int}, (), \mu_0) \\
     \mu' = \mu_0[ l' \mapsto d_1 d_2 \ldots d_n ]
 }{
   \gamma, \env_V, \env_P |- \left<\mycode{size(} e \mycode{)}, \mu \right> \to_E \left< l',  \mu' \right>
@@ -1988,11 +2049,11 @@ return one dimensional array that contains dimension sizes of the
 subexpression:
 \[ \inference[EShape]
 { % peal
-    \gamma |- e : \left(\tau, \delta\ n \right) \\
+    \gamma |- e : \left(\tau, \delta, n \right) \\
     \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
     ((d_1, \ldots, d_n), v) = \mu_0(l_0) \\
-    f(i) = d_{i+1}, 0 \leq i < n \\
-    l' = \newloc_{pub}(\mu_0) \\
+    f = i \mapsto d_{i+1}, 0 \leq i < n \\
+    l' = \newloc_{pub}(\mycode{int}, (n), \mu_0) \\
     \mu' = \mu_0[ l' \mapsto (n, f) ]
 }{
   \gamma, \env_V, \env_P |- \left<\mycode{shape(} e \mycode{)}, \mu \right> \to_E \left< l', \mu' \right>
@@ -2002,19 +2063,21 @@ For generic shape modification we evaluate all of the subexpressions, define new
 shape and do some sanity checking. Result is simply reindexed original array:
 \[\inference[EReshape]
 {
-    \gamma |- e : \left(\tau, \delta\ n \right) \\
-    \gamma |- \mycode{reshape(} e, e_1, \ldots, e_k \mycode{)} : \left(\tau, \delta\ k \right) \\
+    \gamma |- e : \left(\tau, \delta, n \right) \\
+    \gamma |- \mycode{reshape(} e, e_1, \ldots, e_k \mycode{)} : \left(\tau, \delta, k \right) \\
     \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
-    \gamma, \env_V, \env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-    \vdots \\
-    \gamma, \env_V, \env_P |- \left< e_k, \mu_{k-1} \right> \to_E \left< l_k, \mu_k \right> \\
-    (\left( d_1, d_2, \ldots, d_n \right), f) = \mu_k(l_0) \\
-    d'_1 = \mu_k(l_1), \ldots, d'_k = \mu_k(l_k) \\
+    \gamma, \env_V, \env_P |- \left< e_i, \mu_{i-1} \right> \to_E \left< l_i, \mu_i \right>, 1 \le i \le k \\
+    \gamma |- \left< (\mycode{public}, \mycode{int}, 0), e_i, l_i, \mu_{k+i-1}, \noforce \right> \to_C \left< l_{k+i}, \mu_{k+i} \right>, 1 \le i \le k \\
+    %\gamma, \env_V, \env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
+    %\vdots \\
+    %\gamma, \env_V, \env_P |- \left< e_k, \mu_{k-1} \right> \to_E \left< l_k, \mu_k \right> \\
+    (\left( d_1, d_2, \ldots, d_n \right), f) = \mu_{2k}(l_0) \\
+    d'_1 = \mu_{2k}(l_{k+1}), \ldots, d'_k = \mu_{2k}(l_{2k}) \\
     d_1 d_2 \ldots d_n = d'_1 d'_2 \ldots d'_k\ \lor\ n = 0 \\
-    l' = \newloc (\tau, \mu_k) \\
     s' = (d'_1, \ldots, d'_k) \\
-    g(i\!v) = f (\theta_{(d_1, \ldots, d_n)}^{(d'_1, \ldots, d'_k)}(i\!v)) \\
-    \mu' = \mu_k [ l' \mapsto (s', g)]
+    l' = \newloc (\tau, \delta, s', \mu_k) \\
+    g(\overline{i}) = f (\theta_{(d_1, \ldots, d_n)}^{(d'_1, \ldots, d'_k)}(\overline{i})) \\
+    \mu' = \mu_{2k}[ l' \mapsto (s', g)]
 }{
   \gamma, \env_V, \env_P |- \left<\mycode{reshape(} e, e_1, \ldots, e_k \mycode{)}, \mu \right> \to_E \left< l', \mu' \right>
 }\]
@@ -2026,17 +2089,17 @@ classify the first two. Last subexpressions gives us the dimension number along 
 we glue the arrays together. Formally:
 \[ \inference[ECat]
 {
-  \gamma |- e_0 : \left(\tau_0, \delta\ n \right) \\
-  \gamma |- e_1 : \left(\tau_1, \delta\ n \right) \\
+\gamma |- \mycode{cat(} e_0, e_1, e_2 \mycode{)} : \alpha, \left( \tau, \delta, n \right) = \alpha \\
   \gamma, \env_V, \env_P |- \left< e_0 , \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \gamma, \env_V, \env_P |- \left< e_1 , \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
   \gamma, \env_V, \env_P |- \left< e_2 , \mu_1 \right> \to_E \left< l_2, \mu_2 \right> \\
-  \gamma |- \left< \tau_1, e_0, l_0, \newloc_{pri}(\mu_2), \mu_2, \mathit{noforce} \right> \to_C \left<l'_0, \mu_3 \right> \\
-  \gamma |- \left< \tau_0, e_1, l_1, \newloc_{pri}(\mu_3), \mu_3, \mathit{noforce} \right> \to_C \left<l'_1, \mu_4 \right> \\
-  \left( s_0, f_0 \right) = \mu_4(l'_0), \left( s_1, f_1 \right) = \mu_4(l'_1), k = k = \mu_4(l_2) \\
-  s_0 \equiv (d_1, \ldots, d_k, \ldots, d_n), s_1 \equiv (d_1, \ldots, d'_k, \ldots, d_n) \\
-  l' = \newloc(\tau \oplus \tau', \mu_4) \\
+  \gamma |- \left< \alpha, e_0, l_0, \mu_2, \noforce \right> \to_C \left<l'_0, \mu_3 \right> \\
+  \gamma |- \left< \alpha, e_1, l_1, \mu_3, \noforce \right> \to_C \left<l'_1, \mu_4 \right> \\
+  k = \mu_4(l_2) \\
+  \left((d_1, \ldots, d_k, \ldots, d_n), f_0 \right) = \mu_4(l'_0)\\
+  \left((d_1, \ldots, d'_k, \ldots, d_n), f_1 \right) = \mu_4(l'_1)\\
   s' = (d_1,\ldots,d_k+d'_k,\ldots,d_n) \\
+  l' = \newloc(\tau, \delta, s', \mu_4) \\
   \mu' = \mu_4[ l' \mapsto (s', g) ]
 }{
   \gamma, \env_V, \env_P |- \left<\mycode{cat(} e_0, e_1, e_2 \mycode{)}, \mu \right> \to_E \left< l', \mu' \right>
@@ -2059,36 +2122,41 @@ boxed and numbered the premises of the inference rule into five distinct parts:
 \[\inference[EProc]{
   % 1.
   1.\ \boxed{\begin{array}{c}
-  \gamma, \env_V, \env_P |- \left< e_1, \mu \right> \to_E \left< l_1, \mu_1 \right>\\
-  \vdots \\
-  \gamma, \env_V, \env_P |- \left< e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n \right> \\
+  %\gamma, \env_V, \env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right>\\
+  %\vdots \\
+  %\gamma, \env_V, \env_P |- \left< e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n \right> \\
+  \gamma, \env_V, \env_P |- \left< e_i, \mu_{i-1} \right> \to_E \left< l_i, \mu_i \right> \\
+  1 \le i \le n
   \end{array}} \\
   % 2.
   2.\ \boxed{\begin{array}{c}
-  \gamma |- e_1 : (\tau'_1, \nu_1) \\
-  \vdots \\
-  \gamma |- e_n : (\tau'_n, \nu_n) \\
+  %\gamma |- e_1 : \alpha \\
+  %\vdots \\
+  %\gamma |- e_n : \alpha \\
+  \gamma |- f : A\ \mycode{proc} \\
+  \gamma |- e_i : \alpha_i,\ 1 \le i \le n \\
   \end{array}} \\
   % 3
-  3.\ \boxed{\gamma(\mathcal{M}(f, \nu_1, \ldots, \nu_n)) = \left\{\begin{array}{c}
-    ((\tau_1, \ldots, \tau_n)\to\tau, (\nu_1,\ldots,\nu_n)\to\nu) \\
-      \text{or} \\
-    ((\tau_1, \ldots, \tau_n)\to(), (\nu_1,\ldots,\nu_n)\to())\\
-  \end{array}\right.} \\
+  %3.\ \boxed{\gamma(\mathcal{M}(f, \nu_1, \ldots, \nu_n)) = \left\{\begin{array}{c}
+  %  ((\tau_1, \ldots, \tau_n)\to\tau, (\nu_1,\ldots,\nu_n)\to\nu) \\
+  %    \text{or} \\
+  %  ((\tau_1, \ldots, \tau_n)\to(), (\nu_1,\ldots,\nu_n)\to())\\
+  %\end{array}\right.} \\
+  3.\ \boxed{\gamma(\mathcal{M}(f, \alpha'_1, \ldots, \alpha'_n)) = ((\alpha'_1\times\ldots\times\alpha'_n)\to\rho)} \\
   %4
   4.\ \boxed{\begin{array}{c}
-  \gamma |- \left< \tau_1, e_1, l_1, \newloc(\tau_1, \mu_n), \mu_n, force \right> \to_C \left<l'_1, \mu_{n+1} \right> \\
+  \gamma |- \left< \alpha'_1, e_1, l_1, \mu_n, \force \right> \to_C \left<l'_1, \mu_{n+1} \right> \\
   \vdots \\
-  \gamma |- \left< \tau_n, e_n, l_n, \newloc(\tau_n, \mu_{2n-1}), \mu_{2n-1}, force \right> \to_C \left<l'_n, \mu_{2n} \right> \\
+  \gamma |- \left< \alpha'_n, e_n, l_n, \mu_{2n-1}, \force \right> \to_C \left<l'_n, \mu_{2n} \right> \\
   \end{array}} \\
   % 5
   5.\ \boxed{\begin{array}{c}
-  \env_P\left( \mathcal{M}\left( f, \nu_1, \ldots, \nu_n \right) \right) = ( (p_1, \ldots, p_n), S, \gamma', \env'_V, \env'_P ) \\
+  \env_P\left( \mathcal{M}\left( f, \alpha'_1, \ldots, \alpha'_n \right) \right) = ( (p_1, \ldots, p_n), S, \gamma', \env'_V, \env'_P ) \\
   \env''_V = \env'_V\left[ p_1 \mapsto l'_1 \right]\ldots\left[ p_n \mapsto l'_n \right] \\
   \gamma', \env''_V, \env'_P |- \left<S, \mu_{2n} \right> \to_{*} \left<\mu' \right>^{\mycode{return}\ l'}
   \end{array}} \\
 }{
-  \gamma, \env_V, \env_P |- \left< f\mycode{(}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{)}, \mu \right> \to_E \left< l', \mu' \right>
+  \gamma, \env_V, \env_P |- \left< f\mycode{(}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{)}, \mu_0 \right> \to_E \left< l', \mu' \right>
 }\]
 
 For procedure calls, first, all the arguments are evaluated in order from left
@@ -2159,20 +2227,22 @@ to the environments and store after handling the variable definition.
 The first rule initializes the $n$-dimensional value for the variable to its
 default values in the store:
 \[ \inference[VarDef]{
-  \gamma, \env_V, \env_P |- \left<e_1, \mu \right> \to_E \left< l_1, \mu_1\right> \\
-  \vdots \\
-  \gamma, \env_V, \env_P |- \left<e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n\right> \\
-  s = (\mu_n(l_1), \ldots,  \mu_n(l_n)) \\
-  l = \newloc(\tau, \mu_n) \\
-  f(i\!v) = \operatorname{DEF}_{\delta},\ \forall i\!v \in \mathcal{J}(s) \\
-  \mu' = \mu_n[l \mapsto (s, f)] \\
-  \gamma' = \gamma[x \mapsto (\tau, \delta\ n\ var)] \\
-  \env'_V = \env_V[x \mapsto l] \\
+  %\gamma, \env_V, \env_P |- \left<e_1, \mu \right> \to_E \left< l_1, \mu_1\right> \\
+  %\vdots \\
+  %\gamma, \env_V, \env_P |- \left<e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n\right> \\
+  %s = (\mu_n(l_1), \ldots,  \mu_n(l_n)) \\
+  %l = \newloc(\tau, \mu_n) \\
+  %f(\overline{i}) = \operatorname{DEF}_{\delta},\ \forall \overline{i} \in \mathcal{J}(s) \\
+  %\mu' = \mu_n[l \mapsto (s, f)] \\
+  %\gamma' = \gamma[x \mapsto (\tau, \delta\ n\ var)] \\
+  %\env'_V = \env_V[x \mapsto l] \\
+  \env_P |- \left<\alpha\ x\mycode{[}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{]=} \operatorname{DEF}_{\delta}, \gamma, \env_V, \mu \right> \to_{DV}
+            \left< \gamma', \env'_V, \mu' \right>
 }{
-  \env_P |- \left<\tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{]}, \gamma, \env_V, \mu \right> \to_{DV}
+  \env_P |- \left<\alpha\ x\mycode{[}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{]}, \gamma, \env_V, \mu \right> \to_{DV}
             \left< \gamma', \env'_V, \mu' \right>
 } \]
-where $\operatorname{DEF}_{\delta}$ is the default value for a variable of data type $\delta$. $\operatorname{DEF}_{\delta}$ is currently defined as follows:
+where $\operatorname{DEF}_{\delta}$ is the default value for a variable of data type $\delta$ and is defined as follows:
 \begin{align*}
   \operatorname{DEF}_{\mycode{bool}} & \equiv \mycode{false}  &
   \operatorname{DEF}_{\mycode{int}} & \equiv \mycode{0} \\
@@ -2180,26 +2250,35 @@ where $\operatorname{DEF}_{\delta}$ is the default value for a variable of data 
   \operatorname{DEF}_{\mycode{string}} & \equiv \mycode{\"\"}
 \end{align*}
 
-The second rule for variable definition and initialization is almost identical
-to the previous rule, with the exception that before updating the type and
-variable environments, the initializer expression is evaluated to some value
-which is -- instead of the default value -- assigned to the newly-defined
-variable. If needed, the value is classified:
+The rule for variable definition with initialization evaluates all the
+subexpressions while casting into correct type. After subexpressions are
+evaluated new appropriately sized location is allocated and the value of right
+hand side is stored into it. When constructing value for the defined variable
+the right hand side also needs to be reindexed to account for the
+scalar-to-array assignment.
 {\small \[ \inference[VarDefInit]{
-  \gamma, \env_V, \env_P |- \left<e_1, \mu \right> \to_E \left< l_1, \mu_1\right> \\
-  \vdots \\
-  \gamma, \env_V, \env_P |- \left<e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n\right> \\
+  \alpha = (\tau, \delta, n) \\
+  1.\ \boxed{\begin{array}{c}
+  \forall i,\ 1 \le i \le n \\
+  \gamma, \env_V, \env_P |- \left<e_i, \mu_{i-1} \right> \to_E \left< l'_i, \mu'_i\right> \\
+  \gamma, \env_V, \env_P |- \left<\left( \mycode{public}, \mycode{int}, 0 \right), e_i, l'_i, \mu'_{i}, \noforce \right> \to_C \left< l_i, \mu_i\right>
+  \end{array}} \\
   \gamma, \env_V, \env_P |- \left<e, \mu_n \right> \to_E \left< l_{n+1}, \mu_{n+1}\right> \\
-  \gamma |- \left< \tau, e, l_{n+1}, \newloc_{pri}(\mu_{n+1}), \mu_{n+1}, force \right> \to_C \left< l_{n+2}, \mu_{n+2} \right> \\
+  \gamma, \env_V, \env_P |- \left<\alpha, e, l_{n+1}, \mu_{n+1}, \noforce \right> \to_C \left< l_{n+2}, \mu_{n+2} \right> \\
+  %\gamma, \env_V, \env_P |- \left<e_1, \mu \right> \to_E \left< l_1, \mu_1\right> \\
+  %\vdots \\
+  %\gamma, \env_V, \env_P |- \left<e_n, \mu_{n-1} \right> \to_E \left< l_n, \mu_n\right> \\
+  %\gamma, \env_V, \env_P |- \left<e, \mu_n \right> \to_E \left< l_{n+1}, \mu_{n+1}\right> \\
+  %\gamma |- \left< \tau, e, l_{n+1}, \mu_{n+1}, \force \right> \to_C \left< l_{n+2}, \mu_{n+2} \right> \\
   (s',f) = \mu_{n+2}(l_{n+2}) \\
-  s = (\mu_n(l_1), \ldots,  \mu_n(l_n)), s' \sqsubseteq s \\
-  l = \newloc(\tau, \mu_n)\\
-  g(i\!v) = f(\theta_{s'}^{s}(i\!v)),\ \forall i\!v \in \mathcal{J}(s) \\
-  \mu' = \mu_n[l \mapsto (s, g)] \\
-  \gamma' = \gamma[x \mapsto (\tau, \delta\ n\ var)] \\
+  s = (\mu_{n+2}(l_1), \ldots,  \mu_{n+2}(l_n)), s' \sqsubseteq s \\
+  l = \newloc(\tau, \delta, s, \mu_{n+2})\\
+  g(\overline{i}) = f(\theta_{s'}^{s}(\overline{i})),\ \forall \overline{i} \in \mathcal{J}(s) \\
+  \mu' = \mu_{n+2}[l \mapsto (s, g)] \\
+  \gamma' = \gamma[x \mapsto \alpha\ \mathit{var}] \\
   \env'_V = \env_V[x \mapsto l] \\
 }{
-  \env_P |- \left<\tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{]=}\ e, \gamma, \env_V, \mu \right> \to_{DV}
+  \env_P |- \left<\tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[}e_1\mycode{,}\ldots\mycode{,}e_n\mycode{]=}\ e, \gamma, \env_V, \mu_0 \right> \to_{DV}
             \left< \gamma', \env'_V, \mu' \right>
 } \] }
 
@@ -2208,32 +2287,32 @@ Semantic rules for cases where dimensionality annotation or sizes of dimensions
 are omitted are not needed as those are syntactis sugar which is translated to
 more general form. When dimensionality annotation is omitted then the declared
 variable is scala, if sizes of dimensions are missing then they are taken to be
-constant zero. 
+constant zero.
 
 \section{Evaluation of statements}\label{sec:semantics:statements}
 
-Transitions for individual statements have following form: 
+Transitions for individual statements have following form:
 % five different forms, all of which we can denote as
 \[
 %  \operatorname{env}_P |- \left\langle
 %    S, \gamma, \operatorname{env}_V, \mu
-%  \right\rangle ->_S\ 
+%  \right\rangle ->_S\
 %  \left\langle
 %    \gamma', \operatorname{env}'_V, \mu'
 %  \right\rangle ^{s}
   \gamma, \operatorname{env}_V, \operatorname{env}_P |- \left\langle
     s, \mu
-  \right\rangle ->_S\ 
+  \right\rangle ->_S\
   \left\langle
     \mu'
   \right\rangle ^{st}
 \]
-where small $s$ is individual statement. 
+where small $s$ is individual statement.
 Transitions for statement lists have identical form:
 \[
   \gamma, \operatorname{env}_V, \operatorname{env}_P |- \left\langle
     S, \mu
-  \right\rangle ->_{*}\ 
+  \right\rangle ->_{*}\
   \left\langle
     \mu'
   \right\rangle ^{st}
@@ -2577,8 +2656,8 @@ expression in the statement. Additionally, the value of the expression may need
 to be moved to the private data domain:
 \[\inference[SReturn]{
   \gamma, \env_V, \env_P |- \left< e, \mu \right> \to_E \left<l_0, \mu_0 \right> \\
-    \gamma(\mycode{thisproc}) = ( (\tau_1, \ldots, \tau_n)\to\tau, (\nu_1,\ldots,\nu_n)\to\nu ) \\
-    \gamma |- \left<\tau,e,\newloc(\tau,\mu_0),\mu_0,noforce\right> \to_C \left<l', \mu'\right>
+    \gamma(\mycode{thisproc}) = (\alpha_1 \times \ldots \times \alpha_n)\to\alpha \\
+    \gamma |- \left<\alpha, e, l_0, \mu_0, \noforce\right> \to_C \left<l', \mu'\right>
 }{
   \gamma, \env_V, \env_P |- \left<\mycode{return}\ e\mycode{;} , \mu \right>
   \to_S
@@ -3087,7 +3166,7 @@ handled just like a \mycode{while}-loop as described by the SDoWhile  rule:
 %      \mycode{while}\ \mycode{(}e\mycode{)}\ S, \gamma, \operatorname{env}_V, \mu'
 %    \right\rangle
 %  }
-%\end{array} 
+%\end{array}
 \]
 
 If the first execution of the \mycode{do}-\mycode{while}-loop body results in a
@@ -3391,27 +3470,29 @@ loop as it is:
 \section{Evaluation of procedure definitions}\label{sec:semantics:expr:procdefs}
 
 The semantic rule for procedures with non-\mycode{void} return type and with
-\mycode{void} return type are in principle very similar. In order to conserve
-space we have denoted the function declaration without return type with
-$\mathtt{PROC}$. As usual missing dimensionality annotation mean that
-declared variable is a scalar:
+\mycode{void} return type are in principle very similar.  In order to conserve
+space we have denoted the types on syntactic level, somewhat informally,
+directly with $\alpha$, $\alpha_1$, etc.  As usual missing dimensionality
+annotation mean that declared variable is a scalar:
 \[\begin{array}{c}
 \inference[Procdef]{}{
-  \env_V |- \left< \tau\ \delta\ \mycode{[[}k\mycode{]]}\ \mathtt{PROC}, \gamma, \env_P \right> \to_{DP} \left< \gamma', \env'_P \right>
+  \env_V |- \left< \alpha\ f\mycode{(} \alpha_1\ p_1 \mycode{,}\  \ldots \mycode{,} \alpha_n\ p_n \mycode{) \{} S \mycode{\}} , \gamma, \env_P \right> \to_{DP} \left< \gamma', \env'_P \right>
 }\\[2em]
 \inference[ProcdefVoid]{}{
-  \env_V |- \left< \mycode{void}\ \mathtt{PROC}, \gamma, \env_P \right> \to_{DP} \left< \gamma', \env'_P \right>
+  \env_V |- \left< \mycode{void}\ f\mycode{(} \alpha_1\ p_1 \mycode{,}\  \ldots \mycode{,} \alpha_n\ p_n \mycode{) \{} S \mycode{\}}, \gamma, \env_P \right> \to_{DP} \left< \gamma', \env'_P \right>
 }\end{array}\]
 where \[\begin{array}{rcl}
-\mathtt{PROC} & \equiv & f\mycode{(} \tau_1\ \delta_1\ \mycode{[[}k_1\mycode{]]}\ p_1 \mycode{,}\  \ldots \mycode{,}
-                                     \tau_n\ \delta_n\ \mycode{[[}k_n\mycode{]]}\ p_n \mycode{) \{} S \mycode{\}} \\
-    \nu & = & \delta\ k, \nu_1  = \delta_1\ k_1, \ldots, \nu_n = \delta_n\ k_n \\
-\gamma' & = & \gamma[f \mapsto \mycode{proc}][\mathcal{M}(f,\nu_1,\ldots,\nu_n) \mapsto \rho] \\
-  \gamma_c & = & \gamma'[\mycode{thisproc} \mapsto \rho][p_1 \mapsto (\tau_1, \nu_1)]\ldots[p_n \mapsto (\tau_n, \nu_n)] \\
-  \env'_P & = & \env_P[\mathcal{M}(f, \nu_1, \ldots, \nu_n) \mapsto ( (p_1,\ldots,p_n), S, \gamma_c, \env_V, \env'_P)] \\
-  \rho & = & \begin{cases}
-    ( (\tau_1 \times \ldots \times \tau_n)\mapsto\tau, (\nu_1\times\ldots\times\nu_n)\to\nu) & \text{for Procdef} \\
-    ( (\tau_1 \times \ldots \times \tau_n)\mapsto(), (\nu_1\times\ldots\times\nu_n)\to()) & \text{for ProcdefVoid}.
+  \mathcal{M}^f
+            & = & \mathcal{M}(f, \alpha_1, \ldots, \alpha_n) \\
+  A         & = &
+      \left\{ (\alpha_1,\ldots,\alpha_n) \right\} \cup
+      \left\{ \overline{\alpha} \in A'\ |\ \gamma(f) = A'\ \mycode{proc} \right\} \\
+  \gamma'   & = & \gamma[f \mapsto A\ \mycode{proc}]\left[ \mathcal{M}^f \mapsto \rho \right] \\
+  \gamma_c  & = & \gamma'[\mycode{thisproc} \mapsto \rho][p_1 \mapsto \alpha_1]\ldots[p_n \mapsto \alpha_n] \\
+  \env'_P   & = & \env_P[\mathcal{M}^f \mapsto ( (p_1,\ldots,p_n), S, \gamma_c, \env_V, \env'_P)] \\
+  \rho      & = & \begin{cases}
+     (\alpha_1\times\ldots\times\alpha_n)\to\alpha & \text{for Procdef} \\
+     (\alpha_1\times\ldots\times\alpha_n)\to() & \text{for ProcdefVoid}.
   \end{cases}
 \end{array} \]
 
@@ -3456,7 +3537,7 @@ global variable and procedure definitions:
       D_V\mycode{;}\ P,
       \gamma, \operatorname{env}_V, \operatorname{env}_P, \mu
     \right\rangle -> \mathbf{END}
-  } \\[2em]
+  o} \\[2em]
 \inference[ProgramProcDef]
   { % Joone peal:
     \operatorname{env}_V |- \left\langle
