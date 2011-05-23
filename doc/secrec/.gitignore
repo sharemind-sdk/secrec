@@ -1,1 +1,6 @@
-!/Makefile
+semantics.aux
+semantics.bbl
+semantics.blg
+semantics.dvi
+semantics.log
+semantics.pdf
