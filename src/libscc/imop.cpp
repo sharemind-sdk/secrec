@@ -33,6 +33,52 @@ namespace SecreC {
 #define a3name (arg3() == 0 ? "_" : uniqueName(arg3()))
 #define cImop  (arg1() == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(arg1())->decl()->firstImop()->index()))
 
+Imop* newError (TreeNode* node, ConstantString* msg) {
+    Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
+    return imop;
+}
+
+Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
+    return newUnary (node, Imop::ASSIGN, dest, from);
+}
+
+Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, Symbol *arg2) {
+    Imop* i = 0;
+    if (dest->secrecType ().isScalar ()) {
+        i = new Imop (node, iType, dest, arg1, arg2);
+    }
+    else {
+        i = new Imop (node, iType, dest, arg1, arg2, dest->getSizeSym ());
+    }
+
+    return i;
+}
+
+Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
+    Imop* i = 0;
+    if (dest->secrecType ().isScalar ()) {
+        i = new Imop (node, iType, dest, arg1);
+    }
+    else {
+        i = new Imop (node, iType, dest, arg1, dest->getSizeSym ());
+    }
+
+    return i;
+}
+
+Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
+    assert (dest != 0);
+    Imop* i = 0;
+    if (dest->secrecType ().isScalar ()) {
+        i = new Imop (node, iType, dest);
+    }
+    else {
+        i = new Imop (node, iType, dest, dest->getSizeSym ());
+    }
+
+    return i;
+}
+
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
     typedef std::vector<Symbol const* >::iterator SVI;
@@ -240,6 +286,7 @@ std::string Imop::toString() const {
             break;
         default:
             os << "TODO";
+            break;
     }
 
     typedef std::set<Imop*>::const_iterator ISCI;

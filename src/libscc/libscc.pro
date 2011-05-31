@@ -4,6 +4,8 @@ INCLUDEPATH += ../../include/libscc/
 TARGET = ../../lib/scc
 TEMPLATE = lib
 
+DEPENDPATH += codegen
+
 SOURCES = \
     blocks.cpp \
     icodelist.cpp \
@@ -14,7 +16,13 @@ SOURCES = \
     symboltable.cpp \
     treenode.cpp \
     types.cpp \
-    virtual_machine.cpp
+    virtual_machine.cpp \
+    constant.cpp \
+    symbol.cpp \
+    codegen/statement.cpp \
+    codegen/expression.cpp \
+    codegen/assign.cpp \
+    codegen/program.cpp
 
 OTHER_FILES = \
     secrec.l \
@@ -34,7 +42,9 @@ HEADERS = \
     ../../include/libscc/symboltable.h \
     ../../include/libscc/treenode.h \
     ../../include/libscc/types.h \
-    ../../include/libscc/virtual_machine.h
+    ../../include/libscc/virtual_machine.h \
+    ../../include/libscc/constant.h \
+    ../../include/libscc/symbol.h
 
 GENERATED_SOURCES += lex_secrec.c yacc_secrec.tab.c
 GENERATED_FILES   += lex_secrec.h yacc_secrec.tab.h

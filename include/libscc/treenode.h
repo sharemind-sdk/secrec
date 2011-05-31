@@ -119,7 +119,6 @@ class TreeNodeBase : public TreeNode {
         inline Imop *firstImop() const { return m_firstImop; }
         void patchNextList(Imop* i, SymbolTable& st);
         void patchNextList(SymbolLabel* label);
-
     protected:
 
         /**
@@ -353,8 +352,6 @@ class TreeNodeExpr: public TreeNodeBase {
         SecreC::Type       *m_resultType;
         std::vector<Imop*>  m_falseList;
         std::vector<Imop*>  m_trueList;
-
-        /// \todo Add flags.
 };
 
 
@@ -748,6 +745,45 @@ class TreeNodeExprUInt: public TreeNodeExpr {
         unsigned m_value;
 };
 
+/******************************************************************
+  TreeNodeExprPrefix
+******************************************************************/
+
+class TreeNodeExprPrefix: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprPrefix(Type type, const YYLTYPE &loc)
+            : TreeNodeExpr(type, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
+
+/******************************************************************
+  TreeNodeExprPostfix
+******************************************************************/
+
+class TreeNodeExprPostfix: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprPostfix(Type type, const YYLTYPE &loc)
+            : TreeNodeExpr(type, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+        virtual ICode::Status generateCode(ICodeList &code,
+                                           SymbolTable &st,
+                                           CompileLog &log,
+                                           Symbol *result = 0);
+        virtual ICode::Status generateBoolCode(ICodeList &code,
+                                               SymbolTable &st,
+                                               CompileLog &log);
+};
 
 /******************************************************************
   TreeNodeExprUnary

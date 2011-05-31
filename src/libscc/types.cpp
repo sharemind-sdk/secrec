@@ -21,16 +21,143 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {
         case DATATYPE_INVALID: return "invalid";
         case DATATYPE_BOOL:    return "bool";
+        case DATATYPE_INT8:    return "int8";
+        case DATATYPE_INT16:   return "int16";
+        case DATATYPE_INT32:   return "int32";
         case DATATYPE_INT:     return "int";
-        case DATATYPE_UINT:    return "unsigned int";
+        case DATATYPE_UINT8:   return "uint8";
+        case DATATYPE_UINT16:  return "uint16";
+        case DATATYPE_UINT32:  return "uint32";
+        case DATATYPE_UINT:    return "uint";
         case DATATYPE_STRING:  return "string";
     }
     return 0;
 }
 
+enum CastStyle {
+    CAST_FORBIDDEN = 0,
+    CAST_EQUAL     = 1,
+    CAST_IMPLICIT  = 2,
+    CAST_EXPLICIT  = 3
+};
+
+#define F CAST_FORBIDDEN
+#define S CAST_EQUAL
+#define I CAST_IMPLICIT
+#define E CAST_EXPLICIT
+
+const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
+    //  x   B   S   I8  I16 I32 I   U8  U16 U32 U
+       {S,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_INVALID,
+       {F,  S,  F,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_BOOL,
+       {F,  F,  S,  F,  F,  F,  F,  F,  F,  F,  F},     //DATATYPE_STRING,
+       {F,  E,  F,  S,  I,  I,  I,  E,  E,  E,  E},     //DATATYPE_INT8,
+       {F,  E,  F,  E,  S,  I,  I,  E,  E,  E,  E},     //DATATYPE_INTS6,
+       {F,  E,  F,  E,  E,  S,  I,  E,  E,  E,  E},     //DATATYPE_INTEI,
+       {F,  E,  F,  E,  E,  E,  S,  E,  E,  E,  E},     //DATATYPE_INT,
+       {F,  E,  F,  E,  I,  I,  I,  S,  I,  I,  I},     //DATATYPE_UINT8,
+       {F,  E,  F,  E,  E,  I,  I,  E,  S,  I,  I},     //DATATYPE_UINTS6,
+       {F,  E,  F,  E,  E,  E,  I,  E,  E,  S,  I},     //DATATYPE_UINTEI,
+       {F,  E,  F,  E,  E,  E,  E,  E,  E,  E,  S}      //DATATYPE_UINT,
+};
+
+#undef F
+#undef S
+#undef I
+#undef E
+
 }
 
 namespace SecreC {
+
+
+CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
+    return dataTypeCasts[from][to];
+}
+
+SecrecSecType upperSecType(SecrecSecType a, SecrecSecType b) {
+    return (a == SECTYPE_PUBLIC ? b : SECTYPE_PRIVATE);
+}
+
+SecrecDimType upperDimType(SecrecDimType n, SecrecDimType m) {
+    assert (n == 0 || m == 0 || n == m);
+    if (n == 0) return m;
+    return n;
+}
+
+SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
+    if (latticeDataTypeLEQ (a, b)) return b;
+    if (latticeDataTypeLEQ (b, a)) return a;
+
+    SecrecDataType best = DATATYPE_INVALID;
+    for (unsigned i = 0; i < (unsigned) NUM_DATATYPES; ++ i) {
+        SecrecDataType ty = (SecrecDataType) i;
+        if (latticeDataTypeLEQ (a, ty) && latticeDataTypeLEQ (b, ty)) {
+            if (best == DATATYPE_INVALID || latticeDataTypeLEQ (ty, best)) {
+                best = ty;
+            }
+        }
+    }
+
+    return best;
+}
+
+bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
+    return n == m || n == 0;
+}
+
+bool latticeSecTypeLEQ (SecrecSecType a, SecrecSecType b) {
+    return a == b || a == SECTYPE_PUBLIC;
+}
+
+bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b) {
+    bool areLEQ = false;
+    switch (getCastStyle (a, b)) {
+    case CAST_EQUAL:
+    case CAST_IMPLICIT:
+        areLEQ = true;
+    default:
+        break;
+    }
+
+    return areLEQ;
+}
+
+
+bool isNumericDataType (SecrecDataType dType) {
+    return isSignedNumericDataType (dType) ||
+           isUnsignedNumericDataType (dType);
+}
+
+bool isSignedNumericDataType (SecrecDataType dType) {
+    bool isSigned = false;
+    switch (dType) {
+    case DATATYPE_INT8:
+    case DATATYPE_INT16:
+    case DATATYPE_INT32:
+    case DATATYPE_INT:
+        isSigned = true;
+    default:
+        break;
+    }
+
+    return isSigned;
+}
+
+bool isUnsignedNumericDataType (SecrecDataType dType) {
+    bool isUnsigned = false;
+    switch (dType) {
+    case DATATYPE_UINT8:
+    case DATATYPE_UINT16:
+    case DATATYPE_UINT32:
+    case DATATYPE_UINT:
+        isUnsigned = true;
+    default:
+        break;
+    }
+
+    return isUnsigned;
+}
 
 /*******************************************************************************
   DataTypeBasic

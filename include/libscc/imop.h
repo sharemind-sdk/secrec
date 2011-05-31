@@ -13,6 +13,7 @@ class Block;
 class Symbol;
 class SymbolProcedure;
 class SymbolLabel;
+class ConstantString;
 class TreeNode;
 
 /**
@@ -199,7 +200,7 @@ class Imop {
         inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
 
     private: /* Fields: */
-        std::set<Imop*> m_incomingCalls;
+        std::set<Imop*> m_incomingCalls; /// \todo get rid of this too
 
         TreeNode     *m_creator;
         const Type    m_type;
@@ -207,6 +208,17 @@ class Imop {
         Block        *m_block;
         unsigned long m_index;
 };
+
+/**
+ * Convenience operators for Imop creation.
+ */
+
+Imop* newError (TreeNode* node, ConstantString* msg);
+Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* arg);
+Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1, Symbol* arg2);
+Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1);
+Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol* dest);
+
 
 } // namespace SecreC
 

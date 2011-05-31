@@ -66,6 +66,10 @@ enum SecrecTreeNodeType {
     NODE_EXPR_CAT         = 0x220, /* cat(expr, expr {, expr}) */
     NODE_EXPR_RESHAPE     = 0x230, /* reshape(expr, ...        */
     NODE_EXPR_FREAD       = 0x240, /* fread(expr)              */
+    NODE_EXPR_POSTFIX_INC = 0x250, /* expr ++                  */
+    NODE_EXPR_POSTFIX_DEC = 0x260, /* expr --                  */
+    NODE_EXPR_PREFIX_INC  = 0x270, /* ++ expr                  */
+    NODE_EXPR_PREFIX_DEC  = 0x280, /* -- expr                  */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x01000,
     NODE_STMT_FOR       = 0x02000,
@@ -97,11 +101,27 @@ enum SecrecTreeNodeType {
     NODE_SECTYPE_F      = 0x500000
 };
 
-enum SecrecSecType { SECTYPE_INVALID = 0x00, SECTYPE_PUBLIC = 0x01,
-                     SECTYPE_PRIVATE = 0x02 };
-enum SecrecDataType { DATATYPE_INVALID = 0x00, DATATYPE_BOOL = 0x01,
-                      DATATYPE_INT = 0x02, DATATYPE_UINT = 0x04,
-                      DATATYPE_STRING = 0x08 };
+enum SecrecSecType {
+    SECTYPE_INVALID = 0x00,
+    SECTYPE_PUBLIC  = 0x01,
+    SECTYPE_PRIVATE = 0x02
+};
+
+enum SecrecDataType {
+    DATATYPE_INVALID = 0x00,
+    DATATYPE_BOOL,
+    DATATYPE_STRING,
+    DATATYPE_INT8,
+    DATATYPE_INT16,
+    DATATYPE_INT32,
+    DATATYPE_INT,
+    DATATYPE_UINT8,
+    DATATYPE_UINT16,
+    DATATYPE_UINT32,
+    DATATYPE_UINT,
+    NUM_DATATYPES
+};
+
 typedef unsigned SecrecDimType;
 
 /**

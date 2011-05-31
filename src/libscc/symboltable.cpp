@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <map>
 #include <sstream>
 
 
@@ -19,124 +20,146 @@ void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
 namespace SecreC {
 
 /*******************************************************************************
-  Symbol
+  GlobalSymbols
 *******************************************************************************/
 
-void Symbol::inheritShape (Symbol* from) {
-    setSizeSym(from->getSizeSym());
-    std::copy (from->dim_begin(), from->dim_end(), dim_begin());
-}
+/**
+ * \brief class for tracking global symbols
+ */
+class GlobalSymbols {
+public:
+    GlobalSymbols ();
+    ~GlobalSymbols ();
 
-/*******************************************************************************
-  SymbolSymbol
-*******************************************************************************/
+    ConstantBool*   constantBool (bool value);
+    ConstantInt*    constantInt (int value);
+    ConstantUInt*   constantUInt (unsigned value);
+    ConstantString* constantString (const std::string &value);
+    SymbolLabel*    label (Imop* imop);
 
-std::string SymbolSymbol::toString() const {
-    std::ostringstream os;
-    os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' ' << secrecType()
-       << ' ' << name() << '{' << this << '}';
-    return os.str();
-}
+private:
+    ConstantBool*                           m_constantTrue;
+    ConstantBool*                           m_constantFalse;
+    std::map<int, ConstantInt* >            m_constantInts;
+    std::map<unsigned, ConstantUInt* >      m_constantUInts;
+    std::map<std::string, ConstantString* > m_constantStrings;
+    std::map<Imop*, SymbolLabel* >          m_labels;
+};
 
-/*******************************************************************************
-  SymbolTemporary
-*******************************************************************************/
+GlobalSymbols::GlobalSymbols ()
+    : m_constantTrue (0),
+      m_constantFalse (0)
+{ }
 
-std::string SymbolTemporary::toString() const {
-    std::ostringstream os;
-    os << "TEMPORARY " << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
-       << secrecType() << ' ' << name() << '{' << this << '}';
-    return os.str();
-}
-
-/*******************************************************************************
-  SymbolProcedure
-*******************************************************************************/
-
-SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
-    : Symbol(Symbol::PROCEDURE, procdef->procedureType()), m_decl(procdef),
-      m_target(0)
-{
-    // Intentionally empty
-}
-
-std::string SymbolProcedure::toString() const {
-    std::ostringstream os;
-    os << "PROCEDURE " << name() << ": " << secrecType();
-    return os.str();
-}
-
-/*******************************************************************************
-  SymbolLabel
-*******************************************************************************/
-
-SymbolLabel::SymbolLabel (Imop *target)
-    : Symbol (Symbol::LABEL),
-      m_target (target)
-{
-}
-
-std::string SymbolLabel::toString() const {
-    std::ostringstream os;
-    os << "Lable to ";
-    if (m_target->block () != 0) {
-        os << "block " << m_target->block()->index;
-    }
-    else {
-        os << "imop " << m_target->index ();
+template <typename T, typename V >
+static void deleteValues (typename std::map<T, V* >& kvs) {
+    typename std::map<T, V* >::iterator i;
+    for (i = kvs.begin (); i != kvs.end (); ++ i) {
+        delete i->second;
     }
 
-    return os.str ();
+    kvs.clear ();
 }
 
-/*******************************************************************************
-  SymbolConstantBool
-*******************************************************************************/
+GlobalSymbols::~GlobalSymbols () {
+    delete m_constantTrue;
+    delete m_constantFalse;
+    deleteValues (m_constantInts);
+    deleteValues (m_constantUInts);
+    deleteValues (m_constantStrings);
+    deleteValues (m_labels);
+}
 
-std::string SymbolConstantBool::toString() const {
+ConstantBool* GlobalSymbols::constantBool (bool value) {
+    ConstantBool* result = value ? m_constantTrue : m_constantFalse;
+
+    if (result == 0) {
+        result = new ConstantBool (value);
+        if (value) {
+            const char* name = "{constBool}true";
+            result->setName (name);
+            m_constantTrue = result;
+        }
+        else {
+            const char* name = "{constBool}false";
+            result->setName (name);
+            m_constantFalse = result;
+        }
+    }
+
+    return result;
+}
+
+ConstantInt* GlobalSymbols::constantInt (int value) {
+    std::map<int, ConstantInt*>::iterator
+            it = m_constantInts.find (value);
+    if (it != m_constantInts.end ()) {
+        return it->second;
+    }
+
+    ConstantInt* cVal = new ConstantInt (value);
     std::ostringstream os;
-    os << "CONSTANT bool " << m_value;
-    return os.str();
+    os << "{constInt}" << value;
+    cVal->setName (os.str ());
+    m_constantInts.insert (it, std::make_pair (value, cVal));
+    return cVal;
 }
 
-/*******************************************************************************
-  SymbolConstantInt
-*******************************************************************************/
+ConstantUInt* GlobalSymbols::constantUInt (unsigned value) {
+    std::map<unsigned, ConstantUInt*>::iterator
+            it = m_constantUInts.find (value);
+    if (it != m_constantUInts.end ()) {
+        return it->second;
+    }
 
-std::string SymbolConstantInt::toString() const {
+    ConstantUInt* cVal = new ConstantUInt (value);
     std::ostringstream os;
-    os << "CONSTANT int " << m_value;
-    return os.str();
+    os << "{constUInt}" << value;
+    cVal->setName (os.str ());
+    m_constantUInts.insert (it, std::make_pair (value, cVal));
+    return cVal;
 }
 
-/*******************************************************************************
-  SymbolConstantString
-*******************************************************************************/
+ConstantString* GlobalSymbols::constantString (const std::string &value) {
+    std::map<std::string, ConstantString*>::iterator
+            it = m_constantStrings.find (value);
+    if (it != m_constantStrings.end ()) {
+        return it->second;
+    }
 
-std::string SymbolConstantString::toString() const {
+    ConstantString* cVal = new ConstantString (value);
+    std::string name("{constString}" + value);
+    cVal->setName (name);
+    m_constantStrings.insert (it, std::make_pair (value, cVal));
+    return cVal;
+}
+
+SymbolLabel* GlobalSymbols::label (Imop *imop) {
+    assert (imop != 0);
+    std::map<Imop*, SymbolLabel*>::iterator
+            it = m_labels.find (imop);
+    if (it != m_labels.end ()) {
+        return it->second;
+    }
+
+    SymbolLabel* label = new SymbolLabel (imop);
     std::ostringstream os;
-    os << "CONSTANT string " << m_value;
-    return os.str();
+    os << "{label}" << imop;
+    label->setName (os.str ());
+    m_labels.insert (it, std::make_pair (imop, label));
+    return label;
 }
-
-/*******************************************************************************
-  SymbolConstantUInt
-*******************************************************************************/
-
-std::string SymbolConstantUInt::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT uint " << m_value;
-    return os.str();
-}
-
 
 /*******************************************************************************
   SymbolTable
 *******************************************************************************/
 
 SymbolTable::SymbolTable(SymbolTable *parent)
-    : m_parent(parent), m_global(m_parent == 0 ? this : m_parent->m_global),
-      m_tempCount(0), m_constCount(0),
+    : m_parent(parent),
+      m_global(m_parent == 0 ? this : m_parent->m_global),
+      m_globalST (m_parent == 0 ? new GlobalSymbols () : m_parent->m_globalST),
+      m_tempCount(0),
+      m_constCount(0),
       m_labelCount(0)
 {
     // Intentionally empty
@@ -152,6 +175,10 @@ SymbolTable::~SymbolTable() {
 
     for (STLCI it(m_scopes.begin()); it != m_scopes.end(); ++ it ) {
         delete *(it);
+    }
+
+    if (m_parent == 0) {
+        delete m_globalST;
     }
 }
 
@@ -189,78 +216,38 @@ SymbolTemporary *SymbolTable::appendTemporary(const TypeNonVoid &type) {
     return tmp;
 }
 
-SymbolConstantBool *SymbolTable::constantBool(bool value) {
-    const char *name = (value ? "{constBool}true" : "{constBool}false");
-    Symbol *s = findGlobal(name);
-    if (s != 0) {
-        assert(dynamic_cast<SymbolConstantBool*>(s) != 0);
-        return static_cast<SymbolConstantBool*>(s);
-    }
-
-    SymbolConstantBool *sc = new SymbolConstantBool(value);
-    sc->setName(name);
-    appendGlobalSymbol(sc);
-    return sc;
+ConstantBool *SymbolTable::constantBool(bool value) {
+    return m_globalST->constantBool (value);
 }
 
-SymbolConstantInt *SymbolTable::constantInt(int value) {
-    std::ostringstream os;
-    os << "{constInt}" << value;
-    Symbol *s = findGlobal(os.str());
-    if (s != 0) {
-        assert(dynamic_cast<SymbolConstantInt*>(s) != 0);
-        return static_cast<SymbolConstantInt*>(s);
-    }
-    SymbolConstantInt *sc = new SymbolConstantInt(value);
-    sc->setName(os.str());
-    appendGlobalSymbol(sc);
-    return sc;
+ConstantInt *SymbolTable::constantInt(int value) {
+    return m_globalST->constantInt (value);
 }
 
-SymbolConstantUInt *SymbolTable::constantUInt(unsigned value) {
-    std::ostringstream os;
-    os << "{constUInt}" << value;
-    Symbol *s = findGlobal(os.str());
-    if (s != 0) {
-        assert(dynamic_cast<SymbolConstantUInt*>(s) != 0);
-        return static_cast<SymbolConstantUInt*>(s);
-    }
-
-    SymbolConstantUInt *sc = new SymbolConstantUInt(value);
-    sc->setName(os.str());
-    appendGlobalSymbol(sc);
-    return sc;
+ConstantUInt *SymbolTable::constantUInt(unsigned value) {
+    return m_globalST->constantUInt (value);
 }
 
-SymbolConstantString *SymbolTable::constantString(const std::string &value) {
-    /// \todo Implement hashing instead
-    std::string name("{constString}" + value);
-    Symbol *s = findGlobal(name);
-    if (s != 0) {
-        assert(dynamic_cast<SymbolConstantString*>(s) != 0);
-        return static_cast<SymbolConstantString*>(s);
+ConstantString *SymbolTable::constantString(const std::string &value) {
+    return m_globalST->constantString (value);
+}
+
+Symbol* SymbolTable::defaultConstant (SecrecDataType dataType) {
+    Symbol* result = 0;
+    switch (dataType) {
+        case DATATYPE_BOOL:    result = constantBool(false); break;
+        case DATATYPE_INT:     result = constantInt(0); break;
+        case DATATYPE_UINT:    result = constantUInt(0); break;
+        case DATATYPE_STRING:  result = constantString(""); break;
+        default:
+            assert (false && "Don't know how to produce default constant of given type.");
     }
 
-    SymbolConstantString *sc = new SymbolConstantString(value);
-    sc->setName(name);
-    appendGlobalSymbol(sc);
-    return sc;
+    return result;
 }
 
 SymbolLabel* SymbolTable::label (Imop* imop) {
-    assert (imop != 0);
-    std::ostringstream os;
-    os << "{label}" << imop;
-    Symbol *s = findGlobal (os.str ());
-    if (s != 0) {
-        assert (dynamic_cast<SymbolLabel*>(s) != 0);
-        return static_cast<SymbolLabel*>(s);
-    }
-
-    SymbolLabel* sl = new SymbolLabel (imop);
-    sl->setName (os.str ());
-    appendGlobalSymbol (sl);
-    return sl;
+    return m_globalST->label (imop);
 }
 
 Symbol *SymbolTable::find(const std::string &name) const {

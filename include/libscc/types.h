@@ -6,34 +6,33 @@
 #include <vector>
 #include "parser.h"
 
-/// \todo figure out how to merge Type/TypeVoid with DataType's
-/// \todo add lub operator to DataType classes?
+/// \todo this needs a huge cleanup
 
 namespace SecreC {
 
-inline SecrecSecType upperSecType(SecrecSecType a, SecrecSecType b) {
-    return (a == SECTYPE_PUBLIC ? b : SECTYPE_PRIVATE);
+SecrecSecType upperSecType (SecrecSecType a, SecrecSecType b);
+SecrecDimType upperDimType (SecrecDimType n, SecrecDimType m);
+SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b);
+
+template <class Iter >
+SecrecDataType upperDataTypes(Iter begin, Iter end) {
+    assert (begin != end);
+    SecrecDataType best = *begin;
+    for (++ begin; begin != end; ++ begin) {
+        best = upperDataType (best, *begin);
+    }
+
+    return best;
 }
 
-inline SecrecDimType upperDimType(SecrecDimType n, SecrecDimType m) {
-    assert (n == 0 || m == 0 || n == m);
-    if (n == 0) return m;
-    // if (m == 0) return n; // but we return n anyways
-    return n;
-}
+bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m);
+bool latticeSecTypeLEQ (SecrecSecType a, SecrecSecType b);
+bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b);
 
-inline bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
-    return n == m || n == 0;
-}
 
-inline bool latticeSecTypeLEQ (SecrecSecType a, SecrecSecType b) {
-    return a == b || a == SECTYPE_PUBLIC;
-}
-
-inline bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b) {
-    return a == b;
-}
-
+bool isNumericDataType (SecrecDataType dType);
+bool isSignedNumericDataType (SecrecDataType dType);
+bool isUnsignedNumericDataType (SecrecDataType dType);
 
 /*******************************************************************************
   Data types
