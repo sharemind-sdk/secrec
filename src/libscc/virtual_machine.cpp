@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <stdint.h>
 
 #include "icodelist.h"
 
@@ -32,8 +33,14 @@ using namespace SecreC;
 
 // primitive values
 union Value {
-    long m_int_val;
-    unsigned long m_uint_val;
+    int8_t  m_int8_val;
+    int16_t m_int16_val;
+    int32_t m_int32_val;
+    int64_t m_int_val;
+    int8_t  m_uint8_val;
+    int16_t m_uint16_val;
+    int32_t m_uint32_val;
+    int64_t m_uint_val;
     bool m_bool_val;
     std::string const* m_str_val;
 };
@@ -1055,20 +1062,20 @@ void VirtualMachine::run (ICodeList const& code) {
                   Register& reg = m_global[loc];
                   switch (dtype) {
                       case DATATYPE_BOOL:
-                          assert (dynamic_cast<SymbolConstantBool const*>(sym) != 0);
-                          store (reg, static_cast<SymbolConstantBool const*>(sym)->value());
+                          assert (dynamic_cast<ConstantBool const*>(sym) != 0);
+                          store (reg, static_cast<ConstantBool const*>(sym)->value());
                           break;
                       case DATATYPE_INT:
-                          assert (dynamic_cast<SymbolConstantInt const*>(sym) != 0);
-                          store (reg, static_cast<SymbolConstantInt const*>(sym)->value());
+                          assert (dynamic_cast<ConstantInt const*>(sym) != 0);
+                          store (reg, static_cast<ConstantInt const*>(sym)->value());
                           break;
                       case DATATYPE_UINT:
-                          assert (dynamic_cast<SymbolConstantUInt const*>(sym) != 0);
-                          store (reg, static_cast<SymbolConstantUInt const*>(sym)->value());
+                          assert (dynamic_cast<ConstantUInt const*>(sym) != 0);
+                          store (reg, static_cast<ConstantUInt const*>(sym)->value());
                           break;
                       case DATATYPE_STRING:
-                          assert (dynamic_cast<SymbolConstantString const*>(sym) != 0);
-                          store (reg, &static_cast<SymbolConstantString const*>(sym)->value());
+                          assert (dynamic_cast<ConstantString const*>(sym) != 0);
+                          store (reg, &static_cast<ConstantString const*>(sym)->value());
                           break;
                       case DATATYPE_INVALID: assert (false && "VM: reached invalid data type.");
                   }}
@@ -1095,7 +1102,7 @@ void VirtualMachine::run (ICodeList const& code) {
 
       // compile the code into sequence of instructions
       // at compile time we know which instructions are vectorized and
-      // which aren't, and we also know on which type instructions are called
+      // which aren't, and we also know on which types instructions are called
       // on. for example we replace intermediat code equality with specialized
       // instructions depending on type of first argument
       switch (imop.type()) {
