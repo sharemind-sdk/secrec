@@ -8,8 +8,8 @@ bool all (bool [[1]] arr) {
 }
 
 void main () {
-  int [[2]] mat [3, 3];
-  int [[1]] arr [9];
+  int [[2]] mat (3, 3);
+  int [[1]] arr (9);
   int i;
 
   mat[0,0] = 0; mat[0,1] = 3; mat[0,2] = 6;

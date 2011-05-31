@@ -1,6 +1,6 @@
 
 bool [[1]] sieve (int n) {
-  bool [[1]] s [n] = true;
+  bool [[1]] s (n) = true;
   int i; int j;
   s[0:2] = false;
   for (i = 2; i*i < n; i += 1)

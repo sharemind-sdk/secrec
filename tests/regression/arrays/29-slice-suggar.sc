@@ -16,7 +16,7 @@ int sum (int [[1]] arr) {
 }
 
 void main () {
-  int [[1]] arr [3] = 0;
+  int [[1]] arr (3) = 0;
 
   arr[:] = 1;
   assert (size(arr) == 3);

@@ -1,7 +1,7 @@
 
 int [[1]] fibo (int n) {
   assert (n > 0);
-  int [[1]] out [n] = 1;
+  int [[1]] out (n) = 1;
   if (n == 1 || n == 2) return out;
   out[1:n] = fibo (n - 1);
   out[2:n] += fibo (n - 2);

@@ -8,7 +8,7 @@ bool all (bool [[2]] arr) {
 }
 
 void main () {
-  int [[2]] arr [2, 2] = 1;
+  int [[2]] arr (2, 2) = 1;
   arr [0, 0] = 0;
   assert (all(arr[ :1, :1] == 0));
   assert (all(arr[1: ,1: ] == 1));

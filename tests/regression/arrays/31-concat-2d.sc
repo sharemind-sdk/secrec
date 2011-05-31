@@ -9,8 +9,8 @@ bool all (bool [[2]] arr) {
 }
 
 void main () {
-  int [[2]] arr [5, 2] = 0;
-  int [[2]] brr [5, 3] = 1;
+  int [[2]] arr (5, 2) = 0;
+  int [[2]] brr (5, 3) = 1;
   int [[2]] crr;
 
   crr = cat (arr, brr, 1);

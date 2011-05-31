@@ -7,5 +7,5 @@ void main () {
   assert (declassify (!f));
   assert (declassify (!!t));
   assert (declassify (-one == none));
-  assert (declassify (--one == one));
+  assert (declassify (- -one == one));
 }

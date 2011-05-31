@@ -1,6 +1,6 @@
 
 void main () {
-  int [[1]] arr [5] = 0;
+  int [[1]] arr (5) = 0;
   int i;
 
   for (i = 0; i < 5; i += 1) {

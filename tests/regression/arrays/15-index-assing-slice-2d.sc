@@ -1,7 +1,7 @@
 void main () {
   int n = 5;
   int m = 5;
-  int [[2]] mat [n, m] = 0;
+  int [[2]] mat (n, m) = 0;
   mat[1:(n-1), 1:(m-1)] = 1;
   int i; int j;
   for (i = 0; i < n; i = i + 1) {

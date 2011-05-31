@@ -9,7 +9,7 @@ bool all (bool [[1]] arr) {
 }
 
 int [[1]] constant () {
-  int [[1]] out [42] = 42;
+  int [[1]] out (42) = 42;
   return out;
 }
 
@@ -28,7 +28,7 @@ int first (int [[1]] arr) {
 }
 
 void main () {
-  int [[1]] brr [5] = 0;
+  int [[1]] brr (5) = 0;
   assert (all(brr == 0));
   int [[1]] t = constant ();
   assert (size(t) == 42);
@@ -36,7 +36,7 @@ void main () {
   assert (all(double(t) == 84));
   assert (first(t) == 42);
   int t1 = 1;
-  int [[1]] t2 [2] = 2;
+  int [[1]] t2 (2) = 2;
   int t3 = 3;
   order (t1, t2, t3);
 }

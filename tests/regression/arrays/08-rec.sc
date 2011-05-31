@@ -4,7 +4,7 @@ int first (int [[1]] arr) {
 }
 
 void main () {
-  int [[1]] arr [10] = 1;
+  int [[1]] arr (10) = 1;
   int t = first (arr);
   assert (t == 1);
 }

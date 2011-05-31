@@ -6,5 +6,5 @@ void main () {
   assert (!f);
   assert (!!t);
   assert (-one == -1);
-  assert (--one == 1);
+  assert (- -one == 1);
 }
