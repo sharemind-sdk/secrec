@@ -97,6 +97,8 @@
 %nonassoc '<' '>' LE_OP GE_OP
 %left '+' '-'
 %left '*' '/' '%'
+%nonassoc INC_OP
+%nonassoc DEC_OP
 %right UNEG UMINUS
 
 
@@ -137,10 +139,11 @@
 %type <treenode> relational_expression
 %type <treenode> additive_expression
 %type <treenode> multiplicative_expression
-%type <treenode> matrix_expression
 %type <treenode> cast_expression
 %type <treenode> unary_expression
 %type <treenode> postfix_expression
+%type <treenode> postfix_op
+%type <treenode> prefix_op
 %type <treenode> cat_expression
 %type <treenode> fread_expression
 %type <treenode> argument_list
@@ -230,7 +233,7 @@ initializer
  ;
 
 dimensions
- : '[' dimension_list ']'
+ : '(' dimension_list ')'
    {
      $$ = $2
    }
@@ -727,31 +730,21 @@ additive_expression
  ;
 
 multiplicative_expression
- : multiplicative_expression '*' matrix_expression
+ : multiplicative_expression '*' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_MUL, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
- | multiplicative_expression '/' matrix_expression
+ | multiplicative_expression '/' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_DIV, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
- | multiplicative_expression '%' matrix_expression
+ | multiplicative_expression '%' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_MOD, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
-   }
- | matrix_expression
- ;
-
-matrix_expression
- : matrix_expression '#' cast_expression
-   {
-     $$ = treenode_init(NODE_EXPR_BINARY_MATRIXMUL, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -765,8 +758,34 @@ cast_expression
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $4);
    }
- | unary_expression
+ | prefix_op
  ;
+
+prefix_op
+ : INC_OP lvalue
+   {
+     $$ = treenode_init(NODE_EXPR_PREFIX_INC, &@$);
+     treenode_appendChild($$, ensure_rValue($2));
+   }
+ | DEC_OP lvalue
+   {
+     $$ = treenode_init(NODE_EXPR_PREFIX_DEC, &@$);
+     treenode_appendChild($$, ensure_rValue($2));
+   }
+ | postfix_op
+
+postfix_op
+ : lvalue INC_OP
+   {
+     $$ = treenode_init(NODE_EXPR_POSTFIX_INC, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+   }
+ | lvalue DEC_OP
+   {
+     $$ = treenode_init(NODE_EXPR_POSTFIX_DEC, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+   }
+ | unary_expression
 
 unary_expression
  : '-' cast_expression %prec UMINUS
@@ -858,11 +877,6 @@ postfix_expression
          treenode_appendChild($$, ensure_rValue(treenode_childAt($3, i)));
      }
      treenode_free($3);
-   }
- | postfix_expression '[' '*' ']'
-   {
-     $$ = treenode_init(NODE_EXPR_WILDCARD, &@$);
-     treenode_appendChild($$, $1);
    }
  | postfix_expression subscript
    {

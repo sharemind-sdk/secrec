@@ -102,8 +102,8 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "*=" { stepLen(yyget_lloc(yyscanner), 2); return MUL_ASSIGN; }
 "/=" { stepLen(yyget_lloc(yyscanner), 2); return DIV_ASSIGN; }
 "%=" { stepLen(yyget_lloc(yyscanner), 2); return MOD_ASSIGN; }
- /* "++" { stepLen(yyget_lloc(yyscanner), 2); return INC_OP; } */
- /* "--" { stepLen(yyget_lloc(yyscanner), 2); return DEC_OP; } */
+"++" { stepLen(yyget_lloc(yyscanner), 2); return INC_OP; }
+"--" { stepLen(yyget_lloc(yyscanner), 2); return DEC_OP; }
 "&&" { stepLen(yyget_lloc(yyscanner), 2); return LAND_OP; }
 "||" { stepLen(yyget_lloc(yyscanner), 2); return LOR_OP; }
 "<=" { stepLen(yyget_lloc(yyscanner), 2); return LE_OP; }
