@@ -17,11 +17,6 @@ class GlobalSymbols;
   SymbolTable
 *******************************************************************************/
 
-/**
- * Currently does not track in which order symbols and scopes
- * occur in code. This does not break code gen due to linear
- * nature of the process.
- */
 class SymbolTable {
     private: /* Types: */
         typedef std::vector<Symbol*> Table;
@@ -56,12 +51,8 @@ class SymbolTable {
     private: /* Fields: */
         Table        m_table;
         SymbolTable *m_parent;
-        SymbolTable *m_global;
-        GlobalSymbols* m_globalST;
+        GlobalSymbols* m_global;
         std::list<SymbolTable* > m_scopes; ///< Used only for deleting and printing
-        unsigned long m_tempCount;
-        unsigned long m_constCount;
-        unsigned long m_labelCount;
 };
 
 } // namespace SecreC
