@@ -100,8 +100,6 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
         ss << "Index out of bounds at " << location() << ".";
         Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
         Imop* err = newError (this, st.constantString (ss.str ()));
-        // new Imop(this, Imop::ERROR, (Symbol*) 0,
-        //                     (Symbol*) new std::string(ss.str()));
         SymbolLabel* errLabel = st.label(err);
 
         Symbol::dim_iterator dit = x->dim_begin();
@@ -158,15 +156,8 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
 
     // r = FILL def size
     if (!isScalar) {
-        Imop* i = new Imop(this, Imop::FILL, result(), (Symbol*) 0, result()->getSizeSym());
-        switch (resultType().secrecDataType()) {
-            case DATATYPE_BOOL: i->setArg1(st.constantBool(false)); break;
-            case DATATYPE_INT: i->setArg1(st.constantInt(0)); break;
-            case DATATYPE_UINT: i->setArg1(st.constantUInt(0)); break;
-            case DATATYPE_STRING: i->setArg1(st.constantString("")); break;
-            default: assert (false);
-        }
-
+        Symbol* def = st.defaultConstant (resultType ().secrecDataType ());
+        Imop* i = new Imop(this, Imop::FILL, result(), def, result()->getSizeSym());
         code.push_imop(i);
     }
 
@@ -184,7 +175,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
 
     // 3. initialize strides: s[0] = 1; ...; s[n+1] = s[n] * d[n];
     std::vector<Symbol* > strides [2];
-    for (unsigned j = 0; j < 2; ++ j){
+    for (unsigned j = 0; j < 2; ++ j) {
         code.push_comment("Computing stride:");
         Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
         Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantInt(1));
@@ -1817,10 +1808,10 @@ ICode::Status TreeNodeExprPrefix::generateCode(ICodeList &code, SymbolTable &st,
 
 
     // either use ADD or SUB
-    Imop::Type iType;
+    Imop::Type cType;
     switch (type ()) {
-    case NODE_EXPR_PREFIX_INC: iType = Imop::ADD; break;
-    case NODE_EXPR_PREFIX_DEC: iType = Imop::SUB; break;
+    case NODE_EXPR_PREFIX_INC: cType = Imop::ADD; break;
+    case NODE_EXPR_PREFIX_DEC: cType = Imop::SUB; break;
     default: assert (false && "impossible");
     }
 
@@ -1840,7 +1831,7 @@ ICode::Status TreeNodeExprPrefix::generateCode(ICodeList &code, SymbolTable &st,
     }
 
     // x = x + 1
-    Imop* i = newBinary (this, iType, destSymSym, destSymSym, one);
+    Imop* i = newBinary (this, cType, destSymSym, destSymSym, one);
     code.push_imop (i);
     patchFirstImop (i);
     prevPatchNextList (i, st);
