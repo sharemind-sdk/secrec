@@ -123,6 +123,7 @@
 %type <treenode> statement_list
 %type <treenode> statement
 %type <treenode> if_statement
+%type <treenode> for_initializer
 %type <treenode> for_statement
 %type <treenode> maybe_expression
 %type <treenode> while_statement
@@ -183,12 +184,12 @@ program
  ;
 
 variable_declarations /* Helper nonterminal for variable_declaration+ */
- : variable_declarations variable_declaration
+ : variable_declarations variable_declaration ';'
    { $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $2);
    }
- | variable_declaration
+ | variable_declaration ';'
    {
      $$ = treenode_init(NODE_GLOBALS, &@$);
      treenode_appendChild($$, $1);
@@ -196,14 +197,14 @@ variable_declarations /* Helper nonterminal for variable_declaration+ */
  ;
 
 variable_declaration /* NB! Uses type_specifier directly */
- : type_specifier identifier ';'
+ : type_specifier identifier
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
    }
- | type_specifier identifier '=' initializer ';'
+ | type_specifier identifier '=' initializer
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
@@ -211,14 +212,14 @@ variable_declaration /* NB! Uses type_specifier directly */
      treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
      treenode_appendChild($$, ensure_rValue($4));
    }
- | type_specifier identifier dimensions ';'
+ | type_specifier identifier dimensions
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
- | type_specifier identifier dimensions '=' initializer ';'
+ | type_specifier identifier dimensions '=' initializer
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild($$, $2);
@@ -414,9 +415,9 @@ compound_statement
  ;
 
 statement_list
- : variable_declaration statement_list
+ : variable_declaration ';' statement_list
    {
-     $$ = add_vardecl($1, $2, &@$);
+     $$ = add_vardecl($1, $3, &@$);
    }
  | statement statement_list
    {
@@ -477,8 +478,13 @@ if_statement
    }
  ;
 
+for_initializer
+ : maybe_expression
+ | variable_declaration
+ ;
+
 for_statement
- : FOR '(' maybe_expression ';'
+ : FOR '(' for_initializer  ';'
            maybe_expression ';'
            maybe_expression ')' statement
    {

@@ -355,7 +355,8 @@ ICode::Status TreeNodeStmtDecl::generateCode(ICodeList &code, SymbolTable &st,
   TreeNodeStmtFor
 *******************************************************************************/
 
-ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
+ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code,
+                                            SymbolTable &st,
                                             CompileLog &log)
 {
     assert(children().size() == 4);
@@ -363,47 +364,67 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     TreeNode *c1 = children().at(1);
     TreeNode *c2 = children().at(2);
     TreeNode *c3 = children().at(3);
-    assert((c0->type() & NODE_EXPR_MASK) != 0);
+    assert((c0->type() & NODE_EXPR_MASK) != 0 ||
+           (c0->type () == NODE_DECL));
     assert((c1->type() & NODE_EXPR_MASK) != 0);
     assert((c2->type() & NODE_EXPR_MASK) != 0);
 
+    SymbolTable* tmpScope = &st;
+
     // Initialization expression:
-    TreeNodeExpr *e0 = 0;
-    if (children().at(0)->type() != NODE_EXPR_NONE) {
-        assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
-        e0 = static_cast<TreeNodeExpr*>(c0);
-        ICode::Status s = e0->generateCode(code, st, log);
-        if (s != ICode::OK) return s;
-        setFirstImop(e0->firstImop());
+    if (c0->type() != NODE_EXPR_NONE) {
+        if ((c0->type() & NODE_EXPR_MASK) != 0) {
+            TreeNodeExpr *e0 = 0;
+            assert(dynamic_cast<TreeNodeExpr*>(c0) != 0);
+            e0 = static_cast<TreeNodeExpr*>(c0);
+            ICode::Status s = e0->generateCode(code, st, log);
+            if (s != ICode::OK) return s;
+            setFirstImop(e0->firstImop());
+        }
+
+        if (c0->type () == NODE_DECL) {
+            TreeNodeStmtDecl* decl = 0;
+            assert (dynamic_cast<TreeNodeStmtDecl*>(c0) != 0);
+            decl = static_cast<TreeNodeStmtDecl*>(c0);
+            tmpScope = st.newScope ();
+            ICode::Status s = decl->generateCode (code, *tmpScope, log);
+            if (s != ICode::OK) return s;
+            setFirstImop (decl->firstImop ());
+            addToNextList (decl->nextList ());
+        }
     }
+
+    SymbolTable& scope = *tmpScope;
 
     // Conditional expression:
     TreeNodeExpr *e1 = 0;
-    if (children().at(1)->type() != NODE_EXPR_NONE) {
+    if (c1->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c1) != 0);
         e1 = static_cast<TreeNodeExpr*>(c1);
-        ICode::Status s = e1->calculateResultType(st, log);
+        ICode::Status s = e1->calculateResultType(scope, log);
         if (s != ICode::OK) return s;
         if (!e1->havePublicBoolType()) {
             log.fatal() << "Conditional expression in if statement must be of "
                            "type public bool in " << e1->location();
             return ICode::E_TYPE;
         }
-        s = e1->generateBoolCode(code, st, log);
+
+        s = e1->generateBoolCode(code, scope, log);
         if (s != ICode::OK) return s;
         patchFirstImop(e1->firstImop());
+        patchNextList (e1->firstImop (), scope);
         addToNextList(e1->falseList());
     }
 
     // Loop body:
-    SymbolTable &innerScope = *st.newScope();
+    // SymbolTable &innerScope = *st.newScope();
     assert(dynamic_cast<TreeNodeStmt*>(c3) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(c3);
-    ICode::Status s = body->generateCode(code, innerScope, log);
+    ICode::Status s = body->generateCode(code, scope, log);
     if (s != ICode::OK) return s;
     patchFirstImop(body->firstImop());
     if (e1 != 0 && body->firstImop() != 0)
-        e1->patchTrueList(st.label(body->firstImop()));
+        e1->patchTrueList(scope.label(body->firstImop()));
     addToNextList(body->breakList());
 
     // Iteration expression:
@@ -411,19 +432,19 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     if (children().at(2)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
         e2 = static_cast<TreeNodeExpr*>(c2);
-        ICode::Status s = e2->generateCode(code, st, log);
-        SymbolLabel* jumpDest = st.label(e2->firstImop());
+        ICode::Status s = e2->generateCode(code, scope, log);
+        SymbolLabel* jumpDest = scope.label(e2->firstImop());
         if (s != ICode::OK) return s;
         if (e1 != 0 && body->firstImop() == 0) e1->patchTrueList(jumpDest);
         body->patchContinueList(jumpDest);
         body->patchNextList(jumpDest);
     } else {
         if (e1 != 0) {
-            SymbolLabel* jumpDest = st.label(e1->firstImop());
+            SymbolLabel* jumpDest = scope.label(e1->firstImop());
             body->patchContinueList(jumpDest);
             body->patchNextList(jumpDest);
         } else {
-            SymbolLabel* jumpDest = st.label(body->firstImop());
+            SymbolLabel* jumpDest = scope.label(body->firstImop());
             body->patchContinueList(jumpDest);
             body->patchNextList(jumpDest);
         }
@@ -450,9 +471,9 @@ ICode::Status TreeNodeStmtFor::generateCode(ICodeList &code, SymbolTable &st,
     // Next iteration jump:
     Imop *j = new Imop(this, Imop::JUMP, 0);
     if (e1 != 0) {
-        j->setJumpDest(st.label(e1->firstImop()));
+        j->setJumpDest(scope.label(e1->firstImop()));
     } else {
-        j->setJumpDest(st.label(body->firstImop()));
+        j->setJumpDest(scope.label(body->firstImop()));
     }
     code.push_imop(j);
 
