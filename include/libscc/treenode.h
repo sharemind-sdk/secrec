@@ -347,6 +347,26 @@ class TreeNodeExpr: public TreeNodeBase {
         }
         void addToTrueList(const std::vector<Imop*> &bl);
 
+protected:
+
+        /// code generation result info for subscript
+        struct SubscriptInfo {
+            std::vector<unsigned > slices;
+            std::vector<std::pair<Symbol*, Symbol*> > spv;
+            ICode::Status status;
+            SubscriptInfo (ICode::Status s) : status (s) { }
+            ~SubscriptInfo () {}
+        };
+
+        SubscriptInfo codegenSubscript (Symbol* x,
+                                        TreeNode* node,
+                                        ICodeList& code,
+                                        SymbolTable& st,
+                                        CompileLog& log);
+        std::vector<Symbol*> codegenStride (Symbol* sym,
+                                            ICodeList &code,
+                                            SymbolTable &st);
+
     private: /* Fields: */
         Symbol             *m_result;
         SecreC::Type       *m_resultType;

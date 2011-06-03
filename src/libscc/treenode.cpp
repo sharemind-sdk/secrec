@@ -290,84 +290,6 @@ ICode::Status tyCheckIndices (TreeNode* node,
     return ICode::OK;
 }
 
-// figure out how to compute that less often
-ICode::Status TreeNodeExpr::computeSize (ICodeList& code, SymbolTable& st) {
-    assert (haveResultType() &&
-            "ICE: TreeNodeExpr::computeSize called on expression without type.");
-    assert (result() != 0 &&
-            "ICE: TreeNodeExpr::computeSize called on expression with non-void type but no result.");
-
-    if (resultType().isVoid()) return ICode::OK;
-    if (resultType().isScalar()) return ICode::OK;
-
-    assert ((result()->getSizeSym() != 0) &&
-            "ICE: TreeNodeExpr::computeSize called on expression without size symbol.");
-
-
-    Symbol* size = result()->getSizeSym();
-    Imop* i = new Imop (this, Imop::ASSIGN, size, st.constantInt(1));
-    code.push_imop(i);
-    patchFirstImop(i);
-    patchNextList(i, st);
-    prevPatchNextList(i, st);
-
-    Symbol::dim_iterator
-            di = result()->dim_begin(),
-            de = result()->dim_end();
-    for (; di != de; ++ di) {
-        assert (*di != 0 &&
-                "ICE: TreeNodeExpr::computeSize called on expression with corrupt shape.");
-        Imop* i = new Imop (this, Imop::MUL, size, size, *di);
-        code.push_imop(i);
-    }
-
-    return ICode::OK;
-}
-
-void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code, SymbolTable& st) {
-    assert (haveResultType());
-    assert (sym != 0);
-
-    if (resultType().isScalar()) {
-        return;
-    }
-
-    Symbol::dim_iterator
-            di = sym->dim_begin(),
-            de = sym->dim_end();
-    Symbol::dim_iterator
-            dj = result()->dim_begin();
-    for (; di != de; ++ di, ++ dj) {
-        Imop* i = new Imop(this, Imop::ASSIGN, *dj, *di);
-        code.push_imop(i);
-        patchFirstImop(i);
-        patchNextList(i, st);
-        prevPatchNextList(i, st);
-    }
-
-    Symbol* sl = result()->getSizeSym();
-    Symbol* sr = sym->getSizeSym();
-    Imop* i = new Imop(this, Imop::ASSIGN, sl, sr);
-    code.push_imop(i);
-    patchFirstImop(i);
-    patchNextList(i, st);
-    prevPatchNextList(i, st);
-}
-
-void TreeNodeExpr::generateResultSymbol(SymbolTable& st) {
-    assert (haveResultType());
-    if (!resultType().isVoid()) {
-        assert(dynamic_cast<const TypeNonVoid*>(&resultType()) != 0);
-        Symbol* sym = st.appendTemporary(static_cast<const TypeNonVoid&>(resultType()));
-        setResult(sym);
-        for (unsigned i = 0; i < resultType().secrecDimType(); ++ i) {
-            sym->setDim(i, st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
-        }
-
-        sym->setSizeSym(st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
-    }
-}
-
 
 } // namespace SecreC
 
@@ -582,21 +504,6 @@ void TreeNodeBase::addToNextList(const std::vector<Imop*> &nl) {
     appendVectorToVector(m_nextList, nl);
 }
 
-ICode::Status TreeNodeBase::generateSubexprCode (TreeNodeExpr* e, ICodeList& code, SymbolTable& st, CompileLog& log, Symbol* r) {
-    ICode::Status s = e->generateCode(code, st, log, r);
-    if (s != ICode::OK) return s;
-    if (e->firstImop() != 0) {
-        Imop* i = e->firstImop();
-        patchFirstImop(i);
-        patchNextList(i, st);
-        if (prevSubexpr() != 0)
-            prevSubexpr()->patchNextList(i, st);
-        setPrevSubexpr(e);
-    }
-
-    return ICode::OK;
-}
-
 void TreeNodeBase::prevPatchNextList (Imop* i, SymbolTable& st) {
     if (prevSubexpr())
         prevSubexpr()->patchNextList(i, st);
@@ -674,7 +581,6 @@ void TreeNodeExpr::addToFalseList(const std::vector<Imop*> &fl) {
 void TreeNodeExpr::addToTrueList(const std::vector<Imop*> &tl) {
     appendVectorToVector(m_trueList, tl);
 }
-
 
 /*******************************************************************************
   TreeNodeExprAssign

@@ -26,8 +26,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
     bool isScalar = resultType().isScalar();
-    SPV spv; // store symbols corresponding to upper and lower indices
-    std::vector<int > slices; // which of the indices are slices
+
 
     // 0. Generate temporary for the result of the binary expression, if needed:
     if (r == 0) {
@@ -44,100 +43,18 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
     if (s != ICode::OK) return s;
     Symbol* x = e->result();
 
-    {
-        CLCI it = children().at(1)->children().begin();
-        CLCI it_end = children().at(1)->children().end();
-        for (unsigned count = 0; it != it_end; ++ it, ++ count) {
-            TreeNode* t = *it;
-            Symbol* r_lo = 0;
-            Symbol* r_hi = 0;
-
-            // lower bound
-            TreeNode* t_lo = t->children().at(0);
-            if (t_lo->type() == NODE_EXPR_NONE) {
-                r_lo = st.constantInt(0);
-            }
-            else {
-                TreeNodeExpr* e_lo = static_cast<TreeNodeExpr*>(t_lo);
-                s = generateSubexprCode(e_lo, code, st, log);
-                if (s != ICode::OK) return s;
-                r_lo = e_lo->result();
-            }
-
-            // upper bound
-            if (t->type() == NODE_INDEX_SLICE) {
-                TreeNode* t_hi = t->children().at(1);
-                if (t_hi->type() == NODE_EXPR_NONE) {
-                    r_hi = x->getDim(count);
-                }
-                else {
-                    TreeNodeExpr* e_hi = static_cast<TreeNodeExpr*>(t_hi);
-                    s = generateSubexprCode(e_hi, code, st, log);
-                    if (s != ICode::OK) return s;
-                    r_hi = e_hi->result();
-                }
-
-                slices.push_back(count);
-            }
-            else {
-                // if there is no upper bound then make one up
-                r_hi = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-                Imop* i = new Imop(this, Imop::ADD, r_hi, r_lo, st.constantInt(1));
-                code.push_imop(i);
-                patchFirstImop(i);
-                prevPatchNextList(i, st);
-            }
-
-            spv.push_back(std::make_pair(r_lo, r_hi));
-        }
+    TreeNodeExpr::SubscriptInfo subInfo = codegenSubscript (e->result (), children ().at (1), code, st, log);
+    if (subInfo.status != ICode::OK) {
+        return subInfo.status;
     }
 
-    // 2. check that indices are legal
-    {
-        code.push_comment("Validating indices:");
-
-        std::stringstream ss;
-        ss << "Index out of bounds at " << location() << ".";
-        Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
-        Imop* err = newError (this, st.constantString (ss.str ()));
-        SymbolLabel* errLabel = st.label(err);
-
-        Symbol::dim_iterator dit = x->dim_begin();
-        for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it, ++ dit) {
-            Symbol* s_lo = it->first;
-            Symbol* s_hi = it->second;
-            Symbol* d = *dit;
-            // o <= s_lo <= s_hi <= d
-
-            code.push_comment("checking 0 <= s_lo <= s_hi <= d");
-
-            Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, st.constantInt(0), s_lo);
-            code.push_imop(i);
-            patchFirstImop(i);
-            prevPatchNextList(i, st);
-            i->setJumpDest(errLabel);
-
-            i = new Imop(this, Imop::JGT, (Symbol*) 0, s_lo, s_hi);
-            code.push_imop(i);
-            i->setJumpDest(errLabel);
-
-            i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
-            code.push_imop(i);
-            i->setJumpDest(errLabel);
-        }
-
-        code.push_imop(jmp);
-        patchFirstImop(jmp);
-        prevPatchNextList(jmp, st);
-        addToNextList(jmp); /// \todo not sure about that...
-
-        code.push_imop(err);
-    }
+    SPV& spv= subInfo.spv;
+    std::vector<unsigned >& slices = subInfo.slices;
 
     // 5. compute resulting shape
     {
         code.push_comment("Computing shape:");
-        std::vector<int>::const_iterator
+        std::vector<unsigned>::const_iterator
                 it = slices.begin(),
                 it_end = slices.end();
         for (unsigned count = 0; it != it_end; ++ it, ++ count) {
@@ -173,30 +90,10 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
     Symbol* tmp_result = st.appendTemporary(TypeNonVoid(e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0));
     Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
 
-    // 3. initialize strides: s[0] = 1; ...; s[n+1] = s[n] * d[n];
+    // 3. initialize strides
     std::vector<Symbol* > strides [2];
-    for (unsigned j = 0; j < 2; ++ j) {
-        code.push_comment("Computing stride:");
-        Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-        Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantInt(1));
-        strides[j].push_back(sym);
-        code.push_imop(i);
-        patchFirstImop(i);
-        patchNextList(i, st);
-        prevPatchNextList(i, st);
-
-        Symbol* prevSym = sym;
-        Symbol* resSym = 0;
-        if (j == 0) resSym = x;
-        if (j == 1) resSym = result();
-        for (Symbol::dim_iterator it(resSym->dim_begin()); it != resSym->dim_end(); ++ it) {
-            sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-            i = new Imop(this, Imop::MUL, sym, prevSym, *it);
-            strides[j].push_back(sym);
-            code.push_imop(i);
-            prevSym = sym;
-        }
-    }
+    strides[0] = codegenStride (x, code, st);
+    strides[1] = codegenStride (result (), code, st);
 
     // 7. start
     std::stack<Imop*> jump_stack;
@@ -260,7 +157,7 @@ ICode::Status TreeNodeExprIndex::generateCode(ICodeList &code,
             code.push_imop(i);
 
             unsigned count = 0;
-            for (std::vector<int >::iterator it(slices.begin()); it != slices.end(); ++ it, ++ count) {
+            for (std::vector<unsigned >::iterator it(slices.begin()); it != slices.end(); ++ it, ++ count) {
                 unsigned k = *it;
                 Symbol* idx = indices.at(k);
 
@@ -474,8 +371,6 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
     std::stringstream ss;
     ss << "Different sized dimensions in concat at " << location() << ".";
     Imop* err = newError (this, st.constantString (ss.str ()));
-    //new Imop(this, Imop::ERROR, (Symbol*) 0,
-    //                     (Symbol*) new std::string(ss.str()));
     SymbolLabel* errLabel = st.label(err);
     for (unsigned it = 0; it < resultType().secrecDimType(); ++ it) {
         Symbol* s1 = e1->result()->getDim(it);
@@ -508,28 +403,9 @@ ICode::Status TreeNodeExprCat::generateCode(ICodeList &code,
 
     // Initialize strides:
     std::vector<Symbol* > strides [3];
-    {
-        Imop* i = 0;
-        code.push_comment("Computing strides:");
-        for (unsigned j = 0; j < 3; ++ j) {
-            strides[j].reserve(n);
-            for (unsigned it = 0; it < n; ++ it)
-                strides[j].push_back(st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)));
-
-            i = new Imop(this, Imop::ASSIGN, strides[j][0], st.constantInt(1));
-            code.push_imop(i);
-            patchNextList(i, st);
-
-            for (unsigned it = 1; it < n; ++ it) {
-                Symbol* sym = 0;
-                if (j == 0) sym = e1->result()->getDim(it - 1);
-                if (j == 1) sym = e2->result()->getDim(it - 1);
-                if (j == 2) sym = result()->getDim(it - 1);
-                i = new Imop(this, Imop::MUL, strides[j][it], strides[j][it - 1], sym);
-                code.push_imop(i);
-            }
-        }
-    }
+    strides[0] = codegenStride (e1->result(), code, st);
+    strides[1] = codegenStride (e2->result(), code, st);
+    strides[2] = codegenStride (    result(), code, st);
 
     // Symbols for running indices:
     std::vector<Symbol* > indices;

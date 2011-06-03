@@ -22,7 +22,8 @@ SOURCES = \
     codegen/statement.cpp \
     codegen/expression.cpp \
     codegen/assign.cpp \
-    codegen/program.cpp
+    codegen/program.cpp \
+    codegen/util.cpp
 
 OTHER_FILES = \
     secrec.l \

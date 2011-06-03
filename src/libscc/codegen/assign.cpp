@@ -42,145 +42,50 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
     s = generateSubexprCode(e2, code, st, log);
     if (s != ICode::OK) return s;
 
+    const TypeNonVoid& pubIntTy (TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {
-        SPV spv;
-        std::vector<unsigned > slices;
 
-        { // evaluate indices
-            TreeNode::ChildrenListConstIterator
-                    it = lval->children().at(1)->children().begin(),
-                    it_end = lval->children().at(1)->children().end();
-            for (unsigned count = 0; it != it_end; ++ it, ++ count) {
-                TreeNode* t = *it;
-                Symbol* r_lo = 0;
-                Symbol* r_hi = 0;
-
-                // lower bound
-                TreeNode* t_lo = t->children().at(0);
-                if (t_lo->type() == NODE_EXPR_NONE) {
-                    r_lo = st.constantInt(0);
-                }
-                else {
-                    TreeNodeExpr* e_lo = static_cast<TreeNodeExpr*>(t_lo);
-                    s = generateSubexprCode(e_lo, code, st, log);
-                    if (s != ICode::OK) return s;
-                    r_lo = e_lo->result();
-                }
-
-                // upper bound
-                if (t->type() == NODE_INDEX_SLICE) {
-                    TreeNode* t_hi = t->children().at(1);
-                    if (t_hi->type() == NODE_EXPR_NONE) {
-                        r_hi = destSym->getDim(count);
-                    }
-                    else {
-                        TreeNodeExpr* e_hi = static_cast<TreeNodeExpr*>(t_hi);
-                        s = generateSubexprCode(e_hi, code, st, log);
-                        if (s != ICode::OK) return s;
-                        r_hi = e_hi->result();
-                    }
-
-                    slices.push_back(count);
-                }
-                else {
-                    // if there is no upper bound then make one up
-                    r_hi = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-                    Imop* i = new Imop(this, Imop::ADD, r_hi, r_lo, st.constantInt(1));
-                    code.push_imop(i);
-                    patchFirstImop(i);
-                    prevPatchNextList(i, st);
-                }
-
-                spv.push_back(std::make_pair(r_lo, r_hi));
-            }
+        // 1. evaluate subscript
+        TreeNodeExpr::SubscriptInfo subInfo = codegenSubscript (destSym, lval->children ().at (1), code, st, log);
+        if (subInfo.status != ICode::OK) {
+            return subInfo.status;
         }
 
-        // 2. check that indices are legal
-        {
+        SPV& spv = subInfo.spv;
+        std::vector<unsigned>& slices = subInfo.slices;
+
+        // 2. check that rhs has correct dimensions
+        if (!e2->resultType().isScalar()) {
+            assert (e2->resultType().secrecDimType() == slices.size());
+
             std::stringstream ss;
-            ss << "Index out of bounds at " << location() << ".";
+            ss << "Shape of RHS doesn shape of LHS in assignment at " << location() << ".";
             Imop* jmp = new Imop(this, Imop::JUMP, (Symbol*) 0);
             Imop* err = newError (this, st.constantString (ss.str ()));
             SymbolLabel* errLabel = st.label (err);
 
-            // check lower indices
-            Symbol::dim_iterator di = destSym->dim_begin();
-            for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it, ++ di) {
-                code.push_comment("checking s_lo");
-                Symbol* s_lo = it->first;
-                Imop* i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, *di);
-                code.push_imop(i);
-                patchFirstImop(i);
-                prevPatchNextList(i, st);
-                i->setJumpDest(errLabel);
+            for (unsigned k = 0; k < e2->resultType().secrecDimType(); ++ k) {
+                Symbol* tsym = st.appendTemporary (pubIntTy);
+                Imop* i = new Imop(this, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
+                code.push_imop (i);
+                patchFirstImop (i);
+                patchNextList (i, st);
+                prevPatchNextList (i, st);
+
+                i = new Imop(this, Imop::JNE, (Symbol*) 0, tsym, e2->result()->getDim(k));
+                code.push_imop (i);
+                i->setJumpDest (errLabel);
             }
 
-            // check upper indices
-            for (std::vector<unsigned>::const_iterator it(slices.begin()); it != slices.end(); ++ it) {
-                code.push_comment("checking s_hi");
-                unsigned k = *it;
-                Symbol* s_hi = spv[k].second;
-                Symbol* d = destSym->getDim(k);
-                Imop* i = new Imop(this, Imop::JGT, (Symbol*) 0, s_hi, d);
-                code.push_imop(i);
-                patchFirstImop(i);
-                prevPatchNextList(i, st);
-                i->setJumpDest(errLabel);
-
-                Symbol* s_lo = spv[k].first;
-                i = new Imop(this, Imop::JGE, (Symbol*) 0, s_lo, s_hi);
-                code.push_imop(i);
-                i->setJumpDest(errLabel);
-            }
-
-            // check that rhs has correct dimensions
-            if (!e2->resultType().isScalar()) {
-                assert (e2->resultType().secrecDimType() == slices.size());
-                for (unsigned k = 0; k < e2->resultType().secrecDimType(); ++ k) {
-                    Symbol* tsym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-                    Imop* i = new Imop(this, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
-                    code.push_imop(i);
-                    patchFirstImop(i);
-                    prevPatchNextList(i, st);
-
-                    i = new Imop(this, Imop::JNE, (Symbol*) 0, tsym, e2->result()->getDim(k));
-                    code.push_imop(i);
-                    i->setJumpDest(errLabel);
-                }
-            }
-
-            code.push_imop(jmp);
-            patchFirstImop(jmp);
-            prevPatchNextList(jmp, st);
-            addToNextList(jmp); /// \todo not sure about that...
-
-            code.push_imop(err);
+            code.push_imop (jmp);
+            addToNextList (jmp);
+            code.push_imop (err);
         }
 
-        // 3. initialize stride: s[0] = 1; ...; s[n+1] = s[n] * d[n];
-        // - Note that after this point next lists and first imop are patched!
-        // - size of 'x' is stored as last element of the stride
-        std::vector<Symbol* > stride;
-        {
-            code.push_comment("Computing stride:");
-            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-            Imop* i = new Imop(this, Imop::ASSIGN, sym, st.constantInt(1));
-            stride.push_back(sym);
-            code.push_imop(i);
-            patchFirstImop(i);
-            patchNextList(i, st);
-            prevPatchNextList(i, st);
-
-            Symbol* prev = sym;
-            for (Symbol::dim_iterator it(destSym->dim_begin()); it != destSym->dim_end(); ++ it) {
-                sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-                i = new Imop(this, Imop::MUL, sym, prev, *it);
-                stride.push_back(sym);
-                code.push_imop(i);
-                prev = sym;
-            }
-        }
+        // 3. initialize stride
+        std::vector<Symbol* > stride = codegenStride (destSym, code, st);
 
         // 4. initialze running indices
         std::vector<Symbol* > indices;
