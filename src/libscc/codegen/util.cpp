@@ -45,6 +45,7 @@ void TreeNodeExpr::copyShapeFrom(Symbol* sym, ICodeList &code, SymbolTable& st) 
 
     Symbol::dim_iterator dj = result()->dim_begin();
     for (Symbol::dim_iterator di (sym->dim_begin()); di != sym->dim_end(); ++ di, ++ dj) {
+        assert (dj != result ()->dim_end ());
         Imop* i = new Imop(this, Imop::ASSIGN, *dj, *di);
         code.push_imop(i);
         patchFirstImop(i);

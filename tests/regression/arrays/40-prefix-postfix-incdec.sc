@@ -23,7 +23,7 @@ void main () {
   arr = 0;
   ++ arr[0];
   assert (arr[0] == 1);
-  assert (arr (arr[1:] == 0));
+  assert (all (arr[1:] == 0));
 
   // with dynamic index
   arr = 0;

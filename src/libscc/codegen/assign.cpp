@@ -90,21 +90,20 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
         // 4. initialze running indices
         std::vector<Symbol* > indices;
         for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
-            Symbol* sym = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+            Symbol* sym = st.appendTemporary(pubIntTy);
             indices.push_back(sym);
         }
 
         // 6. initialze symbols for offsets and temporary results
-        Symbol* offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-        Symbol* old_offset = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
-        Symbol* tmp_result2 = st.appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Symbol* offset = st.appendTemporary(pubIntTy);
+        Symbol* old_offset = st.appendTemporary(pubIntTy);
+        Symbol* tmp_result2 = st.appendTemporary(pubIntTy);
 
         // 7. start
         std::stack<Imop*> jump_stack;
         {
-            SPV::iterator
-                    spv_it = spv.begin(),
-                    spv_it_end = spv.end();
+            SPV::iterator spv_it = spv.begin(),
+                          spv_it_end = spv.end();
             std::vector<Symbol* >::iterator
                     it_it = indices.begin();
 
@@ -179,6 +178,7 @@ ICode::Status TreeNodeExprAssign::generateCode(ICodeList &code,
                     case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
                     default:
                         assert(false); // shouldn't happen
+                        return ICode::E_OTHER;
                 }
 
                 Imop* i = new Imop(this, Imop::LOAD, t1, destSymSym, old_offset);

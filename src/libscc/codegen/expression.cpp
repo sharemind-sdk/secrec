@@ -993,6 +993,7 @@ ICode::Status TreeNodeExprBinary::generateBoolCode(ICodeList &code,
                 case NODE_EXPR_BINARY_NE: cType = Imop::JNE; break;
                 default:
                     assert(false); // Shouldn't happen.
+                    return ICode::E_OTHER;
             }
 
             Imop *tj = new Imop(this, cType, (Symbol*) 0,
@@ -1663,14 +1664,16 @@ ICode::Status TreeNodeExprUnary::generateBoolCode(ICodeList &code,
   TreeNodeExprPrefix
 ******************************************************************/
 
-/// \todo only works for identifiers
 ICode::Status TreeNodeExprPrefix::generateCode(ICodeList &code, SymbolTable &st,
                                               CompileLog &log,
                                               Symbol *r)
 {
+    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV;
     // Type check:
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
+
+    const TypeNonVoid& pubIntTy (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
 
     // Generate code for child expression:
     TreeNode *lval = children().at(0);
@@ -1693,8 +1696,146 @@ ICode::Status TreeNodeExprPrefix::generateCode(ICodeList &code, SymbolTable &st,
 
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
-        assert (false&& "TODO");
-        return ICode::E_NOT_IMPLEMENTED;
+        SubscriptInfo subInfo = codegenSubscript (destSym, lval->children ().at (1), code, st, log);
+        if (subInfo.status != ICode::OK) {
+            return subInfo.status;
+        }
+
+        SPV& spv = subInfo.spv;
+        std::vector<unsigned>& slices = subInfo.slices;
+        std::vector<Symbol*> stride = codegenStride (destSym, code, st);
+        std::vector<Symbol* > indices;
+        Symbol* offset = st.appendTemporary(pubIntTy);
+        Symbol* resultOffset = st.appendTemporary(pubIntTy);
+        Symbol* tmpResult = st.appendTemporary(pubIntTy);
+        Symbol* tmpValue = st.appendTemporary (pubIntTy);
+
+        for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
+            Symbol* sym = st.appendTemporary(pubIntTy);
+            indices.push_back(sym);
+        }
+
+        std::stack<Imop*> jumpStack;
+        std::vector<Symbol*>::iterator idxIt;
+        Imop* i = 0;
+
+        i = new Imop (this, Imop::ASSIGN, resultOffset, st.constantInt (0));
+        code.push_imop (i);
+        patchFirstImop (i);
+        patchNextList(i, st);
+        prevPatchNextList (i, st);
+
+        // generate result symbol if needed;
+        if (r != 0) {
+            assert (r->secrecType().canAssign(resultType()));
+            setResult (r);
+            assert (false && "TODO!");
+            if (!resultType ().isScalar ()) {
+
+            }
+        }
+        else {
+            generateResultSymbol (st);
+            if (!resultType ().isScalar ()) {
+                unsigned count = 0;
+                for (std::vector<unsigned>::iterator it (slices.begin ()); it != slices.end (); ++ it, ++ count) {
+                    unsigned k = *it;
+                    i = new Imop (this, Imop::SUB, result ()->getDim (count), spv[k].second, spv[k].first);
+                    code.push_imop (i);
+                }
+
+                computeSize (code, st);
+                i = new Imop (this, Imop::FILL, result (), st.constantInt (0), result ()->getSizeSym ());
+            }
+            else {
+                i = new Imop (this, Imop::ASSIGN, result (), st.constantInt (0));
+            }
+
+            code.push_imop (i);
+        }
+
+        // enter loop:
+        idxIt = indices.begin ();
+        for (SPV::iterator it (spv.begin ()); it != spv.end (); ++ it, ++ idxIt) {
+            Symbol* i_lo = it->first;
+            Symbol* i_hi = it->second;
+            Symbol* idx  = *idxIt;
+
+            i = new Imop (this, Imop::ASSIGN, idx, i_lo);
+            code.push_imop (i);
+            patchFirstImop (i);
+            patchNextList(i, st);
+            prevPatchNextList (i, st);
+
+            i = new Imop (this, Imop::JGE, 0, idx, i_hi);
+            code.push_imop (i);
+            jumpStack.push (i);
+        }
+
+        // compute offset:
+        i = new Imop (this, Imop::ASSIGN, offset, st.constantInt (0));
+        code.push_imop(i);
+
+        idxIt = indices.begin ();
+        for (std::vector<Symbol*>::iterator it (stride.begin ()); it != stride.end (); ++ it, ++ idxIt) {
+            i = new Imop (this, Imop::MUL, tmpResult, *it, *idxIt);
+            code.push_imop (i);
+
+            i = new Imop (this, Imop::ADD, offset, offset, tmpResult);
+            code.push_imop (i);
+        }
+
+        // increment the value:
+
+        // t = x[offset]
+        i = new Imop (this, Imop::LOAD, tmpValue, destSymSym, offset);
+        code.push_imop (i);
+
+        // t = t + 1
+        i = new Imop (this, cType, tmpValue, tmpValue, st.constantInt (1));
+        code.push_imop (i);
+
+        // x[offset] = t
+        i = new Imop (this, Imop::STORE, destSymSym, offset, tmpValue);
+        code.push_imop (i);
+
+        if (!resultType ().isScalar ()) {
+            // r[resultOffset] = t
+            i = new Imop (this, Imop::STORE, result (), resultOffset, tmpValue);
+            code.push_imop (i);
+
+            // resultOffset = resultOffset + 1
+            i = new Imop (this, Imop::ADD, resultOffset, resultOffset, st.constantInt (1));
+            code.push_imop (i);
+        }
+        else {
+            // r = t
+            i = new Imop (this, Imop::ASSIGN, result (), tmpValue);
+            code.push_imop (i);
+        }
+
+        // exit loop:
+        Imop* prevJump = 0;
+        for (std::vector<Symbol*>::reverse_iterator it (indices.rbegin ()); it != indices.rend (); ++ it) {
+            Symbol* idx = *it;
+            i = new Imop (this, Imop::ADD, idx, idx, st.constantInt (1));
+            code.push_imop (i);
+            if (prevJump != 0) {
+                prevJump->setJumpDest (st.label (i));
+            }
+
+            i = new Imop (this, Imop::JUMP, (Symbol*) 0);
+            code.push_imop (i);
+            i->setJumpDest (st.label (jumpStack.top ()));
+            prevJump = jumpStack.top ();
+            jumpStack.pop ();
+        }
+
+        if (prevJump != 0) {
+            addToNextList (prevJump);
+        }
+
+        return ICode::OK;
     }
 
     Symbol* one = st.constantInt (1);
@@ -1740,9 +1881,12 @@ ICode::Status TreeNodeExprPostfix::generateCode(ICodeList &code, SymbolTable &st
                                               CompileLog &log,
                                               Symbol *r)
 {
+    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV;
     // Type check:
     ICode::Status s = calculateResultType(st, log);
     if (s != ICode::OK) return s;
+
+    const TypeNonVoid& pubIntTy (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
 
     // Generate code for child expression:
     TreeNode *lval = children().at(0);
@@ -1762,10 +1906,148 @@ ICode::Status TreeNodeExprPostfix::generateCode(ICodeList &code, SymbolTable &st
     default: assert (false && "impossible");
     }
 
-    // ++ x[e1,..,ek]
+    // x[e1,..,ek] ++
     if (lval->children().size() == 2) {
-        assert (false && "TODO");
-        return ICode::E_NOT_IMPLEMENTED;
+        SubscriptInfo subInfo = codegenSubscript (destSym, lval->children ().at (1), code, st, log);
+        if (subInfo.status != ICode::OK) {
+            return subInfo.status;
+        }
+
+        SPV& spv = subInfo.spv;
+        std::vector<unsigned>& slices = subInfo.slices;
+        std::vector<Symbol*> stride = codegenStride (destSym, code, st);
+        std::vector<Symbol* > indices;
+        Symbol* offset = st.appendTemporary(pubIntTy);
+        Symbol* resultOffset = st.appendTemporary(pubIntTy);
+        Symbol* tmpResult = st.appendTemporary(pubIntTy);
+        Symbol* tmpValue = st.appendTemporary (pubIntTy);
+
+        for (SPV::iterator it(spv.begin()); it != spv.end(); ++ it) {
+            Symbol* sym = st.appendTemporary(pubIntTy);
+            indices.push_back(sym);
+        }
+
+        std::stack<Imop*> jumpStack;
+        std::vector<Symbol*>::iterator idxIt;
+        Imop* i = 0;
+
+        i = new Imop (this, Imop::ASSIGN, resultOffset, st.constantInt (0));
+        code.push_imop (i);
+        patchFirstImop (i);
+        patchNextList(i, st);
+        prevPatchNextList (i, st);
+
+        // generate result symbol if needed;
+        if (r != 0) {
+            assert (r->secrecType().canAssign(resultType()));
+            setResult (r);
+            assert (false && "TODO!");
+            if (!resultType ().isScalar ()) {
+
+            }
+        }
+        else {
+            generateResultSymbol (st);
+            if (!resultType ().isScalar ()) {
+                unsigned count = 0;
+                for (std::vector<unsigned>::iterator it (slices.begin ()); it != slices.end (); ++ it, ++ count) {
+                    unsigned k = *it;
+                    i = new Imop (this, Imop::SUB, result ()->getDim (count), spv[k].second, spv[k].first);
+                    code.push_imop (i);
+                }
+
+                computeSize (code, st);
+                i = new Imop (this, Imop::FILL, result (), st.constantInt (0), result ()->getSizeSym ());
+            }
+            else {
+                i = new Imop (this, Imop::ASSIGN, result (), st.constantInt (0));
+            }
+
+            code.push_imop (i);
+        }
+
+        // enter loop:
+        idxIt = indices.begin ();
+        for (SPV::iterator it (spv.begin ()); it != spv.end (); ++ it, ++ idxIt) {
+            Symbol* i_lo = it->first;
+            Symbol* i_hi = it->second;
+            Symbol* idx  = *idxIt;
+
+            i = new Imop (this, Imop::ASSIGN, idx, i_lo);
+            code.push_imop (i);
+            patchFirstImop (i);
+            patchNextList(i, st);
+            prevPatchNextList (i, st);
+
+            i = new Imop (this, Imop::JGE, 0, idx, i_hi);
+            code.push_imop (i);
+            jumpStack.push (i);
+        }
+
+        // compute offset:
+        i = new Imop (this, Imop::ASSIGN, offset, st.constantInt (0));
+        code.push_imop(i);
+
+        idxIt = indices.begin ();
+        for (std::vector<Symbol*>::iterator it (stride.begin ()); it != stride.end (); ++ it, ++ idxIt) {
+            i = new Imop (this, Imop::MUL, tmpResult, *it, *idxIt);
+            code.push_imop (i);
+
+            i = new Imop (this, Imop::ADD, offset, offset, tmpResult);
+            code.push_imop (i);
+        }
+
+        // increment the value:
+
+        // t = x[offset]
+        i = new Imop (this, Imop::LOAD, tmpValue, destSymSym, offset);
+        code.push_imop (i);
+
+        if (!resultType ().isScalar ()) {
+            // r[resultOffset] = t
+            i = new Imop (this, Imop::STORE, result (), resultOffset, tmpValue);
+            code.push_imop (i);
+
+            // resultOffset = resultOffset + 1
+            i = new Imop (this, Imop::ADD, resultOffset, resultOffset, st.constantInt (1));
+            code.push_imop (i);
+        }
+        else {
+            // r = t
+            i = new Imop (this, Imop::ASSIGN, result (), tmpValue);
+            code.push_imop (i);
+        }
+
+        // t = t + 1
+        i = new Imop (this, cType, tmpValue, tmpValue, st.constantInt (1));
+        code.push_imop (i);
+
+        // x[offset] = t
+        i = new Imop (this, Imop::STORE, destSymSym, offset, tmpValue);
+        code.push_imop (i);
+
+        // exit loop:
+        Imop* prevJump = 0;
+        for (std::vector<Symbol*>::reverse_iterator it (indices.rbegin ()); it != indices.rend (); ++ it) {
+            Symbol* idx = *it;
+            i = new Imop (this, Imop::ADD, idx, idx, st.constantInt (1));
+            code.push_imop (i);
+            if (prevJump != 0) {
+                prevJump->setJumpDest (st.label (i));
+            }
+
+            i = new Imop (this, Imop::JUMP, (Symbol*) 0);
+            code.push_imop (i);
+            i->setJumpDest (st.label (jumpStack.top ()));
+            prevJump = jumpStack.top ();
+            jumpStack.pop ();
+        }
+
+        if (prevJump != 0) {
+            addToNextList (prevJump);
+        }
+
+        return ICode::OK;
     }
 
     Symbol* one = st.constantInt (1);
@@ -1783,6 +2065,7 @@ ICode::Status TreeNodeExprPostfix::generateCode(ICodeList &code, SymbolTable &st
     }
     else {
         generateResultSymbol (st);
+        copyShapeFrom (destSymSym, code, st);
     }
 
     Imop* i = 0;
@@ -1790,13 +2073,12 @@ ICode::Status TreeNodeExprPostfix::generateCode(ICodeList &code, SymbolTable &st
     // r = x
     i = newAssign (this, result (), destSymSym);
     code.push_imop (i);
-    copyShapeFrom (destSymSym, code, st);
+    patchFirstImop (i);
+    prevPatchNextList (i, st);
 
     // x = x + 1
     i = newBinary (this, cType, destSymSym, destSymSym, one);
     code.push_imop (i);
-    patchFirstImop (i);
-    prevPatchNextList (i, st);
 
     return ICode::OK;
 }

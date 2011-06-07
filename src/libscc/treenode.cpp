@@ -1490,11 +1490,18 @@ ICode::Status TreeNodeExprPostfix::calculateResultType(SymbolTable &st,
     assert(children().size() == 1);
     assert((children().at(0)->type() == NODE_LVALUE) != 0x0);
     TreeNode* lval = children().at(0);
-    assert (lval->children ().size () == 1);
+    assert (lval->children ().size () <= 2);
     assert(dynamic_cast<TreeNodeIdentifier* >(lval->children ().at(0)) != 0);
 
     TreeNodeIdentifier *e = static_cast<TreeNodeIdentifier*>(lval->children ().at(0));
     const SecreC::Type &eType = e->getSymbol (st, log)->secrecType ();
+    unsigned destDim = eType.secrecDimType ();
+    if (lval->children ().size () == 2) {
+        ICode::Status s = tyCheckIndices (lval->children ().at (1), st, log, destDim);
+        if (s != ICode::OK) {
+            return s;
+        }
+    }
 
     // check that argument is a variable
     if (e->type () == NODE_EXPR_RVARIABLE) {
@@ -1524,7 +1531,7 @@ ICode::Status TreeNodeExprPostfix::calculateResultType(SymbolTable &st,
     setResultType (new TypeNonVoid (
                        eType.secrecSecType (),
                        eType.secrecDataType (),
-                       eType.secrecDimType ()));
+                       destDim));
     return ICode::OK;
 }
 
@@ -1547,6 +1554,13 @@ ICode::Status TreeNodeExprPrefix::calculateResultType(SymbolTable &st,
 
     TreeNodeIdentifier *e = static_cast<TreeNodeIdentifier*>(lval->children ().at(0));
     const SecreC::Type &eType = e->getSymbol (st, log)->secrecType ();
+    unsigned destDim = eType.secrecDimType ();
+    if (lval->children ().size () == 2) {
+        ICode::Status s = tyCheckIndices (lval->children ().at (1), st, log, destDim);
+        if (s != ICode::OK) {
+            return s;
+        }
+    }
 
     // check that argument is a variable
     if (e->type () == NODE_EXPR_RVARIABLE) {
@@ -1576,7 +1590,7 @@ ICode::Status TreeNodeExprPrefix::calculateResultType(SymbolTable &st,
     setResultType (new TypeNonVoid (
                        eType.secrecSecType (),
                        eType.secrecDataType (),
-                       eType.secrecDimType ()));
+                       destDim));
     return ICode::OK;
 }
 
