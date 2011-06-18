@@ -96,14 +96,14 @@ class SymbolProcedure: public Symbol {
         SymbolProcedure(const TreeNodeProcDef *procdef);
 
         inline const TreeNodeProcDef *decl() const { return m_decl; }
-        inline const Imop *target() const { return m_target; }
-        inline void setTarget(const Imop *target) { m_target = target; }
+        inline Imop *target() const { return m_target; }
+        inline void setTarget(Imop *target) { m_target = target; }
 
         virtual std::string toString() const;
 
     private: /* Fields: */
         const TreeNodeProcDef *m_decl;
-        const Imop            *m_target;
+        Imop                  *m_target;
 };
 
 class SymbolLabel: public Symbol {

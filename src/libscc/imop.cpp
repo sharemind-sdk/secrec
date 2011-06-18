@@ -27,11 +27,11 @@ std::string uniqueName(const SecreC::Symbol *s) {
 namespace SecreC {
 
 #define dname  (dest() == 0 ? "_" : uniqueName(dest()))
-#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<SymbolLabel const*>(dest())->target()->index()) )
+#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<const SymbolLabel*>(dest())->target()->index()) )
 #define a1name (arg1() == 0 ? "_" : uniqueName(arg1()))
 #define a2name (arg2() == 0 ? "_" : uniqueName(arg2()))
 #define a3name (arg3() == 0 ? "_" : uniqueName(arg3()))
-#define cImop  (arg1() == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(arg1())->decl()->firstImop()->index()))
+#define cImop  (arg1() == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(arg1())->target ()->index()))
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
     Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
@@ -49,6 +49,18 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
     }
     else {
         i = new Imop (node, iType, dest, arg1, arg2, dest->getSizeSym ());
+    }
+
+    return i;
+}
+
+Imop* newPush (TreeNode* node, Symbol* arg) {
+    Imop* i = 0;
+    if (arg->secrecType ().isScalar ()) {
+        i = new Imop (node, Imop::PUSH, (Symbol*) 0, arg);
+    }
+    else {
+        i = new Imop (node, Imop::PUSH, (Symbol*) 0, arg, arg->getSizeSym ());
     }
 
     return i;
@@ -97,7 +109,7 @@ const Imop *Imop::callDest() const {
     assert(arg1()->symbolType() == Symbol::PROCEDURE);
     assert(dynamic_cast<const SymbolProcedure*>(arg1()) != 0);
 
-    return static_cast<const SymbolProcedure*>(arg1())->decl()->firstImop();
+    return static_cast<const SymbolProcedure*>(arg1())->target ();
 }
 
 SymbolLabel const* Imop::jumpDest() const {
@@ -113,16 +125,15 @@ void Imop::setJumpDest (SymbolLabel *dest) {
 }
 
 void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
-    assert(proc != 0);
-    assert(clean != 0);
-    assert(m_type == CALL);
-    assert(clean->target()->m_type == RETCLEAN);
-    assert(proc->decl()->firstImop() != 0);
-    setArg1(proc);
-    setArg2(clean);
-    proc->setTarget(proc->decl()->firstImop());
-    proc->decl()->firstImop()->addIncomingCall(this);
-    //clean->setArg2((SecreC::Symbol*) this);
+    assert (proc != 0);
+    assert (clean != 0);
+    assert (m_type == CALL);
+    assert (clean->target()->m_type == RETCLEAN);
+    assert (proc->target () != 0);
+    setArg1 (proc);
+    setArg2 (clean);
+    proc->setTarget (proc->target ());
+    proc->target ()->addIncomingCall (this);
 }
 
 void Imop::setReturnDestFirstImop (SymbolLabel *label) {
@@ -220,7 +231,7 @@ std::string Imop::toString() const {
             if (nArgs() == 4) os << " (" << a3name << ")";
             break;
         case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
-            if (dest() != 0) {
+            if (dest () != 0) {
                 os << dname << " = ";
             }
             os << "CALL " << a1name << " @ " << cImop;

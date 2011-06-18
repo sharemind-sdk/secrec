@@ -216,6 +216,7 @@ class Imop {
 Imop* newError (TreeNode* node, ConstantString* msg);
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* arg);
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1, Symbol* arg2);
+Imop* newPush (TreeNode* node, Symbol* arg);
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1);
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol* dest);
 

@@ -10,9 +10,12 @@
 #include "intermediate.h"
 #include "types.h"
 
+#include "codegenResult.h"
+
 namespace SecreC {
 
 class CompileLog;
+class CodeGen;
 class TreeNodeExpr;
 class TreeNodeProcDef;
 class TreeNode;
@@ -87,6 +90,8 @@ class TreeNode {
 
         static const char *typeName(Type type);
 
+        TreeNodeExpr *classifyChildAtIfNeeded(int index, SecrecSecType otherSecType);
+
     protected: /* Methods: */
         inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
         inline void setContainingProcedureDirectly(TreeNodeProcDef *p) { m_procedure = p; }
@@ -94,7 +99,6 @@ class TreeNode {
             m_parent = parent;
             m_procedure = parent->m_procedure;
         }
-        TreeNodeExpr *classifyChildAtIfNeeded(int index, SecrecSecType otherSecType);
 
     private: /* Fields: */
         TreeNode        *m_parent;
@@ -322,6 +326,13 @@ class TreeNodeExpr: public TreeNodeBase {
         void patchTrueList(SymbolLabel *dest);
         void patchFalseList(SymbolLabel *dest);
 
+        virtual CGResult codeGenWith (CodeGen& cg) = 0;
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg) {
+            assert (false && "Not implemented!");
+            (void) cg;
+            return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
+        }
+
     protected: /* Methods: */
         inline void setResult(Symbol *r) {
             m_result = r;
@@ -393,6 +404,9 @@ class TreeNodeExprAssign: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -413,6 +427,8 @@ class TreeNodeExprIndex: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -433,6 +449,7 @@ class TreeNodeExprSize: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -453,6 +470,7 @@ class TreeNodeExprShape: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -473,6 +491,7 @@ class TreeNodeExprCat: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -493,6 +512,7 @@ class TreeNodeExprReshape: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -513,6 +533,7 @@ class TreeNodeExprFRead: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -534,6 +555,8 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 
@@ -562,6 +585,8 @@ class TreeNodeExprBool: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     private: /* Fields: */
         bool m_value;
@@ -586,6 +611,7 @@ class TreeNodeExprClassify: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 
@@ -607,6 +633,8 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 
@@ -631,6 +659,9 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
 
         inline SymbolProcedure *symbolProcedure() const
             { return m_procedure; }
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     private: /* Fields: */
         SymbolProcedure *m_procedure;
@@ -661,6 +692,8 @@ class TreeNodeExprInt: public TreeNodeExpr {
                                                SymbolTable &st,
                                                CompileLog &log);
 
+        virtual CGResult codeGenWith (CodeGen& cg);
+
     private: /* Fields: */
         int m_value;
 };
@@ -684,6 +717,9 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 
@@ -711,6 +747,8 @@ class TreeNodeExprString: public TreeNodeExpr {
                                                SymbolTable &st,
                                                CompileLog &log);
 
+        virtual CGResult codeGenWith (CodeGen& cg);
+
     private: /* Fields: */
         std::string m_value;
 };
@@ -734,6 +772,9 @@ class TreeNodeExprTernary: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 
@@ -761,6 +802,8 @@ class TreeNodeExprUInt: public TreeNodeExpr {
                                                SymbolTable &st,
                                                CompileLog &log);
 
+        virtual CGResult codeGenWith (CodeGen& cg);
+
     private: /* Fields: */
         unsigned m_value;
 };
@@ -783,6 +826,7 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -803,6 +847,7 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
 };
 
 /******************************************************************
@@ -823,6 +868,8 @@ class TreeNodeExprUnary: public TreeNodeExpr {
         virtual ICode::Status generateBoolCode(ICodeList &code,
                                                SymbolTable &st,
                                                CompileLog &log);
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
 
@@ -833,7 +880,7 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 class TreeNodeProcDef: public TreeNodeCodeable {
     public: /* Methods: */
         explicit inline TreeNodeProcDef(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_PROCDEF, loc), m_cachedType(0)
+        : TreeNodeCodeable(NODE_PROCDEF, loc), m_cachedType(0), m_procSymbol (0)
         {
             setContainingProcedureDirectly(this);
         }
@@ -841,6 +888,15 @@ class TreeNodeProcDef: public TreeNodeCodeable {
 
         virtual inline void resetParent(TreeNode *parent) {
             setParentDirectly(parent);
+        }
+
+        void setSymbol (SymbolProcedure* sym) {
+            assert (sym != 0);
+            m_procSymbol = sym;
+        }
+
+        SymbolProcedure* symbol () const {
+            return m_procSymbol;
         }
 
         const std::string &procedureName() const;
@@ -856,6 +912,8 @@ class TreeNodeProcDef: public TreeNodeCodeable {
                                            SymbolTable &st,
                                            CompileLog &log);
 
+        CGStmtResult codeGenWith (CodeGen& cg);
+
     private: /* Methods: */
         ICode::Status addParameters(DataTypeProcedureVoid &dt,
                                     SymbolTable &stable,
@@ -863,6 +921,7 @@ class TreeNodeProcDef: public TreeNodeCodeable {
 
     private: /* Fields: */
         const SecreC::TypeNonVoid *m_cachedType;
+        SymbolProcedure           *m_procSymbol;
 };
 
 
@@ -878,6 +937,8 @@ class TreeNodeProcDefs: public TreeNodeCodeable {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
+
+        CGStmtResult codeGenWith (CodeGen& cg);
 };
 
 
@@ -893,6 +954,8 @@ class TreeNodeGlobals: public TreeNodeCodeable {
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
+
+        CGStmtResult codeGenWith (CodeGen& cg);
 };
 
 
@@ -928,6 +991,8 @@ class TreeNodeProgram: public TreeNodeCodeable {
 
         virtual ICode::Status generateCode(ICodeList &code, SymbolTable &st,
                                            CompileLog &log);
+
+        ICode::Status codeGenWith (CodeGen& cg);
 };
 
 
@@ -952,6 +1017,12 @@ class TreeNodeStmt: public TreeNodeCodeable {
         inline int resultFlags() const { return m_resultFlags; }
         inline void setResultFlags(int flags) { m_resultFlags = flags; }
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg) {
+            assert (false && "Statememnt code gen unimplemented.");
+            (void) cg;
+            return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
+        }
+
     private: /* Fields: */
         int m_resultFlags;
 };
@@ -965,6 +1036,8 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
@@ -981,6 +1054,8 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
         virtual inline ~TreeNodeStmtCompound() {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -995,6 +1070,8 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
@@ -1014,6 +1091,8 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
         virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
         const std::string &variableName() const;
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
@@ -1048,6 +1127,8 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
         explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -1063,6 +1144,8 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
         explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -1077,6 +1160,8 @@ class TreeNodeStmtAssert: public TreeNodeStmt {
         explicit TreeNodeStmtAssert(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -1090,6 +1175,8 @@ class TreeNodeStmtFor: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_FOR, loc) {}
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
@@ -1106,6 +1193,8 @@ class TreeNodeStmtIf: public TreeNodeStmt {
         explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -1120,6 +1209,8 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
@@ -1136,6 +1227,8 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
         explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
+
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,
                                            CompileLog &log);
@@ -1150,6 +1243,8 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
+
+        virtual CGStmtResult codeGenWith (CodeGen& cg);
 
         virtual ICode::Status generateCode(ICodeList &code,
                                            SymbolTable &st,

@@ -1,0 +1,270 @@
+#ifndef CODEGEN_H
+#define CODEGEN_H
+
+#include "codegenResult.h"
+#include "imop.h"
+#include "intermediate.h"
+#include "treenode.h"
+
+#include <stack>
+
+/**
+ * Some ideas:
+ * - Represent ICode::Status enum with powers of two, this way
+ *   appendWith could just OR the statuses together. In general little
+ *   better error reporting facility could be helpful.
+ */
+
+namespace SecreC {
+
+class ICodeList;
+class SymbolTable;
+class CompileLog;
+
+/*******************************************************************************
+  CodeGen
+*******************************************************************************/
+
+class CodeGen {
+private:
+    void operator = (CodeGen&); // do not implement
+public:
+    inline explicit CodeGen (const CodeGen& other)
+        : code (other.code), st (other.st), log (other.log), m_node (other.m_node)
+    { }
+
+    inline CodeGen (ICodeList &code, SymbolTable &st, CompileLog &log)
+        : code (code), st (st), log (log), m_node (0)
+    { }
+
+    inline ~CodeGen () { }
+
+    /**
+     * \brief Used to push instruction right after code block.
+     * \pre imop is not NULL
+     * \post first imop is set and next list is empty
+     */
+    void pushImopAfter (CGResult& result, Imop* imop) {
+        assert (imop != 0);
+        result.patchFirstImop (imop);
+        if (!result.nextList ().empty ())
+            result.patchNextList (st.label (imop));
+        code.push_imop (imop);
+    }
+
+    /**
+     * Useful to chain many expressions together if the control flow is linear.
+     * Care must be taken when using this to chain branching code together.
+     */
+    void append (CGResult& result, const CGResult& other) {
+        result.patchFirstImop (other.firstImop ());
+        // we check for empty next list to avoid creating label
+        if (other.firstImop () && !result.nextList ().empty ()) {
+            result.patchNextList (st.label (other.firstImop ()));
+        }
+
+        result.addToNextList (other.nextList ());
+        if (other.isNotOk ()) {
+            result.setStatus (other.status ());
+        }
+    }
+
+    /// \todo figure out how to refactor following 3 functions:
+
+    inline CGResult codeGen (TreeNodeExpr* e) {
+        TreeNode* const oldNode = m_node;
+        m_node = e;
+        const CGResult& r = e->codeGenWith (*this);
+        m_node = oldNode;
+        return r;
+    }
+
+    inline CGBranchResult codeGenBranch (TreeNodeExpr* e) {
+        TreeNode* oldNode = m_node;
+        m_node = e;
+        const CGBranchResult& r = e->codeGenBoolWith (*this);
+        m_node = oldNode;
+        return r;
+    }
+
+    CGStmtResult codeGenStmt (TreeNodeStmt* e) {
+        TreeNode* oldNode = m_node;
+        m_node = e;
+        const CGStmtResult& r = e->codeGenWith (*this);
+        m_node = oldNode;
+        return r;
+    }
+
+    /// Code generation functions for top level definitions:
+    CGStmtResult cgProgram (TreeNodeProgram* prog);
+    CGStmtResult cgProcDef (TreeNodeProcDef* def);
+    CGStmtResult cgProcDefs (TreeNodeProcDefs* defs);
+    CGStmtResult cgGlobals (TreeNodeGlobals* gs);
+
+    /// Code generation functions for statements:
+    CGStmtResult cgStmtBreak (TreeNodeStmtBreak* s);
+    CGStmtResult cgStmtCompound (TreeNodeStmtCompound* s);
+    CGStmtResult cgStmtContinue (TreeNodeStmtContinue* s);
+    CGStmtResult cgStmtDecl (TreeNodeStmtDecl* s);
+    CGStmtResult cgStmtDoWhile (TreeNodeStmtDoWhile* s);
+    CGStmtResult cgStmtExpr (TreeNodeStmtExpr* s);
+    CGStmtResult cgStmtAssert (TreeNodeStmtAssert* s);
+    CGStmtResult cgStmtFor (TreeNodeStmtFor* s);
+    CGStmtResult cgStmtIf (TreeNodeStmtIf* s);
+    CGStmtResult cgStmtReturn (TreeNodeStmtReturn* s);
+    CGStmtResult cgStmtWhile (TreeNodeStmtWhile* s);
+    CGStmtResult cgStmtPrint (TreeNodeStmtPrint* s);
+
+    /// Code generation functions for branching expressions:
+    CGBranchResult cgBoolExprUnary (TreeNodeExprUnary* e);
+    CGBranchResult cgBoolExprIndex (TreeNodeExprIndex* e);
+    CGBranchResult cgBoolExprBinary (TreeNodeExprBinary* e);
+    CGBranchResult cgBoolExprProcCall (TreeNodeExprProcCall* e);
+    CGBranchResult cgBoolExprRVariable (TreeNodeExprRVariable* e);
+    CGBranchResult cgBoolExprTernary (TreeNodeExprTernary* e);
+    CGBranchResult cgBoolExprBool (TreeNodeExprBool* e);
+    CGBranchResult cgBoolExprDeclassify (TreeNodeExprDeclassify* e);
+    CGBranchResult cgBoolExprAssign (TreeNodeExprAssign* e);
+
+    /// Code generation functions for expressions:
+    CGResult cgExprFRead (TreeNodeExprFRead* e);
+    CGResult cgExprBool (TreeNodeExprBool* e);
+    CGResult cgExprIndex (TreeNodeExprIndex* e);
+    CGResult cgExprShape (TreeNodeExprShape* e);
+    CGResult cgExprReshape (TreeNodeExprReshape* e);
+    CGResult cgExprCat (TreeNodeExprCat* e);
+    CGResult cgExprBinary (TreeNodeExprBinary* e);
+    CGResult cgExprProcCall (TreeNodeExprProcCall* e);
+    CGResult cgExprRVariable (TreeNodeExprRVariable* e);
+    CGResult cgExprString (TreeNodeExprString* e);
+    CGResult cgExprTernary (TreeNodeExprTernary* e);
+    CGResult cgExprInt (TreeNodeExprInt* e);
+    CGResult cgExprUInt (TreeNodeExprUInt* e);
+    CGResult cgExprClassify (TreeNodeExprClassify* e);
+    CGResult cgExprDeclassify (TreeNodeExprDeclassify* e);
+    CGResult cgExprUnary (TreeNodeExprUnary* e);
+    CGResult cgExprPrefix (TreeNodeExprPrefix* e);
+    CGResult cgExprPostfix (TreeNodeExprPostfix* e);
+    CGResult cgExprSize (TreeNodeExprSize* e);
+    CGResult cgExprAssign (TreeNodeExprAssign* e);
+
+    /// Given result computes size of it
+    void codeGenSize (CGResult& result);
+
+    /// Copy shape from another symbol
+    void copyShapeFrom (CGResult& result, Symbol* sym);
+
+    /// generate appropriately typed result symbol for given node
+    Symbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
+
+protected:
+    ICodeList&    code;
+    SymbolTable&  st;
+    CompileLog&   log;
+    TreeNode*     m_node;
+};
+
+/*******************************************************************************
+  CodeGenStride
+*******************************************************************************/
+
+class CodeGenStride : public CodeGen {
+public:
+    typedef std::vector<Symbol*> StrideList;
+
+public:
+    inline explicit CodeGenStride (CodeGen& base)
+        : CodeGen (base) { }
+
+    inline ~CodeGenStride () { }
+
+    unsigned size () const {
+        return m_stride.size ();
+    }
+
+    Symbol* at (unsigned i) const {
+        return m_stride.at (i);
+    }
+
+    CGResult codeGenStride (Symbol* sym);
+
+private:
+    StrideList m_stride;
+};
+
+
+/*******************************************************************************
+  CodeGenLoop
+*******************************************************************************/
+
+/**
+ * Helper class to generate code for loops. Usage would look like:
+ * \code
+ * CodeGenLoop loop (this, node);
+ * result.appendWith (loop.enterLoop (spv, indices));
+ * << generate code for loop body >>
+ * result.appendWith (loop.exitLoop ());
+ * return result;
+ * \endcode
+ */
+class CodeGenLoop : public CodeGen {
+public:
+    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
+    typedef std::vector<Symbol* > IndexList;
+
+public:
+
+    inline explicit CodeGenLoop (const CodeGen& base)
+        : CodeGen (base)
+    { }
+
+    inline ~CodeGenLoop () {
+        assert (m_jumpStack.empty () && "The loop was destroyed before exiting!");
+    }
+
+    /// loop over entire range
+    CGResult enterLoop (Symbol* sym, const IndexList& indices);
+
+    /// loop over limited range
+    CGResult enterLoop (const SPV& spv, const IndexList& indices);
+
+    CGResult exitLoop (const IndexList& indices);
+
+private:
+    std::stack<Imop* > m_jumpStack;
+};
+
+/*******************************************************************************
+  CodeGenSubscript
+*******************************************************************************/
+
+class CodeGenSubscript : public CodeGen {
+public:
+    typedef std::vector<unsigned> SliceIndices;
+    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
+public:
+
+    inline explicit CodeGenSubscript (const CodeGen& base)
+        : CodeGen (base)
+    { }
+
+    inline ~CodeGenSubscript () { }
+
+    const SliceIndices& slices () const {
+        return m_slices;
+    }
+
+    const SPV& spv () const {
+        return m_spv;
+    }
+
+    CGResult codeGenSubscript (Symbol* x, TreeNode* node);
+
+private:
+    SliceIndices m_slices;
+    SPV          m_spv;
+};
+
+}
+
+#endif

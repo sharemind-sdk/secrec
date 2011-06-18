@@ -21,8 +21,11 @@ class SymbolTable {
     private: /* Types: */
         typedef std::vector<Symbol*> Table;
 
+        SymbolTable (const SymbolTable&); // do not implement
+        SymbolTable& operator = (const SymbolTable&); // do not implement
+
     public: /* Methods: */
-        SymbolTable(SymbolTable *parent = 0);
+        explicit SymbolTable(SymbolTable *parent = 0);
         ~SymbolTable();
 
         void appendSymbol(Symbol *symbol);

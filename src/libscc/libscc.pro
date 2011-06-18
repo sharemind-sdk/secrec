@@ -23,7 +23,8 @@ SOURCES = \
     codegen/expression.cpp \
     codegen/assign.cpp \
     codegen/program.cpp \
-    codegen/util.cpp
+    codegen/util.cpp \
+    codegen.cpp
 
 OTHER_FILES = \
     secrec.l \
@@ -45,7 +46,9 @@ HEADERS = \
     ../../include/libscc/types.h \
     ../../include/libscc/virtual_machine.h \
     ../../include/libscc/constant.h \
-    ../../include/libscc/symbol.h
+    ../../include/libscc/symbol.h \
+    ../../include/libscc/codegen.h \
+    ../../include/libscc/codegenResult.h \
 
 GENERATED_SOURCES += lex_secrec.c yacc_secrec.tab.c
 GENERATED_FILES   += lex_secrec.h yacc_secrec.tab.h
