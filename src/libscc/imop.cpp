@@ -137,9 +137,9 @@ void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
 }
 
 void Imop::setReturnDestFirstImop (SymbolLabel *label) {
-    assert(label != 0);
-    Imop* firstImop = label->target ();
-    assert(firstImop->m_type == COMMENT);
+    assert (label != 0);
+    assert (label->target () != 0);
+    assert (label->target ()->m_type == COMMENT);
     setArg2(label);
 }
 

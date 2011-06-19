@@ -30,6 +30,7 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
         case DATATYPE_UINT32:  return "uint32";
         case DATATYPE_UINT:    return "uint";
         case DATATYPE_STRING:  return "string";
+        case NUM_DATATYPES:    assert (false && "ICE!"); break;
     }
     return 0;
 }

@@ -192,6 +192,7 @@ class DataTypeProcedure: public DataTypeProcedureVoid {
 
         virtual bool latticeLEQ(const DataType &) const {
             assert (false && "We don't define lattice structure on function types yet!");
+            return false;
         }
 
     private: /* Fields: */
