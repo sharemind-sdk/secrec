@@ -33,16 +33,16 @@ using namespace SecreC;
 
 // primitive values
 union Value {
-    int8_t  m_int8_val;
-    int16_t m_int16_val;
-    int32_t m_int32_val;
+    uint64_t m_uint_val;
+    uint32_t m_uint32_val;
+    uint16_t m_uint16_val;
+    uint8_t  m_uint8_val;
     int64_t m_int_val;
-    int8_t  m_uint8_val;
-    int16_t m_uint16_val;
-    int32_t m_uint32_val;
-    int64_t m_uint_val;
-    bool m_bool_val;
+    int32_t m_int32_val;
+    int16_t m_int16_val;
+    int8_t  m_int8_val;
     std::string const* m_str_val;
+    bool m_bool_val;
 };
 
 // registers
@@ -1077,7 +1077,7 @@ void VirtualMachine::run (ICodeList const& code) {
                           assert (dynamic_cast<ConstantString const*>(sym) != 0);
                           store (reg, &static_cast<ConstantString const*>(sym)->value());
                           break;
-                      case DATATYPE_INVALID: assert (false && "VM: reached invalid data type.");
+                      default: assert (false && "VM: reached invalid data type.");
                   }}
               default: break;
           }
@@ -1127,7 +1127,7 @@ void VirtualMachine::run (ICodeList const& code) {
             case DATATYPE_INT:     i.callback = CONDVCALLBACK(EQINT, nArgs == 4); break;
             case DATATYPE_UINT:    i.callback = CONDVCALLBACK(EQUINT, nArgs == 4); break;
             case DATATYPE_STRING:  i.callback = CONDVCALLBACK(EQSTRING, nArgs == 4); break;
-            case DATATYPE_INVALID: assert (false && "VM: invalid data type");
+            default: assert (false && "VM: invalid data type");
           }
           break;
         case Imop::NE:
@@ -1136,7 +1136,7 @@ void VirtualMachine::run (ICodeList const& code) {
             case DATATYPE_INT:     i.callback = CONDVCALLBACK(NEQINT, nArgs == 4); break;
             case DATATYPE_UINT:    i.callback = CONDVCALLBACK(NEQUINT, nArgs == 4); break;
             case DATATYPE_STRING:  i.callback = CONDVCALLBACK(NEQSTRING, nArgs == 4); break;
-            case DATATYPE_INVALID: assert (false && "VM: invalid data type");
+            default: assert (false && "VM: invalid data type");
           }
           break;
         case Imop::LE:             i.callback = CONDVCALLBACK(LE, nArgs == 4); break;
@@ -1155,7 +1155,7 @@ void VirtualMachine::run (ICodeList const& code) {
             case DATATYPE_INT:     i.callback = JEINT_callback; break;
             case DATATYPE_UINT:    i.callback = JEUINT_callback; break;
             case DATATYPE_STRING:  i.callback = JESTR_callback; break;
-            case DATATYPE_INVALID: assert (false && "VM: invalid data type");
+            default: assert (false && "VM: invalid data type");
           }
           break;
         case Imop::JNE:
@@ -1164,7 +1164,7 @@ void VirtualMachine::run (ICodeList const& code) {
             case DATATYPE_INT:     i.callback = JNEINT_callback; break;
             case DATATYPE_UINT:    i.callback = JNEUINT_callback; break;
             case DATATYPE_STRING:  i.callback = JNESTR_callback; break;
-            case DATATYPE_INVALID: assert (false && "VM: invalid data type");
+            default: assert (false && "VM: invalid data type");
           }
           break;
         case Imop::JLE:            i.callback = JLE_callback; break;
@@ -1208,7 +1208,7 @@ std::string VirtualMachine::toString(void) {
             case DATATYPE_INT: os << val.m_int_val; break;
             case DATATYPE_UINT: os << val.m_uint_val; break;
             case DATATYPE_STRING: os << *val.m_str_val; break;
-            case DATATYPE_INVALID: assert (false);
+            default: assert (false);
         }
 
         os << '\n';
