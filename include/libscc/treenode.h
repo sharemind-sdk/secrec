@@ -52,6 +52,13 @@ struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
 #ifdef __cplusplus
 } /* extern "C" */
 
+/**
+ * \class TreeNode
+ * Abstract syntax tree, or abstract representation of the SecreC code.
+ * AST handles all of the type checking logic, mainly because it rewrites
+ * the tree in some occasions such as adding of explicit classify nodes.
+ * Code generation function only control which of the
+ */
 class TreeNode {
     public: /* Types: */
         typedef enum SecrecTreeNodeType Type;
@@ -108,6 +115,7 @@ class TreeNode {
   TreeNodeSecTypeF
 ******************************************************************/
 
+/// Security type
 class TreeNodeSecTypeF: public TreeNode {
     public: /* Methods: */
         inline TreeNodeSecTypeF(SecrecSecType secType, const YYLTYPE &loc)
@@ -127,6 +135,7 @@ class TreeNodeSecTypeF: public TreeNode {
   TreeNodeDataType
 ******************************************************************/
 
+/// Data type
 class TreeNodeDataTypeF: public TreeNode {
     public: /* Methods: */
         inline TreeNodeDataTypeF(SecrecDataType dataType,
@@ -149,6 +158,7 @@ class TreeNodeDataTypeF: public TreeNode {
   TreeNodeDimType
 ******************************************************************/
 
+/// Dimensionality type
 class TreeNodeDimTypeF: public TreeNode {
     public: /* Methods: */
         inline TreeNodeDimTypeF(unsigned dimType,
@@ -171,13 +181,11 @@ class TreeNodeDimTypeF: public TreeNode {
   TreeNodeExpr
 ******************************************************************/
 
+/// Representation for expressions, also tracks type of resulting value (if there is one).
 class TreeNodeExpr: public TreeNode {
-    public: /* Types: */
-        enum Flags { CONSTANT = 0x01, PARENTHESIS = 0x02 };
-
     public: /* Methods: */
         inline TreeNodeExpr(Type type, const YYLTYPE &loc)
-            : TreeNode(type, loc), m_result(0), m_resultType(0) { }
+            : TreeNode(type, loc), m_resultType(0) { }
         virtual ~TreeNodeExpr() {
             delete m_resultType;
         }
@@ -185,8 +193,11 @@ class TreeNodeExpr: public TreeNode {
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log) = 0;
 
-        /// @brief common usage is: if (checkAndLogIfVoid(log)) return ICode::E_TYPE;
-        /// @return true if type is void, otherwise false
+        /**
+         * \brief common usage is:
+         * \code if (checkAndLogIfVoid(log)) return ICode::E_TYPE; \endcode
+         * \return \a true if type is void, otherwise \a false
+         */
         bool checkAndLogIfVoid(CompileLog& log);
 
         inline bool haveResultType() const { return m_resultType != 0; }
@@ -216,8 +227,7 @@ class TreeNodeExpr: public TreeNode {
         }
 
     private: /* Fields: */
-        Symbol             *m_result;
-        SecreC::Type       *m_resultType;
+        SecreC::Type       *m_resultType; ///< Type of resulting value.
 };
 
 
@@ -225,6 +235,7 @@ class TreeNodeExpr: public TreeNode {
   TreeNodeExprAssign
 ******************************************************************/
 
+/// Assignment expression.
 class TreeNodeExprAssign: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprAssign(Type type, const YYLTYPE &loc)
@@ -242,6 +253,7 @@ class TreeNodeExprAssign: public TreeNodeExpr {
   TreeNodeExprIndex
 ******************************************************************/
 
+/// Indexing expressions.
 class TreeNodeExprIndex: public TreeNodeExpr {
     public:
         inline TreeNodeExprIndex(const YYLTYPE &loc)
@@ -258,6 +270,7 @@ class TreeNodeExprIndex: public TreeNodeExpr {
   TreeNodeExprSize
 ******************************************************************/
 
+/// Size expression.
 class TreeNodeExprSize: public TreeNodeExpr {
     public:
         inline TreeNodeExprSize(const YYLTYPE &loc)
@@ -273,6 +286,7 @@ class TreeNodeExprSize: public TreeNodeExpr {
   TreeNodeExprShape
 ******************************************************************/
 
+/// Shape expression.
 class TreeNodeExprShape: public TreeNodeExpr {
     public:
         inline TreeNodeExprShape(const YYLTYPE &loc)
@@ -289,6 +303,7 @@ class TreeNodeExprShape: public TreeNodeExpr {
   TreeNodeExprCat
 ******************************************************************/
 
+/// Concatenation expression.
 class TreeNodeExprCat: public TreeNodeExpr {
     public:
         inline TreeNodeExprCat(const YYLTYPE &loc)
@@ -305,6 +320,7 @@ class TreeNodeExprCat: public TreeNodeExpr {
   TreeNodeExprReshape
 ******************************************************************/
 
+/// Reshape expression.
 class TreeNodeExprReshape: public TreeNodeExpr {
     public:
         inline TreeNodeExprReshape(const YYLTYPE &loc)
@@ -321,6 +337,7 @@ class TreeNodeExprReshape: public TreeNodeExpr {
   TreeNodeExprFRead
 ******************************************************************/
 
+/// Expression of reading table from file. Only for testing.
 class TreeNodeExprFRead: public TreeNodeExpr {
     public:
         inline TreeNodeExprFRead(const YYLTYPE &loc)
@@ -337,6 +354,7 @@ class TreeNodeExprFRead: public TreeNodeExpr {
   TreeNodeExprBinary
 ******************************************************************/
 
+/// Binary expressions.
 class TreeNodeExprBinary: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprBinary(Type type, const YYLTYPE &loc)
@@ -355,6 +373,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
   TreeNodeExprBool
 ******************************************************************/
 
+/// Boolean constant.
 class TreeNodeExprBool: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprBool(bool value, const YYLTYPE &loc)
@@ -382,6 +401,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
   TreeNodeExprClassify
 ******************************************************************/
 
+/// Classify expression. Those do not occur naturally in code, always added my type checker.
 class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprClassify(const YYLTYPE &loc)
@@ -398,6 +418,7 @@ class TreeNodeExprClassify: public TreeNodeExpr {
   TreeNodeExprDeclassify
 ******************************************************************/
 
+/// Declassify expression.
 class TreeNodeExprDeclassify: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprDeclassify(const YYLTYPE &loc)
@@ -415,6 +436,7 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
   TreeNodeExprProcCall
 ******************************************************************/
 
+/// Procedure call expression.
 class TreeNodeExprProcCall: public TreeNodeExpr {
     public: /* Methods: */
         explicit inline TreeNodeExprProcCall(const YYLTYPE &loc)
@@ -439,6 +461,7 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
   TreeNodeExprInt
 ******************************************************************/
 
+/// Signed integer constant.
 class TreeNodeExprInt: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprInt(int value, const YYLTYPE &loc)
@@ -464,6 +487,7 @@ class TreeNodeExprInt: public TreeNodeExpr {
   TreeNodeExprRVariable
 ******************************************************************/
 
+/// Variable in right hand side.
 class TreeNodeExprRVariable: public TreeNodeExpr {
     public: /* Methods: */
         explicit inline TreeNodeExprRVariable(const YYLTYPE &loc)
@@ -481,6 +505,7 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
   TreeNodeExprString
 ******************************************************************/
 
+/// String constants.
 class TreeNodeExprString: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprString(const std::string &value, const YYLTYPE &loc)
@@ -505,6 +530,7 @@ class TreeNodeExprString: public TreeNodeExpr {
   TreeNodeExprTernary
 ******************************************************************/
 
+/// Ternary expression.
 class TreeNodeExprTernary: public TreeNodeExpr {
     public: /* Methods: */
         explicit inline TreeNodeExprTernary(const YYLTYPE &loc)
@@ -522,6 +548,7 @@ class TreeNodeExprTernary: public TreeNodeExpr {
   TreeNodeExprUInt
 ******************************************************************/
 
+/// Unsigned integer constant.
 class TreeNodeExprUInt: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
@@ -546,6 +573,7 @@ class TreeNodeExprUInt: public TreeNodeExpr {
   TreeNodeExprPrefix
 ******************************************************************/
 
+/// Prefix increment and decrement.
 class TreeNodeExprPrefix: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprPrefix(Type type, const YYLTYPE &loc)
@@ -562,6 +590,7 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
   TreeNodeExprPostfix
 ******************************************************************/
 
+/// Postfix increment and decrement.
 class TreeNodeExprPostfix: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprPostfix(Type type, const YYLTYPE &loc)
@@ -578,6 +607,7 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
   TreeNodeExprUnary
 ******************************************************************/
 
+/// Unary expressions such as regular (logical) negation.
 class TreeNodeExprUnary: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprUnary(Type type, const YYLTYPE &loc)
@@ -595,6 +625,7 @@ class TreeNodeExprUnary: public TreeNodeExpr {
   TreeNodeProcDef
 ******************************************************************/
 
+/// Procedure definition.
 class TreeNodeProcDef: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProcDef(const YYLTYPE &loc)
@@ -644,6 +675,7 @@ class TreeNodeProcDef: public TreeNode {
   TreeNodeProcDefs
 ******************************************************************/
 
+/// Many procedure definitions.
 class TreeNodeProcDefs: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProcDefs(const YYLTYPE &loc)
@@ -657,6 +689,7 @@ class TreeNodeProcDefs: public TreeNode {
   TreeNodeGlobals
 ******************************************************************/
 
+/// Global definitions and declarations.
 class TreeNodeGlobals: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeGlobals(const YYLTYPE &loc)
@@ -670,6 +703,7 @@ class TreeNodeGlobals: public TreeNode {
   TreeNodeIdentifier
 ******************************************************************/
 
+/// Identifier.
 class TreeNodeIdentifier: public TreeNode {
     public: /* Methods: */
         inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
@@ -691,6 +725,7 @@ class TreeNodeIdentifier: public TreeNode {
   TreeNodeProgram
 ******************************************************************/
 
+/// Representation of program.
 class TreeNodeProgram: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProgram(const YYLTYPE &loc)
@@ -704,6 +739,7 @@ class TreeNodeProgram: public TreeNode {
   TreeNodeStmt
 ******************************************************************/
 
+/// Statements.
 class TreeNodeStmt: public TreeNode {
     public: /* Methods: */
         inline TreeNodeStmt(Type type, const YYLTYPE &loc)
@@ -721,6 +757,7 @@ class TreeNodeStmt: public TreeNode {
   TreeNodeStmtBreak
 ******************************************************************/
 
+/// Break statement.
 class TreeNodeStmtBreak: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
@@ -734,6 +771,7 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
   TreeNodeStmtCompound
 ******************************************************************/
 
+/// Compund statement. Anything between curly bracers.
 class TreeNodeStmtCompound: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
@@ -748,6 +786,7 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
   TreeNodeStmtContinue
 ******************************************************************/
 
+/// Continue statement.
 class TreeNodeStmtContinue: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
@@ -761,6 +800,7 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
   TreeNodeStmtDecl
 ******************************************************************/
 
+/// Declaration statement. Also tracks if the scope is global or not.
 class TreeNodeStmtDecl: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
@@ -796,6 +836,7 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
   TreeNodeStmtDoWhile
 ******************************************************************/
 
+/// Do-while statement.
 class TreeNodeStmtDoWhile: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
@@ -809,6 +850,7 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
   TreeNodeStmtExpr
 ******************************************************************/
 
+/// Expression statements. Any expression can occur as a statement.
 class TreeNodeStmtExpr: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
@@ -821,6 +863,7 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
   TreeNodeStmtAssert
 ******************************************************************/
 
+/// Assert statement.
 class TreeNodeStmtAssert: public TreeNodeStmt {
     public:
         explicit TreeNodeStmtAssert(const YYLTYPE &loc)
@@ -834,6 +877,7 @@ class TreeNodeStmtAssert: public TreeNodeStmt {
   TreeNodeStmtFor
 ******************************************************************/
 
+/// For statement.
 class TreeNodeStmtFor: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
@@ -847,6 +891,7 @@ class TreeNodeStmtFor: public TreeNodeStmt {
   TreeNodeStmtIf
 ******************************************************************/
 
+/// If and if-then-else statement.
 class TreeNodeStmtIf: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
@@ -860,6 +905,7 @@ class TreeNodeStmtIf: public TreeNodeStmt {
   TreeNodeStmtReturn
 ******************************************************************/
 
+/// Regular return and value returning statement.
 class TreeNodeStmtReturn: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
@@ -873,6 +919,7 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
   TreeNodeStmtWhile
 ******************************************************************/
 
+/// While statement.
 class TreeNodeStmtWhile: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
@@ -886,6 +933,7 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
   TreeNodeStmtPrint
 ******************************************************************/
 
+/// String printing statement.
 class TreeNodeStmtPrint: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
@@ -899,6 +947,7 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
   TreeNodeType
 ******************************************************************/
 
+/// Types occuring in code.
 class TreeNodeType: public TreeNode {
     public: /* Methods: */
         inline TreeNodeType(Type type, const YYLTYPE &loc)
@@ -912,6 +961,7 @@ class TreeNodeType: public TreeNode {
   TreeNodeTypeType
 ******************************************************************/
 
+/// Non-void types.
 class TreeNodeTypeType: public TreeNodeType {
     public: /* Methods: */
         explicit inline TreeNodeTypeType(const YYLTYPE &loc)
@@ -930,6 +980,7 @@ class TreeNodeTypeType: public TreeNodeType {
   TreeNodeTypeVoid
 ******************************************************************/
 
+/// Void type.
 class TreeNodeTypeVoid: public TreeNodeType {
     public: /* Methods: */
         explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)

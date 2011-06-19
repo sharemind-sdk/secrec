@@ -28,7 +28,9 @@ class CompileLog;
 *******************************************************************************/
 
 /**
- * Code generation result for expressions. It tracks:
+ * \class CGResult
+ * \brief Code generation result for expressions.
+ * It tracks:
  * \li symbol for stored value
  * \li code generation status
  * \li unpatched instructions that jumps to next instruction
@@ -116,7 +118,8 @@ private:
   CGBranchResult
 *******************************************************************************/
 
-/// may branch
+
+/// Code generation result which also tracks true and false lists.
 class CGBranchResult : public CGResult {
 public:
 
@@ -184,14 +187,14 @@ private:
   CGStmtResult
 *******************************************************************************/
 
-/// may break, continue or return
+/// Code generation result which also tracks break and continue lists.
 class CGStmtResult : public CGResult {
 public: /* Types: */
     enum ResultClass {
-        FALLTHRU = 0x01,
-        RETURN   = 0x02,
-        BREAK    = 0x04,
-        CONTINUE = 0x08,
+        FALLTHRU = 0x01,   ///< may fall through
+        RETURN   = 0x02,   ///< may return
+        BREAK    = 0x04,   ///< may break
+        CONTINUE = 0x08,   ///< may continue
         MASK     = 0x0f
     };
 
@@ -251,9 +254,9 @@ public:
     }
 
 private:
-    std::list<Imop*> m_continueList;
-    std::list<Imop*> m_breakList;
-    int m_resultFlags;
+    std::list<Imop*> m_continueList;  ///< Unpatched continue jumps.
+    std::list<Imop*> m_breakList;     ///< Unpatched break jumps.
+    int m_resultFlags;                ///< Flag to track the possibilities that control flow may take.
 };
 
 }

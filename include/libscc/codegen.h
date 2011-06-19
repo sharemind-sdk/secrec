@@ -25,9 +25,31 @@ class CompileLog;
   CodeGen
 *******************************************************************************/
 
+/**
+ * \class CodeGen
+ * \brief CodeGen class handles the logic of code generation.
+ *
+ * Do note that abstract syntax tree (TreeNode) handles how control
+ * flows through CodeGen methods. There's curious recursion between those two
+ * but this indirection should be inlined and makes possible to keep everything
+ * related to intermediate code generation outside TreeNode.
+ *
+ * \todo It should be possible to remove the m_node member.
+ * \todo Better interface for scoping, right now new CodeGen class is constructed:
+ * \code
+ * CodeGen local (code, *st.newScope (), log);
+ * // run code gen with local
+ * \endcode
+ * I think better solution would be something like:
+ * \code
+ * newScope ();
+ * // run code gen
+ * popScope ();
+ * \endcode
+ */
 class CodeGen {
 private:
-    void operator = (CodeGen&); // do not implement
+    CodeGen& operator = (const CodeGen&); // do not implement
 public:
     inline explicit CodeGen (const CodeGen& other)
         : code (other.code), st (other.st), log (other.log), m_node (other.m_node)
@@ -95,13 +117,22 @@ public:
         return r;
     }
 
-    /// Code generation functions for top level definitions:
+    /**
+     * \name Top level code.
+     * Methods for top level program code generation.
+     */
+     /// \{
     CGStmtResult cgProgram (TreeNodeProgram* prog);
     CGStmtResult cgProcDef (TreeNodeProcDef* def);
     CGStmtResult cgProcDefs (TreeNodeProcDefs* defs);
     CGStmtResult cgGlobals (TreeNodeGlobals* gs);
+    /// \}
 
-    /// Code generation functions for statements:
+    /**
+     * \name Statements.
+     * Methods for statement code generation.
+     */
+    /// \{
     CGStmtResult cgStmtBreak (TreeNodeStmtBreak* s);
     CGStmtResult cgStmtCompound (TreeNodeStmtCompound* s);
     CGStmtResult cgStmtContinue (TreeNodeStmtContinue* s);
@@ -114,8 +145,14 @@ public:
     CGStmtResult cgStmtReturn (TreeNodeStmtReturn* s);
     CGStmtResult cgStmtWhile (TreeNodeStmtWhile* s);
     CGStmtResult cgStmtPrint (TreeNodeStmtPrint* s);
+    /// \}
 
-    /// Code generation functions for branching expressions:
+    /**
+     * \name Branching expressions.
+     * Code generation for expressions that can have boolean type and occur
+     * in branching context such as \a if statement and \a ternary  expressions.
+     */
+    /// \{
     CGBranchResult cgBoolExprUnary (TreeNodeExprUnary* e);
     CGBranchResult cgBoolExprIndex (TreeNodeExprIndex* e);
     CGBranchResult cgBoolExprBinary (TreeNodeExprBinary* e);
@@ -125,8 +162,13 @@ public:
     CGBranchResult cgBoolExprBool (TreeNodeExprBool* e);
     CGBranchResult cgBoolExprDeclassify (TreeNodeExprDeclassify* e);
     CGBranchResult cgBoolExprAssign (TreeNodeExprAssign* e);
+    /// \}
 
-    /// Code generation functions for expressions:
+    /**
+     * \name Expressions.
+     * Code generation for regular expressions.
+     */
+    /// \{
     CGResult cgExprFRead (TreeNodeExprFRead* e);
     CGResult cgExprBool (TreeNodeExprBool* e);
     CGResult cgExprIndex (TreeNodeExprIndex* e);
@@ -147,6 +189,7 @@ public:
     CGResult cgExprPostfix (TreeNodeExprPostfix* e);
     CGResult cgExprSize (TreeNodeExprSize* e);
     CGResult cgExprAssign (TreeNodeExprAssign* e);
+    /// \}
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
@@ -158,16 +201,25 @@ public:
     Symbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
 protected:
-    ICodeList&    code;
-    SymbolTable&  st;
-    CompileLog&   log;
-    TreeNode*     m_node;
+    ICodeList&    code;    ///< The code new instructions are emitted to.
+    SymbolTable&  st;      ///< Symbol table.
+    CompileLog&   log;     ///< Compiler log.
+    TreeNode*     m_node;  ///< Current tree node.
 };
 
 /*******************************************************************************
   CodeGenStride
 *******************************************************************************/
 
+/**
+ * \brief Code generation of a stride.
+ *
+ * Given multi-dimensional that has dimensionalities in
+ * d_1, d_2, ..., d_n the stride is computed as follows:
+ * 1, d_1, d_1 d_2, ..., d_1 d_2 ... d_{n-1}
+ *
+ * Note that this is stride for column major order.
+ */
 class CodeGenStride : public CodeGen {
 public:
     typedef std::vector<Symbol*> StrideList;
@@ -198,12 +250,12 @@ private:
 *******************************************************************************/
 
 /**
- * Helper class to generate code for loops. Usage would look like:
+ * \brief Generate code to loop over entire range of multi-dimensional value or limited slice of one.
  * \code
- * CodeGenLoop loop (this, node);
- * result.appendWith (loop.enterLoop (spv, indices));
- * << generate code for loop body >>
- * result.appendWith (loop.exitLoop ());
+ * CodeGenLoop loop (*this);
+ * append (result, loop.enterLoop (spv, indices));
+ * // check result, and generate code for loop body
+ * append (result, loop.exitLoop ());
  * return result;
  * \endcode
  */
@@ -228,16 +280,20 @@ public:
     /// loop over limited range
     CGResult enterLoop (const SPV& spv, const IndexList& indices);
 
+    /// exit the loop
     CGResult exitLoop (const IndexList& indices);
 
 private:
-    std::stack<Imop* > m_jumpStack;
+    std::stack<Imop* > m_jumpStack;  ///< Jump stack. Entering loop builds it, exiting loop consumes it.
 };
 
 /*******************************************************************************
   CodeGenSubscript
 *******************************************************************************/
 
+/**
+ * \brief Code generation of a subscript (general indexing).
+ */
 class CodeGenSubscript : public CodeGen {
 public:
     typedef std::vector<unsigned> SliceIndices;
@@ -261,8 +317,8 @@ public:
     CGResult codeGenSubscript (Symbol* x, TreeNode* node);
 
 private:
-    SliceIndices m_slices;
-    SPV          m_spv;
+    SliceIndices m_slices;  ///< Specifies which indices are slices.
+    SPV          m_spv;     ///< List of ranges for every index.
 };
 
 }
