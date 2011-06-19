@@ -488,48 +488,6 @@ extern "C" struct TreeNode *treenode_init_dimTypeF(
 namespace SecreC {
 
 /*******************************************************************************
-  TreeNodeBase
-*******************************************************************************/
-
-void TreeNodeBase::patchNextList(Imop* i, SymbolTable& st) {
-    SymbolLabel* label = st.label(i);
-    patchList (m_nextList, label);
-}
-
-void TreeNodeBase::patchNextList (SymbolLabel* label) {
-    patchList (m_nextList, label);
-}
-
-void TreeNodeBase::addToNextList(const std::vector<Imop*> &nl) {
-    appendVectorToVector(m_nextList, nl);
-}
-
-void TreeNodeBase::prevPatchNextList (Imop* i, SymbolTable& st) {
-    if (prevSubexpr())
-        prevSubexpr()->patchNextList(i, st);
-}
-
-/*******************************************************************************
-  TreeNodeCodeable
-*******************************************************************************/
-
-void TreeNodeCodeable::patchBreakList(SymbolLabel *dest) {
-    patchList(m_breakList, dest);
-}
-
-void TreeNodeCodeable::patchContinueList(SymbolLabel *dest) {
-    patchList(m_continueList, dest);
-}
-
-void TreeNodeCodeable::addToBreakList(const std::vector<Imop*> &bl) {
-    appendVectorToVector(m_breakList, bl);
-}
-
-void TreeNodeCodeable::addToContinueList(const std::vector<Imop*> &cl) {
-    appendVectorToVector(m_continueList, cl);
-}
-
-/*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
 
@@ -559,27 +517,6 @@ std::string TreeNodeDimTypeF::xmlHelper() const {
     std::ostringstream os;
     os << "dim=\"" << m_dimType << "\"";
     return os.str();
-}
-
-
-/*******************************************************************************
-  TreeNodeExpr
-*******************************************************************************/
-
-void TreeNodeExpr::patchTrueList(SymbolLabel *dest) {
-    patchList(m_trueList, dest);
-}
-
-void TreeNodeExpr::patchFalseList(SymbolLabel *dest) {
-    patchList(m_falseList, dest);
-}
-
-void TreeNodeExpr::addToFalseList(const std::vector<Imop*> &fl) {
-    appendVectorToVector(m_falseList, fl);
-}
-
-void TreeNodeExpr::addToTrueList(const std::vector<Imop*> &tl) {
-    appendVectorToVector(m_trueList, tl);
 }
 
 /*******************************************************************************

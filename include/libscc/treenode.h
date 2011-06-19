@@ -66,11 +66,6 @@ class TreeNode {
         TreeNodeProcDef* containingProcedure();
         inline TreeNode* parent() const { return m_parent; }
         inline bool hasParent() const { return m_parent != 0; }
-        inline bool isChildOf(TreeNode *parent) const {
-            for (TreeNode *p = m_parent; p != 0; p = p->m_parent)
-                if (p == parent) return true;
-            return false;
-        }
         inline Type type() const { return m_type; }
         inline const ChildrenList &children() const {
             return m_children;
@@ -108,107 +103,6 @@ class TreeNode {
         YYLTYPE          m_location;
 };
 
-/******************************************************************
-  TreeNodeBase
-******************************************************************/
-
-/// \todo Figure out better name!
-class TreeNodeBase : public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeBase (Type type, const YYLTYPE &loc)
-            : TreeNode(type, loc), m_nextList(), m_firstImop(0), m_prevSubexpr(0) { }
-        virtual inline ~TreeNodeBase () { }
-
-        inline const std::vector<Imop*> &nextList() const { return m_nextList; }
-        inline Imop *firstImop() const { return m_firstImop; }
-        void patchNextList(Imop* i, SymbolTable& st);
-        void patchNextList(SymbolLabel* label);
-    protected:
-
-        /**
-         * @brief Generates code of subexpression. It links evaluated expression together
-         * with previous one if needed, and updates the previous subexpression pointer.
-         * @return Status of subexpression code generation.
-         */
-        ICode::Status generateSubexprCode (TreeNodeExpr* e,
-                                           ICodeList& code,
-                                           SymbolTable& st,
-                                           CompileLog& log,
-                                           Symbol* r = 0);
-
-        inline void setNextList(const std::vector<Imop*> &nl) {
-            assert(m_nextList.empty());
-            m_nextList = nl;
-        }
-        inline void addToNextList(Imop *i) {
-            m_nextList.push_back(i);
-        }
-        void addToNextList(const std::vector<Imop*> &nl);
-        inline void setFirstImop(Imop *imop) {
-            assert(m_firstImop == 0);
-            m_firstImop = imop;
-        }
-        inline void patchFirstImop(Imop *imop) {
-            if (m_firstImop != 0) return;
-            m_firstImop = imop;
-        }
-
-        TreeNodeExpr* prevSubexpr () { return m_prevSubexpr; }
-        void setPrevSubexpr (TreeNodeExpr* prev) { m_prevSubexpr = prev; }
-        void prevPatchNextList (Imop* i, SymbolTable& st);
-
-    private: /* Fields: */
-        std::vector<Imop*> m_nextList;     ///< List of operands that jump to next instruction.
-        Imop              *m_firstImop;    ///< Pointer to first Imop, 0 if none exist.
-        TreeNodeExpr      *m_prevSubexpr;  ///< Previously evaluated subexpression, initially 0
-};
-
-/******************************************************************
-  TreeNodeCodeable
-******************************************************************/
-
-class TreeNodeCodeable: public TreeNodeBase {
-    public: /* Methods: */
-        inline TreeNodeCodeable(Type type, const YYLTYPE &loc)
-            : TreeNodeBase(type, loc) {}
-        virtual inline ~TreeNodeCodeable() {}
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log) = 0;
-
-        inline const std::vector<Imop*> &breakList() const {
-            return m_breakList;
-        }
-        inline const std::vector<Imop*> &continueList() const {
-            return m_continueList;
-        }
-
-        void patchBreakList(SymbolLabel *dest);
-        void patchContinueList(SymbolLabel *dest);
-
-    protected: /* Methods: */
-        inline void setBreakList(const std::vector<Imop*> &bl) {
-            assert(m_breakList.empty());
-            m_breakList = bl;
-        }
-        inline void addToBreakList(Imop *i) {
-            m_breakList.push_back(i);
-        }
-        void addToBreakList(const std::vector<Imop*> &bl);
-        inline void setContinueList(const std::vector<Imop*> &cl) {
-            assert(m_continueList.empty());
-            m_continueList = cl;
-        }
-        inline void addToContinueList(Imop *i) {
-            m_continueList.push_back(i);
-        }
-        void addToContinueList(const std::vector<Imop*> &cl);
-
-    private: /* Fields: */
-        std::vector<Imop*> m_breakList;
-        std::vector<Imop*> m_continueList;
-};
 
 /******************************************************************
   TreeNodeSecTypeF
@@ -250,6 +144,7 @@ class TreeNodeDataTypeF: public TreeNode {
         SecrecDataType m_dataType;
 };
 
+
 /******************************************************************
   TreeNodeDimType
 ******************************************************************/
@@ -271,41 +166,29 @@ class TreeNodeDimTypeF: public TreeNode {
         unsigned m_dimType;
 };
 
+
 /******************************************************************
   TreeNodeExpr
 ******************************************************************/
 
-class TreeNodeExpr: public TreeNodeBase {
+class TreeNodeExpr: public TreeNode {
     public: /* Types: */
         enum Flags { CONSTANT = 0x01, PARENTHESIS = 0x02 };
 
     public: /* Methods: */
         inline TreeNodeExpr(Type type, const YYLTYPE &loc)
-            : TreeNodeBase(type, loc), m_result(0), m_resultType(0) { }
+            : TreeNode(type, loc), m_result(0), m_resultType(0) { }
         virtual ~TreeNodeExpr() {
             delete m_resultType;
         }
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log) = 0;
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0) = 0;
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log) = 0;
 
         /// @brief common usage is: if (checkAndLogIfVoid(log)) return ICode::E_TYPE;
         /// @return true if type is void, otherwise false
         bool checkAndLogIfVoid(CompileLog& log);
 
-        /// @return first added Imop or NULL if none were added
-        void copyShapeFrom(Symbol* s, ICodeList &code, SymbolTable &st);
-        ICode::Status computeSize(ICodeList& code, SymbolTable& st);
-        void generateResultSymbol(SymbolTable& st);
-
-        inline Symbol *result() const { return m_result; }
         inline bool haveResultType() const { return m_resultType != 0; }
         inline bool havePublicBoolType() const {
             assert(m_resultType != 0);
@@ -317,14 +200,6 @@ class TreeNodeExpr: public TreeNodeBase {
             assert(m_resultType != 0);
             return *m_resultType;
         }
-        inline const std::vector<Imop*> &falseList() const {
-            return m_falseList;
-        }
-        inline const std::vector<Imop*> &trueList() const {
-            return m_trueList;
-        }
-        void patchTrueList(SymbolLabel *dest);
-        void patchFalseList(SymbolLabel *dest);
 
         virtual CGResult codeGenWith (CodeGen& cg) = 0;
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg) {
@@ -334,55 +209,15 @@ class TreeNodeExpr: public TreeNodeBase {
         }
 
     protected: /* Methods: */
-        inline void setResult(Symbol *r) {
-            m_result = r;
-        }
+
         inline void setResultType(SecreC::Type *type) {
             assert(m_resultType == 0);
             m_resultType = type;
         }
-        inline void setFalseList(const std::vector<Imop*> &fl) {
-            assert(m_falseList.empty());
-            m_falseList = fl;
-        }
-        inline void addToFalseList(Imop *i) {
-            m_falseList.push_back(i);
-        }
-        void addToFalseList(const std::vector<Imop*> &fl);
-        inline void setTrueList(const std::vector<Imop*> &tl) {
-            assert(m_trueList.empty());
-            m_trueList = tl;
-        }
-        inline void addToTrueList(Imop *i) {
-            m_trueList.push_back(i);
-        }
-        void addToTrueList(const std::vector<Imop*> &bl);
-
-protected:
-
-        /// code generation result info for subscript
-        struct SubscriptInfo {
-            std::vector<unsigned > slices;
-            std::vector<std::pair<Symbol*, Symbol*> > spv;
-            ICode::Status status;
-            SubscriptInfo (ICode::Status s) : status (s) { }
-            ~SubscriptInfo () {}
-        };
-
-        SubscriptInfo codegenSubscript (Symbol* x,
-                                        TreeNode* node,
-                                        ICodeList& code,
-                                        SymbolTable& st,
-                                        CompileLog& log);
-        std::vector<Symbol*> codegenStride (Symbol* sym,
-                                            ICodeList &code,
-                                            SymbolTable &st);
 
     private: /* Fields: */
         Symbol             *m_result;
         SecreC::Type       *m_resultType;
-        std::vector<Imop*>  m_falseList;
-        std::vector<Imop*>  m_trueList;
 };
 
 
@@ -397,17 +232,11 @@ class TreeNodeExprAssign: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprIndex
@@ -420,16 +249,10 @@ class TreeNodeExprIndex: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprSize
@@ -442,15 +265,9 @@ class TreeNodeExprSize: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprShape
@@ -463,15 +280,10 @@ class TreeNodeExprShape: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprCat
@@ -484,15 +296,10 @@ class TreeNodeExprCat: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprReshape
@@ -505,15 +312,10 @@ class TreeNodeExprReshape: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprFRead
@@ -526,15 +328,10 @@ class TreeNodeExprFRead: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprBinary
@@ -548,13 +345,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
         const char *operatorString() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
@@ -578,13 +369,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -604,13 +389,7 @@ class TreeNodeExprClassify: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
 
@@ -626,13 +405,7 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
@@ -649,13 +422,7 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
 
         inline SymbolProcedure *symbolProcedure() const
             { return m_procedure; }
@@ -684,13 +451,7 @@ class TreeNodeExprInt: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
@@ -710,13 +471,6 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -739,13 +493,6 @@ class TreeNodeExprString: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
@@ -765,13 +512,6 @@ class TreeNodeExprTernary: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -794,19 +534,13 @@ class TreeNodeExprUInt: public TreeNodeExpr {
         virtual std::string xmlHelper() const;
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
     private: /* Fields: */
         unsigned m_value;
 };
+
 
 /******************************************************************
   TreeNodeExprPrefix
@@ -819,15 +553,10 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprPostfix
@@ -840,15 +569,10 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
 };
+
 
 /******************************************************************
   TreeNodeExprUnary
@@ -861,13 +585,7 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log,
-                                           Symbol *result = 0);
-        virtual ICode::Status generateBoolCode(ICodeList &code,
-                                               SymbolTable &st,
-                                               CompileLog &log);
+
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
@@ -877,10 +595,10 @@ class TreeNodeExprUnary: public TreeNodeExpr {
   TreeNodeProcDef
 ******************************************************************/
 
-class TreeNodeProcDef: public TreeNodeCodeable {
+class TreeNodeProcDef: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProcDef(const YYLTYPE &loc)
-        : TreeNodeCodeable(NODE_PROCDEF, loc), m_cachedType(0), m_procSymbol (0)
+        : TreeNode(NODE_PROCDEF, loc), m_cachedType(0), m_procSymbol (0)
         {
             setContainingProcedureDirectly(this);
         }
@@ -908,9 +626,6 @@ class TreeNodeProcDef: public TreeNodeCodeable {
             return *m_cachedType;
         }
 
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 
         CGStmtResult codeGenWith (CodeGen& cg);
 
@@ -929,14 +644,10 @@ class TreeNodeProcDef: public TreeNodeCodeable {
   TreeNodeProcDefs
 ******************************************************************/
 
-class TreeNodeProcDefs: public TreeNodeCodeable {
+class TreeNodeProcDefs: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProcDefs(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_PROCDEFS, loc) {}
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
+            : TreeNode(NODE_PROCDEFS, loc) {}
 
         CGStmtResult codeGenWith (CodeGen& cg);
 };
@@ -946,14 +657,10 @@ class TreeNodeProcDefs: public TreeNodeCodeable {
   TreeNodeGlobals
 ******************************************************************/
 
-class TreeNodeGlobals: public TreeNodeCodeable {
+class TreeNodeGlobals: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeGlobals(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_GLOBALS, loc) {}
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
+            : TreeNode(NODE_GLOBALS, loc) {}
 
         CGStmtResult codeGenWith (CodeGen& cg);
 };
@@ -984,13 +691,10 @@ class TreeNodeIdentifier: public TreeNode {
   TreeNodeProgram
 ******************************************************************/
 
-class TreeNodeProgram: public TreeNodeCodeable {
+class TreeNodeProgram: public TreeNode {
     public: /* Methods: */
         explicit inline TreeNodeProgram(const YYLTYPE &loc)
-            : TreeNodeCodeable(NODE_PROGRAM, loc) {}
-
-        virtual ICode::Status generateCode(ICodeList &code, SymbolTable &st,
-                                           CompileLog &log);
+            : TreeNode(NODE_PROGRAM, loc) {}
 
         ICode::Status codeGenWith (CodeGen& cg);
 };
@@ -1000,31 +704,16 @@ class TreeNodeProgram: public TreeNodeCodeable {
   TreeNodeStmt
 ******************************************************************/
 
-class TreeNodeStmt: public TreeNodeCodeable {
-    public: /* Types: */
-        enum ResultClass {
-            FALLTHRU = 0x01,
-            RETURN   = 0x02,
-            BREAK    = 0x04,
-            CONTINUE = 0x08,
-            MASK     = 0x0f
-        };
-
+class TreeNodeStmt: public TreeNode {
     public: /* Methods: */
         inline TreeNodeStmt(Type type, const YYLTYPE &loc)
-            : TreeNodeCodeable(type, loc), m_resultFlags(0) {}
-
-        inline int resultFlags() const { return m_resultFlags; }
-        inline void setResultFlags(int flags) { m_resultFlags = flags; }
+            : TreeNode(type, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg) {
             assert (false && "Statememnt code gen unimplemented.");
             (void) cg;
             return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
         }
-
-    private: /* Fields: */
-        int m_resultFlags;
 };
 
 
@@ -1038,11 +727,8 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
+
 
 /******************************************************************
   TreeNodeStmtCompound
@@ -1055,10 +741,6 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
         virtual inline ~TreeNodeStmtCompound() {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1072,10 +754,6 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1093,10 +771,6 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
         const std::string &variableName() const;
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 
         ICode::Status calculateResultType(SymbolTable &st,
                                           CompileLog &log);
@@ -1128,10 +802,6 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1145,10 +815,6 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 /******************************************************************
@@ -1161,11 +827,8 @@ class TreeNodeStmtAssert: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
+
 
 /******************************************************************
   TreeNodeStmtFor
@@ -1177,10 +840,6 @@ class TreeNodeStmtFor: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1194,10 +853,6 @@ class TreeNodeStmtIf: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1211,10 +866,6 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1228,10 +879,6 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
 
 
@@ -1245,11 +892,8 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-        virtual ICode::Status generateCode(ICodeList &code,
-                                           SymbolTable &st,
-                                           CompileLog &log);
 };
+
 
 /******************************************************************
   TreeNodeType
@@ -1298,6 +942,7 @@ class TreeNodeTypeVoid: public TreeNodeType {
     private: /* Fields: */
         const SecreC::TypeVoid m_typeVoid;
 };
+
 
 } // namespace SecreC
 

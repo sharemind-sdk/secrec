@@ -23,7 +23,6 @@ SOURCES = \
     codegen/expression.cpp \
     codegen/assign.cpp \
     codegen/program.cpp \
-    codegen/util.cpp \
     codegen.cpp
 
 OTHER_FILES = \
