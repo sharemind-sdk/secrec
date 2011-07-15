@@ -137,7 +137,7 @@ typedef std::map<Location, Register> Store;
 
 struct Instruction {
   VMSym args[4];
-  void (*callback)(Instruction*);
+  void (*callback)();
 };
 
 struct Frame {
@@ -168,7 +168,7 @@ private:
 ValueStack m_stack;
 Frame* m_frames = 0;
 Store m_global;
-Instruction* m_code = 0;
+Instruction* ip = 0;
 
 static void free_store (Store& store) {
     Store::iterator it = store.begin();
@@ -201,7 +201,7 @@ static inline void pop_frame (void)
 /// This would have to be constant time. In order to
 /// achieve this the global and local stores would have to be
 /// stacks and locations offsets in those stacks. The offsets would
-/// have to be precomputed. This would need some work.
+/// have to be precomputed. This needs too much work for now.
 static Register& lookup (VMSym const sym) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     return store[sym.loc];
@@ -211,16 +211,16 @@ static Register& lookup (VMSym const sym) {
  * Macros to simplify code generation:
  */
 
-#define FETCH1(name, i) Register& name = lookup((i)->args[0])
-#define FETCH2(name, i) Register const& name = lookup((i)->args[1])
-#define FETCH3(name, i) Register const& name = lookup((i)->args[2])
-#define FETCH4(name, i) Register const& name = lookup((i)->args[3])
-#define NEXT(i) ((i) + 1)->callback ((i) + 1)
+#define FETCH1(name) Register& name = lookup((ip)->args[0])
+#define FETCH2(name) Register const& name = lookup((ip)->args[1])
+#define FETCH3(name) Register const& name = lookup((ip)->args[2])
+#define FETCH4(name) Register const& name = lookup((ip)->args[3])
+#define NEXT do ((++ ip)->callback ()); while (0)
 
-#define DECLOP1(NAME) static inline void NAME##_operator (Value& dest, Value const& arg1)
-#define DECLOP2(NAME) static inline void NAME##_operator (Value& dest, Value const& arg1, Value const& arg2)
+#define DECLOP1(NAME) inline void NAME##_operator (Value& dest, Value const& arg1)
+#define DECLOP2(NAME) inline void NAME##_operator (Value& dest, Value const& arg1, Value const& arg2)
 
-#define DECLVECOP1(NAME) static inline void NAME##_vec_operator (Register& dest, Register const& arg1, Register const& size) {\
+#define DECLVECOP1(NAME) inline void NAME##_vec_operator (Register& dest, Register const& arg1, Register const& size) {\
 unsigned s = size.m_arr->m_uint_val;\
 reserve (dest, s);\
 Value* desti = dest.m_arr;\
@@ -230,7 +230,7 @@ for (; desti != end; ++ desti, ++ arg1i)\
   NAME##_operator (*desti, *arg1i);\
 }
 
-#define DECLVECOP2(NAME) static inline void NAME##_vec_operator (Register& dest, Register const& arg1, Register const& arg2, Register const& size) {\
+#define DECLVECOP2(NAME) inline void NAME##_vec_operator (Register& dest, Register const& arg1, Register const& arg2, Register const& size) {\
 unsigned s = size.m_arr->m_uint_val;\
 reserve (dest, s);\
 Value* desti = dest.m_arr;\
@@ -241,7 +241,7 @@ for (; desti != end; ++ desti, ++ arg1i, ++ arg2i)\
   NAME##_operator (*desti, *arg1i, *arg2i);\
 }
 
-#define CALLBACK(NAME, i) static void NAME##_callback (Instruction* const i)
+#define CALLBACK(NAME) inline void NAME##_callback ()
 
 /**
  * Regular primitive operations on data:
@@ -253,7 +253,7 @@ DECLOP1 (DECLASSIFY) { dest = arg1; }
 DECLOP1 (UNEG)       { dest.m_bool_val = !arg1.m_bool_val; }
 DECLOP1 (UMINUS)     { dest.m_int_val  = -arg1.m_int_val; }
 DECLOP2 (ADD)        { dest.m_int_val  = arg1.m_int_val + arg2.m_int_val; }
-DECLOP2 (ADDSTR)     { dest.m_str_val  = new std::string (*arg1.m_str_val + *arg2.m_str_val); }
+DECLOP2 (ADDSTR)     { dest.m_str_val  = new std::string (*arg1.m_str_val + *arg2.m_str_val); } ///< \todo memory leaks here
 DECLOP2 (SUB)        { dest.m_int_val  = arg1.m_int_val - arg2.m_int_val; }
 DECLOP2 (MUL)        { dest.m_int_val  = arg1.m_int_val * arg2.m_int_val; }
 DECLOP2 (DIV)        { dest.m_int_val  = arg1.m_int_val / arg2.m_int_val; }
@@ -306,21 +306,22 @@ DECLVECOP2 (NEQSTRING)
 /**
  * Callbacks for instructions:
  * \todo quite a lot of repeated code
+ * \todo get rid of the rather stupid FETCH macros
  */
 
-CALLBACK(ERROR, i) {
-    FETCH2(arg, i);
+CALLBACK(ERROR) {
+    FETCH2(arg);
     std::cerr << *fetch_val(arg).m_str_val << std::endl;
 }
 
-CALLBACK(PRINT, i) {
-    FETCH2(arg, i);
+CALLBACK(PRINT) {
+    FETCH2(arg);
     std::cout << *fetch_val(arg).m_str_val << std::endl;
-    NEXT(i);
+    NEXT;
 }
 
-CALLBACK(FREAD, i) {
-    FETCH2(arg, i);
+CALLBACK(FREAD) {
+    FETCH2(arg);
     std::string const& str = *fetch_val(arg).m_str_val;
     std::ifstream fhandle;
     std::string line;
@@ -371,655 +372,675 @@ CALLBACK(FREAD, i) {
     m_stack.push(colCount);
     m_stack.push(rowCount);
 
-    NEXT(i);
+    NEXT;
 }
 
-CALLBACK(ASSIGN, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
+CALLBACK(ASSIGN) {
+  FETCH1(dest);
+  FETCH2(arg);
   ASSIGN_operator (fetch_val(dest), fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(ASSIGN_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(ASSIGN_vec) {
+  FETCH1(dest);
+  FETCH2(arg);
+  FETCH3(size);
   ASSIGN_vec_operator (dest, arg, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(CLASSIFY, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
+CALLBACK(CLASSIFY) {
+  FETCH1(dest);
+  FETCH2(arg);
   CLASSIFY_operator (fetch_val(dest), fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(CLASSIFY_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(CLASSIFY_vec) {
+  FETCH1(dest);
+  FETCH2(arg);
+  FETCH3(size);
   CLASSIFY_vec_operator (dest, arg, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(DECLASSIFY, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
+CALLBACK(DECLASSIFY) {
+  FETCH1(dest);
+  FETCH2(arg);
   DECLASSIFY_operator (fetch_val(dest), fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(DECLASSIFY_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(DECLASSIFY_vec) {
+  FETCH1(dest);
+  FETCH2(arg);
+  FETCH3(size);
   DECLASSIFY_vec_operator (dest, arg, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(CALL, i) {
-  Instruction* new_ip = (Instruction*) i->args[1].loc;
-  VMSym dest = i->args[0];
-  push_frame(i + 1, dest);
-  new_ip->callback (new_ip);
+CALLBACK(CALL) {
+  VMSym dest = ip->args[0];
+  push_frame (ip + 1, dest);
+  ip = (Instruction*) ip->args[1].loc;
+  ip->callback ();
 }
 
-CALLBACK(RETCLEAN, i) {
-  NEXT(i);
+CALLBACK(RETCLEAN) {
+  NEXT;
 }
 
-CALLBACK(RETVOID, i) {
-  (void) i;
+CALLBACK(RETVOID) {
   assert (m_frames != 0);
   Instruction* const new_i = m_frames->m_old_ip;
   pop_frame();
-  new_i->callback (new_i);
+  ip = new_i;
+  ip->callback ();
 }
 
-CALLBACK(PUSH, i) {
-  FETCH2(arg, i);
+CALLBACK(PUSH) {
+  FETCH2(arg);
   m_stack.push(fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(PUSH_vec, i) {
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(PUSH_vec) {
+  FETCH2(arg);
+  FETCH3(size);
   m_stack.push(arg, fetch_val(size).m_uint_val);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(POP, i) {
-  FETCH1(dest, i);
+CALLBACK(POP) {
+  FETCH1(dest);
   m_stack.top(fetch_val(dest));
   m_stack.pop();
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(POP_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(size, i);
+CALLBACK(POP_vec) {
+  FETCH1(dest);
+  FETCH2(size);
   unsigned const n = fetch_val(size).m_uint_val;
   m_stack.top(dest, n);
   m_stack.pop(n);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(UNEG, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
+CALLBACK(UNEG) {
+  FETCH1(dest);
+  FETCH2(arg);
   UNEG_operator (fetch_val(dest), fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(UNEG_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(UNEG_vec) {
+  FETCH1(dest);
+  FETCH2(arg);
+  FETCH3(size);
   UNEG_vec_operator (dest, arg, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(UMINUS, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
+CALLBACK(UMINUS) {
+  FETCH1(dest);
+  FETCH2(arg);
   UMINUS_operator (fetch_val(dest), fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(UMINUS_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg, i);
-  FETCH3(size, i);
+CALLBACK(UMINUS_vec) {
+  FETCH1(dest);
+  FETCH2(arg);
+  FETCH3(size);
   UMINUS_vec_operator (dest, arg, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(MUL, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(MUL) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   MUL_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(MUL_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(MUL_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   MUL_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(DIV, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(DIV) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   DIV_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(DIV_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(DIV_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   DIV_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(MOD, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(MOD) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   MOD_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(MOD_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(MOD_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   MOD_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(ADD, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(ADD) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   ADD_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(ADD_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(ADD_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   ADD_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(ADDSTR, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(ADDSTR) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   ADDSTR_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(ADDSTR_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(ADDSTR_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   ADDSTR_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(SUB, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(SUB) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   SUB_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(SUB_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(SUB_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   SUB_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQBOOL, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(EQBOOL) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   EQBOOL_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQBOOL_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(EQBOOL_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   EQBOOL_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQINT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(EQINT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   EQINT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQINT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(EQINT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   EQINT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQUINT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(EQUINT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   EQUINT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQUINT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(EQUINT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   EQUINT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQSTRING, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(EQSTRING) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   EQSTRING_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(EQSTRING_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(EQSTRING_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   EQSTRING_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQBOOL, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(NEQBOOL) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   NEQBOOL_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQBOOL_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(NEQBOOL_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   NEQBOOL_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQINT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(NEQINT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   NEQINT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQINT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(NEQINT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   NEQINT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQUINT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(NEQUINT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   NEQUINT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQUINT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(NEQUINT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   NEQUINT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQSTRING, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(NEQSTRING) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   NEQSTRING_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NEQSTRING_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(NEQSTRING_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   NEQSTRING_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LE, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(LE) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   LE_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LE_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(LE_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   LE_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(LT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   LT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(LT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   LT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(GE, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(GE) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   GE_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(GE_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(GE_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   GE_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(GT, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(GT) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   GT_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(GT_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(GT_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   GT_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LAND, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(LAND) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   LAND_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LAND_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(LAND_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   LAND_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LOR, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
+CALLBACK(LOR) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
   LOR_operator (fetch_val(dest), fetch_val(arg1), fetch_val(arg2));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LOR_vec, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(arg2, i);
-  FETCH4(size, i);
+CALLBACK(LOR_vec) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(arg2);
+  FETCH4(size);
   LOR_vec_operator (dest, arg1, arg2, size);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(JUMP, i) {
-  Instruction* new_i = (Instruction*) i->args[0].loc;
-  new_i->callback (new_i);
+CALLBACK(JUMP) {
+  ip = (Instruction*) ip->args[0].loc;
+  ip->callback ();
 }
 
-CALLBACK(JEBOOL, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JEBOOL) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_bool_val == fetch_val(arg2).m_bool_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JEINT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JEINT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val == fetch_val(arg2).m_int_val) {
-      new_i = (Instruction*) i->args[0].loc;
+      newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JEUINT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JEUINT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_uint_val == fetch_val(arg2).m_uint_val) {
-      new_i = (Instruction*) i->args[0].loc;
+      newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JESTR, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JESTR) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (*fetch_val(arg1).m_str_val == *fetch_val(arg2).m_str_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JNEBOOL, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JNEBOOL) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_bool_val != fetch_val(arg2).m_bool_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JNEINT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JNEINT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val != fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JNEUINT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JNEUINT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_uint_val != fetch_val(arg2).m_uint_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        ip = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JNESTR, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JNESTR) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (*fetch_val(arg1).m_str_val != *fetch_val(arg2).m_str_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
-    new_i->callback (new_i);
+
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JLE, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JLE) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val <= fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JLT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JLT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val < fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JGE, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JGE) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val >= fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JGT, i) {
-    FETCH2(arg1, i);
-    FETCH3(arg2, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JGT) {
+    FETCH2(arg1);
+    FETCH3(arg2);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_int_val > fetch_val(arg2).m_int_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JT, i) {
-    FETCH2(arg1, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JT) {
+    FETCH2(arg1);
+    Instruction* newIp = ip + 1;
     if (fetch_val(arg1).m_bool_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(JF, i) {
-    FETCH2(arg1, i);
-    Instruction* new_i = i + 1;
+CALLBACK(JF) {
+    FETCH2(arg1);
+    Instruction* newIp = ip + 1;
     if (!fetch_val(arg1).m_bool_val) {
-        new_i = (Instruction*) i->args[0].loc;
+        newIp = (Instruction*) ip->args[0].loc;
     }
 
-    new_i->callback (new_i);
+    ip = newIp;
+    ip->callback ();
 }
 
-CALLBACK(FILL, i) {
-  FETCH1(dest, i);
-  FETCH2(arg1, i);
-  FETCH3(size, i);
+CALLBACK(FILL) {
+  FETCH1(dest);
+  FETCH2(arg1);
+  FETCH3(size);
   Value const& v = fetch_val(arg1);
   unsigned const n = fetch_val(size).m_uint_val;
   reserve (dest, n);
   for (Value* it(dest.m_arr); it < dest.m_arr + n; ++ it) *it = v;
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(LOAD, i) {
-  FETCH1(dest, i);
-  FETCH2(arr, i);
-  FETCH3(index, i);
+CALLBACK(LOAD) {
+  FETCH1(dest);
+  FETCH2(arr);
+  FETCH3(index);
   store (fetch_val(dest), arr, fetch_val(index).m_uint_val);
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(STORE, i) {
-  FETCH1(d, i);
-  FETCH2(index, i);
-  FETCH3(arg, i);
+CALLBACK(STORE) {
+  FETCH1(d);
+  FETCH2(index);
+  FETCH3(arg);
   store (d, fetch_val(index).m_uint_val, fetch_val(arg));
-  NEXT(i);
+  NEXT;
 }
 
-CALLBACK(NOP, i) {
-  NEXT (i);
+CALLBACK(NOP) {
+  NEXT;
 }
 
-CALLBACK(END, i) {
-  (void) i;
-}
+CALLBACK(END) { }
 
 } // end of anonymous namespace
 
@@ -1029,6 +1050,7 @@ CALLBACK(END, i) {
 namespace SecreC {
 
 void VirtualMachine::run (ICodeList const& code) {
+    Instruction* m_code = 0;
     m_code = (Instruction*) calloc(sizeof(Instruction), code.size());
     push_frame(0, VMSym(false, 0)); // for temporaries in global scope... ugh...
 
@@ -1188,7 +1210,8 @@ void VirtualMachine::run (ICodeList const& code) {
     }
 
     // execute
-    m_code->callback (m_code);
+    ip = m_code;
+    ip->callback ();
 
     // free memory
     pop_frame ();
