@@ -512,19 +512,38 @@ dimensional array. The conversion may still fail at run-time if it turns out
 that shapes of the arrays mismatch, and for that reason we will later define
 similar ordering on shapes.
 
-% Because we can use previous ordering on lattice only if the context allows, for
-% example arithmetic operators, and not in all cases we need to also define flat
-% ordering for dimensionalities. The second lattice is flat, and $n \preceq m$
-% iff $n = m$, and $\bot \preceq n$ for every $n$ and $m$. The partial ordering
-% relation also defines join $\vee$ and meet $\wedge$ if they exist. This might
-% seem redundant to rename equality on non-negative numbers in such way, but
-% later we overload the $\preceq$ relation for all data types.
-%
-% \subsection{The poset of data types}
-%
-% As previously mentioned it's easy to construct cartesian product from
-% fundamental data type, security type and dimensionality type partially ordered
-% lattices, but it's complicated by the fact that we are
+Because we can use previous ordering on lattice only if the context allows, for
+example arithmetic operators, and not in all cases, we need to also define flat
+ordering for dimensionalities. The second lattice is flat, and $n \preceq m$
+iff $n = m$, and $\bot \preceq n$ for every $n$ and $m$. The partial ordering
+relation also defines join $\curlyvee$ and meet $\curlywedge$ if they exist. This might
+seem redundant to rename equality on non-negative numbers in such way, but
+later we overload the $\preceq$ relation for all data types.
+
+\subsection{The poset of data types}
+
+As previously mentioned it's easy to construct Cartesian product from
+fundamental data type, security type and dimensionality type partially ordered
+sets, but it's complicated by the fact that we are dealing with two different
+orderings depending on the context. For that reason we need to define two
+different orderings for the data types as well.  In both cases we use $\bot$ to
+mean product with all components are bottom as it's always clear from context
+which poset it belongs to.
+
+For contexts wherein scalar can be converted into higher dimensional array, we
+use the regular ordering on dimensionalities. We say that $\alpha_1 \sqsubseteq
+\alpha_2$ iff $\tau_1 \to \tau_2$,  $\delta_1 \sqsubseteq \delta_2$, and $n_1
+\sqsubseteq n_2$, for every data type $\alpha_1 = \left( \tau_1, \delta_1, n_1
+\right)$ and $\alpha_1 = \left( \tau_1, \delta_1, n_1 \right)$. We use $\sqcup$
+for join and $\sqcap$ for meet.
+
+For contexts that forbid scalar-to-array conversions we use flat ordering of
+dimensionalities. This is to say that $\alpha_1 \preceq \alpha_2$ iff $\tau_1
+\to \tau_2$,  $\delta_1 \sqsubseteq \delta_2$, and $n_1 \preceq n_2$, for every
+data type $\alpha_1 = \left( \tau_1, \delta_1, n_1 \right)$ and $\alpha_1 =
+\left( \tau_1, \delta_1, n_1 \right)$. We use $\curlyvee$ for join and
+$\curlywedge$ for meet.
+
 
 
 \subsection{Regular types}
@@ -828,12 +847,12 @@ looser security type and is allowed to be scalar value even if left hand side
 is not.
 \[ \inference[$\eta$EAssignOp]
 {
-  \gamma(x) = \left(\tau, \delta, n \right) \mathit{var} \\
-  \gamma |- e : \left(\tau', \delta', n'\right) \\
-  \tau' \to \tau,\ \delta' \sqsubseteq \delta,\ n' \sqsubseteq n
+  \gamma(x) = \alpha\ \mathit{var} &
+  \gamma |- e : \alpha' &
+  \alpha' \sqsubseteq \alpha
 }
 {
-  \gamma |- x\ \mycode{=}\ e : \left(\tau, \delta, n\right)
+  \gamma |- x\ \mycode{=}\ e : \alpha
 } \]
 
 % EAssignOp2
@@ -843,12 +862,12 @@ binary arithmetic operation between the l-value and the r-value is typeable,
 and that the variable being assigned to can hold the result of this operation.
 \[ \inference[$\eta$EAssignOp2]
 {
-  \gamma(x) = \left(\tau, \delta, n\right) \mathit{var} \\
-  \gamma |- x \circledast e : \left(\tau', \delta', n\right) \\
-  \tau' \to \tau,\ \delta' \sqsubseteq \delta
+  \gamma(x) = \alpha\ \mathit{var} &
+  \gamma |- x \circledast e : \alpha' &
+  \alpha' \preceq \alpha
 }
 {
-  \gamma |- x\  \circledast \mycode{=}\ e : \left(\tau, \delta, n\right)
+  \gamma |- x\  \circledast \mycode{=}\ e : \alpha
 } \]
 
 % ENeg ENot
@@ -895,14 +914,14 @@ can also be calculated from the procedure type returned from the type
 environment by its mangled identifier.
 \[ \inference[$\eta$EProcCall]{
   \gamma |- f : A\ \mycode{proc}\\
-  \gamma |- e_1 : (\tau_1, \delta_1, n_1) \\
-  \vdots \\
-  \gamma |- e_m : (\tau_m, \delta_m, n_m) \\
-  A_f = \left\{ (\underline{\alpha}_1, \dots, \underline{\alpha}_m) \in A\ |\ \underline{\alpha}_i = (\underline{\tau}_i, \underline{\delta}_i, n_i), \tau_i \to \underline{\tau}_i, \delta_i \sqsubseteq \underline{\delta}_i, 1 \le i \le m \right\}\\
-  (\alpha_1, \dots, \alpha_m) = \min A_f \\
-  \gamma |- \mathcal{M}(f, \alpha_1, \ldots, \alpha_m)
-  : \left( \alpha_1 \times \ldots \times \alpha_m \right)  \to \rho \\
-}{\gamma |- f\mycode{(}e_1\mycode{,}\ldots\mycode{,}e_m\mycode{)} : \rho}
+  \gamma |- e_1 : \alpha_1, \cdots, \gamma |- e_m : \alpha_m \\
+  A_f = \left\{ (\underline{\alpha}_1, \dots, \underline{\alpha}_m) \in A\ |\ \alpha_i \preceq \underline{\alpha}_i, 1 \le i \le m \right\}\\
+  (\alpha'_1, \dots, \alpha'_m) = \min A_f \\
+  \gamma |- \mathcal{M}(f, \alpha'_1, \cdots, \alpha'_m)
+  : \left( \alpha'_1 \times \cdots \times \alpha'_m \right)  \to \rho \\
+}{
+\gamma |- f\mycode{(}e_1\mycode{,}\cdots\mycode{,}e_m\mycode{)} : \rho
+}
 \]
 
 % EIndex
@@ -917,10 +936,10 @@ expression can be computed by simply counting all the slices.
 \inference[$\eta$EIndex]
 {
   \gamma |- e : \left( \tau, \delta, n \right) \\
-  \gamma |- e_1 : \left(\mycode{public}, \delta_1, 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \delta_n, 0 \right)\\
-  \gamma |- e'_1 : \left(\mycode{public}, \delta'_1, 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \delta'_k, 0 \right) \\
-  \delta_i \sqsubseteq \mycode{int}, 1 \le i \le n \\
-  \delta'_j \sqsubseteq \mycode{int}, 1 \le j \le k
+  \gamma |- e_1 : \alpha_1,\ \ldots,\ \gamma |- e_n : \alpha_n \\
+  \gamma |- e'_1 : \alpha'_1,\ \ldots,\ \gamma |- e'_k : \alpha'_k \\
+  \alpha_i \sqsubseteq (\mycode{public}, \mycode{int}, 0), 1 \le i \le n \\
+  \alpha'_j \sqsubseteq (\mycode{public}, \mycode{int}, 0), 1 \le j \le k
 }
 {
   \gamma |- e \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} : \left(\tau, \delta, k\right)
@@ -935,33 +954,35 @@ value that equals to the size of $k$-th dimension.
 
 % EAssignArray
 For left hand side indexing, the $\eta$AssignArray rule is similarly to regular
-indexing rule, but in addition we have to check that both sides have same data
-types. We allow for right hand side to have laxer security type and for scalar
-to appear in right hand side.
+indexing rule, but in addition we have to check that the value of right hand
+side expression can be assigned to $x$ types. This means that we allow for
+right hand side to have laxer security type, right hand side may be sub-type of
+left hand side and scalar may appear in right hand side. Ofcourse as with
+previous rule we have to check that the indices can be casted to public integer
+scalars.
 \[ \inference[$\eta$EAssignArray]
 {
-  \gamma(x) = \left( \tau, \delta, n \right)\ \mathit{var}  \\
-  \gamma |- e : \left(\tau', \delta', k'\right) \\
-  \gamma |- e_1 : \left(\mycode{public}, \delta_1, 0 \right),\ \ldots,\ \gamma |- e_n : \left(\mycode{public}, \delta_n, 0 \right)\\
-  \gamma |- e'_1 : \left(\mycode{public}, \delta'_1, 0 \right),\ \ldots,\ \gamma |- e'_k : \left(\mycode{public}, \delta'_k, 0 \right) \\
-  \delta_i \sqsubseteq \mycode{int}, 1 \le i \le n \\
-  \delta'_j \sqsubseteq \mycode{int}, 1 \le j \le k \\
-  \tau' \to \tau, \delta' \sqsubseteq \delta, k' \sqsubseteq k
+  \gamma(x) = \alpha\ \mathit{var}  &
+  \gamma |- e : \alpha' & \alpha' \sqsubseteq \alpha \\
+  \gamma |- e_1 : \alpha_1,\ \ldots,\ \gamma |- e_n : \alpha_n \\
+  \gamma |- e'_1 : \alpha'_1,\ \ldots,\ \gamma |- e'_k : \alpha'_k \\
+  \alpha_i \sqsubseteq (\mycode{public}, \mycode{int}, 0), 1 \le i \le n \\
+  \alpha'_j \sqsubseteq (\mycode{public}, \mycode{int}, 0), 1 \le j \le k
 }
 {
-  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \mycode{=}\ e : \left(\tau, \delta, k\right)
+  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \mycode{=}\ e : \alpha
 } \]
 
 % EAssignArrayOp
 Array assignment with operator is similar to $\eta$AssignOp2 rule.
 \[ \inference[$\eta$EAssignArrayOp]
 {
-\gamma(x) = \left(\tau, \delta, n\right) \mathit{var} \\
-  \gamma |-  x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} \circledast e : \left(\tau', \delta', k\right) \\
-  \tau' \to \tau, \delta' \sqsubseteq \delta
+\gamma(x) = \alpha\ \mathit{var} \\
+  \gamma |-  x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]} \circledast e : \alpha' \\
+  \alpha' \preceq \alpha
 }
 {
-  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \circledast \mycode{=}\ e : \left(\tau, \delta, k\right)
+  \gamma |- x \mycode{[} \iota_1, \ldots, \iota_n \mycode{]}\ \circledast \mycode{=}\ e : \alpha
 } \]
 
 % EShape, ESize
@@ -1008,13 +1029,12 @@ Resulting array has same data type and dimensionality as first two and stricter
 of the security types.
 \[ \inference[$\eta$ECat]
 {
-  \gamma |- e_0 : \left(\tau_0, \delta_0, n \right) \\
-  \gamma |- e_1 : \left(\tau_1, \delta_1, n \right) \\
-  \tau = \tau_0 \oplus \tau_1, \delta = \delta_0 \sqcup \delta_1 \\
+  \gamma |- e_0 : \alpha_0 &
+  \gamma |- e_1 : \alpha_1 &
   0 \leq k < n
 } 
 {
-  \gamma |- \mycode{cat(} e_0 , e_1, k \mycode{)} : \left(\tau, \delta, n\right)
+  \gamma |- \mycode{cat(} e_0 , e_1, k \mycode{)} : \alpha_0 \curlyvee \alpha_1
 } \]
 
 
@@ -1052,9 +1072,9 @@ $\eta$SEmpty is $\emptyset$.
   \gamma |- \mycode{return;} : \left\{ return \right\}
 } \\[2em]
 \inference[$\eta$SReturn]{
-  \gamma |- e : \left( \tau', \delta', n \right)  \\
-  \gamma(\mycode{thisproc}) = (\alpha_1\times\dots\times\alpha_m)\to(\tau,\delta,n) \\
-  \tau' \to \tau,\ \delta' \sqsubseteq \delta
+  \gamma |- e : \alpha' \\
+  \gamma(\mycode{thisproc}) = (\alpha_1\times\dots\times\alpha_m)\to\alpha \\
+  \alpha' \preceq \alpha \\
 }{
   \gamma |- \mycode{return}\ e \mycode{;} : \left\{ return \right\}
 }
@@ -1074,20 +1094,18 @@ initializer expression is also checked to correspond to the type of the
 variable being defined.
 \[\begin{array}{c}
 \inference[$\eta$SCompoundVarDef]{
-  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right)\\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right), \delta_1 \sqsubseteq \mycode{int} \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right)\\
-  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int}\\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right), \delta_n \sqsubseteq \mycode{int}\\
   \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- S : \Gamma_S \\
   \Gamma_S \neq \emptyset
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n \mycode{];} S : \Gamma_S
 } \\[2em]
 \inference[$\eta$SCompoundVarDefInit]{
-  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right), \delta_1 \sqsubseteq \mycode{int} \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
-  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int}\\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right), \delta_n \sqsubseteq \mycode{int}\\
   \gamma |- e : \left( \tau', \delta', n' \right) \\
   \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- S : \Gamma_S \\
   \Gamma_S \neq \emptyset \\
@@ -1245,10 +1263,9 @@ subexpressions denoting shape of declared variable are public integers,
 type environment $\gamma$ is updated with the variable being defined, and the
 rest of the program is checked in the updated type environment:
 \[ \inference[$\eta$VarDef]{
-  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right), \delta_1 \sqsubseteq \mycode{int} \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
-  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int} \\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right), \delta_n \sqsubseteq \mycode{int} \\
   \gamma[x \mapsto \left( \tau, \delta, n \right) \mathit{var}] |- P : \Gamma_P
 }{
   \gamma |- \tau\ \delta\ \mycode{[[}n\mycode{]]}\ x\mycode{[} e_1 \mycode{,} \ldots \mycode{,} e_n  \mycode{];} P : \Gamma_P
@@ -1259,10 +1276,9 @@ performed as without initializer expressions, with the only exception, that the
 initializer expression is first checked in the type environment before updating
 it.
 \[ \inference[$\eta$VarDefInit]{
-  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right) \\
+  \gamma |- e_1 : \left( \mycode{public}, \delta_1, 0 \right), \delta_1 \sqsubseteq \mycode{int} \\
   \vdots \\
-  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right) \\
-  \delta_1 \sqsubseteq \mycode{int}, \cdots, \delta_n \sqsubseteq \mycode{int} \\
+  \gamma |- e_n : \left( \mycode{public}, \delta_n, 0 \right), \delta_n \sqsubseteq \mycode{int} \\
   \gamma |- e : \left( \tau', \delta', n' \right) \\
   \tau' \to \tau,\ \delta' \sqsubseteq \delta,\ n' \sqsubseteq n \\
   \gamma[x \mapsto (\tau, \delta, n)\ \mathit{var}] |- P : \Gamma_P
@@ -1710,8 +1726,8 @@ we allow for binary expressions where one argument is scalar while other is not.
     \gamma |- e_0 \circledast e_1 : \alpha,\ \left( \tau, \delta, n \right) = \alpha \\
     \gamma,\env_V,\env_P |- \left< e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
     \gamma,\env_V,\env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-    \gamma |- \left< \alpha, e_0, l_0, \mu_1, \mathit{noforce} \right> \to_C \left<l'_0, \mu_2 \right> \\
-    \gamma |- \left< \alpha, e_1, l_1, \mu_2, \mathit{noforce} \right> \to_C \left<l'_1, \mu_3 \right> \\
+    \gamma |- \left< \alpha, e_0, l_0, \mu_1, \noforce \right> \to_C \left<l'_0, \mu_2 \right> \\
+    \gamma |- \left< \alpha, e_1, l_1, \mu_2, \noforce \right> \to_C \left<l'_1, \mu_3 \right> \\
     (s_0, f_0) = \mu_3(l'_0), (s_1,f_1) = \mu_3(l'_1) \\
     s' = s_0 \sqcup s_1 \\
     l' = \newloc(\tau, \delta, s' , \mu_3) \\
@@ -1755,8 +1771,8 @@ new memory location $l'$:
   \tau \equiv \mycode{private} \lor n > 0 \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left<l_0, \mu_0 \right> \\
   \gamma, \env_V, \env_P |- \left<e_1, \mu_0 \right> \to_E \left<l_1, \mu_1 \right> \\
-  \gamma |- \left<\alpha, e_0, l_0, \mu_1, noforce \right> \to_C \left<l_2, \mu_2 \right> \\
-  \gamma |- \left<\alpha, e_1, l_1, \mu_2, noforce \right> \to_C \left<l_3, \mu_3 \right> \\
+  \gamma |- \left<\alpha, e_0, l_0, \mu_1, \noforce \right> \to_C \left<l_2, \mu_2 \right> \\
+  \gamma |- \left<\alpha, e_1, l_1, \mu_2, \noforce \right> \to_C \left<l_3, \mu_3 \right> \\
   (s_0,f_0) = \mu_3(l_2), (s_1,f_1) = \mu_3(l_3) \\
   s' = s_0 \sqcup s_2, l' = \newloc(\tau, \mycode{bool}, s', \mu_3) \\
   g(\overline{i}) = \mathcal{E}(f_0(\theta_{s_0}^{s'}(\overline{i}))\ \mycode{&&}\ f_1(\theta_{s_1}^{s'}(\overline{i}))), \forall \overline{i} \in \mathcal{J}(s') \\
@@ -1786,7 +1802,7 @@ subexpression:
   \gamma |- e_1 : (\tau, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{false} \\
-  \gamma |- \left<  (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, noforce \right> \to_C \left<l', \mu' \right>
+  \gamma |- \left<  (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, \noforce \right> \to_C \left<l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{&&}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 } \\[2em]
@@ -1795,7 +1811,7 @@ subexpression:
   \gamma |- e_1 : (\tau, \mycode{bool}, 0) \\
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{true} \\
-  \gamma |- \left< (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, noforce \right> \to_C \left<l', \mu' \right>
+  \gamma |- \left< (\tau, \mycode{bool}, 0), e_0, l_0, \mu_0, \noforce \right> \to_C \left<l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left<e_0\ \mycode{||}\ e_1, \mu \right> \to_E \left<l', \mu' \right>
 }
@@ -1846,7 +1862,7 @@ value is returned:
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{true}\\
   \gamma, \env_V, \env_P |- \left< e_1, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-  \gamma |- \left< \alpha, e_1, l_1, \mu_1, noforce \right> \to_C \left< l', \mu' \right>
+  \gamma |- \left< \alpha, e_1, l_1, \mu_1, \noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', \mu' \right>
 }\]
@@ -1860,7 +1876,7 @@ returned:
   \gamma, \env_V, \env_P |- \left<e_0, \mu \right> \to_E \left< l_0, \mu_0 \right> \\
   \mu_0(l_0) = \mycode{false}\\
   \gamma, \env_V, \env_P |- \left< e_2, \mu_0 \right> \to_E \left< l_1, \mu_1 \right> \\
-  \gamma |- \left< \alpha, e_2, l_1, \mu_1, noforce \right> \to_C \left< l', \mu' \right>
+  \gamma |- \left< \alpha, e_2, l_1, \mu_1, \noforce \right> \to_C \left< l', \mu' \right>
 }{
   \gamma, \env_V, \env_P |- \left< e_0\ \mycode{?}\ e_1\ \mycode{:}\ e_2, \mu \right> \to_E \left< l', \mu' \right>
 }\]
