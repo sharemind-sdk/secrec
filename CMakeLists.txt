@@ -57,14 +57,12 @@ SET(LIBSCC_SOURCES
     "src/libscc/codegen/expression.cpp"
     "src/libscc/codegen/assign.cpp"
     "src/libscc/codegen/program.cpp"
-    "src/libscc/constant_folding.cpp"
     "src/libscc/codegen.cpp"
     "src/libscc/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
     "include/libscc/available_expressions.h"
     "include/libscc/codegen.h"
-    "include/libscc/constant_folding.h"
     "include/libscc/dataflowanalysis.h"
     "include/libscc/imop.h"
     "include/libscc/log.h"
