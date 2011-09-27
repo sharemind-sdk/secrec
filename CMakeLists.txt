@@ -31,9 +31,9 @@ find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
 BISON_TARGET(SECREC_PARSER "src/libscc/secrec.y"
-    "src/libscc/yacc_secrec.c")
+    "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 FLEX_TARGET(SECREC_LEXER "src/libscc/secrec.l"
-    "include/libscc/lex_secrec.h")
+    "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
 ADD_FLEX_BISON_DEPENDENCY(SECREC_LEXER SECREC_PARSER)
 
 SET(FLEX_BISON_SOURCES
@@ -58,7 +58,7 @@ SET(LIBSCC_SOURCES
     "src/libscc/codegen/assign.cpp"
     "src/libscc/codegen/program.cpp"
     "src/libscc/codegen.cpp"
-    "src/libscc/yacc_secrec.c")
+    "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
     "include/libscc/codegen.h"
@@ -79,7 +79,7 @@ SET(LIBSCC_HEADERS
     "include/libscc/types.h")
 
 SET_SOURCE_FILES_PROPERTIES("src/libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
-    "include/libscc/lex_secrec.h;src/libscc/yacc_secrec.c")
+    "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 include_directories("include/libscc/" "src/libscc/")
 ADD_LIBRARY("libscc" SHARED 

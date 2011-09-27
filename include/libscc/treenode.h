@@ -7,9 +7,9 @@
 #include <cassert>
 #include <deque>
 #include <string>
+
 #include "intermediate.h"
 #include "types.h"
-
 #include "codegenResult.h"
 
 namespace SecreC {
@@ -19,35 +19,38 @@ class CodeGen;
 class TreeNodeExpr;
 class TreeNodeProcDef;
 class TreeNode;
+#else
+typedef struct TreeNode TreeNode;
+#endif
 
+#ifdef __cplusplus
 // C interface
 extern "C" {
-
 #endif /* #ifdef __cplusplus */
 
 /* C interface for yacc: */
 
-struct TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
-void treenode_free(struct TreeNode *node);
-enum SecrecTreeNodeType treenode_type(struct TreeNode *node);
-const YYLTYPE *treenode_location(const struct TreeNode *node);
-unsigned treenode_numChildren(struct TreeNode *node);
-struct TreeNode *treenode_childAt(struct TreeNode *node, unsigned index);
-void treenode_appendChild(struct TreeNode *parent, struct TreeNode *child);
-void treenode_prependChild(struct TreeNode *parent, struct TreeNode *child);
-void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc);
+TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
+void treenode_free(TreeNode *node);
+enum SecrecTreeNodeType treenode_type(TreeNode *node);
+const YYLTYPE *treenode_location(const TreeNode *node);
+unsigned treenode_numChildren(const TreeNode *node);
+TreeNode *treenode_childAt(const TreeNode *node, unsigned index);
+void treenode_appendChild(TreeNode *parent, TreeNode *child);
+void treenode_prependChild(TreeNode *parent, TreeNode *child);
+void treenode_setLocation(TreeNode *node, YYLTYPE *loc);
 
-struct TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
-struct TreeNode *treenode_init_int(int value, YYLTYPE *loc);
-struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
-struct TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
-struct TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
-struct TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
-                                        YYLTYPE *loc);
-struct TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
-                                         YYLTYPE *loc);
-struct TreeNode *treenode_init_dimTypeF(unsigned dimType,
-                                        YYLTYPE *loc);
+TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
+TreeNode *treenode_init_int(int value, YYLTYPE *loc);
+TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
+TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
+TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
+TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
+                                 YYLTYPE *loc);
+TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
+                                  YYLTYPE *loc);
+TreeNode *treenode_init_dimTypeF(unsigned dimType,
+                                 YYLTYPE *loc);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -290,14 +290,11 @@ ICode::Status tyCheckIndices (TreeNode* node,
     return ICode::OK;
 }
 
-
-} // namespace SecreC
-
 /*******************************************************************************
   C interface for Yacc
 *******************************************************************************/
 
-extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
+SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
                                           const YYLTYPE *loc)
 {
     switch (type) {
@@ -400,92 +397,90 @@ extern "C" struct TreeNode *treenode_init(enum SecrecTreeNodeType type,
     }
 }
 
-extern "C" void treenode_free(struct TreeNode *node) {
+void treenode_free(TreeNode *node) {
     delete ((SecreC::TreeNode*) node);
 }
 
-extern "C" enum SecrecTreeNodeType treenode_type(const struct TreeNode *node) {
+enum SecrecTreeNodeType treenode_type(TreeNode *node) {
     return ((const SecreC::TreeNode*) node)->type();
 }
 
-extern "C" const YYLTYPE *treenode_location(const struct TreeNode *node) {
+const YYLTYPE *treenode_location(const TreeNode *node) {
     return &((const SecreC::TreeNode*) node)->location();
 }
 
-extern "C" unsigned treenode_numChildren(const struct TreeNode *node) {
+unsigned treenode_numChildren(const TreeNode *node) {
     return ((const SecreC::TreeNode*) node)->children().size();
 }
 
-extern "C" struct TreeNode *treenode_childAt(const struct TreeNode *node,
+TreeNode *treenode_childAt(const TreeNode *node,
                                              unsigned index)
 {
     return (TreeNode*) ((const SecreC::TreeNode*) node)->children().at(index);
 }
 
-extern "C" void treenode_appendChild(struct TreeNode *parent,
-                                     struct TreeNode *child)
+void treenode_appendChild(TreeNode *parent,
+                                     TreeNode *child)
 {
     return ((SecreC::TreeNode*) parent)->appendChild((SecreC::TreeNode*) child);
 }
 
-extern "C" void treenode_prependChild(struct TreeNode *parent,
-                                      struct TreeNode *child)
+void treenode_prependChild(TreeNode *parent,
+                                      TreeNode *child)
 {
     typedef SecreC::TreeNode TN;
     return ((TN*) parent)->prependChild((TN*) child);
 }
 
-extern "C" void treenode_setLocation(struct TreeNode *node, YYLTYPE *loc) {
+void treenode_setLocation(TreeNode *node, YYLTYPE *loc) {
     return ((SecreC::TreeNode*) node)->setLocation(*loc);
 }
 
-extern "C" struct TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc) {
+TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc) {
 
     return (TreeNode*) new SecreC::TreeNodeExprBool(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_int(int value, YYLTYPE *loc) {
+TreeNode *treenode_init_int(int value, YYLTYPE *loc) {
     return (TreeNode*) new SecreC::TreeNodeExprInt(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc) {
+TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc) {
     return (TreeNode*) new SecreC::TreeNodeExprUInt(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_string(const char *value,
+TreeNode *treenode_init_string(const char *value,
                                                  YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeExprString(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_identifier(const char *value,
+TreeNode *treenode_init_identifier(const char *value,
                                                      YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeIdentifier(value, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_secTypeF(
+TreeNode *treenode_init_secTypeF(
         enum SecrecSecType secType,
         YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeSecTypeF(secType, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_dataTypeF(
+TreeNode *treenode_init_dataTypeF(
         enum SecrecDataType dataType,
         YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeDataTypeF(dataType, *loc);
 }
 
-extern "C" struct TreeNode *treenode_init_dimTypeF(
+TreeNode *treenode_init_dimTypeF(
         unsigned dimType,
         YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeDimTypeF(dimType, *loc);
 }
-
-namespace SecreC {
 
 /*******************************************************************************
   TreeNodeDataTypeF
