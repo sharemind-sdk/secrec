@@ -1,0 +1,17 @@
+#
+# Copy this file to config.local for inclusion by CMakeLists.txt.
+#
+# CMakeLists.txt first includes a config.local file in the current source
+# directory, if found. Only then CMakeLists.txt includes a config.local file in
+# the current build (binary) directory, if found.
+#
+
+# Uncomment the following line to enable tests being built:
+#ENABLE_TESTING()
+
+# Override CFLAGS:
+#SET(CMAKE_CXX_FLAGS "-std=gnu99 -Wall -Wextra -O2 -fstrict-aliasing -Wstrict-aliasing=1")
+
+# Uncomment for clang build:
+# SET(CMAKE_C_COMPILER "clang")
+# SET(CMAKE_CXX_COMPILER "clang++")
