@@ -1,6 +1,6 @@
 %{
 #include "parser.h"
-#include "yacc_secrec.tab.h"
+#include "yacc_secrec.h"
 
 #define step(loc) {\
     (loc)->first_line = (loc)->last_line;\

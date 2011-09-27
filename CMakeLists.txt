@@ -61,7 +61,6 @@ SET(LIBSCC_SOURCES
     "src/libscc/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
-    "include/libscc/available_expressions.h"
     "include/libscc/codegen.h"
     "include/libscc/dataflowanalysis.h"
     "include/libscc/imop.h"
