@@ -1,4 +1,5 @@
-#include <QtTest>
+#include "testtreenode.h"
+
 #include <libscc/parser.h>
 #include <libscc/treenode.h>
 
@@ -15,24 +16,6 @@ bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
 
 Q_DECLARE_METATYPE(SecrecDataType)
 Q_DECLARE_METATYPE(SecrecSecType)
-
-class TestTreeNode: public QObject {
-    Q_OBJECT
-
-    private slots:
-        void testInitTreeNode();
-        void testInitBool();
-        void testInitBool_data();
-        void testInitInt();
-        void testInitInt_data();
-        void testInitUInt();
-        void testInitUInt_data();
-        void testInitString();
-        void testInitString_data();
-        void testInitType();
-        void testInitType_data();
-        void testChildren();
-};
 
 #define DEFLOC(n,fl,fc,ll,lc) YYLTYPE n;\
     (n).first_line=(fl);\
@@ -195,4 +178,3 @@ void TestTreeNode::testChildren() {
 }
 
 QTEST_APPLESS_MAIN(TestTreeNode)
-#include "testtreenode.moc"
