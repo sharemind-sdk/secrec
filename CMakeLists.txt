@@ -120,7 +120,7 @@ ENABLE_TESTING()
 
 FUNCTION(add_test_secrec_execute testfile)
     ADD_TEST(NAME "${testfile}"
-        COMMAND $<TARGET_FILE:sca> --eval "tests/regression/${testfile}.sc")
+        COMMAND $<TARGET_FILE:sca> --eval "${CMAKE_CURRENT_SOURCE_DIR}/tests/regression/${testfile}.sc")
 ENDFUNCTION()
 
 # Tests for scalars:
