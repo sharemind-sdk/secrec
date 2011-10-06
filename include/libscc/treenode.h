@@ -253,6 +253,24 @@ class TreeNodeExprAssign: public TreeNodeExpr {
 
 
 /******************************************************************
+  TreeNodeExprCast
+******************************************************************/
+
+/// Data type casting expression.
+class TreeNodeExprCast: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprCast (const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
+
+        virtual ICode::Status calculateResultType(SymbolTable &st,
+                                                  CompileLog &log);
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+};
+
+
+/******************************************************************
   TreeNodeExprIndex
 ******************************************************************/
 

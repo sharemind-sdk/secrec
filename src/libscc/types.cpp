@@ -24,10 +24,12 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
         case DATATYPE_INT8:    return "int8";
         case DATATYPE_INT16:   return "int16";
         case DATATYPE_INT32:   return "int32";
+        case DATATYPE_INT64:   return "int64";
         case DATATYPE_INT:     return "int";
         case DATATYPE_UINT8:   return "uint8";
         case DATATYPE_UINT16:  return "uint16";
         case DATATYPE_UINT32:  return "uint32";
+        case DATATYPE_UINT64:  return "uint64";
         case DATATYPE_UINT:    return "uint";
         case DATATYPE_STRING:  return "string";
         case NUM_DATATYPES:    assert (false && "ICE!"); break;
@@ -48,18 +50,20 @@ enum CastStyle {
 #define E CAST_EXPLICIT
 
 const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
-    //  x   B   S   I8  I16 I32 I   U8  U16 U32 U
-       {S,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_INVALID,
-       {F,  S,  F,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_BOOL,
-       {F,  F,  S,  F,  F,  F,  F,  F,  F,  F,  F},     //DATATYPE_STRING,
-       {F,  E,  F,  S,  I,  I,  I,  E,  E,  E,  E},     //DATATYPE_INT8,
-       {F,  E,  F,  E,  S,  I,  I,  E,  E,  E,  E},     //DATATYPE_INTS6,
-       {F,  E,  F,  E,  E,  S,  I,  E,  E,  E,  E},     //DATATYPE_INTEI,
-       {F,  E,  F,  E,  E,  E,  S,  E,  E,  E,  E},     //DATATYPE_INT,
-       {F,  E,  F,  E,  I,  I,  I,  S,  I,  I,  I},     //DATATYPE_UINT8,
-       {F,  E,  F,  E,  E,  I,  I,  E,  S,  I,  I},     //DATATYPE_UINTS6,
-       {F,  E,  F,  E,  E,  E,  I,  E,  E,  S,  I},     //DATATYPE_UINTEI,
-       {F,  E,  F,  E,  E,  E,  E,  E,  E,  E,  S}      //DATATYPE_UINT,
+    //  x   B   S   I8  I16 I32 I64 I   U8  U16 U32 U64, U
+       {S,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,   I},     //DATATYPE_INVALID,
+       {F,  S,  F,  I,  I,  I,  I,  I,  I,  I,  I,  I,   I},     //DATATYPE_BOOL,
+       {F,  F,  S,  F,  F,  F,  F,  F,  F,  F,  F,  F,   F},     //DATATYPE_STRING,
+       {F,  E,  F,  S,  I,  I,  I,  I,  E,  E,  E,  E,   E},     //DATATYPE_INT8,
+       {F,  E,  F,  E,  S,  I,  I,  I,  E,  E,  E,  E,   E},     //DATATYPE_INT16,
+       {F,  E,  F,  E,  E,  S,  I,  I,  E,  E,  E,  E,   E},     //DATATYPE_INT32,
+       {F,  E,  F,  E,  E,  E,  S,  S,  E,  E,  E,  E,   E},     //DATATYPE_INT64,
+       {F,  E,  F,  E,  E,  E,  S,  S,  E,  E,  E,  E,   E},     //DATATYPE_INT,
+       {F,  E,  F,  E,  I,  I,  I,  I,  S,  I,  I,  I,   I},     //DATATYPE_UINT8,
+       {F,  E,  F,  E,  E,  I,  I,  I,  E,  S,  I,  I,   I},     //DATATYPE_UINT16,
+       {F,  E,  F,  E,  E,  E,  I,  I,  E,  E,  S,  I,   I},     //DATATYPE_UINT32,
+       {F,  E,  F,  E,  E,  E,  E,  E,  E,  E,  E,  S,   S},     //DATATYPE_UINT64,
+       {F,  E,  F,  E,  E,  E,  E,  E,  E,  E,  E,  S,   S}      //DATATYPE_UINT,
 };
 
 #undef F
@@ -136,6 +140,7 @@ bool isSignedNumericDataType (SecrecDataType dType) {
     case DATATYPE_INT8:
     case DATATYPE_INT16:
     case DATATYPE_INT32:
+    case DATATYPE_INT64:
     case DATATYPE_INT:
         isSigned = true;
     default:
@@ -151,6 +156,7 @@ bool isUnsignedNumericDataType (SecrecDataType dType) {
     case DATATYPE_UINT8:
     case DATATYPE_UINT16:
     case DATATYPE_UINT32:
+    case DATATYPE_UINT64:
     case DATATYPE_UINT:
         isUnsigned = true;
     default:

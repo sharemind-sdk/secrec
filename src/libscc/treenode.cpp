@@ -387,6 +387,7 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
         case NODE_TYPEVOID:
             return (TreeNode*) (new SecreC::TreeNodeTypeVoid(*loc));
         case NODE_EXPR_CAST:
+            return (TreeNode*) (new SecreC::TreeNodeExprCast (*loc));
             /// \todo
         case NODE_DECL_VSUFFIX:
             /// \todo
@@ -588,6 +589,45 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     return ICode::OK;
 }
 
+/******************************************************************
+  TreeNodeExprCast
+******************************************************************/
+
+ICode::Status TreeNodeExprCast::calculateResultType(SymbolTable &st,
+                                                    CompileLog &log)
+{
+    if (haveResultType ())
+        return ICode::OK;
+
+    assert (children ().size () == 2);
+    assert (dynamic_cast<TreeNodeDataTypeF*>(children ().at (0)));
+    assert (dynamic_cast<TreeNodeExpr*>(children ().at (1)));
+
+    TreeNodeDataTypeF* dType = static_cast<TreeNodeDataTypeF*>(children ().at (0));
+    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children ().at (1));
+    ICode::Status s = e->calculateResultType (st, log);
+    if (s != ICode::OK) {
+        return s;
+    }
+
+    if (e->checkAndLogIfVoid (log)) {
+        return ICode::E_TYPE;
+    }
+
+    const TypeNonVoid* eType = static_cast<const TypeNonVoid*>(&e->resultType ());
+
+    /// \todo right now we only allow identity casts
+    if (dType->dataType () != eType->secrecDataType ()) {
+        log.error () << "Illegal type cast at " << location ();
+        return ICode::E_TYPE;
+    }
+
+    setResultType (new TypeNonVoid (
+                       eType->secrecSecType (),
+                       dType->dataType (),
+                       eType->secrecDimType ()));
+    return ICode::OK;
+}
 
 /******************************************************************
   TreeNodeExprIndex

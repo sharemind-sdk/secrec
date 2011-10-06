@@ -70,13 +70,22 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "for"        { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
 "if"         { stepLen(yyget_lloc(yyscanner), 2); return IF; }
 "int"        { stepLen(yyget_lloc(yyscanner), 3); return INT; }
+"uint"       { stepLen(yyget_lloc(yyscanner), 4); return UINT; }
+"int8"       { stepLen(yyget_lloc(yyscanner), 4); return INT8; }
+"uint8"      { stepLen(yyget_lloc(yyscanner), 5); return UINT8; }
+"int16"      { stepLen(yyget_lloc(yyscanner), 5); return INT16; }
+"uint16"     { stepLen(yyget_lloc(yyscanner), 6); return UINT16; }
+"int32"      { stepLen(yyget_lloc(yyscanner), 5); return INT32; }
+"uint32"     { stepLen(yyget_lloc(yyscanner), 6); return UINT32; }
+"int64"      { stepLen(yyget_lloc(yyscanner), 5); return INT64; }
+"uint64"     { stepLen(yyget_lloc(yyscanner), 6); return UINT64; }
 "private"    { stepLen(yyget_lloc(yyscanner), 7); return PRIVATE; }
 "public"     { stepLen(yyget_lloc(yyscanner), 6); return PUBLIC; }
 "return"     { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
-"signed"     { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; }
 "string"     { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
 "true"       { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
-"unsigned"   { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; }
+ /* "signed"     { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; } */
+ /* "unsigned"   { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; } */
 "void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
 "assert"     { stepLen(yyget_lloc(yyscanner), 6); return ASSERT; }

@@ -153,6 +153,7 @@ public:
      * in branching context such as \a if statement and \a ternary  expressions.
      */
     /// \{
+    CGBranchResult cgBoolExprCast (TreeNodeExprCast* e);
     CGBranchResult cgBoolExprUnary (TreeNodeExprUnary* e);
     CGBranchResult cgBoolExprIndex (TreeNodeExprIndex* e);
     CGBranchResult cgBoolExprBinary (TreeNodeExprBinary* e);
@@ -169,6 +170,7 @@ public:
      * Code generation for regular expressions.
      */
     /// \{
+    CGResult cgExprCast (TreeNodeExprCast* e);
     CGResult cgExprFRead (TreeNodeExprFRead* e);
     CGResult cgExprBool (TreeNodeExprBool* e);
     CGResult cgExprIndex (TreeNodeExprIndex* e);

@@ -81,8 +81,9 @@
 %token <str> IDENTIFIER
 
 /* Keywords: */
-%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF INT PRIVATE PUBLIC PRINT
-%token RETURN SIGNED STRING TRUE_B UNSIGNED VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT FREAD
+%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
+%token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
+%token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT FREAD
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -310,13 +311,41 @@ datatype_specifier
    {
      $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT, &@$);
    }
- | SIGNED INT
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT, &@$);
-   }
- | UNSIGNED INT
+ | UINT
    {
      $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT, &@$);
+   }
+ | INT8
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT8, &@$);
+   }
+ | UINT8
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT8, &@$);
+   }
+ | INT16
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT16, &@$);
+   }
+ | UINT16
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT16, &@$);
+   }
+ | INT32
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT32, &@$);
+   }
+ | UINT32
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT32, &@$);
+   }
+ | INT64
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT64, &@$);
+   }
+ | UINT64
+   {
+     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT64, &@$);
    }
  | STRING
    {
@@ -758,7 +787,7 @@ multiplicative_expression
  ;
 
 cast_expression
- : '(' type_specifier ')' cast_expression
+ : '(' datatype_specifier ')' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_CAST, &@$);
      treenode_appendChild($$, $2);

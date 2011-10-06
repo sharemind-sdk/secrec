@@ -11,7 +11,32 @@
  */
 
 namespace SecreC {
-  
+
+/******************************************************************
+  TreeNodeExprCast
+******************************************************************/
+
+CGResult TreeNodeExprCast::codeGenWith (CodeGen &cg) {
+    return cg.cgExprCast (this);
+}
+
+CGResult CodeGen::cgExprCast (TreeNodeExprCast *e) {
+    TreeNodeExpr* eArg (static_cast<TreeNodeExpr*>(e->children ().at (1)));
+    log.warning () << "Generating code for partially implemented expression.";
+    return eArg->codeGenWith (*this);
+}
+
+CGBranchResult TreeNodeExprCast::codeGenBoolWith (CodeGen &cg) {
+    assert (havePublicBoolType());
+    return cg.cgBoolExprCast (this);
+}
+
+CGBranchResult CodeGen::cgBoolExprCast (TreeNodeExprCast *e) {
+    TreeNodeExpr* eArg (static_cast<TreeNodeExpr*>(e->children ().at (1)));
+    log.warning () << "Generating code for partially implemented expression.";
+    return eArg->codeGenBoolWith (*this);
+}
+
 /******************************************************************
   TreeNodeExprIndex
 ******************************************************************/
