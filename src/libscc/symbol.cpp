@@ -69,7 +69,7 @@ std::string SymbolLabel::toString() const {
     std::ostringstream os;
     os << "Lable to ";
     if (m_target->block () != 0) {
-        os << "block " << m_target->block()->index;
+        os << "block " << m_target->block()->index ();
     }
     else {
         os << "imop " << m_target->index ();

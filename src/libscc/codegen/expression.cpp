@@ -97,10 +97,10 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         codeGenSize (result);
     }
 
-    // r = FILL def size
+    // r = ALLOC def size
     if (!isScalar) {
         Symbol* def = st.defaultConstant (e->resultType ().secrecDataType ());
-        Imop* i = new Imop (e, Imop::FILL, resSym, def, resSym->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
         pushImopAfter (result, i);
     }
 
@@ -271,7 +271,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     if (eArg->resultType().isScalar())
         i = new Imop (m_node, Imop::ASSIGN, resSym, st.constantInt (0));
     else
-        i = new Imop (m_node, Imop::FILL, resSym, st.constantInt (0), n);
+        i = new Imop (m_node, Imop::ALLOC, resSym, st.constantInt (0), n);
     pushImopAfter (result, i);
 
     i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
@@ -376,7 +376,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     Symbol* rhs = st.defaultConstant (e->resultType ().secrecDataType ());
-    Imop* i = new Imop (m_node, Imop::FILL, resSym, rhs, resSym->getSizeSym());
+    Imop* i = new Imop (m_node, Imop::ALLOC, resSym, rhs, resSym->getSizeSym());
     code.push_imop(i);
 
     CodeGenLoop loop (*this);
@@ -517,7 +517,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
         rhs = st.appendTemporary (TypeNonVoid(eArg->resultType ().secrecSecType (),
                                               eArg->resultType ().secrecDataType (),
                                               e->resultType ().secrecDimType ()));
-        Imop* i = new Imop (e, Imop::FILL, rhs, tmp, resSym->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, rhs, tmp, resSym->getSizeSym ());
         code.push_imop (i);
     }
 
@@ -532,6 +532,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 *******************************************************************************/
 
 CGResult TreeNodeExprFRead::codeGenWith (CodeGen &cg) {
+    assert (false && "TODO");
     return cg.cgExprFRead (this);
 }
 
@@ -554,22 +555,32 @@ CGResult CodeGen::cgExprFRead (TreeNodeExprFRead *e) {
 
     Imop* i = 0;
 
-    i = new Imop (e, Imop::FREAD, (Symbol*) 0, argSym);
-    pushImopAfter (result, i);
+//    i = new Imop (e, Imop::FREAD, (Symbol*) 0, argSym);
+//    pushImopAfter (result, i);
 
-    i = new Imop (e, Imop::POP, resSym->getDim (1));
-    code.push_imop(i);
+//    i = new Imop (e, Imop::POP, resSym->getDim (1));
+//    code.push_imop(i);
 
-    i = new Imop (e, Imop::POP, resSym->getDim (0));
-    code.push_imop(i);
+//    i = new Imop (e, Imop::POP, resSym->getDim (0));
+//    code.push_imop(i);
 
-    codeGenSize (result);
+//    codeGenSize (result);
 
-    i = new Imop (e, Imop::FILL, resSym, st.constantInt (0), resSym->getSizeSym ());
-    code.push_imop(i);
+//    i = new Imop (e, Imop::ALLOC, resSym, st.constantInt (0), resSym->getSizeSym ());
+//    code.push_imop(i);
 
-    i = new Imop (e, Imop::POP, resSym, resSym->getSizeSym ());
-    code.push_imop(i);
+//    i = new Imop (e, Imop::POP, resSym, resSym->getSizeSym ());
+//    code.push_imop(i);
+
+    std::list<Symbol* > args;
+
+    args.push_back (resSym->getDim (0));
+    args.push_back (resSym->getDim (1));
+    args.push_back (resSym);
+    args.push_back (0);
+    args.push_back (argSym);
+
+    i = new Imop (e, Imop::FREAD, args.begin (), args.end ());
 
     return result;
 }
@@ -654,14 +665,14 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     if (eArg1->resultType ().secrecDimType () > eArg2->resultType ().secrecDimType ()) {
         e2result = st.appendTemporary (static_cast<TypeNonVoid const&> (eArg1->resultType ()));
         e2result->inheritShape (e1result);
-        Imop* i = new Imop (e, Imop::FILL, e2result, arg2Result.symbol (), e1result->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, e2result, arg2Result.symbol (), e1result->getSizeSym ());
         pushImopAfter (result, i);
     }
     else
     if (eArg2->resultType ().secrecDimType () > eArg1->resultType ().secrecDimType ()) {
         e1result = st.appendTemporary (static_cast<TypeNonVoid const&> (eArg2->resultType ()));
         e1result->inheritShape (e2result);
-        Imop* i = new Imop (e, Imop::FILL, e1result,arg1Result.symbol (), e2result->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, e1result,arg1Result.symbol (), e2result->getSizeSym ());
         pushImopAfter (result, i);
     }
     else {
@@ -689,8 +700,8 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     resSym->inheritShape(e1result);
 
     // Generate code for binary expression:
-    Imop *i;
     Imop::Type iType;
+
     switch (e->type ()) {
         case NODE_EXPR_BINARY_ADD:  iType = Imop::ADD;  break;
         case NODE_EXPR_BINARY_SUB:  iType = Imop::SUB;  break;
@@ -712,7 +723,8 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
             return result;
     }
 
-    i = newBinary (e, iType, resSym, e1result, e2result);
+    allocResult (result);
+    Imop* i = newBinary (e, iType, resSym, e1result, e2result);
     pushImopAfter (result, i);
 
     return result;
@@ -874,7 +886,7 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
     CGResult result;
     Symbol* r = generateResultSymbol (result, e);
-    std::stack<Symbol*> argList;
+    std::list<Symbol*> argList, retList;
 
     // Initialize arguments:
     for (CLCI it (e->children().begin() + 1); it != e->children ().end (); ++ it) {
@@ -887,56 +899,79 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
             return result;
         }
 
-        argList.push (argResult.symbol ());
-    }
-
-    // Add them as arguments in a backward manner:
-    while (!argList.empty ()) {
-        Symbol* sym = argList.top ();
-
-        Imop *i = 0;
-        if (!sym->secrecType ().isScalar ()) {
-            i = new Imop (e, Imop::PUSH, 0, sym, sym->getSizeSym ());
-        }
-        else {
-            i = new Imop (e, Imop::PUSH, 0, sym);
-        }
-
-        pushImopAfter (result, i);
-
+        Symbol* sym = argResult.symbol ();
+        argList.push_back (sym);
         // push shape in reverse order
-        Symbol::dim_reverese_iterator
-                di = sym->dim_rbegin (),
-                de = sym->dim_rend ();
+        Symbol::dim_iterator
+                di = sym->dim_begin (),
+                de = sym->dim_end ();
         for (; di != de; ++ di) {
-            Imop* i = new Imop (e, Imop::PUSH, (Symbol*) 0, *di);
-            code.push_imop (i);
+            argList.push_back (*di);
         }
-
-        argList.pop ();
     }
 
-    // Do function call
-    Imop *i = new Imop (e, Imop::CALL, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    i->setCallDest (e->symbolProcedure (), st.label (c));
-    c->setArg2 (st.label (i));
-    code.push_imop (i);
-    code.push_imop (c);
-    result.patchFirstImop (i);
-
-    // pop shape, recompute size, and pop data
+    // prep return values:
     if (!e->resultType ().isVoid ()) {
         Symbol::dim_iterator di = r->dim_begin (), de = r->dim_end ();
         for (; di != de; ++ di) {
-            Imop* i = new Imop (e, Imop::POP, *di);
-            code.push_imop (i);
+            retList.push_back (*di);
         }
 
-        codeGenSize (result);
-        i = newNullary (e, Imop::POP, r);
-        code.push_imop (i);
+        retList.push_back (r);
     }
+
+//    // Add them as arguments in a backward manner:
+//    while (!argList.empty ()) {
+//        Symbol* sym = argList.top ();
+
+//        Imop *i = 0;
+//        if (!sym->secrecType ().isScalar ()) {
+//            i = new Imop (e, Imop::PUSH, 0, sym, sym->getSizeSym ());
+//        }
+//        else {
+//            i = new Imop (e, Imop::PUSH, 0, sym);
+//        }
+
+//        pushImopAfter (result, i);
+
+//        // push shape in reverse order
+//        Symbol::dim_reverese_iterator
+//                di = sym->dim_rbegin (),
+//                de = sym->dim_rend ();
+//        for (; di != de; ++ di) {
+//            Imop* i = new Imop (e, Imop::PUSH, (Symbol*) 0, *di);
+//            code.push_imop (i);
+//        }
+
+//        argList.pop ();
+//    }
+
+    // Do function call
+//    Imop *i = new Imop (e, Imop::CALL, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+    Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
+    Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+//    i->setCallDest (e->symbolProcedure (), st.label (c));
+    i->setCallDest (e->symbolProcedure ());
+    c->setArg2 (st.label (i));
+    pushImopAfter (result, i);
+    code.push_imop (c);
+
+    if (!e->resultType ().isVoid ()) {
+        codeGenSize (result);
+    }
+
+//    // pop shape, recompute size, and pop data
+//    if (!e->resultType ().isVoid ()) {
+//        Symbol::dim_iterator di = r->dim_begin (), de = r->dim_end ();
+//        for (; di != de; ++ di) {
+//            Imop* i = new Imop (e, Imop::POP, *di);
+//            code.push_imop (i);
+//        }
+
+//        codeGenSize (result);
+//        i = newNullary (e, Imop::POP, r);
+//        code.push_imop (i);
+//    }
 
     return result;
 }
@@ -1544,7 +1579,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
             }
 
             codeGenSize (result);
-            i = new Imop (e, Imop::FILL, resSym, st.constantInt (0), resSym->getSizeSym ());
+            i = new Imop (e, Imop::ALLOC, resSym, st.constantInt (0), resSym->getSizeSym ());
         }
         else {
             i = new Imop (e, Imop::ASSIGN, resSym, st.constantInt (0));
@@ -1608,7 +1643,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     Symbol* one = st.constantInt (1);
     if (!e->resultType ().isScalar ()) {
         one = st.appendTemporary (static_cast<const TypeNonVoid&> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::FILL, one, st.constantInt (1), destSymSym->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, one, st.constantInt (1), destSymSym->getSizeSym ());
         pushImopAfter (result,i );
     }
 
@@ -1715,7 +1750,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
             }
 
             codeGenSize (result);
-            i = new Imop (e, Imop::FILL, resSym, st.constantInt (0), resSym->getSizeSym ());
+            i = new Imop (e, Imop::ALLOC, resSym, st.constantInt (0), resSym->getSizeSym ());
         }
         else {
             i = new Imop (e, Imop::ASSIGN, resSym, st.constantInt (0));
@@ -1779,7 +1814,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     Symbol* one = st.constantInt (1);
     if (!e->resultType ().isScalar ()) {
         one = st.appendTemporary (static_cast<const TypeNonVoid&> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::FILL, one, st.constantInt (1), destSymSym->getSizeSym ());
+        Imop* i = new Imop (e, Imop::ALLOC, one, st.constantInt (1), destSymSym->getSizeSym ());
         pushImopAfter (result,i );
     }
 

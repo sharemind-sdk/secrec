@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
-#include <stack>
 
 #include "dataflowanalysis.h"
 #include "treenode.h"
@@ -39,52 +38,52 @@ inline bool fallsThru(const SecreC::Block &b) {
 }
 
 inline void addMutualUse (SecreC::Block &from, SecreC::Block &to) {
-    from.users.insert (&to);
-    to.users.insert (&from);
+    from.addUser (&to);
+    to.addUser (&from);
 }
 
 inline void linkBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.successors.insert(&to);
-    to.predecessors.insert(&from);
+    from.addSucc (&to);
+    to.addPred (&from);
     addMutualUse (from, to);
 }
 
 inline void linkBlocksCondFalse(SecreC::Block &from, SecreC::Block &to) {
-    from.successorsCondFalse.insert(&to);
-    to.predecessorsCondFalse.insert(&from);
+    from.addSuccCondFalse (&to);
+    to.addPredCondFalse (&from);
     addMutualUse (from, to);
 }
 
 inline void linkBlocksCondTrue(SecreC::Block &from, SecreC::Block &to) {
-    from.successorsCondTrue.insert(&to);
-    to.predecessorsCondTrue.insert(&from);
+    from.addSuccCondTrue (&to);
+    to.addPredCondTrue (&from);
     addMutualUse (from, to);
 }
 
 inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.successorsCall.insert(&to);
-    to.predecessorsCall.insert(&from);
+    from.addSuccCall (&to);
+    to.addPredCall (&from);
     addMutualUse (from, to);
 }
 
 inline void linkRetBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.successorsRet.insert(&to);
-    to.predecessorsRet.insert(&from);
+    from.addSuccRet (&to);
+    to.addPredRet (&from);
     addMutualUse (from, to);
 }
 
-inline void printBlockList(std::ostream &os, const char *prefix,
-                           const std::set<SecreC::Block*> bl)
+template <typename Iter >
+void printBlocks(std::ostream &os, const char *prefix, Iter begin, Iter end)
 {
-    if (!bl.empty()) {
+    if (begin != end) {
         os << prefix;
         std::set<unsigned long> reachables;
         std::set<unsigned long> unreachables;
-        for (BSCI jt(bl.begin()); jt != bl.end(); jt++) {
-            if ((*jt)->reachable) {
-                reachables.insert((*jt)->index);
+        for (Iter jt = begin; jt != end; ++ jt) {
+            if ((*jt)->reachable ()) {
+                reachables.insert((*jt)->index ());
             } else {
-                unreachables.insert((*jt)->index);
+                unreachables.insert((*jt)->index ());
             }
         }
         for (std::set<unsigned long>::const_iterator jt = reachables.begin(); jt != reachables.end(); jt++) {
@@ -103,6 +102,19 @@ inline void printBlockList(std::ostream &os, const char *prefix,
         os << std::endl;
     }
 }
+
+void printBlockList(std::ostream &os, const char *prefix, const std::set<SecreC::Block*>& bl) {
+    printBlocks (os, prefix, bl.begin (), bl.end ());
+}
+
+
+struct BlockComp {
+    inline bool operator () (const SecreC::Block* b1,
+                             const SecreC::Block* b2) const {
+        return b1->index () < b2->index ();
+    }
+};
+
 
 } // anonymous namespace
 
@@ -131,6 +143,27 @@ Blocks::~Blocks() {
     }
 }
 
+void Blocks::addBlockToProc (const SymbolProcedure* proc, Block* b) {
+    b->setParent (proc);
+    m_procBlocks[proc].push_back (b);
+}
+
+Blocks::ProcMap::iterator Blocks::beginProc () {
+    return m_procBlocks.begin ();
+}
+
+Blocks::ProcMap::const_iterator Blocks::beginProc () const {
+    return m_procBlocks.begin ();
+}
+
+Blocks::ProcMap::iterator Blocks::endProc () {
+    return m_procBlocks.end ();
+}
+
+Blocks::ProcMap::const_iterator Blocks::endProc () const {
+    return m_procBlocks.end ();
+}
+
 std::string Blocks::toString() const {
     typedef DataFlowAnalysis RD;
 
@@ -140,32 +173,38 @@ std::string Blocks::toString() const {
 
     for (const_iterator it = begin(); it != end(); it++) {
         const Block* block = *it;
-        os << "  Block " << block->index;
-        if (!(*it)->reachable) {
+        os << "  Block " << block->index ();
+
+        if (!block->reachable ()) {
             os << " [REMOVED]";
         }
-        os << std::endl;
-        printBlockList(os, "  ..... From: ", (*it)->predecessors);
-        printBlockList(os, "  ... From -: ", (*it)->predecessorsCondFalse);
-        printBlockList(os, "  ... From +: ", (*it)->predecessorsCondTrue);
-        printBlockList(os, "  . FromCall: ", (*it)->predecessorsCall);
-        printBlockList(os, "  .. FromRet: ", (*it)->predecessorsRet);
-        printBlockList(os, "  ....... To: ", (*it)->successors);
-        printBlockList(os, "  ..... To -: ", (*it)->successorsCondFalse);
-        printBlockList(os, "  ..... To +: ", (*it)->successorsCondTrue);
-        printBlockList(os, "  ... ToCall: ", (*it)->successorsCall);
-        printBlockList(os, "  .... ToRet: ", (*it)->successorsRet);
-        if ((*it)->callPassFrom != 0) {
-            os << "  . PassFrom: " << (*it)->callPassFrom->index << std::endl;
+        else
+        if (block->parent () != 0) {
+            os << " [" << block->parent ()->toString () << "]";
         }
-        if ((*it)->callPassTo != 0) {
-            os << "  ... PassTo: " << (*it)->callPassTo->index << std::endl;;
+
+        os << std::endl;
+        printBlockList(os, "  ..... From: ", (*it)->pred ());
+        printBlockList(os, "  ... From -: ", (*it)->predCondFalse ());
+        printBlockList(os, "  ... From +: ", (*it)->predCondTrue ());
+        printBlockList(os, "  . FromCall: ", (*it)->predCall ());
+        printBlockList(os, "  .. FromRet: ", (*it)->predRet ());
+        printBlockList(os, "  ....... To: ", (*it)->succ ());
+        printBlockList(os, "  ..... To -: ", (*it)->succCondFalse ());
+        printBlockList(os, "  ..... To +: ", (*it)->succCondTrue ());
+        printBlockList(os, "  ... ToCall: ", (*it)->succCall ());
+        printBlockList(os, "  .... ToRet: ", (*it)->succRet ());
+        if ((*it)->callPassFrom () != 0) {
+            os << "  . PassFrom: " << (*it)->callPassFrom ()->index () << std::endl;
+        }
+        if ((*it)->callPassTo () != 0) {
+            os << "  ... PassTo: " << (*it)->callPassTo ()->index () << std::endl;;
         }
 
         // Print code:
         os << "    Code:" << std::endl;
         for (Block::iterator jt((*it)->begin ()); jt != (*it)->end (); jt++) {
-            os << "      " << (*jt)->index() << "  " << (**jt);
+            os << "      " << (*jt)->index () << "  " << (**jt);
             if ((*jt)->creator() != 0) {
                 os << " // Created by "
                    << TreeNode::typeName((*jt)->creator()->type())
@@ -243,23 +282,41 @@ void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextB
 // propagate successor/predecessor info
 void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
     std::set<Block* > visited;
-    std::stack<Block* > todo;
+    /// \todo following is hack to force nodes to be visited in topological order
+    std::set<Block*, BlockComp > todo;
 
     m_entryBlock = front ();
-    todo.push (m_entryBlock);
+    todo.insert (m_entryBlock);
+    m_entryBlock->setParent (0);
 
     while (!todo.empty ()) {
-        Block* cur = todo.top ();
-        todo.pop ();
+        Block* cur = *todo.begin ();
+        todo.erase (cur);
 
         if (visited.find (cur) != visited.end ()) continue;
-        cur->reachable = true;
+        cur->setReachable ();
+        m_procBlocks[cur->parent ()].push_back (cur);
         Imop* lastImop = cur->lastImop ();
+
+        // link call with its destination
+        if (lastImop->type () == Imop::CALL) {
+            Block* next = lastImop->callDest ()->block ();
+            next->setParent (static_cast<const SymbolProcedure*>(lastImop->dest ()));
+            todo.insert (next);
+            linkCallBlocks (*cur, *next);
+
+            Block* cleanBlock = nextBlock.find (cur)->second;
+            cleanBlock->setParent (cur->parent ());
+            todo.insert  (cleanBlock);
+            cleanBlock->setCallPassFrom (cur);
+            cur->setCallPassTo (cleanBlock);
+        }
 
         // if block falls through we set its successor to be next block
         if (fallsThru (*cur)) {
             Block* next = nextBlock.find (cur)->second;
-            todo.push (next);
+            next->setParent (cur->parent ());
+            todo.insert (next);
             assert (lastImop->type () != Imop::JUMP);
             if (!lastImop->isJump ()) {
                 linkBlocks (*cur, *next);
@@ -273,7 +330,8 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
             assert (dynamic_cast<const SymbolLabel*>(lastImop->dest ()) != 0);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop->dest ());
             Block* next = jumpDest->target ()->block ();
-            todo.push (next);
+            next->setParent (cur->parent ());
+            todo.insert (next);
             if (lastImop->type () == Imop::JUMP) {
                 linkBlocks (*cur, *next);
             }
@@ -283,32 +341,20 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
         }
 
         if (lastImop->type () == Imop::END) {
+            assert (m_exitBlock == 0 && "Can only have one exit block!");
             m_exitBlock = lastImop->block ();
-        }
-
-        // link call with its destination
-        if (lastImop->type () == Imop::CALL) {
-            Block* next = lastImop->callDest ()->block ();
-            todo.push (next);
-            linkCallBlocks (*cur, *next);
-
-            Block* cleanBlock = nextBlock.find (cur)->second;
-            todo.push (cleanBlock);
-            cleanBlock->callPassFrom = cur;
-            cur->callPassTo = cleanBlock;
         }
 
         // link returning block with all the possible places it may return to
         if (lastImop->type () == Imop::RETURN ||
                 lastImop->type () == Imop::RETURNVOID) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop->arg2()) != 0);
-            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop->arg2())->target();
+            assert (dynamic_cast<const SymbolLabel*>(lastImop->dest()) != 0);
+            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop->dest())->target();
             const IS& ic = firstImop->incomingCalls();
             for (ISCI it(ic.begin()); it != ic.end(); ++ it) {
-                assert((*it)->type() == Imop::CALL);
-                assert (dynamic_cast<const SymbolLabel*>((*it)->arg2()) != 0);
-                Imop const* clean = static_cast<const SymbolLabel*>((*it)->arg2())->target();
-                linkRetBlocks (*cur, *clean->block ());
+                const Imop* callImop = *it;
+                assert(callImop->type() == Imop::CALL);
+                linkRetBlocks (*cur, *nextBlock.find (callImop->block ())->second);
             }
         }
 
@@ -320,36 +366,54 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
   Block
 *******************************************************************************/
 
-class UnlinkFrom {
-public:
-    UnlinkFrom (Block* block) : m_block (block) { }
-    void operator () (Block* that) const {
-        that->users.erase (m_block);
-        that->predecessors.erase (m_block);
-        that->predecessorsCondFalse.erase (m_block);
-        that->predecessorsCondTrue.erase (m_block);
-        that->predecessorsCall.erase (m_block);
-        that->predecessorsRet.erase (m_block);
-        that->successors.erase (m_block);
-        that->successorsCondFalse.erase (m_block);
-        that->successorsCondTrue.erase (m_block);
-        that->successorsCall.erase (m_block);
-        that->successorsRet.erase (m_block);
-        if (that->callPassFrom == m_block) that->callPassFrom = 0;
-        if (that->callPassTo == m_block) that->callPassTo = 0;
+void Block::unlink () {
+    Set::iterator i, e;
+    for (i = m_users.begin (), e = m_users.end (); i != e; ++ i) {
+        Block* that = *i;
+        that->m_users.erase (this);
+        that->m_predecessors.erase (this);
+        that->m_predecessorsCondFalse.erase (this);
+        that->m_predecessorsCondTrue.erase (this);
+        that->m_predecessorsCall.erase (this);
+        that->m_predecessorsRet.erase (this);
+        that->m_successors.erase (this);
+        that->m_successorsCondFalse.erase (this);
+        that->m_successorsCondTrue.erase (this);
+        that->m_successorsCall.erase (this);
+        that->m_successorsRet.erase (this);
+        if (that->m_callPassFrom == this) that->setCallPassFrom (0);
+        if (that->m_callPassTo == this) that->setCallPassTo (0);
     }
 
-private:
-    Block* m_block;
-};
-
-void Block::unlink () {
-    std::for_each (users.begin (), users.end (), UnlinkFrom (this));
-    users.clear ();
+    m_users.clear ();
 }
 
 Block::~Block () {
     unlink ();
+}
+
+void Block::getIncoming (std::set<Block*>& inc) const {
+    inc.clear ();
+    inc.insert (m_successors.begin (), m_successors.end ());
+    inc.insert (m_successorsCondFalse.begin (), m_successorsCondFalse.end ());
+    inc.insert (m_successorsCondTrue.begin (), m_successorsCondTrue.end ());
+    inc.insert (m_successorsCall.begin (), m_successorsCall.end ());
+    inc.insert (m_successorsRet.begin (), m_successorsRet.end ());
+    if (m_callPassFrom != 0) {
+        inc.insert (m_callPassFrom);
+    }
+}
+
+void Block::getOutgoing (std::set<Block*>& out) const {
+    out.clear ();
+    out.insert (m_predecessors.begin (), m_predecessors.end ());
+    out.insert (m_predecessorsCondFalse.begin (), m_predecessorsCondFalse.end ());
+    out.insert (m_predecessorsCondTrue.begin (), m_predecessorsCondTrue.end ());
+    out.insert (m_predecessorsCall.begin (), m_predecessorsCall.end ());
+    out.insert (m_predecessorsRet.begin (), m_predecessorsRet.end ());
+    if (m_callPassFrom != 0) {
+        out.insert (m_callPassTo);
+    }
 }
 
 } // namespace SecreC

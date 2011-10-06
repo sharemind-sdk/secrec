@@ -37,6 +37,17 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* sym) {
     pushImopAfter (result, i);
 }
 
+void CodeGen::allocResult (CGResult& result)  {
+    Symbol* sym = result.symbol ();
+    if (sym->secrecType ().isScalar ())
+        return;
+
+    Imop* i = new Imop (m_node, Imop::ALLOC, sym,
+                        st.defaultConstant (sym->secrecType ().secrecDataType ()),
+                        sym->getSizeSym ());
+    pushImopAfter (result, i);
+}
+
 Symbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
     const TypeNonVoid ty (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
     assert (node->haveResultType ());

@@ -109,7 +109,7 @@ class SymbolProcedure: public Symbol {
 class SymbolLabel: public Symbol {
     public:
         SymbolLabel (Imop* target);
-        inline Imop* target () const { return m_target; }
+        inline const Imop* target () const { return m_target; }
         virtual std::string toString () const;
     private:
         Imop* m_target;

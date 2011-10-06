@@ -140,6 +140,9 @@ class LiveVariables : public BackwardDataFlowAnalysis {
         std::map<const Block*, Symbols > m_defs;
         std::map<const Block*, Symbols > m_outs;
         std::map<const Block*, Symbols > m_ins;
+
+        void useSymbol (const Block* block, const Symbol* sym);
+        void defSymbol (const Block* block, const Symbol* sym);
 };
 
 class ReachingJumps: public ForwardDataFlowAnalysis {

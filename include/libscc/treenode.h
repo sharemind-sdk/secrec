@@ -382,6 +382,7 @@ class TreeNodeExprBinary: public TreeNodeExpr {
             : TreeNodeExpr(type, loc) {}
 
         const char *operatorString() const;
+
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
 
@@ -422,7 +423,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
   TreeNodeExprClassify
 ******************************************************************/
 
-/// Classify expression. Those do not occur naturally in code, always added my type checker.
+/// Classify expression. Those do not occur naturally in code, always added by type checker.
 class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprClassify(const YYLTYPE &loc)
@@ -462,6 +463,7 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
     public: /* Methods: */
         explicit inline TreeNodeExprProcCall(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_PROCCALL, loc) {}
+
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
@@ -531,6 +533,7 @@ class TreeNodeExprString: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprString(const std::string &value, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_LITE_STRING, loc), m_value(value) {}
+
 
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
@@ -752,6 +755,7 @@ class TreeNodeProgram: public TreeNode {
         explicit inline TreeNodeProgram(const YYLTYPE &loc)
             : TreeNode(NODE_PROGRAM, loc) {}
 
+
         ICode::Status codeGenWith (CodeGen& cg);
 };
 
@@ -766,8 +770,9 @@ class TreeNodeStmt: public TreeNode {
         inline TreeNodeStmt(Type type, const YYLTYPE &loc)
             : TreeNode(type, loc) {}
 
+
         virtual CGStmtResult codeGenWith (CodeGen& cg) {
-            assert (false && "Statememnt code gen unimplemented.");
+            assert (false && "Statement code gen unimplemented.");
             (void) cg;
             return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
         }
@@ -783,6 +788,7 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
     public: /* Methods: */
         explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
+
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
 };
@@ -813,6 +819,7 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
         explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
             : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
+
         virtual CGStmtResult codeGenWith (CodeGen& cg);
 };
 
@@ -830,6 +837,7 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
         virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
         const std::string &variableName() const;
+
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
 

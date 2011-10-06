@@ -22,6 +22,10 @@ std::string uniqueName(const SecreC::Symbol *s) {
     return os.str();
 }
 
+std::string symToString (const SecreC::Symbol* s) {
+    return s == 0 ? "_" : uniqueName (s);
+}
+
 } // anonymous namespace
 
 namespace SecreC {
@@ -54,18 +58,6 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
     return i;
 }
 
-Imop* newPush (TreeNode* node, Symbol* arg) {
-    Imop* i = 0;
-    if (arg->secrecType ().isScalar ()) {
-        i = new Imop (node, Imop::PUSH, (Symbol*) 0, arg);
-    }
-    else {
-        i = new Imop (node, Imop::PUSH, (Symbol*) 0, arg, arg->getSizeSym ());
-    }
-
-    return i;
-}
-
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
     Imop* i = 0;
     if (dest->secrecType ().isScalar ()) {
@@ -77,6 +69,12 @@ Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
 
     return i;
 }
+
+Imop* newCall (TreeNode* node) {
+   Imop* out = new Imop (node, Imop::CALL, (Symbol*) 0, (Symbol*) 0);
+   return out;
+}
+
 
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
     assert (dest != 0);
@@ -106,10 +104,10 @@ Imop::~Imop() {
 
 const Imop *Imop::callDest() const {
     assert(m_type == CALL);
-    assert(arg1()->symbolType() == Symbol::PROCEDURE);
-    assert(dynamic_cast<const SymbolProcedure*>(arg1()) != 0);
+    assert(dest()->symbolType() == Symbol::PROCEDURE);
+    assert(dynamic_cast<const SymbolProcedure*>(dest()) != 0);
 
-    return static_cast<const SymbolProcedure*>(arg1())->target ();
+    return static_cast<const SymbolProcedure*>(dest())->target ();
 }
 
 SymbolLabel const* Imop::jumpDest() const {
@@ -124,15 +122,16 @@ void Imop::setJumpDest (SymbolLabel *dest) {
     setDest(dest);
 }
 
-void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
+void Imop::setCallDest(SymbolProcedure *proc) {
+//void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
     assert (proc != 0);
-    assert (clean != 0);
     assert (m_type == CALL);
-    assert (clean->target()->m_type == RETCLEAN);
+//    assert (clean->target()->m_type == RETCLEAN);
     assert (proc->target () != 0);
-    setArg1 (proc);
-    setArg2 (clean);
-    proc->setTarget (proc->target ());
+    setDest (proc);
+//    setArg1 (proc);
+    // setArg2 (clean);
+//    proc->setTarget (proc->target ());
     proc->target ()->addIncomingCall (this);
 }
 
@@ -140,10 +139,10 @@ void Imop::setReturnDestFirstImop (SymbolLabel *label) {
     assert (label != 0);
     assert (label->target () != 0);
     assert (label->target ()->m_type == COMMENT);
-    setArg2(label);
+//    setArg2(label);
+    setDest (label);
 }
 
-/// \todo make this pretty
 std::string Imop::toString() const {
     std::ostringstream os;
     switch (m_type) {
@@ -161,8 +160,8 @@ std::string Imop::toString() const {
             if (nArgs() == 3) os << ", " << a2name;
             os << ")";
             break;
-        case FILL:
-            os << dname << " = FILL " << a1name << " " << a2name;
+        case ALLOC:
+            os << dname << " = ALLOC " << a1name << " " << a2name;
             break;
         case STORE:
             os << dname << "[" << a1name << "] = " << a2name;
@@ -231,10 +230,43 @@ std::string Imop::toString() const {
             if (nArgs() == 4) os << " (" << a3name << ")";
             break;
         case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
-            if (dest () != 0) {
-                os << dname << " = ";
+            {
+                std::list<const Symbol* > argList, retList;
+                OperandConstIterator it, itBegin, itEnd;
+                itBegin = m_args.begin ();
+                itEnd = m_args.end ();
+                it = itBegin;
+                const Symbol* callDest = *it;
+                for (++ it; it != itEnd && *it != 0; ++ it)
+                    argList.push_back (*it);
+
+                for (++ it; it != itEnd; ++ it)
+                    retList.push_back (*it);
+
+                // print destination
+                for (std::list<const Symbol*>::const_iterator jt = retList.begin (); jt != retList.end (); ++ jt) {
+                    const Symbol* sym = *jt;
+                    if (jt != retList.begin ())
+                        os << ", ";
+                    os << symToString (sym);
+                }
+
+                if (!retList.empty ())
+                    os << " = ";
+
+                os << "CALL " << symToString (callDest) << " (";
+                for (std::list<const Symbol*>::const_iterator jt = argList.begin (); jt != argList.end (); ++ jt) {
+                    const Symbol* sym = *jt;
+                    if (jt != argList.begin ())
+                        os << ", ";
+                    os << symToString (sym);
+                }
+
+                os << ");";
             }
-            os << "CALL " << a1name << " @ " << cImop;
+            break;
+        case PARAM:
+            os << ".PARAM " << dname;
             break;
         case JUMP:         /* GOTO d;                            */
             os << "GOTO " << tname;
@@ -269,14 +301,6 @@ std::string Imop::toString() const {
         case ERROR:        /* // arg1                            */
             os << "ERROR \"" <<  a1name << "\"";
             break;
-        case POP:     /* POP d;                        */
-            os << "POP " << dname << ";";
-            if (nArgs() == 2) os << " (" << a1name << ")";
-            break;
-        case PUSH:    /* PUSH arg1;                    */
-            os << "PUSH " << a1name;
-            if (nArgs() == 3) os << " (" << a2name << ")";
-            break;
         case PRINT:
             os << "PRINT \"" << a1name << "\";";
             break;
@@ -290,7 +314,21 @@ std::string Imop::toString() const {
             os << "RETURN";
             break;
         case RETURN:       /* RETURN arg1;                       */
-            os << "RETURN " << a1name;
+            os << "RETURN (";
+            {
+                const OperandConstIterator itBegin = m_args.begin () + 1; // !
+                const OperandConstIterator itEnd = m_args.end ();
+                assert (itBegin != itEnd && "Only RETURNVOID can return nothing.");
+                for (OperandConstIterator it = itBegin; it != itEnd; ++ it) {
+                    if (it != itBegin) {
+                        os << ", ";
+                    }
+
+                    const Symbol* sym = *it;
+                    os << symToString (sym);
+                }
+            }
+            os << ");";
             break;
         case END:          /* END PROGRAM                        */
             os << "END";
@@ -316,9 +354,9 @@ std::string Imop::toString() const {
         }
         os << "]";
     }
-    if ((m_type == RETURN || m_type == RETURNVOID) && arg2() != 0) {
-        assert (dynamic_cast<SymbolLabel const*>(arg2()) != 0);
-        Imop const* i = static_cast<SymbolLabel const*>(arg2())->target ();
+    if ((m_type == RETURN || m_type == RETURNVOID) && dest () != 0) {
+        assert (dynamic_cast<const SymbolLabel*>(dest ()) != 0);
+        Imop const* i = static_cast<const SymbolLabel*>(dest ())->target ();
         if (!i->m_incomingCalls.empty()) {
             std::set<unsigned long> is;
             for (ISCI it(i->m_incomingCalls.begin()); it != i->m_incomingCalls.end(); it++) {
@@ -334,6 +372,7 @@ std::string Imop::toString() const {
             os << "]";
         }
     }
+
     return os.str();
 }
 

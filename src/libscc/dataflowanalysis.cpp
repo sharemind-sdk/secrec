@@ -53,7 +53,7 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
         // For all reachable blocks:
         for (size_t i = 0; i < bs.size(); i++) {
             const Block *b = bs[i];
-            if (!b->reachable) continue;
+            if (!b->reachable ()) continue;
 
             // For forward analysis:
             if (!fas.empty() && b != &bs.entryBlock()) {
@@ -62,29 +62,29 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                     (*a)->startBlock(*b);
 
                 // Recalculate input sets:
-                FOREACH_BLOCKS(it,b->predecessors)
+                FOREACH_BLOCKS(it,b->pred ())
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFrom(**it, *b);
 
-                FOREACH_BLOCKS(it,b->predecessorsCondFalse)
+                FOREACH_BLOCKS(it,b->predCondFalse ())
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromFalse(**it, *b);
 
-                FOREACH_BLOCKS(it,b->predecessorsCondTrue)
+                FOREACH_BLOCKS(it,b->predCondTrue ())
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromTrue(**it, *b);
 
-                FOREACH_BLOCKS(it,b->predecessorsCall)
+                FOREACH_BLOCKS(it,b->predCall ())
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromCall(**it, *b);
 
-                FOREACH_BLOCKS(it,b->predecessorsRet)
+                FOREACH_BLOCKS(it,b->predRet ())
                     FOREACH_FANALYSIS(a, fas)
                         (*a)->inFromRet(**it, *b);
 
-                if (b->callPassFrom != 0)
+                if (b->callPassFrom () != 0)
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromCallPass(*b->callPassFrom, *b);
+                        (*a)->inFromCallPass(*b->callPassFrom (), *b);
 
                 // Recalculate the output sets:
                 FOREACH_FANALYSIS(a, fas)
@@ -102,29 +102,29 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                     (*a)->startBlock(*b);
 
                 // Recalculate output sets:
-                FOREACH_BLOCKS(it,b->successors)
+                FOREACH_BLOCKS(it,b->succ ())
                     FOREACH_BANALYSIS(a, bas)
                         (*a)->outTo(**it, *b);
 
-                FOREACH_BLOCKS(it,b->successorsCondFalse)
+                FOREACH_BLOCKS(it,b->succCondFalse ())
                     FOREACH_BANALYSIS(a, bas)
                         (*a)->outToFalse(**it, *b);
 
-                FOREACH_BLOCKS(it,b->successorsCondTrue)
+                FOREACH_BLOCKS(it,b->succCondTrue ())
                     FOREACH_BANALYSIS(a, bas)
                         (*a)->outToTrue(**it, *b);
 
-                FOREACH_BLOCKS(it,b->successorsCall)
+                FOREACH_BLOCKS(it,b->succCall ())
                     FOREACH_BANALYSIS(a, bas)
                         (*a)->outToCall(**it, *b);
 
-                FOREACH_BLOCKS(it,b->successorsRet)
+                FOREACH_BLOCKS(it,b->succRet ())
                     FOREACH_BANALYSIS(a, bas)
                         (*a)->outToRet(**it, *b);
 
-                if (b->callPassTo != 0)
+                if (b->callPassTo () != 0)
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToCallPass(*b->callPassTo, *b);
+                        (*a)->outToCallPass (*b->callPassTo (), *b);
 
                 // Recalculate the input sets:
                 FOREACH_BANALYSIS(a, bas)
@@ -178,7 +178,8 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     SDefs old = out;
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); it++) {
-        if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
+//        if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
+        if (((*it)->isExpr())
             && (*it)->dest() != 0)
         {
             // Set this def:
@@ -199,8 +200,8 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
 
     os << "Reaching definitions analysis results:" << std::endl;
     for (Blocks::const_iterator bi = bs.begin(); bi != bs.end(); bi++) {
-        if (!(*bi)->reachable) continue;
-        os << "  Block " << (*bi)->index << ": ";
+        if (!(*bi)->reachable ()) continue;
+        os << "  Block " << (*bi)->index () << ": ";
 
         BDM::const_iterator si = m_ins.find(*bi);
         if (si == m_ins.end() || (*si).second.empty()) {
@@ -223,38 +224,70 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
 
 void LiveVariables::start (const Blocks &bs) {
     for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
+        typedef Imop::OperandConstIterator OCI;
         const Block* block = *bi;
-        Symbols& use = m_use [block];
-        Symbols& defs = m_defs [block];
         for (Block::const_iterator it (block->begin ()); it != block->end (); ++ it) {
             const Imop* imop = *it;
 
-            if (imop->type() == Imop::COMMENT) {
+            /// \todo those are poorly formed instructions
+            switch (imop->type ()) {
+            case Imop::COMMENT:
+            case Imop::RETURNVOID:
+            case Imop::RETCLEAN:
+                continue;
+            default:
+                break;
+            }
+
+            Imop::OperandConstIterator i, iBegin, iEnd;
+            iBegin = imop->operandsBegin ();
+            iEnd = imop->operandsEnd ();
+            i = iBegin;
+
+            if (imop->type () == Imop::CALL) {
+                for (++ i; i != iEnd && *i != 0; ++ i)
+                    useSymbol (block, *i);
+                for (++ i; i != iEnd; ++ i)
+                    defSymbol (block, *i);
                 continue;
             }
 
-            for (unsigned i = 0; i < imop->nArgs (); ++ i) {
-                const Symbol* sym = imop->arg (i);
-                if (sym == 0) {
-                    continue;
+            if ((imop->type () & Imop::EXPR_MASK) != 0) {
+                const Symbol* dest = *iBegin;
+                if (dest != 0) {
+                    defSymbol (block, dest);
                 }
+            }
 
-                switch (sym->symbolType ()) {
-                case Symbol::SYMBOL:
-                case Symbol::TEMPORARY:
-                    if (i == 0) {
-                        defs.insert (sym); // destination
-                    }
-                    else {
-                        use.insert (sym); // argument
-                    }
-                    break;
-                default:
-                    break;
+            for (; i != iEnd; ++ i) {
+                const Symbol* sym = *i;
+                if (sym != 0) {
+                    useSymbol (block, sym);
                 }
-
             }
         }
+    }
+}
+
+void LiveVariables::useSymbol (const Block* block, const Symbol *sym) {
+    assert (sym != 0);
+    switch (sym->symbolType ()) {
+    case Symbol::SYMBOL:
+    case Symbol::TEMPORARY:
+        m_use[block].insert (sym);
+    default:
+        break;
+    }
+}
+
+void LiveVariables::defSymbol (const Block* block, const Symbol *sym) {
+    assert (sym != 0);
+    switch (sym->symbolType ()) {
+    case Symbol::SYMBOL:
+    case Symbol::TEMPORARY:
+        m_defs[block].insert (sym);
+    default:
+        break;
     }
 }
 
@@ -292,7 +325,7 @@ std::string LiveVariables::toString (const Blocks &bs) const {
         if (li != m_outs.end ()) {
             const Symbols& live = li->second;
             if (live.empty ()) continue;
-            ss << "Block " << std::setw (3) << block->index << ": ";
+            ss << "Block " << std::setw (3) << block->index () << ": ";
             for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
                 if (it != live.begin ()) ss << ", ";
                 ss << (*it)->name ();
@@ -367,9 +400,9 @@ std::string ReachingJumps::toString(const Blocks &bs) const {
 
     os << "Reaching jumps analysis results:" << std::endl;
     for (Blocks::const_iterator bi = bs.begin(); bi != bs.end(); bi++) {
-        if (!(*bi)->reachable) continue;
+        if (!(*bi)->reachable ()) continue;
 
-        os << "  Block " << (*bi)->index << ": ";
+        os << "  Block " << (*bi)->index () << ": ";
 
         BJMCI posi = m_inPos.find(*bi);
         BJMCI negi = m_inNeg.find(*bi);
@@ -378,7 +411,7 @@ std::string ReachingJumps::toString(const Blocks &bs) const {
 
         if (posi != m_inPos.end()) {
             for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); jt++) {
-                jumps.insert(std::make_pair((*jt)->index(), '+'));
+                jumps.insert(std::make_pair((*jt)->index (), '+'));
             }
             if (negi != m_inNeg.end()) {
                 for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
@@ -421,7 +454,8 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); ++ it) {
         if (!(*it)->isExpr()) {
-            if ((*it)->type() != Imop::POP) continue;
+            if ((*it)->type() != Imop::PARAM)
+                continue;
         } else {
             if ((*it)->dest() == 0) continue;
             if ((*it)->type() == Imop::DECLASSIFY) {
@@ -434,7 +468,7 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
         Defs &d = out[(*it)->dest()];
 
         switch ((*it)->type()) {
-            case Imop::POP:
+            case Imop::PARAM:
             case Imop::CALL:
                 d.nonsensitive.clear();
                 d.sensitive.clear();
@@ -493,7 +527,7 @@ std::string ReachingDeclassify::toString(const Blocks&) const {
         for (std::set<const Imop*>::const_iterator jt = (*it).second.sensitive.begin(); jt != (*it).second.sensitive.end(); jt++) {
             os << "        ";
             switch ((*jt)->type()) {
-                case Imop::POP:
+                case Imop::PARAM:
                 case Imop::CALL:
                     if (dynamic_cast<TreeNodeStmtDecl*>((*jt)->creator()) != 0) {
                         os << "parameter "

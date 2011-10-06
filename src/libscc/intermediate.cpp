@@ -9,15 +9,8 @@
 namespace SecreC {
 
 ICode::Status ICode::init(TreeNodeProgram *program) {
-    // ICode::Status s = program->generateCode(m_code, m_symbols, m_log);
     CodeGen cg (m_code, m_symbols, m_log);
-    ICode::Status s = program->codeGenWith (cg);
-    if (s != OK) {
-        m_status = s;
-        return s;
-    }
-
-    m_status = OK;
+    m_status = program->codeGenWith (cg);;
     return m_status;
 }
 

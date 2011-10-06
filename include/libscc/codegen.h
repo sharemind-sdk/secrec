@@ -34,7 +34,7 @@ class CompileLog;
  * but this indirection should be inlined and makes possible to keep everything
  * related to intermediate code generation outside TreeNode.
  *
- * \todo It should be possible to remove the m_node member.
+ * \todo It should be possible to remove the m_node member. Figure that out.
  * \todo Better interface for scoping, right now new CodeGen class is constructed:
  * \code
  * CodeGen local (code, *st.newScope (), log);
@@ -46,10 +46,14 @@ class CompileLog;
  * // run code gen
  * popScope ();
  * \endcode
+ *
+ * Solution for the last todo is to store the symbol table as pointer, this
+ * change is trivial but requires to modify quite a lot of code.
  */
 class CodeGen {
 private:
     CodeGen& operator = (const CodeGen&); // do not implement
+
 public:
     inline explicit CodeGen (const CodeGen& other)
         : code (other.code), st (other.st), log (other.log), m_node (other.m_node)
@@ -91,12 +95,10 @@ public:
         }
     }
 
-    /// \todo figure out how to refactor following 3 functions:
-
     inline CGResult codeGen (TreeNodeExpr* e) {
         TreeNode* const oldNode = m_node;
         m_node = e;
-        const CGResult& r = e->codeGenWith (*this);
+        const CGResult& r (e->codeGenWith (*this));
         m_node = oldNode;
         return r;
     }
@@ -104,7 +106,7 @@ public:
     inline CGBranchResult codeGenBranch (TreeNodeExpr* e) {
         TreeNode* oldNode = m_node;
         m_node = e;
-        const CGBranchResult& r = e->codeGenBoolWith (*this);
+        const CGBranchResult& r (e->codeGenBoolWith (*this));
         m_node = oldNode;
         return r;
     }
@@ -112,7 +114,7 @@ public:
     CGStmtResult codeGenStmt (TreeNodeStmt* e) {
         TreeNode* oldNode = m_node;
         m_node = e;
-        const CGStmtResult& r = e->codeGenWith (*this);
+        const CGStmtResult& r (e->codeGenWith (*this));
         m_node = oldNode;
         return r;
     }
@@ -195,6 +197,8 @@ public:
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
+
+    void allocResult (CGResult& result);
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);

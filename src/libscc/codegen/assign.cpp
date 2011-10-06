@@ -225,7 +225,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         if (e->resultType ().isScalar())
             i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
         else {
-            Imop::Type iType = eArg2->resultType ().isScalar () ? Imop::FILL : Imop::ASSIGN;
+            Imop::Type iType = eArg2->resultType ().isScalar () ? Imop::ALLOC : Imop::ASSIGN;
             i = new Imop (e, iType, destSym, arg2Result.symbol (), destSym->getSizeSym ());
         }
 
@@ -252,7 +252,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
         else {
             Symbol* tmp = st.appendTemporary (static_cast<TypeNonVoid const&> (e->resultType ()));
-            i = new Imop (e, Imop::FILL, tmp, arg2Result.symbol (), destSym->getSizeSym ());
+            i = new Imop (e, Imop::ALLOC, tmp, arg2Result.symbol (), destSym->getSizeSym ());
             pushImopAfter (result, i);
 
             i = new Imop (e, iType, destSymSym, destSymSym, tmp, destSym->getSizeSym());

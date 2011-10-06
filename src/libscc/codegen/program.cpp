@@ -143,7 +143,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
             }
 
             assert (fType.kind() == TNV::PROCEDUREVOID);
-            Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+            Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
             i->setReturnDestFirstImop (st.label (result.firstImop ()));
             pushImopAfter (result, i);
         }
@@ -237,7 +237,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = new Imop (prog, Imop::CALL, 0, 0, 0);
+    Imop *mainCall = newCall (prog); // new Imop (prog, Imop::CALL, 0, 0, 0);
     Imop *retClean = new Imop (prog, Imop::RETCLEAN, 0, 0, 0);
     pushImopAfter (result, mainCall);
     code.push_imop (retClean);
@@ -259,8 +259,10 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     // Bind call to main(), i.e. mainCall:
-    mainCall->setCallDest (mainProc, st.label (retClean));
+//    mainCall->setCallDest (mainProc, st.label (retClean));
+    mainCall->setCallDest (mainProc);
     retClean->setArg2 (st.label (mainCall));
+
 
     return result;
 }

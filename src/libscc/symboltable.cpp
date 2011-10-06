@@ -15,6 +15,17 @@ void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
             out << " ";
 }
 
+
+template <typename T, typename V >
+static void deleteValues (typename std::map<T, V* >& kvs) {
+    typename std::map<T, V* >::iterator i;
+    for (i = kvs.begin (); i != kvs.end (); ++ i) {
+        delete i->second;
+    }
+
+    kvs.clear ();
+}
+
 } // anonymous namespace
 
 namespace SecreC {
@@ -57,7 +68,7 @@ private:
     std::map<int, ConstantInt* >            m_constantInts;
     std::map<unsigned, ConstantUInt* >      m_constantUInts;
     std::map<std::string, ConstantString* > m_constantStrings;
-    std::map<Imop*, SymbolLabel* >          m_labels;
+    std::map<const Imop*, SymbolLabel* >    m_labels;
     std::map<std::string, Symbol* >         m_globals;
     unsigned                                m_tempCount;
 };
@@ -67,16 +78,6 @@ GlobalSymbols::GlobalSymbols ()
       m_constantFalse (0),
       m_tempCount (0)
 { }
-
-template <typename T, typename V >
-static void deleteValues (typename std::map<T, V* >& kvs) {
-    typename std::map<T, V* >::iterator i;
-    for (i = kvs.begin (); i != kvs.end (); ++ i) {
-        delete i->second;
-    }
-
-    kvs.clear ();
-}
 
 GlobalSymbols::~GlobalSymbols () {
     delete m_constantTrue;
@@ -154,7 +155,7 @@ ConstantString* GlobalSymbols::constantString (const std::string &value) {
 
 SymbolLabel* GlobalSymbols::label (Imop *imop) {
     assert (imop != 0);
-    std::map<Imop*, SymbolLabel*>::iterator
+    std::map<const Imop*, SymbolLabel*>::iterator
             it = m_labels.find (imop);
     if (it != m_labels.end ()) {
         return it->second;
@@ -289,8 +290,20 @@ Symbol* SymbolTable::defaultConstant (SecrecDataType dataType) {
     Symbol* result = 0;
     switch (dataType) {
         case DATATYPE_BOOL:    result = constantBool(false); break;
-        case DATATYPE_INT:     result = constantInt(0); break;
-        case DATATYPE_UINT:    result = constantUInt(0); break;
+        case DATATYPE_INT:
+        case DATATYPE_INT8:
+        case DATATYPE_INT16:
+        case DATATYPE_INT32:
+        case DATATYPE_INT64:
+            result = constantInt(0);
+            break;
+        case DATATYPE_UINT:
+        case DATATYPE_UINT8:
+        case DATATYPE_UINT16:
+        case DATATYPE_UINT32:
+        case DATATYPE_UINT64:
+            result = constantUInt(0);
+            break;
         case DATATYPE_STRING:  result = constantString(""); break;
         default:
             assert (false && "Don't know how to produce default constant of given type.");
@@ -300,6 +313,7 @@ Symbol* SymbolTable::defaultConstant (SecrecDataType dataType) {
 }
 
 SymbolLabel* SymbolTable::label (Imop* imop) {
+    assert (imop != 0);
     return m_global->label (imop);
 }
 

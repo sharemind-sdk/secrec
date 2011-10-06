@@ -13,14 +13,6 @@
 
 namespace {
 
-void patchList(std::vector<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
-    typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
-    for (IVCI it(list.begin()); it != list.end(); it++) {
-        (*it)->setJumpDest(dest);
-    }
-    list.clear();
-}
-
 template <class T>
 inline void appendVectorToVector(std::vector<T> &dst, const std::vector<T> &src)
 {
@@ -867,7 +859,6 @@ ICode::Status TreeNodeExprFRead::calculateResultType(SymbolTable &st,
 
     return ICode::OK;
 }
-
 
 /*******************************************************************************
   TreeNodeExprBinary

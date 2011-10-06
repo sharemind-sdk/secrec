@@ -12,6 +12,7 @@ class Imop;
 class TreeNodeStmtDecl;
 class TreeNodeProcDef;
 class GlobalSymbols;
+class Block;
 
 /*******************************************************************************
   SymbolTable
@@ -42,6 +43,10 @@ class SymbolTable {
 
         std::string toString(unsigned level = 0, unsigned indent = 4,
                              bool newScope = true) const;
+
+        SymbolTable* parent () const {
+            return m_parent;
+        }
 
 
         /* methods to construct constants */
