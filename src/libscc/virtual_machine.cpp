@@ -284,9 +284,9 @@ MKSTORESYM(sym, std::string*, store[sym.un_sym].un_str_val = val)
 
 #define FETCH(name,i) Value& name = lookup((ip)->args[i])
 
-#define NEXT do ((ip + 1)->callback (ip + 1)); while (0)
+#define NEXT do { ((ip + 1)->callback (ip + 1)); return; } while (0)
 
-#define CUR do ip->callback (ip); while (0)
+#define CUR do { ip->callback (ip); return; } while (0)
 
 #define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, CODE) \
     inline void NAME##_callback (const Instruction* ip) \
