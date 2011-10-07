@@ -252,15 +252,16 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                     pushImopAfter (result, i);
                 }
 
-                code.push_comment ("^");
-
                 if (!isScalar) {
                     Imop* i = newAssign (s,  ns->getSizeSym (), eResult.symbol ()->getSizeSym ());
                     code.push_imop(i);
                 }
 
-                Imop* i = newAssign (s, ns, eResult.symbol ());
+                Imop* i = new Imop (s, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym());
                 pushImopAfter (result, i);
+
+                i = newAssign (s, ns, eResult.symbol ());
+                code.push_imop (i);
             }
         }
 

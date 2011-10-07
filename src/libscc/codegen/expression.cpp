@@ -500,6 +500,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
     // Compute new size:
     codeGenSize (result);
+    allocResult (result);
 
     if (!eArg->resultType().isScalar()) {
         // Check that new and old sizes are equal:
@@ -920,37 +921,8 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
         retList.push_back (r);
     }
 
-//    // Add them as arguments in a backward manner:
-//    while (!argList.empty ()) {
-//        Symbol* sym = argList.top ();
-
-//        Imop *i = 0;
-//        if (!sym->secrecType ().isScalar ()) {
-//            i = new Imop (e, Imop::PUSH, 0, sym, sym->getSizeSym ());
-//        }
-//        else {
-//            i = new Imop (e, Imop::PUSH, 0, sym);
-//        }
-
-//        pushImopAfter (result, i);
-
-//        // push shape in reverse order
-//        Symbol::dim_reverese_iterator
-//                di = sym->dim_rbegin (),
-//                de = sym->dim_rend ();
-//        for (; di != de; ++ di) {
-//            Imop* i = new Imop (e, Imop::PUSH, (Symbol*) 0, *di);
-//            code.push_imop (i);
-//        }
-
-//        argList.pop ();
-//    }
-
-    // Do function call
-//    Imop *i = new Imop (e, Imop::CALL, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
     Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
     Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-//    i->setCallDest (e->symbolProcedure (), st.label (c));
     i->setCallDest (e->symbolProcedure ());
     c->setArg2 (st.label (i));
     pushImopAfter (result, i);
@@ -959,19 +931,6 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     if (!e->resultType ().isVoid ()) {
         codeGenSize (result);
     }
-
-//    // pop shape, recompute size, and pop data
-//    if (!e->resultType ().isVoid ()) {
-//        Symbol::dim_iterator di = r->dim_begin (), de = r->dim_end ();
-//        for (; di != de; ++ di) {
-//            Imop* i = new Imop (e, Imop::POP, *di);
-//            code.push_imop (i);
-//        }
-
-//        codeGenSize (result);
-//        i = newNullary (e, Imop::POP, r);
-//        code.push_imop (i);
-//    }
 
     return result;
 }
@@ -1106,8 +1065,13 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
 
         if (!e->resultType ().isVoid ()) {
             result.symbol ()->inheritShape (eTrueResult.symbol ());
-            Imop* i = newAssign (e, result.symbol (), eTrueResult.symbol ());
+            Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
+                                st.defaultConstant (eTrueResult.symbol ()->secrecType ().secrecDataType ()),
+                                result.symbol ()->getSizeSym ());
             pushImopAfter (eTrueResult, i);
+
+            i = newAssign (e, result.symbol (), eTrueResult.symbol ());
+            code.push_imop (i);
         }
 
         result.patchFirstImop (eTrueResult.firstImop ());
@@ -1126,9 +1090,14 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
 
         if (!e->resultType ().isVoid ()) {
             result.symbol ()->inheritShape (eFalseResult.symbol ());
-            Imop* i = newAssign (e, result.symbol (), eFalseResult.symbol ());
+            Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
+                                st.defaultConstant (eFalseResult.symbol ()->secrecType ().secrecDataType ()),
+                                result.symbol ()->getSizeSym ());
             pushImopAfter (eFalseResult, i);
-        }
+
+            i = newAssign (e, result.symbol (), eFalseResult.symbol ());
+            code.push_imop (i);
+        }        
 
         // Link boolean expression code to the rest of the code:
         e1Result.patchTrueList (st.label (eTrueResult.firstImop ()));
@@ -1157,6 +1126,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         // Generate temporary for the result of the ternary expression, if needed:
         Symbol* resSym = generateResultSymbol (result, e);
         resSym->inheritShape (e1Result.symbol ());
+        allocResult (result);
 
         // check that shapes match
         std::stringstream ss;
@@ -1190,7 +1160,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         Symbol* b = st.appendTemporary(TypeNonVoid(e1->resultType ().secrecSecType (), e1->resultType ().secrecDataType ()));
         Symbol* t = st.appendTemporary(TypeNonVoid(e->resultType ().secrecSecType (), e->resultType ().secrecDataType ()));
 
-                // r = e1
+        // r = e1
         Imop* i = newAssign (e, resSym, e2Result.symbol ());
         code.push_imop (i);
         jmp->setJumpDest (st.label(i));
@@ -1378,6 +1348,7 @@ CGResult CodeGen::cgExprClassify (TreeNodeExprClassify *e) {
     Symbol* argSym = result.symbol ();
     Symbol* resSym = generateResultSymbol (result, e);
     resSym->inheritShape (argSym);
+    allocResult (result);
 
     Imop *i = newUnary (m_node, Imop::CLASSIFY, resSym, argSym);
     pushImopAfter (result, i);
@@ -1409,6 +1380,7 @@ CGResult CodeGen::cgExprDeclassify (TreeNodeExprDeclassify *e) {
     Symbol* argSym = result.symbol ();
     Symbol* resSym = generateResultSymbol (result, e);
     resSym->inheritShape (argSym);
+    allocResult (result);
 
     Imop *i = newUnary (e, Imop::DECLASSIFY, resSym, argSym);
     pushImopAfter (result, i);
@@ -1462,6 +1434,7 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
 
     Symbol* eResult = result.symbol ();
     generateResultSymbol (result, e);
+    allocResult (result);
     result.symbol ()->inheritShape (eResult); // no need to copy the symbols
 
     // Generate code for unary expression:
@@ -1651,12 +1624,14 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     Imop* i = newBinary (e, iType, destSymSym, destSymSym, one);
     pushImopAfter (result, i);
 
+    // \todo is this correct?
+    result.setResult (destSymSym);
     // r = x
-
-    Symbol* r = generateResultSymbol (result, e);
-    r->inheritShape (destSymSym);
-    i = newAssign (e, r, destSymSym);
-    code.push_imop (i);
+//    Symbol* r = generateResultSymbol (result, e);
+//    r->inheritShape (destSymSym);
+//    allocResult (result);
+//    i = newAssign (e, r, destSymSym);
+//    code.push_imop (i);
     return result;
 }
 
@@ -1821,6 +1796,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     // r = x
     Symbol* r = generateResultSymbol (result, e);
     r->inheritShape (destSymSym);
+    allocResult (result);
     Imop* i = newAssign (e, r, destSymSym);
     pushImopAfter (result, i);
 

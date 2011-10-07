@@ -306,7 +306,6 @@ MKSTORESYM(sym, std::string*, store[sym.un_sym].un_str_val = val)
     MKCALLBACK(NAME, 1, 1, 0, 0, CODE) \
     MKCALLBACK(NAME ## _vec, 1, 1, 1, 0, BLOCK( \
         unsigned s = arg2.un_uint_val; \
-        reserve (dest, s); /* \todo remove this */ \
         Value* desti = dest.un_ptr; \
         Value* end = dest.un_ptr + s; \
         Value* arg1i = arg1.un_ptr; \
@@ -323,7 +322,6 @@ MKSTORESYM(sym, std::string*, store[sym.un_sym].un_str_val = val)
     MKCALLBACK(NAME, 1, 1, 1, 0, CODE) \
     MKCALLBACK(NAME ## _vec, 1, 1, 1, 1, BLOCK( \
         unsigned s = arg3.un_uint_val; \
-        /* reserve (dest, s); */ \
         Value* desti = dest.un_ptr; \
         Value* end = dest.un_ptr + s; \
         Value* arg1i = arg1.un_ptr; \
