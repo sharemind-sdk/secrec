@@ -104,10 +104,35 @@ SET_TARGET_PROPERTIES("sca" PROPERTIES
 TARGET_LINK_LIBRARIES("sca" "libscc")
 
 ################################################################################
+# scc
+################################################################################
+
+include_directories("include/")
+ADD_EXECUTABLE("scc"
+    "src/scc/main.cpp"
+    "src/scc/args.cpp"
+    "src/scc/VMCode.h"
+    "src/scc/VMCode.cpp"
+    "src/scc/Compiler.h"
+    "src/scc/Compiler.cpp"
+    "src/scc/RegisterAllocator.h"
+    "src/scc/RegisterAllocator.cpp"
+    "src/scc/VMInstruction.h"
+    "src/scc/VMInstruction.cpp"
+    "src/scc/VMSymbolTable.h"
+    "src/scc/VMSymbolTable.cpp"
+    "src/scc/VMValue.h"
+    "src/scc/VMValue.cpp")
+SET_TARGET_PROPERTIES("scc" PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY "bin/"
+    VERSION "0.0.1.0")
+TARGET_LINK_LIBRARIES("scc" "libscc")
+
+################################################################################
 # Installs:
 ################################################################################
 
-INSTALL(TARGETS "libscc" "sca"
+INSTALL(TARGETS "libscc" "sca" "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
     PUBLIC_HEADER DESTINATION "include")
