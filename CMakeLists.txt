@@ -13,8 +13,8 @@ PROJECT("SecreC framework" "CXX" "C")
 
 LINK_DIRECTORIES("lib")
 SET(COMMON_FLAGS "-DDEBUG -O0 -ggdb -g -Wall -Wextra -Wstrict-aliasing -pedantic -pedantic-errors -Wno-long-long -pipe")
-SET(CMAKE_C_FLAGS "-std=gnu99 ${COMMON_FLAGS}")
-SET(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS}")
+SET(CMAKE_C_FLAGS "${COMMON_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS}")
 
 
 ################################################################################
@@ -27,6 +27,7 @@ INCLUDE("config.local" OPTIONAL)
 # libscc
 ################################################################################
 
+find_package(Boost REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
