@@ -1434,8 +1434,8 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
 
     Symbol* eResult = result.symbol ();
     generateResultSymbol (result, e);
-    allocResult (result);
     result.symbol ()->inheritShape (eResult); // no need to copy the symbols
+    allocResult (result);
 
     // Generate code for unary expression:
     Imop::Type iType = (e->type() == NODE_EXPR_UNEG) ? Imop::UNEG : Imop::UMINUS;

@@ -222,14 +222,21 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
 
         Imop *i = 0;
-        if (e->resultType ().isScalar())
+        if (e->resultType ().isScalar()) {
             i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
-        else {
-            Imop::Type iType = eArg2->resultType ().isScalar () ? Imop::ALLOC : Imop::ASSIGN;
-            i = new Imop (e, iType, destSym, arg2Result.symbol (), destSym->getSizeSym ());
+        } else {
+            if (eArg2->resultType ().isScalar ()) {
+                i = new Imop (e, Imop::ALLOC, destSym, arg2Result.symbol (), destSym->getSizeSym ());
+            }
+            else {
+                allocResult (result);
+                i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol (), destSym->getSizeSym ());
+            }
         }
 
         pushImopAfter (result, i);
+
+        code.push_comment ("^");
     } else {
         // Arithmetic assignments
 
