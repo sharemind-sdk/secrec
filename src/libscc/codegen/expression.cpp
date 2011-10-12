@@ -1064,14 +1064,17 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         }
 
         if (!e->resultType ().isVoid ()) {
-            result.symbol ()->inheritShape (eTrueResult.symbol ());
-            Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
-                                st.defaultConstant (eTrueResult.symbol ()->secrecType ().secrecDataType ()),
-                                result.symbol ()->getSizeSym ());
-            pushImopAfter (eTrueResult, i);
+            if (!eTrueResult.symbol ()->secrecType ().isScalar ()) {
+                result.symbol ()->inheritShape (eTrueResult.symbol ());
 
-            i = newAssign (e, result.symbol (), eTrueResult.symbol ());
-            code.push_imop (i);
+                Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
+                                    st.defaultConstant (eTrueResult.symbol ()->secrecType ().secrecDataType ()),
+                                    result.symbol ()->getSizeSym ());
+                pushImopAfter (eTrueResult, i);
+            }
+
+            Imop* i = newAssign (e, result.symbol (), eTrueResult.symbol ());
+            pushImopAfter (eTrueResult, i);
         }
 
         result.patchFirstImop (eTrueResult.firstImop ());
@@ -1089,14 +1092,16 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         }
 
         if (!e->resultType ().isVoid ()) {
-            result.symbol ()->inheritShape (eFalseResult.symbol ());
-            Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
-                                st.defaultConstant (eFalseResult.symbol ()->secrecType ().secrecDataType ()),
-                                result.symbol ()->getSizeSym ());
-            pushImopAfter (eFalseResult, i);
+            if (!eFalseResult.symbol ()->secrecType ().isScalar ()) {
+                result.symbol ()->inheritShape (eFalseResult.symbol ());
+                Imop* i = new Imop (e, Imop::ALLOC, result.symbol (),
+                                    st.defaultConstant (eFalseResult.symbol ()->secrecType ().secrecDataType ()),
+                                    result.symbol ()->getSizeSym ());
+                pushImopAfter (eFalseResult, i);
+            }
 
-            i = newAssign (e, result.symbol (), eFalseResult.symbol ());
-            code.push_imop (i);
+            Imop* i = newAssign (e, result.symbol (), eFalseResult.symbol ());
+            pushImopAfter (eFalseResult, i);
         }        
 
         // Link boolean expression code to the rest of the code:
