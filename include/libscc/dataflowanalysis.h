@@ -119,7 +119,7 @@ class LiveVariables : public BackwardDataFlowAnalysis {
         typedef std::set<Symbol const* > Symbols;
     public:
         virtual void start (const Blocks &bs);
-        virtual void startBlock(const Block &);
+        virtual void startBlock(const Block& b);
         virtual void outTo(const Block &from, const Block &to);
         virtual void outToTrue(const Block &from, const Block &to) { outTo (from, to); }
         virtual void outToFalse(const Block &from, const Block &to) { outTo (from, to); }
@@ -131,18 +131,15 @@ class LiveVariables : public BackwardDataFlowAnalysis {
 
         std::string toString(const Blocks &bs) const;
 
-        const Symbols& use (const Block* block) { return m_use[block]; }
-        const Symbols& defs (const Block* block) { return m_defs[block]; }
-        const Symbols& liveAtExit (const Block* block) { return m_outs[block]; }
-
     private:
-        std::map<const Block*, Symbols > m_use;
-        std::map<const Block*, Symbols > m_defs;
+        std::map<const Block*, Symbols > m_gen;
+        std::map<const Block*, Symbols > m_kill;
         std::map<const Block*, Symbols > m_outs;
         std::map<const Block*, Symbols > m_ins;
+        bool m_changed;
 
-        void useSymbol (const Block* block, const Symbol* sym);
-        void defSymbol (const Block* block, const Symbol* sym);
+        void genSymbol (const Block* block, const Symbol* sym);
+        void killSymbol (const Block* block, const Symbol* sym);
 };
 
 class ReachingJumps: public ForwardDataFlowAnalysis {

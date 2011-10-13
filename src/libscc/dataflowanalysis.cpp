@@ -17,6 +17,14 @@ inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
     return dest;
 }
 
+template <class T, class U>
+inline std::set<T> &operator-=(std::set<T> &dest, const std::set<U> &src) {
+    typedef typename std::set<U >::const_iterator Iter;
+    for (Iter i = src.begin (), e = src.end (); i != e; ++ i)
+        dest.erase (*i);
+    return dest;
+}
+
 #define FOREACH_BLOCKS(it,bs) for (std::set<Block*>::const_iterator it = bs.begin(); it != bs.end(); it++)
 #define FOREACH_ANALYSIS(it,as) for (std::set<DataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
 #define FOREACH_BANALYSIS(it,as) for (std::set<BackwardDataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
@@ -223,6 +231,7 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
 }
 
 void LiveVariables::start (const Blocks &bs) {
+    m_changed = false;
     for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
         typedef Imop::OperandConstIterator OCI;
         const Block* block = *bi;
@@ -246,92 +255,116 @@ void LiveVariables::start (const Blocks &bs) {
 
             if (imop->type () == Imop::CALL) {
                 for (++ i; i != iEnd && *i != 0; ++ i)
-                    useSymbol (block, *i);
+                    genSymbol (block, *i);
                 for (++ i; i != iEnd; ++ i)
-                    defSymbol (block, *i);
+                    killSymbol (block, *i);
                 continue;
             }
 
             if ((imop->type () & Imop::EXPR_MASK) != 0) {
                 const Symbol* dest = *iBegin;
                 if (dest != 0) {
-                    defSymbol (block, dest);
+                    killSymbol (block, dest);
                 }
             }
 
             for (; i != iEnd; ++ i) {
                 const Symbol* sym = *i;
                 if (sym != 0) {
-                    useSymbol (block, sym);
+                    genSymbol (block, sym);
                 }
             }
         }
     }
 }
 
-void LiveVariables::useSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::genSymbol (const Block* block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        m_use[block].insert (sym);
+        if (m_kill[block].find (sym) == m_kill[block].end ())
+            m_gen[block].insert (sym);
     default:
         break;
     }
 }
 
-void LiveVariables::defSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::killSymbol (const Block* block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        m_defs[block].insert (sym);
+        if (m_gen[block].find (sym) == m_gen[block].end ())
+            m_kill[block].insert (sym);
     default:
         break;
     }
 }
 
-void LiveVariables::startBlock (const Block&) { }
+void LiveVariables::startBlock (const Block& b) {
+    Symbols& in = m_ins [&b];
+    const Symbols& out = m_outs [&b];
+    const Symbols  old = in;
+    in = out;
+    in -= m_kill[&b];
+    in += m_gen[&b];
+    m_changed = old != in;
+}
 
 void LiveVariables::outTo (const Block &from, const Block &to) {
     m_outs[&to] += m_ins[&from];
 }
 
 bool LiveVariables::finishBlock (const Block &b) {
-    Symbols& in = m_ins [&b];
-    const Symbols& out = m_outs [&b];
-    const Symbols  old = in;
-    in.clear (); // = m_outs [&b];
-    for (Symbols::const_iterator it (out.begin ()); it != out.end (); ++ it) {
-        if (m_defs[&b].find (*it) == m_defs[&b].end ()) {
-            in.insert (*it);
-        }
-    }
 
-    in += m_use[&b];
-    return old != in;
+    return m_changed;
 }
 
 void LiveVariables::finish () {
-    m_ins.clear ();
+
 }
 
 std::string LiveVariables::toString (const Blocks &bs) const {
     std::stringstream ss;
-    ss << "Live variables at exit:\n";
+    ss << "Live variables at entry:\n";
     for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
         const Block* block = *bi;
-        std::map<const Block*, Symbols >::const_iterator li = m_outs.find (block);
-        if (li != m_outs.end ()) {
-            const Symbols& live = li->second;
-            if (live.empty ()) continue;
-            ss << "Block " << std::setw (3) << block->index () << ": ";
-            for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
-                if (it != live.begin ()) ss << ", ";
-                ss << (*it)->name ();
-            }
+        std::map<const Block*, Symbols >::const_iterator li = m_ins.find (block);
+        std::map<const Block*, Symbols >::const_iterator lj = m_outs.find (block);
 
-            ss << '\n';
+        bool headerPrinted = false;
+
+        if (li != m_ins.end ()) {
+            const Symbols& live = li->second;
+            if (!live.empty ()) {
+                ss << "Block " << block->index () << ":\n";
+                ss << "\tENTRY: ";
+                for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
+                    if (it != live.begin ())
+                        ss << ", ";
+                    ss << (*it)->name ();
+                }
+
+                ss << '\n';
+                headerPrinted = true;
+            }
+        }
+
+        if (lj != m_outs.end ()) {
+            const Symbols& live = lj->second;
+            if (!live.empty ()) {
+                if (!headerPrinted)
+                    ss << "Block " << block->index () << ":\n";
+                ss << "\tEXIT: ";
+                for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
+                    if (it != live.begin ())
+                        ss << ", ";
+                    ss << (*it)->name ();
+                }
+
+                ss << '\n';
+            }
         }
     }
 
