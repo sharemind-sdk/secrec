@@ -107,15 +107,6 @@ void printBlockList(std::ostream &os, const char *prefix, const std::set<SecreC:
     printBlocks (os, prefix, bl.begin (), bl.end ());
 }
 
-
-struct BlockComp {
-    inline bool operator () (const SecreC::Block* b1,
-                             const SecreC::Block* b2) const {
-        return b1->index () < b2->index ();
-    }
-};
-
-
 } // anonymous namespace
 
 
@@ -283,7 +274,7 @@ void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextB
 void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
     std::set<Block* > visited;
     /// \todo following is hack to force nodes to be visited in topological order
-    std::set<Block*, BlockComp > todo;
+    std::set<Block* > todo;
 
     m_entryBlock = front ();
     todo.insert (m_entryBlock);
@@ -307,7 +298,7 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
 
             Block* cleanBlock = nextBlock.find (cur)->second;
             cleanBlock->setParent (cur->parent ());
-            todo.insert  (cleanBlock);
+            todo.insert (cleanBlock);
             cleanBlock->setCallPassFrom (cur);
             cur->setCallPassTo (cleanBlock);
         }
