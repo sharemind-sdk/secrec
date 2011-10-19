@@ -244,7 +244,7 @@ protected:
             count = m_global.colorGreedy (colors);
         else
             count = m_local.colorGreedy (colors);
-        assignColors (st, colors, false);
+        assignColors (st, colors, isGlobal);
         return count;
     }
 
