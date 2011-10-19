@@ -150,9 +150,8 @@ private: /* Fields: */
 };
 
 /******************************************************************
-  VMVReg
+ VMVReg
 ******************************************************************/
-
 
 /**
  * Virtual Register.
@@ -162,9 +161,10 @@ class VMVReg: public VMValue {
 
 protected: /* Methods: */
 
-    explicit VMVReg ()
+    explicit VMVReg (bool isGlobal)
         : VMValue (VMValue::VReg)
         , m_actualReg (0)
+        , m_isGlobal (isGlobal)
     { }
 
 public:
@@ -172,6 +172,7 @@ public:
     ~VMVReg () { }
 
     std::string toString () const;
+    bool isGlobal () const { return m_isGlobal; }
     VMValue* actualReg () const { return m_actualReg; }
     void setActualReg (VMValue* reg) {
         m_actualReg = reg;
@@ -181,8 +182,10 @@ public:
 
 private:
 
-    VMValue* m_actualReg;
+    VMValue*    m_actualReg;
+    const bool  m_isGlobal;
 };
+
 
 } // namespace SecreCC
 

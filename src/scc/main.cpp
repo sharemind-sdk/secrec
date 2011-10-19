@@ -26,19 +26,21 @@ int main(int argc, char *argv[]) {
             { {"verbose", no_argument,       0, 'v'}
             , {"help",    no_argument,       0, 'h'}
             , {"output",  required_argument, 0, 'o'}
+            , { "optimize", no_argument,     0, 'O'}
             , {0, 0, 0, 0}
             };
 
         int option_index = 0;
-        const int c = getopt_long (argc, argv, "vho:", options, &option_index);
+        const int c = getopt_long (argc, argv, "vhOo:", options, &option_index);
         if (c == -1) {
             break;
         }
 
         switch (c) {
-            case 0:   /* intentionally empty*/  break;
-            case 'v': flags[Flag::Verbose] = 1; break;
-            case 'h': flags[Flag::Help] = 1;    break;
+            case 0:   /* intentionally empty*/   break;
+            case 'v': flags[Flag::Verbose] = 1;  break;
+            case 'h': flags[Flag::Help] = 1;     break;
+            case 'O': flags[Flag::Optimize] = 1; break;
             case 'o':
                 if (flags[Flag::Output] != 0) {
                     help ();

@@ -1,4 +1,5 @@
 #include "VMCode.h"
+#include "VMValue.h"
 
 #include <cassert>
 #include <ostream>
@@ -11,8 +12,10 @@ namespace SecreCC {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block) {
-    assert (block.name () != 0);
-    os << block.name ()->toString () << '\n';
+    if (block.name () != 0) {
+        os << block.name ()->name () << '\n';
+    }
+
     std::copy (block.begin (), block.end (),
                std::ostream_iterator<VMInstruction>(os, "\n"));
     return os;
@@ -24,9 +27,12 @@ std::ostream& operator << (std::ostream& os, const VMBlock& block) {
 
 std::ostream& operator << (std::ostream& os, const VMFunction& function) {
     assert (function.name () != 0);
-    os << function.name ()->toString () << '\n';
-    if (function.numLocals () != 0) // kind of hack, maybe add some postprocessing after RA pass?
-        os << "resizestack 0x" << std::hex << function.numLocals () << '\n';
+    os << function.name ()->name () << '\n';
+    if (function.numLocals () != 0) {
+        assert (! function.isStart () && "Must not have local registers in global scope");
+        os << "resizestack 0x" << std::hex  << function.numLocals () << '\n';
+    }
+
     std::copy (function.begin (), function.end (),
                std::ostream_iterator<VMBlock>(os, "\n"));
     return  os;
@@ -38,6 +44,10 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
 
 std::ostream& operator << (std::ostream& os, const VMCode& code) {
     os << ".section TEXT\n";
+    if (code.numGlobals () > 0) {
+        os << "resizestack 0x" << std::hex  << code.numGlobals () << '\n';
+    }
+
     std::copy (code.begin (), code.end (),
                std::ostream_iterator<VMFunction>(os, "\n"));
 

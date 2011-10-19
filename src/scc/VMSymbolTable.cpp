@@ -34,9 +34,9 @@ public:
         deleteValues (m_globals);
         deleteValues (m_locals);
         deleteValues (m_imms);
-        deleteValues (m_labels);
-        for (std::set<VMVReg*>::iterator 
-                i = m_vregs.begin (); i != m_vregs.end (); ++ i) {
+        deleteValues (m_labels);       
+        for (std::set<VMVReg*>::iterator
+             i = m_vregs.begin (); i != m_vregs.end (); ++ i) {
             VMVReg* vreg = *i;
             delete vreg;
         }
@@ -56,11 +56,18 @@ public:
 
 VMSymbolTable::VMSymbolTable () 
     : m_impl (new VMSTImpl ())
+    , m_uniq (0)
 { } 
 
 VMSymbolTable::~VMSymbolTable () {
     delete m_impl;
     m_impl = 0;
+}
+
+VMVReg* VMSymbolTable::getVReg (bool isGlobal) {
+    VMVReg* vreg = new VMVReg (isGlobal);
+    m_impl->m_vregs.insert (vreg);
+    return vreg;
 }
 
 VMValue* VMSymbolTable::find (const SecreC::Symbol* symbol) const {
@@ -118,12 +125,6 @@ VMLabel* VMSymbolTable::getLabel (const std::string& name) {
     }
 
     return i->second;
-}
-
-VMVReg* VMSymbolTable::getVReg () {
-    VMVReg* vreg = new VMVReg ();
-    m_impl->m_vregs.insert (vreg);
-    return vreg;
 }
 
 }

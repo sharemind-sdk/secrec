@@ -11,6 +11,7 @@ void help (void) {
   "  -h, --help           display this help\n"
   "  -v, --verbose        print extra information during compilation\n"
   "  -o, --output=[FILE]  specify output file\n"
+  "  -O                   perform some optimization\n"
   << std::endl;
 }
 

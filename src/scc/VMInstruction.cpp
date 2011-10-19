@@ -1,7 +1,9 @@
 #include "VMInstruction.h"
+#include "VMValue.h"
 
 #include <cassert>
 #include <ostream>
+#include <sstream>
 
 namespace SecreCC {
 
@@ -15,29 +17,19 @@ VMInstruction& VMInstruction::arg (const char* str) {
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (VMImm* imm) {
-    m_operands.push_back (imm);
-    m_strings.push_back (0);
+VMInstruction& VMInstruction::arg (VMValue* val) {
+    assert (val != 0);
+    m_operands.push_back (val);
+    m_strings.push_back ("");
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (VMLabel* label) {
-    m_operands.push_back (label);
-    m_strings.push_back (0);
-    return *this;
-}
-
-VMInstruction& VMInstruction::use (VMVReg* reg) {
-    m_operands.push_back (reg);
-    m_strings.push_back (0);
-    m_use.insert (reg);
-    return *this;
-}
-
-VMInstruction& VMInstruction::def (VMVReg* reg) {
-    m_operands.push_back (reg);
-    m_strings.push_back (0);
-    m_def.insert (reg);
+VMInstruction& VMInstruction::arg (unsigned n) {
+    assert (n >= 0);
+    std::ostringstream ss;
+    ss << "0x" << std::hex << n;
+    m_operands.push_back (0);
+    m_strings.push_back (ss.str ());
     return *this;
 }
 
@@ -46,7 +38,6 @@ std::ostream& operator << (std::ostream& os, const VMInstruction& instr) {
     for (size_t i = 0; i < n; ++ i) {
         if (i > 0) os << ' ';
         if (instr.m_operands[i] == 0) {
-            assert (instr.m_strings[i] != 0);
             os << instr.m_strings[i];
         }
         else {

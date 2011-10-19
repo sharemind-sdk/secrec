@@ -20,7 +20,7 @@ std::ostream& operator << (std::ostream& os,
 
 std::string VMImm::toString () const {
     std::ostringstream ss;
-    ss << "0x" << std::hex << value ();
+    ss << "imm 0x" << std::hex << value ();
     return ss.str ();
 }
 
@@ -50,7 +50,7 @@ std::string VMReg::toString () const {
 
 std::string VMLabel::toString () const {
     std::ostringstream ss;
-    ss << name ();
+    ss << "imm " << name ();
     return ss.str ();
 }
 

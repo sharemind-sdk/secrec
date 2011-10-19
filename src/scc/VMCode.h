@@ -4,12 +4,15 @@
 #include "VMInstruction.h"
 
 #include <list>
+#include <ostream>
 
 namespace SecreC {
     class Block;
 } // namespace SecreC
 
 namespace SecreCC {
+
+class VMLabel;
 
 /*******************************************************************************
   VMBlock
@@ -33,6 +36,7 @@ public: /* Methods: */
     ~VMBlock () { }
 
     const VMLabel* name () const { return m_name; }
+    const SecreC::Block* secrecBlock () const { return m_secrecBlock; }
 
     iterator begin () { return m_instructions.begin (); }
     iterator end () { return m_instructions.end (); }
