@@ -214,6 +214,32 @@ class Imop {
             }
         }
 
+        inline bool isVectorized () const {
+            if (! isExpr ()) {
+                return false;
+            }
+
+            switch (m_type) {
+            case STORE:
+            case LOAD:
+            case ALLOC:
+            case PARAM:
+            case CALL:
+                return false;
+            case ASSIGN:
+            case CLASSIFY:
+            case DECLASSIFY:
+            case UNEG:
+            case UMINUS:
+                return m_args.size () == 3;
+            default:
+                return m_args.size () == 4;
+            }
+        }
+
+        void getUse (std::vector<const Symbol*>& use) const;
+        void getDef (std::vector<const Symbol*>& def) const;
+
         std::string toString() const;
 
         template <typename Iter >

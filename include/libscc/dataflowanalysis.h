@@ -115,31 +115,45 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
  * and set of live-on-exit variables for every basic block.
  */
 class LiveVariables : public BackwardDataFlowAnalysis {
-    public:
+    public: /* Types: */
+
         typedef std::set<Symbol const* > Symbols;
-    public:
+        typedef std::map<const Block*, Symbols> BSM;
+
+    public: /* Methods: */
+
         virtual void start (const Blocks &bs);
         virtual void startBlock(const Block& b);
-        virtual void outTo(const Block &from, const Block &to);
-        virtual void outToTrue(const Block &from, const Block &to) { outTo (from, to); }
-        virtual void outToFalse(const Block &from, const Block &to) { outTo (from, to); }
-        virtual void outToCall(const Block &from, const Block &to) { outTo (from, to); }
-        virtual void outToCallPass(const Block &from, const Block &to) { outTo (from, to); }
-        virtual void outToRet(const Block &from, const Block &to) { outTo (from, to); }
+        virtual void outTo(const Block &from, const Block &to) { transfer (from, to); }
+        virtual void outToTrue(const Block &from, const Block &to) { transfer (from, to);}
+        virtual void outToFalse(const Block &from, const Block &to) { transfer (from, to); }
+        virtual void outToCallPass(const Block &from, const Block &to) { transfer (from, to); }
+        virtual void outToCall(const Block &from, const Block &to) { transferGlobal (from, to); }
+        virtual void outToRet(const Block &from, const Block &to) { transferGlobal (from, to);}
         virtual bool finishBlock(const Block &b);
         virtual void finish();
 
+        const Symbols& def (const Block* block) const { return m_def.find (block)->second; }
+        const Symbols& use (const Block* block) const { return m_use.find (block)->second; }
+        const Symbols& ins (const Block* block) const { return m_ins.find (block)->second; }
+        const Symbols& outs (const Block* block) const { return m_outs.find (block)->second; }
+
         std::string toString(const Blocks &bs) const;
 
-    private:
-        std::map<const Block*, Symbols > m_gen;
-        std::map<const Block*, Symbols > m_kill;
-        std::map<const Block*, Symbols > m_outs;
-        std::map<const Block*, Symbols > m_ins;
-        bool m_changed;
+    protected:
 
-        void genSymbol (const Block* block, const Symbol* sym);
-        void killSymbol (const Block* block, const Symbol* sym);
+        void transfer (const Block &from, const Block &to);
+        void transferGlobal (const Block &from, const Block &to);
+
+        void useSymbol (const Block* block, const Symbol* sym);
+        void defSymbol (const Block* block, const Symbol* sym);
+
+    private: /* Fields: */
+
+        BSM m_use;
+        BSM m_def;
+        BSM m_outs;
+        BSM m_ins;
 };
 
 class ReachingJumps: public ForwardDataFlowAnalysis {

@@ -102,6 +102,51 @@ Imop::~Imop() {
     }
 }
 
+void Imop::getUse (std::vector<const Symbol *>& use) const {
+    OperandConstIterator i = operandsBegin ();
+    const OperandConstIterator e = operandsEnd ();
+    use.clear ();
+
+    if (type () == CALL) {
+        for (++ i; *i != 0 && i != e; ++ i) {
+            use.push_back (*i);
+        }
+
+        return;
+    }
+
+    if (isExpr ()) {
+        if (!isVectorized ()) {
+            if (type () != STORE)
+                ++ i;
+        }
+
+        use.insert (use.end (), i, e);
+        return;
+    }
+
+    if (isJump () || type () == RETURN) {
+        use.insert (use.end (), ++ i, e);
+        return;
+    }
+}
+
+void Imop::getDef (std::vector<const Symbol *>& def) const {
+    OperandConstIterator i = operandsBegin ();
+    const OperandConstIterator e = operandsEnd ();
+    def.clear ();
+    if (! isExpr ()) return;
+    if (isVectorized ()) return;
+    if (type () == STORE) return;
+    if (type () == CALL) {
+        for  (++ i ; *i != 0 && i != e; ++ i);
+        def.insert (def.end (), ++ i, e);
+        return;
+    }
+
+    def.push_back (dest ());
+}
+
 const Imop *Imop::callDest() const {
     assert(m_type == CALL);
     assert(dest()->symbolType() == Symbol::PROCEDURE);

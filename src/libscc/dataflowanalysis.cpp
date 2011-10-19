@@ -97,7 +97,7 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                 // Recalculate the output sets:
                 FOREACH_FANALYSIS(a, fas)
                     if ((*a)->finishBlock(*b)) {
-                        // Analysis didn't change output set for this block
+                        // Analysis changed output set for this block
                         unchanged.erase(*a);
                         funchanged.erase(static_cast<ForwardDataFlowAnalysis*>(*a));
                     }
@@ -137,7 +137,7 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
                 // Recalculate the input sets:
                 FOREACH_BANALYSIS(a, bas)
                     if ((*a)->finishBlock(*b)) {
-                        // Analysis didn't change output set for this block
+                        // Analysis changed input set for this block
                         unchanged.erase(*a);
                         bunchanged.erase(static_cast<BackwardDataFlowAnalysis*>(*a));
                     }
@@ -231,139 +231,115 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
 }
 
 void LiveVariables::start (const Blocks &bs) {
-    m_changed = false;
+    std::vector<const Symbol*> use, def;
     for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
         typedef Imop::OperandConstIterator OCI;
         const Block* block = *bi;
         for (Block::const_iterator it (block->begin ()); it != block->end (); ++ it) {
             const Imop* imop = *it;
+            imop->getDef (def);
+            imop->getUse (use);
 
-            /// \todo those are poorly formed instructions
-            switch (imop->type ()) {
-            case Imop::COMMENT:
-            case Imop::RETURNVOID:
-            case Imop::RETCLEAN:
-                continue;
-            default:
-                break;
+            for (std::vector<const Symbol*>::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
+                useSymbol (block, *i);
             }
 
-            Imop::OperandConstIterator i, iBegin, iEnd;
-            iBegin = imop->operandsBegin ();
-            iEnd = imop->operandsEnd ();
-            i = iBegin;
-
-            if (imop->type () == Imop::CALL) {
-                for (++ i; i != iEnd && *i != 0; ++ i)
-                    genSymbol (block, *i);
-                for (++ i; i != iEnd; ++ i)
-                    killSymbol (block, *i);
-                continue;
-            }
-
-            if ((imop->type () & Imop::EXPR_MASK) != 0) {
-                const Symbol* dest = *iBegin;
-                if (dest != 0) {
-                    killSymbol (block, dest);
-                }
-            }
-
-            for (; i != iEnd; ++ i) {
-                const Symbol* sym = *i;
-                if (sym != 0) {
-                    genSymbol (block, sym);
-                }
+            for (std::vector<const Symbol*>::const_iterator i = def.begin (), e = def.end (); i != e; ++ i) {
+                defSymbol (block, *i);
             }
         }
     }
 }
 
-void LiveVariables::genSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::useSymbol (const Block* block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        if (m_kill[block].find (sym) == m_kill[block].end ())
-            m_gen[block].insert (sym);
+        if (m_def[block].find (sym) == m_def[block].end ())
+            m_use[block].insert (sym);
     default:
         break;
     }
 }
 
-void LiveVariables::killSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::defSymbol (const Block* block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        if (m_gen[block].find (sym) == m_gen[block].end ())
-            m_kill[block].insert (sym);
+        if (m_use[block].find (sym) == m_use[block].end ())
+            m_def[block].insert (sym);
     default:
         break;
     }
 }
 
 void LiveVariables::startBlock (const Block& b) {
+    m_outs[&b].clear ();
+}
+
+// transfer all inputs
+void LiveVariables::transfer (const Block &from, const Block &to) {
+    m_outs[&to] += m_ins[&from];
+}
+
+// transfer only global inputs
+void LiveVariables::transferGlobal (const Block& from, const Block& to) {
+    const Symbols& ins = m_ins[&from];
+    for (Symbols::const_iterator i = ins.begin (), e = ins.end (); i != e; ++ i) {
+        const Symbol* symbol = *i;
+        switch (symbol->symbolType ()) {
+        case Symbol::TEMPORARY:
+            if (static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL)
+                m_outs[&to].insert (symbol);
+            break;
+        case Symbol::SYMBOL:
+            if (static_cast<const SymbolTemporary*>(symbol)->scopeType () == SymbolTemporary::GLOBAL)
+                m_outs[&to].insert (symbol);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+bool LiveVariables::finishBlock (const Block &b) {
     Symbols& in = m_ins [&b];
     const Symbols& out = m_outs [&b];
     const Symbols  old = in;
     in = out;
-    in -= m_kill[&b];
-    in += m_gen[&b];
-    m_changed = old != in;
+    in -= m_def[&b];
+    in += m_use[&b];
+    return old != in;
 }
 
-void LiveVariables::outTo (const Block &from, const Block &to) {
-    m_outs[&to] += m_ins[&from];
-}
-
-bool LiveVariables::finishBlock (const Block &b) {
-
-    return m_changed;
-}
-
-void LiveVariables::finish () {
-
-}
+void LiveVariables::finish () { }
 
 std::string LiveVariables::toString (const Blocks &bs) const {
     std::stringstream ss;
-    ss << "Live variables at entry:\n";
+    ss << "Live variables\n";
     for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
         const Block* block = *bi;
-        std::map<const Block*, Symbols >::const_iterator li = m_ins.find (block);
-        std::map<const Block*, Symbols >::const_iterator lj = m_outs.find (block);
-
+        BSM::const_iterator es [4] = { m_use.end (), m_def.end (), m_ins.end (), m_outs.end () };
+        BSM::const_iterator is [4] = { m_use.find (block), m_def.find (block), m_ins.find (block), m_outs.find (block) };
+        const char* names [4] = {"USE", "DEF", " IN", "OUT"};
         bool headerPrinted = false;
+        for (int k = 0; k < 4; ++ k) {
+            if (is[k] != es[k]) {
+                const Symbols& syms = is[k]->second;
+                if (!syms.empty ()) {
+                    if (!headerPrinted)
+                        ss << "[Block " << block->index () << "]\n";
+                    ss << '\t' << names[k] << ": ";
+                    for (Symbols::const_iterator it (syms.begin ()); it != syms.end (); ++ it) {
+                        if (it != syms.begin ()) ss << ", ";
+                        ss << (*it)->name ();
+                    }
 
-        if (li != m_ins.end ()) {
-            const Symbols& live = li->second;
-            if (!live.empty ()) {
-                ss << "Block " << block->index () << ":\n";
-                ss << "\tENTRY: ";
-                for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
-                    if (it != live.begin ())
-                        ss << ", ";
-                    ss << (*it)->name ();
+                    ss << '\n';
+                    headerPrinted = true;
                 }
-
-                ss << '\n';
-                headerPrinted = true;
-            }
-        }
-
-        if (lj != m_outs.end ()) {
-            const Symbols& live = lj->second;
-            if (!live.empty ()) {
-                if (!headerPrinted)
-                    ss << "Block " << block->index () << ":\n";
-                ss << "\tEXIT: ";
-                for (Symbols::const_iterator it (live.begin ()); it != live.end (); ++ it) {
-                    if (it != live.begin ())
-                        ss << ", ";
-                    ss << (*it)->name ();
-                }
-
-                ss << '\n';
             }
         }
     }
