@@ -1,38 +1,45 @@
 #ifndef ICODELIST_H
 #define ICODELIST_H
 
-#include <vector>
 #include "imop.h"
 
+#include <boost/intrusive/list.hpp>
 
 namespace SecreC {
 
-class ICodeList: private std::vector<Imop*> {
+class ICodeList : private ImopList {
     public: /* Types: */
-        typedef std::vector<Imop*>::const_iterator const_iterator;
-        typedef std::vector<Imop*>::const_reference const_reference;
+
+        using ImopList::const_iterator;
+        using ImopList::iterator;
+        using ImopList::const_reference;
 
     public: /* Methods: */
+
+        ICodeList () : m_counter (0) { }
         ~ICodeList();
 
-        inline const Imop *at(size_type n) const { return std::vector<Imop*>::at(n); }
-        inline const_iterator begin() const { return std::vector<Imop*>::begin(); }
-        inline const_iterator end() const { return std::vector<Imop*>::end(); }
-        inline const_reference operator[] (size_type n) const { return std::vector<Imop*>::operator[](n); }
-        inline size_t size() const { return std::vector<Imop*>::size(); }
+        using ImopList::empty;
+        using ImopList::begin;
+        using ImopList::end;
+        using ImopList::erase;
 
-        inline void push_imop(Imop *i) {
-            std::vector<Imop*>::push_back(i);
-            i->setIndex(size());
+        inline void push_imop (Imop *i) {
+            ImopList::push_back (*i);
+            i->setIndex (m_counter ++);
         }
 
-        inline Imop *push_comment(const std::string &comment) {
+        inline Imop* push_comment (const std::string &comment) {
             Imop *c = new Imop(0, Imop::COMMENT, 0, (Symbol*) new std::string(comment));
-            std::vector<Imop*>::push_back(c);
+            ImopList::push_back(*c);
             return c;
         }
 
-        void resetIndexes() const;
+        void resetIndexes();
+
+    private:
+
+        unsigned m_counter;
 };
 
 } // namespace SecreC

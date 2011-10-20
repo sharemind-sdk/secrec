@@ -20,10 +20,10 @@ inline bool fallsThru(const SecreC::Block &b) {
             "Empty basic block.");
 
     SecreC::Block::const_reverse_iterator i, e;
-    SecreC::Imop* last = 0;
+    const SecreC::Imop* last = 0;
     for (i = b.rbegin (), e = b.rend (); i != e; ++ i) {
-        last = *i;
-        if ((*i)->type () != SecreC::Imop::COMMENT) {
+        last = &*i;
+        if (i->type () != SecreC::Imop::COMMENT) {
             break;
         }
     }
@@ -116,14 +116,14 @@ namespace SecreC {
   Blocks
 *******************************************************************************/
 
-void Blocks::init (const ICodeList &code) {
+void Blocks::init (ICodeList &code) {
     clear ();
 
     /// \todo Check for empty code
 
     code.resetIndexes ();
     std::map<Block*, Block*> nextBlock;
-    assignToBlocks (code.begin (), code.end (), nextBlock);
+    assignToBlocks (code, nextBlock);
     assert (!empty ());
     propagate (nextBlock);
 }
@@ -195,18 +195,18 @@ std::string Blocks::toString() const {
         // Print code:
         os << "    Code:" << std::endl;
         for (Block::iterator jt((*it)->begin ()); jt != (*it)->end (); jt++) {
-            os << "      " << (*jt)->index () << "  " << (**jt);
-            if ((*jt)->creator() != 0) {
+            os << "      " << jt->index () << "  " << (*jt);
+            if (jt->creator() != 0) {
                 os << " // Created by "
-                   << TreeNode::typeName((*jt)->creator()->type())
+                   << TreeNode::typeName(jt->creator()->type())
                    << " at "
-                   << (*jt)->creator()->location();
-                if ((*jt)->creator()->type() == NODE_EXPR_CLASSIFY) {
-                    assert((*jt)->creator()->parent() != 0);
+                   << jt->creator()->location();
+                if (jt->creator()->type() == NODE_EXPR_CLASSIFY) {
+                    assert(jt->creator()->parent() != 0);
                     os << " for "
-                       << TreeNode::typeName((*jt)->creator()->parent()->type())
+                       << TreeNode::typeName(jt->creator()->parent()->type())
                        << " at "
-                       << (*jt)->creator()->parent()->location();
+                       << jt->creator()->parent()->location();
                 }
             }
             os << std::endl;
@@ -218,35 +218,35 @@ std::string Blocks::toString() const {
 }
 
 // Assigns all instructions to blocks
-void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextBlock) {
+void Blocks::assignToBlocks (ICodeList& imops, std::map<Block*, Block*>& nextBlock) {
     unsigned blockCount = 1;
 
     // 1. find leaders
     std::set<const Imop*> leaders;
     bool nextIsLeader = true;  // first instruction is leader
-    for (CCI i = start ; i != end; ++ i) {
-        const Imop* imop = *i;
+    for (ImopList::const_iterator i = imops.begin (); i != imops.end (); ++ i) {
+        const Imop& imop = *i;
 
         if (nextIsLeader) {
-            leaders.insert (imop);
+            leaders.insert (&imop);
             nextIsLeader = false;
         }
 
         // destination of jump is leader
-        if (imop->isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(imop->dest ()) != 0);
-            const SymbolLabel* dest = static_cast<const SymbolLabel*>(imop->dest ());
+        if (imop.isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != 0);
+            const SymbolLabel* dest = static_cast<const SymbolLabel*>(imop.dest ());
             leaders.insert (dest->target ());
         }
 
         // anything following terminator is leader
-        if (imop->isTerminator ()) {
+        if (imop.isTerminator ()) {
             nextIsLeader = true;
         }
 
         // call destinations are leaders
-        if (imop->type () == Imop::CALL) {
-            leaders.insert (imop->callDest ());
+        if (imop.type () == Imop::CALL) {
+            leaders.insert (imop.callDest ());
             nextIsLeader = true; // RETCLEAN is leader too
         }
     }
@@ -254,9 +254,10 @@ void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextB
     // 2. assign all instructions to basic blocks
     // Anything in range [leader, nextLeader) is a basic block.
     Block* cur = 0;
-    for (CCI i = start ; i != end; ++ i) {
-        Imop* imop = *i;
-        if (leaders.find (imop) != leaders.end ()) {
+    ImopList::iterator i = imops.begin ();
+    while (! imops.empty ()) {
+        Imop& imop = *i;
+        if (leaders.find (&imop) != leaders.end ()) {
             // Leader starts a new block
             Block* newBlock = new Block (blockCount ++);
             nextBlock[cur] = newBlock;
@@ -265,7 +266,8 @@ void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextB
         }
 
         assert (cur != 0 && "First instruction not leader?");
-        imop->setBlock (cur);
+        imop.setBlock (cur);
+        i = imops.erase (i);
         cur->push_back (imop);
     }
 }
@@ -273,7 +275,6 @@ void Blocks::assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextB
 // propagate successor/predecessor info
 void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
     std::set<Block* > visited;
-    /// \todo following is hack to force nodes to be visited in topological order
     std::set<Block* > todo;
 
     m_entryBlock = front ();
@@ -287,12 +288,12 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
         if (visited.find (cur) != visited.end ()) continue;
         cur->setReachable ();
         m_procBlocks[cur->parent ()].push_back (cur);
-        Imop* lastImop = cur->lastImop ();
+        Imop& lastImop = cur->back ();
 
         // link call with its destination
-        if (lastImop->type () == Imop::CALL) {
-            Block* next = lastImop->callDest ()->block ();
-            next->setParent (static_cast<const SymbolProcedure*>(lastImop->dest ()));
+        if (lastImop.type () == Imop::CALL) {
+            Block* next = lastImop.callDest ()->block ();
+            next->setParent (static_cast<const SymbolProcedure*>(lastImop.dest ()));
             todo.insert (next);
             linkCallBlocks (*cur, *next);
 
@@ -308,8 +309,8 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
             Block* next = nextBlock.find (cur)->second;
             next->setParent (cur->parent ());
             todo.insert (next);
-            assert (lastImop->type () != Imop::JUMP);
-            if (!lastImop->isJump ()) {
+            assert (lastImop.type () != Imop::JUMP);
+            if (!lastImop.isJump ()) {
                 linkBlocks (*cur, *next);
             } else {
                 linkBlocksCondFalse (*cur, *next);
@@ -317,13 +318,13 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
         }
 
         // if last instruction is jump, link current block with its destination
-        if (lastImop->isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop->dest ()) != 0);
-            const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop->dest ());
+        if (lastImop.isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != 0);
+            const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
             Block* next = jumpDest->target ()->block ();
             next->setParent (cur->parent ());
             todo.insert (next);
-            if (lastImop->type () == Imop::JUMP) {
+            if (lastImop.type () == Imop::JUMP) {
                 linkBlocks (*cur, *next);
             }
             else {
@@ -331,16 +332,16 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
             }
         }
 
-        if (lastImop->type () == Imop::END) {
+        if (lastImop.type () == Imop::END) {
             assert (m_exitBlock == 0 && "Can only have one exit block!");
-            m_exitBlock = lastImop->block ();
+            m_exitBlock = lastImop.block ();
         }
 
         // link returning block with all the possible places it may return to
-        if (lastImop->type () == Imop::RETURN ||
-                lastImop->type () == Imop::RETURNVOID) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop->dest()) != 0);
-            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop->dest())->target();
+        if (lastImop.type () == Imop::RETURN ||
+                lastImop.type () == Imop::RETURNVOID) {
+            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest()) != 0);
+            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop.dest())->target();
             const IS& ic = firstImop->incomingCalls();
             for (ISCI it(ic.begin()); it != ic.end(); ++ it) {
                 const Imop* callImop = *it;
@@ -381,6 +382,7 @@ void Block::unlink () {
 
 Block::~Block () {
     unlink ();
+    clear_and_dispose (Imop::Disposer ());
 }
 
 void Block::getIncoming (std::set<Block*>& inc) const {

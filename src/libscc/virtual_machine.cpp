@@ -1,5 +1,5 @@
 #include "virtual_machine.h"
-#include "icodelist.h"
+#include "blocks.h"
 
 #include <string>
 #include <map>
@@ -486,12 +486,16 @@ public:
     Compiler () : m_codeSize (0) { }
     ~Compiler () { }
 
-    Instruction* runOn (const ICodeList& code) {
+    Instruction* runOn (const Blocks& bs) {
         Instruction* out = 0;
-
-        for (ICodeList::const_iterator it = code.begin (); it != code.end (); ++ it) {
-            const Imop* imop = *it;
-            compileInstruction (*imop);
+        assert (! bs.empty ());
+        for (Blocks::const_iterator bi = bs.begin (); bi != bs.end (); ++ bi) {
+            const Block* block = *bi;
+            assert (! block->empty ());
+            for (ImopList::const_iterator it = block->begin (); it != block->end (); ++ it) {
+                const Imop& imop = *it;
+                compileInstruction (imop);
+            }
         }
 
 
@@ -754,9 +758,9 @@ private:
 
 namespace SecreC {
 
-void VirtualMachine::run (const ICodeList& icode) {
+void VirtualMachine::run (const Blocks& bs) {
     Compiler comp;
-    Instruction* code = comp.runOn (icode);
+    Instruction* code = comp.runOn (bs);
 
     // execute
     push_frame (0);

@@ -10,12 +10,12 @@
 
 namespace SecreC {
 
-class ICodeList;
+class Blocks;
 
 class VirtualMachine {
 public:
     inline VirtualMachine() { }
-    void run (ICodeList const&);
+    void run (const Blocks&);
     std::string toString(void);
 };
 

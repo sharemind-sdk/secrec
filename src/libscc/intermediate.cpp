@@ -9,9 +9,15 @@
 namespace SecreC {
 
 ICode::Status ICode::init(TreeNodeProgram *program) {
-    CodeGen cg (m_code, m_symbols, m_log);
-    m_status = program->codeGenWith (cg);;
-    return m_status;
+    ICodeList code;
+    CodeGen cg (code, m_symbols, m_log);
+    m_status = program->codeGenWith (cg);
+    if (m_status != OK) {
+        return m_status;
+    }
+
+    m_blocks.init (code);
+    return OK;
 }
 
 } // namespace SecreC
@@ -34,8 +40,8 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICodeList &c) {
     typedef SecreC::ICodeList::const_iterator CLCI;
     unsigned i = 1;
 
-    for (CLCI it(c.begin()); it != c.end(); it++, i++) {
-        out << i << "  " << **it << std::endl;
+    for (CLCI it (c.begin()); it != c.end (); it++, i++) {
+        out << i << "  " << *it << std::endl;
     }
 
     return out;
@@ -45,7 +51,7 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode) {
     out << "ICode status: " << icode.status() << std::endl;
     // if (icode.status() == SecreC::ICode::OK) {
         out << "ICode symbols:" << std::endl << icode.symbols()  << std::endl
-            << "ICode code:"    << std::endl << icode.code()     << std::endl
+            << "ICode blocks:"  << std::endl << icode.blocks()     << std::endl
             << "ICode log:"     << std::endl << icode.compileLog() << std::endl;
     // }
     return out;

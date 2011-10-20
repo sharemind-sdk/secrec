@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/intrusive/list.hpp>
 
 namespace SecreC {
 
@@ -15,6 +16,10 @@ class SymbolProcedure;
 class SymbolLabel;
 class ConstantString;
 class TreeNode;
+
+typedef boost::intrusive::list_base_hook<
+            boost::intrusive::link_mode<
+                boost::intrusive::auto_unlink> > auto_unlink_hook;
 
 /**
  * Intermediated code instructions.
@@ -42,11 +47,18 @@ class TreeNode;
  *       This, amongst other implications, means that classify/declassify need
  *       to be removed.
  */
-class Imop {
+class Imop : public auto_unlink_hook {
     public: /* Types: */
         typedef std::vector<const Symbol* > OperandList;
         typedef OperandList::iterator OperandIterator;
         typedef OperandList::const_iterator OperandConstIterator;
+
+        /// Called when list containing instructions is deleted
+        struct Disposer {
+            void operator () (Imop* imop) {
+                delete imop;
+            }
+        };
 
         enum Type {
             //-------------
@@ -250,7 +262,16 @@ class Imop {
                               Iter beginRet, Iter endRet,
                               Iter beginArg, Iter endArg);
 
+        void unlinkFromParent () {
+            auto_unlink_hook::unlink ();
+        }
+
+        bool isLinked()  {
+            return auto_unlink_hook::is_linked();
+        }
+
     protected: /* Methods: */
+
         inline void addIncomingCall(Imop *jump) { m_incomingCalls.insert(jump); }
         inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
 
@@ -263,6 +284,8 @@ class Imop {
         Block        *m_block;
         unsigned long m_index;
 };
+
+typedef boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false> > ImopList;
 
 /**
  * Convenience operators for Imop creation.

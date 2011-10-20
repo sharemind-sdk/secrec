@@ -168,15 +168,10 @@ void Imop::setJumpDest (SymbolLabel *dest) {
 }
 
 void Imop::setCallDest(SymbolProcedure *proc) {
-//void Imop::setCallDest(SymbolProcedure *proc, SymbolLabel* clean) {
     assert (proc != 0);
     assert (m_type == CALL);
-//    assert (clean->target()->m_type == RETCLEAN);
     assert (proc->target () != 0);
     setDest (proc);
-//    setArg1 (proc);
-    // setArg2 (clean);
-//    proc->setTarget (proc->target ());
     proc->target ()->addIncomingCall (this);
 }
 
@@ -184,7 +179,6 @@ void Imop::setReturnDestFirstImop (SymbolLabel *label) {
     assert (label != 0);
     assert (label->target () != 0);
     assert (label->target ()->m_type == COMMENT);
-//    setArg2(label);
     setDest (label);
 }
 

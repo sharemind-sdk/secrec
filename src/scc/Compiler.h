@@ -25,7 +25,7 @@ private:
 
 public: /* Methods: */
 
-    Compiler (const SecreC::ICode& code);
+    Compiler (SecreC::ICode& code);
     ~Compiler ();
 
     void run ();
@@ -55,8 +55,7 @@ protected:
 
 private: /* Fields: */
 
-    const SecreC::ICode&  m_code;    ///< SecreC intermediate code
-    SecreC::Blocks        m_cfg;     ///< Control flow graph
+    SecreC::ICode&        m_code;    ///< SecreC intermediate code
     VMCode                m_target;  ///< Target code
     VMSymbolTable         m_st;      ///< VM symbol table
     unsigned              m_param;   ///< Current param count

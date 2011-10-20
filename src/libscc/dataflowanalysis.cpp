@@ -186,15 +186,16 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     SDefs old = out;
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); it++) {
+        const Imop& imop = *it;
 //        if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
-        if (((*it)->isExpr())
-            && (*it)->dest() != 0)
+        if ((imop.isExpr())
+            && imop.dest() != 0)
         {
             // Set this def:
-            Defs &d = out[(*it)->dest()].first;
+            Defs &d = out[imop.dest()].first;
 
             d.clear();
-            d.insert(*it);
+            d.insert(&imop);
         }
     }
     return old != out;
@@ -236,9 +237,9 @@ void LiveVariables::start (const Blocks &bs) {
         typedef Imop::OperandConstIterator OCI;
         const Block* block = *bi;
         for (Block::const_iterator it (block->begin ()); it != block->end (); ++ it) {
-            const Imop* imop = *it;
-            imop->getDef (def);
-            imop->getUse (use);
+            const Imop& imop = *it;
+            imop.getDef (def);
+            imop.getUse (use);
 
             for (std::vector<const Symbol*>::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
                 useSymbol (block, *i);
@@ -367,23 +368,23 @@ void ReachingJumps::inFrom(const Block &from, const Block &to) {
 }
 
 void ReachingJumps::inFromFalse(const Block &from, const Block &to) {
-    const Imop *cjump = from.lastImop();
-    assert(cjump->isCondJump());
+    const Imop& cjump = from.back ();
+    assert(cjump.isCondJump());
     Jumps inPosT = m_outPos[&from];
-    inPosT.erase(cjump);
+    inPosT.erase(&cjump);
     m_inPos[&to] += inPosT;
     m_inNeg[&to] += m_outNeg[&from];
-    m_inNeg[&to].insert(cjump);
+    m_inNeg[&to].insert(&cjump);
 }
 
 void ReachingJumps::inFromTrue(const Block &from, const Block &to) {
-    const Imop *cjump = from.lastImop();
-    assert(cjump->isCondJump());
+    const Imop& cjump = from.back ();
+    assert(cjump.isCondJump());
     Jumps inNegT = m_outNeg[&from];
-    inNegT.erase(cjump);
+    inNegT.erase(&cjump);
     m_inNeg[&to] += inNegT;
     m_inPos[&to] += m_outPos[&from];
-    m_inPos[&to].insert(cjump);
+    m_inPos[&to].insert(&cjump);
 }
 
 bool ReachingJumps::finishBlock(const Block &b) {
@@ -462,43 +463,44 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
     PDefs old = out;
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); ++ it) {
-        if (!(*it)->isExpr()) {
-            if ((*it)->type() != Imop::PARAM)
+        const Imop& imop = *it;
+        if (!imop.isExpr()) {
+            if (imop.type() != Imop::PARAM)
                 continue;
         } else {
-            if ((*it)->dest() == 0) continue;
-            if ((*it)->type() == Imop::DECLASSIFY) {
-                m_ds[*it] = out[(*it)->arg1()];
+            if (imop.dest() == 0) continue;
+            if (imop.type() == Imop::DECLASSIFY) {
+                m_ds[&imop] = out[imop.arg1()];
                 continue;
             }
         }
-        if ((*it)->dest()->secrecType().secrecSecType() == SECTYPE_PUBLIC) continue;
+        if (imop.dest()->secrecType().secrecSecType() == SECTYPE_PUBLIC) continue;
 
-        Defs &d = out[(*it)->dest()];
+        Defs &d = out[imop.dest()];
 
-        switch ((*it)->type()) {
+        switch (imop.type()) {
             case Imop::PARAM:
             case Imop::CALL:
                 d.nonsensitive.clear();
                 d.sensitive.clear();
-                d.sensitive.insert(*it);
+                d.sensitive.insert(&imop);
                 break;
             case Imop::ASSIGN:
             case Imop::UMINUS:
             case Imop::UNEG:
-                if ((*it)->arg1()->symbolType() != Symbol::CONSTANT) {
-                    if ((*it)->dest() != (*it)->arg1()) {
-                        d = out[(*it)->arg1()];
+                if (imop.arg1()->symbolType() != Symbol::CONSTANT) {
+                    if (imop.dest() != imop.arg1()) {
+                        d = out[imop.arg1()];
                     }
                 } else {
                     d.nonsensitive.clear();
-                    d.nonsensitive.insert(*it);
+                    d.nonsensitive.insert(&imop);
                     d.sensitive.clear();
                 }
                 break;
             default:
                 d.nonsensitive.clear();
-                d.nonsensitive.insert(*it);
+                d.nonsensitive.insert(&imop);
                 d.sensitive.clear();
                 break;
         }

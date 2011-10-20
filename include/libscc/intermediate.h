@@ -1,14 +1,13 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
-#include <set>
-#include <sstream>
 #include "blocks.h"
 #include "imop.h"
 #include "log.h"
 #include "symboltable.h"
 #include "types.h"
 
+#include <ostream>
 
 namespace SecreC {
 
@@ -29,13 +28,15 @@ class ICode {
         Status init(TreeNodeProgram *p);
 
         const SymbolTable &symbols() const { return m_symbols; }
-        const ICodeList &code() const { return m_code; }
+        Blocks& blocks () { return m_blocks; }
+        const Blocks& blocks () const { return m_blocks; }
         Status status() const { return m_status; }
         const CompileLog &compileLog() const { return m_log; }
 
     private: /* Fields: */
+
         SymbolTable m_symbols;
-        ICodeList   m_code;
+        Blocks      m_blocks;
         Status      m_status;
         CompileLog  m_log;
 };

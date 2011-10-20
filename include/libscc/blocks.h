@@ -25,11 +25,10 @@ class ReachingJumps;
  * \brief In essense this is the control flow graph.
  * It deallocates all blocks on exit.
  */
-class Blocks: public std::vector<Block*> {
+class Blocks : public std::vector<Block*> {
     private:
         Blocks (const Blocks&); // do not implement
         void operator = (const Blocks&); // do not implement
-        typedef ICodeList::const_iterator CCI;
 
     public: /* Types: */
 
@@ -43,7 +42,7 @@ class Blocks: public std::vector<Block*> {
 
         ~Blocks();
 
-        void init(const ICodeList &code);
+        void init(ICodeList &code);
 
         inline Block& entryBlock () const { return *m_entryBlock; }
         inline Block& exitBlock () const { return *m_exitBlock; }
@@ -63,7 +62,7 @@ class Blocks: public std::vector<Block*> {
 
         /// \brief Assign each instruction to basic block, and constructs the basic blocks.
         /// \todo get rid of nextBlock argument
-        void assignToBlocks (CCI start, CCI end, std::map<Block*, Block*>& nextBlock);
+        void assignToBlocks (ICodeList& imops, std::map<Block*, Block*>& nextBlock);
 
         /// \brief Traverse the blocks and propagate successor/predecessor information
         /// to visited blocks. \a nextBlock maps each block to it's successor if it happens
@@ -86,7 +85,8 @@ class Blocks: public std::vector<Block*> {
  * is responsible of destroying all instructions.
  * \todo This class requires major refactoring.
  */
-class Block : public std::list<Imop* > {
+class Block : public ImopList {
+
     Block (const Block&); // do not implement
     void operator = (const Block&); // do not implement
 
@@ -108,9 +108,6 @@ public: /* Methods: */
 
     /// \brief unlink block from CFG
     void unlink ();
-
-    inline Imop* firstImop() const { return front (); }
-    inline Imop* lastImop() const { return back (); }
 
     void addUser (Block* block) { m_users.insert (block); }
 
@@ -151,7 +148,8 @@ public: /* Methods: */
     void getIncoming (std::set<Block*>& list) const;
     void getOutgoing (std::set<Block*>& list) const;
 
-private:
+private: /* Fields: */
+
     std::set<Block*>        m_predecessors;
     std::set<Block*>        m_predecessorsCondFalse;
     std::set<Block*>        m_predecessorsCondTrue;

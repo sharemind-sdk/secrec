@@ -121,7 +121,7 @@ namespace SecreCC {
   Compiler
 *******************************************************************************/
 
-Compiler::Compiler (const ICode& code)
+Compiler::Compiler (ICode& code)
     : m_code (code)
     , m_param (0)
     , m_funcs (new BuiltinFunctions ())
@@ -134,14 +134,13 @@ Compiler::~Compiler () {
 }
 
 void Compiler::run () {
-    m_cfg.init (m_code.code ());
     DataFlowAnalysisRunner runner;
     LiveVariables lv;
     runner.addAnalysis (&lv);
-    runner.run (m_cfg);
+    runner.run (m_code.blocks ());
     m_ra->init (m_st, lv);
     typedef Blocks::ProcMap::iterator PMI;
-    for (PMI i = m_cfg.beginProc (), e = m_cfg.endProc (); i != e; ++ i) {
+    for (PMI i = m_code.blocks ().beginProc (), e = m_code.blocks ().endProc (); i != e; ++ i) {
         cgProcedure (i->first, i->second);
     }
 
@@ -196,7 +195,7 @@ void Compiler::cgBlock (VMFunction& function, const Block* block) {
     VMBlock vmBlock (name, block);
     m_ra->enterBlock (vmBlock);
     for (BCI i = block->begin (), e = block->end (); i != e; ++ i) { 
-        cgImop (vmBlock, **i);
+        cgImop (vmBlock, *i);
     }
     m_ra->exitBlock (vmBlock);
     function.push_back (vmBlock);

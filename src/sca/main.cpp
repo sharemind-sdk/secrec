@@ -18,7 +18,8 @@ void help (void) {
   "Options:\n"
   "  -h, --help           this help\n"
   "  -v, --verbose        some extra information\n"
-  "      --print_ast      print abstract syntax tree\n"
+  "      --print-ast      print abstract syntax tree\n"
+  "      --print-st       print symbol tabel\n"
   "  -e, --eval           evaluate the code\n"
   "  -a, --analysis       select analysis that you wish to enable\n"
   "                       Possible comma separated values are:\n"
@@ -35,6 +36,7 @@ enum Name {
     Verbose = 0,
     Help,
     PrintAst,
+    PrintST,
     Eval,
     Analysis,
     Count
@@ -63,11 +65,16 @@ int run (const char* filename) {
         FILE *f = fopen(filename, "r");
         if (f != NULL) {
             if (flags[Flag::Verbose]) {
-              cerr << "Parsing file: " << filename << endl;
+                cerr << "Parsing file: \"" << filename << "\"... ";
+                cerr << flush;
             }
 
             parseResult = sccparse_file(f, &parseTree);
             fclose(f);
+
+            if (flags[Flag::Verbose]) {
+              cerr << "DONE!" << endl;
+            }
         } else {
             cerr << "Unable to open file: " << filename << endl;
             return 1;
@@ -84,17 +91,19 @@ int run (const char* filename) {
         }
 
         SecreC::ICode icode;
-        icode.init(parseTree);
+        icode.init (parseTree);
 
         if (icode.status() == SecreC::ICode::OK) {
+            SecreC::Blocks& bs = icode.blocks ();
+
             if (flags[Flag::Verbose]) {
               cerr << "Valid intermediate code generated." << endl
                    << icode.compileLog();
             }
 
-            // Print basic blocks:
-            SecreC::Blocks bs;
-            bs.init(icode.code());
+            if (flags[Flag::PrintST]) {
+                cerr << icode.symbols () << endl;
+            }
 
             if (flags[Flag::Verbose]) {
                 cerr << bs.toString() << endl;
@@ -102,7 +111,7 @@ int run (const char* filename) {
 
             if (flags[Flag::Eval]) {
                 SecreC::VirtualMachine eval;
-                eval.run(icode.code());
+                eval.run(bs);
                 if (flags[Flag::Verbose]) {
                     cerr << eval.toString();
                 }
@@ -146,7 +155,8 @@ int main(int argc, char *argv[]) {
       static struct option options[] = {
         {"verbose",      no_argument,       0,                      'v'},
         {"help",         no_argument,       0,                      'h'},
-        {"print_ast",    no_argument,       &flags[Flag::PrintAst],  1 },
+        {"print-ast",    no_argument,       &flags[Flag::PrintAst],  1 },
+        {"print-st",     no_argument,       &flags[Flag::PrintST],   1 },
         {"eval",         no_argument,       0,                      'e'},
         {"analysis",     optional_argument, 0,                      'a'},
         {0, 0, 0, 0}
