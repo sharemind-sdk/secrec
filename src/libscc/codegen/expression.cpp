@@ -98,9 +98,13 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     }
 
     // r = ALLOC def size
-    if (!isScalar) {
+    {
         Symbol* def = st.defaultConstant (e->resultType ().secrecDataType ());
-        Imop* i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
+        Imop* i = 0;
+        if (!isScalar)
+            i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
+        else
+            i = newAssign (e, resSym, def);
         pushImopAfter (result, i);
     }
 
@@ -121,6 +125,11 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     append (result, strides[1].codeGenStride (resSym));
     if (result.isNotOk ()) {
         return result;
+    }
+
+    if (!isScalar) {
+        Imop* i = newAssign (e, tmp_result, st.defaultConstant (tmp_result->secrecType ().secrecDataType ()));
+        pushImopAfter (result, i);
     }
 
     CodeGenLoop loop (*this);
@@ -158,7 +167,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         Imop* i = new Imop (e, Imop::LOAD, (isScalar ? resSym : tmp_result), x, offset);
         code.push_imop (i);
 
-        // r[offset] = tmp is not scalar
+        // r[offset] = tmp if not scalar
         if (!isScalar) {
             i = new Imop (e, Imop::ASSIGN, offset, st.constantInt(0));
             code.push_imop (i);

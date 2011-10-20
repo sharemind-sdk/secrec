@@ -237,7 +237,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     // Insert main call into the beginning of the program:
-    Imop *mainCall = newCall (prog); // new Imop (prog, Imop::CALL, 0, 0, 0);
+    Imop *mainCall = newCall (prog);
     Imop *retClean = new Imop (prog, Imop::RETCLEAN, 0, 0, 0);
     pushImopAfter (result, mainCall);
     code.push_imop (retClean);
