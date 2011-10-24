@@ -1,7 +1,9 @@
 #include "virtual_machine.h"
+#include "symboltable.h"
 #include "blocks.h"
 
 #include <string>
+#include <sstream>
 #include <map>
 #include <stack>
 #include <iostream>
@@ -486,18 +488,18 @@ public:
     Compiler () : m_codeSize (0) { }
     ~Compiler () { }
 
-    Instruction* runOn (const Blocks& bs) {
+    Instruction* runOn (const Program& pr) {
         Instruction* out = 0;
-        assert (! bs.empty ());
-        for (Blocks::const_iterator bi = bs.begin (); bi != bs.end (); ++ bi) {
-            const Block* block = *bi;
-            assert (! block->empty ());
-            for (ImopList::const_iterator it = block->begin (); it != block->end (); ++ it) {
-                const Imop& imop = *it;
-                compileInstruction (imop);
+        assert (! pr.empty ());
+        for (Program::const_iterator pi = pr.begin (); pi != pr.end (); ++ pi) {
+            for (Procedure::const_iterator bi = pi->begin (); bi != pi->end (); ++ bi) {
+                assert (! bi->empty ());
+                for (ImopList::const_iterator it = bi->begin (); it != bi->end (); ++ it) {
+                    const Imop& imop = *it;
+                    compileInstruction (imop);
+                }
             }
         }
-
 
         out = (Instruction*) calloc(sizeof (Instruction), m_codeSize);
         for (unsigned i = 0; i != m_codeSize; ++ i) {
@@ -758,9 +760,9 @@ private:
 
 namespace SecreC {
 
-void VirtualMachine::run (const Blocks& bs) {
+void VirtualMachine::run (const Program& pr) {
     Compiler comp;
-    Instruction* code = comp.runOn (bs);
+    Instruction* code = comp.runOn (pr);
 
     // execute
     push_frame (0);

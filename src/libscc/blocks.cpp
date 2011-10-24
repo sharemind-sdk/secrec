@@ -107,207 +107,156 @@ void printBlockList(std::ostream &os, const char *prefix, const std::set<SecreC:
     printBlocks (os, prefix, bl.begin (), bl.end ());
 }
 
+template<class T >
+struct disposer {
+    void operator () (T* obj) {
+        delete obj;
+    }
+};
+
 } // anonymous namespace
 
 
 namespace SecreC {
 
 /*******************************************************************************
-  Blocks
+  Program
 *******************************************************************************/
 
-void Blocks::init (ICodeList &code) {
-    clear ();
+Program::Program () { }
 
-    /// \todo Check for empty code
+Program::~Program () {
+    clear_and_dispose (disposer<Procedure> ());
+}
 
+const Block* Program::entryBlock () const { return &front ().front (); }
+
+const Block* Program::exitBlock () const { return &front ().back (); }
+
+void Program::init (ICodeList &code) {
     code.resetIndexes ();
-    std::map<Block*, Block*> nextBlock;
-    assignToBlocks (code, nextBlock);
-    assert (!empty ());
-    propagate (nextBlock);
+    assignToBlocks (code);
+    propagate ();
 }
 
-Blocks::~Blocks() {
-    for (const_iterator it(begin()); it != end(); it++) {
-        delete *it;
-    }
-}
-
-void Blocks::addBlockToProc (const SymbolProcedure* proc, Block* b) {
-    b->setParent (proc);
-    m_procBlocks[proc].push_back (b);
-}
-
-Blocks::ProcMap::iterator Blocks::beginProc () {
-    return m_procBlocks.begin ();
-}
-
-Blocks::ProcMap::const_iterator Blocks::beginProc () const {
-    return m_procBlocks.begin ();
-}
-
-Blocks::ProcMap::iterator Blocks::endProc () {
-    return m_procBlocks.end ();
-}
-
-Blocks::ProcMap::const_iterator Blocks::endProc () const {
-    return m_procBlocks.end ();
-}
-
-std::string Blocks::toString() const {
-    typedef DataFlowAnalysis RD;
-
-    std::ostringstream os;
-
-    os << "BLOCKS" << std::endl;
-
-    for (const_iterator it = begin(); it != end(); it++) {
-        const Block* block = *it;
-        os << "  Block " << block->index ();
-
-        if (!block->reachable ()) {
-            os << " [REMOVED]";
-        }
-        else
-        if (block->parent () != 0) {
-            os << " [" << block->parent ()->toString () << "]";
-        }
-
-        os << std::endl;
-        printBlockList(os, "  ..... From: ", (*it)->pred ());
-        printBlockList(os, "  ... From -: ", (*it)->predCondFalse ());
-        printBlockList(os, "  ... From +: ", (*it)->predCondTrue ());
-        printBlockList(os, "  . FromCall: ", (*it)->predCall ());
-        printBlockList(os, "  .. FromRet: ", (*it)->predRet ());
-        printBlockList(os, "  ....... To: ", (*it)->succ ());
-        printBlockList(os, "  ..... To -: ", (*it)->succCondFalse ());
-        printBlockList(os, "  ..... To +: ", (*it)->succCondTrue ());
-        printBlockList(os, "  ... ToCall: ", (*it)->succCall ());
-        printBlockList(os, "  .... ToRet: ", (*it)->succRet ());
-        if ((*it)->callPassFrom () != 0) {
-            os << "  . PassFrom: " << (*it)->callPassFrom ()->index () << std::endl;
-        }
-        if ((*it)->callPassTo () != 0) {
-            os << "  ... PassTo: " << (*it)->callPassTo ()->index () << std::endl;;
-        }
-
-        // Print code:
-        os << "    Code:" << std::endl;
-        for (Block::iterator jt((*it)->begin ()); jt != (*it)->end (); jt++) {
-            os << "      " << jt->index () << "  " << (*jt);
-            if (jt->creator() != 0) {
-                os << " // Created by "
-                   << TreeNode::typeName(jt->creator()->type())
-                   << " at "
-                   << jt->creator()->location();
-                if (jt->creator()->type() == NODE_EXPR_CLASSIFY) {
-                    assert(jt->creator()->parent() != 0);
-                    os << " for "
-                       << TreeNode::typeName(jt->creator()->parent()->type())
-                       << " at "
-                       << jt->creator()->parent()->location();
-                }
-            }
-            os << std::endl;
-        }
-
-        os << std::endl;
-    }
-    return os.str();
-}
-
-// Assigns all instructions to blocks
-void Blocks::assignToBlocks (ICodeList& imops, std::map<Block*, Block*>& nextBlock) {
+void Program::assignToBlocks (ICodeList& imops) {
     unsigned blockCount = 1;
+    assert (!imops.empty ());
 
     // 1. find leaders
     std::set<const Imop*> leaders;
-    bool nextIsLeader = true;  // first instruction is leader
-    for (ImopList::const_iterator i = imops.begin (); i != imops.end (); ++ i) {
-        const Imop& imop = *i;
+    std::map<const Imop*, const SymbolProcedure*> functions;
+    functions[&imops.front ()] = 0;
 
+    bool nextIsLeader = true;  // first instruction is leader
+    for (ImopList::const_iterator i = imops.begin ();i != imops.end (); ++ i) {
         if (nextIsLeader) {
-            leaders.insert (&imop);
+            leaders.insert (&*i);
             nextIsLeader = false;
         }
 
         // destination of jump is leader
-        if (imop.isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != 0);
-            const SymbolLabel* dest = static_cast<const SymbolLabel*>(imop.dest ());
+        if (i->isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(i->dest ()) != 0);
+            const SymbolLabel* dest = static_cast<const SymbolLabel*>(i->dest ());
             leaders.insert (dest->target ());
         }
 
         // anything following terminator is leader
-        if (imop.isTerminator ()) {
+        if (i->isTerminator ()) {
             nextIsLeader = true;
         }
 
         // call destinations are leaders
-        if (imop.type () == Imop::CALL) {
-            leaders.insert (imop.callDest ());
+        if (i->type () == Imop::CALL) {
+            leaders.insert (i->callDest ());
+            functions[i->callDest ()] = static_cast<const SymbolProcedure*>(i->dest ());
             nextIsLeader = true; // RETCLEAN is leader too
         }
     }
 
-    // 2. assign all instructions to basic blocks
+    // 2. assign all instructions to basic blocks in procedures
     // Anything in range [leader, nextLeader) is a basic block.
-    Block* cur = 0;
+    Procedure* curProc = 0;
+    Block* curBlock = 0;
     ImopList::iterator i = imops.begin ();
     while (! imops.empty ()) {
         Imop& imop = *i;
-        if (leaders.find (&imop) != leaders.end ()) {
-            // Leader starts a new block
-            Block* newBlock = new Block (blockCount ++);
-            nextBlock[cur] = newBlock;
-            cur = newBlock;
-            push_back (cur);
+        if (functions.find (&imop) != functions.end ()) {
+            curProc = new Procedure (functions[&imop]);
+            push_back (*curProc);
         }
 
-        assert (cur != 0 && "First instruction not leader?");
-        imop.setBlock (cur);
+        if (leaders.find (&imop) != leaders.end ()) {
+            curBlock = new Block (blockCount ++, curProc);
+            curProc->push_back (*curBlock);
+        }
+
+        imop.setBlock (curBlock);
         i = imops.erase (i);
-        cur->push_back (imop);
+        curBlock->push_back (imop);
+
+
+        switch (imop.type ()) {
+        case Imop::END:
+        case Imop::RETURN:
+        case Imop::RETURNVOID:
+        case Imop::ERROR:
+            curBlock->setIsExit ();
+        default:
+            break;
+        }
     }
 }
 
-// propagate successor/predecessor info
-void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
-    std::set<Block* > visited;
-    std::set<Block* > todo;
+struct BlockCmp {
+    bool operator () (const Procedure::iterator& i, const Procedure::iterator& j) const {
+        return i->index () < j->index ();
+    }
+};
 
-    m_entryBlock = front ();
-    todo.insert (m_entryBlock);
-    m_entryBlock->setParent (0);
+void Program::propagate () {
+    std::set<Procedure::iterator, BlockCmp > visited, todo;
+    todo.insert (front ().begin ());
 
     while (!todo.empty ()) {
-        Block* cur = *todo.begin ();
+        Procedure::iterator cur = *todo.begin ();
+        Procedure* curProc = cur->proc ();
         todo.erase (cur);
 
         if (visited.find (cur) != visited.end ()) continue;
         cur->setReachable ();
-        m_procBlocks[cur->parent ()].push_back (cur);
         Imop& lastImop = cur->back ();
 
         // link call with its destination
         if (lastImop.type () == Imop::CALL) {
-            Block* next = lastImop.callDest ()->block ();
-            next->setParent (static_cast<const SymbolProcedure*>(lastImop.dest ()));
+            Procedure* callTarget = lastImop.callDest ()->block ()->proc ();
+            Procedure::iterator next = procIterator (lastImop.callDest ()->block ());
             todo.insert (next);
             linkCallBlocks (*cur, *next);
+            callTarget->addCallFrom (*cur);
 
-            Block* cleanBlock = nextBlock.find (cur)->second;
-            cleanBlock->setParent (cur->parent ());
+            Procedure::iterator cleanBlock = cur;
+            ++ cleanBlock;
+            assert (cleanBlock != curProc->end () && "Expecting RETCLEAN!");
             todo.insert (cleanBlock);
-            cleanBlock->setCallPassFrom (cur);
-            cur->setCallPassTo (cleanBlock);
+            cleanBlock->setCallPassFrom (&*cur);
+            cur->setCallPassTo (&*cleanBlock);
+
+            for (std::set<Block*>::const_iterator it = callTarget->exitBlocks ().begin ();
+                 it != callTarget->exitBlocks ().end (); ++ it)
+            {
+                Block* exitBlock = *it;
+                linkRetBlocks (*exitBlock, *cleanBlock);
+                exitBlock->proc ()->addReturnTo (*cleanBlock);
+            }
         }
 
         // if block falls through we set its successor to be next block
         if (fallsThru (*cur)) {
-            Block* next = nextBlock.find (cur)->second;
-            next->setParent (cur->parent ());
+            Procedure::iterator next = cur;
+            ++ next;
+            assert (next != curProc->end () && "Must not fall out of procedure!");
             todo.insert (next);
             assert (lastImop.type () != Imop::JUMP);
             if (!lastImop.isJump ()) {
@@ -321,8 +270,7 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
         if (lastImop.isJump ()) {
             assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != 0);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
-            Block* next = jumpDest->target ()->block ();
-            next->setParent (cur->parent ());
+            Procedure::iterator next = procIterator (jumpDest->target ()->block ());
             todo.insert (next);
             if (lastImop.type () == Imop::JUMP) {
                 linkBlocks (*cur, *next);
@@ -332,26 +280,79 @@ void Blocks::propagate (const std::map<Block*, Block*>& nextBlock) {
             }
         }
 
-        if (lastImop.type () == Imop::END) {
-            assert (m_exitBlock == 0 && "Can only have one exit block!");
-            m_exitBlock = lastImop.block ();
-        }
-
-        // link returning block with all the possible places it may return to
-        if (lastImop.type () == Imop::RETURN ||
-                lastImop.type () == Imop::RETURNVOID) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest()) != 0);
-            Imop const* firstImop = static_cast<const SymbolLabel*>(lastImop.dest())->target();
-            const IS& ic = firstImop->incomingCalls();
-            for (ISCI it(ic.begin()); it != ic.end(); ++ it) {
-                const Imop* callImop = *it;
-                assert(callImop->type() == Imop::CALL);
-                linkRetBlocks (*cur, *nextBlock.find (callImop->block ())->second);
-            }
-        }
-
         visited.insert (cur);
     }
+}
+
+std::string Program::toString() const {
+    typedef DataFlowAnalysis RD;
+
+    std::ostringstream os;
+
+    os << "PROCEDURES:" << std::endl;
+    for (const_iterator pi = begin(); pi != end(); ++ pi) {
+        if (pi->name ())
+            os << "  " << pi->name ()->toString () << std::endl;
+        printBlockList(os, "  .. From: ", pi->callFrom ());
+        printBlockList(os, "  .... To: ", pi->returnTo ());
+        os << "  BLOCKS:" << std::endl;
+        for (Procedure::const_iterator it = pi->begin (); it != pi->end (); ++ it) {
+            os << "    Block " << it->index ();
+            if (!it->reachable ()) os << " [REMOVED]";
+            if (it->isExit ()) os << " [EXIT]";
+
+            os << std::endl;
+            printBlockList(os, "    ..... From: ", it->pred ());
+            printBlockList(os, "    ... From -: ", it->predCondFalse ());
+            printBlockList(os, "    ... From +: ", it->predCondTrue ());
+            printBlockList(os, "    . FromCall: ", it->predCall ());
+            printBlockList(os, "    .. FromRet: ", it->predRet ());
+            printBlockList(os, "    ....... To: ", it->succ ());
+            printBlockList(os, "    ..... To -: ", it->succCondFalse ());
+            printBlockList(os, "    ..... To +: ", it->succCondTrue ());
+            printBlockList(os, "    ... ToCall: ", it->succCall ());
+            printBlockList(os, "    .... ToRet: ", it->succRet ());
+            if (it->callPassFrom () != 0) {
+                os << "    . PassFrom: " << it->callPassFrom ()->index () << std::endl;
+            }
+            if (it->callPassTo () != 0) {
+                os << "    ... PassTo: " << it->callPassTo ()->index () << std::endl;;
+            }
+
+            // Print code:
+            os << "    CODE:" << std::endl;
+            for (Block::const_iterator jt(it->begin ()); jt != it->end (); jt++) {
+                os << "      " << jt->index () << "  " << (*jt);
+                if (jt->creator() != 0) {
+                    os << " // Created by "
+                       << TreeNode::typeName(jt->creator()->type())
+                       << " at "
+                       << jt->creator()->location();
+                    if (jt->creator()->type() == NODE_EXPR_CLASSIFY) {
+                        assert(jt->creator()->parent() != 0);
+                        os << " for "
+                           << TreeNode::typeName(jt->creator()->parent()->type())
+                           << " at "
+                           << jt->creator()->parent()->location();
+                    }
+                }
+                os << std::endl;
+            }
+
+            os << std::endl;
+        }
+    }
+
+    return os.str();
+}
+
+
+/*******************************************************************************
+  Procedure
+*******************************************************************************/
+
+Procedure::~Procedure () {
+    clear_and_dispose (disposer<Block> ());
 }
 
 /*******************************************************************************
@@ -382,7 +383,7 @@ void Block::unlink () {
 
 Block::~Block () {
     unlink ();
-    clear_and_dispose (Imop::Disposer ());
+    clear_and_dispose (disposer<Imop> ());
 }
 
 void Block::getIncoming (std::set<Block*>& inc) const {
@@ -409,9 +410,14 @@ void Block::getOutgoing (std::set<Block*>& out) const {
     }
 }
 
+void Block::setIsExit () {
+    m_isExit = true;
+    proc ()->addExit (*this);
+}
+
 } // namespace SecreC
 
-std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs) {
-    out << bs.toString();
+std::ostream &operator<<(std::ostream &out, const SecreC::Program &proc) {
+    out << proc.toString();
     return out;
 }

@@ -314,7 +314,7 @@ unsigned RegisterAllocator::globalCount () {
 }
 
 void RegisterAllocator::enterBlock (VMBlock& block) {
-    const LiveVariables::Symbols& in (m_lv->ins (block.secrecBlock ()));
+    const LiveVariables::Symbols& in (m_lv->ins (*block.secrecBlock ()));
     m_live.clear ();
     for (Symbols::iterator i = in.begin (), e = in.end (); i != e; ++ i) {
         VMValue* reg = m_st->find (*i);

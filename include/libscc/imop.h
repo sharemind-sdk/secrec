@@ -158,8 +158,6 @@ class Imop : public auto_unlink_hook {
         { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
         ~Imop();
 
-        inline const std::set<Imop*> &incomingCalls() const { return m_incomingCalls; }
-
         inline TreeNode *creator() const { return m_creator; }
 
         inline Type type() const { return m_type; }
@@ -206,47 +204,11 @@ class Imop : public auto_unlink_hook {
         inline unsigned long index() const { return m_index; }
         inline void setIndex(unsigned long index) { m_index = index; }
 
+
+        bool isTerminator (void) const;
+        bool isVectorized () const;
         inline bool isComment (void) const {
             return m_type == COMMENT;
-        }
-
-        /// \brief Checks if instruction ends a basic block.
-        /// \todo is Imop::CALL actually a terminator?
-        /// for example llvm doesn't consider it to be one
-        inline bool isTerminator (void) const {
-            switch (m_type) {
-            case END:
-            case ERROR:
-            case RETURN:
-            case RETURNVOID:
-            case CALL:
-                return true;
-            default:
-                return isJump ();
-            }
-        }
-
-        inline bool isVectorized () const {
-            if (! isExpr ()) {
-                return false;
-            }
-
-            switch (m_type) {
-            case STORE:
-            case LOAD:
-            case ALLOC:
-            case PARAM:
-            case CALL:
-                return false;
-            case ASSIGN:
-            case CLASSIFY:
-            case DECLASSIFY:
-            case UNEG:
-            case UMINUS:
-                return m_args.size () == 3;
-            default:
-                return m_args.size () == 4;
-            }
         }
 
         void getUse (std::vector<const Symbol*>& use) const;
@@ -262,26 +224,12 @@ class Imop : public auto_unlink_hook {
                               Iter beginRet, Iter endRet,
                               Iter beginArg, Iter endArg);
 
-        void unlinkFromParent () {
-            auto_unlink_hook::unlink ();
-        }
-
-        bool isLinked()  {
-            return auto_unlink_hook::is_linked();
-        }
-
-    protected: /* Methods: */
-
-        inline void addIncomingCall(Imop *jump) { m_incomingCalls.insert(jump); }
-        inline void removeIncomingCall(Imop *jump) { m_incomingCalls.erase(jump); }
-
     private: /* Fields: */
-        std::set<Imop*> m_incomingCalls; /// \todo get rid of this too
 
-        TreeNode     *m_creator;
+        TreeNode*     m_creator;
         const Type    m_type;
         OperandList   m_args;
-        Block        *m_block;
+        Block*        m_block;
         unsigned long m_index;
 };
 
@@ -294,7 +242,6 @@ typedef boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false>
 Imop* newError (TreeNode* node, ConstantString* msg);
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* arg);
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1, Symbol* arg2);
-Imop* newPush (TreeNode* node, Symbol* arg);
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1);
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol* dest);
 

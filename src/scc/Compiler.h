@@ -13,8 +13,12 @@
 #include "VMCode.h"
 #include "VMSymbolTable.h"
 
-#include <libscc/intermediate.h>
-#include <libscc/blocks.h>
+namespace SecreC {
+class Procedure;
+class Block;
+class Imop;
+class ICode;
+}
 
 
 namespace SecreCC {
@@ -44,9 +48,8 @@ public: /* Methods: */
 
 protected:
 
-    void cgProcedure (const SecreC::SymbolProcedure* proc, 
-                      const std::list<SecreC::Block*>& blocks);
-    void cgBlock (VMFunction& func, const SecreC::Block* block);
+    void cgProcedure (const SecreC::Procedure& blocks);
+    void cgBlock (VMFunction& func, const SecreC::Block& block);
     void cgImop (VMBlock& block, const SecreC::Imop& imop);
 
     void cgJump (VMBlock& block, const SecreC::Imop& imop);

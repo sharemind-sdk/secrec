@@ -3,19 +3,14 @@
 
 #include <string>
 
-#include "symboltable.h"
-#include "imop.h"
-#include "types.h"
-#include "log.h"
-
 namespace SecreC {
 
-class Blocks;
+class Program;
 
 class VirtualMachine {
 public:
     inline VirtualMachine() { }
-    void run (const Blocks&);
+    void run (const Program&);
     std::string toString(void);
 };
 

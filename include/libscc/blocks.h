@@ -4,76 +4,19 @@
 #include <list>
 #include <map>
 #include <set>
-#include <vector>
+#include <boost/intrusive/list.hpp>
 
 #include "icodelist.h"
 
-
 namespace SecreC {
 
-/*******************************************************************************
-  Blocks
-*******************************************************************************/
-
+class Program;
+class Procedure;
 class Block;
-class Imop;
-class ReachingDefinitions;
-class ReachingJumps;
 
-
-/**
- * \brief In essense this is the control flow graph.
- * It deallocates all blocks on exit.
- */
-class Blocks : public std::vector<Block*> {
-    private:
-        Blocks (const Blocks&); // do not implement
-        void operator = (const Blocks&); // do not implement
-
-    public: /* Types: */
-
-        typedef std::map<const SymbolProcedure*, std::list<Block* > > ProcMap;
-
-    public: /* Methods: */
-
-        Blocks ()
-            : m_entryBlock (0), m_exitBlock (0)
-        { }
-
-        ~Blocks();
-
-        void init(ICodeList &code);
-
-        inline Block& entryBlock () const { return *m_entryBlock; }
-        inline Block& exitBlock () const { return *m_exitBlock; }
-
-        void addBlockToProc (const SymbolProcedure* proc, Block* b);
-
-        ProcMap::iterator beginProc ();
-        ProcMap::const_iterator beginProc () const;
-
-        ProcMap::iterator endProc ();
-        ProcMap::const_iterator endProc () const;
-
-
-        std::string toString() const;
-
-    protected: /* Methods: */
-
-        /// \brief Assign each instruction to basic block, and constructs the basic blocks.
-        /// \todo get rid of nextBlock argument
-        void assignToBlocks (ICodeList& imops, std::map<Block*, Block*>& nextBlock);
-
-        /// \brief Traverse the blocks and propagate successor/predecessor information
-        /// to visited blocks. \a nextBlock maps each block to it's successor if it happens
-        /// to fall through.
-        void propagate (const std::map<Block*, Block*>& nextBlock);
-
-    private: /* Fields: */
-        ProcMap  m_procBlocks;
-        Block*   m_entryBlock;
-        Block*   m_exitBlock;
-};
+typedef boost::intrusive::list_base_hook<
+            boost::intrusive::link_mode<
+                boost::intrusive::auto_unlink> > auto_unlink_hook;
 
 /*******************************************************************************
   Block
@@ -85,26 +28,40 @@ class Blocks : public std::vector<Block*> {
  * is responsible of destroying all instructions.
  * \todo This class requires major refactoring.
  */
-class Block : public ImopList {
+class Block : private ImopList, public auto_unlink_hook {
 
     Block (const Block&); // do not implement
     void operator = (const Block&); // do not implement
 
 public: /* Types: */
-    
+
     typedef std::set<Block*> Set;
+    using ImopList::iterator;
+    using ImopList::const_iterator;
+    using ImopList::reverse_iterator;
+    using ImopList::const_reverse_iterator;
 
 public: /* Methods: */
 
-    explicit Block (unsigned long i)
+    explicit Block (unsigned long i, Procedure* proc)
         : m_callPassTo (0)
         , m_callPassFrom (0)
-        , m_parent (0)
+        , m_proc (proc)
         , m_index (i)
         , m_reachable (false)
+        , m_isExit (false)
     { }
 
     ~Block ();
+
+    using ImopList::empty;
+    using ImopList::begin;
+    using ImopList::end;
+    using ImopList::rbegin;
+    using ImopList::rend;
+    using ImopList::front;
+    using ImopList::back;
+    using ImopList::push_back;
 
     /// \brief unlink block from CFG
     void unlink ();
@@ -142,11 +99,13 @@ public: /* Methods: */
     void setReachable () { m_reachable = true; }
     bool reachable () const { return m_reachable; }
     unsigned index () const { return m_index; }
-    void setParent (const SymbolProcedure* parent) { m_parent = parent; }
-    const SymbolProcedure* parent () const { return m_parent; }
-    
+
     void getIncoming (std::set<Block*>& list) const;
     void getOutgoing (std::set<Block*>& list) const;
+
+    Procedure* proc () const { return m_proc; }
+    bool isExit () const { return m_isExit; }
+    void setIsExit ();
 
 private: /* Fields: */
 
@@ -163,13 +122,144 @@ private: /* Fields: */
     std::set<Block*>        m_users;
     Block*                  m_callPassTo;
     Block*                  m_callPassFrom;
-    const SymbolProcedure*  m_parent;
-    const unsigned long     m_index;
-    bool                    m_reachable;
+    Procedure* const        m_proc;                      ///< Pointer to containing procedure
+    const unsigned long     m_index;                     ///< Index of block
+    bool                    m_reachable;                 ///< If block is reachable
+    bool                    m_isExit;                    ///< If the block exits procedure
+};
+
+typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;
+
+/*******************************************************************************
+  Procedure
+*******************************************************************************/
+
+class Procedure : private BlockList, public auto_unlink_hook {
+private:
+
+    Procedure (const Procedure&); // DO NOT IMPLEMENT
+    void operator = (const Procedure&); // DO NOT IMPLEMENT
+
+public: /* Types: */
+
+    using BlockList::iterator;
+    using BlockList::const_iterator;
+
+public: /* Methods: */
+
+    explicit Procedure (const SymbolProcedure* name)
+        : m_entry (0)
+        , m_name (name)
+    { }
+
+    ~Procedure ();
+
+    void push_back (Block* block) {
+        assert (block != 0);
+        Procedure::push_back (block);
+    }
+
+    void push_back (Block& block) {
+        if (m_entry == 0)
+            m_entry = &block;
+        BlockList::push_back (block);
+    }
+
+    Block* entry () const { return m_entry; }
+    const SymbolProcedure* name () const { return m_name; }
+    void addCallFrom (Block& block) { m_callFrom.insert (&block); }
+    void addReturnTo (Block& block) { m_returnTo.insert (&block); }
+    void addExit (Block& block) { m_exits.insert (&block); }
+    const std::set<Block*>& callFrom () const { return m_callFrom; }
+    const std::set<Block*>& returnTo () const { return m_returnTo; }
+    const std::set<Block*>& exitBlocks () const { return m_exits; }
+
+    using BlockList::begin;
+    using BlockList::end;
+    using BlockList::front;
+    using BlockList::back;
+    using BlockList::empty;
+    using BlockList::iterator_to;
+
+private: /* Fields: */
+
+    Block*                        m_entry;
+    std::set<Block*>              m_exits;
+    std::set<Block*>              m_callFrom;
+    std::set<Block*>              m_returnTo;
+    const SymbolProcedure* const  m_name;
+};
+
+typedef boost::intrusive::list<Procedure, boost::intrusive::constant_time_size<false> > ProcedureList;
+
+/// Blocks can be converted to procedure iterator
+inline Procedure::iterator procIterator (Block* block) {
+    return block->proc ()->iterator_to (*block);
+}
+
+inline Procedure::const_iterator procIterator (const Block* block) {
+    return block->proc ()->iterator_to (*block);
+}
+
+
+/*******************************************************************************
+  Program
+*******************************************************************************/
+
+class Program : private ProcedureList {
+private:
+
+    Program (const Program&); // DO NOT IMPLEMENT
+    void operator = (const Program&); // DO NOT IMPLEMENT
+
+public: /* Types: */
+
+    using ProcedureList::iterator;
+    using ProcedureList::const_iterator;
+
+public: /* Methods: */
+
+    Program ();
+    ~Program ();
+
+    void init (ICodeList& code);
+
+    Procedure* get (const SymbolProcedure* name) const {
+        return m_procMap.find (name)->second;
+    }
+
+    void addProcedure (const SymbolProcedure* name, Procedure& proc) {
+        assert (name != 0);
+        m_procMap[name] = &proc;
+        push_back (proc);
+    }
+
+    void addGlobalCode (Procedure& proc) {
+        m_procMap[0] = &proc;
+        push_back (proc);
+    }
+
+    std::string toString () const;
+
+    using ProcedureList::begin;
+    using ProcedureList::end;
+    using ProcedureList::empty;
+
+    const Block* entryBlock () const;
+    const Block* exitBlock () const;
+
+protected:
+
+    void assignToBlocks (ICodeList& imops);
+    void propagate ();
+
+private: /* Fields: */
+
+    std::map<const SymbolProcedure*, Procedure* >  m_procMap;
 };
 
 } // namespace SecreC
 
-std::ostream &operator<<(std::ostream &out, const SecreC::Blocks &bs);
+std::ostream &operator<<(std::ostream& out, const SecreC::Program& proc);
 
 #endif // BLOCKS_H

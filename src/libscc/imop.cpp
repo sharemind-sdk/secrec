@@ -102,6 +102,42 @@ Imop::~Imop() {
     }
 }
 
+bool Imop::isTerminator (void) const {
+    switch (m_type) {
+    case END:
+    case ERROR:
+    case RETURN:
+    case RETURNVOID:
+    case CALL:
+        return true;
+    default:
+        return isJump ();
+    }
+}
+
+bool Imop::isVectorized () const {
+    if (! isExpr ()) {
+        return false;
+    }
+
+    switch (m_type) {
+    case STORE:
+    case LOAD:
+    case ALLOC:
+    case PARAM:
+    case CALL:
+        return false;
+    case ASSIGN:
+    case CLASSIFY:
+    case DECLASSIFY:
+    case UNEG:
+    case UMINUS:
+        return m_args.size () == 3;
+    default:
+        return m_args.size () == 4;
+    }
+}
+
 void Imop::getUse (std::vector<const Symbol *>& use) const {
     OperandConstIterator i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
@@ -172,7 +208,6 @@ void Imop::setCallDest(SymbolProcedure *proc) {
     assert (m_type == CALL);
     assert (proc->target () != 0);
     setDest (proc);
-    proc->target ()->addIncomingCall (this);
 }
 
 void Imop::setReturnDestFirstImop (SymbolLabel *label) {
@@ -375,41 +410,6 @@ std::string Imop::toString() const {
         default:
             os << "TODO";
             break;
-    }
-
-    typedef std::set<Imop*>::const_iterator ISCI;
-    typedef std::set<unsigned long>::const_iterator ULSCI;
-    if (!m_incomingCalls.empty()) {
-        std::set<unsigned long> is;
-        for (ISCI it(m_incomingCalls.begin()); it != m_incomingCalls.end(); it++) {
-            is.insert((*it)->index());
-        }
-        os << "    CALLEDBY[";
-        for (ULSCI it(is.begin()); it != is.end(); it++) {
-            if (it != is.begin()) {
-                os << ", ";
-            }
-            os << (*it);
-        }
-        os << "]";
-    }
-    if ((m_type == RETURN || m_type == RETURNVOID) && dest () != 0) {
-        assert (dynamic_cast<const SymbolLabel*>(dest ()) != 0);
-        Imop const* i = static_cast<const SymbolLabel*>(dest ())->target ();
-        if (!i->m_incomingCalls.empty()) {
-            std::set<unsigned long> is;
-            for (ISCI it(i->m_incomingCalls.begin()); it != i->m_incomingCalls.end(); it++) {
-                is.insert((*it)->index());
-            }
-            os << "    RETURNSTO[";
-            for (ULSCI it(is.begin()); it != is.end(); it++) {
-                if (it != is.begin()) {
-                    os << ", ";
-                }
-                os << (*it);
-            }
-            os << "]";
-        }
     }
 
     return os.str();

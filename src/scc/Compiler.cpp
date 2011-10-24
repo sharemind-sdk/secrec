@@ -14,6 +14,8 @@
 
 #include <libscc/treenode.h>
 #include <libscc/dataflowanalysis.h>
+#include <libscc/intermediate.h>
+#include <libscc/blocks.h>
 
 #include <iostream>
 
@@ -50,10 +52,9 @@ const char* imopToVMName (const Imop& imop) {
  * Functions for mapping SecreC symbols to VM values:
  */
 
-VMLabel* getLabel (VMSymbolTable& st, const Block* block) {
-    assert (block != 0);
+VMLabel* getLabel (VMSymbolTable& st, const Block& block) {
     std::stringstream ss;
-    ss << ":L_" << block->index ();
+    ss << ":L_" << block.index ();
     return st.getLabel (ss.str ());
 }
 
@@ -65,7 +66,7 @@ VMLabel* getLabel (VMSymbolTable& st, const Symbol* sym) {
         const SymbolLabel* symL = static_cast<const SymbolLabel*>(sym);
         assert (symL->target () != 0);
         assert (symL->target ()->block () != 0);
-        label = getLabel (st, symL->target ()->block ());
+        label = getLabel (st, *symL->target ()->block ());
         st.store (sym, label);
     }
 
@@ -146,11 +147,10 @@ void Compiler::run () {
     DataFlowAnalysisRunner runner;
     LiveVariables lv;
     runner.addAnalysis (&lv);
-    runner.run (m_code.blocks ());
+    runner.run (m_code.program ());
     m_ra->init (m_st, lv);
-    typedef Blocks::ProcMap::iterator PMI;
-    for (PMI i = m_code.blocks ().beginProc (), e = m_code.blocks ().endProc (); i != e; ++ i) {
-        cgProcedure (i->first, i->second);
+    for (Program::iterator i = m_code.program ().begin (), e = m_code.program ().end (); i != e; ++ i) {
+        cgProcedure (*i);
     }
 
     m_funcs->generateAll (m_target, m_st);
@@ -173,23 +173,21 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     return reg;
 }
 
-void Compiler::cgProcedure (const SymbolProcedure* proc,
-                            const std::list<Block*>& blocks) {
-    typedef std::list<Block*>::const_iterator BI;
+void Compiler::cgProcedure (const Procedure& blocks) {
     VMLabel* name = 0; 
-    if (proc == 0)
+    if (blocks.name () == 0)
         name = st ().getLabel (":start"); // NULL instead?
     else
-        name = getProc (st (), proc);
+        name = getProc (st (), blocks.name ());
     m_param = 0;
     VMFunction function (name);
-    if (proc == 0)
+    if (blocks.name () == 0)
         function.setIsStart ();
 
     m_ra->enterFunction (function);
-    for (BI i = blocks.begin (), e = blocks.end (); i != e; ++ i) {
-        Block* block = *i;
-        if (block->reachable ()) {
+    for (Procedure::const_iterator i = blocks.begin (), e = blocks.end (); i != e; ++ i) {
+        const Block& block = *i;
+        if (block.reachable ()) {
             cgBlock (function, block);
         }
     }
@@ -198,12 +196,12 @@ void Compiler::cgProcedure (const SymbolProcedure* proc,
     m_target.push_back (function);
 }
 
-void Compiler::cgBlock (VMFunction& function, const Block* block) {
+void Compiler::cgBlock (VMFunction& function, const Block& block) {
     typedef Block::const_iterator BCI;
     VMLabel* name = getLabel (st (), block);
-    VMBlock vmBlock (name, block);
+    VMBlock vmBlock (name, &block);
     m_ra->enterBlock (vmBlock);
-    for (BCI i = block->begin (), e = block->end (); i != e; ++ i) { 
+    for (BCI i = block.begin (), e = block.end (); i != e; ++ i) {
         cgImop (vmBlock, *i);
     }
     m_ra->exitBlock (vmBlock);

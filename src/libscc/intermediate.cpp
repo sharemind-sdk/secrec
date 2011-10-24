@@ -16,7 +16,7 @@ ICode::Status ICode::init(TreeNodeProgram *program) {
         return m_status;
     }
 
-    m_blocks.init (code);
+    m_program.init (code);
     return OK;
 }
 
@@ -51,7 +51,7 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode) {
     out << "ICode status: " << icode.status() << std::endl;
     // if (icode.status() == SecreC::ICode::OK) {
         out << "ICode symbols:" << std::endl << icode.symbols()  << std::endl
-            << "ICode blocks:"  << std::endl << icode.blocks()     << std::endl
+            << "ICode CFG:"     << std::endl << icode.program()     << std::endl
             << "ICode log:"     << std::endl << icode.compileLog() << std::endl;
     // }
     return out;

@@ -23,7 +23,7 @@ class DataFlowAnalysis {
         inline bool isForward() const { return m_forward; }
         inline bool isBackward() const { return m_backward; }
 
-        virtual void start(const Blocks &) {}
+        virtual void start(const Program&) {}
         virtual void startBlock(const Block &) {}
         virtual void inFrom(const Block & /* from */, const Block & /* to */) {}
         virtual void inFromTrue(const Block & /* from */, const Block & /* to */) {}
@@ -40,7 +40,7 @@ class DataFlowAnalysis {
         virtual bool finishBlock(const Block &) { return false; }
         virtual void finish() {}
 
-        virtual std::string toString (const Blocks& bs) const = 0;
+        virtual std::string toString (const Program& pr) const = 0;
 
     private: /* Fields: */
         bool m_forward;
@@ -65,7 +65,7 @@ class DataFlowAnalysisRunner {
 
     public: /* Methods: */
         inline void addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); }
-        void run(const Blocks &blocks);
+        void run(const Program &program);
 
     private: /* Fields: */
         AnalysisSet m_as;
@@ -85,22 +85,22 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
             return (*m_ins.find(&b)).second;
         }
 
-        virtual void start(const Blocks &bs) {
+        virtual void start(const Program &pr) {
             // Initialize the OUT set of the entry block:
-            makeOuts(bs.entryBlock(), m_ins[&bs.entryBlock()], m_outs[&bs.entryBlock()]);
+            makeOuts(*pr.entryBlock(), m_ins[pr.entryBlock()], m_outs[pr.entryBlock()]);
         }
         virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
         virtual inline void inFrom(const Block &from, const Block &to) { inFrom(from, to, false); }
         virtual void inFrom(const Block &from, const Block &to, bool globalOnly);
         virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to, false); }
         virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to, false); }
-        virtual inline void inFromCall(const Block &from, const Block &to) { inFrom(from, to, true); }
         virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to, false); }
+        virtual inline void inFromCall(const Block &from, const Block &to) { inFrom(from, to, true); }
         virtual inline void inFromRet(const Block &from, const Block &to) { inFrom(from, to, true); }
         virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
         virtual inline void finish() { m_outs.clear(); }
 
-        std::string toString(const Blocks &bs) const;
+        std::string toString(const Program &program) const;
 
     private: /* Methods: */
         bool makeOuts(const Block &b, const SDefs &in, SDefs &out);
@@ -122,7 +122,7 @@ class LiveVariables : public BackwardDataFlowAnalysis {
 
     public: /* Methods: */
 
-        virtual void start (const Blocks &bs);
+        virtual void start (const Program &bs);
         virtual void startBlock(const Block& b);
         virtual void outTo(const Block &from, const Block &to) { transfer (from, to); }
         virtual void outToTrue(const Block &from, const Block &to) { transfer (from, to);}
@@ -133,20 +133,20 @@ class LiveVariables : public BackwardDataFlowAnalysis {
         virtual bool finishBlock(const Block &b);
         virtual void finish();
 
-        const Symbols& def (const Block* block) const { return m_def.find (block)->second; }
-        const Symbols& use (const Block* block) const { return m_use.find (block)->second; }
-        const Symbols& ins (const Block* block) const { return m_ins.find (block)->second; }
-        const Symbols& outs (const Block* block) const { return m_outs.find (block)->second; }
+        const Symbols& def (const Block& block) const { return m_def.find (&block)->second; }
+        const Symbols& use (const Block& block) const { return m_use.find (&block)->second; }
+        const Symbols& ins (const Block& block) const { return m_ins.find (&block)->second; }
+        const Symbols& outs (const Block& block) const { return m_outs.find (&block)->second; }
 
-        std::string toString(const Blocks &bs) const;
+        std::string toString(const Program &pr) const;
 
     protected:
 
         void transfer (const Block &from, const Block &to);
         void transferGlobal (const Block &from, const Block &to);
 
-        void useSymbol (const Block* block, const Symbol* sym);
-        void defSymbol (const Block* block, const Symbol* sym);
+        void useSymbol (const Block& block, const Symbol* sym);
+        void defSymbol (const Block& block, const Symbol* sym);
 
     private: /* Fields: */
 
@@ -165,7 +165,7 @@ class ReachingJumps: public ForwardDataFlowAnalysis {
         inline const BJM &getPosJumps() const { return m_inPos; }
         inline const BJM &getNegJumps() const { return m_inNeg; }
 
-        virtual void start(const Blocks &bs);
+        virtual void start(const Program &bs);
         virtual void startBlock(const Block &b);
         virtual void inFrom(const Block &from, const Block &to);
         virtual void inFromTrue(const Block &from, const Block &to);
@@ -174,7 +174,7 @@ class ReachingJumps: public ForwardDataFlowAnalysis {
         virtual bool finishBlock(const Block &b);
         virtual inline void finish() { m_outPos.clear(); m_outNeg.clear(); }
 
-        std::string toString(const Blocks &bs) const;
+        std::string toString(const Program &pr) const;
 
     private: /* Fields: */
         BJM           m_inPos;
@@ -199,10 +199,11 @@ class ReachingDeclassify: public ForwardDataFlowAnalysis {
         typedef std::map<const Imop*, Defs> DD;
 
     public: /* Methods: */
-        virtual void start(const Blocks &bs) {
+        virtual void start(const Program &pr) {
             // Initialize the OUT set of the entry block:
-            makeOuts(bs.entryBlock(), m_ins[&bs.entryBlock()], m_outs[&bs.entryBlock()]);
+            makeOuts(*pr.entryBlock (), m_ins[pr.entryBlock()], m_outs[pr.entryBlock()]);
         }
+
         virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
         virtual void inFrom(const Block &from, const Block &to);
         virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to); }
@@ -211,7 +212,7 @@ class ReachingDeclassify: public ForwardDataFlowAnalysis {
         virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
         virtual void finish();
 
-        std::string toString(const Blocks& bs) const;
+        std::string toString(const Program& bs) const;
 
     private: /* Methods: */
         bool makeOuts(const Block &b, const PDefs &in, PDefs &out);

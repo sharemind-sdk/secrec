@@ -23,6 +23,8 @@ class ICodeList : private ImopList {
         using ImopList::begin;
         using ImopList::end;
         using ImopList::erase;
+        using ImopList::front;
+        using ImopList::back;
 
         inline void push_imop (Imop *i) {
             ImopList::push_back (*i);

@@ -94,7 +94,7 @@ int run (const char* filename) {
         icode.init (parseTree);
 
         if (icode.status() == SecreC::ICode::OK) {
-            SecreC::Blocks& bs = icode.blocks ();
+            SecreC::Program& pr = icode.program ();
 
             if (flags[Flag::Verbose]) {
               cerr << "Valid intermediate code generated." << endl
@@ -106,12 +106,12 @@ int run (const char* filename) {
             }
 
             if (flags[Flag::Verbose]) {
-                cerr << bs.toString() << endl;
+                cerr << pr.toString() << endl;
             }
 
             if (flags[Flag::Eval]) {
                 SecreC::VirtualMachine eval;
-                eval.run(bs);
+                eval.run (pr);
                 if (flags[Flag::Verbose]) {
                     cerr << eval.toString();
                 }
@@ -131,12 +131,12 @@ int run (const char* filename) {
                 if (flags[Flag::Analysis] & ReachingDeclassify) runner.addAnalysis(&rdc);
                 if (flags[Flag::Analysis] & LiveVariables)      runner.addAnalysis(&lv);
 
-                runner.run(bs);
+                runner.run(pr);
 
-                if (flags[Flag::Analysis] & ReachingDefs)       cout << rd.toString(bs)  << endl;
-                if (flags[Flag::Analysis] & ReachingJumps)      cout << rj.toString(bs)  << endl;
-                if (flags[Flag::Analysis] & ReachingDeclassify) cout << rdc.toString(bs) << endl;
-                if (flags[Flag::Analysis] & LiveVariables)      cout << lv.toString(bs)  << endl;
+                if (flags[Flag::Analysis] & ReachingDefs)       cout << rd.toString(pr)  << endl;
+                if (flags[Flag::Analysis] & ReachingJumps)      cout << rj.toString(pr)  << endl;
+                if (flags[Flag::Analysis] & ReachingDeclassify) cout << rdc.toString(pr) << endl;
+                if (flags[Flag::Analysis] & LiveVariables)      cout << lv.toString(pr)  << endl;
             }
         } else {
             cerr << "Error generating valid intermediate code." << endl

@@ -28,15 +28,15 @@ class ICode {
         Status init(TreeNodeProgram *p);
 
         const SymbolTable &symbols() const { return m_symbols; }
-        Blocks& blocks () { return m_blocks; }
-        const Blocks& blocks () const { return m_blocks; }
+        Program& program () { return m_program; }
+        const Program& program () const { return m_program; }
         Status status() const { return m_status; }
         const CompileLog &compileLog() const { return m_log; }
 
     private: /* Fields: */
 
         SymbolTable m_symbols;
-        Blocks      m_blocks;
+        Program     m_program;
         Status      m_status;
         CompileLog  m_log;
 };

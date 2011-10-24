@@ -29,11 +29,15 @@ inline std::set<T> &operator-=(std::set<T> &dest, const std::set<U> &src) {
 #define FOREACH_ANALYSIS(it,as) for (std::set<DataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
 #define FOREACH_BANALYSIS(it,as) for (std::set<BackwardDataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
 #define FOREACH_FANALYSIS(it,as) for (std::set<ForwardDataFlowAnalysis*>::const_iterator it = as.begin(); it != as.end(); it++)
+#define FOREACH_BLOCK(IT,pr) \
+    for (Program::const_iterator pit = pr.begin (); pit != pr.end (); ++ pit)\
+        for (Procedure::const_iterator IT = pit->begin (); IT != pit->end (); ++ IT)
+
 
 } // anonymous namespace
 
 
-void DataFlowAnalysisRunner::run(const Blocks &bs) {
+void DataFlowAnalysisRunner::run(const Program &pr) {
     assert(!m_as.empty());
 
     AnalysisSet aas;
@@ -41,7 +45,7 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
     ForwardAnalysisSet fas;
 
     FOREACH_ANALYSIS(a, m_as) {
-        (*a)->start(bs);
+        (*a)->start(pr);
         aas.insert(*a);
         if ((*a)->isBackward()) {
             assert(dynamic_cast<BackwardDataFlowAnalysis*>(*a) != 0);
@@ -59,44 +63,43 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
         ForwardAnalysisSet funchanged = fas;
 
         // For all reachable blocks:
-        for (size_t i = 0; i < bs.size(); i++) {
-            const Block *b = bs[i];
-            if (!b->reachable ()) continue;
+        FOREACH_BLOCK (i, pr) {
+            if (!i->reachable ()) continue;
 
             // For forward analysis:
-            if (!fas.empty() && b != &bs.entryBlock()) {
+            if (!fas.empty() && &*i != pr.entryBlock ()) {
                 // Notify of start of analyzing block:
                 FOREACH_FANALYSIS(a, fas)
-                    (*a)->startBlock(*b);
+                    (*a)->startBlock(*i);
 
                 // Recalculate input sets:
-                FOREACH_BLOCKS(it,b->pred ())
+                FOREACH_BLOCKS(it,i->pred ())
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFrom(**it, *b);
+                        (*a)->inFrom(**it, *i);
 
-                FOREACH_BLOCKS(it,b->predCondFalse ())
+                FOREACH_BLOCKS(it,i->predCondFalse ())
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromFalse(**it, *b);
+                        (*a)->inFromFalse(**it, *i);
 
-                FOREACH_BLOCKS(it,b->predCondTrue ())
+                FOREACH_BLOCKS(it,i->predCondTrue ())
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromTrue(**it, *b);
+                        (*a)->inFromTrue(**it, *i);
 
-                FOREACH_BLOCKS(it,b->predCall ())
+                FOREACH_BLOCKS(it,i->predCall ())
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromCall(**it, *b);
+                        (*a)->inFromCall(**it, *i);
 
-                FOREACH_BLOCKS(it,b->predRet ())
+                FOREACH_BLOCKS(it,i->predRet ())
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromRet(**it, *b);
+                        (*a)->inFromRet(**it, *i);
 
-                if (b->callPassFrom () != 0)
+                if (i->callPassFrom () != 0)
                     FOREACH_FANALYSIS(a, fas)
-                        (*a)->inFromCallPass(*b->callPassFrom (), *b);
+                        (*a)->inFromCallPass(*i->callPassFrom (), *i);
 
                 // Recalculate the output sets:
                 FOREACH_FANALYSIS(a, fas)
-                    if ((*a)->finishBlock(*b)) {
+                    if ((*a)->finishBlock(*i)) {
                         // Analysis changed output set for this block
                         unchanged.erase(*a);
                         funchanged.erase(static_cast<ForwardDataFlowAnalysis*>(*a));
@@ -104,39 +107,39 @@ void DataFlowAnalysisRunner::run(const Blocks &bs) {
             }
 
             // For backward analysis:
-            if (!bas.empty() && b != &bs.exitBlock()) {
+            if (!bas.empty() && &*i != pr.exitBlock ()) {
                 // Notify of start of analyzing block:
                 FOREACH_BANALYSIS(a, bas)
-                    (*a)->startBlock(*b);
+                    (*a)->startBlock(*i);
 
                 // Recalculate output sets:
-                FOREACH_BLOCKS(it,b->succ ())
+                FOREACH_BLOCKS(it,i->succ ())
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outTo(**it, *b);
+                        (*a)->outTo(**it, *i);
 
-                FOREACH_BLOCKS(it,b->succCondFalse ())
+                FOREACH_BLOCKS(it,i->succCondFalse ())
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToFalse(**it, *b);
+                        (*a)->outToFalse(**it, *i);
 
-                FOREACH_BLOCKS(it,b->succCondTrue ())
+                FOREACH_BLOCKS(it,i->succCondTrue ())
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToTrue(**it, *b);
+                        (*a)->outToTrue(**it, *i);
 
-                FOREACH_BLOCKS(it,b->succCall ())
+                FOREACH_BLOCKS(it,i->succCall ())
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToCall(**it, *b);
+                        (*a)->outToCall(**it, *i);
 
-                FOREACH_BLOCKS(it,b->succRet ())
+                FOREACH_BLOCKS(it,i->succRet ())
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToRet(**it, *b);
+                        (*a)->outToRet(**it, *i);
 
-                if (b->callPassTo () != 0)
+                if (i->callPassTo () != 0)
                     FOREACH_BANALYSIS(a, bas)
-                        (*a)->outToCallPass (*b->callPassTo (), *b);
+                        (*a)->outToCallPass (*i->callPassTo (), *i);
 
                 // Recalculate the input sets:
                 FOREACH_BANALYSIS(a, bas)
-                    if ((*a)->finishBlock(*b)) {
+                    if ((*a)->finishBlock(*i)) {
                         // Analysis changed input set for this block
                         unchanged.erase(*a);
                         bunchanged.erase(static_cast<BackwardDataFlowAnalysis*>(*a));
@@ -201,18 +204,18 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     return old != out;
 }
 
-std::string ReachingDefinitions::toString(const Blocks &bs) const {
+std::string ReachingDefinitions::toString(const Program &pr) const {
     typedef SDefs::const_iterator SDCI;
     typedef Defs::const_iterator DCI;
 
     std::ostringstream os;
 
     os << "Reaching definitions analysis results:" << std::endl;
-    for (Blocks::const_iterator bi = bs.begin(); bi != bs.end(); bi++) {
-        if (!(*bi)->reachable ()) continue;
-        os << "  Block " << (*bi)->index () << ": ";
+    FOREACH_BLOCK (bi, pr) {
+        if (!bi->reachable ()) continue;
+        os << "  Block " << bi->index () << ": ";
 
-        BDM::const_iterator si = m_ins.find(*bi);
+        BDM::const_iterator si = m_ins.find(&*bi);
         if (si == m_ins.end() || (*si).second.empty()) {
             os << " NONE" << std::endl;
         } else {
@@ -231,46 +234,45 @@ std::string ReachingDefinitions::toString(const Blocks &bs) const {
     return os.str();
 }
 
-void LiveVariables::start (const Blocks &bs) {
+void LiveVariables::start (const Program &pr) {
     std::vector<const Symbol*> use, def;
-    for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
+    FOREACH_BLOCK (bi, pr) {
         typedef Imop::OperandConstIterator OCI;
-        const Block* block = *bi;
-        for (Block::const_iterator it (block->begin ()); it != block->end (); ++ it) {
+        for (Block::const_iterator it (bi->begin ()); it != bi->end (); ++ it) {
             const Imop& imop = *it;
             imop.getDef (def);
             imop.getUse (use);
 
             for (std::vector<const Symbol*>::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
-                useSymbol (block, *i);
+                useSymbol (*bi, *i);
             }
 
             for (std::vector<const Symbol*>::const_iterator i = def.begin (), e = def.end (); i != e; ++ i) {
-                defSymbol (block, *i);
+                defSymbol (*bi, *i);
             }
         }
     }
 }
 
-void LiveVariables::useSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::useSymbol (const Block& block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        if (m_def[block].find (sym) == m_def[block].end ())
-            m_use[block].insert (sym);
+        if (m_def[&block].find (sym) == m_def[&block].end ())
+            m_use[&block].insert (sym);
     default:
         break;
     }
 }
 
-void LiveVariables::defSymbol (const Block* block, const Symbol *sym) {
+void LiveVariables::defSymbol (const Block& block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
     case Symbol::TEMPORARY:
-        if (m_use[block].find (sym) == m_use[block].end ())
-            m_def[block].insert (sym);
+        if (m_use[&block].find (sym) == m_use[&block].end ())
+            m_def[&block].insert (sym);
     default:
         break;
     }
@@ -317,11 +319,11 @@ bool LiveVariables::finishBlock (const Block &b) {
 
 void LiveVariables::finish () { }
 
-std::string LiveVariables::toString (const Blocks &bs) const {
+std::string LiveVariables::toString (const Program &pr) const {
     std::stringstream ss;
     ss << "Live variables\n";
-    for (Blocks::const_iterator bi (bs.begin ()); bi != bs.end (); ++ bi) {
-        const Block* block = *bi;
+    FOREACH_BLOCK (bi, pr) {
+        const Block* block = &*bi;
         BSM::const_iterator es [4] = { m_use.end (), m_def.end (), m_ins.end (), m_outs.end () };
         BSM::const_iterator is [4] = { m_use.find (block), m_def.find (block), m_ins.find (block), m_outs.find (block) };
         const char* names [4] = {"USE", "DEF", " IN", "OUT"};
@@ -352,9 +354,10 @@ std::string LiveVariables::toString (const Blocks &bs) const {
   \todo ReachingJumps fails on "while (e1) if (e2) break;"
 */
 
-void ReachingJumps::start(const Blocks &bs) {
-    m_inPos.insert(std::make_pair(&bs.entryBlock(), Jumps()));
-    m_inNeg.insert(std::make_pair(&bs.entryBlock(), Jumps()));
+void ReachingJumps::start(const Program &pr) {
+    (void) pr;
+//    m_inPos.insert(std::make_pair(&bs.entryBlock(), Jumps()));
+//    m_inNeg.insert(std::make_pair(&bs.entryBlock(), Jumps()));
 }
 
 void ReachingJumps::startBlock(const Block &b) {
@@ -400,7 +403,7 @@ bool ReachingJumps::finishBlock(const Block &b) {
     return changed;
 }
 
-std::string ReachingJumps::toString(const Blocks &bs) const {
+std::string ReachingJumps::toString(const Program &pr) const {
     typedef std::set<const Imop*>::const_iterator ISCI;
     typedef std::map<unsigned long, char>::iterator       LCMI;
     typedef std::map<unsigned long, char>::const_iterator LCMCI;
@@ -409,13 +412,13 @@ std::string ReachingJumps::toString(const Blocks &bs) const {
     std::ostringstream os;
 
     os << "Reaching jumps analysis results:" << std::endl;
-    for (Blocks::const_iterator bi = bs.begin(); bi != bs.end(); bi++) {
-        if (!(*bi)->reachable ()) continue;
+    FOREACH_BLOCK (bi, pr) {
+        if (!bi->reachable ()) continue;
 
-        os << "  Block " << (*bi)->index () << ": ";
+        os << "  Block " << bi->index () << ": ";
 
-        BJMCI posi = m_inPos.find(*bi);
-        BJMCI negi = m_inNeg.find(*bi);
+        BJMCI posi = m_inPos.find(&*bi);
+        BJMCI negi = m_inNeg.find(&*bi);
 
         std::map<unsigned long, char> jumps;
 
@@ -522,7 +525,7 @@ void ReachingDeclassify::finish() {
     }
 }
 
-std::string ReachingDeclassify::toString(const Blocks&) const {
+std::string ReachingDeclassify::toString(const Program&) const {
     assert(m_ins.empty());
     std::ostringstream os;
     os << "Trivial declassify analysis results:" << std::endl;

@@ -37,7 +37,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    VMBlock (const VMLabel* name, const SecreC::Block* block) 
+    VMBlock (const VMLabel* name, const SecreC::Block* block)
         : m_name (name)
         , m_secrecBlock (block)
     { }
