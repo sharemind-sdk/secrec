@@ -49,7 +49,6 @@ public: /* Methods: */
         , m_proc (proc)
         , m_index (i)
         , m_reachable (false)
-        , m_isExit (false)
     { }
 
     ~Block ();
@@ -62,6 +61,7 @@ public: /* Methods: */
     using ImopList::front;
     using ImopList::back;
     using ImopList::push_back;
+    using ImopList::iterator_to;
 
     /// \brief unlink block from CFG
     void unlink ();
@@ -104,8 +104,8 @@ public: /* Methods: */
     void getOutgoing (std::set<Block*>& list) const;
 
     Procedure* proc () const { return m_proc; }
-    bool isExit () const { return m_isExit; }
-    void setIsExit ();
+    bool isExit () const;
+    bool isEntry () const;
 
 private: /* Fields: */
 
@@ -125,10 +125,17 @@ private: /* Fields: */
     Procedure* const        m_proc;                      ///< Pointer to containing procedure
     const unsigned long     m_index;                     ///< Index of block
     bool                    m_reachable;                 ///< If block is reachable
-    bool                    m_isExit;                    ///< If the block exits procedure
 };
 
 typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;
+
+inline Block::iterator blockIterator (Imop& imop) {
+    return imop.block ()->iterator_to (imop);
+}
+
+inline Block::const_iterator blockIterator (const Imop& imop) {
+    return imop.block ()->iterator_to (imop);
+}
 
 /*******************************************************************************
   Procedure
@@ -148,31 +155,29 @@ public: /* Types: */
 public: /* Methods: */
 
     explicit Procedure (const SymbolProcedure* name)
-        : m_entry (0)
-        , m_name (name)
+        : m_name (name)
     { }
 
     ~Procedure ();
 
-    void push_back (Block* block) {
-        assert (block != 0);
-        Procedure::push_back (block);
+    const Block* entry () const {
+        assert (!empty ());
+        return &front ();
     }
 
-    void push_back (Block& block) {
-        if (m_entry == 0)
-            m_entry = &block;
-        BlockList::push_back (block);
+    Block* entry () {
+        assert (!empty ());
+        return &front ();
     }
 
-    Block* entry () const { return m_entry; }
     const SymbolProcedure* name () const { return m_name; }
-    void addCallFrom (Block& block) { m_callFrom.insert (&block); }
-    void addReturnTo (Block& block) { m_returnTo.insert (&block); }
-    void addExit (Block& block) { m_exits.insert (&block); }
     const std::set<Block*>& callFrom () const { return m_callFrom; }
     const std::set<Block*>& returnTo () const { return m_returnTo; }
     const std::set<Block*>& exitBlocks () const { return m_exits; }
+
+    void addCallFrom (Block& block) { m_callFrom.insert (&block); }
+    void addReturnTo (Block& block) { m_returnTo.insert (&block); }
+    void addExit (Block& block) { m_exits.insert (&block); }
 
     using BlockList::begin;
     using BlockList::end;
@@ -180,10 +185,10 @@ public: /* Methods: */
     using BlockList::back;
     using BlockList::empty;
     using BlockList::iterator_to;
+    using BlockList::push_back;
 
 private: /* Fields: */
 
-    Block*                        m_entry;
     std::set<Block*>              m_exits;
     std::set<Block*>              m_callFrom;
     std::set<Block*>              m_returnTo;
@@ -193,12 +198,12 @@ private: /* Fields: */
 typedef boost::intrusive::list<Procedure, boost::intrusive::constant_time_size<false> > ProcedureList;
 
 /// Blocks can be converted to procedure iterator
-inline Procedure::iterator procIterator (Block* block) {
-    return block->proc ()->iterator_to (*block);
+inline Procedure::iterator procIterator (Block& block) {
+    return block.proc ()->iterator_to (block);
 }
 
-inline Procedure::const_iterator procIterator (const Block* block) {
-    return block->proc ()->iterator_to (*block);
+inline Procedure::const_iterator procIterator (const Block& block) {
+    return block.proc ()->iterator_to (block);
 }
 
 
@@ -240,6 +245,7 @@ public: /* Methods: */
     }
 
     std::string toString () const;
+    void toDotty (std::ostream& os) const;
 
     using ProcedureList::begin;
     using ProcedureList::end;

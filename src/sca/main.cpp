@@ -20,6 +20,7 @@ void help (void) {
   "  -v, --verbose        some extra information\n"
   "      --print-ast      print abstract syntax tree\n"
   "      --print-st       print symbol tabel\n"
+  "      --cfg-dotty      output CFG as dotty graph\n"
   "  -e, --eval           evaluate the code\n"
   "  -a, --analysis       select analysis that you wish to enable\n"
   "                       Possible comma separated values are:\n"
@@ -37,6 +38,7 @@ enum Name {
     Help,
     PrintAst,
     PrintST,
+    CFGDotty,
     Eval,
     Analysis,
     Count
@@ -109,6 +111,11 @@ int run (const char* filename) {
                 cerr << pr.toString() << endl;
             }
 
+            if (flags[Flag::CFGDotty]) {
+                pr.toDotty (cout);
+                cout << std::flush;
+            }
+
             if (flags[Flag::Eval]) {
                 SecreC::VirtualMachine eval;
                 eval.run (pr);
@@ -157,6 +164,7 @@ int main(int argc, char *argv[]) {
         {"help",         no_argument,       0,                      'h'},
         {"print-ast",    no_argument,       &flags[Flag::PrintAst],  1 },
         {"print-st",     no_argument,       &flags[Flag::PrintST],   1 },
+        {"cfg-dotty",    no_argument,       &flags[Flag::CFGDotty],  1 },
         {"eval",         no_argument,       0,                      'e'},
         {"analysis",     optional_argument, 0,                      'a'},
         {0, 0, 0, 0}

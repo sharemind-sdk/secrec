@@ -15,6 +15,8 @@ typedef IS::const_iterator ISCI;
 
 namespace {
 
+using namespace SecreC;
+
 inline bool fallsThru(const SecreC::Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
@@ -105,6 +107,58 @@ void printBlocks(std::ostream &os, const char *prefix, Iter begin, Iter end)
 
 void printBlockList(std::ostream &os, const char *prefix, const std::set<SecreC::Block*>& bl) {
     printBlocks (os, prefix, bl.begin (), bl.end ());
+}
+
+void printLabel (std::ostream& os, const Block& block) {
+    os << "      ";
+    os << "label = <<TABLE BORDER=\"0\">";
+    os << "<TR><TD COLSPAN=\"2\" BORDER=\"1\" ALIGN=\"CENTER\">Block " << block.index () << "</TD></TR>";
+    for (Block::const_iterator i = block.begin (), e = block.end (); i != e; ++ i) {
+        os << "<TR>";
+        os << "<TD ALIGN=\"LEFT\">" << i->index () << "</TD>";
+        os << "<TD ALIGN=\"LEFT\">" << xmlEncode (i->toString ()) << "</TD>";
+        os << "</TR>";
+    }
+
+    os << "</TABLE>>";
+}
+
+void printNode (std::ostream& os, const Block& block) {
+    if (block.reachable ()) {
+        os << "    \"node" << block.index () << "\" [\n";
+        printLabel (os, block);
+        os << "      shape = \"rectangle\"\n";
+        if (block.isEntry ())
+            os << "      style = \"bold\"\n";
+        if (block.isExit ())
+            os << "      style= \"rounded\"\n";
+        os << "    ];\n";
+    }
+}
+
+void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = 0) {
+    if (from.reachable () && to.reachable ()) {
+        os << "node" << from.index () << " -> " << "node" << to.index ();
+        if (style) os << "[style=\"" << style << "\"]";
+        os << ";";
+    }
+}
+
+void printEdges (std::ostream& os, const Block& from, const std::set<Block*>& to, const char* style = 0) {
+    typedef std::set<Block*>::const_iterator Iter;
+    if (!to.empty ()) os << "    ";
+    for (Iter i = to.begin (), e = to.end (); i != e; ++ i) {
+        printEdge (os, from, **i, style);
+        os << ' ';
+    }
+    if (!to.empty ()) os << "\n";
+}
+
+void printProcName (std::ostream& os, const Procedure& pr) {
+    if (pr.name ())
+        os << "    label = \"" << pr.name ()->toString () << "\";\n";
+    else
+        os << "    label = \"START\";\n";
 }
 
 template<class T >
@@ -202,7 +256,7 @@ void Program::assignToBlocks (ICodeList& imops) {
         case Imop::RETURN:
         case Imop::RETURNVOID:
         case Imop::ERROR:
-            curBlock->setIsExit ();
+            curProc->addExit (*curBlock);
         default:
             break;
         }
@@ -231,7 +285,7 @@ void Program::propagate () {
         // link call with its destination
         if (lastImop.type () == Imop::CALL) {
             Procedure* callTarget = lastImop.callDest ()->block ()->proc ();
-            Procedure::iterator next = procIterator (lastImop.callDest ()->block ());
+            Procedure::iterator next = procIterator (*lastImop.callDest ()->block ());
             todo.insert (next);
             linkCallBlocks (*cur, *next);
             callTarget->addCallFrom (*cur);
@@ -247,8 +301,14 @@ void Program::propagate () {
                  it != callTarget->exitBlocks ().end (); ++ it)
             {
                 Block* exitBlock = *it;
-                linkRetBlocks (*exitBlock, *cleanBlock);
-                exitBlock->proc ()->addReturnTo (*cleanBlock);
+                switch (exitBlock->back ().type ()) {
+                case Imop::RETURN:
+                case Imop::RETURNVOID:
+                    linkRetBlocks (*exitBlock, *cleanBlock);
+                    exitBlock->proc ()->addReturnTo (*cleanBlock);
+                default:
+                    break;
+                }
             }
         }
 
@@ -270,7 +330,7 @@ void Program::propagate () {
         if (lastImop.isJump ()) {
             assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != 0);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
-            Procedure::iterator next = procIterator (jumpDest->target ()->block ());
+            Procedure::iterator next = procIterator (*jumpDest->target ()->block ());
             todo.insert (next);
             if (lastImop.type () == Imop::JUMP) {
                 linkBlocks (*cur, *next);
@@ -346,6 +406,39 @@ std::string Program::toString() const {
     return os.str();
 }
 
+void Program::toDotty (std::ostream& os) const {
+    unsigned uniq = 0;
+
+    os << "digraph CFG {\n";
+    for (const_iterator pi = begin(); pi != end(); ++ pi) {
+        os << "  subgraph cluster" << uniq ++ << " {\n";
+        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i)
+            printNode (os, *i);
+        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
+            printEdges (os, *i, i->succ ());
+            printEdges (os, *i, i->succCondFalse ());
+            printEdges (os, *i, i->succCondTrue ());
+            if (i->callPassTo () != 0) {
+                os << "    ";
+                printEdge (os, *i, *i->callPassTo ());
+                os << '\n';
+            }
+        }
+
+        printProcName (os, *pi);
+        os << "  }\n\n";
+    }
+
+    for (const_iterator pi = begin(); pi != end(); ++ pi) {
+        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
+            printEdges (os, *i, i->succCall (), "dotted");
+            printEdges (os, *i, i->succRet (), "dotted");
+        }
+    }
+
+    os << "}\n";
+}
+
 
 /*******************************************************************************
   Procedure
@@ -386,19 +479,19 @@ Block::~Block () {
     clear_and_dispose (disposer<Imop> ());
 }
 
-void Block::getIncoming (std::set<Block*>& inc) const {
+void Block::getOutgoing (std::set<Block*>& inc) const {
     inc.clear ();
     inc.insert (m_successors.begin (), m_successors.end ());
     inc.insert (m_successorsCondFalse.begin (), m_successorsCondFalse.end ());
     inc.insert (m_successorsCondTrue.begin (), m_successorsCondTrue.end ());
     inc.insert (m_successorsCall.begin (), m_successorsCall.end ());
     inc.insert (m_successorsRet.begin (), m_successorsRet.end ());
-    if (m_callPassFrom != 0) {
-        inc.insert (m_callPassFrom);
+    if (m_callPassTo != 0) {
+        inc.insert (m_callPassTo);
     }
 }
 
-void Block::getOutgoing (std::set<Block*>& out) const {
+void Block::getIncoming (std::set<Block*>& out) const {
     out.clear ();
     out.insert (m_predecessors.begin (), m_predecessors.end ());
     out.insert (m_predecessorsCondFalse.begin (), m_predecessorsCondFalse.end ());
@@ -406,13 +499,17 @@ void Block::getOutgoing (std::set<Block*>& out) const {
     out.insert (m_predecessorsCall.begin (), m_predecessorsCall.end ());
     out.insert (m_predecessorsRet.begin (), m_predecessorsRet.end ());
     if (m_callPassFrom != 0) {
-        out.insert (m_callPassTo);
+        out.insert (m_callPassFrom);
     }
 }
 
-void Block::setIsExit () {
-    m_isExit = true;
-    proc ()->addExit (*this);
+bool Block::isEntry () const {
+    return this == proc ()->entry ();
+}
+
+bool Block::isExit () const {
+    const std::set<Block*>& exits = m_proc->exitBlocks ();
+    return exits.find (const_cast<Block*>(this)) != exits.end ();
 }
 
 } // namespace SecreC
