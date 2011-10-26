@@ -15,6 +15,9 @@ class Symbol;
 class ICode;
 class Imop;
 
+/*******************************************************************************
+  DataFlowAnalysis
+*******************************************************************************/
 
 class DataFlowAnalysis {
     public: /* Methods: */
@@ -43,8 +46,8 @@ class DataFlowAnalysis {
         virtual std::string toString (const Program& pr) const = 0;
 
     private: /* Fields: */
-        bool m_forward;
-        bool m_backward;
+        const bool m_forward;
+        const bool m_backward;
 };
 
 class ForwardDataFlowAnalysis: public DataFlowAnalysis {
@@ -56,6 +59,10 @@ class BackwardDataFlowAnalysis: public DataFlowAnalysis {
     public: /* Methods: */
         inline BackwardDataFlowAnalysis() : DataFlowAnalysis(false, true) {}
 };
+
+/*******************************************************************************
+  DataFlowAnalysisRunner
+*******************************************************************************/
 
 class DataFlowAnalysisRunner {
     public: /* Types: */
@@ -70,6 +77,10 @@ class DataFlowAnalysisRunner {
     private: /* Fields: */
         AnalysisSet m_as;
 };
+
+/*******************************************************************************
+  ReachingDefinitions
+*******************************************************************************/
 
 class ReachingDefinitions: public ForwardDataFlowAnalysis {
     public: /* Types: */
@@ -109,6 +120,50 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
         BDM           m_ins;
         BDM           m_outs;
 };
+
+/*******************************************************************************
+  Dominators
+*******************************************************************************/
+
+class Dominators : public ForwardDataFlowAnalysis {
+public: /* Types: */
+
+    typedef std::map<const Block*, unsigned >      IM;
+    typedef std::map<const Block*, const Block* >  BM;
+
+public: /* Methods: */
+
+    virtual void start (const Program &bs);
+    virtual void startBlock(const Block& b);
+    virtual void inFrom(const Block& from , const Block& to);
+    virtual void inFromTrue(const Block& from, const Block& to) { inFrom (from, to); }
+    virtual void inFromFalse(const Block& from, const Block& to) {inFrom (from, to); }
+    virtual void inFromCallPass(const Block & from, const Block& to) {inFrom (from, to); }
+    virtual bool finishBlock(const Block &b);
+    virtual inline void finish();
+
+    std::string toString(const Program &program) const;
+
+    const Block* idom (const Block*) const;
+    void dominators (const Block* block, std::list<const Block*>& doms) const;
+
+protected:
+
+    const Block* intersect (const Block* b1, const Block* b2);
+    unsigned dfs (const Block& entry, unsigned n);
+    bool visited (const Block& block) const;
+
+private: /* Fields: */
+
+    const Block*   m_newIdom;
+    BM             m_doms;
+    IM             m_num;
+};
+
+
+/*******************************************************************************
+  LiveVariables
+*******************************************************************************/
 
 /**
  * @brief This analysis computes: used variables, defined variables
@@ -156,6 +211,10 @@ class LiveVariables : public BackwardDataFlowAnalysis {
         BSM m_ins;
 };
 
+/*******************************************************************************
+  ReachingJumps
+*******************************************************************************/
+
 class ReachingJumps: public ForwardDataFlowAnalysis {
     public: /* Types: */
         typedef std::set<const Imop*>         Jumps;
@@ -182,6 +241,10 @@ class ReachingJumps: public ForwardDataFlowAnalysis {
         BJM           m_outPos;
         BJM           m_outNeg;
 };
+
+/*******************************************************************************
+  ReachingDeclassify
+*******************************************************************************/
 
 class ReachingDeclassify: public ForwardDataFlowAnalysis {
     public: /* Types: */

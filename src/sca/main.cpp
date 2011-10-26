@@ -28,6 +28,7 @@ void help (void) {
   "                       \"rj\"  reaching jumps\n"
   "                       \"rdc\" reaching declassify\n"
   "                       \"lv\"  live variables\n"
+  "                       \"dom\" dominators\n"
   << endl;
 }
 
@@ -51,7 +52,8 @@ enum AnalysisType {
     ReachingJumps      = 0x02,
     ReachingDeclassify = 0x04,
     ConstantFolding    = 0x08,
-    LiveVariables      = 0x10
+    LiveVariables      = 0x10,
+    Dominators         = 0x20
 };
 
 static int flags[Flag::Count];
@@ -132,11 +134,14 @@ int run (const char* filename) {
                 SecreC::ReachingJumps rj;
                 SecreC::ReachingDeclassify rdc;
                 SecreC::LiveVariables lv;
+                SecreC::Dominators dom;
 
                 if (flags[Flag::Analysis] & ReachingDefs)       runner.addAnalysis(&rd);
                 if (flags[Flag::Analysis] & ReachingJumps)      runner.addAnalysis(&rj);
                 if (flags[Flag::Analysis] & ReachingDeclassify) runner.addAnalysis(&rdc);
                 if (flags[Flag::Analysis] & LiveVariables)      runner.addAnalysis(&lv);
+                if (flags[Flag::Analysis] & Dominators)         runner.addAnalysis(&dom);
+
 
                 runner.run(pr);
 
@@ -144,6 +149,7 @@ int run (const char* filename) {
                 if (flags[Flag::Analysis] & ReachingJumps)      cout << rj.toString(pr)  << endl;
                 if (flags[Flag::Analysis] & ReachingDeclassify) cout << rdc.toString(pr) << endl;
                 if (flags[Flag::Analysis] & LiveVariables)      cout << lv.toString(pr)  << endl;
+                if (flags[Flag::Analysis] & Dominators)         cout << dom.toString(pr)  << endl;
             }
         } else {
             cerr << "Error generating valid intermediate code." << endl
@@ -191,6 +197,7 @@ int main(int argc, char *argv[]) {
             if (strcmp (token, "rj") == 0)  flags[Flag::Analysis] |= ReachingJumps;
             if (strcmp (token, "rdc") == 0) flags[Flag::Analysis] |= ReachingDeclassify;
             if (strcmp (token, "lv") == 0)  flags[Flag::Analysis] |= LiveVariables;
+            if (strcmp (token, "dom") == 0) flags[Flag::Analysis] |= Dominators;
             str = NULL;
           }
 
