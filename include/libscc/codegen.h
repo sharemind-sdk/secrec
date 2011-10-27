@@ -56,14 +56,28 @@ private:
 
 public:
     inline explicit CodeGen (const CodeGen& other)
-        : code (other.code), st (other.st), log (other.log), m_node (other.m_node)
+        : code (other.code)
+        , st (other.st)
+        , log (other.log)
+        , m_node (other.m_node)
     { }
 
     inline CodeGen (ICodeList &code, SymbolTable &st, CompileLog &log)
-        : code (code), st (st), log (log), m_node (0)
+        : code (code)
+        , st (&st)
+        , log (log)
+        , m_node (0)
     { }
 
     inline ~CodeGen () { }
+
+    void newScope () {
+        st = st->newScope ();
+    }
+
+    void popScope () {
+        st = st->parent ();
+    }
 
     /**
      * \brief Used to push instruction right after code block.
@@ -74,7 +88,7 @@ public:
         assert (imop != 0);
         result.patchFirstImop (imop);
         if (!result.nextList ().empty ())
-            result.patchNextList (st.label (imop));
+            result.patchNextList (st->label (imop));
         code.push_imop (imop);
     }
 
@@ -86,7 +100,7 @@ public:
         result.patchFirstImop (other.firstImop ());
         // we check for empty next list to avoid creating label
         if (other.firstImop () && !result.nextList ().empty ()) {
-            result.patchNextList (st.label (other.firstImop ()));
+            result.patchNextList (st->label (other.firstImop ()));
         }
 
         result.addToNextList (other.nextList ());
@@ -208,7 +222,7 @@ public:
 
 protected:
     ICodeList&    code;    ///< The code new instructions are emitted to.
-    SymbolTable&  st;      ///< Symbol table.
+    SymbolTable*  st;      ///< Symbol table.
     CompileLog&   log;     ///< Compiler log.
     TreeNode*     m_node;  ///< Current tree node.
 };

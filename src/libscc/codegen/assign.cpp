@@ -23,7 +23,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef std::vector<std::pair<Symbol*, Symbol*> > SPV; // symbol pair vector
 
     // Type check:
-    ICode::Status s = e->calculateResultType(st, log);
+    ICode::Status s = e->calculateResultType(*st, log);
     if (s != ICode::OK) {
         return CGStmtResult (s);
     }
@@ -35,7 +35,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     assert (lval != 0);
     assert (dynamic_cast<TreeNodeIdentifier*>(lval->children ().at (0)) != 0);
     TreeNodeIdentifier *eArg1 = static_cast<TreeNodeIdentifier*>(lval->children ().at (0));
-    Symbol *destSym = st.find (eArg1->value ());
+    Symbol *destSym = st->find (eArg1->value ());
     assert (destSym->symbolType () == Symbol::SYMBOL);
     assert (dynamic_cast<SymbolSymbol*> (destSym) != 0);
     SymbolSymbol *destSymSym = static_cast<SymbolSymbol*> (destSym);
@@ -72,11 +72,11 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             std::stringstream ss;
             ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << ".";
             Imop* jmp = new Imop (e, Imop::JUMP, (Symbol*) 0);
-            Imop* err = newError (e, st.constantString (ss.str ()));
-            SymbolLabel* errLabel = st.label (err);
+            Imop* err = newError (e, st->constantString (ss.str ()));
+            SymbolLabel* errLabel = st->label (err);
 
             for (unsigned k = 0; k < eArg2->resultType().secrecDimType(); ++ k) {
-                Symbol* tsym = st.appendTemporary (pubIntTy);
+                Symbol* tsym = st->appendTemporary (pubIntTy);
                 Imop* i = new Imop (e, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
                 pushImopAfter (result, i);
 
@@ -100,19 +100,19 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         // 4. initialze running indices
         std::vector<Symbol* > indices;
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
-            Symbol* sym = st.appendTemporary (pubIntTy);
+            Symbol* sym = st->appendTemporary (pubIntTy);
             indices.push_back (sym);
         }
 
         // 6. initialze symbols for offsets and temporary results
-        Symbol* offset = st.appendTemporary(pubIntTy);
-        Symbol* old_offset = st.appendTemporary(pubIntTy);
-        Symbol* tmp_result2 = st.appendTemporary(pubIntTy);
+        Symbol* offset = st->appendTemporary(pubIntTy);
+        Symbol* old_offset = st->appendTemporary(pubIntTy);
+        Symbol* tmp_result2 = st->appendTemporary(pubIntTy);
 
         CodeGenLoop loop (*this);
 
         // offset = 0
-        Imop* i = new Imop (e, Imop::ASSIGN, offset, st.constantInt(0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, st->constantInt(0));
         pushImopAfter (result, i);
 
         // 7. start
@@ -124,7 +124,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         // 8. compute offset for RHS
         {
             // old_ffset = 0
-            Imop* i = new Imop (e, Imop::ASSIGN, old_offset, st.constantInt (0));
+            Imop* i = new Imop (e, Imop::ASSIGN, old_offset, st->constantInt (0));
             pushImopAfter (result, i);
 
             unsigned count = 0;
@@ -146,7 +146,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             const TypeNonVoid ty (e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0);
             if (e->type () == NODE_EXPR_ASSIGN) {
                 if (!eArg2->resultType ().isScalar ()) {
-                    Symbol* t1 = st.appendTemporary (ty);
+                    Symbol* t1 = st->appendTemporary (ty);
 
                     Imop* i = new Imop (e, Imop::LOAD, t1, arg2Result.symbol (), offset);
                     code.push_imop(i);
@@ -160,8 +160,8 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                 }
             }
             else {
-                Symbol* t1 = st.appendTemporary (ty);
-                Symbol* t2 = st.appendTemporary (ty);
+                Symbol* t1 = st->appendTemporary (ty);
+                Symbol* t2 = st->appendTemporary (ty);
                 Imop::Type iType;
 
                 switch (e->type ()) {
@@ -199,7 +199,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             }
 
             // offset = offset + 1
-            Imop* i = new Imop (e, Imop::ADD, offset, offset, st.constantInt (1));
+            Imop* i = new Imop (e, Imop::ADD, offset, offset, st->constantInt (1));
             code.push_imop (i);
        }
 
@@ -258,7 +258,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             i = new Imop (e, iType, destSymSym, destSymSym, arg2Result.symbol ());
         }
         else {
-            Symbol* tmp = st.appendTemporary (static_cast<TypeNonVoid const&> (e->resultType ()));
+            Symbol* tmp = st->appendTemporary (static_cast<TypeNonVoid const&> (e->resultType ()));
             i = new Imop (e, Imop::ALLOC, tmp, arg2Result.symbol (), destSym->getSizeSym ());
             pushImopAfter (result, i);
 

@@ -54,7 +54,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     const TNI *id = static_cast<const TNI*> (def->children ().at (0));
 
     CGStmtResult result;
-    ICode::Status s = def->calculateProcedureType (st, log);
+    ICode::Status s = def->calculateProcedureType (*st, log);
     if (s != ICode::OK) {
         result.setStatus (s);
         return result;
@@ -66,12 +66,12 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     os.str("");
 
     // Add to symbol table:
-    SymbolProcedure* ns = st.appendProcedure (*def);
+    SymbolProcedure* ns = st->appendProcedure (*def);
     ns->setTarget (result.firstImop ());
     def->setSymbol (ns);
 
     // Generate local scope:
-    SymbolTable& localScope = *st.newScope ();
+    SymbolTable& localScope = *st->newScope ();
     CodeGen local (code, localScope, log);
 
     if (def->children ().size () > 3) {
@@ -144,7 +144,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
 
             assert (fType.kind() == TNV::PROCEDUREVOID);
             Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
-            i->setReturnDestFirstImop (st.label (result.firstImop ()));
+            i->setReturnDestFirstImop (st->label (result.firstImop ()));
             pushImopAfter (result, i);
         }
     }
@@ -251,7 +251,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     // Check for "void main()":
-    SP *mainProc = st.findGlobalProcedure ("main", DataTypeProcedureVoid ());
+    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid ());
     if (mainProc == 0) {
         log.fatal () << "No function \"void main()\" found!";
         result.setStatus (ICode::E_NO_MAIN);
@@ -259,9 +259,9 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     // Bind call to main(), i.e. mainCall:
-//    mainCall->setCallDest (mainProc, st.label (retClean));
+//    mainCall->setCallDest (mainProc, st->label (retClean));
     mainCall->setCallDest (mainProc);
-    retClean->setArg2 (st.label (mainCall));
+    retClean->setArg2 (st->label (mainCall));
 
 
     return result;
