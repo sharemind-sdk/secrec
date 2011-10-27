@@ -35,20 +35,6 @@ class CompileLog;
  * related to intermediate code generation outside TreeNode.
  *
  * \todo It should be possible to remove the m_node member. Figure that out.
- * \todo Better interface for scoping, right now new CodeGen class is constructed:
- * \code
- * CodeGen local (code, *st.newScope (), log);
- * // run code gen with local
- * \endcode
- * I think better solution would be something like:
- * \code
- * newScope ();
- * // run code gen
- * popScope ();
- * \endcode
- *
- * Solution for the last todo is to store the symbol table as pointer, this
- * change is trivial but requires to modify quite a lot of code.
  */
 class CodeGen {
 private:

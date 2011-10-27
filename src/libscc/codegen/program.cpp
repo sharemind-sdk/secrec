@@ -71,8 +71,8 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     def->setSymbol (ns);
 
     // Generate local scope:
-    SymbolTable& localScope = *st->newScope ();
-    CodeGen local (code, localScope, log);
+
+    newScope ();
 
     if (def->children ().size () > 3) {
         for (CLCI it(def->children ().begin () + 3); it != def->children ().end (); ++ it) {
@@ -80,7 +80,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
             assert (dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
             TreeNodeStmtDecl* paramDecl = static_cast<TreeNodeStmtDecl*>(*it);
             paramDecl->setProcParam (true);
-            const CGStmtResult& paramResult (local.codeGenStmt (paramDecl));
+            const CGStmtResult& paramResult (codeGenStmt (paramDecl));
             append (result, paramResult);
             if (result.isNotOk ()) {
                 return result;
@@ -91,11 +91,13 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     // Generate code for function body:
     assert(dynamic_cast<TreeNodeStmt*>(def->children().at(2)) != 0);
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(def->children().at(2));
-    const CGStmtResult& bodyResult (local.codeGenStmt (body));
+    const CGStmtResult& bodyResult (codeGenStmt (body));
     append (result, bodyResult);
     if (result.isNotOk ()) {
         return result;
     }
+
+    popScope ();
 
     assert (bodyResult.flags () != 0x0);
     assert ((bodyResult.flags () & ~CGStmtResult::MASK) == 0);

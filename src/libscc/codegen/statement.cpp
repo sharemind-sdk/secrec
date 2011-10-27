@@ -23,12 +23,12 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
 
     CGStmtResult result;
 
-    CodeGen local (code, *st->newScope (), log);
+    newScope ();
 
     for (CLCI it (s->children ().begin ()); it != s->children ().end (); ++ it) {
         assert(dynamic_cast<TreeNodeStmt*> (*it) != 0);
         TreeNodeStmt *c = static_cast<TreeNodeStmt*> (*it);
-        const CGStmtResult& cResult = local.codeGenStmt (c);
+        const CGStmtResult& cResult = codeGenStmt (c);
         append (result, cResult);
         if (result.isNotOk ()) {
             break;
@@ -55,6 +55,8 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
                            | cResult.flags ());
         }
     }
+
+    popScope ();
 
     return result;
 }
@@ -373,12 +375,9 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     CGStmtResult result;
 
-    SymbolTable* tmpScope = st;
     if (c0->type () == NODE_DECL) {
-        tmpScope = st->newScope ();
+        newScope ();
     }
-
-    CodeGen local (code, *tmpScope, log);
 
     // Initialization expression:
     if (c0->type () != NODE_EXPR_NONE) {
@@ -386,7 +385,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
             TreeNodeExpr *e0 = 0;
             assert(dynamic_cast<TreeNodeExpr*> (c0) != 0);
             e0 = static_cast<TreeNodeExpr*> (c0);
-            CGResult e0Result (local.codeGen (e0));
+            CGResult e0Result (codeGen (e0));
             append (result, e0Result);
         }
 
@@ -394,7 +393,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
             TreeNodeStmtDecl* decl = 0;
             assert (dynamic_cast<TreeNodeStmtDecl*>(c0) != 0);
             decl = static_cast<TreeNodeStmtDecl*>(c0);
-            CGResult declResult (local.codeGenStmt (decl));
+            CGResult declResult (codeGenStmt (decl));
             append (result, declResult);
         }
     }
@@ -408,7 +407,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     if (c1->type () != NODE_EXPR_NONE) {
         assert (dynamic_cast<TreeNodeExpr*> (c1) != 0);
         TreeNodeExpr *e1 = static_cast<TreeNodeExpr*> (c1);
-        ICode::Status status = e1->calculateResultType (*local.st, log);
+        ICode::Status status = e1->calculateResultType (*st, log);
         if (status != ICode::OK) {
             result.setStatus (status);
             return result;
@@ -421,7 +420,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
             return result;
         }
 
-        condResult = local.codeGenBranch (e1);
+        condResult = codeGenBranch (e1);
         append (result, condResult);
         if (result.isNotOk ()) {
             return result;
@@ -430,7 +429,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     // Body of for loop:
     TreeNodeStmt *body = static_cast<TreeNodeStmt*> (c3);
-    CGStmtResult bodyResult (local.codeGenStmt (body));
+    CGStmtResult bodyResult (codeGenStmt (body));
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
         return result;
@@ -441,7 +440,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     if (s->children().at(2)->type() != NODE_EXPR_NONE) {
         assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
         TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(c2);
-        iterResult = local.codeGen (e2);
+        iterResult = codeGen (e2);
         if (iterResult.isNotOk ()) {
             result.setStatus (iterResult.status ());
             return result;
@@ -450,21 +449,25 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     // Next iteration jump:
     Imop *j = new Imop (s, Imop::JUMP, 0);
-    local.pushImopAfter (iterResult, j);
+    pushImopAfter (iterResult, j);
 
     bodyResult.patchFirstImop (iterResult.firstImop ());
     condResult.patchFirstImop (bodyResult.firstImop ());
-    SymbolLabel* nextIterDest = local.st->label (iterResult.firstImop ());
-    SymbolLabel* firstBodyDest = local.st->label (bodyResult.firstImop ());
+    SymbolLabel* nextIterDest = st->label (iterResult.firstImop ());
+    SymbolLabel* firstBodyDest = st->label (bodyResult.firstImop ());
 
     // i hope the following is not too unreadable:
     result.patchFirstImop (condResult.firstImop ());
     result.addToNextList (condResult.falseList ()); // if condition if false jump out of for loop
     result.addToNextList (bodyResult.breakList ()); // if break is reach jump out of for loop
-    j->setJumpDest (local.st->label (condResult.firstImop ())); // after iteration jump to contitional
+    j->setJumpDest (st->label (condResult.firstImop ())); // after iteration jump to contitional
     condResult.patchTrueList (firstBodyDest); // if conditional is true jump to body
     bodyResult.patchNextList (nextIterDest); // next jumps to iteration
     bodyResult.patchContinueList (nextIterDest); // continue jumps to iteration
+
+    if (c0->type () == NODE_DECL) {
+        popScope ();
+    }
 
     // Static checking:
     assert (bodyResult.flags () != 0x0);
@@ -532,16 +535,16 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
 
 
     // Generate code for first branch:
-    SymbolTable& innerScope1 = *st->newScope ();
-    CodeGen local1 (code, innerScope1, log);
-
+    newScope ();
     assert(dynamic_cast<TreeNodeStmt*> (s->children ().at (1)) != 0);
     TreeNodeStmt *s1 = static_cast<TreeNodeStmt*> (s->children().at (1));
-    CGStmtResult trueResult (local1.codeGenStmt (s1));
+    CGStmtResult trueResult (codeGenStmt (s1));
     if (trueResult.isNotOk ()) {
         result.setStatus (trueResult.status ());
         return result;
     }
+
+    popScope ();
 
     if (trueResult.firstImop () != 0) {
         eResult.patchTrueList (st->label (trueResult.firstImop ()));
@@ -565,15 +568,16 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
         }
 
         // Generate code for second branch:
-        SymbolTable& innerScope2 = *st->newScope();
+        newScope ();
         assert (dynamic_cast<TreeNodeStmt*> (s->children ().at (2)) != 0);
         TreeNodeStmt *s2 = static_cast<TreeNodeStmt*>(s->children ().at (2));
-        CodeGen local2 (code, innerScope2, log);
-        CGStmtResult falseResult (local2.codeGenStmt (s2));
+        CGStmtResult falseResult (codeGenStmt (s2));
         if (falseResult.isNotOk ()) {
             result.setStatus (falseResult.status ());
             return result;
         }
+
+        popScope ();
 
         eResult.patchFalseList(st->label(falseResult.firstImop ()));
         result.addToNextList (falseResult.nextList ());
@@ -732,21 +736,14 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     SymbolLabel* jumpDest = st->label (result.firstImop ());
 
     // Loop body:
-    SymbolTable& innerScope = *st->newScope();
-    CodeGen cgBody (code, innerScope, log);
+    newScope ();
+
     TreeNodeStmt *body = static_cast<TreeNodeStmt*>(s->children ().at (1));
-    CGStmtResult bodyResult (cgBody.codeGenStmt (body));
+    CGStmtResult bodyResult (codeGenStmt (body));
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
         return result;
     }
-
-//    // Static checking:
-//    if (bodyResult.firstImop () == 0) {
-//        log.fatal () << "Empty loop body at " << body->location ();
-//        result.setStatus (ICode::E_OTHER);
-//        return result;
-//    }
 
     assert (bodyResult.flags () != 0x0);
     if ((bodyResult.flags ()
@@ -762,7 +759,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
                       | CGStmtResult::FALLTHRU);
 
     Imop* i = new Imop (s, Imop::JUMP, 0);
-    cgBody.pushImopAfter (bodyResult, i);
+    pushImopAfter (bodyResult, i);
     i->setJumpDest (jumpDest);
 
     // Patch jump lists:
@@ -770,6 +767,8 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     result.setNextList (eResult.falseList ());
     result.addToNextList (bodyResult.breakList ());
     bodyResult.patchContinueList (jumpDest);
+
+    popScope ();
 
     return result;
 }
@@ -837,10 +836,10 @@ CGStmtResult TreeNodeStmtDoWhile::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     // Loop body:
-    SymbolTable &innerScope = *st->newScope ();
-    CodeGen local (code, innerScope, log);
+    newScope ();
+
     TreeNodeStmt* body = static_cast<TreeNodeStmt*> (s->children ().at (0));
-    CGStmtResult result (local.codeGenStmt (body));
+    CGStmtResult result (codeGenStmt (body));
     if (result.isNotOk ()) {
         return result;
     }
@@ -865,6 +864,8 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     result.setFlags ((result.flags ()
                     & ~(CGStmtResult::BREAK | CGStmtResult::CONTINUE))
                    | CGStmtResult::FALLTHRU);
+
+    popScope (); // end of loop body
 
     // Conditional expression:
 
