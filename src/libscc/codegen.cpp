@@ -6,6 +6,13 @@ namespace SecreC {
   CodeGen
 *******************************************************************************/
 
+Imop* CodeGen::pushComment (const std::string& comment) {
+    ConstantString* str = st->constantString (comment);
+    Imop* c = new Imop (0, Imop::COMMENT, 0, str);
+    code.push_imop (c);
+    return c;
+}
+
 void CodeGen::codeGenSize (CGResult& result) {
     assert (result.symbol () != 0);
     SymbolSymbol* resSym = 0;

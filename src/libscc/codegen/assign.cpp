@@ -239,8 +239,6 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
 
         pushImopAfter (result, i);
-
-        code.push_comment ("^");
     } else {
         // Arithmetic assignments
 

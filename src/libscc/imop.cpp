@@ -98,12 +98,7 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
 Imop::~Imop() {
     typedef std::set<Imop*>::const_iterator ISCI;
     typedef std::vector<Symbol const* >::iterator SVI;
-
-    if (m_type == COMMENT) {
-        delete (std::string*) arg1();
-    }
-
-    for (SVI it(m_args.begin()); it != m_args.end(); ++ it) {
+    for (SVI it (m_args.begin ()); it != m_args.end (); ++ it) {
         *it = 0;
     }
 }
@@ -376,7 +371,9 @@ std::string Imop::toString() const {
             os << "IF (" << a1name << " > " << a2name << ") GOTO " << tname;
             break;
         case COMMENT:      /* // arg1                            */
-            os << "// " << *((std::string*) arg1());
+            assert (arg1 () != 0);
+            assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+            os << "// " << static_cast<const ConstantString*>(arg1())->value ();
             break;
         case ERROR:        /* // arg1                            */
             os << "ERROR \"" <<  a1name << "\"";

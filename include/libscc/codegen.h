@@ -65,6 +65,8 @@ public:
         st = st->parent ();
     }
 
+    Imop* pushComment (const std::string& comment);
+
     /**
      * \brief Used to push instruction right after code block.
      * \pre imop is not NULL

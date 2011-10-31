@@ -62,7 +62,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
 
     std::ostringstream os;
     os << "Start of function: " << id->value ();
-    result.setFirstImop (code.push_comment (os.str ()));
+    result.setFirstImop (pushComment (os.str ()));
     os.str("");
 
     // Add to symbol table:
@@ -154,7 +154,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     assert (result.nextList ().empty ());
 
     os << "End of function: " << id->value ();
-    code.push_comment (os.str ());
+    pushComment (os.str ());
     return result;
 }
 
@@ -217,7 +217,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
 
     // Handle global declarations:
     if (prog->children ().size () == 2) {
-        code.push_comment ("Start of global declarations:");
+        pushComment ("Start of global declarations:");
         assert (prog->children ().at (0)->type () == NODE_GLOBALS);
         assert (dynamic_cast<TreeNodeGlobals*> (prog->children ().at (0)) != 0);
         TreeNodeGlobals *gs = static_cast<TreeNodeGlobals*> (prog->children ().at (0));
@@ -227,7 +227,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
             return result;
         }
 
-        code.push_comment("End of global declarations.");
+        pushComment ("End of global declarations.");
 
         assert (prog->children().at (1)->type () == NODE_PROCDEFS);
         assert (dynamic_cast<TreeNodeProcDefs*> (prog->children ().at (1)) != 0);

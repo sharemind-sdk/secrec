@@ -83,7 +83,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     // 5. compute resulting shape
     {
-        code.push_comment ("Computing shape:");
+        pushComment ("Computing shape:");
         std::vector<unsigned>::const_iterator
                 it = slices.begin(),
                 itEnd = slices.end();
@@ -142,7 +142,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     // 8. compute offset for RHS
     {
         // old_ffset = 0
-        code.push_comment("Compute offset:");
+        pushComment ("Compute offset:");
         Imop* i = new Imop (e, Imop::ASSIGN, offset, st->constantInt(0));
         code.push_imop(i);
 
@@ -161,7 +161,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     // 9. load and store
     {
-        code.push_comment("Load and store:");
+        pushComment("Load and store:");
 
         // tmp = x[old_offset] or r = x[old_offset] if scalar
         Imop* i = new Imop (e, Imop::LOAD, (isScalar ? resSym : tmp_result), x, offset);
