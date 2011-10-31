@@ -67,7 +67,7 @@ void DataFlowAnalysisRunner::run(const Program &pr) {
             if (!i->reachable ()) continue;
 
             // For forward analysis:
-            if (!fas.empty() && !i->isEntry ()) {
+            if (!fas.empty() && !i->isProgramEntry ()) {
                 // Notify of start of analyzing block:
                 FOREACH_FANALYSIS(a, fas)
                     (*a)->startBlock(*i);
@@ -107,7 +107,7 @@ void DataFlowAnalysisRunner::run(const Program &pr) {
             }
 
             // For backward analysis:
-            if (!bas.empty() && !i->isExit ()) {
+            if (!bas.empty() && !i->isProgramExit ()) {
                 // Notify of start of analyzing block:
                 FOREACH_BANALYSIS(a, bas)
                     (*a)->startBlock(*i);
@@ -164,6 +164,15 @@ void DataFlowAnalysisRunner::run(const Program &pr) {
             fas.erase(*a);
         }
     }
+}
+
+std::string DataFlowAnalysisRunner::toString (const Program& program) {
+    std::ostringstream os;
+    FOREACH_ANALYSIS(a, m_as) {
+        os << (*a)->toString (program);
+    }
+
+    return os.str ();
 }
 
 /*******************************************************************************

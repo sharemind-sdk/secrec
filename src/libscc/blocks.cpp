@@ -139,7 +139,7 @@ void printNode (std::ostream& os, const Block& block) {
 void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = 0) {
     if (from.reachable () && to.reachable ()) {
         os << "node" << from.index () << " -> " << "node" << to.index ();
-        if (style) os << "[style=\"" << style << "\"]";
+        if (style) os << style;
         os << ";";
     }
 }
@@ -416,8 +416,8 @@ void Program::toDotty (std::ostream& os) const {
             printNode (os, *i);
         for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
             printEdges (os, *i, i->succ ());
-            printEdges (os, *i, i->succCondFalse ());
-            printEdges (os, *i, i->succCondTrue ());
+            printEdges (os, *i, i->succCondFalse (), "[label=\"-\"]");
+            printEdges (os, *i, i->succCondTrue (), "[label=\"+\"]");
             if (i->callPassTo () != 0) {
                 os << "    ";
                 printEdge (os, *i, *i->callPassTo ());
@@ -431,8 +431,8 @@ void Program::toDotty (std::ostream& os) const {
 
     for (const_iterator pi = begin(); pi != end(); ++ pi) {
         for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
-            printEdges (os, *i, i->succCall (), "dotted");
-            printEdges (os, *i, i->succRet (), "dotted");
+            printEdges (os, *i, i->succCall (), "[style = \"dotted\"]");
+            printEdges (os, *i, i->succRet (), "[style = \"dotted\"]");
         }
     }
 
@@ -501,6 +501,14 @@ void Block::getIncoming (std::set<Block*>& out) const {
     if (m_callPassFrom != 0) {
         out.insert (m_callPassFrom);
     }
+}
+
+bool Block::isProgramEntry () const {
+    return isEntry () && (proc ()->name () == 0);
+}
+
+bool Block::isProgramExit () const {
+    return isExit () && (proc ()->name () == 0);
 }
 
 bool Block::isEntry () const {

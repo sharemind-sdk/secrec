@@ -75,12 +75,12 @@ public: /* Methods: */
     void addPredCall (Block* block) { m_predecessorsCall.insert (block); }
     void addPredRet (Block* block) { m_predecessorsRet.insert (block); }
     void setCallPassTo (Block* block) { m_callPassTo = block; }
-    const std::set<Block*>& succ () const { return m_successors; }
-    const std::set<Block*>& succCondFalse () const { return m_successorsCondFalse; }
-    const std::set<Block*>& succCondTrue () const { return m_successorsCondTrue; }
-    const std::set<Block*>& succCall () const { return m_successorsCall; }
-    const std::set<Block*>& succRet () const { return m_successorsRet; }
-    Block* callPassTo () const { return m_callPassTo; }
+    const std::set<Block*>& pred () const { return m_predecessors; }
+    const std::set<Block*>& predCondFalse () const { return m_predecessorsCondFalse; }
+    const std::set<Block*>& predCondTrue () const { return m_predecessorsCondTrue; }
+    const std::set<Block*>& predCall () const { return m_predecessorsCall; }
+    const std::set<Block*>& predRet () const { return m_predecessorsRet; }
+    Block* callPassFrom () const { return m_callPassFrom; }
 
     // Successors:
     void addSucc (Block* block) { m_successors.insert (block); }
@@ -89,21 +89,24 @@ public: /* Methods: */
     void addSuccCall (Block* block) { m_successorsCall.insert (block); }
     void addSuccRet (Block* block) { m_successorsRet.insert (block); }
     void setCallPassFrom (Block* block) { m_callPassFrom = block; }
-    const std::set<Block*>& pred () const { return m_predecessors; }
-    const std::set<Block*>& predCondFalse () const { return m_predecessorsCondFalse; }
-    const std::set<Block*>& predCondTrue () const { return m_predecessorsCondTrue; }
-    const std::set<Block*>& predCall () const { return m_predecessorsCall; }
-    const std::set<Block*>& predRet () const { return m_predecessorsRet; }
-    Block* callPassFrom () const { return m_callPassFrom; }
+    const std::set<Block*>& succ () const { return m_successors; }
+    const std::set<Block*>& succCondFalse () const { return m_successorsCondFalse; }
+    const std::set<Block*>& succCondTrue () const { return m_successorsCondTrue; }
+    const std::set<Block*>& succCall () const { return m_successorsCall; }
+    const std::set<Block*>& succRet () const { return m_successorsRet; }
+    Block* callPassTo () const { return m_callPassTo; }
 
     void setReachable () { m_reachable = true; }
     bool reachable () const { return m_reachable; }
-    unsigned index () const { return m_index; }
+    unsigned long index () const { return m_index; }
 
     void getIncoming (std::set<Block*>& list) const;
     void getOutgoing (std::set<Block*>& list) const;
 
     Procedure* proc () const { return m_proc; }
+
+    bool isProgramExit () const;
+    bool isProgramEntry () const;
     bool isExit () const;
     bool isEntry () const;
 

@@ -73,6 +73,7 @@ class DataFlowAnalysisRunner {
     public: /* Methods: */
         inline void addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); }
         void run(const Program &program);
+        std::string toString (const Program& program);
 
     private: /* Fields: */
         AnalysisSet m_as;

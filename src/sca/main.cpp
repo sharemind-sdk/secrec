@@ -142,14 +142,8 @@ int run (const char* filename) {
                 if (flags[Flag::Analysis] & LiveVariables)      runner.addAnalysis(&lv);
                 if (flags[Flag::Analysis] & Dominators)         runner.addAnalysis(&dom);
 
-
                 runner.run(pr);
-
-                if (flags[Flag::Analysis] & ReachingDefs)       cout << rd.toString(pr)  << endl;
-                if (flags[Flag::Analysis] & ReachingJumps)      cout << rj.toString(pr)  << endl;
-                if (flags[Flag::Analysis] & ReachingDeclassify) cout << rdc.toString(pr) << endl;
-                if (flags[Flag::Analysis] & LiveVariables)      cout << lv.toString(pr)  << endl;
-                if (flags[Flag::Analysis] & Dominators)         cout << dom.toString(pr)  << endl;
+                cout << runner.toString (pr) << endl;
             }
         } else {
             cerr << "Error generating valid intermediate code." << endl
