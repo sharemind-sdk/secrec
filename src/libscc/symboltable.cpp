@@ -57,7 +57,7 @@ public:
     // symbols for variables and procedures
     Symbol*          find (const std::string& name) const;
     void             append (Symbol* sym);
-    SymbolTemporary* temporary (const TypeNonVoid &type);
+    SymbolSymbol*    temporary (const TypeNonVoid &type);
 
     //
     std::string toString () const;
@@ -67,6 +67,7 @@ private:
     ConstantBool*                           m_constantFalse;
     std::map<int, ConstantInt* >            m_constantInts;
     std::map<unsigned, ConstantUInt* >      m_constantUInts;
+
     std::map<std::string, ConstantString* > m_constantStrings;
     std::map<const Imop*, SymbolLabel* >    m_labels;
     std::map<std::string, Symbol* >         m_globals;
@@ -74,9 +75,9 @@ private:
 };
 
 GlobalSymbols::GlobalSymbols ()
-    : m_constantTrue (0),
-      m_constantFalse (0),
-      m_tempCount (0)
+    : m_constantTrue (0)
+    , m_constantFalse (0)
+    , m_tempCount (0)
 { }
 
 GlobalSymbols::~GlobalSymbols () {
@@ -192,8 +193,8 @@ Symbol* GlobalSymbols::find (const std::string &name) const {
     return out;
 }
 
-SymbolTemporary* GlobalSymbols::temporary (const TypeNonVoid &type) {
-    SymbolTemporary* tmp = new SymbolTemporary (DataTypeVar(type.dataType()));
+SymbolSymbol* GlobalSymbols::temporary (const TypeNonVoid &type) {
+    SymbolSymbol* tmp = new SymbolSymbol (DataTypeVar(type.dataType()), true);
     std::ostringstream os;
     os << "{t}" << m_tempCount ++;
     tmp->setName (os.str ());
@@ -239,8 +240,8 @@ std::string GlobalSymbols::toString () const {
 *******************************************************************************/
 
 SymbolTable::SymbolTable (SymbolTable *parent)
-    : m_parent (parent),
-      m_global (m_parent == 0 ? new GlobalSymbols () : m_parent->m_global)
+    : m_parent (parent)
+    , m_global (m_parent == 0 ? new GlobalSymbols () : m_parent->m_global)
 {
     // Intentionally empty
 }
@@ -337,7 +338,7 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
     return ns;
 }
 
-SymbolTemporary *SymbolTable::appendTemporary(const TypeNonVoid &type) {
+SymbolSymbol *SymbolTable::appendTemporary(const TypeNonVoid &type) {
     return m_global->temporary (type);
 }
 

@@ -204,7 +204,7 @@ public:
     void copyShapeFrom (CGResult& result, Symbol* sym);
 
     /// generate appropriately typed result symbol for given node
-    Symbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
+    SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
 protected:
     ICodeList&    code;    ///< The code new instructions are emitted to.

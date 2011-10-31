@@ -187,10 +187,8 @@ void ReachingDefinitions::inFrom(const Block &from, const Block &to, bool global
     } else {
         for (SDefs::const_iterator jt = m_outs[&from].begin(); jt != m_outs[&from].end(); jt++) {
             const Symbol *s = (*jt).first;
-            if (((s->symbolType() == Symbol::SYMBOL)
-                 && static_cast<const SymbolSymbol*>(s)->scopeType() == SymbolSymbol::GLOBAL)
-                || ((s->symbolType() == Symbol::TEMPORARY)
-                    && static_cast<const SymbolTemporary*>(s)->scopeType() == SymbolTemporary::GLOBAL))
+            if ((s->symbolType() == Symbol::SYMBOL)
+                && static_cast<const SymbolSymbol*>(s)->scopeType() == SymbolSymbol::GLOBAL)
             {
                 m_ins[&to][s].first += (*jt).second.first;
             }
@@ -199,21 +197,20 @@ void ReachingDefinitions::inFrom(const Block &from, const Block &to, bool global
 }
 
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
+    typedef std::vector<const Symbol*> SV;
     SDefs old = out;
+    SV defs;
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); it++) {
         const Imop& imop = *it;
-//        if (((*it)->isExpr() || ((*it)->type() == Imop::POP))
-        if ((imop.isExpr())
-            && imop.dest() != 0)
-        {
-            // Set this def:
-            Defs &d = out[imop.dest()].first;
-
-            d.clear();
-            d.insert(&imop);
+        imop.getDef (defs);
+        for (SV::const_iterator i = defs.begin (), e = defs.end (); i != e; ++ i) {
+            Defs& d = out[*i].first;
+            d.clear ();
+            d.insert (&imop);
         }
     }
+
     return old != out;
 }
 
@@ -372,7 +369,6 @@ void LiveVariables::useSymbol (const Block& block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
-    case Symbol::TEMPORARY:
         if (m_def[&block].find (sym) == m_def[&block].end ())
             m_use[&block].insert (sym);
     default:
@@ -384,7 +380,6 @@ void LiveVariables::defSymbol (const Block& block, const Symbol *sym) {
     assert (sym != 0);
     switch (sym->symbolType ()) {
     case Symbol::SYMBOL:
-    case Symbol::TEMPORARY:
         if (m_use[&block].find (sym) == m_use[&block].end ())
             m_def[&block].insert (sym);
     default:
@@ -407,12 +402,8 @@ void LiveVariables::transferGlobal (const Block& from, const Block& to) {
     for (Symbols::const_iterator i = ins.begin (), e = ins.end (); i != e; ++ i) {
         const Symbol* symbol = *i;
         switch (symbol->symbolType ()) {
-        case Symbol::TEMPORARY:
-            if (static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL)
-                m_outs[&to].insert (symbol);
-            break;
         case Symbol::SYMBOL:
-            if (static_cast<const SymbolTemporary*>(symbol)->scopeType () == SymbolTemporary::GLOBAL)
+            if (static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL)
                 m_outs[&to].insert (symbol);
             break;
         default:
@@ -468,15 +459,7 @@ std::string LiveVariables::toString (const Program &pr) const {
   ReachingJumps
 *******************************************************************************/
 
-/**
-  \todo ReachingJumps fails on "while (e1) if (e2) break;"
-*/
-
-void ReachingJumps::start(const Program &pr) {
-    (void) pr;
-//    m_inPos.insert(std::make_pair(&bs.entryBlock(), Jumps()));
-//    m_inNeg.insert(std::make_pair(&bs.entryBlock(), Jumps()));
-}
+void ReachingJumps::start(const Program&) { }
 
 void ReachingJumps::startBlock(const Block &b) {
     m_inNeg[&b].clear();

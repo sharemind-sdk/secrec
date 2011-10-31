@@ -1,9 +1,19 @@
 #include "icodelist.h"
 
+namespace {
+
+struct imop_disposer {
+    inline void operator () (SecreC::Imop* imop) const {
+        delete imop;
+    }
+};
+
+}
+
 namespace SecreC {
 
 ICodeList::~ICodeList() {
-    clear_and_dispose (Imop::Disposer ());
+    clear_and_dispose (imop_disposer ());
 }
 
 void ICodeList::resetIndexes() {

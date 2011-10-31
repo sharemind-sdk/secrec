@@ -9,34 +9,25 @@
 namespace SecreC {
 
 /*******************************************************************************
-  Symbol
-*******************************************************************************/
-
-void Symbol::inheritShape (Symbol* from) {
-    setSizeSym(from->getSizeSym());
-    std::copy (from->dim_begin(), from->dim_end(), dim_begin());
-}
-
-/*******************************************************************************
   SymbolSymbol
 *******************************************************************************/
 
 std::string SymbolSymbol::toString() const {
     std::ostringstream os;
-    os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' ' << secrecType()
-       << ' ' << name() << '{' << this << '}';
+    if (m_isTemporary) os << "TEMPORARY ";
+    os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
+       << secrecType() << ' ' << name () << '{' << this << '}';
     return os.str();
 }
 
-/*******************************************************************************
-  SymbolTemporary
-*******************************************************************************/
 
-std::string SymbolTemporary::toString() const {
-    std::ostringstream os;
-    os << "TEMPORARY " << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
-       << secrecType() << ' ' << name() << '{' << this << '}';
-    return os.str();
+void SymbolSymbol::inheritShape (Symbol* from) {
+    assert (from != 0);
+    SymbolSymbol* t = 0;
+    if ((t = dynamic_cast<SymbolSymbol*>(from)) != 0) {
+        setSizeSym(t->getSizeSym());
+        std::copy (t->m_dims.begin (), t->m_dims.end (), m_dims.begin ());
+    }
 }
 
 /*******************************************************************************
@@ -44,8 +35,9 @@ std::string SymbolTemporary::toString() const {
 *******************************************************************************/
 
 SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
-    : Symbol(Symbol::PROCEDURE, procdef->procedureType()), m_decl(procdef),
-      m_target(0)
+    : Symbol(Symbol::PROCEDURE, procdef->procedureType())
+    , m_decl(procdef)
+    , m_target(0)
 {
     // Intentionally empty
 }

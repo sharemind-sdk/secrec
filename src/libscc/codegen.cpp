@@ -8,27 +8,28 @@ namespace SecreC {
 
 void CodeGen::codeGenSize (CGResult& result) {
     assert (result.symbol () != 0);
-    Symbol* resSym = result.symbol ();
-    Symbol* size = resSym->getSizeSym ();
-    assert (size != 0);
+    SymbolSymbol* resSym = 0;
+    if ((resSym = dynamic_cast<SymbolSymbol*>(result.symbol ())) != 0) {
+        Symbol* size = resSym->getSizeSym ();
+        Imop* i = new Imop (m_node, Imop::ASSIGN, size, st->constantInt(1));
+        pushImopAfter (result, i);
 
-    Imop* i = new Imop (m_node, Imop::ASSIGN, size, st->constantInt(1));
-    pushImopAfter (result, i);
-
-    for (Symbol::dim_iterator it (resSym->dim_begin ()); it != resSym->dim_end (); ++ it) {
-        i = new Imop (m_node, Imop::MUL, size, size, *it);
-        code.push_imop (i);
+        for (dim_iterator it = dim_begin (resSym), e = dim_end (resSym); it != e; ++ it) {
+            i = new Imop (m_node, Imop::MUL, size, size, *it);
+            code.push_imop (i);
+        }
     }
 }
 
-void CodeGen::copyShapeFrom (CGResult& result, Symbol* sym) {
-    Symbol* resSym = result.symbol ();
+void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
+    SymbolSymbol* resSym = dynamic_cast<SymbolSymbol*>(result.symbol ());
+    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
     assert (sym != 0 && resSym != 0);
-    Symbol::dim_iterator dj = resSym->dim_begin();
+    dim_iterator dj = dim_begin (resSym);
     Imop* i = 0;
 
-    for (Symbol::dim_iterator di (sym->dim_begin()); di != sym->dim_end(); ++ di, ++ dj) {
-        assert (dj != resSym->dim_end ());
+    for (dim_iterator di (dim_begin (sym)); di != dim_end (sym); ++ di, ++ dj) {
+        assert (dj != dim_end (resSym));
         i = new Imop (m_node, Imop::ASSIGN, *dj, *di);
         pushImopAfter (result, i);
     }
@@ -38,22 +39,24 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* sym) {
 }
 
 void CodeGen::allocResult (CGResult& result)  {
-    Symbol* sym = result.symbol ();
-    if (sym->secrecType ().isScalar ())
+    if (result.symbol ()->secrecType ().isScalar ()) {
+        log.warning () << "Allocating result for scala! Ignoring that.";
         return;
+    }
 
+    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(result.symbol ());
     Imop* i = new Imop (m_node, Imop::ALLOC, sym,
                         st->defaultConstant (sym->secrecType ().secrecDataType ()),
                         sym->getSizeSym ());
     pushImopAfter (result, i);
 }
 
-Symbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
+SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
     const TypeNonVoid ty (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
     assert (node->haveResultType ());
     if (!node->resultType().isVoid()) {
         assert (dynamic_cast<const TypeNonVoid*>(&node->resultType()) != 0);
-        Symbol* sym = st->appendTemporary(static_cast<const TypeNonVoid&>(node->resultType()));
+        SymbolSymbol* sym = st->appendTemporary(static_cast<const TypeNonVoid&>(node->resultType()));
         result.setResult (sym);
         for (unsigned i = 0; i < node->resultType().secrecDimType(); ++ i) {
             sym->setDim (i, st->appendTemporary (ty));
@@ -70,16 +73,16 @@ Symbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
   CodeGenStride
 *******************************************************************************/
 
-CGResult CodeGenStride::codeGenStride (Symbol* sym) {
+CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
     const TypeNonVoid ty (SECTYPE_PUBLIC, DATATYPE_INT, 0);
     CGResult result;
-    const unsigned n = sym->secrecType ().secrecDimType ();
-
+    const unsigned n = tmp->secrecType ().secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
         log.debug () << "Generating stride of scalar!";
         return result;
     }
 
+    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
     m_stride.clear ();
     m_stride.reserve (n);
 
@@ -103,11 +106,13 @@ CGResult CodeGenStride::codeGenStride (Symbol* sym) {
   CodeGenLoop
 *******************************************************************************/
 
-CGResult CodeGenLoop::enterLoop (Symbol* sym, const IndexList& indices) {
+CGResult CodeGenLoop::enterLoop (Symbol* tmp, const IndexList& indices) {
     assert (m_jumpStack.empty ());
 
     CGResult result;
+    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
     IndexList::const_iterator idxIt = indices.begin ();
+    assert (sym != 0);
     for (unsigned count = 0; idxIt != indices.end (); ++ idxIt, ++ count) {
         Symbol* idx  = *idxIt;
 
@@ -175,11 +180,11 @@ CGResult CodeGenLoop::exitLoop (const IndexList& indices) {
   CodeGenSubscript
 *******************************************************************************/
 
-CGResult CodeGenSubscript::codeGenSubscript (Symbol* x, TreeNode* node) {
+CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
     assert (node != 0);
-    assert (x != 0);
+    assert (tmp != 0);
     assert (node->type () == NODE_SUBSCRIPT);
 
     m_slices.clear ();
@@ -188,6 +193,8 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* x, TreeNode* node) {
     CGResult result;
     CLCI it    = node->children ().begin ();
     CLCI itEnd = node->children ().end ();
+    SymbolSymbol* x = dynamic_cast<SymbolSymbol*>(tmp);
+    assert (x != 0);
 
     // 1. evaluate the indices and manage the syntactic suggar
     for (unsigned count = 0; it != itEnd; ++ it, ++ count) {
@@ -241,7 +248,7 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* x, TreeNode* node) {
         Imop* err = newError (m_node, st->constantString (ss.str ()));
         SymbolLabel* errLabel = st->label (err);
 
-        Symbol::dim_iterator dit = x->dim_begin ();
+        dim_iterator dit = dim_begin (x);
         for (SPV::iterator it  (m_spv.begin ()); it != m_spv.end (); ++ it, ++ dit) {
             Symbol* s_lo = it->first;
             Symbol* s_hi = it->second;

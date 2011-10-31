@@ -7,7 +7,7 @@
 
 namespace {
 
-void patchList(std::list<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
+inline void patchList(std::list<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
     typedef std::list<SecreC::Imop*>::const_iterator IVCI;
     for (IVCI it(list.begin()); it != list.end(); it++) {
         (*it)->setJumpDest(dest);
@@ -42,9 +42,9 @@ class CGResult {
 public:
 
     inline explicit CGResult (ICode::Status s = ICode::OK)
-        : m_result (0),
-          m_firstImop (0),
-          m_status (s)
+        : m_result (0)
+        , m_firstImop (0)
+        , m_status (s)
     { }
 
     inline ~CGResult () { }
@@ -117,7 +117,6 @@ private:
 /*******************************************************************************
   CGBranchResult
 *******************************************************************************/
-
 
 /// Code generation result which also tracks true and false lists.
 class CGBranchResult : public CGResult {
@@ -200,13 +199,13 @@ public: /* Types: */
 
 public:
     inline explicit CGStmtResult (ICode::Status status = ICode::OK)
-        : CGResult (status),
-          m_resultFlags (FALLTHRU)
+        : CGResult (status)
+        , m_resultFlags (FALLTHRU)
     { }
 
     inline CGStmtResult (const CGResult& result)
-        : CGResult (result),
-          m_resultFlags (FALLTHRU)
+        : CGResult (result)
+        , m_resultFlags (FALLTHRU)
     { }
 
     inline ~CGStmtResult () { }
@@ -254,9 +253,9 @@ public:
     }
 
 private:
-    std::list<Imop*> m_continueList;  ///< Unpatched continue jumps.
-    std::list<Imop*> m_breakList;     ///< Unpatched break jumps.
-    int m_resultFlags;                ///< Flag to track the possibilities that control flow may take.
+    std::list<Imop*>  m_continueList;  ///< Unpatched continue jumps.
+    std::list<Imop*>  m_breakList;     ///< Unpatched break jumps.
+    int               m_resultFlags;   ///< Flag to track the possibilities that control flow may take.
 };
 
 }

@@ -9,26 +9,33 @@ namespace SecreC {
 class Imop;
 class TreeNodeProcDef;
 
+/*******************************************************************************
+  Symbol
+*******************************************************************************/
+
 class Symbol {
     public: /* Types: */
-        enum Type { PROCEDURE, CONSTANT, LABEL, SYMBOL, TEMPORARY };
-        typedef std::vector<Symbol* >::iterator dim_iterator;
-        typedef std::vector<Symbol* >::reverse_iterator dim_reverese_iterator;
-        typedef std::vector<Symbol* >::const_iterator const_dim_iterator;
-
+        enum Type {
+            PROCEDURE,
+            CONSTANT,
+            LABEL,
+            SYMBOL
+        };
     public: /* Methods: */
-        explicit inline Symbol(Type symbolType,
-                               const SecreC::TypeNonVoid &valueType)
-            : m_symbolType(symbolType),
-              m_type(valueType.clone()),
-              m_dims(valueType.secrecDimType(), (Symbol*) 0),
-              m_size((Symbol*) 0) {}
+
+        explicit inline Symbol(Type symbolType, const SecreC::TypeNonVoid &valueType)
+            : m_symbolType(symbolType)
+            , m_type(valueType.clone())
+        { }
+
         explicit inline Symbol (Type symbolType)
-            : m_symbolType(symbolType),
-              m_type(TypeVoid ().clone ()),
-              m_dims(),
-              m_size((Symbol*) 0) {}
-        virtual inline ~Symbol() { delete m_type; }
+            : m_symbolType(symbolType)
+            , m_type(TypeVoid ().clone ())
+        { }
+
+        virtual inline ~Symbol() {
+            delete m_type;
+        }
 
         inline bool isConstant () const { return m_symbolType == CONSTANT; }
         inline Type symbolType() const { return m_symbolType; }
@@ -36,60 +43,128 @@ class Symbol {
         inline void setName(const std::string &name) { m_name = name; }
         inline const SecreC::Type &secrecType() const { return *m_type; }
 
-        inline Symbol* getDim (unsigned i) { return m_dims[i]; }
-        inline void setDim (unsigned i, Symbol* sym) { m_dims[i] = sym; }
-        dim_iterator dim_begin () { return m_dims.begin(); }
-        dim_reverese_iterator dim_rbegin() { return m_dims.rbegin(); }
-        dim_reverese_iterator dim_rend() { return m_dims.rend(); }
-        const_dim_iterator dim_begin () const { return m_dims.begin(); }
-        dim_iterator dim_end () { return m_dims.end(); }
-        const_dim_iterator dim_end () const { return m_dims.end(); }
-        Symbol* getSizeSym () { return m_size; }
-        void setSizeSym (Symbol* sym) { m_size = sym; }
-        void inheritShape (Symbol* from);
         virtual std::string toString() const = 0;
 
     private: /* Fields: */
         const Type  m_symbolType;
         std::string m_name;
         SecreC::Type *m_type;
-        std::vector<Symbol* > m_dims;
-        Symbol* m_size;
+
 };
+
+/*******************************************************************************
+  SymbolSymbol
+*******************************************************************************/
 
 class SymbolSymbol: public Symbol {
     public: /* Types: */
+
         enum ScopeType { GLOBAL, LOCAL };
 
     public: /* Methods: */
-        SymbolSymbol(const SecreC::TypeNonVoid &valueType)
-            : Symbol(Symbol::SYMBOL, valueType), m_scopeType(LOCAL) {}
+
+        explicit SymbolSymbol (const SecreC::TypeNonVoid &valueType)
+            : Symbol (Symbol::SYMBOL, valueType)
+            , m_scopeType (LOCAL)
+            , m_dims (valueType.secrecDimType())
+            , m_size (0)
+            , m_isTemporary (false)
+        { }
+
+        explicit SymbolSymbol (const SecreC::TypeNonVoid &valueType, bool)
+            : Symbol (Symbol::SYMBOL, valueType)
+            , m_scopeType (LOCAL)
+            , m_dims (valueType.secrecDimType ())
+            , m_size (0)
+            , m_isTemporary (true)
+        { }
 
         inline ScopeType scopeType() const { return m_scopeType; }
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
+        inline bool isTemporary () const { return m_isTemporary; }
+
+        inline Symbol* getDim (unsigned i) { return m_dims[i]; }
+        inline void setDim (unsigned i, Symbol* sym) { m_dims[i] = sym; }
+        Symbol* getSizeSym () { return m_size; }
+        void setSizeSym (Symbol* sym) { m_size = sym; }
+        void inheritShape (Symbol* from);
 
         virtual std::string toString() const;
 
-    private: /* Fields: */
-        ScopeType   m_scopeType;
-};
+    protected:
 
-class SymbolTemporary: public Symbol {
-    public: /* Types: */
-        enum ScopeType { GLOBAL, LOCAL };
-
-    public: /* Methods: */
-        SymbolTemporary(const SecreC::TypeNonVoid &valueType)
-            : Symbol(Symbol::TEMPORARY, valueType), m_scopeType(LOCAL) {}
-
-        inline ScopeType scopeType() const { return m_scopeType; }
-        inline void setScopeType(ScopeType type) { m_scopeType = type; }
-
-        virtual std::string toString() const;
+        template <typename B, typename E>
+        friend class DimIterator;
 
     private: /* Fields: */
-        ScopeType m_scopeType;
+
+        ScopeType              m_scopeType;
+        std::vector<Symbol* >  m_dims;
+        Symbol*                m_size;
+        const bool             m_isTemporary;
 };
+
+template <typename BaseTy, typename ElemTy >
+class DimIterator : std::iterator<std::bidirectional_iterator_tag, ElemTy > {
+public: /* Types: */
+
+    typedef std::iterator<std::bidirectional_iterator_tag, ElemTy > Super;
+    typedef DimIterator<BaseTy, ElemTy > Self;
+    typedef typename Super::pointer pointer;
+
+public: /* Methods: */
+
+    explicit inline DimIterator (BaseTy symbol)
+        : m_symbol (symbol)
+        , m_index (0)
+    { }
+
+    explicit inline DimIterator (BaseTy symbol, bool)
+        : m_symbol (symbol)
+        , m_index (0)
+    {
+        if (symbol) {
+            m_index = symbol->m_dims.size ();
+        }
+    }
+
+    inline const Self& operator = (const Self& i) {
+        assert (m_symbol == i.m_symbol);
+        m_index = i.m_index;
+        return *this;
+    }
+
+    inline bool operator == (const Self& i) const { return m_index == i.m_index; }
+    inline bool operator != (const Self& i) const { return m_index != i.m_index; }
+    inline pointer operator*() const { return m_symbol->m_dims[m_index]; }
+    inline pointer operator->() const { return operator * (); }
+    inline Self& operator ++ () { ++ m_index; return *this; }
+    inline Self  operator ++ (int) { Self tmp = *this; ++ m_index; return tmp; }
+    inline Self& operator -- () { -- m_index; return *this; }
+    inline Self  operator -- (int) { Self tmp = *this; -- m_index; return tmp; }
+
+private: /* Methods: */
+
+    const BaseTy   m_symbol;
+    unsigned       m_index;
+};
+
+/// \{
+typedef DimIterator<SymbolSymbol*, Symbol> dim_iterator;
+typedef DimIterator<const SymbolSymbol*, Symbol> dim_const_iterator;
+inline dim_iterator dim_begin (SymbolSymbol* symbol) { return dim_iterator (symbol); }
+inline dim_iterator dim_end (SymbolSymbol* symbol) { return dim_iterator (symbol, true); }
+inline dim_const_iterator dim_begin (const SymbolSymbol* symbol) { return dim_const_iterator (symbol); }
+inline dim_const_iterator dim_end (const SymbolSymbol* symbol) { return dim_const_iterator (symbol, true); }
+inline dim_iterator dim_begin (Symbol* symbol) { return dim_begin (dynamic_cast<SymbolSymbol*>(symbol)); }
+inline dim_iterator dim_end (Symbol* symbol) { return dim_end (dynamic_cast<SymbolSymbol*>(symbol)); }
+inline dim_const_iterator dim_begin (const Symbol* symbol) { return dim_begin (dynamic_cast<const SymbolSymbol*>(symbol)); }
+inline dim_const_iterator dim_end (const Symbol* symbol) { return dim_end (dynamic_cast<const SymbolSymbol*>(symbol)); }
+/// \}
+
+/*******************************************************************************
+  SymbolProcedure
+*******************************************************************************/
 
 class SymbolProcedure: public Symbol {
     public: /* Methods: */
@@ -105,6 +180,10 @@ class SymbolProcedure: public Symbol {
         const TreeNodeProcDef *m_decl;
         Imop                  *m_target;
 };
+
+/*******************************************************************************
+  SymbolLabel
+*******************************************************************************/
 
 class SymbolLabel: public Symbol {
     public:

@@ -53,13 +53,6 @@ class Imop : public auto_unlink_hook {
         typedef OperandList::iterator OperandIterator;
         typedef OperandList::const_iterator OperandConstIterator;
 
-        /// Called when list containing instructions is deleted
-        struct Disposer {
-            void operator () (Imop* imop) {
-                delete imop;
-            }
-        };
-
         enum Type {
             //-------------
             // Expressions:

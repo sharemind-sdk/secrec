@@ -26,6 +26,12 @@ std::string symToString (const SecreC::Symbol* s) {
     return s == 0 ? "_" : uniqueName (s);
 }
 
+SecreC::Symbol* getSizeSymbol (SecreC::Symbol* sym) {
+    assert (sym != 0);
+    assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != 0);
+    return static_cast<SecreC::SymbolSymbol*>(sym)->getSizeSym ();
+}
+
 } // anonymous namespace
 
 namespace SecreC {
@@ -52,7 +58,7 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
         i = new Imop (node, iType, dest, arg1, arg2);
     }
     else {
-        i = new Imop (node, iType, dest, arg1, arg2, dest->getSizeSym ());
+        i = new Imop (node, iType, dest, arg1, arg2, getSizeSymbol (dest));
     }
 
     return i;
@@ -64,7 +70,7 @@ Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
         i = new Imop (node, iType, dest, arg1);
     }
     else {
-        i = new Imop (node, iType, dest, arg1, dest->getSizeSym ());
+        i = new Imop (node, iType, dest, arg1, getSizeSymbol (dest));
     }
 
     return i;
@@ -83,7 +89,7 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
         i = new Imop (node, iType, dest);
     }
     else {
-        i = new Imop (node, iType, dest, dest->getSizeSym ());
+        i = new Imop (node, iType, dest, getSizeSymbol (dest));
     }
 
     return i;

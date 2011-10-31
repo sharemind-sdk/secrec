@@ -32,7 +32,7 @@ class SymbolTable {
         void appendSymbol(Symbol *symbol);
         void appendGlobalSymbol(Symbol *symbol);
         SymbolProcedure *appendProcedure(const TreeNodeProcDef &procdef);
-        SymbolTemporary *appendTemporary(const TypeNonVoid &type);
+        SymbolSymbol *appendTemporary(const TypeNonVoid &type);
 
         SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;

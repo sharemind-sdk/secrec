@@ -30,8 +30,6 @@ bool isGlobalSymbol (const Symbol* symbol) {
     switch (symbol->symbolType ()) {
     case Symbol::SYMBOL:
         return static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL;
-    case Symbol::TEMPORARY:
-        return static_cast<const SymbolTemporary*>(symbol)->scopeType () == SymbolTemporary::GLOBAL;
     default:
         assert (false && "Allocating non-variable!");
         return true;
@@ -347,7 +345,6 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     for (SV::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
         const Symbol* symbol = *i;
         switch (symbol->symbolType ()) {
-        case Symbol::TEMPORARY:
         case Symbol::SYMBOL:
             assert (m_st->find (symbol) != 0);
             break;
