@@ -45,7 +45,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::LOAD,       1, 0, 0, 1,-1 }
     , { Imop::ALLOC,      1, 0, 0, 1,-1 }
     , { Imop::PARAM,      1, 0, 0, 1,-1 }
-    , { Imop::CALL,       1, 0, 1, 0,-1 }
+    , { Imop::CALL,       1, 0, 1, 1,-1 }
     // Jumps:
     , { Imop::JUMP,       0, 1, 1, 0,-1 }
     , { Imop::JT,         0, 1, 1, 0,-1 }
