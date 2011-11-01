@@ -57,71 +57,64 @@ class Imop : public auto_unlink_hook {
             //-------------
             // Expressions:
             //-------------
-            ASSIGN     = 0x1,   /*   d = arg1 {arg2};                   */
-            CLASSIFY   = 0x2,   /*   d = CLASSIFY(arg1 {, arg2});       */
-            DECLASSIFY = 0x3,   /*   d = DECLASSIFY(arg1 {, arg2});     */
-            UNEG       = 0x7,   /*   d = !arg1 {arg2};                  */
-            UMINUS     = 0x8,   /*   d = -arg1 {arg2};                  */
-            MUL        = 0xa,   /*   d = arg1 *  arg2 {arg3};           */
-            DIV        = 0xb,   /*   d = arg1 /  arg2 {arg3};           */
-            MOD        = 0xc,   /*   d = arg1 %  arg2 {arg3};           */
-            ADD        = 0xd,   /*   d = arg1 +  arg2 {arg3};           */
-            SUB        = 0xe,   /*   d = arg1 -  arg2 {arg3};           */
-            EQ         = 0xf,   /*   d = arg1 == arg2 {arg3};           */
-            NE         = 0x10,  /*   d = arg1 != arg2 {arg3};           */
-            LE         = 0x11,  /*   d = arg1 <= arg2 {arg3};           */
-            LT         = 0x12,  /*   d = arg1 <  arg2 {arg3};           */
-            GE         = 0x13,  /*   d = arg1 >= arg2 {arg3};           */
-            GT         = 0x14,  /*   d = arg1 >  arg2 {arg3};           */
-            LAND       = 0x15,  /*   d = arg1 && arg2 {arg3};           */
-            LOR        = 0x16,  /*   d = arg1 || arg2 {arg3};           */
+            ASSIGN = 0, /*   d = arg1 {arg2};                   */
+            CLASSIFY,   /*   d = CLASSIFY(arg1 {, arg2});       */
+            DECLASSIFY, /*   d = DECLASSIFY(arg1 {, arg2});     */
+            UNEG,       /*   d = !arg1 {arg2};                  */
+            UMINUS,     /*   d = -arg1 {arg2};                  */
+            MUL,        /*   d = arg1 *  arg2 {arg3};           */
+            DIV,        /*   d = arg1 /  arg2 {arg3};           */
+            MOD,        /*   d = arg1 %  arg2 {arg3};           */
+            ADD,        /*   d = arg1 +  arg2 {arg3};           */
+            SUB,        /*   d = arg1 -  arg2 {arg3};           */
+            EQ,         /*   d = arg1 == arg2 {arg3};           */
+            NE,         /*   d = arg1 != arg2 {arg3};           */
+            LE,         /*   d = arg1 <= arg2 {arg3};           */
+            LT,         /*   d = arg1 <  arg2 {arg3};           */
+            GE,         /*   d = arg1 >= arg2 {arg3};           */
+            GT,         /*   d = arg1 >  arg2 {arg3};           */
+            LAND,       /*   d = arg1 && arg2 {arg3};           */
+            LOR,        /*   d = arg1 || arg2 {arg3};           */
 
             //-------------------
             // Array expressions:
             //-------------------
-            STORE      = 0x17, /*    d[arg1] = arg2;                    */
-            LOAD       = 0x18, /*    d = arg1[arg2];                    */
-            ALLOC      = 0x20, /*    d = ALLOC (arg1, arg2)             */
-
-            /* For CALL, arg2 is the corresponding RETCLEAN instruction:*/
-            PARAM      = 0x22,  /*   d = PARAM                           */
-            CALL       = 0x23,  /*  arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)  */
-                EXPR_MASK = 0xff, /* expressions always write to dest    */
+            STORE,     /*    d[arg1] = arg2;                    */
+            LOAD,      /*    d = arg1[arg2];                    */
+            ALLOC,     /*    d = ALLOC (arg1, arg2)             */
+            PARAM,     /*    d = PARAM                          */
+            CALL,      /*  arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)  */
 
             //-------
             // Jumps:
             //-------
-            JUMP       = 0x100, /* GOTO d;                              */
-            JT         = 0x200, /* if (arg1) GOTO d;                    */
-            JF         = 0x300, /* if (!arg1) GOTO d;                   */
-            JE         = 0x400, /* if (arg1 == arg2) GOTO d;            */
-            JNE        = 0x500, /* if (arg1 != arg2) GOTO d;            */
-            JLE        = 0x600, /* if (arg1 <= arg2) GOTO d;            */
-            JLT        = 0x700, /* if (arg1 <  arg2) GOTO d;            */
-            JGE        = 0x800, /* if (arg1 >= arg2) GOTO d;            */
-            JGT        = 0x900, /* if (arg1 >  arg2) GOTO d;            */
-                JUMP_MASK  = 0xf00,
+            JUMP,      /* GOTO d;                              */
+            JT,        /* if (arg1) GOTO d;                    */
+            JF,        /* if (!arg1) GOTO d;                   */
+            JE,        /* if (arg1 == arg2) GOTO d;            */
+            JNE,       /* if (arg1 != arg2) GOTO d;            */
+            JLE,       /* if (arg1 <= arg2) GOTO d;            */
+            JLT,       /* if (arg1 <  arg2) GOTO d;            */
+            JGE,       /* if (arg1 >= arg2) GOTO d;            */
+            JGT,       /* if (arg1 >  arg2) GOTO d;            */
+
+            //--------------------
+            // Procedure terminating:
+            //--------------------
+            ERROR,      /* // arg1                            */
+            RETURNVOID, /* RETURN;               (Imop *arg2) */
+            RETURN,     /* RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n */
+            END,        /* END PROGRAM                        */
 
             //--------------------
             // Misc. instructions:
             //--------------------
-            COMMENT    = 0x1000,  /* // arg1                            */
-            ERROR      = 0x2000,  /* // arg1                            */
-            FREAD      = 0x3000,  /* FREAD                              */
+            COMMENT,    /* // arg1                            */
+            FREAD,      /* FREAD                              */
+            PRINT,      /* PRINT arg1; */
+            RETCLEAN,   /* RETCLEAN;             (Imop *arg2) */
 
-
-            /* For RETCLEAN, arg2 is the corresponding CALL instruction:*/
-            RETCLEAN   = 0x4000,  /* RETCLEAN;             (Imop *arg2) */
-
-            /*
-              For RETURN and RETURNVOID, arg2 is the first Imop of the procedure
-              to return from.
-            */
-            RETURNVOID = 0x6000,  /* RETURN;               (Imop *arg2) */
-            RETURN     = 0x7000,  /* RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n */
-            END        = 0x8000,  /* END PROGRAM                        */
-
-            PRINT      = 0x9000   /* PRINT arg1; */
+            _NUM_INSTR  /* Number of instructions. Do not add anything after this. */
         };
 
     public: /* Methods: */
@@ -156,10 +149,6 @@ class Imop : public auto_unlink_hook {
         inline Type type() const { return m_type; }
 
         inline unsigned nArgs() const { return m_args.size(); }
-
-        inline bool isJump() const { return (m_type & JUMP_MASK) != 0x0; }
-        inline bool isCondJump() const { return ((m_type & JUMP_MASK) != 0x0) && (m_type != JUMP); }
-        inline bool isExpr() const { return (m_type & EXPR_MASK) != 0x0; }
 
         OperandConstIterator operandsBegin () const { return m_args.begin (); }
         OperandConstIterator operandsEnd () const { return m_args.end (); }
@@ -197,9 +186,12 @@ class Imop : public auto_unlink_hook {
         inline unsigned long index() const { return m_index; }
         inline void setIndex(unsigned long index) { m_index = index; }
 
-
-        bool isTerminator (void) const;
+        bool isJump () const;
+        bool isCondJump () const;
+        bool isExpr () const;
+        bool isTerminator () const;
         bool isVectorized () const;
+
         inline bool isComment (void) const {
             return m_type == COMMENT;
         }

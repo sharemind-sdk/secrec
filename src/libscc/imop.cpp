@@ -5,6 +5,78 @@
 #include "symboltable.h"
 #include "treenode.h"
 
+namespace {
+
+using namespace  SecreC;
+
+struct ImopInfoBits {
+    unsigned  type;              ///< Opcode
+    bool      isExpr : 1;        ///< Expression (why do we even need this?)
+    bool      isJump : 1;        ///< Instruction is procedure-local jump
+    bool      isTerminator : 1;  ///< Instruction terminates a basic block
+    bool      writesDest : 1;    ///< Instruction may write to destination operand
+    unsigned  vecArgNum;         ///< Vectorised if number of operands equals to that
+};
+
+ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
+    //{ Imop::Type,       E, J, T, W, V }
+    // Unary operators:
+      { Imop::ASSIGN,     1, 0, 0, 1, 3 }
+    , { Imop::CLASSIFY,   1, 0, 0, 1, 3 }
+    , { Imop::DECLASSIFY, 1, 0, 0, 1, 3 }
+    , { Imop::UNEG,       1, 0, 0, 1, 3 }
+    , { Imop::UMINUS,     1, 0, 0, 1, 3 }
+    // Binary operators:
+    , { Imop::MUL,        1, 0, 0, 1, 4 }
+    , { Imop::DIV,        1, 0, 0, 1, 4 }
+    , { Imop::MOD,        1, 0, 0, 1, 4 }
+    , { Imop::ADD,        1, 0, 0, 1, 4 }
+    , { Imop::SUB,        1, 0, 0, 1, 4 }
+    , { Imop::EQ,         1, 0, 0, 1, 4 }
+    , { Imop::NE,         1, 0, 0, 1, 4 }
+    , { Imop::LE,         1, 0, 0, 1, 4 }
+    , { Imop::LT,         1, 0, 0, 1, 4 }
+    , { Imop::GE,         1, 0, 0, 1, 4 }
+    , { Imop::GT,         1, 0, 0, 1, 4 }
+    , { Imop::LAND,       1, 0, 0, 1, 4 }
+    , { Imop::LOR,        1, 0, 0, 1, 4 }
+    // Other expressions:
+    , { Imop::STORE,      1, 0, 0, 0,-1 }
+    , { Imop::LOAD,       1, 0, 0, 1,-1 }
+    , { Imop::ALLOC,      1, 0, 0, 1,-1 }
+    , { Imop::PARAM,      1, 0, 0, 1,-1 }
+    , { Imop::CALL,       1, 0, 1, 0,-1 }
+    // Jumps:
+    , { Imop::JUMP,       0, 1, 1, 0,-1 }
+    , { Imop::JT,         0, 1, 1, 0,-1 }
+    , { Imop::JF,         0, 1, 1, 0,-1 }
+    , { Imop::JE,         0, 1, 1, 0,-1 }
+    , { Imop::JNE,        0, 1, 1, 0,-1 }
+    , { Imop::JLE,        0, 1, 1, 0,-1 }
+    , { Imop::JLT,        0, 1, 1, 0,-1 }
+    , { Imop::JGE,        0, 1, 1, 0,-1 }
+    , { Imop::JGT,        0, 1, 1, 0,-1 }
+    // Terminators:
+    , { Imop::ERROR,      0, 0, 1, 0,-1 }
+    , { Imop::RETURNVOID, 0, 0, 1, 0,-1 }
+    , { Imop::RETURN,     0, 0, 1, 0,-1 }
+    , { Imop::END,        0, 0, 1, 0,-1 }
+    // Other:
+    , { Imop::COMMENT,    0, 0, 0, 0,-1 }
+    , { Imop::FREAD,      0, 0, 0, 0,-1 }
+    , { Imop::PRINT,      0, 0, 0, 0,-1 }
+    , { Imop::RETCLEAN,   0, 0, 0, 0,-1 }
+};
+
+const ImopInfoBits& getImopInfoBits (Imop::Type type) {
+    assert (0 <= type && type < Imop::_NUM_INSTR);
+    const ImopInfoBits& out = imopInfo [type];
+    assert (out.type == type);
+    return out;
+}
+
+} // anonymous namespace
+
 
 namespace {
 
@@ -37,7 +109,7 @@ SecreC::Symbol* getSizeSymbol (SecreC::Symbol* sym) {
 namespace SecreC {
 
 #define dname  (dest() == 0 ? "_" : uniqueName(dest()))
-#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<const SymbolLabel*>(dest())->target()->index()) )
+#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<const SymbolLabel*>(dest())->target()->index()))
 #define a1name (arg1() == 0 ? "_" : uniqueName(arg1()))
 #define a2name (arg2() == 0 ? "_" : uniqueName(arg2()))
 #define a3name (arg3() == 0 ? "_" : uniqueName(arg3()))
@@ -103,40 +175,25 @@ Imop::~Imop() {
     }
 }
 
+bool Imop::isJump () const {
+    return getImopInfoBits (m_type).isJump;
+}
+
+bool Imop::isCondJump() const {
+    return isJump () && (m_type != JUMP);
+}
+
+bool Imop::isExpr() const {
+    return getImopInfoBits (m_type).isExpr;
+}
+
 bool Imop::isTerminator (void) const {
-    switch (m_type) {
-    case END:
-    case ERROR:
-    case RETURN:
-    case RETURNVOID:
-    case CALL:
-        return true;
-    default:
-        return isJump ();
-    }
+    return getImopInfoBits (m_type).isTerminator;
 }
 
 bool Imop::isVectorized () const {
-    if (! isExpr ()) {
-        return false;
-    }
-
-    switch (m_type) {
-    case STORE:
-    case LOAD:
-    case ALLOC:
-    case PARAM:
-    case CALL:
-        return false;
-    case ASSIGN:
-    case CLASSIFY:
-    case DECLASSIFY:
-    case UNEG:
-    case UMINUS:
-        return m_args.size () == 3;
-    default:
-        return m_args.size () == 4;
-    }
+    const size_t argNum = m_args.size ();
+    return getImopInfoBits (m_type).vecArgNum == argNum;
 }
 
 void Imop::getUse (std::vector<const Symbol *>& use) const {
@@ -172,9 +229,11 @@ void Imop::getDef (std::vector<const Symbol *>& def) const {
     OperandConstIterator i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
     def.clear ();
-    if (! isExpr ()) return;
     if (isVectorized ()) return;
-    if (type () == STORE) return;
+    if (! getImopInfoBits (m_type).writesDest) {
+        return;
+    }
+
     if (type () == CALL) {
         for  (++ i ; *i != 0 && i != e; ++ i);
         def.insert (def.end (), ++ i, e);
@@ -199,9 +258,9 @@ SymbolLabel const* Imop::jumpDest() const {
 }
 
 void Imop::setJumpDest (SymbolLabel *dest) {
-    assert(dest != 0);
-    assert((m_type & JUMP_MASK) != 0x0);
-    setDest(dest);
+    assert (dest != 0);
+    assert (isJump ());
+    setDest (dest);
 }
 
 void Imop::setCallDest(SymbolProcedure *proc) {

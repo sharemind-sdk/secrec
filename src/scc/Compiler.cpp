@@ -210,7 +210,7 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
 
 void Compiler::cgJump (VMBlock& block, const Imop& imop) {
     typedef Imop::OperandConstIterator OCI;
-    assert ((imop.type () & Imop::JUMP_MASK) != 0);
+    assert (imop.isJump ());
 
     const char* name = 0;
     switch (imop.type ()) {
@@ -422,7 +422,7 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
-    assert ((imop.type () & Imop::EXPR_MASK) != 0);
+    assert (imop.isExpr ());
 
     if (imop.isVectorized ()) {
         for (Imop::OperandConstIterator i = imop.operandsBegin (), e = imop.operandsEnd (); i != e; ++ i) {
@@ -464,7 +464,7 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
     m_ra->getReg (imop);
 
-    if ((imop.type () & Imop::JUMP_MASK) != 0) {
+    if (imop.isJump ()) {
         cgJump (block, imop);
         return;
     }
@@ -509,7 +509,7 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
             break;
     }
 
-    if ((imop.type () & Imop::EXPR_MASK) != 0) {
+    if (imop.isExpr ()) {
         cgArithm (block, imop);
         return;
     }

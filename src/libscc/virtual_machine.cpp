@@ -583,7 +583,7 @@ private:
         }
 
         // compute destinations for jumps
-        if ((imop.type() & Imop::JUMP_MASK) != 0x0) {
+        if (imop.isJump ()) {
             const Symbol* arg = imop.dest ();
             assert (dynamic_cast<const SymbolLabel*>(arg) != 0);
             dest = static_cast<const SymbolLabel*>(arg)->target ();
