@@ -31,12 +31,6 @@ class ICodeList : private ImopList {
             i->setIndex (m_counter ++);
         }
 
-        inline Imop* push_comment (const std::string &comment) {
-            Imop *c = new Imop(0, Imop::COMMENT, 0, (Symbol*) new std::string(comment));
-            ImopList::push_back(*c);
-            return c;
-        }
-
         void resetIndexes();
 
     private:
