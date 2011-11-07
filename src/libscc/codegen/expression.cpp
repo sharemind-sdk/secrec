@@ -111,13 +111,13 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     // 4. initialze required temporary symbols
     std::vector<Symbol* > indices;
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
-        Symbol* sym = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Symbol* sym = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
         indices.push_back(sym);
     }
 
-    Symbol* offset = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    Symbol* offset = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
     Symbol* tmp_result = st->appendTemporary(TypeNonVoid(e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0));
-    Symbol* tmp_result2 = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    Symbol* tmp_result2 = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
 
     // 3. initialize strides
     std::vector<CodeGenStride > strides (2, CodeGenStride (*this));
@@ -376,7 +376,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     // Symbols for running indices:
     std::vector<Symbol* > indices;
     for (unsigned it = 0; it < n; ++ it) {
-        Symbol* sym = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0));
+        Symbol* sym = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
         indices.push_back(sym);
     }
 
@@ -393,8 +393,8 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     CodeGenLoop loop (*this);
     append (result, loop.enterLoop (resSym, indices));
 
-    Symbol* offset = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT));
-    Symbol* tmpInt = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT));
+    Symbol* offset = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
+    Symbol* tmpInt = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
 
     // j = 0 (right hand side index)
     i = new Imop(m_node, Imop::ASSIGN, offset, st->constantInt(0));
@@ -603,7 +603,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
       If first sub-expression is public, then generate short-circuit code for
       logical && and logical ||.
     */
-    if (eArg1->resultType ().secrecSecType () == SECTYPE_PUBLIC
+    if (isPublic (eArg1->resultType ().secrecSecType ())
         && eArg1->resultType ().isScalar ()
         && eArg2->resultType ().isScalar ()
         && (e->type () == NODE_EXPR_BINARY_LAND || e->type () == NODE_EXPR_BINARY_LOR))
@@ -755,9 +755,7 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
               If first sub-expression is public, then generate short-circuit
               code for logical && and logical ||.
             */
-            if (static_cast<const TNV&>(eArg1->resultType()).secrecSecType()
-                    == SECTYPE_PUBLIC)
-            {
+            if (isPublic (static_cast<const TNV&>(eArg1->resultType()).secrecSecType())) {
                 /// \todo I'm quite sure this is incorrect, we are not handling next lists!
 
                 // Generate code for first child expression:
@@ -1158,7 +1156,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         // loop to set all values of resulting array
 
         // Set up some temporary scalars:
-        Symbol* counter = st->appendTemporary(TypeNonVoid(SECTYPE_PUBLIC, DATATYPE_INT, 0)); // public int
+        Symbol* counter = st->appendTemporary(TypeNonVoid(DATATYPE_INT)); // public int
         Symbol* b = st->appendTemporary(TypeNonVoid(e1->resultType ().secrecSecType (), e1->resultType ().secrecDataType ()));
         Symbol* t = st->appendTemporary(TypeNonVoid(e->resultType ().secrecSecType (), e->resultType ().secrecDataType ()));
 
@@ -1489,7 +1487,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    const TypeNonVoid& pubIntTy (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    const TypeNonVoid& pubIntTy (DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1662,7 +1660,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    const TypeNonVoid& pubIntTy (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    const TypeNonVoid& pubIntTy (DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);

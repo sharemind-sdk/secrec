@@ -53,7 +53,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         return result;
     }
 
-    const TypeNonVoid& pubIntTy (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    const TypeNonVoid& pubIntTy (DATATYPE_INT);
 
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {

@@ -222,13 +222,6 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         return result;
     }
 
-    SymbolKind* publicKind = new SymbolKind ();
-    publicKind->setName ("_public");
-    st->appendSymbol (publicKind);
-    SymbolDomain* publicDomain = new SymbolDomain (publicKind);
-    publicDomain->setName ("public");
-    st->appendSymbol (publicDomain);
-
     for (CLCI i = prog->children ().begin (), e = prog->children ().end (); i != e; ++ i) {
         TreeNode* decl = *i;
         if (decl->type () == NODE_PROCDEF) {

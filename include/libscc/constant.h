@@ -17,7 +17,7 @@ namespace SecreC {
 class Constant##name : public Symbol {\
     public:\
         explicit Constant##name (cValTy value)\
-            : Symbol(Symbol::CONSTANT, SecreC::TypeNonVoid(SECTYPE_PUBLIC, secrecValTy)), m_value(value) {}\
+            : Symbol(Symbol::CONSTANT, TypeNonVoid(secrecValTy)), m_value(value) {}\
         inline cValTy const& value() const { return m_value; }\
         virtual std::string toString() const;\
     private:\

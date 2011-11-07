@@ -125,7 +125,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     unsigned n = 0;
 
     // Initialize shape:
-    const TypeNonVoid& dimType = TypeNonVoid (DataTypeVar (DataTypeBasic (SECTYPE_PUBLIC, DATATYPE_INT)));
+    const TypeNonVoid& dimType = TypeNonVoid (DataTypeVar (DataTypeBasic (DATATYPE_INT)));
     for (unsigned i = 0; i < s->resultType().secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);
@@ -779,7 +779,7 @@ CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
         return result;
     }
 
-    if (e->resultType().secrecDataType() != DATATYPE_STRING || e->resultType().secrecSecType() != SECTYPE_PUBLIC   ||
+    if (e->resultType().secrecDataType() != DATATYPE_STRING || isPrivate (e->resultType().secrecSecType())  ||
         !e->resultType().isScalar()) {
         log.fatal () << "Argument to print statement has to be public string scalar, got "
                     << e->resultType() << " at " << s->location();

@@ -10,20 +10,12 @@
 
 namespace SecreC {
 
+inline bool isPrivate (SecrecSecType sty) { return sty == SECTYPE_PRIVATE; }
+inline bool isPublic (SecrecSecType sty) { return sty == SECTYPE_PUBLIC; }
+
 SecrecSecType upperSecType (SecrecSecType a, SecrecSecType b);
 SecrecDimType upperDimType (SecrecDimType n, SecrecDimType m);
 SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b);
-
-template <class Iter >
-SecrecDataType upperDataTypes(Iter begin, Iter end) {
-    assert (begin != end);
-    SecrecDataType best = *begin;
-    for (++ begin; begin != end; ++ begin) {
-        best = upperDataType (best, *begin);
-    }
-
-    return best;
-}
 
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m);
 bool latticeSecTypeLEQ (SecrecSecType a, SecrecSecType b);
@@ -35,7 +27,7 @@ bool isSignedNumericDataType (SecrecDataType dType);
 bool isUnsignedNumericDataType (SecrecDataType dType);
 
 /*******************************************************************************
-  Data types
+  DataType
 *******************************************************************************/
 
 class DataType {
@@ -81,12 +73,32 @@ class DataType {
         Kind m_kind;
 };
 
+/*******************************************************************************
+  DataTypeBasic
+*******************************************************************************/
+
 class DataTypeBasic: public DataType {
     public: /* Methods: */
-        explicit DataTypeBasic(SecrecSecType secType, SecrecDataType dataType, unsigned dim = 0)
-            : DataType(DataType::BASIC), m_secType(secType), m_dataType(dataType), m_dimType(dim) {}
+        explicit DataTypeBasic(SecrecDataType dataType, SecrecDimType dim = 0)
+            : DataType(DataType::BASIC)
+            , m_secType(SECTYPE_PUBLIC)
+            , m_dataType(dataType)
+            , m_dimType(dim)
+        { }
+
+        explicit DataTypeBasic(SecrecSecType secType, SecrecDataType dataType, SecrecDimType dim = 0)
+            : DataType(DataType::BASIC)
+            , m_secType(secType)
+            , m_dataType(dataType)
+            , m_dimType(dim)
+        { }
+
         explicit DataTypeBasic(const DataTypeBasic &copy)
-            : DataType(copy), m_secType(copy.m_secType), m_dataType(copy.m_dataType), m_dimType(copy.m_dimType) {}
+            : DataType(copy)
+            , m_secType(copy.m_secType)
+            , m_dataType(copy.m_dataType)
+            , m_dimType(copy.m_dimType)
+        { }
 
         inline SecrecSecType secType() const { return m_secType; }
         inline SecrecDataType dataType() const { return m_dataType; }
@@ -114,6 +126,10 @@ class DataTypeBasic: public DataType {
         SecrecDataType m_dataType;
         SecrecDimType m_dimType;
 };
+
+/*******************************************************************************
+  DataTypeVar
+*******************************************************************************/
 
 class DataTypeVar: public DataType {
     public: /* Methods: */
@@ -147,6 +163,10 @@ class DataTypeVar: public DataType {
         DataType *m_dataType;
 };
 
+/*******************************************************************************
+  DataTypeProcedureVoid
+*******************************************************************************/
+
 class DataTypeProcedureVoid: public DataType {
     public: /* Methods: */
         explicit DataTypeProcedureVoid(DataType::Kind kind = PROCEDUREVOID)
@@ -171,6 +191,10 @@ class DataTypeProcedureVoid: public DataType {
     private: /* Fields: */
         std::vector<DataType*> m_params;
 };
+
+/*******************************************************************************
+  DataTypeProcedure
+*******************************************************************************/
 
 class DataTypeProcedure: public DataTypeProcedureVoid {
     public: /* Methods: */
@@ -250,9 +274,8 @@ inline SecrecDimType DataType::secrecDimType() const {
     }
 }
 
-
 /*******************************************************************************
-  General types
+  Type
 *******************************************************************************/
 
 class Type {
@@ -288,6 +311,10 @@ class Type {
         bool m_isVoid;
 };
 
+/*******************************************************************************
+  TypeVoid
+*******************************************************************************/
+
 class TypeVoid: public Type {
     public: /* Methods: */
         inline TypeVoid()
@@ -298,6 +325,10 @@ class TypeVoid: public Type {
         virtual inline Type *clone() const { return new TypeVoid(); }
         virtual inline std::string toString() const { return "void"; }
 };
+
+/*******************************************************************************
+  TypeNonVoid
+*******************************************************************************/
 
 class TypeNonVoid: public Type {
     public: /* Types: */
@@ -310,9 +341,12 @@ class TypeNonVoid: public Type {
 
     public: /* Methods: */
 
+        TypeNonVoid(SecrecDataType dataType, SecrecDimType dimType = 0)
+            : Type(false), m_kind(BASIC),
+              m_dataType(new DataTypeBasic(dataType, dimType)) {}
         TypeNonVoid(SecrecSecType secType, SecrecDataType dataType, SecrecDimType dimType = 0)
             : Type(false), m_kind(BASIC),
-            m_dataType(new DataTypeBasic(secType, dataType, dimType)) {}
+              m_dataType(new DataTypeBasic(secType, dataType, dimType)) {}
         TypeNonVoid(const DataTypeBasic &dataType)
             : Type(false), m_kind(BASIC), m_dataType(dataType.clone()) {}
         TypeNonVoid(const DataTypeVar &dataType)
@@ -323,7 +357,7 @@ class TypeNonVoid: public Type {
             : Type(false), m_kind(PROCEDUREVOID), m_dataType(dataType.clone()) {}
         TypeNonVoid(const DataType &dataType);
 
-        explicit inline TypeNonVoid(const TypeNonVoid &copy)
+        inline TypeNonVoid(const TypeNonVoid &copy)
             : Type(copy), m_kind(copy.m_kind),
               m_dataType(copy.m_dataType->clone()) {}
         virtual ~TypeNonVoid();
