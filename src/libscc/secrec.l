@@ -64,7 +64,6 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "continue"   { stepLen(yyget_lloc(yyscanner), 8); return CONTINUE; }
 "declassify" { stepLen(yyget_lloc(yyscanner), 8); return DECLASSIFY; }
 "do"         { stepLen(yyget_lloc(yyscanner), 2); return DO; }
- /* "double"   { stepLen(yyget_lloc(yyscanner), 6); return DOUBLE; } */
 "else"       { stepLen(yyget_lloc(yyscanner), 4); return ELSE; }
 "false"      { stepLen(yyget_lloc(yyscanner), 5); return FALSE_B; }
 "for"        { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
@@ -84,8 +83,6 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "return"     { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
 "string"     { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
 "true"       { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
- /* "signed"     { stepLen(yyget_lloc(yyscanner), 6); return SIGNED; } */
- /* "unsigned"   { stepLen(yyget_lloc(yyscanner), 8); return UNSIGNED; } */
 "void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
 "assert"     { stepLen(yyget_lloc(yyscanner), 6); return ASSERT; }
@@ -95,6 +92,8 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 "print"      { stepLen(yyget_lloc(yyscanner), 5); return PRINT; }
 "fread"      { stepLen(yyget_lloc(yyscanner), 5); return FREAD; }
+"kind"       { stepLen(yyget_lloc(yyscanner), 4); return KIND; }
+"domain"     { stepLen(yyget_lloc(yyscanner), 6); return DOMAIN; }
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

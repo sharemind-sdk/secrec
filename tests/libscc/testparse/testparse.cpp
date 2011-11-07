@@ -36,7 +36,7 @@ using namespace SecreC;
 
 // Macros for testing simple code in blocks:
 #define SIMPLE(x) "void myprocedure() {" x "}"
-#define SIMPLE_PARSE(x) XB3("PROGRAM", "PROCDEFS", "PROCDEF",\
+#define SIMPLE_PARSE(x) XB2("PROGRAM", "PROCDEF",\
         XID("myprocedure") XTYPEVOID x)
 
 // Macros for testing expressions as a statement:
@@ -99,12 +99,12 @@ void TestParse::testParseProgram_data() {
 
     QTest::newRow("oneprocedure")
         << QString("void myprocedure(){}")
-        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+        << QString(XB2("PROGRAM", "PROCDEF",
                        XID("myprocedure") XTYPEVOID XSCE));
 
     QTest::newRow("twoprocedures")
         << QString("void myprocedure(){}private int[[1]] myprocedure2(){}")
-        << QString(XB2("PROGRAM", "PROCDEFS",
+        << QString(XB("PROGRAM",
                        XB("PROCDEF",
                            XID("myprocedure") XTYPEVOID XSCE)
                        XB("PROCDEF",
@@ -115,35 +115,34 @@ void TestParse::testParseProgram_data() {
     QTest::newRow("declarationAndprocedure")
         << QString("private int myInt; void myprocedure(){}")
         << QString(XB("PROGRAM",
-                      XB2("DECL_GLOBALS", "DECL",
+                      XB("DECL",
                            XID("myInt") XSIMPLETYPE("private", "int", "0") NODIMENSIONS)
-                      XB2("PROCDEFS", "PROCDEF",
+                      XB("PROCDEF",
                           XID("myprocedure") XTYPEVOID XSCE)));
 
     QTest::newRow("declarationsAndprocedure")
         << QString("private int[[2]] myInt (2, 3); public bool myBool = true;"
                    "void myprocedure(){}")
         << QString(XB("PROGRAM",
-                       XB("DECL_GLOBALS",
-                           XB("DECL",
-                               XID("myInt")
-                               XSIMPLETYPE ("private", "int", "2")
-                               XB("DIMENSIONS", XINT(2) XINT(3)))
-                           XB("DECL",
-                               XID("myBool") XSIMPLETYPE("public", "bool", "0") NODIMENSIONS XBOOL(true)))
-                       XB2("PROCDEFS", "PROCDEF",
+                       XB("DECL",
+                           XID("myInt")
+                           XSIMPLETYPE ("private", "int", "2")
+                           XB("DIMENSIONS", XINT(2) XINT(3)))
+                       XB("DECL",
+                           XID("myBool") XSIMPLETYPE("public", "bool", "0") NODIMENSIONS XBOOL(true))
+                       XB("PROCDEF",
                            XID("myprocedure") XTYPEVOID XSCE)));
 
     QTest::newRow("procedureWithParam")
         << QString("void myprocedure(private int i){}")
-        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+        << QString(XB2("PROGRAM", "PROCDEF",
                        XID("myprocedure") XTYPEVOID XSCE
                        XB("DECL", XID("i") XSIMPLETYPE("private", "int", "0"))
                   ));
 
     QTest::newRow("procedureWithParams")
         << QString("void myprocedure(private int i, public bool j){}")
-        << QString(XB3("PROGRAM", "PROCDEFS", "PROCDEF",
+        << QString(XB2("PROGRAM", "PROCDEF",
                        XID("myprocedure") XTYPEVOID XSCE
                        XB("DECL", XID("i") XSIMPLETYPE("private", "int", "0"))
                        XB("DECL", XID("j") XSIMPLETYPE("public", "bool", "0"))
@@ -155,14 +154,14 @@ void TestParse::testGlobalDecls_data() {
 
     QString iSkeleton("%1 myVar; void myprocedure(){}");
     QString oSkeleton(XB("PROGRAM",
-                         XB2("DECL_GLOBALS", "DECL",
+                         XB("DECL",
                              XID("myVar") "%1" NODIMENSIONS)
-                         XB2("PROCDEFS", "PROCDEF",
+                         XB("PROCDEF",
                              XID("myprocedure") XTYPEVOID XSCE)));
     QString ovSkeleton(XB("PROGRAM",
-                          XB2("DECL_GLOBALS", "DECL",
+                          XB("DECL",
                               XID("myVar") "%1" NODIMENSIONS)
-                          XB2("PROCDEFS", "PROCDEF",
+                          XB("PROCDEF",
                               XID("myprocedure") XTYPEVOID XSCE)));
 
     QTest::newRow("privateBool") << iSkeleton.arg("private bool")

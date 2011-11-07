@@ -10,9 +10,10 @@
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
   struct TreeNode *ensure_rValue(struct TreeNode *node) {
+     struct TreeNode *t = 0;
+
      if (treenode_type(node) == NODE_IDENTIFIER) {;
-         struct TreeNode *t = treenode_init(NODE_EXPR_RVARIABLE,
-                                            treenode_location(node));
+         t = treenode_init(NODE_EXPR_RVARIABLE, treenode_location(node));
          treenode_appendChild(t, treenode_childAt(node, 0));
          return t;
      } else {
@@ -84,6 +85,7 @@
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT FREAD
+%token DOMAIN KIND
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -103,8 +105,12 @@
 %right UNEG UMINUS
 
 
-%type <treenode> variable_declarations
+%type <treenode> global_declarations
+%type <treenode> global_declaration
 %type <treenode> variable_declaration
+%type <treenode> domain_declaration
+%type <treenode> kind_declaration
+%type <treenode> procedure_definition
 %type <treenode> initializer
 %type <treenode> dimensions
 %type <treenode> dimension_list
@@ -116,8 +122,6 @@
 %type <treenode> subscript
 %type <treenode> indices
 %type <treenode> index
-%type <treenode> procedure_definitions
-%type <treenode> procedure_definition
 %type <treenode> procedure_parameter_list
 %type <treenode> procedure_parameter
 %type <treenode> compound_statement
@@ -165,39 +169,55 @@
 %%
 
 /*******************************************************************************
-  Program and variable declarations: TODO: sync with formal grammar
+  Program and variable declarations:
 *******************************************************************************/
 
 program
- : variable_declarations procedure_definitions
-   {
-     $$ = 0;
-     *parseTree = treenode_init(NODE_PROGRAM, &@$);
-     treenode_appendChild(*parseTree, $1);
-     treenode_appendChild(*parseTree, $2);
-   }
- | procedure_definitions
-   {
-     $$ = 0;
-     *parseTree = treenode_init(NODE_PROGRAM, &@$);
-     treenode_appendChild(*parseTree, $1);
+ : global_declarations
+   { $$ = 0;
+     *parseTree = $1;
    }
  ;
 
-variable_declarations /* Helper nonterminal for variable_declaration+ */
- : variable_declarations variable_declaration ';'
-   { $$ = $1;
+global_declarations
+ : global_declarations global_declaration
+   {
+     $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $2);
    }
- | variable_declaration ';'
+ | global_declaration
    {
-     $$ = treenode_init(NODE_GLOBALS, &@$);
+     $$ = treenode_init(NODE_PROGRAM, &@$);
      treenode_appendChild($$, $1);
    }
  ;
 
-variable_declaration /* NB! Uses type_specifier directly */
+global_declaration
+ : variable_declaration ';'
+ | procedure_definition
+ | domain_declaration ';'
+ | kind_declaration ';'
+ ;
+
+kind_declaration
+ : KIND identifier
+   {
+     $$ = treenode_init (NODE_KIND, &@$);
+     treenode_appendChild($$, $2);
+   }
+ ;
+
+domain_declaration
+ : DOMAIN identifier identifier
+   {
+     $$ = treenode_init (NODE_DOMAIN, &@$);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $3);
+   }
+ ;
+
+variable_declaration
  : type_specifier identifier
    {
      $$ = treenode_init(NODE_DECL, &@$);
@@ -364,26 +384,12 @@ dimtype_specifier
   Procedures:
 *******************************************************************************/
 
-
 procedure_type_specifier
  : VOID
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPEVOID, &@$);
    }
  | type_specifier
- ;
-
-procedure_definitions /* Helper nonterminal for procedure_definition+ */
- : procedure_definitions procedure_definition
-   { $$ = $1;
-     treenode_setLocation($$, &@$);
-     treenode_appendChild($$, $2);
-   }
- | procedure_definition
-   {
-     $$ = treenode_init(NODE_PROCDEFS, &@$);
-     treenode_appendChild($$, $1);
-   }
  ;
 
 procedure_definition
@@ -545,7 +551,7 @@ print_statement
      $$ = treenode_init(NODE_STMT_PRINT, &@$);
      treenode_appendChild($$, $3);
    }
-;
+ ;
 
 dowhile_statement
  : DO statement WHILE '(' expression ')' ';'
@@ -1010,23 +1016,27 @@ void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
 
 int sccparse(TYPE_TREENODEPROGRAM *result) {
     yyscan_t scanner;
+    int r;
     yylex_init(&scanner);
-    int r = yyparse(scanner, result);
+    r = yyparse(scanner, result);
     yylex_destroy(scanner);
     return r;
 }
 
 int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result) {
     yyscan_t scanner;
+    int r;
     yylex_init(&scanner);
     yyset_in(input, scanner);
-    int r = yyparse(scanner, result);
+    r = yyparse(scanner, result);
     yylex_destroy(scanner);
     return r;
 }
 
 int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEPROGRAM *result) {
     FILE *memoryFile;
+    yyscan_t scanner;
+    int r;
 #ifdef _GNU_SOURCE
     memoryFile = fmemopen((void*) buf, size, "r");
     if (memoryFile == NULL) return 3;
@@ -1040,10 +1050,9 @@ int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEPROGRAM *result) {
     rewind(memoryFile);
 #endif
 
-    yyscan_t scanner;
     yylex_init(&scanner);
     yyset_in(memoryFile, scanner);
-    int r = yyparse(scanner, result);
+    r = yyparse(scanner, result);
     yylex_destroy(scanner);
     fclose(memoryFile);
     return r;

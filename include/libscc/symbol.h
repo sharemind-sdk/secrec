@@ -19,11 +19,13 @@ class Symbol {
             PROCEDURE,
             CONSTANT,
             LABEL,
-            SYMBOL
+            SYMBOL,
+            PKIND,
+            PDOMAIN
         };
     public: /* Methods: */
 
-        explicit inline Symbol(Type symbolType, const SecreC::TypeNonVoid &valueType)
+        inline Symbol(Type symbolType, const SecreC::TypeNonVoid &valueType)
             : m_symbolType(symbolType)
             , m_type(valueType.clone())
         { }
@@ -49,7 +51,40 @@ class Symbol {
         const Type  m_symbolType;
         std::string m_name;
         SecreC::Type *m_type;
+};
 
+/*******************************************************************************
+  SymbolKind
+*******************************************************************************/
+
+class SymbolKind : public Symbol {
+public: /* Methods: */
+
+    SymbolKind ()
+        : Symbol (Symbol::PKIND)
+    { }
+
+    virtual std::string toString () const;
+};
+
+/*******************************************************************************
+  SymbolDomain
+*******************************************************************************/
+
+class SymbolDomain : public Symbol {
+public: /* Methods: */
+
+    SymbolDomain (const SymbolKind* kind)
+        : Symbol (Symbol::PDOMAIN)
+        , m_kind (kind)
+    { }
+
+    const SymbolKind* kind () const { return m_kind; }
+    virtual std::string toString () const;
+
+private:
+
+    const SymbolKind* const m_kind;
 };
 
 /*******************************************************************************

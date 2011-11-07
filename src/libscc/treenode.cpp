@@ -76,7 +76,6 @@ const char *TreeNode::typeName(Type type) {
         case NODE_EXPR_CLASSIFY: return "EXPR_CLASSIFY";
         case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
         case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
-        case NODE_EXPR_WILDCARD: return "EXPR_WILDCARD";
         case NODE_EXPR_INDEX: return "EXPR_INDEX";
         case NODE_EXPR_UNEG: return "EXPR_UNEG";
         case NODE_EXPR_UMINUS: return "EXPR_UMINUS";
@@ -123,10 +122,7 @@ const char *TreeNode::typeName(Type type) {
         case NODE_STMT_ASSERT: return "STMT_ASSERT";
         case NODE_STMT_PRINT: return "NODE_STMT_PRINT";
         case NODE_DECL: return "DECL";
-        case NODE_DECL_VSUFFIX: return "DECL_VSUFFIX";
-        case NODE_GLOBALS: return "DECL_GLOBALS";
         case NODE_PROCDEF: return "PROCDEF";
-        case NODE_PROCDEFS: return "PROCDEFS";
         case NODE_PROGRAM: return "PROGRAM";
         case NODE_DIMENSIONS: return "DIMENSIONS";
         case NODE_INDEX_INT: return "NODE_INDEX_INT";
@@ -139,6 +135,8 @@ const char *TreeNode::typeName(Type type) {
         case NODE_DATATYPE_F: return "DATATYPE_F";
         case NODE_DIMTYPE_F: return "DIMTYPE_F";
         case NODE_SECTYPE_F: return "SECTYPE_F";
+        case NODE_KIND: return "KIND";
+        case NODE_DOMAIN: return "DOMAIN";
         default: return "UNKNOWN";
     }
 }
@@ -287,18 +285,13 @@ ICode::Status tyCheckIndices (TreeNode* node,
 *******************************************************************************/
 
 SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
-                                          const YYLTYPE *loc)
+                                const YYLTYPE *loc)
 {
     switch (type) {
         case NODE_PROGRAM:
             return (TreeNode*) (new SecreC::TreeNodeProgram(*loc));
-        case NODE_GLOBALS:
-            return (TreeNode*) (new SecreC::TreeNodeGlobals(*loc));
-        case NODE_PROCDEFS:
-            return (TreeNode*) (new SecreC::TreeNodeProcDefs(*loc));
         case NODE_PROCDEF:
             return (TreeNode*) (new SecreC::TreeNodeProcDef(*loc));
-        case NODE_EXPR_WILDCARD: /* Fall through: */
         case NODE_EXPR_UNEG:     /* Fall through: */
         case NODE_EXPR_UMINUS:
             return (TreeNode*) (new SecreC::TreeNodeExprUnary(type, *loc));
@@ -380,9 +373,10 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeTypeVoid(*loc));
         case NODE_EXPR_CAST:
             return (TreeNode*) (new SecreC::TreeNodeExprCast (*loc));
-            /// \todo
-        case NODE_DECL_VSUFFIX:
-            /// \todo
+        case NODE_KIND:
+            return (TreeNode*) (new SecreC::TreeNodeKind (*loc));
+        case NODE_DOMAIN:
+            return (TreeNode*) (new SecreC::TreeNodeDomain (*loc));
         default:
             assert(type != NODE_IDENTIFIER);
             assert((type & NODE_LITE_MASK) == 0x0);

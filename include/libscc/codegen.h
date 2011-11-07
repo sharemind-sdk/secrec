@@ -41,6 +41,7 @@ private:
     CodeGen& operator = (const CodeGen&); // do not implement
 
 public:
+
     inline explicit CodeGen (const CodeGen& other)
         : code (other.code)
         , st (other.st)
@@ -128,8 +129,9 @@ public:
      /// \{
     CGStmtResult cgProgram (TreeNodeProgram* prog);
     CGStmtResult cgProcDef (TreeNodeProcDef* def);
-    CGStmtResult cgProcDefs (TreeNodeProcDefs* defs);
-    CGStmtResult cgGlobals (TreeNodeGlobals* gs);
+    CGStmtResult cgDomain (TreeNodeDomain* dom);
+    CGStmtResult cgKind (TreeNodeKind* kind);
+    CGStmtResult cgGlobalDecl (TreeNode* decl);
     /// \}
 
     /**
@@ -209,6 +211,7 @@ public:
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
 protected:
+
     ICodeList&    code;    ///< The code new instructions are emitted to.
     SymbolTable*  st;      ///< Symbol table.
     CompileLog&   log;     ///< Compiler log.

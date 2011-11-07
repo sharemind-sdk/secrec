@@ -60,7 +60,6 @@ TreeNode *treenode_init_dimTypeF(unsigned dimType,
  * Abstract syntax tree, or abstract representation of the SecreC code.
  * AST handles all of the type checking logic, mainly because it rewrites
  * the tree in some occasions such as adding of explicit classify nodes.
- * Code generation function only control which of the
  */
 class TreeNode {
     public: /* Types: */
@@ -216,9 +215,8 @@ class TreeNodeExpr: public TreeNode {
         }
 
         virtual CGResult codeGenWith (CodeGen& cg) = 0;
-        virtual CGBranchResult codeGenBoolWith (CodeGen& cg) {
+        virtual CGBranchResult codeGenBoolWith (CodeGen&) {
             assert (false && "Not implemented!");
-            (void) cg;
             return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
         }
 
@@ -644,6 +642,33 @@ class TreeNodeExprUnary: public TreeNodeExpr {
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 };
 
+/******************************************************************
+  TreeNodeStmtKind
+******************************************************************/
+
+/// Declaration statement. Also tracks if the scope is global or not.
+class TreeNodeKind : public TreeNode {
+    public: /* Methods: */
+        explicit inline TreeNodeKind(const YYLTYPE &loc)
+            : TreeNode (NODE_KIND, loc) { }
+        virtual inline ~TreeNodeKind() { }
+        CGStmtResult codeGenWith (CodeGen& cg);
+};
+
+/******************************************************************
+  TreeNodeStmtDomain
+******************************************************************/
+
+/// Declaration statement. Also tracks if the scope is global or not.
+class TreeNodeDomain : public TreeNode {
+    public: /* Methods: */
+        explicit inline TreeNodeDomain(const YYLTYPE &loc)
+            : TreeNode (NODE_DOMAIN, loc) { }
+        virtual inline ~TreeNodeDomain() { }
+        CGStmtResult codeGenWith (CodeGen& cg);
+};
+
+
 
 /******************************************************************
   TreeNodeProcDef
@@ -694,35 +719,6 @@ class TreeNodeProcDef: public TreeNode {
         SymbolProcedure           *m_procSymbol;
 };
 
-
-/******************************************************************
-  TreeNodeProcDefs
-******************************************************************/
-
-/// Many procedure definitions.
-class TreeNodeProcDefs: public TreeNode {
-    public: /* Methods: */
-        explicit inline TreeNodeProcDefs(const YYLTYPE &loc)
-            : TreeNode(NODE_PROCDEFS, loc) {}
-
-        CGStmtResult codeGenWith (CodeGen& cg);
-};
-
-
-/******************************************************************
-  TreeNodeGlobals
-******************************************************************/
-
-/// Global definitions and declarations.
-class TreeNodeGlobals: public TreeNode {
-    public: /* Methods: */
-        explicit inline TreeNodeGlobals(const YYLTYPE &loc)
-            : TreeNode(NODE_GLOBALS, loc) {}
-
-        CGStmtResult codeGenWith (CodeGen& cg);
-};
-
-
 /******************************************************************
   TreeNodeIdentifier
 ******************************************************************/
@@ -755,7 +751,6 @@ class TreeNodeProgram: public TreeNode {
         explicit inline TreeNodeProgram(const YYLTYPE &loc)
             : TreeNode(NODE_PROGRAM, loc) {}
 
-
         ICode::Status codeGenWith (CodeGen& cg);
 };
 
@@ -771,9 +766,8 @@ class TreeNodeStmt: public TreeNode {
             : TreeNode(type, loc) {}
 
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg) {
+        virtual CGStmtResult codeGenWith (CodeGen&) {
             assert (false && "Statement code gen unimplemented.");
-            (void) cg;
             return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
         }
 };
@@ -859,7 +853,6 @@ class TreeNodeStmtDecl: public TreeNodeStmt {
         bool m_global;
         bool m_procParam;
 };
-
 
 /******************************************************************
   TreeNodeStmtDoWhile

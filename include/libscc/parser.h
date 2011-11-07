@@ -34,7 +34,6 @@ enum SecrecTreeNodeType {
     NODE_EXPR_CLASSIFY    = 0x020, /* classify(expr)           */
     NODE_EXPR_DECLASSIFY  = 0x030, /* declassify(expr)         */
     NODE_EXPR_PROCCALL    = 0x040, /* expr(), expr(expr, ...)  */
-    NODE_EXPR_WILDCARD    = 0x050, /* expr[*]                  */
     NODE_EXPR_INDEX       = 0x060, /* expr[expr,...]           */
     NODE_EXPR_UNEG        = 0x070, /* !expr                    */
     NODE_EXPR_UMINUS      = 0x080, /* -expr                    */
@@ -82,10 +81,7 @@ enum SecrecTreeNodeType {
     NODE_STMT_EXPR      = 0x09000,
     NODE_STMT_ASSERT    = 0x0a000,
     NODE_DECL           = 0x0b000,
-    NODE_DECL_VSUFFIX   = 0x0c000,
-    NODE_GLOBALS        = 0x0d000,
     NODE_PROCDEF        = 0x0e000,
-    NODE_PROCDEFS       = 0x0f000,
     NODE_PROGRAM        = 0x10000,
     NODE_DIMENSIONS     = 0x11000,
     NODE_INDEX_INT      = 0x12000,
@@ -98,7 +94,9 @@ enum SecrecTreeNodeType {
     NODE_TYPEVOID       = 0x200000,
     NODE_DATATYPE_F     = 0x300000,
     NODE_DIMTYPE_F      = 0x400000,
-    NODE_SECTYPE_F      = 0x500000
+    NODE_SECTYPE_F      = 0x500000,
+    NODE_DOMAIN         = 0x600000,
+    NODE_KIND           = 0x700000
 };
 
 enum SecrecSecType {
