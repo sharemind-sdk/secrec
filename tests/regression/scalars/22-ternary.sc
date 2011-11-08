@@ -1,3 +1,6 @@
+kind a3p;
+domain private a3p;
+
 int val = 0;
 
 void load_one () { val = 1; }

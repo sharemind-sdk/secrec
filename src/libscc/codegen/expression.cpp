@@ -562,7 +562,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
       If first sub-expression is public, then generate short-circuit code for
       logical && and logical ||.
     */
-    if (isPublic (eArg1->resultType ().secrecSecType ())
+    if (   eArg1->resultType ().secrecSecType ().isPublic ()
         && eArg1->resultType ().isScalar ()
         && eArg2->resultType ().isScalar ()
         && (e->type () == NODE_EXPR_BINARY_LAND || e->type () == NODE_EXPR_BINARY_LOR))
@@ -714,7 +714,7 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
               If first sub-expression is public, then generate short-circuit
               code for logical && and logical ||.
             */
-            if (isPublic (static_cast<const TNV&>(eArg1->resultType()).secrecSecType())) {
+            if (static_cast<const TNV&>(eArg1->resultType()).secrecSecType().isPublic ()) {
                 /// \todo I'm quite sure this is incorrect, we are not handling next lists!
 
                 // Generate code for first child expression:

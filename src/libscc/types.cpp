@@ -1,4 +1,5 @@
 #include "types.h"
+#include "symbol.h"
 
 #include <cassert>
 #include <sstream>
@@ -9,15 +10,6 @@
 namespace {
 
 using namespace SecreC;
-
-inline const char *SecrecFundSecTypeToString(SecrecSecType secType) {
-    switch (secType) {
-        case SECTYPE_INVALID: return "invalid";
-        case SECTYPE_PUBLIC:  return "public";
-        case SECTYPE_PRIVATE: return "private";
-    }
-    return 0;
-}
 
 inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {
@@ -92,10 +84,6 @@ CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
     return dataTypeCasts[from][to];
 }
 
-SecrecSecType upperSecType(SecrecSecType a, SecrecSecType b) {
-    return (a == SECTYPE_PUBLIC ? b : SECTYPE_PRIVATE);
-}
-
 SecrecDimType upperDimType(SecrecDimType n, SecrecDimType m) {
     assert (n == 0 || m == 0 || n == m);
     if (n == 0) return m;
@@ -121,10 +109,6 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
 
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
     return n == m || n == 0;
-}
-
-bool latticeSecTypeLEQ (SecrecSecType a, SecrecSecType b) {
-    return a == b || a == SECTYPE_PUBLIC;
 }
 
 bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b) {
@@ -179,12 +163,28 @@ bool isUnsignedNumericDataType (SecrecDataType dType) {
 }
 
 /*******************************************************************************
+  PublicSecType
+*******************************************************************************/
+
+std::string PublicSecType::toString () const {
+    return "public";
+}
+
+/*******************************************************************************
+  PrivateSecType
+*******************************************************************************/
+
+std::string PrivateSecType::toString () const {
+    return domain ()->name ();
+}
+
+/*******************************************************************************
   DataTypeBasic
 *******************************************************************************/
 
 std::string DataTypeBasic::toString() const {
     std::ostringstream os;
-    os << "(" << SecrecFundSecTypeToString(m_secType) << ","
+    os << "(" << m_secType->toString () << ","
        << SecrecFundDataTypeToString(m_dataType) << ","
        << m_dimType << ")";
     return os.str();
@@ -313,11 +313,6 @@ std::string TypeNonVoid::toString() const {
 /*******************************************************************************
   Global functions
 *******************************************************************************/
-
-std::ostream &operator<<(std::ostream &out, const SecrecSecType &type) {
-    out << SecrecFundSecTypeToString(type);
-    return out;
-}
 
 std::ostream &operator<<(std::ostream &out, const SecrecDataType &type) {
     out << SecrecFundDataTypeToString(type);

@@ -59,7 +59,7 @@ void CodeGen::allocResult (CGResult& result)  {
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
-    const TypeNonVoid ty (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
+    const TypeNonVoid ty (DATATYPE_INT);
     assert (node->haveResultType ());
     if (!node->resultType().isVoid()) {
         assert (dynamic_cast<const TypeNonVoid*>(&node->resultType()) != 0);
@@ -81,7 +81,7 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 *******************************************************************************/
 
 CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
-    const TypeNonVoid ty (SECTYPE_PUBLIC, DATATYPE_INT, 0);
+    const TypeNonVoid ty (DATATYPE_INT);
     CGResult result;
     const unsigned n = tmp->secrecType ().secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
@@ -239,7 +239,7 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
         }
         else {
             // if there is no upper bound then make one up
-            r_hi = st->appendTemporary (TypeNonVoid (SECTYPE_PUBLIC, DATATYPE_INT, 0));
+            r_hi = st->appendTemporary (TypeNonVoid (DATATYPE_INT));
             Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo, st->constantInt (1));
             pushImopAfter (result, i);
         }

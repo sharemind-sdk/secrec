@@ -779,7 +779,8 @@ CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
         return result;
     }
 
-    if (e->resultType().secrecDataType() != DATATYPE_STRING || isPrivate (e->resultType().secrecSecType())  ||
+    if (e->resultType().secrecDataType() != DATATYPE_STRING ||
+        e->resultType().secrecSecType().isPrivate ()  ||
         !e->resultType().isScalar()) {
         log.fatal () << "Argument to print statement has to be public string scalar, got "
                     << e->resultType() << " at " << s->location();

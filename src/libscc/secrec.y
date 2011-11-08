@@ -296,14 +296,14 @@ type_specifier
  | datatype_specifier dimtype_specifier
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$));
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_publicSecTypeF (&@$));
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
  | datatype_specifier
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$));
+     treenode_appendChild($$, (struct TreeNode *) treenode_init_publicSecTypeF (&@$));
      treenode_appendChild($$, $1);
      treenode_appendChild($$, (struct TreeNode *) treenode_init_dimTypeF(0, &@$));
    }
@@ -311,13 +311,14 @@ type_specifier
 
 
 sectype_specifier
- : PRIVATE
+ : PUBLIC
    {
-     $$ = (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PRIVATE, &@$);
+     $$ = (struct TreeNode *) treenode_init_publicSecTypeF (&@$);
    }
- | PUBLIC
+ | identifier
    {
-     $$ = (struct TreeNode *) treenode_init_secTypeF(SECTYPE_PUBLIC, &@$);
+     $$ = (struct TreeNode *) treenode_init_privateSecTypeF(&@$);
+     treenode_appendChild($$, (struct TreeNode *) $1);
    }
  ;
 

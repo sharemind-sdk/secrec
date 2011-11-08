@@ -14,8 +14,6 @@ bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
     return true;
 }
 
-Q_DECLARE_METATYPE(SecrecDataType)
-Q_DECLARE_METATYPE(SecrecSecType)
 
 #define DEFLOC(n,fl,fc,ll,lc) YYLTYPE n;\
     (n).first_line=(fl);\

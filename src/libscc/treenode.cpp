@@ -202,10 +202,12 @@ TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index, const Type& ty)
     TreeNode *&child = m_children.at(index);
     assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
     if (!ty.isVoid ()) {
-        if (isPrivate (ty.secrecSecType ()) &&
-            isPublic (static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType()))
+        if (ty.secrecSecType ().isPrivate () &&
+            static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType().isPublic ())
         {
-            TreeNodeExprClassify *ec = new TreeNodeExprClassify(child->location());
+            TreeNodeExprClassify *ec = new TreeNodeExprClassify(
+                        static_cast<const PrivateSecType&>(ty.secrecSecType ()).domain (),
+                        child->location());
             ec->appendChild(child);
             ec->resetParent(this);
             child = ec;
@@ -273,7 +275,7 @@ ICode::Status tyCheckIndices (TreeNode* node,
 
             const TypeNonVoid* eTy = static_cast<const TypeNonVoid*>(&e->resultType());
 
-            if (isPrivate (eTy->secrecSecType()) ||
+            if (eTy->secrecSecType().isPrivate () ||
                     eTy->secrecDataType() != DATATYPE_INT ||
                     eTy->secrecDimType() > 0) {
                 log.fatal() << "Invalid type for index at " << e->location() << ". "
@@ -452,11 +454,12 @@ TreeNode *treenode_init_identifier(const char *value,
     return (TreeNode*) new SecreC::TreeNodeIdentifier(value, *loc);
 }
 
-TreeNode *treenode_init_secTypeF(
-        enum SecrecSecType secType,
-        YYLTYPE *loc)
-{
-    return (TreeNode*) new SecreC::TreeNodeSecTypeF(secType, *loc);
+TreeNode *treenode_init_publicSecTypeF (YYLTYPE *loc) {
+    return (TreeNode*) new SecreC::TreeNodeSecTypeF(true, *loc);
+}
+
+TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc) {
+    return (TreeNode*) new SecreC::TreeNodeSecTypeF (false, *loc);
 }
 
 TreeNode *treenode_init_dataTypeF(
@@ -765,7 +768,7 @@ ICode::Status TreeNodeExprCat::calculateResultType(SymbolTable &st,
     TNV const* e3Type = static_cast<TNV const*>(&e3->resultType());
     if (!e3Type->isScalar() ||
         e3Type->secrecDataType() != DATATYPE_INT ||
-        isPrivate (e3Type->secrecSecType())) {
+        e3Type->secrecSecType().isPrivate ()) {
         log.fatal() << "Expected public scalar integer at "
                     << children().at(2)->location()
                     << " got " << *e3Type;
@@ -809,7 +812,7 @@ ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &st,
         if (ei->checkAndLogIfVoid(log)) return ICode::E_TYPE;
         TNV const* eiType = static_cast<TNV const*>(&ei->resultType());
         if (eiType->secrecDataType() != DATATYPE_INT ||
-            isPrivate (eiType->secrecSecType()) ||
+            eiType->secrecSecType().isPrivate () ||
             !eiType->isScalar()) {
             log.fatal() << "Expected public integer scalar at "
                         << ei->location()
@@ -909,8 +912,8 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
 
         SecrecDataType d1 = eType1->secrecDataType();
         SecrecDataType d2 = eType2->secrecDataType();
-        SecrecSecType s1 = eType1->secrecSecType();
-        SecrecSecType s2 = eType2->secrecSecType();
+        const SecurityType& s1 = eType1->secrecSecType();
+        const SecurityType& s2 = eType2->secrecSecType();
         SecrecDimType n1 = eType1->secrecDimType();
         SecrecDimType n2 = eType2->secrecDimType();
 
@@ -998,8 +1001,8 @@ ICode::Status TreeNodeExprClassify::calculateResultType(SymbolTable &st,
     ICode::Status s = e->calculateResultType(st, log);
     if (s != ICode::OK) return s;
     if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
-    assert(isPublic (e->resultType().secrecSecType()));
-    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, e->resultType().secrecDataType(), e->resultType().secrecDimType()));
+    assert(e->resultType().secrecSecType().isPublic ());
+    setResultType(new TypeNonVoid(PrivateSecType (m_expectedDomain), e->resultType().secrecDataType(), e->resultType().secrecDimType()));
     return ICode::OK;
 }
 
@@ -1020,7 +1023,7 @@ ICode::Status TreeNodeExprDeclassify::calculateResultType(SymbolTable &st,
     if (s != ICode::OK) return s;
 
     if (!e->resultType().isVoid()) {
-        if (isPrivate (e->resultType().secrecSecType())) {
+        if (e->resultType().secrecSecType().isPrivate ()) {
             setResultType(new TypeNonVoid(
                 e->resultType().secrecDataType(),
                 e->resultType().secrecDimType()));
@@ -1106,10 +1109,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         assert(dynamic_cast<DataTypeBasic*>(dataType.paramTypes().at(i)) != 0);
         DataTypeBasic *have = static_cast<DataTypeBasic*>(dataType.paramTypes()[i]);
 
-        assert(need->secType() != SECTYPE_INVALID);
-        assert(have->secType() != SECTYPE_INVALID);
-
-        if (isPublic (need->secType()) && isPrivate (have->secType()))
+        if (need->secType().isPublic () && have->secType().isPrivate ())
         {
             log.fatal() << "Argument " << (i + 1) << " to function "
                 << id->value() << " at " << arguments[i]->location()
@@ -1268,7 +1268,7 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
         || cType.dataType().kind() != DataType::BASIC
         || static_cast<const DataTypeBasic&>(cType.dataType()).dataType()
             != DATATYPE_BOOL
-        || isPrivate (static_cast<const DataTypeBasic&>(cType.dataType()).secType()))
+        || static_cast<const DataTypeBasic&>(cType.dataType()).secType().isPrivate ())
     {
         log.fatal() << "Conditional subexpression at " << e1->location()
                     << " of ternary expression has to be public boolean, got "
@@ -1533,7 +1533,7 @@ const std::string &TreeNodeProcDef::procedureName() const {
     return static_cast<const TreeNodeIdentifier*>(children().at(0))->value();
 }
 
-ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
+ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &st,
                                                       CompileLog &log)
 {
     typedef TypeNonVoid TNV;
@@ -1542,12 +1542,13 @@ ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
 
     assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
     TreeNodeType *rt = static_cast<TreeNodeType*>(children().at(1));
-
+    ICode::Status s = rt->calculateType (st, log);
+    if (s != ICode::OK) return s;
     if (rt->type() == NODE_TYPEVOID) {
         assert(rt->secrecType().isVoid());
 
         DataTypeProcedureVoid dt;
-        ICode::Status s = addParameters(dt, stable, log);
+        s = addParameters(dt, st, log);
         if (s != ICode::OK) return s;
         m_cachedType = new TNV(dt);
     } else {
@@ -1557,8 +1558,8 @@ ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &stable,
         const TNV &tt = static_cast<const TNV&>(rt->secrecType());
         assert(tt.dataType().kind() == DataType::BASIC);
 
-        DataTypeProcedure dt(tt.dataType());
-        ICode::Status s = addParameters(dt, stable, log);
+        DataTypeProcedure dt (tt.dataType());
+        s = addParameters(dt, st, log);
         if (s != ICode::OK) return s;
 
         m_cachedType = new TNV(dt);
@@ -1630,13 +1631,16 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 
 std::string TreeNodeSecTypeF::stringHelper() const {
     std::ostringstream os;
-    os << m_secType;
+    if (m_isPublic)
+        os << "public";
+    else
+        os << static_cast<TreeNodeIdentifier*>(children ().at (0))->value ();
     return os.str();
 }
 
 std::string TreeNodeSecTypeF::xmlHelper() const {
     std::ostringstream os;
-    os << "type=\"" << m_secType << "\"";
+    os << "type=\"" << stringHelper () << "\"";
     return os.str();
 }
 
@@ -1664,6 +1668,8 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
     assert(children().size() >= 2);
     assert(dynamic_cast<TNT*>(children().at(1)) != 0);
     TNT *type = static_cast<TNT*>(children().at(1));
+    ICode::Status s = type->calculateType (st, log);
+    if (s != ICode::OK) return s;
 
     /// \todo Check here for overrides first if new symbol table is needed.
 
@@ -1685,12 +1691,12 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
             assert(((*ei)->type() & NODE_EXPR_MASK) != 0);
             assert(dynamic_cast<TreeNodeExpr*>(*ei) != 0);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(*ei);
-            ICode::Status s = e->calculateResultType(st, log);
+            s = e->calculateResultType(st, log);
             if (s != ICode::OK) return s;
             if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
             if (   !e->resultType().secrecDataType() == DATATYPE_INT
                 || !e->resultType().isScalar()
-                || isPrivate (e->resultType().secrecSecType())) {
+                || e->resultType().secrecSecType().isPrivate ()) {
                 log.fatal() << "Expecting public unsigned integer scalar at "
                             << e->location();
                 return ICode::E_TYPE;
@@ -1722,8 +1728,8 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
 
         }
 
-        if (isPrivate (e->resultType().secrecSecType()) &&
-            isPublic (justType.secrecSecType()))
+        if (e->resultType().secrecSecType().isPrivate () &&
+            justType.secrecSecType().isPublic ())
         {
             log.fatal() << "Public variable is given a private initializer at "
                         << location();
@@ -1755,23 +1761,45 @@ ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog 
   TreeNodeTypeType
 *******************************************************************************/
 
-const SecreC::Type &TreeNodeTypeType::secrecType() const {
+ICode::Status TreeNodeTypeType::calculateType (SymbolTable& st, CompileLog& log) {
     typedef TreeNodeDataTypeF TNDT;
     typedef TreeNodeSecTypeF TNST;
     typedef TreeNodeDimTypeF TNDimT;
 
+    if (m_cachedType != 0) {
+        return ICode::OK;
+    }
+
     assert(children().size() == 3);
-    if (m_cachedType != 0) return *m_cachedType;
-
     assert(dynamic_cast<TNST*>(children().at(0)) != 0);
-    TNST *st = static_cast<TNST*>(children().at(0));
-    assert(dynamic_cast<TNDT*>(children().at(1)) != 0);
-    TNDT *dt = static_cast<TNDT*>(children().at(1));
-    assert(dynamic_cast<TNDimT*>(children().at(2)) != 0);
-    TNDimT *dimt = static_cast<TNDimT*>(children().at(2));
+    TreeNodeSecTypeF *sty = static_cast<TNST*>(children().at(0));
+    SecurityType* secType = 0;
+    if (sty->isPublic ()) {
+        secType = new PublicSecType ();
+    }
+    else {
+        TreeNodeIdentifier* id = static_cast<TreeNodeIdentifier*>(sty->children ().at (0));
+        Symbol* sym = st.find (id->value ());
+        if (sym == 0) {
+            log.error () << "Symbol at " << sty->location () << " not declared!";
+            return ICode::E_TYPE;
+        }
 
-    m_cachedType = new SecreC::TypeNonVoid(st->secType(), dt->dataType(), dimt->dimType());
-    return *m_cachedType;
+        if (dynamic_cast<SymbolDomain*>(sym) == 0) {
+            log.error () << "Mismatching symbol at " << sty->location ();
+            return ICode::E_TYPE;
+        }
+
+        secType = new PrivateSecType (static_cast<SymbolDomain*>(sym));
+    }
+
+    assert(dynamic_cast<TNDT*>(children().at(1)) != 0);
+    TNDT *dty = static_cast<TNDT*>(children().at(1));
+    assert(dynamic_cast<TNDimT*>(children().at(2)) != 0);
+    TNDimT *dimty = static_cast<TNDimT*>(children().at(2));
+    m_cachedType = new SecreC::TypeNonVoid(*secType, dty->dataType(), dimty->dimType());
+    delete secType;
+    return ICode::OK;
 }
 
 std::string TreeNodeTypeType::stringHelper() const {

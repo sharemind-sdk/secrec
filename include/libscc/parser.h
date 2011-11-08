@@ -98,12 +98,6 @@ enum SecrecTreeNodeType {
     NODE_KIND           = 0x700000
 };
 
-enum SecrecSecType {
-    SECTYPE_INVALID = 0x00,
-    SECTYPE_PUBLIC  = 0x01,
-    SECTYPE_PRIVATE = 0x02
-};
-
 enum SecrecDataType {
     DATATYPE_INVALID = 0x00,
     DATATYPE_BOOL,

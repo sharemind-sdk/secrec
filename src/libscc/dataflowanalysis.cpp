@@ -582,7 +582,8 @@ bool ReachingDeclassify::makeOuts(const Block &b, const PDefs &in, PDefs &out) {
                 continue;
             }
         }
-        if (imop.dest()->secrecType().secrecSecType() == SECTYPE_PUBLIC) continue;
+
+        if (imop.dest()->secrecType().secrecSecType().isPublic ()) continue;
 
         Defs &d = out[imop.dest()];
 

@@ -45,8 +45,8 @@ TreeNode *treenode_init_int(int value, YYLTYPE *loc);
 TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
 TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
 TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
-TreeNode *treenode_init_secTypeF(enum SecrecSecType secType,
-                                 YYLTYPE *loc);
+TreeNode *treenode_init_publicSecTypeF(YYLTYPE *loc);
+TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc);
 TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
                                   YYLTYPE *loc);
 TreeNode *treenode_init_dimTypeF(unsigned dimType,
@@ -119,16 +119,17 @@ class TreeNode {
 /// Security type
 class TreeNodeSecTypeF: public TreeNode {
     public: /* Methods: */
-        inline TreeNodeSecTypeF(SecrecSecType secType, const YYLTYPE &loc)
-            : TreeNode(NODE_SECTYPE_F, loc), m_secType(secType) {}
+        inline TreeNodeSecTypeF(bool isPublic, const YYLTYPE &loc)
+            : TreeNode (NODE_SECTYPE_F, loc)
+            , m_isPublic (isPublic)
+        { }
 
-        SecrecSecType secType() const { return m_secType; }
-
+        inline bool isPublic () const { return m_isPublic; }
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
 
     private: /* Fields: */
-        SecrecSecType m_secType;
+        const bool m_isPublic;
 };
 
 
@@ -205,7 +206,7 @@ class TreeNodeExpr: public TreeNode {
         inline bool havePublicBoolType() const {
             assert(m_resultType != 0);
             return m_resultType->secrecDataType() == DATATYPE_BOOL
-                   && m_resultType->secrecSecType() == SECTYPE_PUBLIC
+                   && m_resultType->secrecSecType().isPublic ()
                    && m_resultType->isScalar();
         }
         inline const SecreC::Type &resultType() const {
@@ -409,13 +410,18 @@ class TreeNodeExprBool: public TreeNodeExpr {
  */
 class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprClassify(const YYLTYPE &loc)
-            : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc) {}
+        inline TreeNodeExprClassify(SymbolDomain* dom, const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
+            , m_expectedDomain (dom)
+        { }
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
                                                   CompileLog &log);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+    private:
+        SymbolDomain* const m_expectedDomain;
 };
 
 
@@ -960,12 +966,28 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
 ******************************************************************/
 
 /// Types occuring in code.
-class TreeNodeType: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNode(type, loc) {}
+class TreeNodeType : public TreeNode {
+public: /* Methods: */
+    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNode(type, loc)
+        , m_cachedType (0)
+    { }
 
-        virtual const SecreC::Type &secrecType() const = 0;
+    virtual ICode::Status calculateType (SymbolTable& st,
+                                         CompileLog& log) = 0;
+
+    const SecreC::Type& secrecType () const {
+        assert (m_cachedType != 0);
+        return *m_cachedType;
+    }
+
+protected: /* Fields: */
+    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc, SecreC::Type* ty)
+        : TreeNode(type, loc)
+        , m_cachedType (ty)
+    { }
+
+    SecreC::Type* m_cachedType;
 };
 
 
@@ -975,16 +997,14 @@ class TreeNodeType: public TreeNode {
 
 /// Non-void types.
 class TreeNodeTypeType: public TreeNodeType {
-    public: /* Methods: */
-        explicit inline TreeNodeTypeType(const YYLTYPE &loc)
-            : TreeNodeType(NODE_TYPETYPE, loc), m_cachedType(0) {}
-        virtual inline ~TreeNodeTypeType() { delete m_cachedType; }
+public: /* Methods: */
+    explicit inline TreeNodeTypeType(const YYLTYPE &loc)
+        : TreeNodeType(NODE_TYPETYPE, loc) {}
+    virtual inline ~TreeNodeTypeType() { }
 
-        virtual const SecreC::Type &secrecType() const;
-        virtual std::string stringHelper() const;
-
-    private: /* Fields: */
-        mutable SecreC::TypeNonVoid *m_cachedType;
+    virtual ICode::Status calculateType (SymbolTable& st,
+                                         CompileLog& log);
+    virtual std::string stringHelper() const;
 };
 
 
@@ -994,16 +1014,14 @@ class TreeNodeTypeType: public TreeNodeType {
 
 /// Void type.
 class TreeNodeTypeVoid: public TreeNodeType {
-    public: /* Methods: */
-        explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
-            : TreeNodeType(NODE_TYPEVOID, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
+        : TreeNodeType(NODE_TYPEVOID, loc, new TypeVoid ())
+    { }
 
-        virtual inline const SecreC::Type &secrecType() const {
-            return m_typeVoid;
-        }
-
-    private: /* Fields: */
-        const SecreC::TypeVoid m_typeVoid;
+    ICode::Status calculateType (SymbolTable&, CompileLog&) {
+        return ICode::OK;
+    }
 };
 
 
