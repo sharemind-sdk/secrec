@@ -347,8 +347,6 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprCat(*loc));
         case NODE_EXPR_RESHAPE:
             return (TreeNode*) (new SecreC::TreeNodeExprReshape(*loc));
-        case NODE_EXPR_FREAD:
-            return (TreeNode*) (new SecreC::TreeNodeExprFRead(*loc));
         case NODE_STMT_BREAK:
             return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
         case NODE_STMT_CONTINUE:
@@ -827,36 +825,6 @@ ICode::Status TreeNodeExprReshape::calculateResultType(SymbolTable &st,
     }
 
     setResultType(new TNV(eType->secrecSecType(), eType->secrecDataType(), resDim));
-    return ICode::OK;
-}
-
-/*******************************************************************************
-  TreeNodeExprFRead
-*******************************************************************************/
-
-ICode::Status TreeNodeExprFRead::calculateResultType(SymbolTable &st,
-                                                      CompileLog &log)
-{
-    typedef TypeNonVoid TNV;
-    if (haveResultType()) return ICode::OK;
-    assert (children().size() == 1);
-    assert (dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
-    TreeNodeExpr* e = static_cast<TreeNodeExpr*>(children().at(0));
-    ICode::Status s = e->calculateResultType(st, log);
-    if (s != ICode::OK) return s;
-    if (e->checkAndLogIfVoid(log)) return ICode::E_TYPE;
-    TypeNonVoid const* eType = static_cast<TypeNonVoid const*>(&e->resultType());
-
-    if (!eType->isScalar() ||
-         eType->secrecDataType() != DATATYPE_STRING ||
-         isPrivate (eType->secrecSecType())) {
-        log.fatal() << "fread expression at " << location() << " has to take public scalar string as argument, got "
-                    << *eType;
-        return ICode::E_TYPE;
-    }
-
-    setResultType(new TypeNonVoid(SECTYPE_PRIVATE, DATATYPE_INT, 2));
-
     return ICode::OK;
 }
 

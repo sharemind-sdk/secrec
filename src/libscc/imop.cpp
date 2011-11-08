@@ -63,7 +63,6 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::END,        0, 0, 1, 0,-1 }
     // Other:
     , { Imop::COMMENT,    0, 0, 0, 0,-1 }
-    , { Imop::FREAD,      0, 0, 0, 0,-1 }
     , { Imop::PRINT,      0, 0, 0, 0,-1 }
     , { Imop::RETCLEAN,   0, 0, 0, 0,-1 }
 };
@@ -439,9 +438,6 @@ std::string Imop::toString() const {
             break;
         case PRINT:
             os << "PRINT \"" << a1name << "\";";
-            break;
-        case FREAD:
-            os << "FREAD \"" << a1name << "\";";
             break;
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";

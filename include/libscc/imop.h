@@ -110,7 +110,6 @@ class Imop : public auto_unlink_hook {
             // Misc. instructions:
             //--------------------
             COMMENT,    /* // arg1                            */
-            FREAD,      /* FREAD                              */
             PRINT,      /* PRINT arg1; */
             RETCLEAN,   /* RETCLEAN;             (Imop *arg2) */
 

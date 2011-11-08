@@ -84,7 +84,7 @@
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
-%token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT FREAD
+%token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND
 
 /* Literals: */
@@ -151,7 +151,6 @@
 %type <treenode> postfix_op
 %type <treenode> prefix_op
 %type <treenode> cat_expression
-%type <treenode> fread_expression
 %type <treenode> argument_list
 %type <treenode> primary_expression
 %type <treenode> constant
@@ -842,14 +841,6 @@ unary_expression
  | postfix_expression
  ;
 
-fread_expression
- : FREAD '(' expression ')'
-   {
-    $$ = treenode_init(NODE_EXPR_FREAD, &@$);
-    treenode_appendChild($$, $3);
-   }
- ;
-
 cat_expression
  : CAT '(' expression ',' expression ',' int_literal ')'
    {
@@ -884,7 +875,6 @@ postfix_expression
      treenode_appendChild($$, $3);
    }
  | cat_expression
- | fread_expression
  | RESHAPE '(' argument_list ')'
    {
      unsigned i;

@@ -352,23 +352,6 @@ class TreeNodeExprReshape: public TreeNodeExpr {
 
 
 /******************************************************************
-  TreeNodeExprFRead
-******************************************************************/
-
-/// Expression of reading table from file. Only for testing.
-class TreeNodeExprFRead: public TreeNodeExpr {
-    public:
-        inline TreeNodeExprFRead(const YYLTYPE &loc)
-            : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
-
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
-
-        virtual CGResult codeGenWith (CodeGen& cg);
-};
-
-
-/******************************************************************
   TreeNodeExprBinary
 ******************************************************************/
 

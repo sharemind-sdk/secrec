@@ -178,57 +178,6 @@ ValueStack m_stack;
 Frame* m_frames = 0;
 Store m_global;
 
-/// Read a table and push it into a stack as a array
-void fread_table (const std::string& str) {
-    std::ifstream fhandle;
-    std::string line;
-    std::vector<int > values;
-    fhandle.open (str.c_str(), std::ios::in);
-    int rowCount = 0;
-    int colCount = 0;
-    int tmp = 0;
-    int n;
-
-    if (!fhandle.is_open()) {
-        std::cout << "Unable to open file named \"" << str << "\"." << std::endl;
-        return;
-    }
-
-    while (std::getline (fhandle, line)) {
-        std::stringstream ss (line.c_str());
-        tmp = 0;
-        while (ss.good()) {
-            if (ss >> n) {
-                values.push_back(n);
-                ++ tmp;
-            }
-        }
-
-        if (rowCount == 0 || tmp == rowCount) {
-            rowCount = tmp;
-        }
-        else {
-            fhandle.close();
-            std::cout << "Every line of \"" << str << "\" has to have equal number of values." << std::endl;
-            std::cout << "Mismatch at line " << colCount + 1 << std::endl;
-            return;
-        }
-
-        ++ colCount;
-    }
-
-    fhandle.close();
-
-    for (int row = 0; row < rowCount; ++ row) {
-        for (int col = 0; col < colCount; ++ col) {
-            m_stack.push(values[(rowCount - row - 1) + (colCount - col - 1)*rowCount]);
-        }
-    }
-
-    m_stack.push(colCount);
-    m_stack.push(rowCount);
-}
-
 void free_store (Store& store) {
     store.clear();
 }
@@ -408,11 +357,6 @@ MKCALLBACK (ERROR, 0, 1, 0, 0,
 
 MKCALLBACK (PRINT, 0, 1, 0, 0,
     fprintf (stdout, "%s\n", arg1.un_str_val->c_str());
-)
-
-MKCALLBACK(FREAD, 0, 0, 0, 0,
-    FETCH (arg, 1);
-    fread_table (*arg.un_str_val);
 )
 
 MKCALLBACK(CALL, 0, 0, 0, 0,
@@ -664,7 +608,6 @@ private:
           case Imop::LOAD:           i.callback = LOAD_callback; break;
           case Imop::END:            i.callback = END_callback; break;
           case Imop::PRINT:          i.callback = PRINT_callback; break;
-          case Imop::FREAD:          i.callback = FREAD_callback; break;
           default:
             assert (false && "VM: Reached unfamiliar instruction.");
         }

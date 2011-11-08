@@ -541,47 +541,6 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 }
 
 /*******************************************************************************
-  TreeNodeExprFRead
-*******************************************************************************/
-
-CGResult TreeNodeExprFRead::codeGenWith (CodeGen &cg) {
-    assert (false && "TODO");
-    return cg.cgExprFRead (this);
-}
-
-CGResult CodeGen::cgExprFRead (TreeNodeExprFRead *e) {
-    // Type check:
-    ICode::Status s = e->calculateResultType(*st, log);
-    if (s != ICode::OK) {
-        return CGResult (s);
-    }
-
-    // Generate code for child expression:
-    TreeNodeExpr *eArg = static_cast<TreeNodeExpr*>(e->children ().at (0));
-    CGResult result (codeGen (eArg));
-    if (result.isNotOk ()) {
-        return result;
-    }
-
-    Symbol* argSym = result.symbol ();
-    SymbolSymbol* resSym = generateResultSymbol (result, e);
-
-    Imop* i = 0;
-
-    std::list<Symbol* > args;
-
-    args.push_back (resSym->getDim (0));
-    args.push_back (resSym->getDim (1));
-    args.push_back (resSym);
-    args.push_back (0);
-    args.push_back (argSym);
-
-    i = new Imop (e, Imop::FREAD, args.begin (), args.end ());
-
-    return result;
-}
-
-/*******************************************************************************
   TreeNodeExprBinary
 *******************************************************************************/
 

@@ -177,7 +177,6 @@ public:
      */
     /// \{
     CGResult cgExprCast (TreeNodeExprCast* e);
-    CGResult cgExprFRead (TreeNodeExprFRead* e);
     CGResult cgExprBool (TreeNodeExprBool* e);
     CGResult cgExprIndex (TreeNodeExprIndex* e);
     CGResult cgExprShape (TreeNodeExprShape* e);

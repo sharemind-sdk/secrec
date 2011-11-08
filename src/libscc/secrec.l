@@ -91,7 +91,6 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "reshape"    { stepLen(yyget_lloc(yyscanner), 7); return RESHAPE; }
 "cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 "print"      { stepLen(yyget_lloc(yyscanner), 5); return PRINT; }
-"fread"      { stepLen(yyget_lloc(yyscanner), 5); return FREAD; }
 "kind"       { stepLen(yyget_lloc(yyscanner), 4); return KIND; }
 "domain"     { stepLen(yyget_lloc(yyscanner), 6); return DOMAIN; }
 
