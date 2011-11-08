@@ -301,14 +301,13 @@ class Type {
             return false;
         }
 
-        // \todo i dislike that those 3 functions are also defined in DataType class
         inline SecrecSecType secrecSecType() const;
         inline SecrecDataType secrecDataType() const;
         inline SecrecDimType secrecDimType() const;
         inline bool isScalar () const { return secrecDimType() == 0; }
 
     private: /* Fields: */
-        bool m_isVoid;
+        const bool m_isVoid;
 };
 
 /*******************************************************************************
@@ -380,18 +379,16 @@ class TypeNonVoid: public Type {
         }
 
     private: /* Fields: */
-        Kind      m_kind;
-        DataType *m_dataType;
+        const Kind  m_kind;
+        DataType*   m_dataType;
 };
 
 inline SecrecSecType Type::secrecSecType() const {
-    if (isVoid()) return SECTYPE_INVALID;
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     return static_cast<const TypeNonVoid&>(*this).dataType().secrecSecType();
 }
 
 inline SecrecDataType Type::secrecDataType() const {
-    if (isVoid()) return DATATYPE_INVALID;
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     return static_cast<const TypeNonVoid&>(*this).dataType().secrecDataType();
 }

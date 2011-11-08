@@ -23,8 +23,11 @@ inline void appendVectorToVector(std::vector<T> &dst, const std::vector<T> &src)
 
 namespace SecreC {
 
-TreeNode::TreeNode(Type type, const struct YYLTYPE &loc)
-    : m_parent(0), m_procedure(0), m_type(type), m_location(loc)
+TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE &loc)
+    : m_parent (0)
+    , m_procedure (0)
+    , m_type (type)
+    , m_location (loc)
 {
     // Intentionally empty
 }
@@ -63,7 +66,7 @@ void TreeNode::setLocation(const YYLTYPE &location) {
     m_location = location;
 }
 
-const char *TreeNode::typeName(Type type) {
+const char *TreeNode::typeName(SecrecTreeNodeType type) {
     switch (type) {
         case NODE_INTERNAL_USE: return "INTERNAL_USE";
 
@@ -193,19 +196,22 @@ std::string TreeNode::toXml(bool full) const {
     return os.str();
 }
 
-TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index,
-                                                SecrecSecType otherSecType)
+TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index, const Type& ty)
+//                                                SecrecSecType otherSecType)
 {
     TreeNode *&child = m_children.at(index);
     assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
-    if (isPrivate (otherSecType) &&
-        isPublic (static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType()))
-    {
-        TreeNodeExprClassify *ec = new TreeNodeExprClassify(child->location());
-        ec->appendChild(child);
-        ec->resetParent(this);
-        child = ec;
+    if (!ty.isVoid ()) {
+        if (isPrivate (ty.secrecSecType ()) &&
+            isPublic (static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType()))
+        {
+            TreeNodeExprClassify *ec = new TreeNodeExprClassify(child->location());
+            ec->appendChild(child);
+            ec->resetParent(this);
+            child = ec;
+        }
     }
+
     return static_cast<TreeNodeExpr*>(child);
 }
 
@@ -564,7 +570,7 @@ ICode::Status TreeNodeExprAssign::calculateResultType(SymbolTable &st,
     }
 
     // Add implicit classify node if needed:
-    classifyChildAtIfNeeded(1, destType.secrecSecType());
+    classifyChildAtIfNeeded(1, destType);
 
     assert(dynamic_cast<const TNV*>(&destType) != 0);
     const TNV &destTypeNV = static_cast<const TNV&>(destType);
@@ -920,13 +926,13 @@ ICode::Status TreeNodeExprBinary::calculateResultType(SymbolTable &st,
     {
         // Add implicit classify nodes if needed:
         {
-            TreeNodeExpr *e1 = classifyChildAtIfNeeded(0, eType2->secrecSecType());
+            TreeNodeExpr *e1 = classifyChildAtIfNeeded(0, *eType2);
             ICode::Status s = e1->calculateResultType(st, log);
             if (s != ICode::OK) return s;
             eType1 = &e1->resultType();
         }
         {
-            TreeNodeExpr *e2 = classifyChildAtIfNeeded(1, eType1->secrecSecType());
+            TreeNodeExpr *e2 = classifyChildAtIfNeeded(1, *eType1);
             ICode::Status s = e2->calculateResultType(st, log);
             if (s != ICode::OK) return s;
             eType2 = &e2->resultType();
@@ -1151,7 +1157,7 @@ ICode::Status TreeNodeExprProcCall::calculateResultType(SymbolTable &st,
         }
 
         // Add implicit classify node if needed:
-        classifyChildAtIfNeeded(i + 1, need->secType());
+        classifyChildAtIfNeeded(i + 1, TypeNonVoid (*need));
     }
 
     // Set result type:
@@ -1341,11 +1347,11 @@ ICode::Status TreeNodeExprTernary::calculateResultType(SymbolTable &st,
     }
 
     // Add implicit classify nodes if needed:
-    e2 = classifyChildAtIfNeeded(1, eType3.secrecSecType());
+    e2 = classifyChildAtIfNeeded(1, eType3);
     s = e2->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 
-    e3 = classifyChildAtIfNeeded(2, eType2.secrecSecType());
+    e3 = classifyChildAtIfNeeded(2, eType2);
     s = e3->calculateResultType(st, log);
     if (s != ICode::OK) return s;
 

@@ -63,19 +63,18 @@ TreeNode *treenode_init_dimTypeF(unsigned dimType,
  */
 class TreeNode {
     public: /* Types: */
-        typedef enum SecrecTreeNodeType Type;
         typedef std::deque<TreeNode*> ChildrenList;
         typedef ChildrenList::iterator ChildrenListIterator;
         typedef ChildrenList::const_iterator ChildrenListConstIterator;
 
     public: /* Methods: */
-        TreeNode(Type type, const YYLTYPE &loc);
+        TreeNode(SecrecTreeNodeType type, const YYLTYPE &loc);
         virtual ~TreeNode();
 
         TreeNodeProcDef* containingProcedure();
         inline TreeNode* parent() const { return m_parent; }
         inline bool hasParent() const { return m_parent != 0; }
-        inline Type type() const { return m_type; }
+        inline SecrecTreeNodeType type() const { return m_type; }
         inline const ChildrenList &children() const {
             return m_children;
         }
@@ -92,9 +91,9 @@ class TreeNode {
         std::string toXml(bool full = false) const;
         virtual inline std::string xmlHelper() const { return ""; }
 
-        static const char *typeName(Type type);
+        static const char *typeName(SecrecTreeNodeType type);
 
-        TreeNodeExpr *classifyChildAtIfNeeded(int index, SecrecSecType otherSecType);
+        TreeNodeExpr *classifyChildAtIfNeeded(int index, const Type& ty);
 
     protected: /* Methods: */
         inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
@@ -105,11 +104,11 @@ class TreeNode {
         }
 
     private: /* Fields: */
-        TreeNode        *m_parent;
-        TreeNodeProcDef *m_procedure;
-        const Type       m_type;
-        ChildrenList     m_children;
-        YYLTYPE          m_location;
+        TreeNode*                 m_parent;
+        TreeNodeProcDef*          m_procedure;
+        const SecrecTreeNodeType  m_type;
+        ChildrenList              m_children;
+        YYLTYPE                   m_location;
 };
 
 
@@ -186,7 +185,7 @@ class TreeNodeDimTypeF: public TreeNode {
 /// Representation for expressions, also tracks type of resulting value (if there is one).
 class TreeNodeExpr: public TreeNode {
     public: /* Methods: */
-        inline TreeNodeExpr(Type type, const YYLTYPE &loc)
+        inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNode(type, loc), m_resultType(0) { }
         virtual ~TreeNodeExpr() {
             delete m_resultType;
@@ -239,7 +238,7 @@ class TreeNodeExpr: public TreeNode {
 /// Assignment expression.
 class TreeNodeExprAssign: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprAssign(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprAssign(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -376,7 +375,7 @@ class TreeNodeExprFRead: public TreeNodeExpr {
 /// Binary expressions.
 class TreeNodeExprBinary: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprBinary(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprBinary(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         const char *operatorString() const;
@@ -421,7 +420,10 @@ class TreeNodeExprBool: public TreeNodeExpr {
   TreeNodeExprClassify
 ******************************************************************/
 
-/// Classify expression. Those do not occur naturally in code, always added by type checker.
+/**
+ * Classify expression. Those do not occur naturally in code,
+ * always added by type checker.
+ */
 class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprClassify(const YYLTYPE &loc)
@@ -529,11 +531,16 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 /// String constants.
 class TreeNodeExprString: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprString(const std::string &value, const YYLTYPE &loc)
-            : TreeNodeExpr(NODE_LITE_STRING, loc), m_value(value) {}
+        inline TreeNodeExprString(const std::string &value,
+                                  const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_STRING, loc)
+            , m_value(value)
+        { }
 
 
-        inline void setValue(const std::string &value) { m_value = value; }
+        inline void setValue(const std::string &value) {
+            m_value = value;
+        }
         inline const std::string &value() const { return m_value; }
 
         virtual std::string stringHelper() const;
@@ -598,7 +605,7 @@ class TreeNodeExprUInt: public TreeNodeExpr {
 /// Prefix increment and decrement.
 class TreeNodeExprPrefix: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprPrefix(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprPrefix(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -615,7 +622,7 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
 /// Postfix increment and decrement.
 class TreeNodeExprPostfix: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprPostfix(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprPostfix(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -632,7 +639,7 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
 /// Unary expressions such as regular (logical) negation.
 class TreeNodeExprUnary: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprUnary(Type type, const YYLTYPE &loc)
+        inline TreeNodeExprUnary(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
         virtual ICode::Status calculateResultType(SymbolTable &st,
@@ -762,7 +769,7 @@ class TreeNodeProgram: public TreeNode {
 /// Statements.
 class TreeNodeStmt: public TreeNode {
     public: /* Methods: */
-        inline TreeNodeStmt(Type type, const YYLTYPE &loc)
+        inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNode(type, loc) {}
 
 
@@ -972,7 +979,7 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
 /// Types occuring in code.
 class TreeNodeType: public TreeNode {
     public: /* Methods: */
-        inline TreeNodeType(Type type, const YYLTYPE &loc)
+        inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNode(type, loc) {}
 
         virtual const SecreC::Type &secrecType() const = 0;

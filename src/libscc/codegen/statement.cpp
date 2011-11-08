@@ -653,7 +653,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         }
 
         // Add implicit classify node if needed:
-        e = s->classifyChildAtIfNeeded (0, s->containingProcedure ()->procedureType ().secrecSecType ());
+        e = s->classifyChildAtIfNeeded (0, s->containingProcedure ()->procedureType ());
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
         if (result.isNotOk ()) {

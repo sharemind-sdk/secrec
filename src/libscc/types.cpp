@@ -8,6 +8,8 @@
 
 namespace {
 
+using namespace SecreC;
+
 inline const char *SecrecFundSecTypeToString(SecrecSecType secType) {
     switch (secType) {
         case SECTYPE_INVALID: return "invalid";
@@ -70,6 +72,16 @@ const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
 #undef S
 #undef I
 #undef E
+
+
+TypeNonVoid::Kind kindToKind (DataType::Kind k) {
+    switch (k) {
+        case DataType::BASIC:         return TypeNonVoid::BASIC;
+        case DataType::VAR:           return TypeNonVoid::VAR;
+        case DataType::PROCEDURE:     return TypeNonVoid::PROCEDURE;
+        case DataType::PROCEDUREVOID: return TypeNonVoid::PROCEDUREVOID;
+    }
+}
 
 }
 
@@ -279,23 +291,10 @@ bool DataTypeProcedure::operator==(const DataType &other) const {
 *******************************************************************************/
 
 TypeNonVoid::TypeNonVoid(const DataType &dataType)
-     : Type(false), m_dataType(dataType.clone())
-{
-    switch (dataType.kind()) {
-        case DataType::BASIC:
-            m_kind = TypeNonVoid::BASIC;
-            break;
-        case DataType::VAR:
-            m_kind = TypeNonVoid::VAR;
-            break;
-        case DataType::PROCEDURE:
-            m_kind = TypeNonVoid::PROCEDURE;
-            break;
-        case DataType::PROCEDUREVOID:
-            m_kind = TypeNonVoid::PROCEDUREVOID;
-            break;
-    }
-}
+     : Type(false)
+     , m_kind (kindToKind (dataType.kind ()))
+     , m_dataType(dataType.clone())
+{ }
 
 TypeNonVoid::~TypeNonVoid() {
     delete m_dataType;
