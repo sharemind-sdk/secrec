@@ -1,3 +1,5 @@
+kind a3p;
+domain private a3p;
 
 int one () { return 1; }
 

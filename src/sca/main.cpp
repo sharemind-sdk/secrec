@@ -61,10 +61,10 @@ static int flags[Flag::Count];
 static
 int run (const char* filename) {
     SecreC::TreeNodeProgram *parseTree = 0;
-    int parseResult = 0;
+    int exitCode = 0;
 
     if (filename == 0) {
-        parseResult = sccparse(&parseTree);
+        exitCode = sccparse(&parseTree);
     } else {
         FILE *f = fopen(filename, "r");
         if (f != NULL) {
@@ -73,7 +73,7 @@ int run (const char* filename) {
                 cerr << flush;
             }
 
-            parseResult = sccparse_file(f, &parseTree);
+            exitCode = sccparse_file(f, &parseTree);
             fclose(f);
 
             if (flags[Flag::Verbose]) {
@@ -88,7 +88,7 @@ int run (const char* filename) {
     fflush(stdout);
     fflush(stderr);
 
-    if (parseResult == 0) {
+    if (exitCode == 0) {
         assert(parseTree != 0);
         if (flags[Flag::PrintAst]) {
           cout << parseTree->toString() << endl << endl;
@@ -148,11 +148,12 @@ int run (const char* filename) {
         } else {
             cerr << "Error generating valid intermediate code." << endl
                  << icode.compileLog();
+            exitCode = 1;
         }
     }
 
     delete parseTree;
-    return parseResult;
+    return exitCode;
 }
 
 int main(int argc, char *argv[]) {

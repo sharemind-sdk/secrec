@@ -83,8 +83,8 @@ SET_SOURCE_FILES_PROPERTIES("src/libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 include_directories("include/libscc/" "src/libscc/")
-ADD_LIBRARY("libscc" SHARED 
-    ${LIBSCC_SOURCES} 
+ADD_LIBRARY("libscc" SHARED
+    ${LIBSCC_SOURCES}
     ${FLEX_BISON_SOURCES}
     ${LIBSCC_HEADERS})
 SET_TARGET_PROPERTIES("libscc" PROPERTIES
@@ -99,7 +99,7 @@ SET_TARGET_PROPERTIES("libscc" PROPERTIES
 
 include_directories("include/")
 ADD_EXECUTABLE("sca" "src/sca/main.cpp")
-SET_TARGET_PROPERTIES("sca" PROPERTIES 
+SET_TARGET_PROPERTIES("sca" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.3.0.0")
 TARGET_LINK_LIBRARIES("sca" "libscc")
@@ -128,7 +128,7 @@ ADD_EXECUTABLE("scc"
     "src/scc/VMSymbolTable.cpp"
     "src/scc/VMValue.h"
     "src/scc/VMValue.cpp")
-SET_TARGET_PROPERTIES("scc" PROPERTIES 
+SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.0.1.0")
 TARGET_LINK_LIBRARIES("scc" "libscc")
@@ -160,7 +160,7 @@ add_test_secrec_execute("scalars/02-decl")
 add_test_secrec_execute("scalars/03-scope")
 add_test_secrec_execute("scalars/04-function")
 add_test_secrec_execute("scalars/05-assert-fail")
-SET_TESTS_PROPERTIES("scalars/05-assert-fail" 
+SET_TESTS_PROPERTIES("scalars/05-assert-fail"
     PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at \\(2,13\\)\\(4,2\\)")
 add_test_secrec_execute("scalars/05-declassify")
 add_test_secrec_execute("scalars/06-rec")
@@ -199,6 +199,10 @@ add_test_secrec_execute("scalars/38-postfix-fail")
 add_test_secrec_execute("scalars/39-int-types")
 add_test_secrec_execute("scalars/40-casts")
 add_test_secrec_execute("scalars/41-param-order")
+add_test_secrec_execute("scalars/42-ra-fail")
+add_test_secrec_execute("scalars/43-domain-fail")
+SET_TESTS_PROPERTIES("scalars/43-domain-fail"
+    PROPERTIES PASS_REGULAR_EXPRESSION "Invalid assignment.*\\(9,5\\)\\(9,12\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
@@ -243,11 +247,12 @@ add_test_secrec_execute("arrays/38-concat-empty-matrix-bug")
 add_test_secrec_execute("arrays/39-size-of-assignment-expr")
 add_test_secrec_execute("arrays/40-prefix-postfix-incdec")
 add_test_secrec_execute("arrays/41-for-decl")
+add_test_secrec_execute("arrays/42-inc-bug")
 
 # Run Qt4 tests if qt is found
 find_package(Qt4)
 IF (QT4_FOUND)
-    
+
     SET(TEST_LIBRARIES "libscc" ${QT_LIBRARIES} ${QT_QTTEST_LIBRARIES})
     foreach(testname "testparse" "testtreenode")
         include_directories("include"
@@ -259,7 +264,7 @@ IF (QT4_FOUND)
         ADD_EXECUTABLE("test-libscc-${testname}"
             "tests/libscc/${testname}/${testname}.cpp"
             ${QT4_TEST_MOC})
-        SET_TARGET_PROPERTIES("test-libscc-${testname}" PROPERTIES 
+        SET_TARGET_PROPERTIES("test-libscc-${testname}" PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "bin/")
         TARGET_LINK_LIBRARIES("test-libscc-${testname}" ${TEST_LIBRARIES})
     endforeach()
