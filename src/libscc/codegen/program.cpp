@@ -94,7 +94,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     const TNI *id = static_cast<const TNI*> (def->children ().at (0));
 
     CGStmtResult result;
-    ICode::Status s = def->calculateProcedureType (*st, log);
+    ICode::Status s = m_tyChecker.visit (def);
     if (s != ICode::OK) {
         result.setStatus (s);
         return result;

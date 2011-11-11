@@ -95,8 +95,6 @@ class TreeNode {
 
         static const char *typeName(SecrecTreeNodeType type);
 
-        TreeNodeExpr *classifyChildAtIfNeeded(int index, const Type& ty);
-
     protected: /* Methods: */
         inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
         inline void setContainingProcedureDirectly(TreeNodeProcDef *p) { m_procedure = p; }
@@ -235,9 +233,6 @@ public: /* Methods: */
         , m_cachedType (0)
     { }
 
-    virtual ICode::Status calculateType (SymbolTable& st,
-                                         CompileLog& log) = 0;
-
     const SecreC::Type& secrecType () const {
         assert (m_cachedType != 0);
         return *m_cachedType;
@@ -285,8 +280,6 @@ public: /* Methods: */
         : TreeNodeType(NODE_TYPETYPE, loc) {}
     virtual inline ~TreeNodeTypeType() { }
 
-    virtual ICode::Status calculateType (SymbolTable& st,
-                                         CompileLog& log);
     virtual std::string stringHelper() const;
 };
 
@@ -301,10 +294,6 @@ public: /* Methods: */
     explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
         : TreeNodeType(NODE_TYPEVOID, loc, new TypeVoid ())
     { }
-
-    ICode::Status calculateType (SymbolTable&, CompileLog&) {
-        return ICode::OK;
-    }
 };
 
 
@@ -322,10 +311,6 @@ class TreeNodeExpr: public TreeNode {
         }
 
         virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
-        ICode::Status calculateResultType(SymbolTable &st, CompileLog &log);
-
-        /// \todo remove
-        bool checkAndLogIfVoid(CompileLog& log);
 
         inline bool haveResultType() const { return m_resultType != 0; }
 
@@ -962,8 +947,7 @@ class TreeNodeProcDef: public TreeNode {
         }
 
         const std::string &procedureName() const;
-        ICode::Status calculateProcedureType(SymbolTable &st,
-                                             CompileLog &log);
+
         inline bool haveProcedureType() const { return m_cachedType != 0; }
         const SecreC::TypeNonVoid &procedureType() const {
             assert(m_cachedType != 0);
@@ -1017,15 +1001,23 @@ class TreeNodeProgram: public TreeNode {
 
 /// Statements.
 class TreeNodeStmt: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNode(type, loc) {}
+public: /* Methods: */
+    inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNode(type, loc) {}
 
 
-        virtual CGStmtResult codeGenWith (CodeGen&) {
-            assert (false && "Statement code gen unimplemented.");
-            return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
-        }
+    virtual CGStmtResult codeGenWith (CodeGen&) {
+        assert (false && "Statement code gen unimplemented.");
+        return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
+    }
+
+protected:
+
+    TreeNodeStmt* statementAt (unsigned i) const {
+        assert (i < children ().size ());
+        assert (dynamic_cast<TreeNodeStmt*>(children ().at (i)) != 0);
+        return static_cast<TreeNodeStmt*>(children ().at (i));
+    }
 };
 
 
@@ -1091,8 +1083,6 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    ICode::Status calculateResultType(SymbolTable &st,
-                                      CompileLog &log);
     inline const SecreC::TypeNonVoid &resultType() const {
         assert(m_type != 0);
         return *m_type;
@@ -1143,11 +1133,22 @@ protected: /* Fields: */
 
 /// Do-while statement.
 class TreeNodeStmtDoWhile: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* conditional () const {
+        assert (children ().size () == 2);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (1)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (1));
+    }
+
+    TreeNodeStmt* body () const {
+        assert (children ().size () == 2);
+        return statementAt (0);
+    }
 };
 
 
@@ -1157,11 +1158,17 @@ class TreeNodeStmtDoWhile: public TreeNodeStmt {
 
 /// Expression statements. Any expression can occur as a statement.
 class TreeNodeStmtExpr: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
 };
 
 /******************************************************************
@@ -1170,13 +1177,18 @@ class TreeNodeStmtExpr: public TreeNodeStmt {
 
 /// Assert statement.
 class TreeNodeStmtAssert: public TreeNodeStmt {
-    public:
-        explicit TreeNodeStmtAssert(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
+public: /* Methods: */
+    explicit TreeNodeStmtAssert(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
 };
-
 
 /******************************************************************
   TreeNodeStmtFor
@@ -1184,11 +1196,48 @@ class TreeNodeStmtAssert: public TreeNodeStmt {
 
 /// For statement.
 class TreeNodeStmtFor: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_FOR, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    ICode::Status accept (TypeChecker& tyChecker);
+
+    TreeNode* initializer () const {
+        assert (children ().size () == 4);
+        if (children ().at (0)->type () != NODE_EXPR_NONE) {
+            return children ().at (0);
+        }
+
+        return 0;
+    }
+
+    TreeNodeExpr* conditional () const {
+        assert (children ().size () == 4);
+        if (children ().at (1)->type () != NODE_EXPR_NONE) {
+            assert (dynamic_cast<TreeNodeExpr*> (children ().at (1)) != 0);
+            return static_cast<TreeNodeExpr*> (children ().at (1));
+        }
+
+        return 0;
+    }
+
+    TreeNodeExpr* iteratorExpr () const {
+        assert (children ().size () == 4);
+        if (children ().at (2)->type () != NODE_EXPR_NONE) {
+            assert (dynamic_cast<TreeNodeExpr*> (children ().at (2)) != 0);
+            return static_cast<TreeNodeExpr*> (children ().at (2));
+        }
+
+        return 0;
+    }
+
+    TreeNodeStmt* body () const {
+        assert (children ().size () == 4);
+        assert (dynamic_cast<TreeNodeStmt*>(children ().at (3)) != 0);
+        return static_cast<TreeNodeStmt*>(children ().at (3));
+    }
 };
 
 
@@ -1198,11 +1247,31 @@ class TreeNodeStmtFor: public TreeNodeStmt {
 
 /// If and if-then-else statement.
 class TreeNodeStmtIf: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_IF, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* conditional () const {
+        assert (children ().size () == 2 || children ().size () == 3);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return (static_cast<TreeNodeExpr*> (children ().at (0)));
+    }
+
+    TreeNodeStmt* trueBranch () const {
+        assert (children ().size () == 2 || children ().size () == 3);
+        return statementAt (1);
+    }
+
+    TreeNodeStmt* falseBranch () const {
+        assert (children ().size () == 2 || children ().size () == 3);
+        if (children ().size () == 3) {
+            return statementAt (2);
+        }
+
+        return 0;
+    }
 };
 
 
@@ -1212,11 +1281,20 @@ class TreeNodeStmtIf: public TreeNodeStmt {
 
 /// Regular return and value returning statement.
 class TreeNodeStmtReturn: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const {
+        if (!children ().empty ()) {
+            assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+            return static_cast<TreeNodeExpr*> (children ().at (0));
+        }
+
+        return 0;
+    }
 };
 
 
@@ -1226,11 +1304,22 @@ class TreeNodeStmtReturn: public TreeNodeStmt {
 
 /// While statement.
 class TreeNodeStmtWhile: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* conditional () const {
+        assert (children ().size () == 2);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
+
+    TreeNodeStmt* body () const {
+        assert (children ().size () == 2);
+        return statementAt (1);
+    }
 };
 
 
@@ -1240,11 +1329,17 @@ class TreeNodeStmtWhile: public TreeNodeStmt {
 
 /// String printing statement.
 class TreeNodeStmtPrint: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
 };
 
 

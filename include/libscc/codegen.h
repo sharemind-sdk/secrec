@@ -5,6 +5,7 @@
 #include "imop.h"
 #include "intermediate.h"
 #include "treenode.h"
+#include "typechecker.h"
 
 #include <stack>
 
@@ -47,23 +48,27 @@ public:
         , st (other.st)
         , log (other.log)
         , m_node (other.m_node)
+        , m_tyChecker (other.m_tyChecker)
     { }
 
-    inline CodeGen (ICodeList &code, SymbolTable &st, CompileLog &log)
+    inline CodeGen (ICodeList &code, SymbolTable &st, CompileLog &log, TypeChecker& tyChecker)
         : code (code)
         , st (&st)
         , log (log)
         , m_node (0)
+        , m_tyChecker (tyChecker)
     { }
 
     inline ~CodeGen () { }
 
     void newScope () {
         st = st->newScope ();
+        m_tyChecker.setScope (*st);
     }
 
     void popScope () {
         st = st->parent ();
+        m_tyChecker.setScope (*st);
     }
 
     Imop* pushComment (const std::string& comment);
@@ -211,10 +216,11 @@ public:
 
 protected:
 
-    ICodeList&    code;    ///< The code new instructions are emitted to.
-    SymbolTable*  st;      ///< Symbol table.
-    CompileLog&   log;     ///< Compiler log.
-    TreeNode*     m_node;  ///< Current tree node.
+    ICodeList&    code;         ///< The code new instructions are emitted to.
+    SymbolTable*  st;           ///< Symbol table.
+    CompileLog&   log;          ///< Compiler log.
+    TreeNode*     m_node;       ///< Current tree node. \todo get rid of it somehow
+    TypeChecker&  m_tyChecker;  ///< Instance of type checker.
 };
 
 /*******************************************************************************

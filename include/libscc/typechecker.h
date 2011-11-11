@@ -13,6 +13,11 @@ namespace SecreC {
 *******************************************************************************/
 
 class TypeChecker {
+private:
+
+    TypeChecker (const TypeChecker&); // DO NOT IMPLEMENT
+    void operator = (const TypeChecker&); // DO NOT IMPLEMENT
+
 public: /* Methods: */
 
     TypeChecker (SymbolTable& st, CompileLog& log)
@@ -54,13 +59,15 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeProcDef* proc);
     ICode::Status visit (TreeNodeStmtDecl* decl);
     ICode::Status visit (TreeNodeType* _ty);
+    ICode::Status visit (TreeNodeStmtPrint* stmt);
+
+    TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty);
 
 protected:
 
     /// \todo write more and better utility methods:
 
     ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root, bool isPrefix, bool isInc);
-    TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty);
     ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
     ICode::Status populateParamTypes (DataTypeProcedureVoid& dt, TreeNodeProcDef* proc);

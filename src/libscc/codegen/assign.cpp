@@ -23,7 +23,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef std::vector<std::pair<Symbol*, Symbol*> > SPV; // symbol pair vector
 
     // Type check:
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGStmtResult (s);
     }

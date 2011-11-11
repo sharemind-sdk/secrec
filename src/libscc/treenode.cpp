@@ -195,42 +195,6 @@ std::string TreeNode::toXml(bool full) const {
     return os.str();
 }
 
-TreeNodeExpr *TreeNode::classifyChildAtIfNeeded(int index, const Type& ty)
-{
-    TreeNode *&child = m_children.at(index);
-    assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
-    if (!ty.isVoid ()) {
-        if (ty.secrecSecType ().isPrivate () &&
-            static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType().isPublic ())
-        {
-            TreeNodeExprClassify *ec = new TreeNodeExprClassify(
-                        static_cast<const PrivateSecType&>(ty.secrecSecType ()).domain (),
-                        child->location());
-            ec->appendChild(child);
-            ec->resetParent(this);
-            child = ec;
-        }
-    }
-
-    return static_cast<TreeNodeExpr*>(child);
-}
-
-ICode::Status TreeNodeExpr::calculateResultType(SymbolTable &st, CompileLog &log) {
-    TypeChecker tyChecker (st, log);
-    return accept (tyChecker);
-}
-
-bool TreeNodeExpr::checkAndLogIfVoid(CompileLog& log) {
-    assert (haveResultType());
-    if (resultType().isVoid()) {
-        log.fatal() << "Subexpression has type void at "
-                    << location() << ".";
-        return true;
-    }
-
-    return false;
-}
-
 /*******************************************************************************
   C interface for Yacc
 *******************************************************************************/
@@ -545,13 +509,6 @@ const std::string &TreeNodeProcDef::procedureName() const {
     return static_cast<const TreeNodeIdentifier*>(children().at(0))->value();
 }
 
-ICode::Status TreeNodeProcDef::calculateProcedureType(SymbolTable &st,
-                                                      CompileLog &log)
-{
-    TypeChecker checker (st, log);
-    return checker.visit (this);
-}
-
 /*******************************************************************************
   TreeNodeIdentifier
 *******************************************************************************/
@@ -617,19 +574,9 @@ const std::string &TreeNodeStmtDecl::variableName() const {
     return static_cast<TNI*>(children().at(0))->value();
 }
 
-ICode::Status TreeNodeStmtDecl::calculateResultType(SymbolTable &st, CompileLog &log) {
-    TypeChecker checker (st, log);
-    return checker.visit (this);
-}
-
 /*******************************************************************************
   TreeNodeTypeType
 *******************************************************************************/
-
-ICode::Status TreeNodeTypeType::calculateType (SymbolTable& st, CompileLog& log) {
-    TypeChecker checker (st, log);
-    return checker.visit (this);
-}
 
 std::string TreeNodeTypeType::stringHelper() const {
     return secrecType().toString();

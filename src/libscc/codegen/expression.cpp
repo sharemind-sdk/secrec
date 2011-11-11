@@ -52,7 +52,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     CGResult result;
 
     // Type check:
-    ICode::Status status = e->calculateResultType(*st, log);
+    ICode::Status status =  m_tyChecker.visit (e);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -228,7 +228,7 @@ CGResult TreeNodeExprSize::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprSize (TreeNodeExprSize* e) {
-    ICode::Status s = e->calculateResultType (*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -259,7 +259,7 @@ CGResult TreeNodeExprShape::codeGenWith (CodeGen &cg) {
 CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     // Type check:
     CGResult result;
-    ICode::Status status = e->calculateResultType (*st, log);
+    ICode::Status status = m_tyChecker.visit (e);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -307,7 +307,7 @@ CGResult TreeNodeExprCat::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -478,7 +478,7 @@ CGResult TreeNodeExprReshape::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType (*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -550,7 +550,7 @@ CGResult TreeNodeExprBinary::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -838,7 +838,7 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
     // Type check:
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -922,7 +922,7 @@ CGResult TreeNodeExprRVariable::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprRVariable (TreeNodeExprRVariable *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType (*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -969,7 +969,7 @@ CGResult CodeGen::cgExprString (TreeNodeExprString *e) {
     CGResult result;
 
     // Type check:
-    ICode::Status status = e->calculateResultType (*st, log);
+    ICode::Status status = m_tyChecker.visit (e);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -989,7 +989,7 @@ CGResult TreeNodeExprTernary::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType (*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1214,7 +1214,7 @@ CGResult TreeNodeExprInt::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprInt (TreeNodeExprInt *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1233,7 +1233,7 @@ CGResult TreeNodeExprUInt::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprUInt (TreeNodeExprUInt *e) {
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1252,7 +1252,7 @@ CGResult TreeNodeExprBool::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprBool (TreeNodeExprBool *e) {
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1291,7 +1291,7 @@ CGResult TreeNodeExprClassify::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprClassify (TreeNodeExprClassify *e) {
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1323,7 +1323,7 @@ CGResult TreeNodeExprDeclassify::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprDeclassify (TreeNodeExprDeclassify *e) {
-    ICode::Status s = e->calculateResultType(*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1379,7 +1379,7 @@ CGResult TreeNodeExprUnary::codeGenWith (CodeGen &cg) {
 
 CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
     // Type check:
-    ICode::Status s = e->calculateResultType (*st, log);
+    ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
         return CGResult (s);
     }
@@ -1440,7 +1440,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
 
     // Type check:
     CGResult result;
-    ICode::Status status = e->calculateResultType(*st, log);
+    ICode::Status status = m_tyChecker.visit (e);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -1613,7 +1613,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
     // Type check:
     CGResult result;
-    ICode::Status status = e->calculateResultType(*st, log);
+    ICode::Status status = m_tyChecker.visit (e);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;

@@ -1,6 +1,7 @@
 #include "treenode.h"
 #include "symboltable.h"
 #include "misc.h"
+#include "typechecker.h"
 
 #include "codegen.h"
 
@@ -108,7 +109,7 @@ CGStmtResult TreeNodeStmtDecl::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     CGStmtResult result;
-    ICode::Status status = s->calculateResultType (*st, log);
+    ICode::Status status = m_tyChecker.visit (s);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -351,48 +352,23 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtFor::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 4);
-    TreeNode *c0 = children ().at (0);
-    TreeNode *c1 = children ().at (1);
-    TreeNode *c2 = children ().at (2);
-    TreeNode *c3 = children ().at (3);
-    (void) c0; (void) c1; (void) c2; (void) c3;
-    assert ((c0->type () & NODE_EXPR_MASK) != 0 ||
-            (c0->type () == NODE_DECL));
-    assert ((c1->type () & NODE_EXPR_MASK) != 0);
-    assert ((c2->type () & NODE_EXPR_MASK) != 0);
-    assert (dynamic_cast<TreeNodeStmt*> (c3) != 0);
     return cg.cgStmtFor (this);
 }
 
 CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
-    TreeNode *c0 = s->children ().at (0);
-    TreeNode *c1 = s->children ().at (1);
-    TreeNode *c2 = s->children ().at (2);
-    TreeNode *c3 = s->children ().at (3);
-
     CGStmtResult result;
-
-    if (c0->type () == NODE_DECL) {
-        newScope ();
-    }
+    bool createdScope = false;
 
     // Initialization expression:
-    if (c0->type () != NODE_EXPR_NONE) {
-        if ((c0->type () & NODE_EXPR_MASK) != 0) {
-            TreeNodeExpr *e0 = 0;
-            assert(dynamic_cast<TreeNodeExpr*> (c0) != 0);
-            e0 = static_cast<TreeNodeExpr*> (c0);
-            CGResult e0Result (codeGen (e0));
-            append (result, e0Result);
+    if (s->initializer () != 0) {
+        if (dynamic_cast<TreeNodeExpr*> (s->initializer ()) != 0) {
+            append (result, codeGen (static_cast<TreeNodeExpr*> (s->initializer ())));
         }
-
-        if (c0->type () == NODE_DECL) {
-            TreeNodeStmtDecl* decl = 0;
-            assert (dynamic_cast<TreeNodeStmtDecl*>(c0) != 0);
-            decl = static_cast<TreeNodeStmtDecl*>(c0);
-            CGResult declResult (codeGenStmt (decl));
-            append (result, declResult);
+        else
+        if (dynamic_cast<TreeNodeStmtDecl*>(s->initializer ()) != 0) {
+            newScope ();
+            createdScope = true;
+            append (result, codeGenStmt (static_cast<TreeNodeStmtDecl*>(s->initializer ())));
         }
     }
 
@@ -402,10 +378,9 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     // Conditional expression:
     CGBranchResult condResult;
-    if (c1->type () != NODE_EXPR_NONE) {
-        assert (dynamic_cast<TreeNodeExpr*> (c1) != 0);
-        TreeNodeExpr *e1 = static_cast<TreeNodeExpr*> (c1);
-        ICode::Status status = e1->calculateResultType (*st, log);
+    if (s->conditional () != 0) {
+        TreeNodeExpr *e1 = s->conditional ();
+        ICode::Status status = e1->accept (m_tyChecker);
         if (status != ICode::OK) {
             result.setStatus (status);
             return result;
@@ -426,7 +401,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     }
 
     // Body of for loop:
-    TreeNodeStmt *body = static_cast<TreeNodeStmt*> (c3);
+    TreeNodeStmt *body = s->body ();
     CGStmtResult bodyResult (codeGenStmt (body));
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
@@ -435,10 +410,8 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     // Iteration expression:
     CGResult iterResult;
-    if (s->children().at(2)->type() != NODE_EXPR_NONE) {
-        assert(dynamic_cast<TreeNodeExpr*>(c2) != 0);
-        TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(c2);
-        iterResult = codeGen (e2);
+    if (s->iteratorExpr ()) {
+        iterResult = codeGen (s->iteratorExpr ());
         if (iterResult.isNotOk ()) {
             result.setStatus (iterResult.status ());
             return result;
@@ -463,7 +436,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     bodyResult.patchNextList (nextIterDest); // next jumps to iteration
     bodyResult.patchContinueList (nextIterDest); // continue jumps to iteration
 
-    if (c0->type () == NODE_DECL) {
+    if (createdScope) {
         popScope ();
     }
 
@@ -496,19 +469,13 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 2 || children ().size () == 3);
-    TreeNode *c0 = children ().at (0);
-    (void) c0;
-    assert ((c0->type () & NODE_EXPR_MASK) != 0);
-    assert (dynamic_cast<TreeNodeExpr*> (c0) != 0);
     return cg.cgStmtIf (this);
 }
 
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
-
     CGStmtResult result;
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*> (s->children ().at (0));
-    ICode::Status status = e->calculateResultType (*st, log);
+    TreeNodeExpr *e = s->conditional ();
+    ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -529,13 +496,10 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
     }
 
     assert (result.firstImop () != 0);
-    /// \todo is this correct assumption? I think it fails for if (true) ...
-
 
     // Generate code for first branch:
     newScope ();
-    assert(dynamic_cast<TreeNodeStmt*> (s->children ().at (1)) != 0);
-    TreeNodeStmt *s1 = static_cast<TreeNodeStmt*> (s->children().at (1));
+    TreeNodeStmt *s1 = s->trueBranch ();
     CGStmtResult trueResult (codeGenStmt (s1));
     if (trueResult.isNotOk ()) {
         result.setStatus (trueResult.status ());
@@ -554,7 +518,7 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
         result.addToNextList (eResult.trueList ());
     }
 
-    if (s->children().size() == 2) {
+    if (s->falseBranch () == 0) {
         result.addToNextList (eResult.falseList ());
         result.setFlags (trueResult.flags () | CGStmtResult::FALLTHRU);
     } else {
@@ -567,8 +531,7 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
 
         // Generate code for second branch:
         newScope ();
-        assert (dynamic_cast<TreeNodeStmt*> (s->children ().at (2)) != 0);
-        TreeNodeStmt *s2 = static_cast<TreeNodeStmt*>(s->children ().at (2));
+        TreeNodeStmt *s2 = s->falseBranch ();
         CGStmtResult falseResult (codeGenStmt (s2));
         if (falseResult.isNotOk ()) {
             result.setStatus (falseResult.status ());
@@ -598,7 +561,7 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     CGStmtResult result;
-    if (s->children ().empty ()) {
+    if (s->expression () == 0) {
         if (s->containingProcedure ()->procedureType ().kind ()
             == TypeNonVoid::PROCEDURE)
         {
@@ -615,7 +578,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
         pushImopAfter (result, i);
     } else {
-        assert (s->children ().size () == 1);
+
         if (s->containingProcedure ()->procedureType ().kind ()
             == TypeNonVoid::PROCEDUREVOID)
         {
@@ -627,10 +590,8 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         assert (s->containingProcedure ()->procedureType ().kind ()
                == TypeNonVoid::PROCEDURE);
 
-        assert ((s->children ().at (0)->type () & NODE_EXPR_MASK) != 0x0);
-        assert (dynamic_cast<TreeNodeExpr*> (s->children ().at (0)) != 0);
-        TreeNodeExpr *e = static_cast<TreeNodeExpr*> (s->children ().at (0));
-        ICode::Status status = e->calculateResultType(*st, log);
+        TreeNodeExpr *e = s->expression ();
+        ICode::Status status = e->accept (m_tyChecker);
         if (status != ICode::OK) {
             result.setStatus (status);
             return result;
@@ -645,15 +606,15 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
              procType.secrecDimType () != e->resultType ().secrecDimType ())
         {
             log.fatal () << "Cannot return value of type " << e->resultType ()
-                        << " from function with type "
-                        << s->containingProcedure ()->procedureType () << ". At"
-                        << s->location ();
+                         << " from function with type "
+                         << s->containingProcedure ()->procedureType () << " at"
+                         << s->location () << ".";
             result.setStatus (ICode::E_OTHER);
             return result;
         }
 
         // Add implicit classify node if needed:
-        e = s->classifyChildAtIfNeeded (0, s->containingProcedure ()->procedureType ());
+        e = m_tyChecker.classifyIfNeeded (s, 0, s->containingProcedure ()->procedureType ());
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
         if (result.isNotOk ()) {
@@ -677,14 +638,6 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtWhile::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 2);
-    TreeNode *c0 = children ().at (0);
-    TreeNode *c1 = children ().at (1);
-    (void) c0; (void) c1;
-    assert ((c0->type () & NODE_EXPR_MASK) != 0);
-    assert (c0->type() != NODE_EXPR_NONE);
-    assert (dynamic_cast<TreeNodeExpr*> (c0) != 0);
-    assert (dynamic_cast<TreeNodeStmt*> (c1) != 0);
     return cg.cgStmtWhile (this);
 }
 
@@ -692,8 +645,8 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
 
     // Conditional expression:
     CGStmtResult result;
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*> (s->children ().at (0));
-    ICode::Status status = e->calculateResultType (*st, log);
+    TreeNodeExpr *e = s->conditional ();
+    ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -720,7 +673,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     // Loop body:
     newScope ();
 
-    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(s->children ().at (1));
+    TreeNodeStmt *body = s->body ();
     CGStmtResult bodyResult (codeGenStmt (body));
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
@@ -765,31 +718,17 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
-    TreeNode* c0 = s->children().at (0);
-
-    assert (c0->type() != NODE_EXPR_NONE);
-    assert (dynamic_cast<TreeNodeExpr*> (c0) != 0);
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*> (c0);
+    TreeNodeExpr *e = s->expression ();
 
     // Type check:
     CGStmtResult result;
-    ICode::Status status = e->calculateResultType (*st, log);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
-
-    if (e->resultType().secrecDataType() != DATATYPE_STRING ||
-        e->resultType().secrecSecType().isPrivate ()  ||
-        !e->resultType().isScalar()) {
-        log.fatal () << "Argument to print statement has to be public string scalar, got "
-                    << e->resultType() << " at " << s->location();
-        result.setStatus (ICode::E_TYPE);
+    result.setStatus (m_tyChecker.visit (s));
+    if (result.isNotOk ()) {
         return result;
     }
 
     // Generate code:
-    CGResult eResult = codeGen (e);
+    const CGResult& eResult = codeGen (e);
     append (result, eResult);
     if (result.isNotOk ()) {
         return result;
@@ -805,14 +744,6 @@ CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtDoWhile::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 2);
-    TreeNode *c0 = children ().at (0);
-    TreeNode *c1 = children ().at (1);
-    (void) c0; (void) c1;
-    assert (dynamic_cast<TreeNodeStmt*>(c0) != 0);
-    assert ((c1->type() & NODE_EXPR_MASK) != 0);
-    assert (c1->type() != NODE_EXPR_NONE);
-    assert (dynamic_cast<TreeNodeExpr*> (c1) != 0);
     return cg.cgStmtDoWhile (this);
 }
 
@@ -821,7 +752,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     // Loop body:
     newScope ();
 
-    TreeNodeStmt* body = static_cast<TreeNodeStmt*> (s->children ().at (0));
+    TreeNodeStmt* body = s->body ();
     CGStmtResult result (codeGenStmt (body));
     if (result.isNotOk ()) {
         return result;
@@ -852,8 +783,8 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     // Conditional expression:
 
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*> (s->children ().at (1));
-    ICode::Status status = e->calculateResultType (*st, log);
+    TreeNodeExpr *e = s->conditional ();
+    ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;
@@ -890,15 +821,11 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtExpr::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 1);
-    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
     return cg.cgStmtExpr (this);
 }
 
 CGStmtResult CodeGen::cgStmtExpr (TreeNodeStmtExpr* s) {
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(s->children().at(0));
-    CGStmtResult result (codeGen (e));
-    return result;
+    return codeGen (s->expression ());
 }
 
 /*******************************************************************************
@@ -906,21 +833,15 @@ CGStmtResult CodeGen::cgStmtExpr (TreeNodeStmtExpr* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtAssert::codeGenWith (CodeGen& cg) {
-    assert(children ().size () == 1);
     return cg.cgStmtAssert (this);
 }
 
 CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
-
-    TreeNode *c0 = s->children ().at (0);
-
     CGStmtResult result;
 
     // Type check the expression
-    assert ((c0->type() & NODE_EXPR_MASK) != 0);
-    assert (dynamic_cast<TreeNodeExpr*>(c0) != 0);
-    TreeNodeExpr *e = static_cast<TreeNodeExpr*>(c0);
-    ICode::Status status = e->calculateResultType (*st, log);
+    TreeNodeExpr *e = s->expression ();
+    ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
         return result;

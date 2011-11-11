@@ -10,7 +10,8 @@ namespace SecreC {
 
 ICode::Status ICode::init(TreeNodeProgram *program) {
     ICodeList code;
-    CodeGen cg (code, m_symbols, m_log);
+    TypeChecker tyChecker (m_symbols, m_log);
+    CodeGen cg (code, m_symbols, m_log, tyChecker);
     m_status = program->codeGenWith (cg);
     if (m_status != OK) {
         return m_status;
@@ -33,6 +34,7 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICode::Status &s) {
         case SecreC::ICode::E_NO_MEM:          out << "OUT OF MEMORY"; break;
         default:                               out << "UNKNOWN"; break;
     }
+
     return out;
 }
 
@@ -48,11 +50,9 @@ std::ostream &operator<<(std::ostream &out, const SecreC::ICodeList &c) {
 }
 
 std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode) {
-    out << "ICode status: " << icode.status() << std::endl;
-    // if (icode.status() == SecreC::ICode::OK) {
-        out << "ICode symbols:" << std::endl << icode.symbols()  << std::endl
-            << "ICode CFG:"     << std::endl << icode.program()     << std::endl
-            << "ICode log:"     << std::endl << icode.compileLog() << std::endl;
-    // }
+    out << "ICode status: " << icode.status() << std::endl
+        << "ICode symbols:" << std::endl << icode.symbols()    << std::endl
+        << "ICode CFG:"     << std::endl << icode.program()    << std::endl
+        << "ICode log:"     << std::endl << icode.compileLog() << std::endl;
     return out;
 }

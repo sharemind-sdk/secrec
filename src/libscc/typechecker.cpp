@@ -995,6 +995,26 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
     return ICode::OK;
 }
 
+ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
+    TreeNodeExpr* e = stmt->expression ();
+    ICode::Status s = visitExpr (e);
+    if (s != ICode::OK) {
+        return s;
+    }
+
+    if (e->resultType().secrecDataType() != DATATYPE_STRING ||
+        e->resultType().secrecSecType().isPrivate ()  ||
+        !e->resultType().isScalar())
+    {
+        m_log.fatal () << "Argument of \"print\" statement has to be public string scalar, got "
+                       << e->resultType() << " at " << stmt->location() << ".";
+        return ICode::E_TYPE;
+    }
+
+    return ICode::OK;
+}
+
+
 TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty) {
     TreeNode *&child = node->children ().at (index);
     assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
