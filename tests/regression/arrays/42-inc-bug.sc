@@ -1,8 +1,9 @@
 void main () {
     int [[2]] arr (2, 2);
-    arr = ++ arr [:,0];
-    arr = arr [0,:] ++;
-    arr = -- arr [:,1];
-    arr = arr [1,:] --;
+    int [[2]] brr;
+    brr = ++ arr [:,0];
+    brr = arr [0,:] ++;
+    brr = -- arr [:,1];
+    brr = arr [1,:] --;
     assert (true);
 }
