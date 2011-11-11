@@ -6,22 +6,6 @@
 #include <algorithm>
 #include <sstream>
 
-/**
- * NB!
- * All of the generateCode and generateBoolCode implementations
- * are found in codegen/ subdirectory
- */
-
-namespace {
-
-template <class T>
-inline void appendVectorToVector(std::vector<T> &dst, const std::vector<T> &src)
-{
-    dst.insert(dst.end(), src.begin(), src.end());
-}
-
-} // anonymous namespace
-
 namespace SecreC {
 
 TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE &loc)
