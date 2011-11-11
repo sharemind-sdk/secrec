@@ -59,6 +59,7 @@ SET(LIBSCC_SOURCES
     "src/libscc/codegen/assign.cpp"
     "src/libscc/codegen/program.cpp"
     "src/libscc/codegen.cpp"
+    "src/libscc/typechecker.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
@@ -77,7 +78,8 @@ SET(LIBSCC_HEADERS
     "include/libscc/intermediate.h"
     "include/libscc/misc.h"
     "include/libscc/symboltable.h"
-    "include/libscc/types.h")
+    "include/libscc/types.h"
+    "include/libscc/typechecker.h")
 
 SET_SOURCE_FILES_PROPERTIES("src/libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")

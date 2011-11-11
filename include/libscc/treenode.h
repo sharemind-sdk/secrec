@@ -16,6 +16,7 @@ namespace SecreC {
 
 class CompileLog;
 class CodeGen;
+class TypeChecker;
 class TreeNodeExpr;
 class TreeNodeProcDef;
 class TreeNode;
@@ -75,6 +76,7 @@ class TreeNode {
         inline TreeNode* parent() const { return m_parent; }
         inline bool hasParent() const { return m_parent != 0; }
         inline SecrecTreeNodeType type() const { return m_type; }
+        inline ChildrenList &children() { return m_children; }
         inline const ChildrenList &children() const {
             return m_children;
         }
@@ -109,6 +111,43 @@ class TreeNode {
         const SecrecTreeNodeType  m_type;
         ChildrenList              m_children;
         YYLTYPE                   m_location;
+};
+
+inline TreeNode::ChildrenListIterator begin_children (TreeNode* node) {
+    return node->children ().begin ();
+}
+
+inline TreeNode::ChildrenListIterator end_children (TreeNode* node) {
+    return node->children ().end ();
+}
+
+inline TreeNode::ChildrenListConstIterator begin_children (const TreeNode* node) {
+    return node->children ().begin ();
+}
+
+inline TreeNode::ChildrenListConstIterator end_children (const TreeNode* node) {
+    return node->children ().end ();
+}
+
+/******************************************************************
+  TreeNodeIdentifier
+******************************************************************/
+
+/// Identifier.
+class TreeNodeIdentifier: public TreeNode {
+    public: /* Methods: */
+        inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
+            : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
+
+        inline void setValue(const std::string &value) { m_value = value; }
+        inline const std::string &value() const { return m_value; }
+        SymbolSymbol *getSymbol(SymbolTable &st, CompileLog &log) const;
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+
+    private: /* Fields: */
+        std::string m_value;
 };
 
 
@@ -192,17 +231,15 @@ class TreeNodeExpr: public TreeNode {
             delete m_resultType;
         }
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log) = 0;
+        virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
+        ICode::Status calculateResultType(SymbolTable &st, CompileLog &log);
 
-        /**
-         * \brief common usage is:
-         * \code if (checkAndLogIfVoid(log)) return ICode::E_TYPE; \endcode
-         * \return \a true if type is void, otherwise \a false
-         */
+        /// \todo remove
         bool checkAndLogIfVoid(CompileLog& log);
 
         inline bool haveResultType() const { return m_resultType != 0; }
+
+        /// \todo move to type checker
         inline bool havePublicBoolType() const {
             assert(m_resultType != 0);
             return m_resultType->secrecDataType() == DATATYPE_BOOL
@@ -222,13 +259,45 @@ class TreeNodeExpr: public TreeNode {
 
     protected: /* Methods: */
 
+        friend class TypeChecker;
+
         inline void setResultType(SecreC::Type *type) {
             assert(m_resultType == 0);
             m_resultType = type;
         }
 
+        TreeNodeExpr* expressionAt (unsigned i) const {
+            assert (i < children ().size ());
+            assert (dynamic_cast<TreeNodeExpr*>(children ().at (i)) != 0);
+            return static_cast<TreeNodeExpr*>(children ().at (i));
+        }
+
     private: /* Fields: */
         SecreC::Type       *m_resultType; ///< Type of resulting value.
+};
+
+
+/******************************************************************
+  TreeNodeExprInt
+******************************************************************/
+
+/// Signed integer constant.
+class TreeNodeExprInt: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprInt(int value, const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
+
+        inline void setValue(int value) { m_value = value; }
+        inline int value() const { return m_value; }
+
+        virtual std::string stringHelper() const;
+        virtual std::string xmlHelper() const;
+        virtual ICode::Status accept (TypeChecker& tyChecker);
+
+        virtual CGResult codeGenWith (CodeGen& cg);
+
+    private: /* Fields: */
+        int m_value;
 };
 
 
@@ -242,11 +311,35 @@ class TreeNodeExprAssign: public TreeNodeExpr {
         inline TreeNodeExprAssign(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNode* slice () const {
+            assert (children ().size () == 2);
+            TreeNode *e1 = children().at(0);
+            if (e1->children().size() == 2) {
+                return e1->children ().at (1);
+            }
+
+            return 0;
+        }
+
+        TreeNodeIdentifier* identifier () const {
+            assert (children ().size () == 2);
+            TreeNode *e1 = children().at(0);
+            assert(e1 != 0);
+            assert(e1->type() == NODE_LVALUE);
+            assert(e1->children().size() > 0 && e1->children().size() <= 2);
+            assert(dynamic_cast<TreeNodeIdentifier*>(e1->children().at(0)) != 0);
+            return static_cast<TreeNodeIdentifier*>(e1->children().at(0));
+        }
+
+        TreeNodeExpr* rightHandSide () const {
+            assert(children().size() == 2);
+            return expressionAt (1);
+        }
 };
 
 
@@ -254,17 +347,30 @@ class TreeNodeExprAssign: public TreeNodeExpr {
   TreeNodeExprCast
 ******************************************************************/
 
-/// Data type casting expression.
+/**
+ * For now both data and security type casts.
+ * \todo Casts of security types will fail for now.
+ * \todo Split those when type checking.
+ */
 class TreeNodeExprCast: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprCast (const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            assert (children ().size () == 2);
+            return expressionAt (1);
+        }
+
+        TreeNodeDataTypeF* castType () const {
+            assert (dynamic_cast<TreeNodeDataTypeF*>(children ().at (0)));
+            return static_cast<TreeNodeDataTypeF*>(children ().at (0));
+        }
 };
 
 
@@ -278,10 +384,19 @@ class TreeNodeExprIndex: public TreeNodeExpr {
         inline TreeNodeExprIndex(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_INDEX, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            assert (children().size() == 2);
+            return expressionAt (0);
+        }
+
+        TreeNode* indices () const {
+            assert (children().size() == 2);
+            return children ().at (1);
+        }
 };
 
 
@@ -295,9 +410,13 @@ class TreeNodeExprSize: public TreeNodeExpr {
         inline TreeNodeExprSize(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_SIZE, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
         virtual CGResult codeGenWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            assert (children().size() == 1);
+            return expressionAt (0);
+        }
 };
 
 
@@ -311,10 +430,14 @@ class TreeNodeExprShape: public TreeNodeExpr {
         inline TreeNodeExprShape(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_SHAPE, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            assert (children().size() == 1);
+            return expressionAt (0);
+        }
 };
 
 
@@ -328,10 +451,30 @@ class TreeNodeExprCat: public TreeNodeExpr {
         inline TreeNodeExprCat(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_CAT, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+        TreeNodeExpr* leftExpression () const {
+            assert (children().size() == 3 ||
+                    children().size() == 2);
+            return expressionAt (0);
+        }
+        TreeNodeExpr* rightExpression () const {
+            assert (children().size() == 3 ||
+                    children().size() == 2);
+            return expressionAt (1);
+        }
+
+        TreeNodeExprInt* dimensionality () const {
+            if (children ().size () == 3) {
+                TreeNodeExpr* e = expressionAt (2);
+                assert (dynamic_cast<TreeNodeExprInt*>(e) != 0);
+                return static_cast<TreeNodeExprInt*>(e);
+            }
+
+            return 0;
+        }
 };
 
 
@@ -345,10 +488,21 @@ class TreeNodeExprReshape: public TreeNodeExpr {
         inline TreeNodeExprReshape(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+        /// \todo yeah, figure a better name out...
+        /// "reshapee" as the expression that is being reshaped!
+        TreeNodeExpr* reshapee () const {
+            assert (children ().size() >= 1);
+            return expressionAt (0);
+        }
+
+        /// \todo iterators
+        TreeNodeExpr* dimensionality (unsigned i) {
+            return expressionAt (i + 1); /// will perform the range check too
+        }
 };
 
 
@@ -364,11 +518,20 @@ class TreeNodeExprBinary: public TreeNodeExpr {
 
         const char *operatorString() const;
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNodeExpr* leftExpression () const {
+            assert (children ().size () == 2);
+            return expressionAt (0);
+        }
+
+        TreeNodeExpr* rightExpression () const {
+            assert (children ().size () == 2);
+            return expressionAt (1);
+        }
 };
 
 
@@ -389,8 +552,7 @@ class TreeNodeExprBool: public TreeNodeExpr {
             return (m_value ? "true" : "false");
         }
         virtual std::string xmlHelper() const;
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -415,10 +577,18 @@ class TreeNodeExprClassify: public TreeNodeExpr {
             , m_expectedDomain (dom)
         { }
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            assert (children ().size () == 1);
+            return expressionAt (0);
+        }
+
+        SymbolDomain* expectedDomain () const {
+            return m_expectedDomain;
+        }
 
     private:
         SymbolDomain* const m_expectedDomain;
@@ -435,8 +605,7 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
         inline TreeNodeExprDeclassify(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_DECLASSIFY, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -454,9 +623,12 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
             : TreeNodeExpr(NODE_EXPR_PROCCALL, loc) {}
 
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
+
+        void setProcedure (SymbolProcedure* proc) {
+            m_procedure = proc;
+        }
 
         inline SymbolProcedure *symbolProcedure() const
             { return m_procedure; }
@@ -464,34 +636,15 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
-    private: /* Fields: */
+        TreeNodeIdentifier* procName () const {
+            assert (!children ().empty ());
+            assert(children().at(0)->type() == NODE_IDENTIFIER);
+            assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+            return static_cast<TreeNodeIdentifier*>(children().at(0));
+        }
+
+    protected: /* Fields: */
         SymbolProcedure *m_procedure;
-};
-
-
-/******************************************************************
-  TreeNodeExprInt
-******************************************************************/
-
-/// Signed integer constant.
-class TreeNodeExprInt: public TreeNodeExpr {
-    public: /* Methods: */
-        inline TreeNodeExprInt(int value, const YYLTYPE &loc)
-            : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
-
-        inline void setValue(int value) { m_value = value; }
-        inline int value() const { return m_value; }
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
-
-
-        virtual CGResult codeGenWith (CodeGen& cg);
-
-    private: /* Fields: */
-        int m_value;
 };
 
 
@@ -505,11 +658,17 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
         explicit inline TreeNodeExprRVariable(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+
+        TreeNodeIdentifier* identifier () const {
+            assert (children ().size () == 1);
+            assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)));
+            return static_cast<TreeNodeIdentifier*>(children ().at (0));
+        }
 };
 
 
@@ -534,8 +693,7 @@ class TreeNodeExprString: public TreeNodeExpr {
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
@@ -554,11 +712,31 @@ class TreeNodeExprTernary: public TreeNodeExpr {
         explicit inline TreeNodeExprTernary(const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNodeExpr* conditional () const {
+            assert(children().size() == 3);
+            assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
+            assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+            return static_cast<TreeNodeExpr*>(children().at(0));
+        }
+
+        TreeNodeExpr* trueBranch () const {
+            assert(children().size() == 3);
+            assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
+            assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+            return static_cast<TreeNodeExpr*>(children().at(1));
+        }
+
+        TreeNodeExpr* falseBranch () const {
+            assert(children().size() == 3);
+            assert((children().at(2)->type() & NODE_EXPR_MASK) != 0x0);
+            assert(dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
+            return static_cast<TreeNodeExpr*>(children().at(2));
+        }
 };
 
 
@@ -577,8 +755,7 @@ class TreeNodeExprUInt: public TreeNodeExpr {
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
@@ -597,8 +774,7 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
         inline TreeNodeExprPrefix(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 };
@@ -614,8 +790,7 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
         inline TreeNodeExprPostfix(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
 };
@@ -631,11 +806,14 @@ class TreeNodeExprUnary: public TreeNodeExpr {
         inline TreeNodeExprUnary(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNodeExpr(type, loc) {}
 
-        virtual ICode::Status calculateResultType(SymbolTable &st,
-                                                  CompileLog &log);
+        virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+        TreeNodeExpr* expression () const {
+            return expressionAt (0);
+        }
 };
 
 /******************************************************************
@@ -713,27 +891,6 @@ class TreeNodeProcDef: public TreeNode {
     private: /* Fields: */
         const SecreC::TypeNonVoid *m_cachedType;
         SymbolProcedure           *m_procSymbol;
-};
-
-/******************************************************************
-  TreeNodeIdentifier
-******************************************************************/
-
-/// Identifier.
-class TreeNodeIdentifier: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
-            : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
-
-        inline void setValue(const std::string &value) { m_value = value; }
-        inline const std::string &value() const { return m_value; }
-        SymbolSymbol *getSymbol(SymbolTable &st, CompileLog &log) const;
-
-        virtual std::string stringHelper() const;
-        virtual std::string xmlHelper() const;
-
-    private: /* Fields: */
-        std::string m_value;
 };
 
 
