@@ -819,6 +819,182 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root, bool is
     return ICode::OK;
 }
 
+ICode::Status TypeChecker::populateParamTypes (DataTypeProcedureVoid& dt, TreeNodeProcDef* proc) {
+    typedef DataTypeVar DTV;
+    BOOST_FOREACH (TreeNode* n, std::make_pair (proc->paramBegin (), proc->paramEnd ())) {
+        assert(n->type() == NODE_DECL);
+        assert(dynamic_cast<TreeNodeStmtDecl*>(n) != 0);
+        TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(n);
+        ICode::Status s = visit (d);
+        if (s != ICode::OK) return s;
+        const TypeNonVoid &pt = d->resultType();
+        assert(pt.dataType().kind() == DataType::VAR);
+        assert(dynamic_cast<const DTV*>(&pt.dataType()) != 0);
+        dt.addParamType(static_cast<const DTV&>(pt.dataType()).dataType());
+    }
+
+    return ICode::OK;
+}
+
+ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
+    typedef TypeNonVoid TNV;
+
+    if (proc->m_cachedType == 0) {
+        TreeNodeType* rt = proc->returnType ();
+        ICode::Status s = visit (rt);
+        if (s != ICode::OK) return s;
+        if (rt->secrecType().isVoid()) {
+            DataTypeProcedureVoid dt;
+            if ((s = populateParamTypes (dt, proc)) != ICode::OK) {
+                return s;
+            }
+
+            proc->m_cachedType = new TNV (dt);
+        }
+        else {
+            const TNV &tt = static_cast<const TNV&>(rt->secrecType());
+            assert (tt.dataType().kind() == DataType::BASIC);
+            DataTypeProcedure dt (tt.dataType());
+            if ((s = populateParamTypes (dt, proc)) != ICode::OK) {
+                return s;
+            }
+
+            proc->m_cachedType = new TNV (dt);
+        }
+    }
+
+    return ICode::OK;
+}
+
+ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
+    typedef DataTypeBasic DTB;
+    typedef TreeNodeType TNT;
+    typedef TypeNonVoid TNV;
+
+    if (decl->m_type != 0) {
+        return ICode::OK;
+    }
+
+    TreeNodeType *type = decl->varType ();
+    ICode::Status s = visit (type);
+    if (s != ICode::OK) return s;
+
+    // First we create the new symbol, but we don't add it to the symbol table:
+    assert (!type->secrecType().isVoid());
+    assert (dynamic_cast<const TNV*>(&type->secrecType()) != 0);
+    const TNV &justType = static_cast<const TNV&>(type->secrecType());
+
+    assert(justType.kind() == TNV::BASIC);
+    assert(dynamic_cast<const DTB*>(&justType.dataType()) != 0);
+    const DTB &dataType = static_cast<const DTB&>(justType.dataType());
+
+    unsigned n = 0;
+    if (decl->shape () != 0) {
+        BOOST_FOREACH (TreeNode* node, decl->shape ()->children ()) {
+            assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
+            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
+            s = visitExpr (e);
+            if (s != ICode::OK) return s;
+            if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+            if (   !e->resultType().secrecDataType() == DATATYPE_INT
+                || !e->resultType().isScalar()
+                ||  e->resultType().secrecSecType().isPrivate ())
+            {
+                m_log.fatal() << "Expecting public unsigned integer scalar at "
+                              << e->location() << ".";
+                return ICode::E_TYPE;
+            }
+
+            ++ n;
+        }
+    }
+
+    if (n > 0 && n != justType.secrecDimType()) {
+        m_log.fatal() << "Mismatching number of shape components in declaration at "
+                      << decl->location() << ".";
+        return ICode::E_TYPE;
+    }
+
+    if (decl->rightHandSide () != 0) {
+        TreeNodeExpr *e = decl->rightHandSide ();
+        ICode::Status s = visitExpr (e);
+        if (s != ICode::OK) return s;
+        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+
+        if (n == 0 && e->resultType().isScalar() && justType.secrecDimType() > 0) {
+            m_log.fatal() << "Defining array without shape annotation with scalar at "
+                          << decl->location() << ".";
+            return ICode::E_TYPE;
+
+        }
+
+        if (e->resultType().secrecSecType().isPrivate () &&
+            justType.secrecSecType().isPublic ())
+        {
+            m_log.fatal() << "Public variable is given a private initializer at "
+                          << decl->location() << ".";
+            return ICode::E_TYPE;
+        }
+
+        if (e->resultType().secrecDataType() != justType.secrecDataType()) {
+            m_log.fatal() << "Variable of type " << TNV(DataTypeVar(dataType))
+                          << " is given an initializer expression of type "
+                          << e->resultType() << " at " << decl->location() << ".";
+            return ICode::E_TYPE;
+        }
+
+        if (!e->resultType().isScalar() &&
+            e->resultType().secrecDimType() != justType.secrecDimType())
+        {
+            m_log.fatal() << "Variable of dimensionality " << dataType.secrecDimType()
+                          << " is given an initializer expression of dimensionality "
+                          << e->resultType().secrecDimType() << " at " << decl->location() << ".";
+            return ICode::E_TYPE;
+        }
+    }
+
+    decl->m_type = new TNV(DataTypeVar(dataType));
+    return ICode::OK;
+}
+
+ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
+    if (_ty->m_cachedType != 0) {
+        return ICode::OK;
+    }
+
+    TreeNodeTypeType* ty = 0;
+    if ((ty = dynamic_cast<TreeNodeTypeType*>(_ty)) != 0) {
+        TreeNodeSecTypeF *secty = ty->secType ();
+        SecurityType* secType = 0;
+        if (secty->isPublic ()) {
+            secType = new PublicSecType ();
+        }
+        else {
+            TreeNodeIdentifier* id = secty->identifier ();
+            Symbol* sym = m_st->find (id->value ());
+            if (sym == 0) {
+                m_log.error () << "Symbol at " << secty->location () << " not declared!";
+                return ICode::E_TYPE;
+            }
+
+            if (dynamic_cast<SymbolDomain*>(sym) == 0) {
+                m_log.error () << "Mismatching symbol at " << secty->location () << ".";
+                return ICode::E_TYPE;
+            }
+
+            secType = new PrivateSecType (static_cast<SymbolDomain*>(sym));
+        }
+
+        ty->m_cachedType = new SecreC::TypeNonVoid(
+                    *secType,
+                    ty->dataType ()->dataType (),
+                    ty->dimType ()->dimType() );
+        delete secType;
+    }
+
+    return ICode::OK;
+}
+
 TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty) {
     TreeNode *&child = node->children ().at (index);
     assert(dynamic_cast<TreeNodeExpr*>(child) != 0);

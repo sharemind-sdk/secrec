@@ -167,10 +167,15 @@ class TreeNodeSecTypeF: public TreeNode {
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
 
+        TreeNodeIdentifier* identifier () const {
+            assert (children ().size () == 1);
+            assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+            return static_cast<TreeNodeIdentifier*>(children ().at (0));
+        }
+
     private: /* Fields: */
         const bool m_isPublic;
 };
-
 
 /******************************************************************
   TreeNodeDataType
@@ -215,6 +220,91 @@ class TreeNodeDimTypeF: public TreeNode {
 
     private:
         unsigned m_dimType;
+};
+
+
+/******************************************************************
+  TreeNodeType
+******************************************************************/
+
+/// Types occuring in code.
+class TreeNodeType : public TreeNode {
+public: /* Methods: */
+    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNode(type, loc)
+        , m_cachedType (0)
+    { }
+
+    virtual ICode::Status calculateType (SymbolTable& st,
+                                         CompileLog& log) = 0;
+
+    const SecreC::Type& secrecType () const {
+        assert (m_cachedType != 0);
+        return *m_cachedType;
+    }
+
+    TreeNodeSecTypeF* secType () const {
+        assert (children().size() == 3);
+        assert (dynamic_cast<TreeNodeSecTypeF*>(children().at (0)) != 0);
+        return static_cast<TreeNodeSecTypeF*>(children().at (0));
+    }
+
+    TreeNodeDataTypeF* dataType () const {
+        assert (children().size() == 3);
+        assert (dynamic_cast<TreeNodeDataTypeF*>(children().at (1)) != 0);
+        return static_cast<TreeNodeDataTypeF*>(children().at (1));
+    }
+
+    TreeNodeDimTypeF* dimType () const {
+        assert (children().size() == 3);
+        assert (dynamic_cast<TreeNodeDimTypeF*>(children().at (2)) != 0);
+        return static_cast<TreeNodeDimTypeF*>(children().at (2));
+    }
+
+protected: /* Fields: */
+
+    friend class TypeChecker;
+
+    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc, SecreC::Type* ty)
+        : TreeNode(type, loc)
+        , m_cachedType (ty)
+    { }
+
+    SecreC::Type* m_cachedType;
+};
+
+
+/******************************************************************
+  TreeNodeTypeType
+******************************************************************/
+
+/// Non-void types.
+class TreeNodeTypeType: public TreeNodeType {
+public: /* Methods: */
+    explicit inline TreeNodeTypeType(const YYLTYPE &loc)
+        : TreeNodeType(NODE_TYPETYPE, loc) {}
+    virtual inline ~TreeNodeTypeType() { }
+
+    virtual ICode::Status calculateType (SymbolTable& st,
+                                         CompileLog& log);
+    virtual std::string stringHelper() const;
+};
+
+
+/******************************************************************
+  TreeNodeTypeVoid
+******************************************************************/
+
+/// Void type.
+class TreeNodeTypeVoid: public TreeNodeType {
+public: /* Methods: */
+    explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
+        : TreeNodeType(NODE_TYPEVOID, loc, new TypeVoid ())
+    { }
+
+    ICode::Status calculateType (SymbolTable&, CompileLog&) {
+        return ICode::OK;
+    }
 };
 
 
@@ -880,15 +970,28 @@ class TreeNodeProcDef: public TreeNode {
             return *m_cachedType;
         }
 
+        TreeNodeType* returnType () const {
+            assert (children ().size () > 1);
+            assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+            return static_cast<TreeNodeType*>(children().at(1));
+        }
+
+        ChildrenListConstIterator paramBegin () const {
+            assert (children ().size () > 2);
+            return children ().begin () + 3;
+        }
+
+        ChildrenListConstIterator paramEnd () const {
+            return children ().end ();
+        }
 
         CGStmtResult codeGenWith (CodeGen& cg);
 
-    private: /* Methods: */
-        ICode::Status addParameters(DataTypeProcedureVoid &dt,
-                                    SymbolTable &stable,
-                                    CompileLog &log) const;
+    protected: /* Methods: */
 
-    private: /* Fields: */
+        friend class TypeChecker;
+
+    protected: /* Fields: */
         const SecreC::TypeNonVoid *m_cachedType;
         SymbolProcedure           *m_procSymbol;
 };
@@ -977,34 +1080,61 @@ class TreeNodeStmtContinue: public TreeNodeStmt {
 
 /// Declaration statement. Also tracks if the scope is global or not.
 class TreeNodeStmtDecl: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false),
-              m_procParam(false) {}
-        virtual inline ~TreeNodeStmtDecl() { delete m_type; }
+public: /* Methods: */
+    explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false),
+          m_procParam(false) {}
+    virtual inline ~TreeNodeStmtDecl() { delete m_type; }
 
-        const std::string &variableName() const;
+    const std::string &variableName() const;
 
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-        ICode::Status calculateResultType(SymbolTable &st,
-                                          CompileLog &log);
-        inline const SecreC::TypeNonVoid &resultType() const {
-            assert(m_type != 0);
-            return *m_type;
+    ICode::Status calculateResultType(SymbolTable &st,
+                                      CompileLog &log);
+    inline const SecreC::TypeNonVoid &resultType() const {
+        assert(m_type != 0);
+        return *m_type;
+    }
+    inline bool haveResultType() const { return m_type != 0; }
+
+    inline bool global() const { return m_global; }
+    inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
+    inline bool procParam() const { return m_procParam; }
+    inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
+
+    TreeNodeType* varType () const {
+        assert(children().size() >= 2);
+        assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+        return static_cast<TreeNodeType*>(children().at(1));
+    }
+
+    TreeNode* shape () const {
+        if (children().size() > 2) {
+            return children ().at (2);
         }
-        inline bool haveResultType() const { return m_type != 0; }
 
-        inline bool global() const { return m_global; }
-        inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
-        inline bool procParam() const { return m_procParam; }
-        inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
+        return 0;
+    }
 
-    private: /* Fields: */
-        SecreC::TypeNonVoid *m_type;
-        bool m_global;
-        bool m_procParam;
+    TreeNodeExpr* rightHandSide () const {
+        if (children ().size () > 3) {
+            assert(dynamic_cast<TreeNodeExpr*>(children().at(3)) != 0);
+            return static_cast<TreeNodeExpr*>(children().at(3));
+        }
+
+        return 0;
+    }
+
+protected:
+
+    friend class TypeChecker;
+
+protected: /* Fields: */
+    SecreC::TypeNonVoid *m_type;
+    bool m_global;
+    bool m_procParam;
 };
 
 /******************************************************************
@@ -1115,70 +1245,6 @@ class TreeNodeStmtPrint: public TreeNodeStmt {
             : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
 
         virtual CGStmtResult codeGenWith (CodeGen& cg);
-};
-
-
-/******************************************************************
-  TreeNodeType
-******************************************************************/
-
-/// Types occuring in code.
-class TreeNodeType : public TreeNode {
-public: /* Methods: */
-    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
-        : TreeNode(type, loc)
-        , m_cachedType (0)
-    { }
-
-    virtual ICode::Status calculateType (SymbolTable& st,
-                                         CompileLog& log) = 0;
-
-    const SecreC::Type& secrecType () const {
-        assert (m_cachedType != 0);
-        return *m_cachedType;
-    }
-
-protected: /* Fields: */
-    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc, SecreC::Type* ty)
-        : TreeNode(type, loc)
-        , m_cachedType (ty)
-    { }
-
-    SecreC::Type* m_cachedType;
-};
-
-
-/******************************************************************
-  TreeNodeTypeType
-******************************************************************/
-
-/// Non-void types.
-class TreeNodeTypeType: public TreeNodeType {
-public: /* Methods: */
-    explicit inline TreeNodeTypeType(const YYLTYPE &loc)
-        : TreeNodeType(NODE_TYPETYPE, loc) {}
-    virtual inline ~TreeNodeTypeType() { }
-
-    virtual ICode::Status calculateType (SymbolTable& st,
-                                         CompileLog& log);
-    virtual std::string stringHelper() const;
-};
-
-
-/******************************************************************
-  TreeNodeTypeVoid
-******************************************************************/
-
-/// Void type.
-class TreeNodeTypeVoid: public TreeNodeType {
-public: /* Methods: */
-    explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
-        : TreeNodeType(NODE_TYPEVOID, loc, new TypeVoid ())
-    { }
-
-    ICode::Status calculateType (SymbolTable&, CompileLog&) {
-        return ICode::OK;
-    }
 };
 
 

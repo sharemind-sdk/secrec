@@ -51,6 +51,9 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeExprAssign* e);
     ICode::Status visit (TreeNodeExprInt* e);
 
+    ICode::Status visit (TreeNodeProcDef* proc);
+    ICode::Status visit (TreeNodeStmtDecl* decl);
+    ICode::Status visit (TreeNodeType* _ty);
 
 protected:
 
@@ -60,6 +63,7 @@ protected:
     TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty);
     ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
+    ICode::Status populateParamTypes (DataTypeProcedureVoid& dt, TreeNodeProcDef* proc);
 
     inline static TypeVoid* voidTy () {
         return new TypeVoid ();
