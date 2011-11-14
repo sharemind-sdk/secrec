@@ -982,6 +982,55 @@ class TreeNodeProcDef: public TreeNode {
 
 
 /******************************************************************
+  TreeNodeQuantifier
+******************************************************************/
+
+class TreeNodeQuantifier : public TreeNode {
+public:
+    explicit inline TreeNodeQuantifier(const YYLTYPE &loc)
+        : TreeNode(NODE_TEMPLATE_QUANT, loc) {}
+
+    TreeNodeIdentifier* domain () {
+        assert (children ().size () == 1 || children ().size () == 2);
+        assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+        return static_cast<TreeNodeIdentifier*>(children ().at (0));
+    }
+
+    // will equal to zero, if kind not specified
+    TreeNodeIdentifier* kind () {
+        assert (children ().size () == 1 || children ().size () == 2);
+        if (children ().size () == 2) {
+            assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (1)) != 0);
+            return static_cast<TreeNodeIdentifier*>(children ().at (1));
+        }
+
+        return 0;
+    }
+};
+
+
+/******************************************************************
+  TreeNodeTemplate
+******************************************************************/
+
+class TreeNodeTemplate : public TreeNode {
+public:
+    explicit inline TreeNodeTemplate(const YYLTYPE &loc)
+        : TreeNode(NODE_TEMPLATE_DECL, loc) {}
+
+    TreeNodeProcDef* body () const {
+        assert (children ().size () == 2);
+        assert (dynamic_cast<TreeNodeProcDef*>(children ().at (1)) != 0);
+        return static_cast<TreeNodeProcDef*>(children ().at (1));
+    }
+
+    TreeNode* quantifiers () const {
+        assert (children ().size () == 2);
+        return children ().at (0);
+    }
+};
+
+/******************************************************************
   TreeNodeProgram
 ******************************************************************/
 

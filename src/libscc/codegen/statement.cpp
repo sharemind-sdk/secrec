@@ -567,10 +567,9 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         return result;
     }
 
-    const SecreC::TypeNonVoid& procType = stmt->containingProcedure ()->procedureType ();
     if (s->expression () == 0) {
         Imop *i = new Imop (s, Imop::RETURNVOID, 0);
-        i->setReturnDestFirstImop (st->label (procType->symbol ()->target ()));
+        i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
         pushImopAfter (result, i);
     } else {
         TreeNodeExpr *e = s->expression ();
@@ -586,7 +585,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         rets.insert (rets.end (), dim_begin (eResult.symbol ()), dim_end (eResult.symbol ()));
         rets.push_back (eResult.symbol ());
         Imop* i = newReturn (s, rets.begin (), rets.end ());
-        i->setReturnDestFirstImop (st->label (procType->symbol ()->target ()));
+        i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
         pushImopAfter (result, i);
     }
 

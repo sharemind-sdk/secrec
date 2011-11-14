@@ -274,6 +274,10 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeKind (*loc));
         case NODE_DOMAIN:
             return (TreeNode*) (new SecreC::TreeNodeDomain (*loc));
+        case NODE_TEMPLATE_QUANT:
+            return (TreeNode*) (new SecreC::TreeNodeQuantifier (*loc));
+        case NODE_TEMPLATE_DECL:
+            return (TreeNode*) (new SecreC::TreeNodeTemplate (*loc));
         default:
             assert(type != NODE_IDENTIFIER);
             assert((type & NODE_LITE_MASK) == 0x0);
