@@ -60,6 +60,7 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeStmtDecl* decl);
     ICode::Status visit (TreeNodeType* _ty);
     ICode::Status visit (TreeNodeStmtPrint* stmt);
+    ICode::Status visit (TreeNodeStmtReturn* stmt);
 
     TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty);
 
@@ -85,7 +86,7 @@ protected:
     }
 
 
-private: /* Types: */
+private: /* Fields: */
 
     SymbolTable*    m_st;
     CompileLog&     m_log;

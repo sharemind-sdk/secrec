@@ -561,60 +561,21 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     CGStmtResult result;
+    ICode::Status status = m_tyChecker.visit (s);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    const SecreC::TypeNonVoid& procType = stmt->containingProcedure ()->procedureType ();
     if (s->expression () == 0) {
-        if (s->containingProcedure ()->procedureType ().kind ()
-            == TypeNonVoid::PROCEDURE)
-        {
-            log.fatal() << "Cannot return from non-void function without value "
-                           "at " << s->location();
-            result.setStatus (ICode::E_OTHER);
-            return result;
-        }
-
-        assert(s->containingProcedure()->procedureType().kind()
-               == TypeNonVoid::PROCEDUREVOID);
-
         Imop *i = new Imop (s, Imop::RETURNVOID, 0);
-        i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
+        i->setReturnDestFirstImop (st->label (procType->symbol ()->target ()));
         pushImopAfter (result, i);
     } else {
-
-        if (s->containingProcedure ()->procedureType ().kind ()
-            == TypeNonVoid::PROCEDUREVOID)
-        {
-            log.fatal () << "Cannot return value from void function at"
-                        << s->location();
-            result.setStatus (ICode::E_OTHER);
-            return result;
-        }
-        assert (s->containingProcedure ()->procedureType ().kind ()
-               == TypeNonVoid::PROCEDURE);
-
         TreeNodeExpr *e = s->expression ();
-        ICode::Status status = e->accept (m_tyChecker);
-        if (status != ICode::OK) {
-            result.setStatus (status);
-            return result;
-        }
+        assert (e->haveResultType ());
 
-        const SecreC::TypeNonVoid& procType = s->containingProcedure ()->procedureType ();
-
-        // check that we can assign return type to proc type and also verify that
-        // dimensionalities check as we can not to implicit conversion to array
-        // with return statement
-        if (!procType.canAssign(e->resultType ()) ||
-             procType.secrecDimType () != e->resultType ().secrecDimType ())
-        {
-            log.fatal () << "Cannot return value of type " << e->resultType ()
-                         << " from function with type "
-                         << s->containingProcedure ()->procedureType () << " at"
-                         << s->location () << ".";
-            result.setStatus (ICode::E_OTHER);
-            return result;
-        }
-
-        // Add implicit classify node if needed:
-        e = m_tyChecker.classifyIfNeeded (s, 0, s->containingProcedure ()->procedureType ());
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
         if (result.isNotOk ()) {
@@ -625,7 +586,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         rets.insert (rets.end (), dim_begin (eResult.symbol ()), dim_end (eResult.symbol ()));
         rets.push_back (eResult.symbol ());
         Imop* i = newReturn (s, rets.begin (), rets.end ());
-        i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
+        i->setReturnDestFirstImop (st->label (procType->symbol ()->target ()));
         pushImopAfter (result, i);
     }
 

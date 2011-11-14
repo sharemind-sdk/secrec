@@ -1014,6 +1014,41 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
     return ICode::OK;
 }
 
+ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
+    const SecreC::TypeNonVoid& procType = stmt->containingProcedure ()->procedureType ();
+    TreeNodeExpr *e = stmt->expression ();
+    if (e == 0) {
+        if (procType.kind () == TypeNonVoid::PROCEDURE) {
+            m_log.fatal() << "Cannot return from non-void function without value "
+                             "at " << stmt->location() << ".";
+            return ICode::E_TYPE;
+        }
+    }
+    else {
+        if (procType.kind () == TypeNonVoid::PROCEDUREVOID) {
+            m_log.fatal () << "Cannot return value from void function at"
+                           << stmt->location() << ".";
+            return ICode::E_TYPE;
+        }
+
+        ICode::Status s = visitExpr (e);
+        if (s != ICode::OK) return s;
+        if (!procType.canAssign(e->resultType ()) ||
+             procType.secrecDimType () != e->resultType ().secrecDimType ())
+        {
+            m_log.fatal () << "Cannot return value of type " << e->resultType ()
+                           << " from function with type "
+                           << procType << " at "
+                           << stmt->location () << ".";
+            return ICode::E_TYPE;
+        }
+
+        classifyIfNeeded (stmt, 0, procType);
+    }
+
+    return ICode::OK;
+}
+
 
 TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty) {
     TreeNode *&child = node->children ().at (index);
