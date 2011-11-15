@@ -700,6 +700,54 @@ CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
 }
 
 /*******************************************************************************
+  TreeNodeStmtSyscall
+*******************************************************************************/
+
+CGStmtResult TreeNodeStmtSyscall::codeGenWith (CodeGen& cg) {
+    return cg.cgStmtSyscall (this);
+}
+
+CGStmtResult CodeGen::cgStmtSyscall (TreeNodeStmtSyscall* s) {
+    TreeNodeExprString *e = s->expression ();
+
+    // Generate code:
+    CGStmtResult result;
+    const CGResult& eResult = codeGen (e);
+    append (result, eResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    Imop* i = new Imop (s, Imop::SYSCALL, (Symbol*) 0, eResult.symbol ());
+    pushImopAfter (result, i);
+    return result;
+}
+
+/*******************************************************************************
+  TreeNodeStmtPush
+*******************************************************************************/
+
+CGStmtResult TreeNodeStmtPush::codeGenWith (CodeGen& cg) {
+    return cg.cgStmtPush (this);
+}
+
+CGStmtResult CodeGen::cgStmtPush (TreeNodeStmtPush* s) {
+    TreeNodeExpr *e = s->expression ();
+
+    // Generate code:
+    CGStmtResult result;
+    const CGResult& eResult = codeGen (e);
+    append (result, eResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    Imop* i = new Imop (s, Imop::PUSH, (Symbol*) 0, eResult.symbol ());
+    pushImopAfter (result, i);
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeStmtDoWhile
 *******************************************************************************/
 
@@ -720,7 +768,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     // Static checking:
     if (result.firstImop () == 0) {
-        log.fatal () << "Empty loop body at " << body->location ();
+        log.fatal () << "Empty loop body at " << body->location () << ".";
         result.setStatus (ICode::E_OTHER);
         return result;
     }

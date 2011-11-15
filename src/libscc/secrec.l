@@ -59,11 +59,14 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 <COMMENT_CPP>[^\n] { stepChar(yyget_lloc(yyscanner)); }
 <COMMENT_CPP>[\n]  { newline(yyget_lloc(yyscanner)); BEGIN(INITIAL); }
 
+"assert"     { stepLen(yyget_lloc(yyscanner), 6); return ASSERT; }
 "bool"       { stepLen(yyget_lloc(yyscanner), 4); return BOOL; }
 "break"      { stepLen(yyget_lloc(yyscanner), 5); return BREAK; }
+"cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 "continue"   { stepLen(yyget_lloc(yyscanner), 8); return CONTINUE; }
 "declassify" { stepLen(yyget_lloc(yyscanner), 8); return DECLASSIFY; }
 "do"         { stepLen(yyget_lloc(yyscanner), 2); return DO; }
+"domain"     { stepLen(yyget_lloc(yyscanner), 6); return DOMAIN; }
 "else"       { stepLen(yyget_lloc(yyscanner), 4); return ELSE; }
 "false"      { stepLen(yyget_lloc(yyscanner), 5); return FALSE_B; }
 "for"        { stepLen(yyget_lloc(yyscanner), 3); return FOR; }
@@ -84,14 +87,18 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "true"       { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
 "void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }
-"assert"     { stepLen(yyget_lloc(yyscanner), 6); return ASSERT; }
 "size"       { stepLen(yyget_lloc(yyscanner), 4); return SIZE; }
 "shape"      { stepLen(yyget_lloc(yyscanner), 5); return SHAPE; }
 "reshape"    { stepLen(yyget_lloc(yyscanner), 7); return RESHAPE; }
-"cat"        { stepLen(yyget_lloc(yyscanner), 3); return CAT; }
 "print"      { stepLen(yyget_lloc(yyscanner), 5); return PRINT; }
 "kind"       { stepLen(yyget_lloc(yyscanner), 4); return KIND; }
-"domain"     { stepLen(yyget_lloc(yyscanner), 6); return DOMAIN; }
+"template"   { stepLen(yyget_lloc(yyscanner), 8); return TEMPLATE; }
+"__syscall"  { stepLen(yyget_lloc(yyscanner), 9); return SYSCALL; }
+"__push"     { stepLen(yyget_lloc(yyscanner), 6); return PUSH; }
+"__pushref"  { stepLen(yyget_lloc(yyscanner), 9); return PUSHREF; }
+"__pushcref" { stepLen(yyget_lloc(yyscanner), 10); return PUSHCREF; }
+
+
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

@@ -127,6 +127,44 @@ VMValue* getImm (VMSymbolTable& st, const Symbol* sym) {
 
 namespace SecreCC {
 
+class Compiler::SyscallManager {
+private: /* Types: */
+
+    typedef std::map<const ConstantString*, VMLabel*> SCMap;
+
+public: /* Methods: */
+
+    SyscallManager () : m_st (0) { }
+    ~SyscallManager () { }
+
+    void init (VMSymbolTable& st) {
+        m_st = &st;
+    }
+
+    void emitBindings (VMCode& code) {
+        for (SCMap::iterator i = m_syscalls.begin (); i != m_syscalls.end (); ++ i) {
+            code.addBinding (i->second, i->first->value ());
+        }
+    }
+
+    VMLabel* getSyscallBinding (const ConstantString* name) {
+        SCMap::iterator i = m_syscalls.find (name);
+        if (i == m_syscalls.end ()) {
+            std::ostringstream ss;
+            ss << ":SC_" << m_st->uniq ();
+            VMLabel* label = m_st->getLabel (ss.str ());
+            i = m_syscalls.insert (i, std::make_pair (name, label));
+        }
+
+        return i->second;
+    }
+
+private: /* Fields: */
+
+    VMSymbolTable* m_st;
+    SCMap m_syscalls;
+};
+
 /*******************************************************************************
   Compiler
 *******************************************************************************/
@@ -136,11 +174,13 @@ Compiler::Compiler (ICode& code)
     , m_param (0)
     , m_funcs (new BuiltinFunctions ())
     , m_ra (new RegisterAllocator ())
+    , m_scm (new Compiler::SyscallManager ())
 { }
 
 Compiler::~Compiler () {
     delete m_funcs;
     delete m_ra;
+    delete m_scm;
 }
 
 void Compiler::run () {
@@ -149,12 +189,14 @@ void Compiler::run () {
     runner.addAnalysis (&lv);
     runner.run (m_code.program ());
     m_ra->init (m_st, lv);
+    m_scm->init (m_st);
     for (Program::iterator i = m_code.program ().begin (), e = m_code.program ().end (); i != e; ++ i) {
         cgProcedure (*i);
     }
 
     m_funcs->generateAll (m_target, m_st);
     m_target.setNumGlobals (m_ra->globalCount ());
+    m_scm->emitBindings (m_target);
 }
 
 
@@ -240,9 +282,9 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
     // arguments
     OCI i = imop.operandsBegin (),
         e = imop.operandsEnd ();
-    for (++ i; i != e; ++ i) {
-        instr << loadToRegister (block, *i);
-    }
+//    if (i != e)
+        for (++ i; i != e; ++ i)
+            instr << loadToRegister (block, *i);
 
     block.push_back (instr);
 }
@@ -460,6 +502,16 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
+void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
+    VMLabel* label = m_scm->getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
+    block.push_back (VMInstruction () << "syscall" << label << "imm");
+}
+
+void Compiler::cgPush (VMBlock& block, const Imop& imop) {
+    assert (m_st.find (imop.arg1 ()) != 0);
+    block.push_back (VMInstruction () << "push" << m_st.find (imop.arg1 ()));
+}
+
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
     m_ra->getReg (imop);
@@ -495,6 +547,12 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
             return;
         case Imop::RETURN:
             cgReturn (block, imop);
+            return;
+        case Imop::SYSCALL:
+            cgSyscall (block, imop);
+            return;
+        case Imop::PUSH:
+            cgPush (block, imop);
             return;
         case Imop::END:
             block.push_back (VMInstruction () << "halt imm 0x0");

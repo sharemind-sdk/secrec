@@ -88,6 +88,10 @@ enum SecrecTreeNodeType {
     NODE_LVALUE         = 0x14000,
     NODE_SUBSCRIPT      = 0x15000,
     NODE_STMT_PRINT     = 0x16000,
+    NODE_STMT_SYSCALL   = 0x17000,
+    NODE_STMT_PUSH      = 0x18000,
+    NODE_STMT_PUSHREF   = 0x19000,
+    NODE_STMT_PUSHCREF  = 0x1a000,
 
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,
@@ -95,7 +99,9 @@ enum SecrecTreeNodeType {
     NODE_DIMTYPE_F      = 0x400000,
     NODE_SECTYPE_F      = 0x500000,
     NODE_DOMAIN         = 0x600000,
-    NODE_KIND           = 0x700000
+    NODE_KIND           = 0x700000,
+    NODE_TEMPLATE_DECL  = 0x800000,
+    NODE_TEMPLATE_QUANT = 0x900000
 };
 
 enum SecrecDataType {

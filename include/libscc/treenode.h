@@ -986,7 +986,7 @@ class TreeNodeProcDef: public TreeNode {
 ******************************************************************/
 
 class TreeNodeQuantifier : public TreeNode {
-public:
+public: /* Methods: */
     explicit inline TreeNodeQuantifier(const YYLTYPE &loc)
         : TreeNode(NODE_TEMPLATE_QUANT, loc) {}
 
@@ -1014,7 +1014,7 @@ public:
 ******************************************************************/
 
 class TreeNodeTemplate : public TreeNode {
-public:
+public: /* Methods: */
     explicit inline TreeNodeTemplate(const YYLTYPE &loc)
         : TreeNode(NODE_TEMPLATE_DECL, loc) {}
 
@@ -1391,6 +1391,41 @@ public: /* Methods: */
     }
 };
 
+/******************************************************************
+  TreeNodeStmtSyscall
+******************************************************************/
+
+class TreeNodeStmtSyscall : public TreeNodeStmt {
+public: /* Methods: */
+    explicit inline TreeNodeStmtSyscall(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_SYSCALL, loc) {}
+
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExprString* expression () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeExprString*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExprString*> (children ().at (0));
+    }
+};
+
+/******************************************************************
+  TreeNodeStmtPush
+******************************************************************/
+
+class TreeNodeStmtPush: public TreeNodeStmt {
+public: /* Methods: */
+    explicit inline TreeNodeStmtPush(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_PUSH, loc) {}
+
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
+};
 
 } // namespace SecreC
 

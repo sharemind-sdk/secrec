@@ -47,7 +47,11 @@ public: /* Methods: */
 
     BuiltinFunctions ();
     ~BuiltinFunctions ();
+
+    /// Add function into the pool
     void insert (VMLabel* label, const BuiltinFunction& func);
+
+    /// Generate bodies of inserted functions
     void generateAll (VMCode& code, VMSymbolTable& st);
 
 protected:

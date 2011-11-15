@@ -85,7 +85,7 @@
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
-%token DOMAIN KIND
+%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -159,6 +159,9 @@
 %type <treenode> int_literal
 %type <treenode> string_literal
 %type <treenode> bool_literal
+%type <treenode> template_declaration
+%type <treenode> template_quantifiers
+%type <treenode> template_quantifier
 
 %type <nothing> program
 
@@ -195,6 +198,7 @@ global_declarations
 global_declaration
  : variable_declaration ';'
  | procedure_definition
+ | template_declaration
  | domain_declaration ';'
  | kind_declaration ';'
  ;
@@ -309,7 +313,6 @@ type_specifier
    }
  ;
 
-
 sectype_specifier
  : PUBLIC
    {
@@ -379,6 +382,47 @@ dimtype_specifier
         $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
         free ($3);
     }
+  ;
+
+/*******************************************************************************
+  Templates:
+*******************************************************************************/
+
+template_declaration
+ : TEMPLATE '<' template_quantifiers '>' procedure_definition
+   {
+     $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_DECL, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+   }
+ ;
+
+template_quantifiers
+ : template_quantifiers ',' template_quantifier
+   {
+     $$ = $1;
+     treenode_appendChild($$, $3);
+   }
+ | template_quantifier
+   {
+     $$ = (struct TreeNode*) treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+   }
+ ;
+
+template_quantifier
+ : identifier ':' identifier
+  {
+    $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
+    treenode_appendChild($$, $1);
+    treenode_appendChild($$, $3);
+  }
+ | identifier
+  {
+    $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
+    treenode_appendChild($$, $1);
+  }
+ ;
 
 /*******************************************************************************
   Procedures:
@@ -469,6 +513,26 @@ statement
  | dowhile_statement
  | assert_statement
  | print_statement
+ | SYSCALL '(' string_literal ')' ';'
+   {
+     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
+     treenode_appendChild ($$, $3);
+   }
+ | PUSH '(' expression ')' ';'
+   {
+     $$ = treenode_init(NODE_STMT_PUSH, &@$);
+     treenode_appendChild ($$, ensure_rValue ($3));
+   }
+ | PUSHREF '(' identifier ')' ';'
+   {
+     $$ = treenode_init(NODE_STMT_PUSHREF, &@$);
+     treenode_appendChild ($$, $3);
+   }
+ | PUSHCREF '(' identifier ')' ';'
+   {
+     $$ = treenode_init(NODE_STMT_PUSHCREF, &@$);
+     treenode_appendChild ($$, $3);
+   }
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
@@ -794,6 +858,12 @@ multiplicative_expression
 
 cast_expression
  : '(' datatype_specifier ')' cast_expression
+   {
+     $$ = treenode_init(NODE_EXPR_CAST, &@$);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $4);
+   }
+ | '(' sectype_specifier ')' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_CAST, &@$);
      treenode_appendChild($$, $2);

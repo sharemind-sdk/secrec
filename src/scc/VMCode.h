@@ -113,6 +113,29 @@ private: /* Fields: */
    unsigned        m_numLocals;
 };
 
+
+/*******************************************************************************
+  VMBinding
+*******************************************************************************/
+
+class VMBinding {
+public:
+    VMBinding (VMLabel* label, std::string syscall)
+        : m_label (label)
+        , m_syscall (syscall)
+    { }
+
+    ~VMBinding () { }
+
+    friend std::ostream& operator << (std::ostream& os, const VMBinding& binding);
+
+private:
+
+    VMLabel*    const m_label;
+    std::string const m_syscall;
+};
+
+
 /*******************************************************************************
   VMCode
 *******************************************************************************/
@@ -122,6 +145,7 @@ class VMCode {
 public: /* Types: */
 
     typedef std::list<VMFunction > FunctionList;
+    typedef std::list<VMBinding >  BindingList;
     typedef FunctionList::iterator iterator;
     typedef FunctionList::const_iterator const_iterator;
 
@@ -133,6 +157,9 @@ public: /* Methods: */
 
     unsigned numGlobals () const { return m_numGlobals; }
     void setNumGlobals (unsigned n) { m_numGlobals = n; }
+    void addBinding (VMLabel* label, const std::string& name) {
+        m_bindings.push_back (VMBinding (label, name));
+    }
 
     iterator begin () { return m_functions.begin (); }
     iterator end () { return m_functions.end (); }
@@ -146,12 +173,14 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-   FunctionList    m_functions;
-   unsigned        m_numGlobals;
+    BindingList     m_bindings;
+    FunctionList    m_functions;
+    unsigned        m_numGlobals;
 };
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block);
 std::ostream& operator << (std::ostream& os, const VMFunction& function);
+std::ostream& operator << (std::ostream& os, const VMBinding& binding);
 std::ostream& operator << (std::ostream& os, const VMCode& code);
 
 

@@ -1,12 +1,12 @@
 #ifndef TYPE_CHECKER_H
 #define TYPE_CHECKER_H
 
-#include "log.h"
-#include "types.h"
-#include "symboltable.h"
 #include "treenode.h"
 
 namespace SecreC {
+
+class CompileLog;
+class SymbolTable;
 
 /*******************************************************************************
   TypeChecker

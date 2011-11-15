@@ -64,6 +64,8 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Other:
     , { Imop::COMMENT,    0, 0, 0, 0,-1 }
     , { Imop::PRINT,      0, 0, 0, 0,-1 }
+    , { Imop::SYSCALL,    0, 0, 0, 0,-1 }
+    , { Imop::PUSH,       0, 0, 0, 0,-1 }
     , { Imop::RETCLEAN,   0, 0, 0, 0,-1 }
 };
 
@@ -73,11 +75,6 @@ const ImopInfoBits& getImopInfoBits (Imop::Type type) {
     assert (out.type == type);
     return out;
 }
-
-} // anonymous namespace
-
-
-namespace {
 
 std::string ulongToString(unsigned long n) {
     std::ostringstream os;
@@ -221,6 +218,13 @@ void Imop::getUse (std::vector<const Symbol *>& use) const {
     if (isJump () || type () == RETURN) {
         use.insert (use.end (), ++ i, e);
         return;
+    }
+
+    switch (type ()) {
+    case PUSH:
+        use.push_back (arg1 ());
+    default:
+        break;
     }
 }
 
@@ -438,6 +442,14 @@ std::string Imop::toString() const {
             break;
         case PRINT:
             os << "PRINT \"" << a1name << "\";";
+            break;
+        case SYSCALL:
+            assert (arg1 () != 0);
+            assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+            os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
+            break;
+        case PUSH:
+            os << "__PUSH " << a1name;
             break;
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";

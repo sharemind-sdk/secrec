@@ -48,10 +48,25 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
 }
 
 /*******************************************************************************
+  VMBinding
+*******************************************************************************/
+
+std::ostream& operator << (std::ostream& os, const VMBinding& binding) {
+    os << binding.m_label->name () << " .bind_syscall \"" << binding.m_syscall << "\"";
+    return  os;
+}
+
+/*******************************************************************************
   VMCode
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMCode& code) {
+    if (! code.m_bindings.empty ()) {
+        os << ".section BIND\n";
+        std::copy (code.m_bindings.begin (), code.m_bindings.end (),
+                   std::ostream_iterator<VMBinding>(os, "\n"));
+    }
+
     os << ".section TEXT\n";
     if (code.numGlobals () > 0) {
         os << "resizestack 0x" << std::hex  << code.numGlobals () << '\n';

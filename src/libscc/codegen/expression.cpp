@@ -860,17 +860,12 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
         Symbol* sym = argResult.symbol ();
         argList.push_back (sym);
-        for (dim_iterator di = dim_begin (sym), de = dim_end (sym); di != de; ++ di) {
-            argList.push_back (*di);
-        }
+        argList.insert (argList.end (), dim_begin (sym), dim_end (sym));
     }
 
     // prep return values:
     if (!e->resultType ().isVoid ()) {
-        for (dim_iterator di = dim_begin (r), de = dim_end (r); di != de; ++ di) {
-            retList.push_back (*di);
-        }
-
+        retList.insert (retList.end (), dim_begin (r), dim_end (r));
         retList.push_back (r);
     }
 

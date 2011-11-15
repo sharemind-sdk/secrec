@@ -61,11 +61,15 @@ protected:
     void cgAlloc (VMBlock& block, const SecreC::Imop& imop);
     void cgStore (VMBlock& block, const SecreC::Imop& imop);
     void cgLoad (VMBlock& block, const SecreC::Imop& imop);
+    void cgSyscall (VMBlock& block, const SecreC::Imop& imo);
+    void cgPush (VMBlock& block, const SecreC::Imop& imop);
 
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
     void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
 
 private: /* Fields: */
+
+    class SyscallManager;
 
     SecreC::ICode&        m_code;    ///< SecreC intermediate code
     VMCode                m_target;  ///< Target code
@@ -73,6 +77,7 @@ private: /* Fields: */
     unsigned              m_param;   ///< Current param count
     BuiltinFunctions*     m_funcs;   ///< Bult-in functions
     RegisterAllocator*    m_ra;      ///< Instance of register allocator
+    SyscallManager*       m_scm;
 };
 
 } // namespace SecreCC
