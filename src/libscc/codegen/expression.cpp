@@ -1576,6 +1576,13 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     assert (dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol* destSymSym = static_cast<SymbolSymbol*> (destSym);
 
+    // r = x
+    SymbolSymbol* r = generateResultSymbol (result, e);
+    copyShapeFrom (result, destSymSym);
+    allocResult (result);
+    Imop* i = newAssign (e, r, destSymSym);
+    pushImopAfter (result, i);
+
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -1590,15 +1597,14 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
+        assert (!e->resultType ().isScalar ());
         CodeGenSubscript subInfo (*this);
         append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
             return result;
         }
 
-
         const SPV& spv = subInfo.spv ();
-        const std::vector<unsigned>& slices = subInfo.slices ();
         CodeGenStride stride (*this);
         append (result, stride.codeGenStride (destSym));
         if (result.isNotOk ()) {
@@ -1608,7 +1614,6 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         // Initialize required temporary symbols:
         std::vector<Symbol* > indices;
         Symbol* offset = st->appendTemporary(pubIntTy);
-        Symbol* resultOffset = st->appendTemporary(pubIntTy);
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
         Symbol* tmpValue = st->appendTemporary (pubIntTy);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
@@ -1617,27 +1622,6 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         }
 
         std::vector<Symbol*>::const_iterator idxIt;
-        Imop* i = new Imop (e, Imop::ASSIGN, resultOffset, st->constantInt (0));
-        pushImopAfter (result, i);
-
-        SymbolSymbol* resSym = generateResultSymbol (result, e);
-
-        if (!e->resultType ().isScalar ()) {
-            unsigned count = 0;
-            for (std::vector<unsigned>::const_iterator it (slices.begin ()); it != slices.end (); ++ it, ++ count) {
-                unsigned k = *it;
-                i = new Imop (e, Imop::SUB, resSym->getDim (count), spv[k].second, spv[k].first);
-                code.push_imop (i);
-            }
-
-            codeGenSize (result);
-            i = new Imop (e, Imop::ALLOC, resSym, st->constantInt (0), resSym->getSizeSym ());
-        }
-        else {
-            i = new Imop (e, Imop::ASSIGN, resSym, st->constantInt (0));
-        }
-
-        code.push_imop (i);
 
         CodeGenLoop loop (*this);
 
@@ -1665,21 +1649,6 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         i = new Imop (e, Imop::LOAD, tmpValue, destSymSym, offset);
         code.push_imop (i);
 
-        if (!e->resultType ().isScalar ()) {
-            // r[resultOffset] = t
-            i = new Imop (e, Imop::STORE, resSym, resultOffset, tmpValue);
-            code.push_imop (i);
-
-            // resultOffset = resultOffset + 1
-            i = new Imop (e, Imop::ADD, resultOffset, resultOffset, st->constantInt (1));
-            code.push_imop (i);
-        }
-        else {
-            // r = t
-            i = new Imop (e, Imop::ASSIGN, resSym, tmpValue);
-            code.push_imop (i);
-        }
-
         // t = t + 1
         i = new Imop (e, iType, tmpValue, tmpValue, st->constantInt (1));
         code.push_imop (i);
@@ -1698,13 +1667,6 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         Imop* i = new Imop (e, Imop::ALLOC, one, st->constantInt (1), destSymSym->getSizeSym ());
         pushImopAfter (result,i );
     }
-
-    // r = x
-    SymbolSymbol* r = generateResultSymbol (result, e);
-    r->inheritShape (destSymSym);
-    allocResult (result);
-    Imop* i = newAssign (e, r, destSymSym);
-    pushImopAfter (result, i);
 
     // x = x `iType` 1
     i = newBinary (e, iType, destSymSym, destSymSym, one);
