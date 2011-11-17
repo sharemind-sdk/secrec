@@ -1450,7 +1450,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     assert (destSym->symbolType() == Symbol::SYMBOL);
     assert (dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol* destSymSym = static_cast<SymbolSymbol*> (destSym);
-
+    result.setResult (destSymSym);
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -1465,15 +1465,14 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
 
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
+        assert (!e->resultType ().isScalar ());
         CodeGenSubscript subInfo (*this);
         append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
             return result;
         }
 
-
         const SPV& spv = subInfo.spv ();
-        const std::vector<unsigned>& slices = subInfo.slices ();
         CodeGenStride stride (*this);
         append (result, stride.codeGenStride (destSym));
         if (result.isNotOk ()) {
@@ -1483,7 +1482,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         // Initialize required temporary symbols:
         std::vector<Symbol* > indices;
         Symbol* offset = st->appendTemporary(pubIntTy);
-        Symbol* resultOffset = st->appendTemporary(pubIntTy);
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
         Symbol* tmpValue = st->appendTemporary (pubIntTy);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
@@ -1492,28 +1490,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         }
 
         std::vector<Symbol*>::const_iterator idxIt;
-        Imop* i = new Imop (e, Imop::ASSIGN, resultOffset, st->constantInt (0));
-        pushImopAfter (result, i);
-
-        SymbolSymbol* resSym = generateResultSymbol (result, e);
-
-        if (!e->resultType ().isScalar ()) {
-            unsigned count = 0;
-            for (std::vector<unsigned>::const_iterator it (slices.begin ()); it != slices.end (); ++ it, ++ count) {
-                unsigned k = *it;
-                i = new Imop (e, Imop::SUB, resSym->getDim (count), spv[k].second, spv[k].first);
-                code.push_imop (i);
-            }
-
-            codeGenSize (result);
-            i = new Imop (e, Imop::ALLOC, resSym, st->constantInt (0), resSym->getSizeSym ());
-        }
-        else {
-            i = new Imop (e, Imop::ASSIGN, resSym, st->constantInt (0));
-        }
-
-        code.push_imop (i);
-
         CodeGenLoop loop (*this);
 
         append (result, loop.enterLoop (spv, indices));
@@ -1522,7 +1498,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         }
 
         // compute offset:
-        i = new Imop (e, Imop::ASSIGN, offset, st->constantInt (0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, st->constantInt (0));
         code.push_imop (i);
 
         idxIt = indices.begin ();
@@ -1548,21 +1524,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         i = new Imop (e, Imop::STORE, destSymSym, offset, tmpValue);
         code.push_imop (i);
 
-        if (!e->resultType ().isScalar ()) {
-            // r[resultOffset] = t
-            i = new Imop (e, Imop::STORE, resSym, resultOffset, tmpValue);
-            code.push_imop (i);
-
-            // resultOffset = resultOffset + 1
-            i = new Imop (e, Imop::ADD, resultOffset, resultOffset, st->constantInt (1));
-            code.push_imop (i);
-        }
-        else {
-            // r = t
-            i = new Imop (e, Imop::ASSIGN, resSym, tmpValue);
-            code.push_imop (i);
-        }
-
         append (result, loop.exitLoop (indices));
         return result;
     }
@@ -1571,21 +1532,12 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     if (!e->resultType ().isScalar ()) {
         one = st->appendTemporary (static_cast<const TypeNonVoid&> (e->resultType ()));
         Imop* i = new Imop (e, Imop::ALLOC, one, st->constantInt (1), destSymSym->getSizeSym ());
-        pushImopAfter (result,i );
+        pushImopAfter (result, i);
     }
 
     // x = x `iType` 1
     Imop* i = newBinary (e, iType, destSymSym, destSymSym, one);
     pushImopAfter (result, i);
-
-    // \todo is this correct?
-    result.setResult (destSymSym);
-    // r = x
-//    Symbol* r = generateResultSymbol (result, e);
-//    r->inheritShape (destSymSym);
-//    allocResult (result);
-//    i = newAssign (e, r, destSymSym);
-//    code.push_imop (i);
     return result;
 }
 
