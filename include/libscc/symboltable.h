@@ -1,10 +1,11 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
+#include <list>
+
 #include "symbol.h"
 #include "constant.h"
 
-#include <list>
 
 namespace SecreC {
 

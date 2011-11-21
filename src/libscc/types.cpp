@@ -1,6 +1,5 @@
 #include "types.h"
 
-
 #include <cassert>
 #include <sstream>
 #include <iostream>

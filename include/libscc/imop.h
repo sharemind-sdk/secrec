@@ -5,7 +5,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
 #include <boost/intrusive/list.hpp>
 
 #include "parser.h"

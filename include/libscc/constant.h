@@ -1,11 +1,11 @@
 #ifndef SECREC_CONSTANT_H
 #define SECREC_CONSTANT_H
 
-#include "symbol.h"
-
 // for some reason cstdint fails
 #include <stdint.h>
 #include <sstream>
+
+#include "symbol.h"
 
 namespace SecreC {
 

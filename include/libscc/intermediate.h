@@ -1,13 +1,13 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
+#include <ostream>
+
 #include "blocks.h"
 #include "imop.h"
 #include "log.h"
 #include "symboltable.h"
 #include "types.h"
-
-#include <ostream>
 
 namespace SecreC {
 

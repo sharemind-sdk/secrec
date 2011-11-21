@@ -1,11 +1,13 @@
 #include "treenode.h"
+
+#include <algorithm>
+#include <sstream>
+
 #include "symboltable.h"
 #include "typechecker.h"
 #include "misc.h"
 #include "context.h"
 
-#include <algorithm>
-#include <sstream>
 
 namespace SecreC {
 

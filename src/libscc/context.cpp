@@ -8,7 +8,6 @@
  */
 
 #include "context.h"
-
 #include "context_impl.h"
 
 namespace SecreC {

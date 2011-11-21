@@ -11,7 +11,6 @@
 #include <cstring>
 #include <fstream>
 #include <stdint.h>
-
 #include <boost/preprocessor/control/if.hpp>
 
 #define LEAVETRACE 0

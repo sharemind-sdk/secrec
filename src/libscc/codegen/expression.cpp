@@ -1,10 +1,10 @@
+#include <stack>
+
+#include "codegen.h"
 #include "treenode.h"
 #include "symboltable.h"
 #include "misc.h"
 
-#include "codegen.h"
-
-#include <stack>
 
 /**
  * Code generation for expressions.

@@ -1,10 +1,11 @@
 #include "symboltable.h"
-#include "treenode.h"
 
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <sstream>
+
+#include "treenode.h"
 
 
 namespace {

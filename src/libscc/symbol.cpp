@@ -1,10 +1,11 @@
 #include "symbol.h"
 
+#include <string>
+#include <sstream>
+
 #include "imop.h"
 #include "treenode.h"
 
-#include <string>
-#include <sstream>
 
 namespace SecreC {
 

@@ -1,9 +1,9 @@
+#include <boost/foreach.hpp>
+
 #include "treenode.h"
 #include "symboltable.h"
 #include "misc.h"
 #include "codegen.h"
-
-#include <boost/foreach.hpp>
 
 /**
  * Code generation for top level statements.

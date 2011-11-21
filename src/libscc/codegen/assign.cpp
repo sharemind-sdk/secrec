@@ -1,9 +1,9 @@
+#include <stack>
+#include <vector>
+
 #include "treenode.h"
 #include "symboltable.h"
 #include "codegen.h"
-
-#include <stack>
-#include <vector>
 
 /**
  * Code generation for assignment expression

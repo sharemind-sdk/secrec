@@ -10,10 +10,6 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
-#include "parser.h"
-
-#include <vector>
-
 namespace SecreC {
 
 class ContextImpl;
