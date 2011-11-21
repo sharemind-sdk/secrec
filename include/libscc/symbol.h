@@ -8,6 +8,7 @@ namespace SecreC {
 
 class Imop;
 class TreeNodeProcDef;
+class TreeNodeTemplate;
 
 /*******************************************************************************
   Symbol
@@ -17,6 +18,7 @@ class Symbol {
     public: /* Types: */
         enum Type {
             PROCEDURE,
+            TEMPLATE,
             CONSTANT,
             LABEL,
             SYMBOL,
@@ -209,6 +211,24 @@ class SymbolProcedure: public Symbol {
         const TreeNodeProcDef *m_decl;
         Imop                  *m_target;
 };
+
+
+/*******************************************************************************
+  SymbolTemplate
+*******************************************************************************/
+
+class SymbolTemplate: public Symbol {
+    public: /* Methods: */
+        SymbolTemplate(const TreeNodeTemplate *templ);
+
+        inline const TreeNodeTemplate *decl() const { return m_templ; }
+
+        virtual std::string toString() const;
+
+    private: /* Fields: */
+        const TreeNodeTemplate *m_templ;
+};
+
 
 /*******************************************************************************
   SymbolLabel
