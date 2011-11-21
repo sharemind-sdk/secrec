@@ -1,5 +1,5 @@
-#ifndef VIRTUAL_MACHINE_H
-#define VIRTUAL_MACHINE_H
+#ifndef SECREC_VIRTUAL_MACHINE_H
+#define SECREC_VIRTUAL_MACHINE_H
 
 #include <string>
 

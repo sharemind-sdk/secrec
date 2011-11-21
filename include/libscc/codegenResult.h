@@ -1,5 +1,5 @@
-#ifndef CODEGENRESULT_H
-#define CODEGENRESULT_H
+#ifndef SECREC_CODE_GEN_RESULT_H
+#define SECREC_CODE_GEN_RESULT_H
 
 #include "intermediate.h"
 

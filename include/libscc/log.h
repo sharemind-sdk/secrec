@@ -1,5 +1,5 @@
-#ifndef LOG_H
-#define LOG_H
+#ifndef SECREC_LOG_H
+#define SECREC_LOG_H
 
 #include <cassert>
 #include <deque>

@@ -1,5 +1,5 @@
-#ifndef TYPE_CHECKER_H
-#define TYPE_CHECKER_H
+#ifndef SECREC_TYPE_CHECKER_H
+#define SECREC_TYPE_CHECKER_H
 
 #include "treenode.h"
 

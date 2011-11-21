@@ -1,5 +1,5 @@
-#ifndef MISC_H
-#define MISC_H
+#ifndef SECREC_MISC_H
+#define SECREC_MISC_H
 
 #include <string>
 #include <ostream>

@@ -1,5 +1,5 @@
-#ifndef REACHINGDEFINITIONS_H
-#define REACHINGDEFINITIONS_H
+#ifndef SECREC_DATAFLOW_ANALYSIS_H
+#define SECREC_DATAFLOW_ANALYSIS_H
 
 #include <cassert>
 #include <map>

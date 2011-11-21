@@ -1,5 +1,5 @@
-#ifndef CODEGEN_H
-#define CODEGEN_H
+#ifndef SECREC_CODE_GEN_H
+#define SECREC_CODE_GEN_H
 
 #include "codegenResult.h"
 #include "imop.h"

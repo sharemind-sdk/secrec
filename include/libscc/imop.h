@@ -1,8 +1,7 @@
-#ifndef IMOP_H
-#define IMOP_H
+#ifndef SECREC_IMOP_H
+#define SECREC_IMOP_H
 
 #include <cassert>
-#include <set>
 #include <string>
 #include <vector>
 #include <boost/intrusive/list.hpp>

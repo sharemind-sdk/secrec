@@ -1,5 +1,5 @@
-#ifndef SYMBOLTABLE_H
-#define SYMBOLTABLE_H
+#ifndef SECREC_SYMBOLTABLE_H
+#define SECREC_SYMBOLTABLE_H
 
 #include <list>
 

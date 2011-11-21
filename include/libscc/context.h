@@ -7,8 +7,8 @@
  * code is subject to the appropriate license agreement.
  */
 
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#ifndef SECREC_CONTEXT_H
+#define SECREC_CONTEXT_H
 
 namespace SecreC {
 

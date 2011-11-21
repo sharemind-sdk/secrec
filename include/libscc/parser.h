@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef SECREC_PARSER_H
+#define SECREC_PARSER_H
 
 #include <stddef.h>
 #include <stdio.h>

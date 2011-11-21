@@ -1,5 +1,5 @@
-#ifndef TREENODE_H
-#define TREENODE_H
+#ifndef SECREC_TREENODE_H
+#define SECREC_TREENODE_H
 
 #include "parser.h"
 

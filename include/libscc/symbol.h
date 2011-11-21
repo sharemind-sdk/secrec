@@ -35,9 +35,7 @@ class Symbol {
             , m_type(0)
         { }
 
-        virtual inline ~Symbol() {
-//            delete m_type;
-        }
+        virtual inline ~Symbol() { }
 
         inline bool isConstant () const { return m_symbolType == CONSTANT; }
         inline Type symbolType() const { return m_symbolType; }
@@ -156,12 +154,8 @@ public: /* Methods: */
 
     explicit inline DimIterator (BaseTy symbol, bool)
         : m_symbol (symbol)
-        , m_index (0)
-    {
-        if (symbol) {
-            m_index = symbol->m_dims.size ();
-        }
-    }
+        , m_index (symbol ? symbol->m_dims.size () : 0)
+    { }
 
     inline const Self& operator = (const Self& i) {
         assert (m_symbol == i.m_symbol);

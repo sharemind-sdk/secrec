@@ -1,5 +1,5 @@
-#ifndef BLOCKS_H
-#define BLOCKS_H
+#ifndef SECREC_BLOCKS_H
+#define SECREC_BLOCKS_H
 
 #include <list>
 #include <map>
