@@ -7,9 +7,9 @@
 
 #include "parser.h"
 
-/// \todo this needs a huge cleanup
-
 namespace SecreC {
+
+class Context;
 
 SecrecDimType upperDimType (SecrecDimType n, SecrecDimType m);
 SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b);
@@ -29,19 +29,17 @@ bool isUnsignedNumericDataType (SecrecDataType dType);
 class SymbolDomain;
 
 class SecurityType {
+private:
+    SecurityType (const SecurityType&); // DO NOT IMPLEMENT
+
 public: /* Methods: */
 
     virtual ~SecurityType () { }
     virtual std::string toString () const = 0;
-    virtual SecurityType* clone () const = 0;
     inline bool isPrivate () const { return !m_isPublic; }
     inline bool isPublic () const { return m_isPublic; }
 
 protected:
-
-    friend bool operator == (const SecurityType& a, const SecurityType& b);
-
-    virtual bool equalsV (const SecurityType& other) const = 0;
 
     explicit SecurityType (bool isPublic)
         : m_isPublic (isPublic)
@@ -60,20 +58,11 @@ class PublicSecType : public SecurityType {
 public: /* Methods: */
 
     PublicSecType () : SecurityType (true) { }
-
     ~PublicSecType () { }
 
     std::string toString () const;
-    SecurityType* clone () const {
-        return new PublicSecType ();
-    }
 
-protected:
-
-    bool equalsV (const SecurityType& other) const {
-        assert (dynamic_cast<const PublicSecType*>(&other) != 0);
-        return true;
-    }
+    static PublicSecType* create (Context& cxt);
 };
 
 /*******************************************************************************
@@ -92,41 +81,27 @@ public: /* Methods: */
 
     SymbolDomain* domain () const { return m_dom; }
     std::string toString () const;
-    SecurityType* clone () const {
-        return new PrivateSecType (m_dom);
-    }
 
-protected:
+    static PrivateSecType* create (Context& cxt, SymbolDomain* dom);
 
-    bool equalsV (const SecurityType &other) const {
-        assert (dynamic_cast<const PrivateSecType*>(&other) != 0);
-        return m_dom == static_cast<const PrivateSecType&>(other).m_dom;
-    }
 
 private: /* Fields: */
 
     SymbolDomain* const m_dom;
 };
 
-inline bool operator == (const SecurityType& a, const SecurityType& b) {
-    return a.m_isPublic == b.m_isPublic && a.equalsV (b);
-}
-
 inline bool latticeSecTypeLEQ (const SecurityType& a, const SecurityType& b) {
     if (a.isPublic ()) return true;
     if (b.isPublic ()) return false;
-    return
-            static_cast<const PrivateSecType&>(a).domain () ==
-            static_cast<const PrivateSecType&>(b).domain ();
+    return &a == &b;
 }
 
-inline const SecurityType& upperSecType (const SecurityType& a, const SecurityType& b) {
-    if (a.isPublic ()) return b;
-    if (b.isPublic ()) return a;
-    if (static_cast<const PrivateSecType&>(a).domain () ==
-        static_cast<const PrivateSecType&>(b).domain ()) return a;
+inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
+    if (a->isPublic ()) return b;
+    if (b->isPublic ()) return a;
+    if (a == b) return a;
     assert (false);
-    return a;
+    return 0;
 }
 
 
@@ -135,46 +110,43 @@ inline const SecurityType& upperSecType (const SecurityType& a, const SecurityTy
 *******************************************************************************/
 
 class DataType {
-    public: /* Types: */
-        enum Kind { BASIC, VAR, PROCEDURE, PROCEDUREVOID };
+private:
+    DataType (const DataType&); // DO NOT IMPLEMENT
+    void operator = (const DataType&); // DO NOT IMPLEMENT
 
-    public: /* Methods: */
-        explicit DataType(Kind kind)
-            : m_kind(kind) {}
-        explicit DataType(const DataType &other)
-            : m_kind(other.m_kind) {}
-        virtual inline ~DataType() {}
+public: /* Types: */
+    enum Kind { BASIC, VAR, PROCEDURE, PROCEDUREVOID };
 
-        inline Kind kind() const { return m_kind; }
-        inline const SecurityType& secrecSecType() const;
-        inline SecrecDataType secrecDataType() const;
-        inline SecrecDimType secrecDimType() const;
+public: /* Methods: */
 
-        virtual DataType *clone() const = 0;
-        virtual std::string toString() const = 0;
-        virtual inline bool operator==(const DataType &other) const {
-            return m_kind == other.kind();
-        }
-        virtual inline bool operator!=(const DataType &other) const {
-            return !operator==(other);
-        }
+    explicit DataType(Kind kind)
+        : m_kind(kind) {}
 
-        virtual inline bool canAssign(const DataType &) const {
-            return false;
-        }
+    virtual inline ~DataType() {}
 
-        /**
-         * We define less-than-equal relation on data types to check
-         * if a kind of type can be converted into other. This is used to
-         * convert public data to private and for interpreting scalar values
-         * as arbitrary dimensional arrays.
-         */
-        virtual inline bool latticeLEQ(DataType const& other) const {
-            return m_kind == other.m_kind;
-        }
+    inline Kind kind() const { return m_kind; }
+    inline SecurityType* secrecSecType() const;
+    inline SecrecDataType secrecDataType() const;
+    inline SecrecDimType secrecDimType() const;
 
-    private: /* Fields: */
-        Kind m_kind;
+    virtual std::string toString() const = 0;
+
+    virtual inline bool canAssign(const DataType &) const {
+        return false;
+    }
+
+    /**
+     * We define less-than-equal relation on data types to check
+     * if a kind of type can be converted into other. This is used to
+     * convert public data to private and for interpreting scalar values
+     * as arbitrary dimensional arrays.
+     */
+    virtual inline bool latticeLEQ(DataType const& other) const {
+        return m_kind == other.m_kind;
+    }
+
+private: /* Fields: */
+    Kind m_kind;
 };
 
 /*******************************************************************************
@@ -183,44 +155,23 @@ class DataType {
 
 class DataTypeBasic: public DataType {
 public: /* Methods: */
-    explicit DataTypeBasic(SecrecDataType dataType, SecrecDimType dim = 0)
+
+    explicit DataTypeBasic(SecurityType* secType,
+                           SecrecDataType dataType,
+                           SecrecDimType dim = 0)
         : DataType(DataType::BASIC)
-        , m_secType(PublicSecType ().clone ())
+        , m_secType(secType)
         , m_dataType(dataType)
         , m_dimType(dim)
     { }
 
-    explicit DataTypeBasic(const SecurityType& secType, SecrecDataType dataType, SecrecDimType dim = 0)
-        : DataType(DataType::BASIC)
-        , m_secType(secType.clone ())
-        , m_dataType(dataType)
-        , m_dimType(dim)
-    { }
+    ~DataTypeBasic () { }
 
-    explicit DataTypeBasic(const DataTypeBasic &copy)
-        : DataType(copy)
-        , m_secType(copy.m_secType->clone ())
-        , m_dataType(copy.m_dataType)
-        , m_dimType(copy.m_dimType)
-    { }
-
-    ~DataTypeBasic () {
-        delete m_secType;
-    }
-
-    inline const SecurityType& secType() const { return *m_secType; }
+    inline SecurityType* secType() const { return m_secType; }
     inline SecrecDataType dataType() const { return m_dataType; }
     inline SecrecDimType dimType() const { return m_dimType; }
 
-    virtual inline DataType *clone() const { return new DataTypeBasic(*this); }
     virtual std::string toString() const;
-
-    virtual bool operator==(const DataType &other) const {
-        return DataType::operator==(other)
-                && *m_secType == *static_cast<const DataTypeBasic &>(other).m_secType
-                && m_dataType == static_cast<const DataTypeBasic &>(other).m_dataType
-                && m_dimType == static_cast<const DataTypeBasic &>(other).m_dimType;
-    }
 
     virtual bool latticeLEQ(const DataType &other) const {
         return  DataType::latticeLEQ(other)
@@ -228,6 +179,9 @@ public: /* Methods: */
                 && latticeDataTypeLEQ(m_dataType,static_cast<const DataTypeBasic &>(other).m_dataType)
                 && latticeDimTypeLEQ(m_dimType,static_cast<const DataTypeBasic &>(other).m_dimType);
     }
+
+    static DataTypeBasic* create (Context& cxt, SecrecDataType dataType, SecrecDimType dim = 0);
+    static DataTypeBasic* create (Context& cxt, SecurityType* secType, SecrecDataType dataType, SecrecDimType dim = 0);
 
 private: /* Fields: */
     SecurityType* m_secType;
@@ -240,36 +194,31 @@ private: /* Fields: */
 *******************************************************************************/
 
 class DataTypeVar: public DataType {
-    public: /* Methods: */
-        explicit DataTypeVar(const SecurityType& secType, SecrecDataType dataType)
-            : DataType(DataType::VAR)
-            , m_dataType(new DataTypeBasic(secType, dataType)) {}
-        explicit DataTypeVar(const DataType &dataType)
-            : DataType(DataType::VAR), m_dataType(dataType.clone()) {}
-        explicit DataTypeVar(const DataTypeVar &copy)
-            : DataType(copy), m_dataType(copy.m_dataType->clone()) {}
-        virtual inline ~DataTypeVar() { delete m_dataType; }
+public: /* Methods: */
 
-        const DataType &dataType() const { return *m_dataType; }
+    explicit DataTypeVar(DataType* dataType)
+        : DataType(DataType::VAR), m_dataType(dataType) {}
 
-        virtual inline DataType *clone() const { return new DataTypeVar(*this); }
-        virtual std::string toString() const;
-        virtual bool operator==(const DataType &other) const {
-            return DataType::operator==(other)
-                   && m_dataType == static_cast<const DataTypeVar &>(other).m_dataType;
-        }
+    virtual inline ~DataTypeVar() { }
 
-        virtual inline bool canAssign(const DataType &other) const {
-            return other.latticeLEQ(*m_dataType);
-        }
+    DataType* dataType() const { return m_dataType; }
 
-        virtual inline bool latticeLEQ(const DataType &other) const {
-            return m_dataType->DataType::latticeLEQ(other)
-                   && m_dataType->latticeLEQ(*static_cast<DataTypeVar const&>(other).m_dataType);
-        }
+    virtual std::string toString() const;
+    virtual inline bool canAssign(const DataType &other) const {
+        return other.latticeLEQ(*m_dataType);
+    }
 
-    private: /* Fields: */
-        DataType *m_dataType;
+    virtual inline bool latticeLEQ(const DataType &other) const {
+        return
+            m_dataType->DataType::latticeLEQ(other) &&
+            m_dataType->latticeLEQ(*static_cast<DataTypeVar const&>(other).m_dataType);
+    }
+
+    static DataTypeVar* create (Context& cxt, DataType* base);
+
+
+private: /* Fields: */
+    DataType *m_dataType;
 };
 
 /*******************************************************************************
@@ -277,28 +226,30 @@ class DataTypeVar: public DataType {
 *******************************************************************************/
 
 class DataTypeProcedureVoid: public DataType {
-    public: /* Methods: */
-        explicit DataTypeProcedureVoid(DataType::Kind kind = PROCEDUREVOID)
-            : DataType(kind) {}
-        explicit DataTypeProcedureVoid(const DataTypeProcedureVoid &copy);
-        virtual ~DataTypeProcedureVoid();
+public: /* Methods: */
+    explicit DataTypeProcedureVoid(const std::vector<DataType*>& params,
+                                   DataType::Kind kind = PROCEDUREVOID)
+        : DataType(kind)
+        , m_params (params) {}
+    explicit DataTypeProcedureVoid(DataType::Kind kind = PROCEDUREVOID)
+        : DataType(kind) {}
+    virtual ~DataTypeProcedureVoid() { }
 
-        virtual inline DataType *clone() const { return new DataTypeProcedureVoid(*this); }
-        virtual std::string toString() const;
-        std::string mangle() const;
+    virtual std::string toString() const;
+    std::string mangle() const;
 
-        inline void addParamType(const DataType &paramType) { m_params.push_back(paramType.clone()); }
-        inline const std::vector<DataType*> &paramTypes() const { return m_params; }
+    inline void addParamType(DataType* paramType) { m_params.push_back(paramType); }
+    inline const std::vector<DataType*> &paramTypes() const { return m_params; }
 
-        virtual bool operator==(const DataType &other) const;
+    virtual bool latticeLEQ(const DataType &) const {
+        assert (false && "We don't define lattice structure on function types yet!");
+        return false;
+    }
 
-        virtual bool latticeLEQ(const DataType &) const {
-            assert (false && "We don't define lattice structure on function types yet!");
-            return false;
-        }
+    static DataTypeProcedureVoid* create (Context& cxt, const std::vector<DataType*>& params);
 
-    private: /* Fields: */
-        std::vector<DataType*> m_params;
+private: /* Fields: */
+    std::vector<DataType*> m_params;
 };
 
 /*******************************************************************************
@@ -306,43 +257,52 @@ class DataTypeProcedureVoid: public DataType {
 *******************************************************************************/
 
 class DataTypeProcedure: public DataTypeProcedureVoid {
-    public: /* Methods: */
-        explicit DataTypeProcedure(const DataType &returnType)
-            : DataTypeProcedureVoid(PROCEDURE), m_ret(returnType.clone()) {}
-        explicit DataTypeProcedure(const DataTypeProcedure &copy)
-            : DataTypeProcedureVoid(copy), m_ret(copy.m_ret->clone()) {}
-        virtual inline ~DataTypeProcedure() { delete m_ret; }
+public: /* Methods: */
 
-        virtual inline DataType *clone() const { return new DataTypeProcedure(*this); }
-        virtual std::string toString() const;
+    explicit DataTypeProcedure(const std::vector<DataType*>& params, DataType* returnType)
+        : DataTypeProcedureVoid(params, PROCEDURE)
+        , m_ret(returnType)
+    { }
 
-        inline const DataType &returnType() const { return *m_ret; }
+    explicit DataTypeProcedure(DataType* returnType)
+        : DataTypeProcedureVoid(PROCEDURE)
+        , m_ret(returnType)
+    { }
 
-        virtual bool operator==(const DataType &other) const;
-        virtual inline bool canAssign(const DataType &other) const {
-            return DataTypeVar(*m_ret).canAssign(other);
-        }
+    virtual inline ~DataTypeProcedure() { }
 
-        virtual bool latticeLEQ(const DataType &) const {
-            assert (false && "We don't define lattice structure on function types yet!");
-            return false;
-        }
+    virtual std::string toString() const;
 
-    private: /* Fields: */
-        const DataType *m_ret;
+    inline DataType* returnType() const { return m_ret; }
+
+    virtual inline bool canAssign(const DataType &other) const {
+        return other.latticeLEQ(*m_ret);
+    }
+
+    virtual bool latticeLEQ(const DataType &) const {
+        assert (false && "We don't define lattice structure on function types yet!");
+        return false;
+    }
+
+    static DataTypeProcedure* create (Context& cxt, const std::vector<DataType*>& params, DataType* returnType);
+    static DataTypeProcedure* create (Context& cxt, DataTypeProcedureVoid* params, DataType* returnType);
+
+
+private: /* Fields: */
+    DataType* m_ret;
 };
 
-inline const SecurityType& DataType::secrecSecType() const {
+inline SecurityType* DataType::secrecSecType() const {
     switch (m_kind) {
     case BASIC:
         assert(dynamic_cast<const DataTypeBasic*>(this) != 0);
         return static_cast<const DataTypeBasic*>(this)->secType();
     case VAR:
         assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-        return static_cast<const DataTypeVar*>(this)->dataType().secrecSecType();
+        return static_cast<const DataTypeVar*>(this)->dataType()->secrecSecType();
     case PROCEDURE:
         assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
-        return static_cast<const DataTypeProcedure*>(this)->returnType().secrecSecType();
+        return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecSecType();
     case PROCEDUREVOID:
     default:
         assert (false && "Invalid security type!");
@@ -356,10 +316,10 @@ inline SecrecDataType DataType::secrecDataType() const {
             return static_cast<const DataTypeBasic*>(this)->dataType();
         case VAR:
             assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-            return static_cast<const DataTypeVar*>(this)->dataType().secrecDataType();
+            return static_cast<const DataTypeVar*>(this)->dataType()->secrecDataType();
         case PROCEDURE:
             assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
-            return static_cast<const DataTypeProcedure*>(this)->returnType().secrecDataType();
+            return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDataType();
         case PROCEDUREVOID:
         default:
             return DATATYPE_INVALID;
@@ -373,10 +333,10 @@ inline SecrecDimType DataType::secrecDimType() const {
             return static_cast<const DataTypeBasic*>(this)->dimType();
         case VAR:
             assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-            return static_cast<const DataTypeVar*>(this)->dataType().secrecDimType();
+            return static_cast<const DataTypeVar*>(this)->dataType()->secrecDimType();
         case PROCEDURE:
             assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
-            return static_cast<const DataTypeProcedure*>(this)->returnType().secrecDimType();
+            return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDimType();
         case PROCEDUREVOID:
         default:
             return 0; // or maybe -1 for invalid dimensionalities?
@@ -388,35 +348,34 @@ inline SecrecDimType DataType::secrecDimType() const {
 *******************************************************************************/
 
 class Type {
-    public: /* Methods: */
-        explicit inline Type(bool isVoid)
-            : m_isVoid(isVoid) {}
-        explicit inline Type(const Type &copy)
-            : m_isVoid(copy.m_isVoid) {}
-        virtual inline ~Type() {}
+private:
+    Type (const Type&); // DO NOT IMPLEMENT
+    void operator = (const Type&); // DO NOT IMPLEMENT
 
-        inline bool isVoid() const { return m_isVoid; }
+public: /* Methods: */
 
-        virtual Type *clone() const = 0;
-        virtual std::string toString() const = 0;
+    explicit inline Type(bool isVoid)
+        : m_isVoid(isVoid)
+    { }
 
-        virtual inline bool operator==(const Type &other) const {
-            return m_isVoid == other.m_isVoid;
-        }
-        virtual inline bool operator!=(const Type &other) const {
-            return !operator==(other);
-        }
-        virtual inline bool canAssign(const Type &) const {
-            return false;
-        }
+    virtual inline ~Type() { }
 
-        inline const SecurityType& secrecSecType() const;
-        inline SecrecDataType secrecDataType() const;
-        inline SecrecDimType secrecDimType() const;
-        inline bool isScalar () const { return secrecDimType() == 0; }
+    inline bool isVoid() const { return m_isVoid; }
 
-    private: /* Fields: */
-        const bool m_isVoid;
+    virtual std::string toString() const = 0;
+
+    virtual inline bool canAssign(const Type &) const {
+        return false;
+    }
+
+    inline SecurityType* secrecSecType() const;
+    inline SecrecDataType secrecDataType() const;
+    inline SecrecDimType secrecDimType() const;
+    inline bool isScalar () const { return secrecDimType() == 0; }
+
+private: /* Fields: */
+
+    const bool m_isVoid;
 };
 
 /*******************************************************************************
@@ -424,14 +383,15 @@ class Type {
 *******************************************************************************/
 
 class TypeVoid: public Type {
-    public: /* Methods: */
-        inline TypeVoid()
-            : Type(true) {}
-        explicit inline TypeVoid(const TypeVoid &copy)
-            : Type(copy) {}
+public: /* Methods: */
 
-        virtual inline Type *clone() const { return new TypeVoid(); }
-        virtual inline std::string toString() const { return "void"; }
+    inline TypeVoid ()
+        : Type(true)
+    { }
+
+    static TypeVoid* create (Context& cxt);
+
+    virtual inline std::string toString() const { return "void"; }
 };
 
 /*******************************************************************************
@@ -439,74 +399,64 @@ class TypeVoid: public Type {
 *******************************************************************************/
 
 class TypeNonVoid: public Type {
-    public: /* Types: */
-        enum Kind {
-            BASIC,        /**< DataTypeBasic.         */
-            VAR,          /**< DataTypeVar.           */
-            PROCEDURE,    /**< DataTypeProcedure.     */
-            PROCEDUREVOID /**< DataTypeProcedureVoid. */
-        };
+public: /* Types: */
 
-    public: /* Methods: */
+    enum Kind {
+        BASIC,        /**< DataTypeBasic.         */
+        VAR,          /**< DataTypeVar.           */
+        PROCEDURE,    /**< DataTypeProcedure.     */
+        PROCEDUREVOID /**< DataTypeProcedureVoid. */
+    };
 
-        TypeNonVoid(SecrecDataType dataType, SecrecDimType dimType = 0)
-            : Type(false), m_kind(BASIC),
-              m_dataType(new DataTypeBasic(dataType, dimType)) {}
-        TypeNonVoid(const SecurityType& secType,
-                    SecrecDataType dataType,
-                    SecrecDimType dimType = 0)
-            : Type(false), m_kind(BASIC),
-              m_dataType(new DataTypeBasic(secType, dataType, dimType)) {}
-        TypeNonVoid(const DataTypeBasic &dataType)
-            : Type(false), m_kind(BASIC), m_dataType(dataType.clone()) {}
-        TypeNonVoid(const DataTypeVar &dataType)
-            : Type(false), m_kind(VAR), m_dataType(dataType.clone()) {}
-        TypeNonVoid(const DataTypeProcedure &dataType)
-            : Type(false), m_kind(PROCEDURE), m_dataType(dataType.clone()) {}
-        TypeNonVoid(const DataTypeProcedureVoid &dataType)
-            : Type(false), m_kind(PROCEDUREVOID), m_dataType(dataType.clone()) {}
-        TypeNonVoid(const DataType &dataType);
+public: /* Methods: */
 
-        inline TypeNonVoid(const TypeNonVoid &copy)
-            : Type(copy), m_kind(copy.m_kind),
-              m_dataType(copy.m_dataType->clone()) {}
-        virtual ~TypeNonVoid();
+    TypeNonVoid(DataTypeProcedureVoid* dataType)
+        : Type(false)
+        , m_kind(PROCEDUREVOID)
+        , m_dataType(dataType)
+    { }
 
-        inline Kind kind() const { return m_kind; }
-        inline const DataType &dataType() const { return *m_dataType; }
+    TypeNonVoid(DataType* dataType);
 
-        virtual inline Type *clone() const { return new TypeNonVoid(*this); }
-        virtual std::string toString() const;
-        virtual inline bool operator==(const Type &other) const {
-            return Type::operator==(other)
-                   && m_kind == static_cast<const TypeNonVoid&>(other).kind()
-                   && *m_dataType == *static_cast<const TypeNonVoid&>(other).m_dataType;
-        }
-        virtual inline bool canAssign(const Type &other) const {
-            if (other.isVoid()) return false;
-            assert(dynamic_cast<const TypeNonVoid*>(&other) != 0);
-            const TypeNonVoid &o = static_cast<const TypeNonVoid&>(other);
-            return m_dataType->canAssign(*(o.m_dataType));
-        }
+    virtual ~TypeNonVoid() { }
 
-    private: /* Fields: */
-        const Kind  m_kind;
-        DataType*   m_dataType;
+    inline Kind kind() const { return m_kind; }
+    inline DataType* dataType() const { return m_dataType; }
+
+    virtual std::string toString() const;
+
+    virtual inline bool canAssign(const Type &other) const {
+        if (other.isVoid()) return false;
+        assert(dynamic_cast<const TypeNonVoid*>(&other) != 0);
+        const TypeNonVoid &o = static_cast<const TypeNonVoid&>(other);
+        return m_dataType->canAssign(*(o.m_dataType));
+    }
+
+    static TypeNonVoid* create (Context& cxt, DataType* dtype);
+    static TypeNonVoid* create (Context& cxt, SecrecDataType dataType,
+                                SecrecDimType dimType = 0);
+    static TypeNonVoid* create (Context& cxt, SecurityType* secType,
+                                SecrecDataType dataType,
+                                SecrecDimType dimType = 0);
+
+private: /* Fields: */
+    const Kind  m_kind;
+    DataType*   m_dataType;
 };
 
-inline const SecurityType& Type::secrecSecType() const {
+inline SecurityType* Type::secrecSecType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
-    return static_cast<const TypeNonVoid&>(*this).dataType().secrecSecType();
+    return static_cast<const TypeNonVoid&>(*this).dataType()->secrecSecType();
 }
 
 inline SecrecDataType Type::secrecDataType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
-    return static_cast<const TypeNonVoid&>(*this).dataType().secrecDataType();
+    return static_cast<const TypeNonVoid&>(*this).dataType()->secrecDataType();
 }
 
 inline SecrecDimType Type::secrecDimType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
-    return static_cast<const TypeNonVoid&>(*this).dataType().secrecDimType();
+    return static_cast<const TypeNonVoid&>(*this).dataType()->secrecDimType();
 }
 
 

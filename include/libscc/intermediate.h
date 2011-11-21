@@ -25,7 +25,7 @@ class ICode {
         inline ICode()
             : m_status(NOT_READY) {}
 
-        Status init(TreeNodeProgram *p);
+        Status init(Context& cxt, TreeNodeProgram *p);
 
         const SymbolTable &symbols() const { return m_symbols; }
         Program& program () { return m_program; }

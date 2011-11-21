@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <fstream>
 
+#include <libscc/context.h>
 #include <libscc/intermediate.h>
 #include <libscc/treenode.h>
 #include <libscc/blocks.h>
@@ -113,8 +114,9 @@ int main(int argc, char *argv[]) {
     }
     
     /* Translate to intermediate code: */
+    SecreC::Context context;
     SecreC::ICode icode;
-    if (icode.init (parseTree) != SecreC::ICode::OK) {
+    if (icode.init (context, parseTree) != SecreC::ICode::OK) {
         ::operator << (cerr << "Error generating valid intermediate code." << endl
                       , icode.compileLog ());
         return EXIT_FAILURE;

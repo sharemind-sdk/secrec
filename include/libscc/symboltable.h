@@ -31,8 +31,9 @@ class SymbolTable {
 
         void appendSymbol(Symbol *symbol);
         void appendGlobalSymbol(Symbol *symbol);
+
         SymbolProcedure *appendProcedure(const TreeNodeProcDef &procdef);
-        SymbolSymbol *appendTemporary(const TypeNonVoid &type);
+        SymbolSymbol *appendTemporary(TypeNonVoid* type);
 
         SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;
@@ -48,19 +49,13 @@ class SymbolTable {
             return m_parent;
         }
 
-
         /* methods to construct constants */
-        Symbol* defaultConstant (SecrecDataType dataType);
-        ConstantBool *constantBool(bool value);
-        ConstantInt *constantInt(int value);
-        ConstantUInt *constantUInt(unsigned value);
-        ConstantString *constantString(const std::string &value);
 
     private: /* Fields: */
-        Table        m_table;
-        SymbolTable *m_parent;
-        GlobalSymbols* m_global;
-        std::list<SymbolTable* > m_scopes; ///< Used only for deleting and printing
+        Table                     m_table;
+        SymbolTable*              m_parent;
+        GlobalSymbols*            m_global;
+        std::list<SymbolTable* >  m_scopes;
 };
 
 } // namespace SecreC

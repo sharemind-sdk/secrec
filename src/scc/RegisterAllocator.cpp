@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <boost/foreach.hpp>
 
 using namespace SecreC;
 
@@ -42,7 +43,7 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
     VMValue* imm = st.find (sym);
     if (imm == 0) {
         uint64_t value = 0xdeadbeef;
-        switch (sym->secrecType ().secrecDataType ()) {
+        switch (sym->secrecType ()->secrecDataType ()) {
             case DATATYPE_BOOL:   value = static_cast<const ConstantBool*>(sym)->value ();   break;
             case DATATYPE_INT8:   value = static_cast<const ConstantInt8*>(sym)->value ();   break;
             case DATATYPE_INT16:  value = static_cast<const ConstantInt16*>(sym)->value ();  break;

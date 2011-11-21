@@ -1,8 +1,9 @@
 #include "treenode.h"
 #include "symboltable.h"
 #include "misc.h"
-
 #include "codegen.h"
+
+#include <boost/foreach.hpp>
 
 /**
  * Code generation for top level statements.
@@ -145,10 +146,10 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     assert (bodyResult.continueList ().empty ());
 
     // Static checking:
-    assert(ns->secrecType().isVoid() == false);
-    assert(dynamic_cast<const TNV*>(&ns->secrecType()) != 0);
-    const TNV &fType = static_cast<const TNV&>(ns->secrecType());
-    if (fType.kind() == TNV::PROCEDURE) {
+    assert(!ns->secrecType()->isVoid());
+    assert(dynamic_cast<TNV*>(ns->secrecType()) != 0);
+    TNV* fType = static_cast<TNV*>(ns->secrecType());
+    if (fType->kind() == TNV::PROCEDURE) {
         if (bodyResult.flags () != CGStmtResult::RETURN) {
             if ((bodyResult.flags () & CGStmtResult::BREAK) != 0x0) {
                 log.fatal() << "Function at " << def->location()
@@ -170,7 +171,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
         }
         assert((bodyResult.flags () & CGStmtResult::RETURN) != 0x0);
     } else {
-        assert(fType.kind() == TNV::PROCEDUREVOID);
+        assert(fType->kind() == TNV::PROCEDUREVOID);
         if (bodyResult.flags () != CGStmtResult::RETURN) {
             if ((bodyResult.flags () & CGStmtResult::BREAK) != 0x0) {
                 log.fatal() << "Function at " << def->location()
@@ -184,7 +185,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
                 return result;
             }
 
-            assert (fType.kind() == TNV::PROCEDUREVOID);
+            assert (fType->kind() == TNV::PROCEDUREVOID);
             Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
             i->setReturnDestFirstImop (st->label (result.firstImop ()));
             pushImopAfter (result, i);
@@ -214,7 +215,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
 
     CGStmtResult result;
     std::list<TreeNodeProcDef*> procs;
-    typedef std::list<TreeNodeProcDef*>::iterator PI;
+    std::list<TreeNodeTemplate*> templs;
 
     if (prog->children().empty()) {
         log.fatal() << "Program is empty";
@@ -222,11 +223,15 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         return result;
     }
 
-    for (CLCI i = prog->children ().begin (), e = prog->children ().end (); i != e; ++ i) {
-        TreeNode* decl = *i;
+    BOOST_FOREACH (TreeNode* decl, prog->children ()) {
         if (decl->type () == NODE_PROCDEF) {
             assert (dynamic_cast<TreeNodeProcDef*>(decl) != 0);
             procs.push_back (static_cast<TreeNodeProcDef*>(decl));
+        }
+        else
+        if (decl->type () == NODE_TEMPLATE_DECL) {
+            assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
+            templs.push_back (static_cast<TreeNodeTemplate*>(decl));
         }
         else {
             append (result, cgGlobalDecl (decl));
@@ -244,8 +249,8 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     code.push_imop (new Imop (prog, Imop::END));
 
     // Handle functions:
-    for (PI i = procs.begin (), e = procs.end (); i != e; ++ i) {
-        append (result, (*i)->codeGenWith (*this));
+    BOOST_FOREACH (TreeNodeProcDef* procDef, procs) {
+        append (result, procDef->codeGenWith (*this));
         if (result.isNotOk ()) {
             return result;
         }

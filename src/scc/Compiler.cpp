@@ -96,7 +96,7 @@ VMValue* getImm (VMSymbolTable& st, const Symbol* sym) {
     VMValue* imm = st.find (sym);
     if (imm == 0) {
         uint64_t value = 0xdeadbeef;
-        switch (sym->secrecType ().secrecDataType ()) {
+        switch (sym->secrecType ()->secrecDataType ()) {
             case DATATYPE_BOOL:   value = static_cast<const ConstantBool*>(sym)->value ();   break;
             case DATATYPE_INT8:   value = static_cast<const ConstantInt8*>(sym)->value ();   break;
             case DATATYPE_INT16:  value = static_cast<const ConstantInt16*>(sym)->value ();  break;
@@ -276,7 +276,7 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
 
     // type of arguments (if needed)
     if (imop.type () != Imop::JUMP) {
-        instr << secrecDTypeToVMDType (imop.arg1 ()->secrecType ().secrecDataType ());
+        instr << secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
     }
 
     // arguments
@@ -301,7 +301,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     block.push_back (pushSize);
 
     VMLabel* target = 0;
-    unsigned size = secrecDTypeSize (imop.arg1 ()->secrecType ().secrecDataType ());
+    unsigned size = secrecDTypeSize (imop.arg1 ()->secrecType ()->secrecDataType ());
     {
         std::stringstream ss;
         ss << ":secrecAlloc_" << size;
@@ -329,7 +329,7 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     if (imop.isVectorized ()) {
         VMValue* rSize = m_ra->temporaryReg ();
         VMValue* rNum = m_st.find (imop.arg2 ());
-        const unsigned elemSize = secrecDTypeSize (imop.arg1 ()->secrecType ().secrecDataType ());
+        const unsigned elemSize = secrecDTypeSize (imop.arg1 ()->secrecType ()->secrecDataType ());
         block.push_back (
             VMInstruction ()
                 << "tmul uint64" << rSize << rNum
@@ -389,7 +389,7 @@ void Compiler::cgParam (VMBlock& block, const Imop& imop) {
             << m_st.getImm (m_param ++)
             << "0x0" // offset 0
             << m_st.find (imop.dest ())
-            << m_st.getImm (secrecDTypeSize (imop.dest ()->secrecType ().secrecDataType ()))
+            << m_st.getImm (secrecDTypeSize (imop.dest ()->secrecType ()->secrecDataType ()))
     );
 }
 
@@ -411,7 +411,7 @@ void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
         movI << "ref"
              << m_st.getImm (retCount ++ )
              << "0x0"
-             << m_st.getImm (secrecDTypeSize ((*it)->secrecType ().secrecDataType ()));
+             << m_st.getImm (secrecDTypeSize ((*it)->secrecType ()->secrecDataType ()));
         block.push_back (movI);
     }
 
@@ -428,7 +428,7 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
     tmpInstr << "mov" << m_st.find (imop.arg2 ()) << rOffset;
     block.push_back (tmpInstr);
 
-    const unsigned size = secrecDTypeSize (imop.arg1()->secrecType ().secrecDataType ());
+    const unsigned size = secrecDTypeSize (imop.arg1()->secrecType ()->secrecDataType ());
     VMInstruction mulInstr;
     mulInstr << "bmul uint64" << rOffset << m_st.getImm (size);
     block.push_back (mulInstr);
@@ -451,7 +451,7 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
     tmpInstr << rOffset;
     block.push_back (tmpInstr);
 
-    const unsigned size = secrecDTypeSize (imop.arg2()->secrecType ().secrecDataType ());
+    const unsigned size = secrecDTypeSize (imop.arg2()->secrecType ()->secrecDataType ());
     VMInstruction mulInstr;
     mulInstr << "bmul uint64" << rOffset << m_st.getImm (size);
     block.push_back (mulInstr);
@@ -477,7 +477,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
         {
             std::stringstream ss;
             ss << ':' << imopToVMName (imop) << "_vec_"
-                      << secrecDTypeSize (imop.arg1 ()->secrecType ().secrecDataType ());
+                      << secrecDTypeSize (imop.arg1 ()->secrecType ()->secrecDataType ());
             target = st ().getLabel (ss.str ());
         }
 
@@ -489,7 +489,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     const char* name = imopToVMName (imop);
     VMInstruction instr;
     instr << name
-          << secrecDTypeToVMDType (imop.dest ()->secrecType ().secrecDataType ())
+          << secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ())
           << m_st.find (imop.dest ());
 
     Imop::OperandConstIterator 

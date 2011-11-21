@@ -12,7 +12,7 @@ CMAKE_POLICY(SET CMP0015 NEW)
 PROJECT("SecreC framework" "CXX" "C")
 
 LINK_DIRECTORIES("lib")
-SET(COMMON_FLAGS "-DDEBUG -O0 -ggdb -g -Wall -Wextra -Wstrict-aliasing -pedantic -pedantic-errors -Wno-long-long -pipe")
+SET(COMMON_FLAGS "-DDEBUG -O0 -g3 -Wall -Wextra -Wstrict-aliasing -pedantic -pedantic-errors -Wno-long-long -pipe")
 SET(CMAKE_C_FLAGS "--std=gnu99 ${COMMON_FLAGS}")
 SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS}")
 
@@ -60,6 +60,8 @@ SET(LIBSCC_SOURCES
     "src/libscc/codegen/program.cpp"
     "src/libscc/codegen.cpp"
     "src/libscc/typechecker.cpp"
+    "src/libscc/context_impl.cpp"
+    "src/libscc/context.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
@@ -79,7 +81,9 @@ SET(LIBSCC_HEADERS
     "include/libscc/misc.h"
     "include/libscc/symboltable.h"
     "include/libscc/types.h"
-    "include/libscc/typechecker.h")
+    "include/libscc/typechecker.h"
+    "include/libscc/context.h"
+    "src/libscc/context_impl.h")
 
 SET_SOURCE_FILES_PROPERTIES("src/libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")

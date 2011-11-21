@@ -21,6 +21,7 @@ namespace SecreC {
 class ICodeList;
 class SymbolTable;
 class CompileLog;
+class Context;
 
 /*******************************************************************************
   CodeGen
@@ -60,6 +61,10 @@ public:
     { }
 
     inline ~CodeGen () { }
+
+    inline Context& getContext () const {
+        return m_tyChecker.getContext ();
+    }
 
     void newScope () {
         st = st->newScope ();
@@ -217,7 +222,7 @@ public:
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
-protected:
+protected: /* Fields: */
 
     ICodeList&    code;         ///< The code new instructions are emitted to.
     SymbolTable*  st;           ///< Symbol table.

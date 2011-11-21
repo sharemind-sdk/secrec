@@ -20,15 +20,20 @@ private:
 
 public: /* Methods: */
 
-    TypeChecker (SymbolTable& st, CompileLog& log)
+    TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt)
         : m_st (&st)
         , m_log (log)
+        , m_context (cxt)
     { }
 
     ~TypeChecker () { }
 
     void setScope (SymbolTable& st) {
         m_st = &st;
+    }
+
+    Context& getContext () const {
+        return m_context;
     }
 
     ICode::Status visitExpr (TreeNodeExpr* e) {
@@ -62,7 +67,12 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeStmtPrint* stmt);
     ICode::Status visit (TreeNodeStmtReturn* stmt);
 
-    TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty);
+    ICode::Status visit (TreeNodeTemplate* templ);
+
+    TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, Type* ty);
+
+    /// TreeNode* findImpl (std::string& name, const std::vector<TypeNonVoid*>& argTys);
+    bool match (TreeNodeTemplate* n, const std::vector<TypeNonVoid*>& argTys);
 
 protected:
 
@@ -71,25 +81,13 @@ protected:
     ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root, bool isPrefix, bool isInc);
     ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
-    ICode::Status populateParamTypes (DataTypeProcedureVoid& dt, TreeNodeProcDef* proc);
-
-    inline static TypeVoid* voidTy () {
-        return new TypeVoid ();
-    }
-
-    inline static TypeNonVoid* publicTy (SecrecDataType dTy, SecrecDimType dimTy = 0) {
-        return new TypeNonVoid (dTy, dimTy);
-    }
-
-    inline static TypeNonVoid* publicBoolTy (SecrecDimType dimTy = 0)  {
-        return publicTy (DATATYPE_BOOL, dimTy);
-    }
-
+    ICode::Status populateParamTypes (std::vector<DataType*>& params, TreeNodeProcDef* proc);
 
 private: /* Fields: */
 
     SymbolTable*    m_st;
     CompileLog&     m_log;
+    Context&        m_context;
 };
 
 }

@@ -233,9 +233,9 @@ public: /* Methods: */
         , m_cachedType (0)
     { }
 
-    const SecreC::Type& secrecType () const {
+    SecreC::Type* secrecType () const {
         assert (m_cachedType != 0);
-        return *m_cachedType;
+        return m_cachedType;
     }
 
     TreeNodeSecTypeF* secType () const {
@@ -292,7 +292,7 @@ public: /* Methods: */
 class TreeNodeTypeVoid: public TreeNodeType {
 public: /* Methods: */
     explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
-        : TreeNodeType(NODE_TYPEVOID, loc, new TypeVoid ())
+        : TreeNodeType(NODE_TYPEVOID, loc)
     { }
 };
 
@@ -306,9 +306,7 @@ class TreeNodeExpr: public TreeNode {
     public: /* Methods: */
         inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
             : TreeNode(type, loc), m_resultType(0) { }
-        virtual ~TreeNodeExpr() {
-            delete m_resultType;
-        }
+        virtual ~TreeNodeExpr() { }
 
         virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
 
@@ -318,12 +316,12 @@ class TreeNodeExpr: public TreeNode {
         inline bool havePublicBoolType() const {
             assert(m_resultType != 0);
             return m_resultType->secrecDataType() == DATATYPE_BOOL
-                   && m_resultType->secrecSecType().isPublic ()
+                   && m_resultType->secrecSecType()->isPublic ()
                    && m_resultType->isScalar();
         }
-        inline const SecreC::Type &resultType() const {
+        inline SecreC::Type* resultType() const {
             assert(m_resultType != 0);
-            return *m_resultType;
+            return m_resultType;
         }
 
         virtual CGResult codeGenWith (CodeGen& cg) = 0;
@@ -918,7 +916,6 @@ class TreeNodeDomain : public TreeNode {
 };
 
 
-
 /******************************************************************
   TreeNodeProcDef
 ******************************************************************/
@@ -931,7 +928,7 @@ class TreeNodeProcDef: public TreeNode {
         {
             setContainingProcedureDirectly(this);
         }
-        virtual inline ~TreeNodeProcDef() { delete m_cachedType; }
+        virtual inline ~TreeNodeProcDef() { }
 
         virtual inline void resetParent(TreeNode *parent) {
             setParentDirectly(parent);
@@ -949,9 +946,9 @@ class TreeNodeProcDef: public TreeNode {
         const std::string &procedureName() const;
 
         inline bool haveProcedureType() const { return m_cachedType != 0; }
-        const SecreC::TypeNonVoid &procedureType() const {
+        SecreC::TypeNonVoid* procedureType() const {
             assert(m_cachedType != 0);
-            return *m_cachedType;
+            return m_cachedType;
         }
 
         TreeNodeType* returnType () const {
@@ -976,8 +973,8 @@ class TreeNodeProcDef: public TreeNode {
         friend class TypeChecker;
 
     protected: /* Fields: */
-        const SecreC::TypeNonVoid *m_cachedType;
-        SymbolProcedure           *m_procSymbol;
+        SecreC::TypeNonVoid*  m_cachedType;
+        SymbolProcedure*      m_procSymbol;
 };
 
 
@@ -1125,16 +1122,16 @@ public: /* Methods: */
     explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
         : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false),
           m_procParam(false) {}
-    virtual inline ~TreeNodeStmtDecl() { delete m_type; }
+    virtual inline ~TreeNodeStmtDecl() { }
 
     const std::string &variableName() const;
 
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    inline const SecreC::TypeNonVoid &resultType() const {
+    inline SecreC::TypeNonVoid* resultType() const {
         assert(m_type != 0);
-        return *m_type;
+        return m_type;
     }
     inline bool haveResultType() const { return m_type != 0; }
 

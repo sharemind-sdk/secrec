@@ -25,25 +25,25 @@ class Symbol {
         };
     public: /* Methods: */
 
-        inline Symbol(Type symbolType, const SecreC::TypeNonVoid &valueType)
+        inline Symbol(Type symbolType, SecreC::TypeNonVoid* valueType)
             : m_symbolType(symbolType)
-            , m_type(valueType.clone())
+            , m_type(valueType)
         { }
 
         explicit inline Symbol (Type symbolType)
-            : m_symbolType(symbolType)
-            , m_type(TypeVoid ().clone ())
+            : m_symbolType (symbolType)
+            , m_type(0)
         { }
 
         virtual inline ~Symbol() {
-            delete m_type;
+//            delete m_type;
         }
 
         inline bool isConstant () const { return m_symbolType == CONSTANT; }
         inline Type symbolType() const { return m_symbolType; }
         inline const std::string &name() const { return m_name; }
         inline void setName(const std::string &name) { m_name = name; }
-        inline const SecreC::Type &secrecType() const { return *m_type; }
+        inline SecreC::Type* secrecType() const { return m_type; }
 
         virtual std::string toString() const = 0;
 
@@ -98,18 +98,18 @@ class SymbolSymbol: public Symbol {
 
     public: /* Methods: */
 
-        explicit SymbolSymbol (const SecreC::TypeNonVoid &valueType)
+        explicit SymbolSymbol (SecreC::TypeNonVoid* valueType)
             : Symbol (Symbol::SYMBOL, valueType)
             , m_scopeType (LOCAL)
-            , m_dims (valueType.secrecDimType())
+            , m_dims (valueType->secrecDimType())
             , m_size (0)
             , m_isTemporary (false)
         { }
 
-        explicit SymbolSymbol (const SecreC::TypeNonVoid &valueType, bool)
+        explicit SymbolSymbol (SecreC::TypeNonVoid* valueType, bool)
             : Symbol (Symbol::SYMBOL, valueType)
             , m_scopeType (LOCAL)
-            , m_dims (valueType.secrecDimType ())
+            , m_dims (valueType->secrecDimType ())
             , m_size (0)
             , m_isTemporary (true)
         { }

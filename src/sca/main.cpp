@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <iostream>
 
+#include <libscc/context.h>
 #include <libscc/blocks.h>
 #include <libscc/dataflowanalysis.h>
 #include <libscc/intermediate.h>
@@ -94,8 +95,9 @@ int run (const char* filename) {
           cout << parseTree->toString() << endl << endl;
         }
 
+        SecreC::Context context;
         SecreC::ICode icode;
-        icode.init (parseTree);
+        icode.init (context, parseTree);
 
         if (icode.status() == SecreC::ICode::OK) {
             SecreC::Program& pr = icode.program ();

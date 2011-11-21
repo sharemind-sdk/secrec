@@ -14,7 +14,6 @@
 
 #include <boost/preprocessor/control/if.hpp>
 
-
 #define LEAVETRACE 0
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
 #define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
@@ -22,19 +21,6 @@
 namespace { // anonymous namespace
 
 using namespace SecreC;
-
-/**
- * \todo translate this to C
- * \todo way too many lookups!
- * \todo lock the state of interpreter
- * \todo performance tests
- *
- * Some ideas to improve performance:
- * \todo in VM move away from Symbol to something better, for that
- *       we need extra pass to compute offsets in stack, also figure
- *       out what to do with constants.
- * \todo don't use std::map or std::vector
- */
 
 /**
  * Data structures:
@@ -54,6 +40,17 @@ union Value {
     const std::string*  un_str_val;
     bool                un_bool_val;
 };
+
+inline void assignValue (Value& v, const std::string& r) { v.un_str_val = &r; }
+inline void assignValue (Value& v, bool r) { v.un_bool_val = r; }
+inline void assignValue (Value& v, int8_t r) { v.un_int8_val = r; }
+inline void assignValue (Value& v, uint8_t r) { v.un_uint8_val = r; }
+inline void assignValue (Value& v, int16_t r) { v.un_int16_val = r; }
+inline void assignValue (Value& v, uint16_t r) { v.un_uint16_val = r; }
+inline void assignValue (Value& v, int32_t r) { v.un_int32_val = r; }
+inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
+inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
+inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
 
 void reserve (Value& arr, unsigned n) {
     arr.un_ptr = (Value*) malloc (sizeof (Value) * n);
@@ -198,11 +195,6 @@ inline void pop_frame (void)
     delete temp;
 }
 
-/// \todo this is too slow
-/// This would have to be constant time. In order to
-/// achieve this the global and local stores would have to be
-/// stacks and locations offsets in those stacks. The offsets would
-/// have to be precomputed. This needs too much work for now.
 Value& lookup (VMSym sym) __attribute__ ((noinline));
 Value& lookup (VMSym sym)  {
     TRACE ("%s ", (sym.isLocal ? "LOCAL" : "GLOBAL"));
@@ -218,12 +210,33 @@ Value& lookup (VMSym sym)  {
     }
 
 MKSTORESYM(sym, Value, store[sym.un_sym] = val)
-MKSTORESYM(sym, int64_t, store[sym.un_sym].un_int_val = val)
-MKSTORESYM(sym, int32_t, store[sym.un_sym].un_int32_val = val)
-MKSTORESYM(sym, uint64_t, store[sym.un_sym].un_uint_val = val)
-MKSTORESYM(sym, uint32_t, store[sym.un_sym].un_uint32_val = val)
-MKSTORESYM(sym, bool, store[sym.un_sym].un_bool_val = val)
-MKSTORESYM(sym, std::string*, store[sym.un_sym].un_str_val = val)
+
+template <SecrecDataType ty>
+void storeConstantHelper (Value& out, const Symbol* c) {
+    assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
+}
+
+void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>::CType& value) {
+    SecrecDataType dtype = c->secrecType ()->secrecDataType ();
+    Store& store = sym.isLocal ? m_frames->m_local : m_global;
+    Value& out = store[sym.un_sym];
+    switch (dtype) {
+    case DATATYPE_BOOL: storeConstantHelper<DATATYPE_BOOL>(out, c); break;
+    case DATATYPE_STRING: storeConstantHelper<DATATYPE_STRING>(out, c); break;
+    case DATATYPE_INT: storeConstantHelper<DATATYPE_INT>(out, c); break;
+    case DATATYPE_UINT: storeConstantHelper<DATATYPE_UINT>(out, c); break;
+    case DATATYPE_INT8: storeConstantHelper<DATATYPE_INT8>(out, c); break;
+    case DATATYPE_UINT8: storeConstantHelper<DATATYPE_UINT8>(out, c); break;
+    case DATATYPE_INT16: storeConstantHelper<DATATYPE_INT16>(out, c); break;
+    case DATATYPE_UINT16: storeConstantHelper<DATATYPE_UINT16>(out, c); break;
+    case DATATYPE_INT32: storeConstantHelper<DATATYPE_INT32>(out, c); break;
+    case DATATYPE_UINT32: storeConstantHelper<DATATYPE_UINT32>(out, c); break;
+    case DATATYPE_INT64: storeConstantHelper<DATATYPE_INT64>(out, c); break;
+    case DATATYPE_UINT64: storeConstantHelper<DATATYPE_UINT64>(out, c); break;
+    default:
+        assert (false && "VM: reached invalid data type.");
+    }
+}
 
 
 /**
@@ -235,6 +248,8 @@ MKSTORESYM(sym, std::string*, store[sym.un_sym].un_str_val = val)
 
 #define FETCH(name,i) Value& name = lookup((ip)->args[i])
 
+// Note that returns after callback explicitly tell compiler that callbacks
+// don't return. That should make tail call detection trivial.
 #define NEXT do { ((ip + 1)->callback (ip + 1)); return; } while (0)
 
 #define CUR do { ip->callback (ip); return; } while (0)
@@ -474,28 +489,9 @@ private:
                 if (static_cast<SymbolSymbol const*>(sym)->scopeType() == SymbolSymbol::GLOBAL)
                     out.isLocal = false;
                 break;
-            case Symbol::CONSTANT: {
-                SecrecDataType const& dtype = sym->secrecType().secrecDataType();
+            case Symbol::CONSTANT:
                 out.isLocal = false;
-                switch (dtype) {
-                    case DATATYPE_BOOL:
-                        assert (dynamic_cast<ConstantBool const*>(sym) != 0);
-                        storeSym (out, static_cast<ConstantBool const*>(sym)->value());
-                        break;
-                    case DATATYPE_INT:
-                        assert (dynamic_cast<ConstantInt const*>(sym) != 0);
-                        storeSym (out, static_cast<ConstantInt const*>(sym)->value());
-                        break;
-                    case DATATYPE_UINT:
-                        assert (dynamic_cast<ConstantUInt const*>(sym) != 0);
-                        storeSym (out, static_cast<ConstantUInt const*>(sym)->value());
-                        break;
-                    case DATATYPE_STRING:
-                        assert (dynamic_cast<ConstantString const*>(sym) != 0);
-                        storeSym (out, (std::string*) &static_cast<ConstantString const*>(sym)->value());
-                        break;
-                    default: assert (false && "VM: reached invalid data type.");
-                }}
+                storeConstant (out, sym);
             default: break;
         }
 
@@ -543,14 +539,14 @@ private:
           case Imop::DIV:            i.callback = CONDVCALLBACK(DIV, nArgs == 4); break;
           case Imop::MOD:            i.callback = CONDVCALLBACK(MOD, nArgs == 4); break;
           case Imop::ADD:
-            switch (imop.arg1()->secrecType().secrecDataType()) {
+            switch (imop.arg1()->secrecType()->secrecDataType()) {
               case DATATYPE_STRING:  i.callback = CONDVCALLBACK(ADDSTR, nArgs == 4); break;
               default:               i.callback = CONDVCALLBACK(ADD, nArgs == 4); break;
             }
             break;
           case Imop::SUB:            i.callback = CONDVCALLBACK(SUB, nArgs == 4); break;
           case Imop::EQ:
-            switch (imop.arg1()->secrecType().secrecDataType()) {
+            switch (imop.arg1()->secrecType()->secrecDataType()) {
               case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(EQBOOL, nArgs == 4); break;
               case DATATYPE_INT:     i.callback = CONDVCALLBACK(EQINT, nArgs == 4); break;
               case DATATYPE_UINT:    i.callback = CONDVCALLBACK(EQUINT, nArgs == 4); break;
@@ -559,7 +555,7 @@ private:
             }
             break;
           case Imop::NE:
-            switch (imop.arg1()->secrecType().secrecDataType()) {
+            switch (imop.arg1()->secrecType()->secrecDataType()) {
               case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(NEQBOOL, nArgs == 4); break;
               case DATATYPE_INT:     i.callback = CONDVCALLBACK(NEQINT, nArgs == 4); break;
               case DATATYPE_UINT:    i.callback = CONDVCALLBACK(NEQUINT, nArgs == 4); break;
@@ -577,7 +573,7 @@ private:
           case Imop::JT:             i.callback = JT_callback; break;
           case Imop::JF:             i.callback = JF_callback; break;
           case Imop::JE:
-            switch (imop.arg1()->secrecType().secrecDataType()) {
+            switch (imop.arg1()->secrecType()->secrecDataType()) {
               case DATATYPE_BOOL:    i.callback = JEBOOL_callback; break;
               case DATATYPE_INT:     i.callback = JEINT_callback; break;
               case DATATYPE_UINT:    i.callback = JEUINT_callback; break;
@@ -586,7 +582,7 @@ private:
             }
             break;
           case Imop::JNE:
-            switch (imop.arg1()->secrecType().secrecDataType()) {
+            switch (imop.arg1()->secrecType()->secrecDataType()) {
               case DATATYPE_BOOL:    i.callback = JNEBOOL_callback; break;
               case DATATYPE_INT:     i.callback = JNEINT_callback; break;
               case DATATYPE_UINT:    i.callback = JNEUINT_callback; break;
@@ -722,12 +718,13 @@ std::string VirtualMachine::toString(void) {
         const Symbol* sym = (Symbol const*) i->first;
         const Value& val = i->second;
         os << sym->toString() << " -> ";
-        switch (sym->secrecType().secrecDataType()) {
-            case DATATYPE_BOOL: os << val.un_bool_val; break;
-            case DATATYPE_INT: os << val.un_int_val; break;
-            case DATATYPE_UINT: os << val.un_uint_val; break;
-            case DATATYPE_STRING: os << *val.un_str_val; break;
-            default: assert (false);
+        switch (sym->secrecType()->secrecDataType()) {
+        case DATATYPE_BOOL: os << val.un_bool_val; break;
+        case DATATYPE_INT: os << val.un_int_val; break;
+        case DATATYPE_UINT: os << val.un_uint_val; break;
+        case DATATYPE_STRING: os << *val.un_str_val; break;
+        default:
+            assert (false);
         }
 
         os << '\n';

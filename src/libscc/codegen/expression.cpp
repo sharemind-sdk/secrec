@@ -58,7 +58,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         return result;
     }
 
-    bool isScalar = e->resultType ().isScalar ();
+    bool isScalar = e->resultType ()->isScalar ();
 
     SymbolSymbol* resSym = generateResultSymbol (result, e);
 
@@ -99,7 +99,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     // r = ALLOC def size
     {
-        Symbol* def = st->defaultConstant (e->resultType ().secrecDataType ());
+        Symbol* def = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
         Imop* i = 0;
         if (!isScalar)
             i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
@@ -110,14 +110,17 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     // 4. initialze required temporary symbols
     std::vector<Symbol* > indices;
+    Context& cxt = m_tyChecker.getContext ();
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (cxt, DATATYPE_INT);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
-        Symbol* sym = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
+        Symbol* sym = st->appendTemporary(pubIntTy);
         indices.push_back(sym);
     }
 
-    Symbol* offset = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
-    Symbol* tmp_result = st->appendTemporary(TypeNonVoid(e->resultType().secrecSecType(), e->resultType().secrecDataType(), 0));
-    Symbol* tmp_result2 = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
+    Symbol* offset = st->appendTemporary(pubIntTy);
+    Symbol* tmp_result = st->appendTemporary(TypeNonVoid::create (cxt,
+        e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType()));
+    Symbol* tmp_result2 = st->appendTemporary(pubIntTy);
 
     // 3. initialize strides
     std::vector<CodeGenStride > strides (2, CodeGenStride (*this));
@@ -128,7 +131,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     }
 
     if (!isScalar) {
-        Imop* i = newAssign (e, tmp_result, st->defaultConstant (tmp_result->secrecType ().secrecDataType ()));
+        Imop* i = newAssign (e, tmp_result, defaultConstant (getContext (), tmp_result->secrecType ()->secrecDataType ()));
         pushImopAfter (result, i);
     }
 
@@ -143,7 +146,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     {
         // old_ffset = 0
         pushComment ("Compute offset:");
-        Imop* i = new Imop (e, Imop::ASSIGN, offset, st->constantInt(0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
         code.push_imop(i);
 
         std::vector<Symbol* >::iterator itIt = indices.begin();
@@ -169,7 +172,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
         // r[offset] = tmp if not scalar
         if (!isScalar) {
-            i = new Imop (e, Imop::ASSIGN, offset, st->constantInt(0));
+            i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
             code.push_imop (i);
 
             unsigned count = 0;
@@ -239,8 +242,8 @@ CGResult CodeGen::cgExprSize (TreeNodeExprSize* e) {
         return result;
     }
 
-    Symbol* size = st->constantInt (1);
-    if (!eArg->resultType().isScalar()) {
+    Symbol* size = ConstantInt::get (getContext (), 1);
+    if (!eArg->resultType ()->isScalar()) {
         size = static_cast<SymbolSymbol*>(result.symbol())->getSizeSym();
     }
 
@@ -273,13 +276,13 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
         return result;
     }
 
-    Symbol* n = st->constantInt (eArg->resultType().secrecDimType());
+    Symbol* n = ConstantInt::get (getContext (),eArg->resultType ()->secrecDimType());
     Imop* i = 0;
 
-    if (eArg->resultType().isScalar())
-        i = new Imop (m_node, Imop::ASSIGN, resSym, st->constantInt (0));
+    if (eArg->resultType ()->isScalar())
+        i = new Imop (m_node, Imop::ASSIGN, resSym, ConstantInt::get (getContext (), 0));
     else
-        i = new Imop (m_node, Imop::ALLOC, resSym, st->constantInt (0), n);
+        i = new Imop (m_node, Imop::ALLOC, resSym, ConstantInt::get (getContext (), 0), n);
     pushImopAfter (result, i);
 
     i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
@@ -289,7 +292,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
             dti = dim_begin (argResult.symbol()),
             dte = dim_end (argResult.symbol());
     for (unsigned count = 0; dti != dte; ++ dti, ++ count) {
-        Imop* i = new Imop(m_node, Imop::STORE, resSym, st->constantInt(count), *dti);
+        Imop* i = new Imop(m_node, Imop::STORE, resSym, ConstantInt::get (getContext (),count), *dti);
         code.push_imop(i);
     }
 
@@ -331,7 +334,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     unsigned k = static_cast<TreeNodeExprInt*>(e->children().at(2))->value();
-    unsigned n = e->resultType().secrecDimType();
+    unsigned n = e->resultType ()->secrecDimType();
     SymbolSymbol* arg1ResultSymbol = static_cast<SymbolSymbol*>(arg1Result.symbol ());
     SymbolSymbol* arg2ResultSymbol = static_cast<SymbolSymbol*>(arg2Result.symbol ());
     SymbolSymbol* resSym = static_cast<SymbolSymbol*>(result.symbol ());
@@ -339,9 +342,9 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
     ss << "Different sized dimensions in concat at " << e->location() << ".";
-    Imop* err = newError (m_node, st->constantString (ss.str ()));
+    Imop* err = newError (m_node, ConstantString::get (getContext (), ss.str ()));
     SymbolLabel* errLabel = st->label(err);
-    for (unsigned it = 0; it < e->resultType().secrecDimType(); ++ it) {
+    for (unsigned it = 0; it < e->resultType ()->secrecDimType(); ++ it) {
         Symbol* s1 = arg1ResultSymbol->getDim(it);
         Symbol* s2 = arg2ResultSymbol->getDim(it);
         if (it == k) {
@@ -375,8 +378,9 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     // Symbols for running indices:
     std::vector<Symbol* > indices;
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
     for (unsigned it = 0; it < n; ++ it) {
-        Symbol* sym = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
+        Symbol* sym = st->appendTemporary(pubIntTy);
         indices.push_back(sym);
     }
 
@@ -386,18 +390,18 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
         return result;
     }
 
-    Symbol* rhs = st->defaultConstant (e->resultType ().secrecDataType ());
+    Symbol* rhs = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
     Imop* i = new Imop (m_node, Imop::ALLOC, resSym, rhs, resSym->getSizeSym());
     code.push_imop(i);
 
     CodeGenLoop loop (*this);
     append (result, loop.enterLoop (resSym, indices));
 
-    Symbol* offset = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
-    Symbol* tmpInt = st->appendTemporary(TypeNonVoid(DATATYPE_INT));
+    Symbol* offset = st->appendTemporary(pubIntTy);
+    Symbol* tmpInt = st->appendTemporary(pubIntTy);
 
     // j = 0 (right hand side index)
-    i = new Imop(m_node, Imop::ASSIGN, offset, st->constantInt(0));
+    i = new Imop(m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
     code.push_imop(i);
 
     // IF (i_k >= d_k) GOTO T1;
@@ -415,7 +419,8 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     // t = x[j]
-    const TypeNonVoid elemType (e->resultType().secrecSecType(), e->resultType().secrecDataType());
+    TypeNonVoid* elemType = TypeNonVoid::create (m_tyChecker.getContext (),
+        e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
     Symbol* tmp_elem = st->appendTemporary(elemType);
     i = new Imop (m_node, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
     code.push_imop(i);
@@ -447,7 +452,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     pushImopAfter (result, i);
 
     // out: r[i] = t
-    i = new Imop (m_node, Imop::ASSIGN, offset, st->constantInt(0));
+    i = new Imop (m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
     code.push_imop(i);
     jump_out->setJumpDest (st->label (i));
 
@@ -513,7 +518,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     codeGenSize (result);
     allocResult (result);
 
-    if (!eArg->resultType().isScalar()) {
+    if (!eArg->resultType ()->isScalar()) {
         // Check that new and old sizes are equal:
         Symbol* sizeSymbol = static_cast<SymbolSymbol*>(rhs)->getSizeSym ();
         Imop* jmp = new Imop (e, Imop::JE, (Symbol*) 0, sizeSymbol, resSym->getSizeSym ());
@@ -521,15 +526,16 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
         result.addToNextList (jmp);
         std::stringstream ss;
         ss << "ERROR: Mismatching sizes in reshape at " << e->location ();
-        Imop* err = newError (e, st->constantString (ss.str ()));
+        Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
         code.push_imop (err);
     }
     else {
         // Convert scalar to constant array:
         Symbol* tmp = rhs;
-        rhs = st->appendTemporary (TypeNonVoid(eArg->resultType ().secrecSecType (),
-                                              eArg->resultType ().secrecDataType (),
-                                              e->resultType ().secrecDimType ()));
+        rhs = st->appendTemporary (TypeNonVoid::create (m_tyChecker.getContext (),
+            eArg->resultType ()->secrecSecType (),
+            eArg->resultType ()->secrecDataType (),
+            e->resultType ()->secrecDimType ()));
         Imop* i = new Imop (e, Imop::ALLOC, rhs, tmp, resSym->getSizeSym ());
         code.push_imop (i);
     }
@@ -562,9 +568,9 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
       If first sub-expression is public, then generate short-circuit code for
       logical && and logical ||.
     */
-    if (   eArg1->resultType ().secrecSecType ().isPublic ()
-        && eArg1->resultType ().isScalar ()
-        && eArg2->resultType ().isScalar ()
+    if (   eArg1->resultType ()->secrecSecType ()->isPublic ()
+        && eArg1->resultType ()->isScalar ()
+        && eArg2->resultType ()->isScalar ()
         && (e->type () == NODE_EXPR_BINARY_LAND || e->type () == NODE_EXPR_BINARY_LOR))
     {
         // Generate code for first child expression:
@@ -617,9 +623,9 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
 
     // Implicitly convert scalar to array if needed:
     Imop* jmp = 0;
-    if (eArg1->resultType ().secrecDimType () > eArg2->resultType ().secrecDimType ()) {
+    if (eArg1->resultType ()->secrecDimType () > eArg2->resultType ()->secrecDimType ()) {
         SymbolSymbol* tmpe1 = static_cast<SymbolSymbol*>(e1result);
-        SymbolSymbol* tmpe2 = st->appendTemporary (static_cast<TypeNonVoid const&> (eArg1->resultType ()));
+        SymbolSymbol* tmpe2 = st->appendTemporary (static_cast<TypeNonVoid*> (eArg1->resultType ()));
         tmpe2->inheritShape (tmpe1);
         e1result = tmpe1;
         e2result = tmpe2;
@@ -627,8 +633,8 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         pushImopAfter (result, i);
     }
     else
-    if (eArg2->resultType ().secrecDimType () > eArg1->resultType ().secrecDimType ()) {
-        SymbolSymbol* tmpe1 = st->appendTemporary (static_cast<TypeNonVoid const&> (eArg2->resultType ()));
+    if (eArg2->resultType ()->secrecDimType () > eArg1->resultType ()->secrecDimType ()) {
+        SymbolSymbol* tmpe1 = st->appendTemporary (static_cast<TypeNonVoid*> (eArg2->resultType ()));
         SymbolSymbol* tmpe2 = static_cast<SymbolSymbol*>(e2result);
         tmpe1->inheritShape (tmpe2);
         e1result = tmpe1;
@@ -639,7 +645,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     else {
         std::stringstream ss;
         ss << "Mismaching shapes in addition at " << e->location();
-        Imop* err = newError (e, st->constantString (ss.str ()));
+        Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
         SymbolLabel* errLabel = st->label (err);
         dim_iterator
                 di = dim_begin (e1result),
@@ -707,14 +713,14 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
     switch (e->type()) {
         case NODE_EXPR_BINARY_LAND: // fall through
         case NODE_EXPR_BINARY_LOR:
-            assert(!eArg1->resultType().isVoid());
-            assert(dynamic_cast<const TNV*>(&eArg1->resultType()) != 0);
+            assert(!eArg1->resultType ()->isVoid());
+            assert(dynamic_cast<TNV*>(eArg1->resultType()) != 0);
 
             /*
               If first sub-expression is public, then generate short-circuit
               code for logical && and logical ||.
             */
-            if (static_cast<const TNV&>(eArg1->resultType()).secrecSecType().isPublic ()) {
+            if (static_cast<TNV*>(eArg1->resultType())->secrecSecType()->isPublic ()) {
                 /// \todo I'm quite sure this is incorrect, we are not handling next lists!
 
                 // Generate code for first child expression:
@@ -864,7 +870,7 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     }
 
     // prep return values:
-    if (!e->resultType ().isVoid ()) {
+    if (!e->resultType ()->isVoid ()) {
         retList.insert (retList.end (), dim_begin (r), dim_end (r));
         retList.push_back (r);
     }
@@ -876,7 +882,7 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     pushImopAfter (result, i);
     code.push_imop (c);
 
-    if (!e->resultType ().isVoid ()) {
+    if (!e->resultType ()->isVoid ()) {
         codeGenSize (result);
     }
 
@@ -970,7 +976,7 @@ CGResult CodeGen::cgExprString (TreeNodeExprString *e) {
         return result;
     }
 
-    result.setResult (st->constantString (e->value ()));
+    result.setResult (ConstantString::get (getContext (), e->value ()));
     return result;
 }
 
@@ -1011,12 +1017,12 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
             return result;
         }
 
-        if (!e->resultType ().isVoid ()) {
-            if (!eTrueResult.symbol ()->secrecType ().isScalar ()) {
+        if (!e->resultType ()->isVoid ()) {
+            if (!eTrueResult.symbol ()->secrecType ()->isScalar ()) {
                 SymbolSymbol* resultSymbol = static_cast<SymbolSymbol*>(result.symbol ());
                 resultSymbol->inheritShape (eTrueResult.symbol ());
                 Imop* i = new Imop (e, Imop::ALLOC, resultSymbol,
-                                    st->defaultConstant (eTrueResult.symbol ()->secrecType ().secrecDataType ()),
+                                    defaultConstant (getContext (), eTrueResult.symbol ()->secrecType ()->secrecDataType ()),
                                     resultSymbol->getSizeSym ());
                 pushImopAfter (eTrueResult, i);
             }
@@ -1039,12 +1045,12 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
             return result;
         }
 
-        if (!e->resultType ().isVoid ()) {
-            if (!eFalseResult.symbol ()->secrecType ().isScalar ()) {
+        if (!e->resultType ()->isVoid ()) {
+            if (!eFalseResult.symbol ()->secrecType ()->isScalar ()) {
                 SymbolSymbol* resultSymbol = static_cast<SymbolSymbol*>(result.symbol ());
                 resultSymbol->inheritShape (eFalseResult.symbol ());
                 Imop* i = new Imop (e, Imop::ALLOC, resultSymbol,
-                                    st->defaultConstant (eFalseResult.symbol ()->secrecType ().secrecDataType ()),
+                                    defaultConstant (getContext (), eFalseResult.symbol ()->secrecType ()->secrecDataType ()),
                                     resultSymbol->getSizeSym ());
                 pushImopAfter (eFalseResult, i);
             }
@@ -1086,7 +1092,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         std::stringstream ss;
         ss << "Mismatching shapes at " << e->location();
         Imop* jmp = new Imop (e, Imop::JUMP, (Symbol*) 0);
-        Imop* err = newError (e, st->constantString (ss.str ()));
+        Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
         SymbolLabel* errLabel = st->label(err);
         dim_iterator
                 di = dim_begin (e1Result.symbol ()),
@@ -1110,9 +1116,12 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         // loop to set all values of resulting array
 
         // Set up some temporary scalars:
-        Symbol* counter = st->appendTemporary(TypeNonVoid(DATATYPE_INT)); // public int
-        Symbol* b = st->appendTemporary(TypeNonVoid(e1->resultType ().secrecSecType (), e1->resultType ().secrecDataType ()));
-        Symbol* t = st->appendTemporary(TypeNonVoid(e->resultType ().secrecSecType (), e->resultType ().secrecDataType ()));
+        Context& cxt = m_tyChecker.getContext ();
+        Symbol* counter = st->appendTemporary(TypeNonVoid::create (cxt, DATATYPE_INT));
+        Symbol* b = st->appendTemporary(TypeNonVoid::create (cxt,
+            e1->resultType ()->secrecSecType (), e1->resultType ()->secrecDataType ()));
+        Symbol* t = st->appendTemporary(TypeNonVoid::create (cxt,
+            e->resultType ()->secrecSecType (), e->resultType ()->secrecDataType ()));
 
         // r = e1
         Imop* i = newAssign (e, resSym, e2Result.symbol ());
@@ -1120,7 +1129,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         jmp->setJumpDest (st->label(i));
 
         // counter = 0
-        i = new Imop (e, Imop::ASSIGN, counter, st->constantInt (0));
+        i = new Imop (e, Imop::ASSIGN, counter, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
         // L0: if (counter >= size) goto next;
@@ -1132,7 +1141,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         i = new Imop (e, Imop::LOAD, b, e1Result.symbol (), counter);
         code.push_imop (i);
 
-        Imop* t0 = new Imop (e, Imop::ADD, counter, counter, st->constantInt (1));
+        Imop* t0 = new Imop (e, Imop::ADD, counter, counter, ConstantInt::get (getContext (), 1));
         Imop* t1 = new Imop (e, Imop::STORE, resSym, counter, t);
 
         // if b goto T0
@@ -1215,7 +1224,7 @@ CGResult CodeGen::cgExprInt (TreeNodeExprInt *e) {
     }
 
     CGResult result;
-    result.setResult (st->constantInt (e->value ()));
+    result.setResult (ConstantInt::get (getContext (), e->value ()));
     return result;
 }
 
@@ -1234,7 +1243,7 @@ CGResult CodeGen::cgExprUInt (TreeNodeExprUInt *e) {
     }
 
     CGResult result;
-    result.setResult (st->constantUInt (e->value ()));
+    result.setResult (ConstantUInt::get (getContext (), e->value ()));
     return result;
 }
 
@@ -1253,7 +1262,8 @@ CGResult CodeGen::cgExprBool (TreeNodeExprBool *e) {
     }
 
     CGResult result;
-    result.setResult (st->constantBool (e->value ()));
+    Context& cxt = m_tyChecker.getContext ();
+    result.setResult (ConstantBool::get (cxt, e->value ()));
     return result;
 }
 
@@ -1441,7 +1451,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    const TypeNonVoid& pubIntTy (DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1465,7 +1475,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
 
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
-        assert (!e->resultType ().isScalar ());
+        assert (!e->resultType ()->isScalar ());
         CodeGenSubscript subInfo (*this);
         append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
@@ -1498,7 +1508,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         }
 
         // compute offset:
-        Imop* i = new Imop (e, Imop::ASSIGN, offset, st->constantInt (0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
         idxIt = indices.begin ();
@@ -1517,7 +1527,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         code.push_imop (i);
 
         // t = t + 1
-        i = new Imop (e, iType, tmpValue, tmpValue, st->constantInt (1));
+        i = new Imop (e, iType, tmpValue, tmpValue, ConstantInt::get (getContext (), 1));
         code.push_imop (i);
 
         // x[offset] = t
@@ -1528,10 +1538,10 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    Symbol* one = st->constantInt (1);
-    if (!e->resultType ().isScalar ()) {
-        one = st->appendTemporary (static_cast<const TypeNonVoid&> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::ALLOC, one, st->constantInt (1), destSymSym->getSizeSym ());
+    Symbol* one = ConstantInt::get (getContext (), 1);
+    if (!e->resultType ()->isScalar ()) {
+        one = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        Imop* i = new Imop (e, Imop::ALLOC, one, ConstantInt::get (getContext (), 1), destSymSym->getSizeSym ());
         pushImopAfter (result, i);
     }
 
@@ -1566,7 +1576,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    const TypeNonVoid& pubIntTy (DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1597,7 +1607,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
-        assert (!e->resultType ().isScalar ());
+        assert (!e->resultType ()->isScalar ());
         CodeGenSubscript subInfo (*this);
         append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
@@ -1631,7 +1641,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         }
 
         // compute offset:
-        i = new Imop (e, Imop::ASSIGN, offset, st->constantInt (0));
+        i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
         idxIt = indices.begin ();
@@ -1650,7 +1660,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         code.push_imop (i);
 
         // t = t + 1
-        i = new Imop (e, iType, tmpValue, tmpValue, st->constantInt (1));
+        i = new Imop (e, iType, tmpValue, tmpValue, ConstantInt::get (getContext (), 1));
         code.push_imop (i);
 
         // x[offset] = t
@@ -1661,10 +1671,10 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    Symbol* one = st->constantInt (1);
-    if (!e->resultType ().isScalar ()) {
-        one = st->appendTemporary (static_cast<const TypeNonVoid&> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::ALLOC, one, st->constantInt (1), destSymSym->getSizeSym ());
+    Symbol* one = ConstantInt::get (getContext (), 1);
+    if (!e->resultType ()->isScalar ()) {
+        one = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        Imop* i = new Imop (e, Imop::ALLOC, one, ConstantInt::get (getContext (), 1), destSymSym->getSizeSym ());
         pushImopAfter (result,i );
     }
 

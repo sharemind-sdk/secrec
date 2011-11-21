@@ -122,12 +122,15 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     ns->setName (s->variableName ());
     st->appendSymbol (ns);
 
-    bool isScalar = s->resultType ().isScalar ();
+    bool isScalar = s->resultType ()->isScalar ();
     unsigned n = 0;
 
     // Initialize shape:
-    const TypeNonVoid& dimType = TypeNonVoid (DataTypeVar (DataTypeBasic (DATATYPE_INT)));
-    for (unsigned i = 0; i < s->resultType().secrecDimType(); ++ i) {
+    TypeNonVoid* dimType =
+        TypeNonVoid::create (getContext (),
+            DataTypeVar::create (getContext (),
+                DataTypeBasic::create (getContext (), DATATYPE_INT)));
+    for (unsigned i = 0; i < s->resultType ()->secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);
         std::stringstream ss;
@@ -150,7 +153,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     // evaluate shape if given, also compute size
     if (s->children ().size () > 2) {
         if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), st->constantInt (1));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 1));
             pushImopAfter (result, i);
         }
 
@@ -175,12 +178,12 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     }
     else {
         if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), st->constantInt (0));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 0));
             pushImopAfter (result, i);
         }
 
-        for (unsigned it = 0; it < s->resultType ().secrecDimType (); ++ it) {
-            Imop* i = new Imop( s, Imop::ASSIGN, ns->getDim (it), st->constantInt (0));
+        for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
+            Imop* i = new Imop( s, Imop::ASSIGN, ns->getDim (it), ConstantInt::get (getContext (), 0));
             code.push_imop(i);
         }
     }
@@ -194,7 +197,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         }
         else {
 
-            SymbolSymbol* tns = st->appendTemporary(static_cast<const TypeNonVoid&> (ns->secrecType ()));
+            SymbolSymbol* tns = st->appendTemporary(static_cast<TypeNonVoid*> (ns->secrecType ()));
 
             i = new Imop (s, Imop::PARAM, tns);
             pushImopAfter (result, i);
@@ -204,7 +207,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 code.push_imop(i);
             }
 
-            i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), st->constantInt (1));
+            i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 1));
             pushImopAfter (result, i);
 
             for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
@@ -212,7 +215,9 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 code.push_imop(i);
             }
 
-            i = new Imop (s, Imop::ALLOC, ns, st->defaultConstant (ns->secrecType ().secrecDataType ()), ns->getSizeSym ());
+            i = new Imop (s, Imop::ALLOC, ns,
+                defaultConstant (getContext (), ns->secrecType ()->secrecDataType ()),
+                ns->getSizeSym ());
             code.push_imop (i);
 
             i = new Imop (s, Imop::ASSIGN, ns, tns, ns->getSizeSym());
@@ -234,13 +239,13 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         }
 
         // type x = foo;
-        if (s->resultType ().secrecDimType () > 0 && n == 0) {
-            if (s->resultType ().secrecDimType () > e->resultType ().secrecDimType ()) {
+        if (s->resultType ()->secrecDimType () > 0 && n == 0) {
+            if (s->resultType ()->secrecDimType () > e->resultType ()->secrecDimType ()) {
                 Imop* i = new Imop (s, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym());
                 pushImopAfter (result, i);
             }
             else {
-                assert (s->resultType().secrecDimType() == e->resultType().secrecDimType());
+                assert (s->resultType ()->secrecDimType() == e->resultType()->secrecDimType());
 
                 SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
                 dim_iterator
@@ -266,8 +271,8 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         }
 
         // arr x[e1,...,en] = foo;
-        if (n > 0 && s->resultType ().secrecDimType () == n) {
-            if (s->resultType ().secrecDimType() > e->resultType ().secrecDimType ()) {
+        if (n > 0 && s->resultType ()->secrecDimType () == n) {
+            if (s->resultType ()->secrecDimType() > e->resultType ()->secrecDimType ()) {
                 // fill lhs with constant value
                 Imop* i = new Imop (s, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym ());
                 pushImopAfter (result, i);
@@ -276,7 +281,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 // check that shapes match and assign
                 std::stringstream ss;
                 ss << "Shape mismatch at " << s->location ();
-                Imop* err = newError (s, st->constantString (ss.str ()));
+                Imop* err = newError (s, ConstantString::get (getContext (), ss.str ()));
                 SymbolLabel* errLabel = st->label (err);
                 SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
                 dim_iterator
@@ -299,18 +304,18 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         }
 
         // scalar_type x = scalar;
-        if (s->resultType().isScalar()) {
+        if (s->resultType ()->isScalar()) {
             Imop* i = new Imop (s, Imop::ASSIGN, ns, eResult.symbol ());
             pushImopAfter (result, i);
         }
     }
     else {
         if (!isScalar && n == 0) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), st->constantInt (0));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 0));
             pushImopAfter (result, i);
 
-            for (unsigned it = 0; it < s->resultType().secrecDimType (); ++ it) {
-                Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (it), st->constantInt (0));
+            for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
+                Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (it), ConstantInt::get (getContext (), 0));
                 code.push_imop (i);
             }
         }
@@ -322,7 +327,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         else {
             i = new Imop (s, Imop::ALLOC, ns, (Symbol*) 0, (Symbol*) 0);
             if (n == 0) {
-                i->setArg2 (st->constantInt(0));
+                i->setArg2 (ConstantInt::get (getContext (), 0));
             }
             else {
                 i->setArg2 (ns->getSizeSym());
@@ -333,14 +338,14 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
         typedef DataTypeBasic DTB;
         typedef DataTypeVar DTV;
-        assert (s->resultType ().dataType ().kind () == DataType::VAR);
-        assert (dynamic_cast<const DTV*> (&s->resultType ().dataType ()) != 0);
-        const DTV &dtv (static_cast<const DTV&> (s->resultType ().dataType ()));
-        assert (dtv.dataType().kind() == DataType::BASIC);
-        assert (dynamic_cast<const DTB*> (&dtv.dataType ()) != 0);
-        const DTB &dtb (static_cast<const DTB&> (dtv.dataType ()));
+        assert (s->resultType ()->dataType ()->kind () == DataType::VAR);
+        assert (dynamic_cast<DTV*> (s->resultType ()->dataType ()) != 0);
+        const DTV &dtv (*static_cast<DTV*> (s->resultType ()->dataType ()));
+        assert (dtv.dataType()->kind() == DataType::BASIC);
+        assert (dynamic_cast<DTB*> (dtv.dataType ()) != 0);
+        const DTB &dtb (*static_cast<DTB*> (dtv.dataType ()));
 
-        Symbol *def = st->defaultConstant (dtb.dataType ());
+        Symbol *def = defaultConstant (getContext (), dtb.dataType ());
         i->setArg1(def);
     }
 
@@ -673,7 +678,6 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
 *******************************************************************************/
 
 CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
-    assert (children ().size () == 1);
     return cg.cgStmtPrint (this);
 }
 
@@ -871,7 +875,7 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
 
     std::ostringstream ss;
     ss << "assert failed at " << s->location ();
-    Imop *i = newError (s, st->constantString (ss.str ()));
+    Imop *i = newError (s, ConstantString::get (getContext (), ss.str ()));
     pushImopAfter (result, i);
 
     eResult.patchFalseList (st->label (i));

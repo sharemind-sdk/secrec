@@ -1,10 +1,13 @@
 #include "types.h"
-#include "symbol.h"
+
 
 #include <cassert>
 #include <sstream>
-
 #include <iostream>
+
+#include "symbol.h"
+#include "context.h"
+#include "context_impl.h"
 
 
 namespace {
@@ -204,30 +207,11 @@ std::string DataTypeVar::toString() const {
   DataTypeProcedureVoid
 *******************************************************************************/
 
-DataTypeProcedureVoid::DataTypeProcedureVoid(const DataTypeProcedureVoid &copy)
-    : DataType(copy)
-{
-    typedef std::vector<DataType*>::const_iterator TVCI;
-    for (TVCI it(copy.m_params.begin()); it != copy.m_params.end(); it++) {
-        m_params.push_back((*it)->clone());
-    }
-}
-
-DataTypeProcedureVoid::~DataTypeProcedureVoid() {
-    typedef std::vector<DataType*>::const_iterator TVCI;
-    for (TVCI it(m_params.begin()); it != m_params.end(); it++) {
-        delete (*it);
-    }
-}
-
 // \todo don't use mangle() here
 std::string DataTypeProcedureVoid::toString() const {
     return mangle() + " -> void";
 }
 
-// right now functions can only be overloaded by data,
-// it's also possible to overload by dimensionalities, but i'm
-// not sure how wise this is
 std::string DataTypeProcedureVoid::mangle() const {
     typedef std::vector<DataType*>::const_iterator TVCI;
 
@@ -248,23 +232,6 @@ std::string DataTypeProcedureVoid::mangle() const {
     return os.str();
 }
 
-bool DataTypeProcedureVoid::operator==(const DataType &other) const {
-    typedef std::vector<DataType*>::const_iterator TVCI;
-
-    if (!DataType::operator==(other)) return false;
-    assert(dynamic_cast<const DataTypeProcedureVoid*>(&other) != 0);
-    const DataTypeProcedureVoid &o(static_cast<const DataTypeProcedureVoid&>(other));
-
-    if (m_params.size() != o.m_params.size()) return false;
-
-    TVCI it(m_params.begin());
-    TVCI jt(m_params.begin());
-    for (; it != m_params.end(); it++, jt++) {
-        if (*it != *jt) return false;
-    }
-    return true;
-}
-
 /*******************************************************************************
   DataTypeProcedure
 *******************************************************************************/
@@ -275,30 +242,96 @@ std::string DataTypeProcedure::toString() const {
     return os.str();
 }
 
-bool DataTypeProcedure::operator==(const DataType &other) const {
-    typedef std::vector<DataType*>::const_iterator TVCI;
-
-    if (!DataTypeProcedureVoid::operator==(other)) return false;
-    assert(dynamic_cast<const DataTypeProcedure*>(&other) != 0);
-    const DataTypeProcedure &o(static_cast<const DataTypeProcedure&>(other));
-
-    return *m_ret == *o.m_ret;
+PrivateSecType* PrivateSecType::create (Context& cxt, SymbolDomain* dom) {
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.privateType (dom);
 }
 
+PublicSecType* PublicSecType::create (Context& cxt) {
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.publicType ();
+}
+
+DataTypeBasic* DataTypeBasic::create (Context& cxt,
+                                      SecrecDataType dataType,
+                                      SecrecDimType dim)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.basicDataType (impl.publicType (), dataType, dim);
+}
+
+DataTypeBasic* DataTypeBasic::create (Context& cxt,
+                                      SecurityType* secType,
+                                      SecrecDataType dataType,
+                                      SecrecDimType dim)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.basicDataType (secType, dataType, dim);
+}
+
+DataTypeVar* DataTypeVar::create (Context& cxt, DataType* base) {
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.varType (base);
+}
+
+DataTypeProcedureVoid* DataTypeProcedureVoid::create (Context& cxt,
+                                                      const std::vector<DataType*>& params)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.voidProcedureType (params);
+}
+
+DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
+                                              const std::vector<DataType*>& params,
+                                              DataType* returnType)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.procedureType (params, returnType);
+}
+
+DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
+                                              DataTypeProcedureVoid* params,
+                                              DataType* returnType)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.procedureType (params->paramTypes (), returnType);
+}
+
+TypeVoid* TypeVoid::create (Context &cxt) {
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.voidType ();
+}
+
+TypeNonVoid* TypeNonVoid::create (Context& cxt, DataType* dtype) {
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.nonVoidType (dtype);
+}
+
+TypeNonVoid* TypeNonVoid::create (Context& cxt,
+                                  SecrecDataType dataType,
+                                  SecrecDimType dimType)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.nonVoidType (impl.basicDataType (impl.publicType (), dataType, dimType));
+}
+
+TypeNonVoid* TypeNonVoid::create (Context& cxt, SecurityType* secType,
+                                  SecrecDataType dataType,
+                                  SecrecDimType dimType)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.nonVoidType (impl.basicDataType (secType, dataType, dimType));
+}
 
 /*******************************************************************************
   TypeNonVoid
 *******************************************************************************/
 
-TypeNonVoid::TypeNonVoid(const DataType &dataType)
+TypeNonVoid::TypeNonVoid(DataType* dataType)
      : Type(false)
-     , m_kind (kindToKind (dataType.kind ()))
-     , m_dataType(dataType.clone())
+     , m_kind (kindToKind (dataType->kind ()))
+     , m_dataType(dataType)
 { }
-
-TypeNonVoid::~TypeNonVoid() {
-    delete m_dataType;
-}
 
 std::string TypeNonVoid::toString() const {
     assert(m_dataType != 0);

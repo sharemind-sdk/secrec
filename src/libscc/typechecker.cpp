@@ -27,11 +27,11 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     if (s != ICode::OK) return s;
 
     // Get types for destination and source:
-    const SecreC::Type &destType = dest->secrecType();
-    SecrecDimType destDim = dest->secrecType().secrecDimType();
-    assert(destType.isVoid() == false);
-    const SecreC::Type &srcType = src->resultType();
-    SecrecDimType srcDim = src->resultType().secrecDimType();
+    SecreC::Type* destType = dest->secrecType();
+    SecrecDimType destDim = destType->secrecDimType();
+    assert(destType->isVoid() == false);
+    SecreC::Type* srcType = src->resultType();
+    SecrecDimType srcDim = srcType->secrecDimType();
 
     if (TreeNode* e1 = e->slice ()) {
         s = checkIndices (e1, destDim);
@@ -49,21 +49,21 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
 
     // Check types:
     if (checkAndLogIfVoid (src)) return ICode::E_TYPE;
-    if (!destType.canAssign (srcType)) {
-        m_log.fatal() << "Invalid assignment from value of type " << srcType
-                      << " to variable of type " << destType << " at "
+    if (!destType->canAssign (*srcType)) {
+        m_log.fatal() << "Invalid assignment from value of type " << *srcType
+                      << " to variable of type " << *destType << " at "
                       << e->location() << ".";
         return ICode::E_TYPE;
     }
 
     // Add implicit classify node if needed:
     classifyIfNeeded (e, 1, destType);
-    assert(dynamic_cast<const TNV*>(&destType) != 0);
-    const TNV &destTypeNV = static_cast<const TNV&>(destType);
-    assert(destTypeNV.dataType().kind() == DataType::VAR);
-    assert(dynamic_cast<const DTV*>(&destTypeNV.dataType()) != 0);
-    const DTV &ddtv = static_cast<const DTV&>(destTypeNV.dataType());
-    e->setResultType(new TNV(ddtv.dataType()));
+    assert(dynamic_cast<TNV*>(destType) != 0);
+    TNV* destTypeNV = static_cast<TNV*>(destType);
+    assert(destTypeNV->dataType()->kind() == DataType::VAR);
+    assert(dynamic_cast<DTV*>(destTypeNV->dataType()) != 0);
+    DTV* ddtv = static_cast<DTV*>(destTypeNV->dataType());
+    e->setResultType(TypeNonVoid::create (m_context, ddtv->dataType()));
     return ICode::OK;
 }
 
@@ -87,7 +87,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
         return ICode::E_TYPE;
     }
 
-    const TypeNonVoid* eType = static_cast<const TypeNonVoid*>(&e->resultType ());
+    TypeNonVoid* eType = static_cast<TypeNonVoid*>(e->resultType ());
 
     /// \todo right now we only allow identity casts
     if (dType->dataType () != eType->secrecDataType ()) {
@@ -95,10 +95,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType (new TypeNonVoid (
-                             eType->secrecSecType (),
-                             dType->dataType (),
-                             eType->secrecDimType ()));
+    root->setResultType (TypeNonVoid::create (m_context,
+        eType->secrecSecType (), dType->dataType (), eType->secrecDimType ()));
     return ICode::OK;
 }
 
@@ -117,7 +115,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprIndex* root) {
     ICode::Status s = visitExpr (e);
     if (s != ICode::OK) return s;
     if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-    TNV const* eType = static_cast<TNV const*>(&e->resultType());
+    TNV* eType = static_cast<TNV*>(e->resultType());
     SecrecDimType k = 0;
     SecrecDimType n = eType->secrecDimType();
 
@@ -132,7 +130,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprIndex* root) {
         return s;
     }
 
-    root->setResultType(new TNV(eType->secrecSecType(), eType->secrecDataType(), k));
+    root->setResultType(TypeNonVoid::create (m_context,
+        eType->secrecSecType(), eType->secrecDataType(), k));
     return ICode::OK;
 }
 
@@ -148,7 +147,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprSize* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(new TNV (DATATYPE_INT));
+        root->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT));
     }
 
     return ICode::OK;
@@ -166,7 +165,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprShape* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(new TNV (DATATYPE_INT, 1));
+        root->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT, 1));
     }
 
     return ICode::OK;
@@ -189,7 +188,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         root->appendChild(e);
     }
 
-    const TNV* eTypes[2];
+    TNV* eTypes[2];
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
     for (int i = 0; i < 2; ++ i) {
@@ -199,7 +198,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
 
-        eTypes[i] = static_cast<TNV const*>(&e->resultType());
+        eTypes[i] = static_cast<TNV*>(e->resultType());
         if (eTypes[i]->isScalar()) {
             m_log.fatal() << "Concatenation of scalar values at "
                           << e->location() << ".";
@@ -228,10 +227,10 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
     if (s != ICode::OK) return s;
     if (checkAndLogIfVoid (e3)) return ICode::E_TYPE;
 
-    const TNV* e3Type = static_cast<TNV const*>(&e3->resultType());
+    TNV* e3Type = static_cast<TNV*>(e3->resultType());
     if (!e3Type->isScalar() ||
         e3Type->secrecDataType() != DATATYPE_INT ||
-        e3Type->secrecSecType().isPrivate ())
+        e3Type->secrecSecType()->isPrivate ())
     {
         m_log.fatal() << "Expected public scalar integer at "
                       << root->dimensionality ()->location()
@@ -239,10 +238,10 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType(new TNV(
-            upperSecType(eTypes[0]->secrecSecType(), eTypes[1]->secrecSecType()),
-            eTypes[0]->secrecDataType(),
-            eTypes[0]->secrecDimType()));
+    root->setResultType(TypeNonVoid::create (m_context,
+        upperSecType(eTypes[0]->secrecSecType(), eTypes[1]->secrecSecType()),
+        eTypes[0]->secrecDataType(),
+        eTypes[0]->secrecDimType()));
     return ICode::OK;
 }
 
@@ -262,7 +261,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
     if (s != ICode::OK) return s;
     if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
 
-    TNV const* eType = static_cast<TNV const*>(&e->resultType());
+    TNV* eType = static_cast<TNV*>(e->resultType());
     SecrecDimType resDim = root->children ().size () - 1;
     for (unsigned i = 0; i < resDim; ++ i) {
         TreeNodeExpr* ei = root->dimensionality (i);
@@ -270,9 +269,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
         if (s != ICode::OK) return s;
 
         if (checkAndLogIfVoid (ei)) return ICode::E_TYPE;
-        TNV const* eiType = static_cast<TNV const*>(&ei->resultType());
+        TNV* eiType = static_cast<TNV*>(ei->resultType());
         if (eiType->secrecDataType() != DATATYPE_INT ||
-            eiType->secrecSecType().isPrivate () ||
+            eiType->secrecSecType()->isPrivate () ||
             !eiType->isScalar())
         {
             m_log.fatal() << "Expected public integer scalar at "
@@ -288,10 +287,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType (new TNV (
-        eType->secrecSecType(),
-        eType->secrecDataType(),
-        resDim));
+    root->setResultType (TypeNonVoid::create (m_context,
+        eType->secrecSecType(), eType->secrecDataType(), resDim));
     return ICode::OK;
 }
 
@@ -306,19 +303,19 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
         return ICode::OK;
     }
 
-    const SecreC::Type *eType1, *eType2;
+    SecreC::Type *eType1, *eType2;
 
     {
         TreeNodeExpr *e1 = root->leftExpression ();
         ICode::Status s = visitExpr (e1);
         if (s != ICode::OK) return s;
-        eType1 = &e1->resultType();
+        eType1 = e1->resultType();
     }
     {
         TreeNodeExpr *e2 = root->rightExpression ();
         ICode::Status s = visitExpr (e2);
         if (s != ICode::OK) return s;
-        eType2 = &e2->resultType();
+        eType2 = e2->resultType();
     }
 
     /// \todo implement more expressions
@@ -332,30 +329,32 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
     {
         // Add implicit classify nodes if needed:
         {
-            TreeNodeExpr *e1 = classifyIfNeeded (root, 0, *eType2);
-            eType1 = &e1->resultType();
+            TreeNodeExpr *e1 = classifyIfNeeded (root, 0, eType2);
+            eType1 = e1->resultType();
         }
         {
-            TreeNodeExpr *e2 = classifyIfNeeded (root, 1, *eType1);
-            eType2 = &e2->resultType();
+            TreeNodeExpr *e2 = classifyIfNeeded (root, 1, eType1);
+            eType2 = e2->resultType();
         }
 
 
         SecrecDataType d1 = eType1->secrecDataType();
         SecrecDataType d2 = eType2->secrecDataType();
-        const SecurityType& s1 = eType1->secrecSecType();
-        const SecurityType& s2 = eType2->secrecSecType();
+        SecurityType* s1 = eType1->secrecSecType();
+        SecurityType* s2 = eType2->secrecSecType();
         SecrecDimType n1 = eType1->secrecDimType();
         SecrecDimType n2 = eType2->secrecDimType();
 
         if (n1 == 0 || n2 == 0 || n1 == n2) {
+            SecrecDimType n0 = upperDimType(n1, n2);
+            SecurityType* s0 = upperSecType(s1, s2);
             switch (root->type()) {
                 case NODE_EXPR_BINARY_ADD:
                     if (d1 != d2) break;
                     if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0)
                         break;
 
-                    root->setResultType(new TNV(upperSecType(s1, s2), d1, upperDimType(n1, n2)));
+                    root->setResultType(TNV::create (m_context, s0, d1, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_SUB:
                 case NODE_EXPR_BINARY_MUL:
@@ -363,7 +362,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 case NODE_EXPR_BINARY_DIV:
                     if (d1 != d2) break;
                     if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
-                    root->setResultType(new TNV(upperSecType(s1, s2), d1, upperDimType(n1, n2)));
+                    root->setResultType(TNV::create (m_context, s0, d1, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_EQ:
                 case NODE_EXPR_BINARY_GE:
@@ -372,12 +371,12 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 case NODE_EXPR_BINARY_LT:
                 case NODE_EXPR_BINARY_NE:
                     if (d1 != d2) break;
-                    root->setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL, upperDimType(n1, n2)));
+                    root->setResultType(TNV::create (m_context, s0, DATATYPE_BOOL, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_LAND:
                 case NODE_EXPR_BINARY_LOR:
                     if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
-                    root->setResultType(new TNV(upperSecType(s1, s2), DATATYPE_BOOL, upperDimType(n1, n2)));
+                    root->setResultType(TNV::create (m_context, s0, DATATYPE_BOOL, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_MATRIXMUL:
                     m_log.fatal() << "Matrix multiplication not yet supported. At "
@@ -412,31 +411,31 @@ ICode::Status TypeChecker::visit (TreeNodeExprUnary* root) {
     TreeNodeExpr *e = root->expression ();
     ICode::Status s = visitExpr (e);
     if (s != ICode::OK) return s;
-    const SecreC::Type &eType = e->resultType();
+    SecreC::Type* eType = e->resultType();
 
     /// \todo implement for matrixes also
-    if (!eType.isVoid()
-        && (assert(dynamic_cast<const TypeNonVoid*>(&eType) != 0), true)
-        && static_cast<const TypeNonVoid&>(eType).kind() == TypeNonVoid::BASIC)
+    if (!eType->isVoid()
+        && (assert(dynamic_cast<TypeNonVoid*>(eType) != 0), true)
+        && static_cast<TypeNonVoid*>(eType)->kind() == TypeNonVoid::BASIC)
     {
-        const TypeNonVoid &et = static_cast<const TypeNonVoid&>(eType);
-        assert(dynamic_cast<const DTB*>(&et.dataType()) != 0);
-        const DTB &bType = static_cast<const DTB&>(et.dataType());
+        TypeNonVoid* et = static_cast<TypeNonVoid*>(eType);
+        assert(dynamic_cast<DTB*>(et->dataType()) != 0);
+        const DTB &bType = *static_cast<DTB*>(et->dataType());
 
         if (root->type() == NODE_EXPR_UNEG && bType.dataType() == DATATYPE_BOOL) {
-            root->setResultType(et.clone());
+            root->setResultType(et);
             return ICode::OK;
         }
         else
         if (root->type() == NODE_EXPR_UMINUS) {
             if (isSignedNumericDataType (bType.dataType())) {
-                root->setResultType (et.clone());
+                root->setResultType (et);
                 return ICode::OK;
             }
         }
     }
 
-    m_log.fatal() << "Invalid expression of type (" << eType
+    m_log.fatal() << "Invalid expression of type (" << *eType
                   << ") given to unary "
                   << (root->type() == NODE_EXPR_UNEG ? "negation" : "minus")
                   << " operator at " << root->location() << ".";
@@ -449,7 +448,7 @@ ICode::Status TreeNodeExprBool::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprBool* e) {
     if (! e->haveResultType ()) {
-        e->setResultType (publicBoolTy ());
+        e->setResultType (TypeNonVoid::create (m_context, DATATYPE_BOOL));
     }
 
     return ICode::OK;
@@ -461,7 +460,7 @@ ICode::Status TreeNodeExprInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprInt* e) {
     if (! e->haveResultType()) {
-        e->setResultType(new TypeNonVoid (DATATYPE_INT));
+        e->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT));
     }
 
     return ICode::OK;
@@ -473,7 +472,7 @@ ICode::Status TreeNodeExprUInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprUInt* e) {
     if (! e->haveResultType()) {
-        e->setResultType(new TypeNonVoid (DATATYPE_UINT));
+        e->setResultType(TypeNonVoid::create (m_context, DATATYPE_UINT));
     }
 
     return ICode::OK;
@@ -489,11 +488,11 @@ ICode::Status TypeChecker::visit (TreeNodeExprClassify* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid(e)) return ICode::E_TYPE;
-        assert (e->resultType().secrecSecType().isPublic ());
-        root->setResultType(new TypeNonVoid(
-            PrivateSecType (root->expectedDomain ()),
-            e->resultType().secrecDataType(),
-            e->resultType().secrecDimType()));
+        assert (e->resultType()->secrecSecType()->isPublic ());
+        root->setResultType(TypeNonVoid::create (m_context,
+            PrivateSecType::create (m_context, root->expectedDomain ()),
+            e->resultType()->secrecDataType(),
+            e->resultType()->secrecDimType()));
     }
 
     return ICode::OK;
@@ -514,16 +513,17 @@ ICode::Status TypeChecker::visit (TreeNodeExprDeclassify* e) {
         return s;
     }
 
-    const Type& childType (child->resultType ());
-    if (!childType.isVoid ()) {
-        if (childType.secrecSecType ().isPrivate ()) {
-            e->setResultType (publicTy (childType.secrecDataType (),
-                                        childType.secrecDimType ()));
+    Type* childType = child->resultType ();
+    if (!childType->isVoid ()) {
+        if (childType->secrecSecType ()->isPrivate ()) {
+            e->setResultType (TypeNonVoid::create (m_context,
+                childType->secrecDataType (),
+                childType->secrecDimType ()));
             return ICode::OK;
         }
     }
 
-    m_log.fatal() << "Argument of type " << childType
+    m_log.fatal() << "Argument of type " << *childType
                   << " passed to declassify operator at " << e->location() << ".";
     return ICode::E_TYPE;
 }
@@ -561,9 +561,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        assert(dynamic_cast<const TypeNonVoid*>(&e->resultType()) != 0);
-        const TypeNonVoid &t = static_cast<const TypeNonVoid&>(e->resultType());
-        dataType.addParamType(t.dataType());
+        assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
+        TypeNonVoid* t = static_cast<TypeNonVoid*>(e->resultType());
+        dataType.addParamType(t->dataType());
         arguments.push_back (e);
     }
 
@@ -576,11 +576,11 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         return ICode::E_TYPE;
     }
 
-    const TypeNonVoid &ft = root->symbolProcedure ()->decl()->procedureType();
-    assert(ft.kind() == TypeNonVoid::PROCEDURE
-           || ft.kind() == TypeNonVoid::PROCEDUREVOID);
-    assert(dynamic_cast<const DTFV*>(&ft.dataType()) != 0);
-    const DTFV &rstv = static_cast<const DTFV&>(ft.dataType());
+    TypeNonVoid* ft = root->symbolProcedure ()->decl()->procedureType();
+    assert(ft->kind() == TypeNonVoid::PROCEDURE
+           || ft->kind() == TypeNonVoid::PROCEDUREVOID);
+    assert(dynamic_cast<DTFV*>(ft->dataType()) != 0);
+    const DTFV &rstv = *static_cast<DTFV*>(ft->dataType());
 
     // Check security types of parameters:
     assert(rstv.paramTypes().size() == root->children().size() - 1);
@@ -593,7 +593,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         assert(dynamic_cast<DataTypeBasic*>(dataType.paramTypes().at(i)) != 0);
         DataTypeBasic *have = static_cast<DataTypeBasic*>(dataType.paramTypes()[i]);
 
-        if (need->secType().isPublic () && have->secType().isPrivate ())
+        if (need->secType()->isPublic () && have->secType()->isPrivate ())
         {
             m_log.fatal() << "Argument " << (i + 1) << " to function "
                 << id->value() << " at " << arguments[i]->location()
@@ -609,16 +609,16 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         }
 
         // Add implicit classify node if needed:
-        classifyIfNeeded (root, i + 1, TypeNonVoid (*need));
+        classifyIfNeeded (root, i + 1, TypeNonVoid::create (m_context, need));
     }
 
     // Set result type:
-    if (ft.kind() == TypeNonVoid::PROCEDURE) {
-        assert(dynamic_cast<const DTF*>(&ft.dataType()) != 0);
-        const DTF &rdt = static_cast<const DTF&>(ft.dataType());
-        root->setResultType(new TypeNonVoid(rdt.returnType()));
+    if (ft->kind() == TypeNonVoid::PROCEDURE) {
+        assert(dynamic_cast<DTF*>(ft->dataType()) != 0);
+        const DataTypeProcedure &rdt = *static_cast<DTF*>(ft->dataType());
+        root->setResultType(TypeNonVoid::create (m_context, rdt.returnType()));
     } else {
-        root->setResultType(new TypeVoid);
+        root->setResultType(TypeVoid::create (m_context));
     }
 
     return ICode::OK;
@@ -643,12 +643,13 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
         return ICode::E_OTHER;
     }
 
-    assert(!s->secrecType().isVoid());
-    assert(dynamic_cast<const TNV*>(&s->secrecType()) != 0);
-    const TNV *type = static_cast<const TNV*>(&s->secrecType());
-    assert(type->dataType().kind() == DataType::VAR);
-    assert(dynamic_cast<const DTV*>(&type->dataType()) != 0);
-    e->setResultType(new TNV(static_cast<const DTV&>(type->dataType()).dataType()));
+    assert(!s->secrecType()->isVoid());
+    assert(dynamic_cast<TNV*>(s->secrecType()) != 0);
+    TNV *type = static_cast<TNV*>(s->secrecType());
+    assert(type->dataType()->kind() == DataType::VAR);
+    assert(dynamic_cast<DTV*>(type->dataType()) != 0);
+    e->setResultType(TypeNonVoid::create (m_context,
+        static_cast<DTV*>(type->dataType())->dataType()));
     return ICode::OK;
 }
 
@@ -658,7 +659,7 @@ ICode::Status TreeNodeExprString::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprString* e) {
     if (!e->haveResultType()) {
-        e->setResultType (publicTy (DATATYPE_STRING));
+        e->setResultType (TypeNonVoid::create (m_context, DATATYPE_STRING));
     }
 
     return ICode::OK;
@@ -686,48 +687,48 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* e) {
     s = visitExpr (e3);
     if (s != ICode::OK) return s;
 
-    const SecreC::Type &eType1 = e1->resultType();
-    const SecreC::Type &eType2 = e2->resultType();
-    const SecreC::Type &eType3 = e3->resultType();
+    SecreC::Type* eType1 = e1->resultType();
+    SecreC::Type* eType2 = e2->resultType();
+    SecreC::Type* eType3 = e3->resultType();
 
-    assert(dynamic_cast<const TypeNonVoid*>(&eType1) != 0);
-    const TypeNonVoid &cType = static_cast<const TypeNonVoid&>(eType1);
+    assert(dynamic_cast<TypeNonVoid*>(eType1) != 0);
+    TypeNonVoid* cType = static_cast<TypeNonVoid*>(eType1);
 
     // check if conditional expression is of public boolean type
-    if (cType.kind() != TypeNonVoid::BASIC
-        || cType.dataType().kind() != DataType::BASIC
-        || static_cast<const DataTypeBasic&>(cType.dataType()).dataType()
+    if (cType->kind() != TypeNonVoid::BASIC
+        || cType->dataType()->kind() != DataType::BASIC
+        || static_cast<DataTypeBasic*>(cType->dataType())->dataType()
             != DATATYPE_BOOL
-        || static_cast<const DataTypeBasic&>(cType.dataType()).secType().isPrivate ())
+        || static_cast<DataTypeBasic*>(cType->dataType())->secType()->isPrivate ())
     {
         m_log.fatal() << "Conditional subexpression at " << e1->location()
                       << " of ternary expression has to be public boolean, got "
-                      << cType << ".";
+                      << *cType << ".";
         return ICode::E_TYPE;
     }
 
     // check the types of results
-    if (eType2.isVoid() != eType3.isVoid()) {
+    if (eType2->isVoid() != eType3->isVoid()) {
         m_log.fatal() << "Subxpression at " << e2->location() << " is "
-                      << (eType2.isVoid() ? "" : "not")
+                      << (eType2->isVoid() ? "" : "not")
                       << " void while subexpression at " << e3->location()
-                      << (eType3.isVoid() ? " is" : " isn't");
+                      << (eType3->isVoid() ? " is" : " isn't");
         return ICode::E_TYPE;
 
     }
 
-    if (!eType2.isVoid()) {
-        if (eType2.secrecDataType() != eType3.secrecDataType()) {
+    if (!eType2->isVoid()) {
+        if (eType2->secrecDataType() != eType3->secrecDataType()) {
             m_log.fatal() << "Results of ternary expression  at "
                           << e->location()
                           << " have to be of same data types, got "
-                          << eType2 << " and " << eType3 << ".";
+                          << *eType2 << " and " << *eType3 << ".";
             return ICode::E_TYPE;
         }
 
-        SecrecDimType n1 = eType1.secrecDimType();
-        SecrecDimType n2 = eType2.secrecDimType();
-        SecrecDimType n3 = eType2.secrecDimType();
+        SecrecDimType n1 = eType1->secrecDimType();
+        SecrecDimType n2 = eType2->secrecDimType();
+        SecrecDimType n3 = eType3->secrecDimType();
 
         if (n2 != n3) {
             m_log.fatal() << "Brances of ternary expression at "
@@ -747,7 +748,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* e) {
     e2 = classifyIfNeeded (e, 1, eType3);
     e3 = classifyIfNeeded (e, 2, eType2);
     assert(e2->resultType() == e3->resultType());
-    e->setResultType(e2->resultType().clone());
+    e->setResultType(e2->resultType());
     return ICode::OK;
 }
 
@@ -779,8 +780,8 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root, bool is
     assert(dynamic_cast<TreeNodeIdentifier* >(lval->children ().at(0)) != 0);
 
     TreeNodeIdentifier *e = static_cast<TreeNodeIdentifier*>(lval->children ().at(0));
-    const SecreC::Type &eType = e->getSymbol (*m_st, m_log)->secrecType ();
-    unsigned destDim = eType.secrecDimType ();
+    SecreC::Type* eType = e->getSymbol (*m_st, m_log)->secrecType ();
+    unsigned destDim = eType->secrecDimType ();
     if (lval->children ().size () == 2) {
         ICode::Status s = checkIndices (lval->children ().at (1), destDim);
         if (s != ICode::OK) {
@@ -798,39 +799,41 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root, bool is
         return ICode::E_TYPE;
     }
     // increment or decrement of void
-    if (eType.isVoid ()) {
+    if (eType->isVoid ()) {
         m_log.fatal() << m1 << m2 << " of void type expression at "
                       << root->location () << ".";
         return ICode::E_TYPE;
     }
 
     // check that we are operating on numeric types
-    if (!isNumericDataType (eType.secrecDataType ())) {
+    if (!isNumericDataType (eType->secrecDataType ())) {
         m_log.fatal() << m1 << m2
                       << " operator expects numeric type, given "
-                      << eType << " at " << root->location() << ".";
+                      << *eType << " at " << root->location() << ".";
         return ICode::E_TYPE;
     }
 
-    root->setResultType (new TypeNonVoid (
-                             eType.secrecSecType (),
-                             eType.secrecDataType (),
-                             eType.secrecDimType ()));
+    root->setResultType (TypeNonVoid::create (m_context,
+        eType->secrecSecType (),
+        eType->secrecDataType (),
+        eType->secrecDimType ()));
     return ICode::OK;
 }
 
-ICode::Status TypeChecker::populateParamTypes (DataTypeProcedureVoid& dt, TreeNodeProcDef* proc) {
+ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params, TreeNodeProcDef* proc) {
     typedef DataTypeVar DTV;
+    params.clear ();
+    params.reserve (std::distance (proc->paramBegin (), proc->paramEnd ()));
     BOOST_FOREACH (TreeNode* n, std::make_pair (proc->paramBegin (), proc->paramEnd ())) {
         assert(n->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl*>(n) != 0);
         TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(n);
         ICode::Status s = visit (d);
         if (s != ICode::OK) return s;
-        const TypeNonVoid &pt = d->resultType();
-        assert(pt.dataType().kind() == DataType::VAR);
-        assert(dynamic_cast<const DTV*>(&pt.dataType()) != 0);
-        dt.addParamType(static_cast<const DTV&>(pt.dataType()).dataType());
+        TypeNonVoid* pt = d->resultType();
+        assert(pt->dataType()->kind() == DataType::VAR);
+        assert(dynamic_cast<DTV*>(pt->dataType()) != 0);
+        params.push_back (static_cast<DTV*>(pt->dataType())->dataType());
     }
 
     return ICode::OK;
@@ -838,28 +841,25 @@ ICode::Status TypeChecker::populateParamTypes (DataTypeProcedureVoid& dt, TreeNo
 
 ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
     typedef TypeNonVoid TNV;
-
+    std::vector<DataType*> params;
     if (proc->m_cachedType == 0) {
         TreeNodeType* rt = proc->returnType ();
         ICode::Status s = visit (rt);
         if (s != ICode::OK) return s;
-        if (rt->secrecType().isVoid()) {
-            DataTypeProcedureVoid dt;
-            if ((s = populateParamTypes (dt, proc)) != ICode::OK) {
-                return s;
-            }
+        if ((s = populateParamTypes (params, proc)) != ICode::OK) {
+            return s;
+        }
 
-            proc->m_cachedType = new TNV (dt);
+        DataTypeProcedureVoid* voidProcType = DataTypeProcedureVoid::create (m_context, params);
+
+        if (rt->secrecType()->isVoid()) {
+            proc->m_cachedType = TypeNonVoid::create (m_context, voidProcType);
         }
         else {
-            const TNV &tt = static_cast<const TNV&>(rt->secrecType());
-            assert (tt.dataType().kind() == DataType::BASIC);
-            DataTypeProcedure dt (tt.dataType());
-            if ((s = populateParamTypes (dt, proc)) != ICode::OK) {
-                return s;
-            }
-
-            proc->m_cachedType = new TNV (dt);
+            TNV* tt = static_cast<TNV*>(rt->secrecType());
+            assert (tt->dataType()->kind() == DataType::BASIC);
+            proc->m_cachedType = TypeNonVoid::create (m_context,
+                DataTypeProcedure::create (m_context, voidProcType, tt->dataType ()));
         }
     }
 
@@ -880,13 +880,13 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
     if (s != ICode::OK) return s;
 
     // First we create the new symbol, but we don't add it to the symbol table:
-    assert (!type->secrecType().isVoid());
-    assert (dynamic_cast<const TNV*>(&type->secrecType()) != 0);
-    const TNV &justType = static_cast<const TNV&>(type->secrecType());
+    assert (!type->secrecType()->isVoid());
+    assert (dynamic_cast<TNV*>(type->secrecType()) != 0);
+    TNV* justType = static_cast<TNV*>(type->secrecType());
 
-    assert(justType.kind() == TNV::BASIC);
-    assert(dynamic_cast<const DTB*>(&justType.dataType()) != 0);
-    const DTB &dataType = static_cast<const DTB&>(justType.dataType());
+    assert(justType->kind() == TNV::BASIC);
+    assert(dynamic_cast<DTB*>(justType->dataType()) != 0);
+    DTB* dataType = static_cast<DTB*>(justType->dataType());
 
     unsigned n = 0;
     if (decl->shape () != 0) {
@@ -896,9 +896,9 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
             s = visitExpr (e);
             if (s != ICode::OK) return s;
             if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-            if (   !e->resultType().secrecDataType() == DATATYPE_INT
-                || !e->resultType().isScalar()
-                ||  e->resultType().secrecSecType().isPrivate ())
+            if (   !e->resultType()->secrecDataType() == DATATYPE_INT
+                || !e->resultType()->isScalar()
+                ||  e->resultType()->secrecSecType()->isPrivate ())
             {
                 m_log.fatal() << "Expecting public unsigned integer scalar at "
                               << e->location() << ".";
@@ -909,7 +909,7 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
         }
     }
 
-    if (n > 0 && n != justType.secrecDimType()) {
+    if (n > 0 && n != justType->secrecDimType()) {
         m_log.fatal() << "Mismatching number of shape components in declaration at "
                       << decl->location() << ".";
         return ICode::E_TYPE;
@@ -921,39 +921,40 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
 
-        if (n == 0 && e->resultType().isScalar() && justType.secrecDimType() > 0) {
+        if (n == 0 && e->resultType()->isScalar() && justType->secrecDimType() > 0) {
             m_log.fatal() << "Defining array without shape annotation with scalar at "
                           << decl->location() << ".";
             return ICode::E_TYPE;
 
         }
 
-        if (e->resultType().secrecSecType().isPrivate () &&
-            justType.secrecSecType().isPublic ())
+        if (e->resultType()->secrecSecType()->isPrivate () &&
+            justType->secrecSecType()->isPublic ())
         {
             m_log.fatal() << "Public variable is given a private initializer at "
                           << decl->location() << ".";
             return ICode::E_TYPE;
         }
 
-        if (e->resultType().secrecDataType() != justType.secrecDataType()) {
-            m_log.fatal() << "Variable of type " << TNV(DataTypeVar(dataType))
+        if (e->resultType()->secrecDataType() != justType->secrecDataType()) {
+            m_log.fatal() << "Variable of type " << dataType->toString ()
                           << " is given an initializer expression of type "
                           << e->resultType() << " at " << decl->location() << ".";
             return ICode::E_TYPE;
         }
 
-        if (!e->resultType().isScalar() &&
-            e->resultType().secrecDimType() != justType.secrecDimType())
+        if (!e->resultType()->isScalar() &&
+            e->resultType()->secrecDimType() != justType->secrecDimType())
         {
-            m_log.fatal() << "Variable of dimensionality " << dataType.secrecDimType()
+            m_log.fatal() << "Variable of dimensionality " << dataType->secrecDimType()
                           << " is given an initializer expression of dimensionality "
-                          << e->resultType().secrecDimType() << " at " << decl->location() << ".";
+                          << e->resultType()->secrecDimType() << " at " << decl->location() << ".";
             return ICode::E_TYPE;
         }
     }
 
-    decl->m_type = new TNV(DataTypeVar(dataType));
+    decl->m_type = TypeNonVoid::create (m_context,
+        DataTypeVar::create (m_context, dataType));
     return ICode::OK;
 }
 
@@ -962,12 +963,13 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
         return ICode::OK;
     }
 
-    TreeNodeTypeType* ty = 0;
-    if ((ty = dynamic_cast<TreeNodeTypeType*>(_ty)) != 0) {
+    if (_ty->type () == NODE_TYPETYPE) {
+        assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
+        TreeNodeTypeType* ty = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF *secty = ty->secType ();
         SecurityType* secType = 0;
         if (secty->isPublic ()) {
-            secType = new PublicSecType ();
+            secType = PublicSecType::create (m_context);
         }
         else {
             TreeNodeIdentifier* id = secty->identifier ();
@@ -982,14 +984,15 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
                 return ICode::E_TYPE;
             }
 
-            secType = new PrivateSecType (static_cast<SymbolDomain*>(sym));
+            secType = PrivateSecType::create (m_context, static_cast<SymbolDomain*>(sym));
         }
 
-        ty->m_cachedType = new SecreC::TypeNonVoid(
-                    *secType,
-                    ty->dataType ()->dataType (),
-                    ty->dimType ()->dimType() );
-        delete secType;
+        ty->m_cachedType = TypeNonVoid::create (m_context,
+            secType, ty->dataType ()->dataType (), ty->dimType ()->dimType());
+    }
+    else {
+        assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);
+        _ty->m_cachedType = TypeVoid::create (getContext ());
     }
 
     return ICode::OK;
@@ -1002,12 +1005,12 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
         return s;
     }
 
-    if (e->resultType().secrecDataType() != DATATYPE_STRING ||
-        e->resultType().secrecSecType().isPrivate ()  ||
-        !e->resultType().isScalar())
+    if (e->resultType()->secrecDataType() != DATATYPE_STRING ||
+        e->resultType()->secrecSecType()->isPrivate ()  ||
+        !e->resultType()->isScalar())
     {
         m_log.fatal () << "Argument of \"print\" statement has to be public string scalar, got "
-                       << e->resultType() << " at " << stmt->location() << ".";
+                       << *e->resultType() << " at " << stmt->location() << ".";
         return ICode::E_TYPE;
     }
 
@@ -1015,17 +1018,17 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
 }
 
 ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
-    const SecreC::TypeNonVoid& procType = stmt->containingProcedure ()->procedureType ();
+    SecreC::TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
-        if (procType.kind () == TypeNonVoid::PROCEDURE) {
+        if (procType->kind () == TypeNonVoid::PROCEDURE) {
             m_log.fatal() << "Cannot return from non-void function without value "
                              "at " << stmt->location() << ".";
             return ICode::E_TYPE;
         }
     }
     else {
-        if (procType.kind () == TypeNonVoid::PROCEDUREVOID) {
+        if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
             m_log.fatal () << "Cannot return value from void function at"
                            << stmt->location() << ".";
             return ICode::E_TYPE;
@@ -1033,12 +1036,12 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
 
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
-        if (!procType.canAssign(e->resultType ()) ||
-             procType.secrecDimType () != e->resultType ().secrecDimType ())
+        if (!procType->canAssign(*e->resultType ()) ||
+             procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
-            m_log.fatal () << "Cannot return value of type " << e->resultType ()
+            m_log.fatal () << "Cannot return value of type " << *e->resultType ()
                            << " from function with type "
-                           << procType << " at "
+                           << *procType << " at "
                            << stmt->location () << ".";
             return ICode::E_TYPE;
         }
@@ -1050,20 +1053,21 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
 }
 
 
-TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, const Type& ty) {
+TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, Type* ty) {
     TreeNode *&child = node->children ().at (index);
     assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
-    if (!ty.isVoid ()) {
-        if (ty.secrecSecType ().isPrivate () &&
-            static_cast<TreeNodeExpr*>(child)->resultType().secrecSecType().isPublic ())
+    if (!ty->isVoid ()) {
+        if (ty->secrecSecType ()->isPrivate () &&
+            static_cast<TreeNodeExpr*>(child)->resultType()->secrecSecType()->isPublic ())
         {
-            const SecurityType& secTy (ty.secrecSecType ());
+            SecurityType* secTy (ty->secrecSecType ());
             TreeNodeExprClassify *ec = new TreeNodeExprClassify(
-                        static_cast<const PrivateSecType&>(secTy).domain (),
+                        static_cast<PrivateSecType*>(secTy)->domain (),
                         child->location());
             ec->appendChild(child);
             ec->resetParent(node);
-            ec->setResultType (new TypeNonVoid (secTy, ty.secrecDataType (), ty.secrecDimType ()));
+            ec->setResultType (TypeNonVoid::create (m_context,
+                secTy, ty->secrecDataType (), ty->secrecDimType ()));
             child = ec;
         }
     }
@@ -1073,7 +1077,7 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, con
 
 bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     assert (e->haveResultType());
-    if (e->resultType().isVoid()) {
+    if (e->resultType()->isVoid()) {
         m_log.fatal() << "Subexpression has type void at "
                       << e->location() << ".";
         return true;
@@ -1113,9 +1117,9 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, unsigned& destDim) {
                 return ICode::E_TYPE;
             }
 
-            const TypeNonVoid* eTy = static_cast<const TypeNonVoid*>(&e->resultType());
+            TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
 
-            if (eTy->secrecSecType().isPrivate () ||
+            if (eTy->secrecSecType()->isPrivate () ||
                 eTy->secrecDataType() != DATATYPE_INT ||
                 eTy->secrecDimType() > 0)
             {
@@ -1129,5 +1133,12 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, unsigned& destDim) {
     return ICode::OK;
 }
 
+ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
+    return ICode::E_NOT_IMPLEMENTED;
+}
+
+bool TypeChecker::match (TreeNodeTemplate* n, const std::vector<TypeNonVoid*>& argTys) {
+    return false;
+}
 
 } // namespace SecreC

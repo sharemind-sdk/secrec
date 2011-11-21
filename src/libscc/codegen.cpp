@@ -7,7 +7,7 @@ namespace SecreC {
 *******************************************************************************/
 
 Imop* CodeGen::pushComment (const std::string& comment) {
-    ConstantString* str = st->constantString (comment);
+    ConstantString* str = ConstantString::get (getContext (), comment);
     Imop* c = new Imop (0, Imop::COMMENT, 0, str);
     code.push_imop (c);
     return c;
@@ -18,7 +18,8 @@ void CodeGen::codeGenSize (CGResult& result) {
     SymbolSymbol* resSym = 0;
     if ((resSym = dynamic_cast<SymbolSymbol*>(result.symbol ())) != 0) {
         Symbol* size = resSym->getSizeSym ();
-        Imop* i = new Imop (m_node, Imop::ASSIGN, size, st->constantInt(1));
+        ConstantInt* one = ConstantInt::get (getContext (), 1);
+        Imop* i = new Imop (m_node, Imop::ASSIGN, size, one);
         pushImopAfter (result, i);
 
         for (dim_iterator it = dim_begin (resSym), e = dim_end (resSym); it != e; ++ it) {
@@ -46,26 +47,26 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
 }
 
 void CodeGen::allocResult (CGResult& result)  {
-    if (result.symbol ()->secrecType ().isScalar ()) {
+    if (result.symbol ()->secrecType ()->isScalar ()) {
         log.warning () << "Allocating result for scala! Ignoring that.";
         return;
     }
 
     SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(result.symbol ());
     Imop* i = new Imop (m_node, Imop::ALLOC, sym,
-                        st->defaultConstant (sym->secrecType ().secrecDataType ()),
+                        defaultConstant (getContext (), sym->secrecType ()->secrecDataType ()),
                         sym->getSizeSym ());
     pushImopAfter (result, i);
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
-    const TypeNonVoid ty (DATATYPE_INT);
+    TypeNonVoid* ty = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
     assert (node->haveResultType ());
-    if (!node->resultType().isVoid()) {
-        assert (dynamic_cast<const TypeNonVoid*>(&node->resultType()) != 0);
-        SymbolSymbol* sym = st->appendTemporary(static_cast<const TypeNonVoid&>(node->resultType()));
+    if (!node->resultType ()->isVoid()) {
+        assert (dynamic_cast<TypeNonVoid*>(node->resultType()) != 0);
+        SymbolSymbol* sym = st->appendTemporary(static_cast<TypeNonVoid*>(node->resultType()));
         result.setResult (sym);
-        for (unsigned i = 0; i < node->resultType().secrecDimType(); ++ i) {
+        for (unsigned i = 0; i < node->resultType ()->secrecDimType(); ++ i) {
             sym->setDim (i, st->appendTemporary (ty));
         }
 
@@ -81,9 +82,9 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 *******************************************************************************/
 
 CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
-    const TypeNonVoid ty (DATATYPE_INT);
+    TypeNonVoid* ty = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
     CGResult result;
-    const unsigned n = tmp->secrecType ().secrecDimType ();
+    const unsigned n = tmp->secrecType ()->secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
         log.debug () << "Generating stride of scalar!";
         return result;
@@ -97,7 +98,7 @@ CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
         m_stride.push_back (st->appendTemporary (ty));
     }
 
-    Imop* i = new Imop (m_node, Imop::ASSIGN, m_stride[0], st->constantInt(1));
+    Imop* i = new Imop (m_node, Imop::ASSIGN, m_stride[0], ConstantInt::get (getContext (), 1));
     pushImopAfter (result, i);
 
     for (unsigned it = 1; it < n; ++ it) {
@@ -123,7 +124,7 @@ CGResult CodeGenLoop::enterLoop (Symbol* tmp, const IndexList& indices) {
     for (unsigned count = 0; idxIt != indices.end (); ++ idxIt, ++ count) {
         Symbol* idx  = *idxIt;
 
-        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, st->constantInt (0));
+        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, ConstantInt::get (getContext (),0));
         code.push_imop (i);
         result.patchFirstImop (i);
 
@@ -162,7 +163,7 @@ CGResult CodeGenLoop::exitLoop (const IndexList& indices) {
     Imop* prevJump = 0;
     for (IndexList::const_reverse_iterator it (indices.rbegin ()); it != indices.rend (); ++ it) {
         Symbol* idx = *it;
-        Imop* i = new Imop (m_node, Imop::ADD, idx, idx, st->constantInt (1));
+        Imop* i = new Imop (m_node, Imop::ADD, idx, idx, ConstantInt::get (getContext (),1));
         code.push_imop (i);
         result.patchFirstImop (i);
         if (prevJump != 0) {
@@ -206,7 +207,7 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
     // 1. evaluate the indices and manage the syntactic suggar
     for (unsigned count = 0; it != itEnd; ++ it, ++ count) {
         TreeNode* t = *it;
-        Symbol* r_lo = st->constantInt (0);
+        Symbol* r_lo = ConstantInt::get (getContext (), 0);
         Symbol* r_hi = x->getDim (count);
 
         // lower bound
@@ -239,8 +240,9 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
         }
         else {
             // if there is no upper bound then make one up
-            r_hi = st->appendTemporary (TypeNonVoid (DATATYPE_INT));
-            Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo, st->constantInt (1));
+            r_hi = st->appendTemporary (TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT));
+            ConstantInt* one = ConstantInt::get (m_tyChecker.getContext (), 1);
+            Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo,one);
             pushImopAfter (result, i);
         }
 
@@ -252,7 +254,7 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
         std::stringstream ss;
         ss << "Index out of bounds at " << m_node->location () << ".";
         Imop* jmp = new Imop(m_node, Imop::JUMP, (Symbol*) 0);
-        Imop* err = newError (m_node, st->constantString (ss.str ()));
+        Imop* err = newError (m_node, ConstantString::get (getContext (), ss.str ()));
         SymbolLabel* errLabel = st->label (err);
 
         dim_iterator dit = dim_begin (x);
@@ -260,8 +262,8 @@ CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
             Symbol* s_lo = it->first;
             Symbol* s_hi = it->second;
             Symbol* d = *dit;
-
-            Imop* i = new Imop(m_node, Imop::JGT, (Symbol*) 0, st->constantInt(0), s_lo);
+            ConstantInt* zero = ConstantInt::get (m_tyChecker.getContext (), 0);
+            Imop* i = new Imop(m_node, Imop::JGT, (Symbol*) 0, zero, s_lo);
             pushImopAfter (result, i);
             i->setJumpDest (errLabel);
 

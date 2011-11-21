@@ -122,7 +122,7 @@ Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
 
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, Symbol *arg2) {
     Imop* i = 0;
-    if (dest->secrecType ().isScalar ()) {
+    if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1, arg2);
     }
     else {
@@ -134,7 +134,7 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
 
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
     Imop* i = 0;
-    if (dest->secrecType ().isScalar ()) {
+    if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1);
     }
     else {
@@ -153,7 +153,7 @@ Imop* newCall (TreeNode* node) {
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
     assert (dest != 0);
     Imop* i = 0;
-    if (dest->secrecType ().isScalar ()) {
+    if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest);
     }
     else {

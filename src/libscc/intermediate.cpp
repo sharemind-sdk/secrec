@@ -1,16 +1,17 @@
 #include "intermediate.h"
 
 #include <iostream>
+
 #include "treenode.h"
 #include "virtual_machine.h"
 #include "codegen.h"
-
+#include "context.h"
 
 namespace SecreC {
 
-ICode::Status ICode::init(TreeNodeProgram *program) {
+ICode::Status ICode::init(Context& cxt, TreeNodeProgram *program) {
     ICodeList code;
-    TypeChecker tyChecker (m_symbols, m_log);
+    TypeChecker tyChecker (m_symbols, m_log, cxt);
     CodeGen cg (code, m_symbols, m_log, tyChecker);
     m_status = program->codeGenWith (cg);
     if (m_status != OK) {

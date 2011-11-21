@@ -3,106 +3,204 @@
 #include <string>
 #include <sstream>
 
+#include "context.h"
+#include "context_impl.h"
+
+namespace {
+
+using namespace SecreC;
+using namespace std;
+
+template <SecrecDataType ty>
+Constant<ty>* getNumeric (Context& cxt, const typename SecrecTypeInfo<ty>::CType& value) {
+    ContextImpl& impl = *cxt.pImpl ();
+    const pair<SecrecDataType, uint64_t> index (ty, value);
+    map<pair<SecrecDataType, uint64_t>, Symbol*>::iterator
+        i = impl.m_numericConstants.find (index);
+    if (i == impl.m_numericConstants.end ()) {
+        TypeNonVoid* tnv = TypeNonVoid::create (cxt, ty);
+        i = impl.m_numericConstants.insert (i,
+            make_pair (index, new Constant<ty>(value, tnv)));
+        ostringstream os;
+        os << "{const" << SecrecTypeInfo<ty>::CName << "}" << value;
+        i->second->setName (os.str ());
+    }
+
+    assert (dynamic_cast<Constant<ty>* >(i->second) != 0);
+    return static_cast<Constant<ty>* >(i->second);
+}
+
+} // anonymous namesace
+
 namespace SecreC {
+
+const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "Bool";
+const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "String";
+const char* SecrecTypeInfo<DATATYPE_INT>::CName = "Int";
+const char* SecrecTypeInfo<DATATYPE_UINT>::CName = "UInt";
+const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "Int8";
+const char* SecrecTypeInfo<DATATYPE_UINT8>::CName = "UInt8";
+const char* SecrecTypeInfo<DATATYPE_INT16>::CName = "Int16";
+const char* SecrecTypeInfo<DATATYPE_UINT16>::CName = "UInt16";
+const char* SecrecTypeInfo<DATATYPE_INT32>::CName = "Int32";
+const char* SecrecTypeInfo<DATATYPE_UINT32>::CName = "UInt32";
+const char* SecrecTypeInfo<DATATYPE_INT64>::CName = "Int64";
+const char* SecrecTypeInfo<DATATYPE_UINT64>::CName = "UInt64";
+
 
 /*******************************************************************************
   SymbolConstantBool
 *******************************************************************************/
 
-std::string ConstantBool::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT bool " << m_value;
-    return os.str();
+template <>
+ConstantBool* ConstantBool::get (Context& cxt, const bool& value) {
+    ContextImpl& impl = *cxt.pImpl ();
+
+    if (impl.m_trueConstant == 0) {
+        impl.m_trueConstant = new ConstantBool (true,
+            TypeNonVoid::create (cxt, DATATYPE_BOOL));
+        impl.m_trueConstant->setName ("{constBool}true");
+    }
+
+    if (impl.m_falseConstant == 0) {
+        impl.m_falseConstant = new ConstantBool (false,
+            TypeNonVoid::create (cxt, DATATYPE_BOOL));
+        impl.m_falseConstant->setName ("{constBool}false");
+    }
+
+    return value ? impl.m_trueConstant : impl.m_falseConstant;
 }
 
 /*******************************************************************************
   SymbolConstantInt
 *******************************************************************************/
 
-std::string ConstantInt::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT int " << m_value;
-    return os.str();
+template <>
+ConstantInt* ConstantInt::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_INT> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantInt8
 *******************************************************************************/
 
-std::string ConstantInt8::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT int8 " << m_value;
-    return os.str();
+template <>
+ConstantInt8* ConstantInt8::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_INT8> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantInt16
 *******************************************************************************/
 
-std::string ConstantInt16::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT int16 " << m_value;
-    return os.str();
+template <>
+ConstantInt16* ConstantInt16::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_INT16> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantInt32
 *******************************************************************************/
 
-std::string ConstantInt32::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT int32 " << m_value;
-    return os.str();
+template <>
+ConstantInt32* ConstantInt32::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_INT32> (cxt, value);
+}
+
+/*******************************************************************************
+  SymbolConstantInt64
+*******************************************************************************/
+
+template <>
+ConstantInt64* ConstantInt64::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_INT64> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantString
 *******************************************************************************/
 
-std::string ConstantString::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT string " << m_value;
-    return os.str();
+template <>
+ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
+    ContextImpl& impl = *cxt.pImpl ();
+    std::map<std::string, ConstantString*>::iterator
+            i = impl.m_stringLiterals.find (value);
+    if (i == impl.m_stringLiterals.end ()) {
+        TypeNonVoid* tnv = TypeNonVoid::create (cxt, DATATYPE_STRING);
+        i = impl.m_stringLiterals.insert (i,
+            std::make_pair (value, new ConstantString (value, tnv)));
+        std::ostringstream os;
+        os << "{constString}" << value;
+        i->second->setName (os.str ());
+    }
+
+    return i->second;
 }
 
 /*******************************************************************************
   SymbolConstantUInt
 *******************************************************************************/
 
-std::string ConstantUInt::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT uint " << m_value;
-    return os.str();
+template <>
+ConstantUInt* ConstantUInt::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_UINT> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantUInt8
 *******************************************************************************/
 
-std::string ConstantUInt8::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT uint8 " << m_value;
-    return os.str();
+template <>
+ConstantUInt8* ConstantUInt8::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_UINT8> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantUInt16
 *******************************************************************************/
 
-std::string ConstantUInt16::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT uint16 " << m_value;
-    return os.str();
+template <>
+ConstantUInt16* ConstantUInt16::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_UINT16> (cxt, value);
 }
 
 /*******************************************************************************
   SymbolConstantUInt32
 *******************************************************************************/
 
-std::string ConstantUInt32::toString() const {
-    std::ostringstream os;
-    os << "CONSTANT uint32 " << m_value;
-    return os.str();
+template <>
+ConstantUInt32* ConstantUInt32::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_UINT32> (cxt, value);
+}
+
+/*******************************************************************************
+  SymbolConstantUInt64
+*******************************************************************************/
+
+template <>
+ConstantUInt64* ConstantUInt64::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_UINT64> (cxt, value);
+}
+
+
+Symbol* defaultConstant (Context& cxt, SecrecDataType ty) {
+    switch (ty) {
+    case DATATYPE_BOOL:   return ConstantBool::get (cxt, false); break;
+    case DATATYPE_INT:    return ConstantInt::get (cxt, 0); break;
+    case DATATYPE_UINT:   return ConstantUInt::get (cxt, 0); break;
+    case DATATYPE_INT8:   return ConstantInt8::get (cxt, 0); break;
+    case DATATYPE_UINT8:  return ConstantUInt8::get (cxt, 0); break;
+    case DATATYPE_INT16:  return ConstantInt16::get (cxt, 0); break;
+    case DATATYPE_UINT16: return ConstantUInt16::get (cxt, 0); break;
+    case DATATYPE_INT32:  return ConstantInt32::get (cxt, 0); break;
+    case DATATYPE_UINT32: return ConstantUInt32::get (cxt, 0); break;
+    case DATATYPE_INT64:  return ConstantInt64::get (cxt, 0); break;
+    case DATATYPE_UINT64: return ConstantUInt64::get (cxt, 0); break;
+    case DATATYPE_STRING: return ConstantString::get (cxt, ""); break;
+    default:
+        assert (false && "TODO");
+        return 0;
+    }
 }
 
 }

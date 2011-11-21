@@ -36,7 +36,7 @@ std::string SymbolSymbol::toString() const {
     std::ostringstream os;
     if (m_isTemporary) os << "TEMPORARY ";
     os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
-       << secrecType() << ' ' << name () << '{' << this << '}';
+       << *secrecType () << ' ' << name () << '{' << this << '}';
     return os.str();
 }
 
@@ -64,7 +64,7 @@ SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
 
 std::string SymbolProcedure::toString() const {
     std::ostringstream os;
-    os << "PROCEDURE " << name() << ": " << secrecType();
+    os << "PROCEDURE " << name () << ": " << *secrecType ();
     return os.str();
 }
 

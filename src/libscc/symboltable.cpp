@@ -57,101 +57,25 @@ public:
     // symbols for variables and procedures
     Symbol*          find (const std::string& name) const;
     void             append (Symbol* sym);
-    SymbolSymbol*    temporary (const TypeNonVoid &type);
+    SymbolSymbol*    temporary (TypeNonVoid* type);
 
     //
     std::string toString () const;
 
 private:
-    ConstantBool*                           m_constantTrue;
-    ConstantBool*                           m_constantFalse;
-    std::map<int, ConstantInt* >            m_constantInts;
-    std::map<unsigned, ConstantUInt* >      m_constantUInts;
 
-    std::map<std::string, ConstantString* > m_constantStrings;
     std::map<const Imop*, SymbolLabel* >    m_labels;
     std::map<std::string, Symbol* >         m_globals;
     unsigned                                m_tempCount;
 };
 
 GlobalSymbols::GlobalSymbols ()
-    : m_constantTrue (0)
-    , m_constantFalse (0)
-    , m_tempCount (0)
+    : m_tempCount (0)
 { }
 
 GlobalSymbols::~GlobalSymbols () {
-    delete m_constantTrue;
-    delete m_constantFalse;
-    deleteValues (m_constantInts);
-    deleteValues (m_constantUInts);
-    deleteValues (m_constantStrings);
     deleteValues (m_labels);
     deleteValues (m_globals);
-}
-
-ConstantBool* GlobalSymbols::constantBool (bool value) {
-    ConstantBool* result = value ? m_constantTrue : m_constantFalse;
-
-    if (result == 0) {
-        result = new ConstantBool (value);
-        if (value) {
-            const char* name = "{constBool}true";
-            result->setName (name);
-            m_constantTrue = result;
-        }
-        else {
-            const char* name = "{constBool}false";
-            result->setName (name);
-            m_constantFalse = result;
-        }
-    }
-
-    return result;
-}
-
-ConstantInt* GlobalSymbols::constantInt (int value) {
-    std::map<int, ConstantInt*>::iterator
-            it = m_constantInts.find (value);
-    if (it != m_constantInts.end ()) {
-        return it->second;
-    }
-
-    ConstantInt* cVal = new ConstantInt (value);
-    std::ostringstream os;
-    os << "{constInt}" << value;
-    cVal->setName (os.str ());
-    m_constantInts.insert (it, std::make_pair (value, cVal));
-    return cVal;
-}
-
-ConstantUInt* GlobalSymbols::constantUInt (unsigned value) {
-    std::map<unsigned, ConstantUInt*>::iterator
-            it = m_constantUInts.find (value);
-    if (it != m_constantUInts.end ()) {
-        return it->second;
-    }
-
-    ConstantUInt* cVal = new ConstantUInt (value);
-    std::ostringstream os;
-    os << "{constUInt}" << value;
-    cVal->setName (os.str ());
-    m_constantUInts.insert (it, std::make_pair (value, cVal));
-    return cVal;
-}
-
-ConstantString* GlobalSymbols::constantString (const std::string &value) {
-    std::map<std::string, ConstantString*>::iterator
-            it = m_constantStrings.find (value);
-    if (it != m_constantStrings.end ()) {
-        return it->second;
-    }
-
-    ConstantString* cVal = new ConstantString (value);
-    std::string name("{constString}" + value);
-    cVal->setName (name);
-    m_constantStrings.insert (it, std::make_pair (value, cVal));
-    return cVal;
 }
 
 SymbolLabel* GlobalSymbols::label (Imop *imop) {
@@ -193,8 +117,9 @@ Symbol* GlobalSymbols::find (const std::string &name) const {
     return out;
 }
 
-SymbolSymbol* GlobalSymbols::temporary (const TypeNonVoid &type) {
-    SymbolSymbol* tmp = new SymbolSymbol (DataTypeVar(type.dataType()), true);
+SymbolSymbol* GlobalSymbols::temporary (TypeNonVoid* type) {
+//    SymbolSymbol* tmp = new SymbolSymbol (new TypeNonVoid (new DataTypeVar (type->dataType())), true);
+    SymbolSymbol* tmp = new SymbolSymbol (type, true);
     std::ostringstream os;
     os << "{t}" << m_tempCount ++;
     tmp->setName (os.str ());
@@ -212,19 +137,6 @@ static void printValues (typename std::map<T, V* > const& kvs, std::ostringstrea
 
 std::string GlobalSymbols::toString () const {
     std::ostringstream os;
-
-    os << "* Boolean constants:\n";
-    if (m_constantFalse != 0) os << *m_constantFalse << '\n';
-    if (m_constantTrue != 0)  os << *m_constantTrue << '\n';
-
-    os << "* Int constants:\n";
-    printValues (m_constantInts, os);
-
-    os << "* UInt constants:\n";
-    printValues (m_constantUInts, os);
-
-    os << "* String constants:\n";
-    printValues (m_constantStrings, os);
 
     os << "* Labels:\n";
     printValues (m_labels, os);
@@ -271,48 +183,6 @@ void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
     m_global->append (symbol);
 }
 
-ConstantBool *SymbolTable::constantBool(bool value) {
-    return m_global->constantBool (value);
-}
-
-ConstantInt *SymbolTable::constantInt(int value) {
-    return m_global->constantInt (value);
-}
-
-ConstantUInt *SymbolTable::constantUInt(unsigned value) {
-    return m_global->constantUInt (value);
-}
-
-ConstantString *SymbolTable::constantString(const std::string &value) {
-    return m_global->constantString (value);
-}
-
-Symbol* SymbolTable::defaultConstant (SecrecDataType dataType) {
-    Symbol* result = 0;
-    switch (dataType) {
-        case DATATYPE_BOOL:    result = constantBool(false); break;
-        case DATATYPE_INT:
-        case DATATYPE_INT8:
-        case DATATYPE_INT16:
-        case DATATYPE_INT32:
-        case DATATYPE_INT64:
-            result = constantInt(0);
-            break;
-        case DATATYPE_UINT:
-        case DATATYPE_UINT8:
-        case DATATYPE_UINT16:
-        case DATATYPE_UINT32:
-        case DATATYPE_UINT64:
-            result = constantUInt(0);
-            break;
-        case DATATYPE_STRING:  result = constantString(""); break;
-        default:
-            assert (false && "Don't know how to produce default constant of given type.");
-    }
-
-    return result;
-}
-
 SymbolLabel* SymbolTable::label (Imop* imop) {
     assert (imop != 0);
     return m_global->label (imop);
@@ -327,18 +197,18 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
 
     SymbolProcedure *ns = new SymbolProcedure(&procdef);
 
-    assert(procdef.procedureType().kind() == TypeNonVoid::PROCEDURE
-           || procdef.procedureType().kind() == TypeNonVoid::PROCEDUREVOID);
-    assert(dynamic_cast<const DTPV*>(&procdef.procedureType().dataType()) != 0);
-    const DTPV &dt = static_cast<const DTPV&>(procdef.procedureType().dataType());
+    assert(procdef.procedureType()->kind() == TypeNonVoid::PROCEDURE
+           || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
+    assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
+    DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
 
-    ns->setName("{proc}" + procdef.procedureName() + dt.mangle());
+    ns->setName("{proc}" + procdef.procedureName() + dt->mangle());
     appendGlobalSymbol(ns);
 
     return ns;
 }
 
-SymbolSymbol *SymbolTable::appendTemporary(const TypeNonVoid &type) {
+SymbolSymbol *SymbolTable::appendTemporary(TypeNonVoid* type) {
     return m_global->temporary (type);
 }
 
@@ -376,7 +246,7 @@ SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
     return 0;
 }
 
-SymbolTable *SymbolTable::newScope() {
+SymbolTable *SymbolTable::newScope () {
     SymbolTable *scope = new SymbolTable(this);
     m_scopes.push_back(scope);
     return scope;

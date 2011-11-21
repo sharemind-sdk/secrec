@@ -106,8 +106,8 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     const Imop& imop = *m_imop;
     const unsigned n = imop.nArgs ();
     assert (imop.isVectorized ());
-    VMImm* argSize = st.getImm (secrecDTypeSize (imop.arg1 ()->secrecType ().secrecDataType ()));
-    VMImm* destSize = st.getImm (secrecDTypeSize (imop.dest ()->secrecType ().secrecDataType ()));
+    VMImm* argSize = st.getImm (secrecDTypeSize (imop.arg1 ()->secrecType ()->secrecDataType ()));
+    VMImm* destSize = st.getImm (secrecDTypeSize (imop.dest ()->secrecType ()->secrecDataType ()));
 
     VMBlock entryB (0, 0);
 
@@ -185,7 +185,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         }
 
         VMInstruction instr;
-        instr << name << secrecDTypeToVMDType (imop.arg1 ()->secrecType ().secrecDataType ());
+        instr << name << secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
         for (unsigned i = 0; i < n - 1; ++ i)
             instr << rTmp [i];
         middleB.push_back (instr);

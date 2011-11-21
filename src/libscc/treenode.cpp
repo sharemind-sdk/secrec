@@ -2,6 +2,7 @@
 #include "symboltable.h"
 #include "typechecker.h"
 #include "misc.h"
+#include "context.h"
 
 #include <algorithm>
 #include <sstream>
@@ -117,7 +118,6 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_INDEX_SLICE: return "NODE_INDEX_SLICE";
         case NODE_LVALUE: return "NODE_LVALUE";
         case NODE_SUBSCRIPT: return "NODE_SUBSCRIPT";
-
         case NODE_TYPETYPE: return "TYPETYPE";
         case NODE_TYPEVOID: return "TYPEVOID";
         case NODE_DATATYPE_F: return "DATATYPE_F";
@@ -571,7 +571,7 @@ const std::string &TreeNodeStmtDecl::variableName() const {
 *******************************************************************************/
 
 std::string TreeNodeTypeType::stringHelper() const {
-    return secrecType().toString();
+    return secrecType()->toString();
 }
 
 } // namespace SecreC
