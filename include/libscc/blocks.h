@@ -232,21 +232,6 @@ public: /* Methods: */
 
     void init (ICodeList& code);
 
-    Procedure* get (const SymbolProcedure* name) const {
-        return m_procMap.find (name)->second;
-    }
-
-    void addProcedure (const SymbolProcedure* name, Procedure& proc) {
-        assert (name != 0);
-        m_procMap[name] = &proc;
-        push_back (proc);
-    }
-
-    void addGlobalCode (Procedure& proc) {
-        m_procMap[0] = &proc;
-        push_back (proc);
-    }
-
     std::string toString () const;
     void toDotty (std::ostream& os) const;
 
@@ -261,10 +246,6 @@ protected:
 
     void assignToBlocks (ICodeList& imops);
     void propagate ();
-
-private: /* Fields: */
-
-    std::map<const SymbolProcedure*, Procedure* >  m_procMap;
 };
 
 } // namespace SecreC
