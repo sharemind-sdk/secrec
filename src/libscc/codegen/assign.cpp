@@ -53,7 +53,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
 
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {
@@ -147,7 +147,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
         // 9. load and store
         {
-            TypeNonVoid* ty = TypeNonVoid::create (m_tyChecker.getContext (),
+            TypeNonVoid* ty = TypeNonVoid::create (getContext (),
                 e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
             if (e->type () == NODE_EXPR_ASSIGN) {
                 if (!eArg2->resultType ()->isScalar ()) {

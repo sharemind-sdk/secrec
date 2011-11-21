@@ -110,7 +110,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     // 4. initialze required temporary symbols
     std::vector<Symbol* > indices;
-    Context& cxt = m_tyChecker.getContext ();
+    Context& cxt = getContext ();
     TypeNonVoid* pubIntTy = TypeNonVoid::create (cxt, DATATYPE_INT);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
@@ -378,7 +378,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     // Symbols for running indices:
     std::vector<Symbol* > indices;
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
     for (unsigned it = 0; it < n; ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         indices.push_back(sym);
@@ -419,7 +419,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     // t = x[j]
-    TypeNonVoid* elemType = TypeNonVoid::create (m_tyChecker.getContext (),
+    TypeNonVoid* elemType = TypeNonVoid::create (getContext (),
         e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
     Symbol* tmp_elem = st->appendTemporary(elemType);
     i = new Imop (m_node, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
@@ -532,7 +532,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     else {
         // Convert scalar to constant array:
         Symbol* tmp = rhs;
-        rhs = st->appendTemporary (TypeNonVoid::create (m_tyChecker.getContext (),
+        rhs = st->appendTemporary (TypeNonVoid::create (getContext (),
             eArg->resultType ()->secrecSecType (),
             eArg->resultType ()->secrecDataType (),
             e->resultType ()->secrecDimType ()));
@@ -1116,7 +1116,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         // loop to set all values of resulting array
 
         // Set up some temporary scalars:
-        Context& cxt = m_tyChecker.getContext ();
+        Context& cxt = getContext ();
         Symbol* counter = st->appendTemporary(TypeNonVoid::create (cxt, DATATYPE_INT));
         Symbol* b = st->appendTemporary(TypeNonVoid::create (cxt,
             e1->resultType ()->secrecSecType (), e1->resultType ()->secrecDataType ()));
@@ -1262,7 +1262,7 @@ CGResult CodeGen::cgExprBool (TreeNodeExprBool *e) {
     }
 
     CGResult result;
-    Context& cxt = m_tyChecker.getContext ();
+    Context& cxt = getContext ();
     result.setResult (ConstantBool::get (cxt, e->value ()));
     return result;
 }
@@ -1451,7 +1451,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1576,7 +1576,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (m_tyChecker.getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
