@@ -46,12 +46,6 @@ public:
     GlobalSymbols ();
     ~GlobalSymbols ();
 
-    // constants
-    ConstantBool*    constantBool (bool value);
-    ConstantInt*     constantInt (int value);
-    ConstantUInt*    constantUInt (unsigned value);
-    ConstantString*  constantString (const std::string &value);
-
     // labels
     SymbolLabel*     label (Imop* imop);
 

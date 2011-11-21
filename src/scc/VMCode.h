@@ -119,7 +119,8 @@ private: /* Fields: */
 *******************************************************************************/
 
 class VMBinding {
-public:
+public: /* Methods: */
+
     VMBinding (VMLabel* label, std::string syscall)
         : m_label (label)
         , m_syscall (syscall)
@@ -129,7 +130,7 @@ public:
 
     friend std::ostream& operator << (std::ostream& os, const VMBinding& binding);
 
-private:
+private: /* Fields: */
 
     VMLabel*    const m_label;
     std::string const m_syscall;

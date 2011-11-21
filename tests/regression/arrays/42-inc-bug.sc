@@ -5,5 +5,9 @@ void main () {
     brr = arr [0,:] ++;
     brr = -- arr [:,1];
     brr = arr [1,:] --;
+    brr = ++ arr [:,:];
+    brr = arr [:,:] ++;
+    brr = -- arr [:,:];
+    brr = arr [:,:] --;
     assert (true);
 }
