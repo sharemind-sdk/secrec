@@ -138,7 +138,7 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
 
     std::ostringstream os;
 
-    os << std::string (' ', startIndent);
+    os << std::string (startIndent, ' ');
     os << typeName(m_type);
 
     const std::string sh(stringHelper());
