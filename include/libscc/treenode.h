@@ -95,6 +95,22 @@ class TreeNode {
 
         static const char *typeName(SecrecTreeNodeType type);
 
+        TreeNode* clone (TreeNode* parent) const {
+            TreeNode* out = cloneV ();
+            out->m_parent = parent;
+            out->m_procedure = parent->m_procedure;
+
+            for (ChildrenListConstIterator
+                 i = m_children.begin (),
+                 e = m_children.end (); i != e; ++ i)
+            {
+                const TreeNode* n = *i;
+                out->m_children.push_back (n->clone (out));
+            }
+
+            return out;
+        }
+
     protected: /* Methods: */
         inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
         inline void setContainingProcedureDirectly(TreeNodeProcDef *p) { m_procedure = p; }
@@ -103,7 +119,14 @@ class TreeNode {
             m_procedure = parent->m_procedure;
         }
 
-    private: /* Fields: */
+        // It's assumed that cloneV sets m_type, and m_location.
+        // As the children are populated by clone method, it must not
+        // explicitly add any by itself.
+        virtual TreeNode* cloneV () const {
+            return new TreeNode (m_type, m_location);
+        }
+
+    protected: /* Fields: */
         TreeNode*                 m_parent;
         TreeNodeProcDef*          m_procedure;
         const SecrecTreeNodeType  m_type;
@@ -144,6 +167,12 @@ class TreeNodeIdentifier: public TreeNode {
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
 
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeIdentifier (m_value, m_location);
+        }
+
     private: /* Fields: */
         std::string m_value;
 };
@@ -171,6 +200,12 @@ class TreeNodeSecTypeF: public TreeNode {
             return static_cast<TreeNodeIdentifier*>(children ().at (0));
         }
 
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeSecTypeF (m_isPublic, m_location);
+        }
+
     private: /* Fields: */
         const bool m_isPublic;
 };
@@ -192,6 +227,12 @@ class TreeNodeDataTypeF: public TreeNode {
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeDataTypeF (m_dataType, m_location);
+        }
 
     private:
         SecrecDataType m_dataType;
@@ -215,6 +256,12 @@ class TreeNodeDimTypeF: public TreeNode {
 
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeDimTypeF (m_dimType, m_location);
+        }
 
     private:
         unsigned m_dimType;
@@ -265,6 +312,8 @@ protected: /* Fields: */
         , m_cachedType (ty)
     { }
 
+    virtual TreeNode* cloneV () const = 0;
+
     SecreC::Type* m_cachedType;
 };
 
@@ -281,6 +330,12 @@ public: /* Methods: */
     virtual inline ~TreeNodeTypeType() { }
 
     virtual std::string stringHelper() const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeType (m_location);
+    }
 };
 
 
@@ -294,6 +349,12 @@ public: /* Methods: */
     explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
         : TreeNodeType(NODE_TYPEVOID, loc)
     { }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeVoid (m_location);
+    }
 };
 
 
@@ -345,6 +406,8 @@ class TreeNodeExpr: public TreeNode {
             return static_cast<TreeNodeExpr*>(children ().at (i));
         }
 
+        virtual TreeNode* cloneV () const = 0;
+
     private: /* Fields: */
         SecreC::Type       *m_resultType; ///< Type of resulting value.
 };
@@ -368,6 +431,12 @@ class TreeNodeExprInt: public TreeNodeExpr {
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprInt (m_value, m_location);
+        }
 
     private: /* Fields: */
         int m_value;
@@ -413,6 +482,12 @@ class TreeNodeExprAssign: public TreeNodeExpr {
             assert(children().size() == 2);
             return expressionAt (1);
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprAssign (m_type, m_location);
+        }
 };
 
 
@@ -444,6 +519,12 @@ class TreeNodeExprCast: public TreeNodeExpr {
             assert (dynamic_cast<TreeNodeDataTypeF*>(children ().at (0)));
             return static_cast<TreeNodeDataTypeF*>(children ().at (0));
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprCast (m_location);
+        }
 };
 
 
@@ -470,6 +551,12 @@ class TreeNodeExprIndex: public TreeNodeExpr {
             assert (children().size() == 2);
             return children ().at (1);
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprIndex (m_location);
+        }
 };
 
 
@@ -489,6 +576,12 @@ class TreeNodeExprSize: public TreeNodeExpr {
         TreeNodeExpr* expression () const {
             assert (children().size() == 1);
             return expressionAt (0);
+        }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprSize (m_location);
         }
 };
 
@@ -510,6 +603,12 @@ class TreeNodeExprShape: public TreeNodeExpr {
         TreeNodeExpr* expression () const {
             assert (children().size() == 1);
             return expressionAt (0);
+        }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprShape (m_location);
         }
 };
 
@@ -548,6 +647,12 @@ class TreeNodeExprCat: public TreeNodeExpr {
 
             return 0;
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprCat (m_location);
+        }
 };
 
 
@@ -575,6 +680,12 @@ class TreeNodeExprReshape: public TreeNodeExpr {
         /// \todo iterators
         TreeNodeExpr* dimensionality (unsigned i) {
             return expressionAt (i + 1); /// will perform the range check too
+        }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprReshape (m_location);
         }
 };
 
@@ -605,6 +716,12 @@ class TreeNodeExprBinary: public TreeNodeExpr {
             assert (children ().size () == 2);
             return expressionAt (1);
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprBinary (m_type, m_location);
+        }
 };
 
 
@@ -629,6 +746,13 @@ class TreeNodeExprBool: public TreeNodeExpr {
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprBool (m_value, m_location);
+        }
+
 
     private: /* Fields: */
         bool m_value;
@@ -663,6 +787,15 @@ class TreeNodeExprClassify: public TreeNodeExpr {
             return m_expectedDomain;
         }
 
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            assert (false && "ICE: Classify nodes are created during type checking and "
+                    "it's assumed that procedures are cloned before type checking is performed.");
+            return new TreeNodeExprClassify (m_expectedDomain, m_location);
+        }
+
+
     private:
         SymbolDomain* const m_expectedDomain;
 };
@@ -682,6 +815,12 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
 
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprDeclassify (m_location);
+        }
 };
 
 
@@ -716,6 +855,13 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
             return static_cast<TreeNodeIdentifier*>(children().at(0));
         }
 
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprProcCall (m_location);
+        }
+
+
     protected: /* Fields: */
         SymbolProcedure *m_procedure;
 };
@@ -741,6 +887,12 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
             assert (children ().size () == 1);
             assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)));
             return static_cast<TreeNodeIdentifier*>(children ().at (0));
+        }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprRVariable (m_location);
         }
 };
 
@@ -769,6 +921,13 @@ class TreeNodeExprString: public TreeNodeExpr {
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprString (m_value, m_location);
+        }
+
 
     private: /* Fields: */
         std::string m_value;
@@ -810,6 +969,12 @@ class TreeNodeExprTernary: public TreeNodeExpr {
             assert(dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
             return static_cast<TreeNodeExpr*>(children().at(2));
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprTernary (m_location);
+        }
 };
 
 
@@ -832,6 +997,12 @@ class TreeNodeExprUInt: public TreeNodeExpr {
 
         virtual CGResult codeGenWith (CodeGen& cg);
 
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprUInt (m_value, m_location);
+        }
+
     private: /* Fields: */
         unsigned m_value;
 };
@@ -850,6 +1021,12 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprPrefix (m_type, m_location);
+        }
 };
 
 
@@ -866,6 +1043,12 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
         virtual CGResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprPostfix (m_type, m_location);
+        }
 };
 
 
@@ -887,6 +1070,12 @@ class TreeNodeExprUnary: public TreeNodeExpr {
         TreeNodeExpr* expression () const {
             return expressionAt (0);
         }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprUnary (m_type, m_location);
+        }
 };
 
 /******************************************************************
@@ -900,6 +1089,12 @@ class TreeNodeKind : public TreeNode {
             : TreeNode (NODE_KIND, loc) { }
         virtual inline ~TreeNodeKind() { }
         CGStmtResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeKind (m_location);
+        }
 };
 
 /******************************************************************
@@ -913,6 +1108,12 @@ class TreeNodeDomain : public TreeNode {
             : TreeNode (NODE_DOMAIN, loc) { }
         virtual inline ~TreeNodeDomain() { }
         CGStmtResult codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeDomain (m_location);
+        }
 };
 
 
@@ -972,6 +1173,10 @@ class TreeNodeProcDef: public TreeNode {
 
         friend class TypeChecker;
 
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeProcDef (m_location);
+        }
+
     protected: /* Fields: */
         SecreC::TypeNonVoid*  m_cachedType;
         SymbolProcedure*      m_procSymbol;
@@ -1003,6 +1208,12 @@ public: /* Methods: */
 
         return 0;
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeQuantifier (m_location);
+    }
 };
 
 
@@ -1025,6 +1236,12 @@ public: /* Methods: */
         assert (children ().size () == 2);
         return children ().at (0);
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTemplate (m_location);
+    }
 };
 
 /******************************************************************
@@ -1038,6 +1255,12 @@ class TreeNodeProgram: public TreeNode {
             : TreeNode(NODE_PROGRAM, loc) {}
 
         ICode::Status codeGenWith (CodeGen& cg);
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeProgram (m_location);
+        }
 };
 
 
@@ -1064,6 +1287,8 @@ protected:
         assert (dynamic_cast<TreeNodeStmt*>(children ().at (i)) != 0);
         return static_cast<TreeNodeStmt*>(children ().at (i));
     }
+
+    virtual TreeNode* cloneV () const = 0;
 };
 
 
@@ -1073,12 +1298,18 @@ protected:
 
 /// Break statement.
 class TreeNodeStmtBreak: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtBreak (m_location);
+    }
 };
 
 
@@ -1088,12 +1319,18 @@ class TreeNodeStmtBreak: public TreeNodeStmt {
 
 /// Compund statement. Anything between curly bracers.
 class TreeNodeStmtCompound: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
-        virtual inline ~TreeNodeStmtCompound() {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
+    virtual inline ~TreeNodeStmtCompound() {}
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtCompound (m_location);
+    }
 };
 
 
@@ -1103,12 +1340,18 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
 
 /// Continue statement.
 class TreeNodeStmtContinue: public TreeNodeStmt {
-    public: /* Methods: */
-        explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
-            : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
+public: /* Methods: */
+    explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
+        : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
 
-        virtual CGStmtResult codeGenWith (CodeGen& cg);
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtContinue (m_location);
+    }
 };
 
 
@@ -1167,6 +1410,10 @@ protected:
 
     friend class TypeChecker;
 
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtDecl (m_location);
+    }
+
 protected: /* Fields: */
     SecreC::TypeNonVoid *m_type;
     bool m_global;
@@ -1195,6 +1442,12 @@ public: /* Methods: */
         assert (children ().size () == 2);
         return statementAt (0);
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtDoWhile (m_location);
+    }
 };
 
 
@@ -1215,6 +1468,12 @@ public: /* Methods: */
         assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
         return static_cast<TreeNodeExpr*> (children ().at (0));
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtExpr (m_location);
+    }
 };
 
 /******************************************************************
@@ -1233,6 +1492,12 @@ public: /* Methods: */
         assert (children ().size () == 1);
         assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
         return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtAssert (m_location);
     }
 };
 
@@ -1284,6 +1549,12 @@ public: /* Methods: */
         assert (dynamic_cast<TreeNodeStmt*>(children ().at (3)) != 0);
         return static_cast<TreeNodeStmt*>(children ().at (3));
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtFor (m_location);
+    }
 };
 
 
@@ -1318,6 +1589,13 @@ public: /* Methods: */
 
         return 0;
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtIf (m_location);
+    }
+
 };
 
 
@@ -1340,6 +1618,12 @@ public: /* Methods: */
         }
 
         return 0;
+    }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtReturn (m_location);
     }
 };
 
@@ -1366,6 +1650,12 @@ public: /* Methods: */
         assert (children ().size () == 2);
         return statementAt (1);
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtWhile (m_location);
+    }
 };
 
 
@@ -1386,6 +1676,12 @@ public: /* Methods: */
         assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
         return static_cast<TreeNodeExpr*> (children ().at (0));
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtPrint (m_location);
+    }
 };
 
 /******************************************************************
@@ -1404,6 +1700,12 @@ public: /* Methods: */
         assert (dynamic_cast<TreeNodeExprString*> (children ().at (0)) != 0);
         return static_cast<TreeNodeExprString*> (children ().at (0));
     }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtSyscall  (m_location);
+    }
 };
 
 /******************************************************************
@@ -1421,6 +1723,12 @@ public: /* Methods: */
         assert (children ().size () == 1);
         assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
         return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtPush (m_location);
     }
 };
 
