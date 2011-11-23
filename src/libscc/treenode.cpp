@@ -507,21 +507,6 @@ const std::string &TreeNodeProcDef::procedureName() const {
   TreeNodeIdentifier
 *******************************************************************************/
 
-SymbolSymbol *TreeNodeIdentifier::getSymbol(SymbolTable &st, CompileLog &log)
-        const
-{
-    Symbol *s = st.find(m_value);
-    if (s == 0) {
-        log.fatal() << "Undefined symbol \"" << m_value << "\" at "
-                    << location();
-        return 0;
-    }
-
-    assert(s->symbolType() == Symbol::SYMBOL);
-    assert(dynamic_cast<SymbolSymbol*>(s) != 0);
-    return static_cast<SymbolSymbol*>(s);
-}
-
 std::string TreeNodeIdentifier::stringHelper() const {
     std::ostringstream os;
     os << "\"" << m_value << "\"";

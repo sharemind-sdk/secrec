@@ -162,8 +162,6 @@ class TreeNodeIdentifier: public TreeNode {
 
         inline void setValue(const std::string &value) { m_value = value; }
         inline const std::string &value() const { return m_value; }
-        SymbolSymbol *getSymbol(SymbolTable &st, CompileLog &log) const;
-
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
 
@@ -1150,6 +1148,12 @@ class TreeNodeProcDef: public TreeNode {
         SecreC::TypeNonVoid* procedureType() const {
             assert(m_cachedType != 0);
             return m_cachedType;
+        }
+
+        TreeNodeIdentifier* identifier () const {
+            assert (children ().size () > 1);
+            assert(dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+            return static_cast<TreeNodeIdentifier*>(children ().at (0));
         }
 
         TreeNodeType* returnType () const {

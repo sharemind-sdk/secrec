@@ -929,8 +929,9 @@ CGResult CodeGen::cgExprRVariable (TreeNodeExprRVariable *e) {
     }
 
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*> (e->children ().at (0));
+    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
     CGResult result;
-    result.setResult (id->getSymbol (*st, log));
+    result.setResult (sym);
     return result;
 }
 
@@ -942,19 +943,16 @@ CGBranchResult TreeNodeExprRVariable::codeGenBoolWith (CodeGen &cg) {
 }
 
 CGBranchResult CodeGen::cgBoolExprRVariable (TreeNodeExprRVariable *e) {
-
     TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(e->children().at(0));
-
     CGBranchResult result;
-    Imop *i = new Imop (e, Imop::JT, 0, id->getSymbol (*st, log));
+    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
+    Imop *i = new Imop (e, Imop::JT, 0, sym);
     code.push_imop (i);
     result.setFirstImop (i);
     result.addToTrueList (i);
-
     i = new Imop (e, Imop::JUMP, 0);
     code.push_imop (i);
     result.addToFalseList (i);
-
     return result;
 }
 

@@ -70,6 +70,7 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeTemplate* templ);
 
     TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, Type* ty);
+    SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
 
     /// TreeNode* findImpl (std::string& name, const std::vector<TypeNonVoid*>& argTys);
     bool match (TreeNodeTemplate* n, const std::vector<TypeNonVoid*>& argTys);

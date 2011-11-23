@@ -18,7 +18,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
 
     // Get symbol for l-value:
     TreeNodeIdentifier* id = e->identifier ();
-    SymbolSymbol* dest = id->getSymbol (*m_st, m_log);
+    SymbolSymbol* dest = getSymbol (id);
     if (dest == 0) return ICode::E_OTHER;
 
     // Calculate type of r-value:
@@ -543,8 +543,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
 
     TreeNodeIdentifier *id = root->procName ();
     Symbol *s = m_st->find(id->value());
-    if (s != 0 && s->symbolType() != Symbol::PROCEDURE) {
-        m_log.fatal() << "Identifier \"" << id->value() << "\" is not a function at "
+
+    if (s != 0 && (s->symbolType() != Symbol::PROCEDURE || s->symbolType () != Symbol::TEMPLATE)) {
+        m_log.fatal() << "Identifier \"" << id->value() << "\" is not a procedure or template name at "
                       << root->location () << ".";
         return ICode::E_TYPE;
     }
@@ -553,13 +554,13 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
     std::vector<TreeNodeExpr*> arguments;
 
     BOOST_FOREACH (TreeNode* node,
-        make_pair (root->children ().begin () + 1,
-                   root->children ().end ()))
+        std::make_pair (++ root->children ().begin (),
+                           root->children ().end ()))
     {
         assert(dynamic_cast<TreeNodeExpr*>(node) != 0);
         TreeNodeExpr *e = static_cast<TreeNodeExpr*>(node);
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
+        ICode::Status status = visitExpr (e);
+        if (status != ICode::OK) return status;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
         assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(e->resultType());
@@ -637,7 +638,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
     typedef TypeNonVoid TNV;
 
     TreeNodeIdentifier *id = e->identifier ();
-    SymbolSymbol *s = id->getSymbol(*m_st, m_log);
+    SymbolSymbol *s = getSymbol (id);
     if (s == 0) {
         m_log.fatal () << "Undefined symbol at " << id->location () << ".";
         return ICode::E_OTHER;
@@ -780,7 +781,7 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root, bool is
     assert(dynamic_cast<TreeNodeIdentifier* >(lval->children ().at(0)) != 0);
 
     TreeNodeIdentifier *e = static_cast<TreeNodeIdentifier*>(lval->children ().at(0));
-    SecreC::Type* eType = e->getSymbol (*m_st, m_log)->secrecType ();
+    SecreC::Type* eType = getSymbol (e)->secrecType ();
     unsigned destDim = eType->secrecDimType ();
     if (lval->children ().size () == 2) {
         ICode::Status s = checkIndices (lval->children ().at (1), destDim);
@@ -1050,6 +1051,19 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
     }
 
     return ICode::OK;
+}
+
+SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
+    Symbol *s = m_st->find (id->value ());
+    if (s == 0) {
+        m_log.fatal() << "Undefined symbol \"" << id->value () << "\" at "
+                      << id->location() << ".";
+        return 0;
+    }
+
+    assert (s->symbolType() == Symbol::SYMBOL);
+    assert (dynamic_cast<SymbolSymbol*>(s) != 0);
+    return static_cast<SymbolSymbol*>(s);
 }
 
 
