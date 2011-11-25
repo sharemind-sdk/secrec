@@ -767,9 +767,9 @@ class TreeNodeExprBool: public TreeNodeExpr {
  */
 class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
-        inline TreeNodeExprClassify(SymbolDomain* dom, const YYLTYPE &loc)
+        inline TreeNodeExprClassify(SecurityType* ty, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
-            , m_expectedDomain (dom)
+            , m_expectedType (ty)
         { }
 
         virtual ICode::Status accept (TypeChecker& tyChecker);
@@ -781,8 +781,8 @@ class TreeNodeExprClassify: public TreeNodeExpr {
             return expressionAt (0);
         }
 
-        SymbolDomain* expectedDomain () const {
-            return m_expectedDomain;
+        SecurityType* expectedType () const {
+            return m_expectedType;
         }
 
     protected:
@@ -790,12 +790,12 @@ class TreeNodeExprClassify: public TreeNodeExpr {
         virtual TreeNode* cloneV () const {
             assert (false && "ICE: Classify nodes are created during type checking and "
                     "it's assumed that procedures are cloned before type checking is performed.");
-            return new TreeNodeExprClassify (m_expectedDomain, m_location);
+            return new TreeNodeExprClassify (m_expectedType, m_location);
         }
 
 
     private:
-        SymbolDomain* const m_expectedDomain;
+        SecurityType* const m_expectedType;
 };
 
 

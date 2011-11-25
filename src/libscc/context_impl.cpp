@@ -47,12 +47,12 @@ PublicSecType* ContextImpl::publicType () {
     return &m_pubSecType;
 }
 
-PrivateSecType* ContextImpl::privateType (SymbolDomain* domain) {
-    std::map<SymbolDomain*, PrivateSecType*>::iterator
-        i = m_privSecTypes.find (domain);
+PrivateSecType* ContextImpl::privateType (const std::string& name, SymbolKind* kind) {
+    std::map<std::string, PrivateSecType*>::iterator
+        i = m_privSecTypes.find (name);
     if (i == m_privSecTypes.end ()) {
         i = m_privSecTypes.insert (i,
-            std::make_pair (domain, new PrivateSecType (domain)));
+            std::make_pair (name, new PrivateSecType (name, kind)));
     }
 
     return i->second;

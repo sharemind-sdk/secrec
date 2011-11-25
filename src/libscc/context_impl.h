@@ -26,7 +26,7 @@ private:
     ContextImpl (const ContextImpl&); // DO NOT IMPLEMENT
     void operator = (const ContextImpl&); // DO NOT IMPLEMENT
 
-public: /* Fields: */
+public: /* Methods: */
 
     ContextImpl ()
         : m_trueConstant (0)
@@ -35,7 +35,7 @@ public: /* Fields: */
 
     /* Security types: */
     PublicSecType* publicType ();
-    PrivateSecType* privateType (SymbolDomain* domain);
+    PrivateSecType* privateType (const std::string& domain, SymbolKind* kind);
 
     /* Data types: */
     DataTypeVar* varType (DataType* dtype);
@@ -49,12 +49,12 @@ public: /* Fields: */
     TypeVoid* voidType ();
     TypeNonVoid* nonVoidType (DataType* dType);
 
-public: /* Methods: */
+public: /* Fields: */
 
     /* All types: */
     TypeVoid m_voidType;
     PublicSecType m_pubSecType;
-    std::map<SymbolDomain*, PrivateSecType*> m_privSecTypes;
+    std::map<std::string, PrivateSecType*> m_privSecTypes;
     std::map<DataType*, DataTypeVar*> m_varTypes;
     std::map<DataType*, TypeNonVoid*> m_nonVoidTypes;
     std::map<std::vector<DataType*>, DataTypeProcedureVoid* > m_voidProcTypes;

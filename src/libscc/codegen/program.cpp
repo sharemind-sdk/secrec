@@ -62,16 +62,17 @@ CGStmtResult CodeGen::cgDomain (TreeNodeDomain *dom) {
     const TNI* idKind = static_cast<const TNI*>(dom->children ().at (1));
     SymbolKind* kind = dynamic_cast<SymbolKind*>(st->find (idKind->value ()));
     if (kind == 0) {
-        log.error () << "Undefined domain kind at " << dom->location ();
+        log.error () << "Undefined domain kind at " << dom->location () << ".";
         return CGResult (ICode::E_TYPE);
     }
 
-    if (st->findGlobal (idDomain->value ()) != 0) {
-        log.error () << "Redefining global symbol at " << dom->location ();
+    if (st->find (idDomain->value ()) != 0) {
+        log.error () << "Redeclaration of security domain at " << dom->location () << ".";
         return CGResult (ICode::E_TYPE);
     }
 
-    SymbolDomain* symDom = new SymbolDomain (kind);
+    SymbolDomain* symDom = new SymbolDomain (
+        PrivateSecType::create (getContext (), idDomain->value (), kind));
     symDom->setName (idDomain->value ());
     st->appendSymbol (symDom);
     return CGStmtResult ();

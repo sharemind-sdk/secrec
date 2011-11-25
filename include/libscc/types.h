@@ -26,7 +26,7 @@ bool isUnsignedNumericDataType (SecrecDataType dType);
   SecurityType
 *******************************************************************************/
 
-class SymbolDomain;
+class SymbolKind;
 
 class SecurityType {
 private:
@@ -72,22 +72,24 @@ public: /* Methods: */
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
 
-    explicit PrivateSecType (SymbolDomain* dom)
+    explicit PrivateSecType (const std::string& name, SymbolKind* kind)
         : SecurityType (false)
-        , m_dom (dom)
+        , m_name (name)
+        , m_kind (kind)
     { }
 
     ~PrivateSecType () { }
 
-    SymbolDomain* domain () const { return m_dom; }
+    inline const std::string& name () const { return m_name; }
+    inline SymbolKind* securityKind () const { return m_kind; }
     std::string toString () const;
 
-    static PrivateSecType* create (Context& cxt, SymbolDomain* dom);
-
+    static PrivateSecType* create (Context& cxt, const std::string& name, SymbolKind* kind);
 
 private: /* Fields: */
 
-    SymbolDomain* const m_dom;
+    std::string   const m_name;
+    SymbolKind*   const m_kind;
 };
 
 inline bool latticeSecTypeLEQ (const SecurityType& a, const SecurityType& b) {

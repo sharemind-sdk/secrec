@@ -490,9 +490,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprClassify* root) {
         if (checkAndLogIfVoid(e)) return ICode::E_TYPE;
         assert (e->resultType()->secrecSecType()->isPublic ());
         root->setResultType(TypeNonVoid::create (m_context,
-            PrivateSecType::create (m_context, root->expectedDomain ()),
-            e->resultType()->secrecDataType(),
-            e->resultType()->secrecDimType()));
+                root->expectedType (),
+                e->resultType()->secrecDataType(),
+                e->resultType()->secrecDimType()));
     }
 
     return ICode::OK;
@@ -544,7 +544,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
     TreeNodeIdentifier *id = root->procName ();
     Symbol *s = m_st->find(id->value());
 
-    if (s != 0 && (s->symbolType() != Symbol::PROCEDURE || s->symbolType () != Symbol::TEMPLATE)) {
+    if (s != 0 && s->symbolType() != Symbol::PROCEDURE && s->symbolType () != Symbol::TEMPLATE) {
         m_log.fatal() << "Identifier \"" << id->value() << "\" is not a procedure or template name at "
                       << root->location () << ".";
         return ICode::E_TYPE;
@@ -985,7 +985,7 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
                 return ICode::E_TYPE;
             }
 
-            secType = PrivateSecType::create (m_context, static_cast<SymbolDomain*>(sym));
+            secType =  static_cast<SymbolDomain*>(sym)->securityType ();
         }
 
         ty->m_cachedType = TypeNonVoid::create (m_context,
@@ -1075,9 +1075,7 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, Typ
             static_cast<TreeNodeExpr*>(child)->resultType()->secrecSecType()->isPublic ())
         {
             SecurityType* secTy (ty->secrecSecType ());
-            TreeNodeExprClassify *ec = new TreeNodeExprClassify(
-                        static_cast<PrivateSecType*>(secTy)->domain (),
-                        child->location());
+            TreeNodeExprClassify *ec = new TreeNodeExprClassify (secTy, child->location());
             ec->appendChild(child);
             ec->resetParent(node);
             ec->setResultType (TypeNonVoid::create (m_context,

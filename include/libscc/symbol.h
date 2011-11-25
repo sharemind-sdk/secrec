@@ -74,17 +74,17 @@ public: /* Methods: */
 class SymbolDomain : public Symbol {
 public: /* Methods: */
 
-    SymbolDomain (const SymbolKind* kind)
+    SymbolDomain (SecurityType* secType)
         : Symbol (Symbol::PDOMAIN)
-        , m_kind (kind)
+        , m_secType (secType)
     { }
 
-    const SymbolKind* kind () const { return m_kind; }
+    inline SecurityType* securityType () const { return m_secType; }
     virtual std::string toString () const;
 
 private:
 
-    const SymbolKind* const m_kind;
+    SecurityType* const m_secType;
 };
 
 /*******************************************************************************

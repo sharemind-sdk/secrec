@@ -177,7 +177,7 @@ std::string PublicSecType::toString () const {
 *******************************************************************************/
 
 std::string PrivateSecType::toString () const {
-    return domain ()->name ();
+    return m_name;
 }
 
 /*******************************************************************************
@@ -241,9 +241,9 @@ std::string DataTypeProcedure::toString() const {
     return os.str();
 }
 
-PrivateSecType* PrivateSecType::create (Context& cxt, SymbolDomain* dom) {
+PrivateSecType* PrivateSecType::create (Context& cxt, const std::string& name, SymbolKind* kind) {
     ContextImpl& impl = *cxt.pImpl ();
-    return impl.privateType (dom);
+    return impl.privateType (name, kind);
 }
 
 PublicSecType* PublicSecType::create (Context& cxt) {

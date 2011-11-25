@@ -558,7 +558,9 @@ const std::string &TreeNodeStmtDecl::variableName() const {
 *******************************************************************************/
 
 std::string TreeNodeTypeType::stringHelper() const {
-    return secrecType()->toString();
+    if (m_cachedType != 0)
+        return secrecType()->toString();
+    return "";
 }
 
 } // namespace SecreC
