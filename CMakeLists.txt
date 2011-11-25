@@ -255,6 +255,19 @@ add_test_secrec_execute("arrays/40-prefix-postfix-incdec")
 add_test_secrec_execute("arrays/41-for-decl")
 add_test_secrec_execute("arrays/42-inc-bug")
 
+# Tests for templates:
+add_test_secrec_execute("templates/00-trivial")
+add_test_secrec_execute("templates/01-recursion")
+add_test_secrec_execute("templates/02-kind-fail")
+SET_TESTS_PROPERTIES("templates/02-kind-fail"
+    PROPERTIES PASS_REGULAR_EXPRESSION "Failed to unify.* at \\(8,5\\)\\(8,19\\).")
+add_test_secrec_execute("templates/03-kind")
+add_test_secrec_execute("templates/04-multiparam")
+add_test_secrec_execute("templates/05-multiparam-fail")
+SET_TESTS_PROPERTIES("templates/05-multiparam-fail"
+    PROPERTIES PASS_REGULAR_EXPRESSION "Failed to unify.* at \\(12,5\\)\\(12,15\\).")
+
+
 # Run Qt4 tests if qt is found
 find_package(Qt4)
 IF (QT4_FOUND)
