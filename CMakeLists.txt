@@ -262,17 +262,19 @@ add_test_secrec_execute("templates/00-trivial")
 add_test_secrec_execute("templates/01-recursion")
 add_test_secrec_execute("templates/02-kind-fail")
 SET_TESTS_PROPERTIES("templates/02-kind-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "Failed to unify.* at \\(8,5\\)\\(8,19\\).")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,5\\)\\(8,19\\).")
 add_test_secrec_execute("templates/03-kind")
 add_test_secrec_execute("templates/04-multiparam")
 add_test_secrec_execute("templates/05-multiparam-fail")
 SET_TESTS_PROPERTIES("templates/05-multiparam-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "Failed to unify.* at \\(12,5\\)\\(12,15\\).")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(12,5\\)\\(12,15\\).")
 add_test_secrec_execute("templates/06-instantiation-fail")
 SET_TESTS_PROPERTIES("templates/06-instantiation-fail"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,9\\)\\(4,10\\)")
 add_test_secrec_execute("templates/07-strange-bug")
 add_test_secrec_execute("templates/08-mutual-recursion")
+add_test_secrec_execute("templates/09-recursive-call-of-different-instance")
+add_test_secrec_execute("templates/10-overloading")
 
 
 # Run Qt4 tests if qt is found
