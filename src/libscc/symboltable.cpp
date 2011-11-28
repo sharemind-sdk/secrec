@@ -4,11 +4,14 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 #include "treenode.h"
 
 
 namespace {
+
+using namespace SecreC;
 
 void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
     while (level-- > 0)
@@ -25,6 +28,23 @@ static void deleteValues (typename std::map<T, V* >& kvs) {
     }
 
     kvs.clear ();
+}
+
+std::string mangleTemplateParameters (const std::vector<SecurityType*>& targs) {
+    std::ostringstream os;
+    if (! targs.empty ()) {
+        os << '(';
+        bool first = true;
+        BOOST_FOREACH (SecurityType* ty, targs) {
+            if (! first) os << ',';
+            os << ty->toString ();
+            first = false;
+        }
+
+        os << ')';
+    }
+
+    return os.str ();
 }
 
 } // anonymous namespace
@@ -113,7 +133,6 @@ Symbol* GlobalSymbols::find (const std::string &name) const {
 }
 
 SymbolSymbol* GlobalSymbols::temporary (TypeNonVoid* type) {
-//    SymbolSymbol* tmp = new SymbolSymbol (new TypeNonVoid (new DataTypeVar (type->dataType())), true);
     SymbolSymbol* tmp = new SymbolSymbol (type, true);
     std::ostringstream os;
     os << "{t}" << m_tempCount ++;
@@ -187,18 +206,25 @@ Symbol *SymbolTable::findGlobal(const std::string &name) const {
     return m_global->find (name);
 }
 
-SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef) {
+SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,
+                                              const std::vector<SecurityType*>& targs) {
     typedef DataTypeProcedureVoid DTPV;
 
-    SymbolProcedure *ns = new SymbolProcedure(&procdef);
 
     assert(procdef.procedureType()->kind() == TypeNonVoid::PROCEDURE
            || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
+    std::ostringstream os;
+    os << "{proc}" + procdef.procedureName() + dt->mangle() + mangleTemplateParameters (targs);
+    const std::string name = os.str ();
 
-    ns->setName("{proc}" + procdef.procedureName() + dt->mangle());
-    appendGlobalSymbol(ns);
+    SymbolProcedure* ns = static_cast<SymbolProcedure*>(m_global->find (name));
+    if (ns == 0) {
+        ns = new SymbolProcedure(&procdef);
+        ns->setName(name);
+        appendGlobalSymbol(ns);
+    }
 
     return ns;
 }
@@ -227,11 +253,12 @@ Symbol *SymbolTable::find(const std::string &name) const {
 }
 
 SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
-                                                  const DataTypeProcedureVoid &dt)
+                                                  DataTypeProcedureVoid* dt,
+                                                  const std::vector<SecurityType*>& targs)
 {
     assert(name.empty() == false);
 
-    std::string fn("{proc}" + name + dt.mangle());
+    std::string fn("{proc}" + name + dt->mangle() + mangleTemplateParameters (targs));
     Symbol* sym = m_global->find (fn);
     if (sym != 0) {
         assert(dynamic_cast<SymbolProcedure*>(sym) != 0);

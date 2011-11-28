@@ -249,6 +249,7 @@ public: /* Methods: */
     }
 
     static DataTypeProcedureVoid* create (Context& cxt, const std::vector<DataType*>& params);
+    static DataTypeProcedureVoid* create (Context& cxt);
 
 private: /* Fields: */
     std::vector<DataType*> m_params;

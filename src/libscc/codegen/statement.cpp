@@ -392,7 +392,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
         if (!e1->havePublicBoolType ()) {
             log.fatal () << "Conditional expression in if statement must be of "
-                            "type public bool in " << e1->location ();
+                            "type public bool at " << e1->location () << ".";
             result.setStatus (ICode::E_TYPE);
             return result;
         }

@@ -33,14 +33,20 @@ class SymbolTable {
         void appendSymbol(Symbol *symbol);
         void appendGlobalSymbol(Symbol *symbol);
 
-        SymbolProcedure *appendProcedure(const TreeNodeProcDef &procdef);
+        SymbolProcedure *appendProcedure(
+                const TreeNodeProcDef &procdef,
+                const std::vector<SecurityType*>& targs
+                    = std::vector<SecurityType*> ());
         SymbolSymbol *appendTemporary(TypeNonVoid* type);
 
         SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;
         Symbol *findGlobal(const std::string &name) const;
-        SymbolProcedure *findGlobalProcedure(const std::string &name,
-                                             const DataTypeProcedureVoid &dt);
+        SymbolProcedure *findGlobalProcedure(
+                const std::string &name,
+                DataTypeProcedureVoid* dt,
+                const std::vector<SecurityType*>& targs
+                    = std::vector<SecurityType*> ());
         SymbolTable *newScope();
 
         std::string toString(unsigned level = 0, unsigned indent = 4,

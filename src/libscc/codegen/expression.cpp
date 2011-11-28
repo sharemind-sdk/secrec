@@ -877,7 +877,14 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
     Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
     Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    i->setCallDest (e->symbolProcedure ());
+    /// \todo figure out how to set symbol for procedure in only single place
+    if (e->symbolProcedure ()->target () != 0) {
+        i->setCallDest (e->symbolProcedure ());
+    }
+    else {
+        m_callsTo[e->symbolProcedure ()->decl ()].insert (i);
+    }
+
     c->setArg2 (st->label (i));
     pushImopAfter (result, i);
     code.push_imop (c);

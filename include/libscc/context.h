@@ -14,6 +14,10 @@ namespace SecreC {
 
 class ContextImpl;
 
+
+/**
+ * Context class is responsible for allocating types and constant symbols.
+ */
 class Context {
 private:
 

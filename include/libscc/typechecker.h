@@ -7,6 +7,8 @@ namespace SecreC {
 
 class CompileLog;
 class SymbolTable;
+class Instantiation;
+class TemplateInstantiator;
 
 /*******************************************************************************
   TypeChecker
@@ -20,13 +22,8 @@ private:
 
 public: /* Methods: */
 
-    TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt)
-        : m_st (&st)
-        , m_log (log)
-        , m_context (cxt)
-    { }
-
-    ~TypeChecker () { }
+    TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt);
+    ~TypeChecker ();
 
     void setScope (SymbolTable& st) {
         m_st = &st;
@@ -69,26 +66,38 @@ public: /* Methods: */
 
     ICode::Status visit (TreeNodeTemplate* templ);
 
+    /// \see TemplateInstantiator
+    bool getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st);
     TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, Type* ty);
+
+    /// Check if given idenfier is in scope. Logs error message and returns NULL if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
 
-    /// TreeNode* findImpl (std::string& name, const std::vector<TypeNonVoid*>& argTys);
-    bool match (TreeNodeTemplate* n, const std::vector<TypeNonVoid*>& argTys);
 
 protected:
 
     /// \todo write more and better utility methods:
+
+    /// Check if given idenfier is in scope. Logs error message and returns NULL if not.
+    Symbol* findIdentifier (TreeNodeIdentifier* id) const;
 
     ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root, bool isPrefix, bool isInc);
     ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
     ICode::Status populateParamTypes (std::vector<DataType*>& params, TreeNodeProcDef* proc);
 
+    ICode::Status getInstance (SymbolProcedure*& proc, const Instantiation& inst);
+
+    // Try to unify template with given parameter types. On success this procedure returns
+    // true, and gives bindings to quantifiers. No addition side effect are performed.
+    bool unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const;
+
 private: /* Fields: */
 
-    SymbolTable*    m_st;
-    CompileLog&     m_log;
-    Context&        m_context;
+    SymbolTable*            m_st;
+    CompileLog&             m_log;
+    Context&                m_context;
+    TemplateInstantiator*   m_instantiator;
 };
 
 }

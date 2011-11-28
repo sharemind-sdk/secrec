@@ -280,6 +280,12 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::create (Context& cxt,
     return impl.voidProcedureType (params);
 }
 
+DataTypeProcedureVoid* DataTypeProcedureVoid::create (Context& cxt)
+{
+    ContextImpl& impl = *cxt.pImpl ();
+    return impl.voidProcedureType (std::vector<DataType*> ());
+}
+
 DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
                                               const std::vector<DataType*>& params,
                                               DataType* returnType)

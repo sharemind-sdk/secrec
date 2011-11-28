@@ -108,9 +108,16 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     os.str("");
 
     // Add to symbol table:
-    SymbolProcedure* ns = st->appendProcedure (*def);
+    SymbolProcedure* ns = def->symbol ();
+    /// \todo symbols for procedures should be only set in one place
+    /// figure a better solution for this (maybe store instansiation type
+    /// in the tree node?)
+    if (ns == 0) {
+        ns = st->appendProcedure (*def);
+        def->setSymbol (ns);
+    }
+
     ns->setTarget (result.firstImop ());
-    def->setSymbol (ns);
 
     // Generate local scope:
 
@@ -216,7 +223,6 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
 
     CGStmtResult result;
     std::list<TreeNodeProcDef*> procs;
-    std::list<TreeNodeTemplate*> templs;
 
     if (prog->children().empty()) {
         log.fatal() << "Program is empty";
@@ -232,7 +238,11 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         else
         if (decl->type () == NODE_TEMPLATE_DECL) {
             assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
-            templs.push_back (static_cast<TreeNodeTemplate*>(decl));
+            ICode::Status status = m_tyChecker.visit (static_cast<TreeNodeTemplate*>(decl));
+            if (status != ICode::OK) {
+                result.setStatus (status);
+                return result;
+            }
         }
         else {
             append (result, cgGlobalDecl (decl));
@@ -257,8 +267,25 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         }
     }
 
+    SymbolTable* oldST = st;
+    TreeNodeProcDef* procDef = 0;
+    while (m_tyChecker.getForInstantiation (procDef, st)) {
+        assert (procDef != 0);
+        append (result, cgProcDef (procDef));
+        if (result.isNotOk ()) {
+            return result;
+        }
+
+        // calls that are generated after instansiation have location
+        BOOST_FOREACH (Imop* imop, m_callsTo[procDef]) {
+            imop->setCallDest (procDef->symbol ());
+        }
+    }
+
+    std::swap (oldST, st);
+
     // Check for "void main()":
-    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid ());
+    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid::create (getContext ()));
     if (mainProc == 0) {
         log.fatal () << "No function \"void main()\" found!";
         result.setStatus (ICode::E_NO_MAIN);

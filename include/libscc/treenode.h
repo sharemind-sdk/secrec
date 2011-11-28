@@ -14,7 +14,6 @@
 
 namespace SecreC {
 
-class CompileLog;
 class CodeGen;
 class TypeChecker;
 class TreeNodeExpr;
@@ -97,8 +96,10 @@ class TreeNode {
 
         TreeNode* clone (TreeNode* parent) const {
             TreeNode* out = cloneV ();
-            out->m_parent = parent;
-            out->m_procedure = parent->m_procedure;
+
+            if (parent) {
+                out->resetParent (parent);
+            }
 
             for (ChildrenListConstIterator
                  i = m_children.begin (),
@@ -830,8 +831,9 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
 class TreeNodeExprProcCall: public TreeNodeExpr {
     public: /* Methods: */
         explicit inline TreeNodeExprProcCall(const YYLTYPE &loc)
-            : TreeNodeExpr(NODE_EXPR_PROCCALL, loc) {}
-
+            : TreeNodeExpr(NODE_EXPR_PROCCALL, loc)
+            , m_procedure (0)
+        { }
 
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
@@ -1236,9 +1238,9 @@ public: /* Methods: */
         return static_cast<TreeNodeProcDef*>(children ().at (1));
     }
 
-    TreeNode* quantifiers () const {
+    TreeNode::ChildrenList& quantifiers () const {
         assert (children ().size () == 2);
-        return children ().at (0);
+        return children ().at (0)->children ();
     }
 
 protected:

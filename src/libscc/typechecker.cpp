@@ -2,7 +2,28 @@
 
 #include <boost/foreach.hpp>
 
+#include "typechecker/templates.h"
+
 namespace SecreC {
+
+/******************************************************************
+  TypeChecker
+******************************************************************/
+
+TypeChecker::TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt)
+    : m_st (&st)
+    , m_log (log)
+    , m_context (cxt)
+    , m_instantiator (new TemplateInstantiator ())
+{ }
+
+TypeChecker::~TypeChecker () {
+    delete m_instantiator;
+}
+
+bool TypeChecker::getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st) {
+    return m_instantiator->getForInstantiation (proc, st);
+}
 
 ICode::Status TreeNodeExprAssign::accept (TypeChecker& tyChecker) {
     return tyChecker.visit (this);
@@ -550,8 +571,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         return ICode::E_TYPE;
     }
 
-    DataTypeProcedureVoid dataType;
     std::vector<TreeNodeExpr*> arguments;
+    std::vector<DataType*> argumentDataTypes;
 
     BOOST_FOREACH (TreeNode* node,
         std::make_pair (++ root->children ().begin (),
@@ -564,20 +585,41 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
         assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(e->resultType());
-        dataType.addParamType(t->dataType());
+        argumentDataTypes.push_back (t->dataType());
         arguments.push_back (e);
     }
 
+    DataTypeProcedureVoid* argTypes = DataTypeProcedureVoid::create (m_context, argumentDataTypes);
+    SymbolProcedure* symProc = 0;
+    if (s != 0 && s->symbolType () == Symbol::TEMPLATE) {
+        Instantiation inst (static_cast<SymbolTemplate*>(s));
+        if (unify (inst, argTypes) == 0) {
+            m_log.fatal () << "Failed to unify template for instantiation at "
+                           << root->location () << ".";
+            return ICode::E_TYPE;
+        }
+
+        ICode::Status status = getInstance (symProc, inst);
+        if (status != ICode::OK) {
+            m_log.fatal () << "Template instantsiation at "
+                           << root->location () << " failed.";
+            return status;
+        }
+    }
+    else {
+        symProc = m_st->findGlobalProcedure(id->value(), argTypes);
+    }
+
     // Search for the procedure by its name and the data types of its arguments:
-    root->setProcedure (m_st->findGlobalProcedure(id->value(), dataType));
-    if (root->symbolProcedure () == 0) {
+    root->setProcedure (symProc);
+    if (symProc == 0) {
         m_log.fatal() << "No function with parameter data types of ("
-                      << dataType.mangle() << ") found in scope at "
+                      << argTypes->mangle() << ") found in scope at "
                       << root->location() << ".";
         return ICode::E_TYPE;
     }
 
-    TypeNonVoid* ft = root->symbolProcedure ()->decl()->procedureType();
+    TypeNonVoid* ft = symProc->decl()->procedureType();
     assert(ft->kind() == TypeNonVoid::PROCEDURE
            || ft->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTFV*>(ft->dataType()) != 0);
@@ -590,9 +632,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         assert(dynamic_cast<DataTypeBasic*>(rstv.paramTypes().at(i)) != 0);
         DataTypeBasic *need = static_cast<DataTypeBasic*>(rstv.paramTypes()[i]);
 
-        assert(dataType.paramTypes().at(i)->kind() == DataType::BASIC);
-        assert(dynamic_cast<DataTypeBasic*>(dataType.paramTypes().at(i)) != 0);
-        DataTypeBasic *have = static_cast<DataTypeBasic*>(dataType.paramTypes()[i]);
+        assert(argTypes->paramTypes().at(i)->kind() == DataType::BASIC);
+        assert(dynamic_cast<DataTypeBasic*>(argTypes->paramTypes().at(i)) != 0);
+        DataTypeBasic *have = static_cast<DataTypeBasic*>(argTypes->paramTypes()[i]);
 
         if (need->secType()->isPublic () && have->secType()->isPrivate ())
         {
@@ -605,7 +647,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         if (need->dimType() != have->dimType()) {
             m_log.fatal() << "Argument " << (i + 1) << " to function "
                 << id->value() << " at " << arguments[i]->location()
-                << " has mismatching dimensionality!";
+                << " has mismatching dimensionality.";
             return ICode::E_TYPE;
         }
 
@@ -715,7 +757,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* e) {
                       << " void while subexpression at " << e3->location()
                       << (eType3->isVoid() ? " is" : " isn't");
         return ICode::E_TYPE;
-
     }
 
     if (!eType2->isVoid()) {
@@ -842,11 +883,11 @@ ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params, T
 
 ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
     typedef TypeNonVoid TNV;
-    std::vector<DataType*> params;
     if (proc->m_cachedType == 0) {
         TreeNodeType* rt = proc->returnType ();
         ICode::Status s = visit (rt);
         if (s != ICode::OK) return s;
+        std::vector<DataType*> params;
         if ((s = populateParamTypes (params, proc)) != ICode::OK) {
             return s;
         }
@@ -864,6 +905,65 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
         }
     }
 
+    return ICode::OK;
+}
+
+ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
+    TreeNodeProcDef* body = templ->body ();
+    TreeNodeIdentifier* id = body->identifier ();
+
+    if (m_st->find (id->value ()) != 0) {
+        m_log.fatal ()
+                << "Redeclaration of template \"" << id->value () << "\""
+                << " at " << id->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    // Check that quantifiers are saneley defined
+    std::set<std::string > quantifiedDomains;
+    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
+        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
+        quantifiedDomains.insert (quant->domain ()->value ());
+        if (quant->kind ()) {
+            Symbol* kindSym = findIdentifier (quant->kind ());
+            if (kindSym == 0) return ICode::E_TYPE;
+            if (kindSym->symbolType () != Symbol::PKIND) {
+                m_log.fatal () << "Identifier at " << quant->location ()
+                               << " is not a security domain kind.";
+                return ICode::E_TYPE;
+            }
+        }
+    }
+
+    // Check that security types of parameters are either quantified or defined.
+    BOOST_FOREACH (TreeNode* _d, std::make_pair (body->paramBegin (), body->paramEnd ())) {
+        assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
+        TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
+        TreeNodeType* t = d->varType ();
+        TreeNodeIdentifier* id = t->secType ()->identifier ();
+        if (quantifiedDomains.find (id->value ()) == quantifiedDomains.end ()) {
+            if (! t->secType ()->isPublic () && findIdentifier (id) == 0) {
+                return ICode::E_TYPE;
+            }
+        }
+    }
+
+    // Check return type.
+    if (body->returnType ()->type () == NODE_TYPETYPE) {
+        TreeNodeType* t = body->returnType ();
+        if (! t->secType ()->isPublic ()) {
+            TreeNodeIdentifier* id = t->secType ()->identifier ();
+            if (quantifiedDomains.find (id->value ()) == quantifiedDomains.end ()) {
+                if (findIdentifier (id) == 0) {
+                    return ICode::E_TYPE;
+                }
+            }
+        }
+    }
+
+    SymbolTemplate* s = new SymbolTemplate (templ);
+    s->setName (id->value ());
+    m_st->appendSymbol (s);
     return ICode::OK;
 }
 
@@ -968,20 +1068,16 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
         TreeNodeTypeType* ty = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF *secty = ty->secType ();
-        SecurityType* secType = 0;
-        if (secty->isPublic ()) {
-            secType = PublicSecType::create (m_context);
-        }
-        else {
+        SecurityType* secType = PublicSecType::create (getContext ());
+        if (! secty->isPublic ()) {
             TreeNodeIdentifier* id = secty->identifier ();
-            Symbol* sym = m_st->find (id->value ());
+            Symbol* sym = findIdentifier (id);
             if (sym == 0) {
-                m_log.error () << "Symbol at " << secty->location () << " not declared!";
                 return ICode::E_TYPE;
             }
 
-            if (dynamic_cast<SymbolDomain*>(sym) == 0) {
-                m_log.error () << "Mismatching symbol at " << secty->location () << ".";
+            if (sym->symbolType () != Symbol::PDOMAIN) {
+                m_log.error () << "Mismatching symbol at " << secty->location () << ", expecting domain name.";
                 return ICode::E_TYPE;
             }
 
@@ -1053,10 +1149,20 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
     return ICode::OK;
 }
 
+Symbol* TypeChecker::findIdentifier (TreeNodeIdentifier* id) const {
+    Symbol* s = m_st->find (id->value ());
+    if (s == 0) {
+        m_log.fatal () << "Idenfier \"" << id->value () << "\" at " << id->location ()
+                       << " not in scope.";
+    }
+
+    return s;
+}
+
 SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     Symbol *s = m_st->find (id->value ());
     if (s == 0) {
-        m_log.fatal() << "Undefined symbol \"" << id->value () << "\" at "
+        m_log.fatal() << "Undeclared identifier \"" << id->value () << "\" at "
                       << id->location() << ".";
         return 0;
     }
@@ -1145,12 +1251,80 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, unsigned& destDim) {
     return ICode::OK;
 }
 
-ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
-    return ICode::E_NOT_IMPLEMENTED;
+ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiation& inst) {
+    TreeNodeProcDef* body = m_instantiator->add (inst, m_st);
+    SymbolTable* localST = m_instantiator->getLocalST (inst);
+    std::swap (localST, m_st);
+    ICode::Status status = visit (body);
+    std::swap (localST, m_st);
+    if (status != ICode::OK) {
+        return status;
+    }
+
+    const std::vector<SecurityType*> targs (inst.begin (), inst.end ());
+    proc = m_st->findGlobalProcedure (
+        body->procedureName (),
+        static_cast<DataTypeProcedureVoid*>(body->procedureType ()->dataType ()),
+        targs);
+    if (proc == 0) {
+        proc = m_st->appendProcedure (*body, targs);
+    }
+
+    body->setSymbol (proc);
+    return ICode::OK;
 }
 
-bool TypeChecker::match (TreeNodeTemplate* n, const std::vector<TypeNonVoid*>& argTys) {
-    return false;
+bool TypeChecker::unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const {
+    typedef std::map<std::string, SecurityType* > DomainMap;
+    const TreeNodeTemplate* t = inst.getTemplate ()->decl ();
+    DomainMap argDomains;
+
+    unsigned i = 0;
+    BOOST_FOREACH (TreeNode* _d,
+                   std::make_pair (t->body ()->paramBegin (),
+                                   t->body ()->paramEnd ()))
+    {
+        assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
+        TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(_d);
+        TreeNodeIdentifier* styId = d->varType ()->secType ()->identifier ();
+        SecurityType*& ty = argDomains[styId->value ()];
+        DataType* expectedTy = argTypes->paramTypes ().at (i ++);
+
+        if (ty != 0 && ty != expectedTy->secrecSecType ())
+            return false;
+
+        if (expectedTy->secrecDataType () != d->varType ()->dataType ()->dataType ())
+            return false;
+
+        if (expectedTy->secrecDimType () != d->varType ()->dimType ()->dimType ())
+            return false;
+
+        ty = expectedTy->secrecSecType ();
+    }
+
+    std::list<SecurityType*> tmp;
+
+    BOOST_FOREACH (TreeNode* _quant, t->quantifiers ()) {
+        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
+        SecurityType* argTy = argDomains[quant->domain ()->value ()];
+        assert (argTy != 0);
+        if (quant->kind () != 0) {
+            if (argTy->isPublic ()) return false;
+            SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (quant->kind ()->value ()));
+            PrivateSecType* privArgTy = static_cast<PrivateSecType*>(argTy);
+            if (sym != privArgTy->securityKind ()) {
+                return false;
+            }
+        }
+
+        tmp.push_back (argTy);
+    }
+
+    BOOST_FOREACH (SecurityType* ty, tmp) {
+        inst.addParam (ty);
+    }
+
+    return true;
 }
 
 } // namespace SecreC

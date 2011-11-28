@@ -229,6 +229,7 @@ protected: /* Fields: */
     CompileLog&   log;          ///< Compiler log.
     TreeNode*     m_node;       ///< Current tree node. \todo get rid of it somehow
     TypeChecker&  m_tyChecker;  ///< Instance of type checker.
+    std::map<const TreeNodeProcDef*, std::set<Imop*> > m_callsTo;
 };
 
 /*******************************************************************************

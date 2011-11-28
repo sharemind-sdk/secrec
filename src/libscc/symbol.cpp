@@ -74,8 +74,8 @@ std::string SymbolProcedure::toString() const {
 *******************************************************************************/
 
 SymbolLabel::SymbolLabel (Imop* target)
-    : Symbol (Symbol::LABEL),
-      m_target (target)
+    : Symbol (Symbol::LABEL)
+    , m_target (target)
 { }
 
 std::string SymbolLabel::toString() const {
@@ -90,5 +90,21 @@ std::string SymbolLabel::toString() const {
 
     return os.str ();
 }
+
+/*******************************************************************************
+  SymbolTemplate
+*******************************************************************************/
+
+SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
+    : Symbol (Symbol::TEMPLATE)
+    , m_templ (templ)
+{ }
+
+std::string SymbolTemplate::toString() const {
+    std::ostringstream os;
+    os << "TEMPLATE " << name ();
+    return os.str ();
+}
+
 
 }
