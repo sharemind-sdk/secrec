@@ -92,6 +92,19 @@ protected:
     // true, and gives bindings to quantifiers. No addition side effect are performed.
     bool unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const;
 
+    /**
+     * \pre argTypes != 0
+     * \post symProc != 0 if returned status is OK
+     * \param[in] name name of the procedure/template
+     * \param[in] argTypes types of arguments
+     * \param[out] symProc best matching procedure if single best one was found
+     * \retval ICode::OK if best matching procedure was found
+     */
+    ICode::Status findBestMatchingProc (
+            SymbolProcedure*& symProc,
+            const std::string& name,
+            DataTypeProcedureVoid* argTypes);
+
 private: /* Fields: */
 
     SymbolTable*            m_st;

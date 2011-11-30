@@ -107,14 +107,6 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
 
     // Add to symbol table:
     SymbolProcedure* ns = def->symbol ();
-    /// \todo symbols for procedures should be only set in one place
-    /// figure a better solution for this (maybe store instansiation type
-    /// in the tree node?)
-    if (ns == 0) {
-        ns = st->appendProcedure (*def);
-        def->setSymbol (ns);
-    }
-
     ns->setTarget (result.firstImop ());
 
     // Generate local scope:
@@ -272,12 +264,13 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         if (result.isNotOk ()) {
             return result;
         }
-
-        // calls that are generated after instansiation have location
-        BOOST_FOREACH (Imop* imop, m_callsTo[procDef]) {
-            imop->setCallDest (procDef->symbol ());
-        }
     }
+
+    // Patch up calls to template instances:
+    typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
+    BOOST_FOREACH (CallMap::value_type v, m_callsTo)
+        BOOST_FOREACH (Imop* imop, v.second)
+            imop->setCallDest (v.first->symbol ());
 
     std::swap (oldST, st);
 

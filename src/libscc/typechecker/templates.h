@@ -36,22 +36,31 @@ public: /* Types: */
 
 public: /* Methods: */
 
+    Instantiation ()
+        : m_templ (0)
+    { }
+
     explicit Instantiation (SymbolTemplate* templ)
         : m_templ (templ)
     { }
 
-    SymbolTemplate* getTemplate () const {
-        return m_templ;
+    inline void swap (Instantiation& i) {
+        std::swap (m_templ, i.m_templ);
+        m_params.swap (i.m_params);
     }
+
+    SymbolTemplate* getTemplate () const { return m_templ; }
 
     const_iterator begin () const { return m_params.begin (); }
     const_iterator end () const { return m_params.end (); }
     iterator begin () { return m_params.begin (); }
     iterator end () { return m_params.end (); }
 
-    void addParam (SecurityType* secTy) {
-        m_params.push_back (secTy);
-    }
+    void addParam (SecurityType* secTy) { m_params.push_back (secTy); }
+
+    unsigned templateParamCount () const { return m_params.size (); }
+    unsigned unrestrictedTemplateParamCount () const;
+    unsigned quantifiedDomainOccurrenceCount () const;
 
     friend bool operator == (const Instantiation& a, const Instantiation& b);
     friend bool operator <  (const Instantiation& a, const Instantiation& b);

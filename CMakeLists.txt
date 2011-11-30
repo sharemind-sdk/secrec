@@ -275,6 +275,7 @@ add_test_secrec_execute("templates/07-strange-bug")
 add_test_secrec_execute("templates/08-mutual-recursion")
 add_test_secrec_execute("templates/09-recursive-call-of-different-instance")
 add_test_secrec_execute("templates/10-overloading")
+add_test_secrec_execute("templates/11-name-lookup")
 
 
 # Run Qt4 tests if qt is found

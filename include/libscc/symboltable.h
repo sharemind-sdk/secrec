@@ -38,6 +38,8 @@ class SymbolTable {
                     = std::vector<SecurityType*> ());
         SymbolSymbol *appendTemporary(TypeNonVoid* type);
 
+        std::list<Symbol* > findAll (const std::string& name) const;
+
         SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;
         SymbolProcedure *findGlobalProcedure(
@@ -53,8 +55,6 @@ class SymbolTable {
         SymbolTable* parent () const {
             return m_parent;
         }
-
-        /* methods to construct constants */
 
     private: /* Fields: */
         Table                     m_table;

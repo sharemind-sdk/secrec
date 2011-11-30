@@ -30,6 +30,15 @@ static void deleteValues (typename std::map<T, V* >& kvs) {
     kvs.clear ();
 }
 
+template <typename T, typename V >
+void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) {
+    typename std::map<T, V* >::const_iterator i;
+    for (i = kvs.begin (); i != kvs.end (); ++ i) {
+        os << *i->second << '\n';
+    }
+}
+
+
 std::string mangleTemplateParameters (const std::vector<SecurityType*>& targs) {
     std::ostringstream os;
     if (! targs.empty ()) {
@@ -46,6 +55,14 @@ std::string mangleTemplateParameters (const std::vector<SecurityType*>& targs) {
 
     return os.str ();
 }
+
+std::string mangleProcedure (const std::string& name,
+                             DataTypeProcedureVoid* dt,
+                             const std::vector<SecurityType*>& targs)
+{
+    return "{proc}" + name + dt->mangle() + mangleTemplateParameters (targs);
+}
+
 
 } // anonymous namespace
 
@@ -141,14 +158,6 @@ SymbolSymbol* GlobalSymbols::temporary (TypeNonVoid* type) {
     return tmp;
 }
 
-template <typename T, typename V >
-static void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) {
-    typename std::map<T, V* >::const_iterator i;
-    for (i = kvs.begin (); i != kvs.end (); ++ i) {
-        os << *i->second << '\n';
-    }
-}
-
 std::string GlobalSymbols::toString () const {
     std::ostringstream os;
 
@@ -207,10 +216,7 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,
            || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
-    std::ostringstream os;
-    os << "{proc}" + procdef.procedureName() + dt->mangle() + mangleTemplateParameters (targs);
-    const std::string name = os.str ();
-
+    const std::string name = mangleProcedure ( procdef.procedureName(), dt, targs);
     SymbolProcedure* ns = static_cast<SymbolProcedure*>(m_global->find (name));
     if (ns == 0) {
         ns = new SymbolProcedure(&procdef);
@@ -219,6 +225,21 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,
     }
 
     return ns;
+}
+
+SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
+                                                  DataTypeProcedureVoid* dt,
+                                                  const std::vector<SecurityType*>& targs)
+{
+    assert (!name.empty());
+    const std::string fn = mangleProcedure (name, dt, targs);
+    Symbol* sym = m_global->find (fn);
+    if (sym != 0) {
+        assert(dynamic_cast<SymbolProcedure*>(sym) != 0);
+        return static_cast<SymbolProcedure*>(sym);
+    }
+
+    return 0;
 }
 
 SymbolSymbol *SymbolTable::appendTemporary(TypeNonVoid* type) {
@@ -244,20 +265,27 @@ Symbol *SymbolTable::find(const std::string &name) const {
     return 0;
 }
 
-SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
-                                                  DataTypeProcedureVoid* dt,
-                                                  const std::vector<SecurityType*>& targs)
-{
-    assert(name.empty() == false);
+std::list<Symbol* > SymbolTable::findAll (const std::string& name) const {
+    typedef Table::const_reverse_iterator STI;
+    std::list<Symbol* > out;
+    const SymbolTable *c = this;
+    for (;;) {
+        const Table &t(c->m_table);
+        for (STI it (t.rbegin()); it != t.rend(); it++) {
+            if ((*it)->name() == name)
+                out.push_back (*it);
+        }
+        if (c->m_parent == 0) {
+            Symbol* s = m_global->find (name);
+            if (s != 0)
+                out.push_back (s);
+            break;
+        }
 
-    std::string fn("{proc}" + name + dt->mangle() + mangleTemplateParameters (targs));
-    Symbol* sym = m_global->find (fn);
-    if (sym != 0) {
-        assert(dynamic_cast<SymbolProcedure*>(sym) != 0);
-        return static_cast<SymbolProcedure*>(sym);
+        c = c->m_parent;
     }
 
-    return 0;
+    return out;
 }
 
 SymbolTable *SymbolTable::newScope () {

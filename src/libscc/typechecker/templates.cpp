@@ -9,7 +9,49 @@
 
 #include "typechecker/templates.h"
 
+#include <boost/foreach.hpp>
+
 namespace SecreC {
+
+/*******************************************************************************
+  Instantiation
+*******************************************************************************/
+
+unsigned Instantiation::unrestrictedTemplateParamCount () const {
+    unsigned count = 0;
+    const TreeNodeTemplate* templ = getTemplate ()->decl ();
+    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
+        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
+        if (quant->kind () == 0)
+            ++ count;
+    }
+
+    return count;
+}
+
+unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
+    unsigned count = 0;
+    std::set<std::string > quantifiedDomains;
+    const TreeNodeTemplate* templ = getTemplate ()->decl ();
+    const TreeNodeProcDef* body = templ->body ();
+    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
+        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
+        quantifiedDomains.insert (quant->domain ()->value ());
+    }
+
+    BOOST_FOREACH (TreeNode* _d, std::make_pair (body->paramBegin (), body->paramEnd ())) {
+        assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
+        TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
+        TreeNodeType* t = d->varType ();
+        TreeNodeIdentifier* id = t->secType ()->identifier ();
+        if (quantifiedDomains.find (id->value ()) != quantifiedDomains.end ()) {
+            ++ count;
+        }
+    }
+
+    return count;
+}
+
 
 /*******************************************************************************
   TemplateInstantiator

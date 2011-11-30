@@ -1,6 +1,8 @@
 #include "typechecker.h"
 
 #include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "typechecker/templates.h"
 
@@ -54,8 +56,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     SecreC::Type* srcType = src->resultType();
     SecrecDimType srcDim = srcType->secrecDimType();
 
-    if (TreeNode* e1 = e->slice ()) {
-        s = checkIndices (e1, destDim);
+    if (e->slice ()) {
+        s = checkIndices (e->slice (), destDim);
         if (s != ICode::OK) {
             return ICode::E_TYPE;
         }
@@ -553,6 +555,59 @@ ICode::Status TreeNodeExprProcCall::accept (TypeChecker& tyChecker) {
     return tyChecker.visit (this);
 }
 
+ICode::Status TypeChecker::findBestMatchingProc (
+        SymbolProcedure*& symProc,
+        const std::string& name,
+        DataTypeProcedureVoid* argTypes)
+{
+    typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
+
+    assert (argTypes != 0);
+    SymbolProcedure* procTempSymbol = m_st->findGlobalProcedure (name, argTypes);
+    if (procTempSymbol != 0) {
+        symProc = procTempSymbol;
+        return ICode::OK;
+    }
+
+    Weight best (argTypes->paramTypes ().size () + 1, 0, 0);
+    std::vector<Instantiation> bestMatches;
+    BOOST_FOREACH (Symbol* s, m_st->findAll ("{templ}" + name)) {
+        assert (s != 0);
+        assert (s->symbolType () == Symbol::TEMPLATE);
+        Instantiation inst (static_cast<SymbolTemplate*>(s));
+        if (unify (inst, argTypes)) {
+            Weight w (inst.templateParamCount (),
+                      inst.unrestrictedTemplateParamCount (),
+                      inst.quantifiedDomainOccurrenceCount ());
+            if (w > best) continue;
+            if (w < best) {
+                bestMatches.clear ();
+                best = w;
+            }
+
+            bestMatches.push_back (inst);
+        }
+    }
+
+    if (bestMatches.empty ()) {
+        m_log.fatal () << "No matching procedure or template.";
+        return ICode::E_TYPE;
+    }
+
+    if (bestMatches.size () > 1) {
+        std::ostringstream os;
+        os << "Multiply matching templates:";
+        BOOST_FOREACH (Instantiation i, bestMatches) {
+            os << i.getTemplate ()->decl ()->location ();
+        }
+
+        m_log.fatal () << os.str ();
+        return ICode::E_TYPE;
+    }
+
+    return getInstance (symProc, bestMatches.front ());
+}
+
 ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
     typedef DataTypeProcedureVoid DTFV;
     typedef DataTypeProcedure DTF;
@@ -560,15 +615,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
 
     if (root->haveResultType ()) {
         return ICode::OK;
-    }
-
-    TreeNodeIdentifier *id = root->procName ();
-    Symbol *s = m_st->find(id->value());
-
-    if (s != 0 && s->symbolType() != Symbol::PROCEDURE && s->symbolType () != Symbol::TEMPLATE) {
-        m_log.fatal() << "Identifier \"" << id->value() << "\" is not a procedure or template name at "
-                      << root->location () << ".";
-        return ICode::E_TYPE;
     }
 
     std::vector<TreeNodeExpr*> arguments;
@@ -591,34 +637,15 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
 
     DataTypeProcedureVoid* argTypes = DataTypeProcedureVoid::get (m_context, argumentDataTypes);
     SymbolProcedure* symProc = 0;
-    if (s != 0 && s->symbolType () == Symbol::TEMPLATE) {
-        Instantiation inst (static_cast<SymbolTemplate*>(s));
-        if (unify (inst, argTypes) == 0) {
-            m_log.fatal () << "Failed to unify template for instantiation at "
-                           << root->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        ICode::Status status = getInstance (symProc, inst);
-        if (status != ICode::OK) {
-            m_log.fatal () << "Template instantsiation at "
-                           << root->location () << " failed.";
-            return status;
-        }
-    }
-    else {
-        symProc = m_st->findGlobalProcedure(id->value(), argTypes);
+    TreeNodeIdentifier *id = root->procName ();
+    ICode::Status status = findBestMatchingProc (symProc, id->value (), argTypes);
+    if (status != ICode::OK) {
+        m_log.fatal () << "Error at " << root->location () << ".";
+        return status;
     }
 
-    // Search for the procedure by its name and the data types of its arguments:
+    assert (symProc != 0);
     root->setProcedure (symProc);
-    if (symProc == 0) {
-        m_log.fatal() << "No function with parameter data types of ("
-                      << argTypes->mangle() << ") found in scope at "
-                      << root->location() << ".";
-        return ICode::E_TYPE;
-    }
-
     TypeNonVoid* ft = symProc->decl()->procedureType();
     assert(ft->kind() == TypeNonVoid::PROCEDURE
            || ft->kind() == TypeNonVoid::PROCEDUREVOID);
@@ -903,6 +930,25 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
             proc->m_cachedType = TypeNonVoid::get (m_context,
                 DataTypeProcedure::get (m_context, voidProcType, tt->dataType ()));
         }
+
+        SymbolProcedure* procSym = m_st->appendProcedure (*proc);
+        proc->setSymbol (procSym);
+
+        const std::string& shortName = "{proc}" + proc->identifier ()->value ();
+        BOOST_FOREACH (Symbol* sym, m_st->findAll (shortName)) {
+            if (sym->symbolType () == Symbol::PROCEDURE) {
+                SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
+                if (t->decl ()->m_cachedType == proc->m_cachedType) {
+                    m_log.fatal () << "Redefinition of procedure at " << proc->location () << "."
+                                   << " Conflicting with procedure declared at " << t->decl ()->location () << ".";
+                    return ICode::E_TYPE;
+                }
+            }
+        }
+
+        procSym = new SymbolProcedure (proc);
+        procSym->setName (shortName);
+        m_st->appendSymbol (procSym);
     }
 
     return ICode::OK;
@@ -962,7 +1008,7 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
     }
 
     SymbolTemplate* s = new SymbolTemplate (templ);
-    s->setName (id->value ());
+    s->setName ("{templ}" + id->value ());
     m_st->appendSymbol (s);
     return ICode::OK;
 }
