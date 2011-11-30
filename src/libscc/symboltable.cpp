@@ -215,7 +215,7 @@ SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,
     if (ns == 0) {
         ns = new SymbolProcedure(&procdef);
         ns->setName(name);
-        appendGlobalSymbol(ns);
+        m_global->append (ns);
     }
 
     return ns;
