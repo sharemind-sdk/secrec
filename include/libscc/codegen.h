@@ -1,13 +1,13 @@
 #ifndef SECREC_CODE_GEN_H
 #define SECREC_CODE_GEN_H
 
+#include <stack>
+
 #include "codegenResult.h"
 #include "imop.h"
 #include "intermediate.h"
 #include "treenode.h"
 #include "typechecker.h"
-
-#include <stack>
 
 /**
  * Some ideas:

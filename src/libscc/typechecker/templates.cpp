@@ -19,7 +19,6 @@ namespace SecreC {
 /// if possible).
 TreeNodeProcDef* TemplateInstantiator::add (const Instantiation& i, SymbolTable* st) {
     std::map<const Instantiation, InstanceInfo >::iterator it = m_instanceInfo.find (i);
-    std::cerr << "add: " << i << std::endl;
     if (it == m_instanceInfo.end ()) {
         TreeNode* cloned = i.getTemplate ()->decl ()->body ()->clone (0);
         InstanceInfo info;

@@ -18,7 +18,7 @@ Constant<ty>* getNumeric (Context& cxt, const typename SecrecTypeInfo<ty>::CType
     map<pair<SecrecDataType, uint64_t>, Symbol*>::iterator
         i = impl.m_numericConstants.find (index);
     if (i == impl.m_numericConstants.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::create (cxt, ty);
+        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty);
         i = impl.m_numericConstants.insert (i,
             make_pair (index, new Constant<ty>(value, tnv)));
         ostringstream os;
@@ -58,13 +58,13 @@ ConstantBool* ConstantBool::get (Context& cxt, const bool& value) {
 
     if (impl.m_trueConstant == 0) {
         impl.m_trueConstant = new ConstantBool (true,
-            TypeNonVoid::create (cxt, DATATYPE_BOOL));
+            TypeNonVoid::get (cxt, DATATYPE_BOOL));
         impl.m_trueConstant->setName ("{constBool}true");
     }
 
     if (impl.m_falseConstant == 0) {
         impl.m_falseConstant = new ConstantBool (false,
-            TypeNonVoid::create (cxt, DATATYPE_BOOL));
+            TypeNonVoid::get (cxt, DATATYPE_BOOL));
         impl.m_falseConstant->setName ("{constBool}false");
     }
 
@@ -126,7 +126,7 @@ ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
     std::map<std::string, ConstantString*>::iterator
             i = impl.m_stringLiterals.find (value);
     if (i == impl.m_stringLiterals.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::create (cxt, DATATYPE_STRING);
+        TypeNonVoid* tnv = TypeNonVoid::get (cxt, DATATYPE_STRING);
         i = impl.m_stringLiterals.insert (i,
             std::make_pair (value, new ConstantString (value, tnv)));
         std::ostringstream os;

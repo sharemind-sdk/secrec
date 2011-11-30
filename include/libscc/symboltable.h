@@ -31,7 +31,6 @@ class SymbolTable {
         ~SymbolTable();
 
         void appendSymbol(Symbol *symbol);
-        void appendGlobalSymbol(Symbol *symbol);
 
         SymbolProcedure *appendProcedure(
                 const TreeNodeProcDef &procdef,
@@ -41,7 +40,6 @@ class SymbolTable {
 
         SymbolLabel *label (Imop* imop);
         Symbol *find(const std::string &name) const;
-        Symbol *findGlobal(const std::string &name) const;
         SymbolProcedure *findGlobalProcedure(
                 const std::string &name,
                 DataTypeProcedureVoid* dt,

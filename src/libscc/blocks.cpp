@@ -221,7 +221,7 @@ void Program::assignToBlocks (ICodeList& imops) {
             nextIsLeader = true;
         }
 
-        // call destinations are leaders
+        // call destinations are leaders (we might have interprocedural analysis)
         if (i->type () == Imop::CALL) {
             leaders.insert (i->callDest ());
             functions[i->callDest ()] = static_cast<const SymbolProcedure*>(i->dest ());

@@ -62,7 +62,7 @@ public: /* Methods: */
 
     std::string toString () const;
 
-    static PublicSecType* create (Context& cxt);
+    static PublicSecType* get (Context& cxt);
 };
 
 /*******************************************************************************
@@ -84,7 +84,7 @@ public: /* Methods: */
     inline SymbolKind* securityKind () const { return m_kind; }
     std::string toString () const;
 
-    static PrivateSecType* create (Context& cxt, const std::string& name, SymbolKind* kind);
+    static PrivateSecType* get (Context& cxt, const std::string& name, SymbolKind* kind);
 
 private: /* Fields: */
 
@@ -182,8 +182,8 @@ public: /* Methods: */
                 && latticeDimTypeLEQ(m_dimType,static_cast<const DataTypeBasic &>(other).m_dimType);
     }
 
-    static DataTypeBasic* create (Context& cxt, SecrecDataType dataType, SecrecDimType dim = 0);
-    static DataTypeBasic* create (Context& cxt, SecurityType* secType, SecrecDataType dataType, SecrecDimType dim = 0);
+    static DataTypeBasic* get (Context& cxt, SecrecDataType dataType, SecrecDimType dim = 0);
+    static DataTypeBasic* get (Context& cxt, SecurityType* secType, SecrecDataType dataType, SecrecDimType dim = 0);
 
 private: /* Fields: */
     SecurityType* m_secType;
@@ -216,7 +216,7 @@ public: /* Methods: */
             m_dataType->latticeLEQ(*static_cast<DataTypeVar const&>(other).m_dataType);
     }
 
-    static DataTypeVar* create (Context& cxt, DataType* base);
+    static DataTypeVar* get (Context& cxt, DataType* base);
 
 
 private: /* Fields: */
@@ -248,8 +248,8 @@ public: /* Methods: */
         return false;
     }
 
-    static DataTypeProcedureVoid* create (Context& cxt, const std::vector<DataType*>& params);
-    static DataTypeProcedureVoid* create (Context& cxt);
+    static DataTypeProcedureVoid* get (Context& cxt, const std::vector<DataType*>& params);
+    static DataTypeProcedureVoid* get (Context& cxt);
 
 private: /* Fields: */
     std::vector<DataType*> m_params;
@@ -287,8 +287,8 @@ public: /* Methods: */
         return false;
     }
 
-    static DataTypeProcedure* create (Context& cxt, const std::vector<DataType*>& params, DataType* returnType);
-    static DataTypeProcedure* create (Context& cxt, DataTypeProcedureVoid* params, DataType* returnType);
+    static DataTypeProcedure* get (Context& cxt, const std::vector<DataType*>& params, DataType* returnType);
+    static DataTypeProcedure* get (Context& cxt, DataTypeProcedureVoid* params, DataType* returnType);
 
 
 private: /* Fields: */
@@ -392,7 +392,7 @@ public: /* Methods: */
         : Type(true)
     { }
 
-    static TypeVoid* create (Context& cxt);
+    static TypeVoid* get (Context& cxt);
 
     virtual inline std::string toString() const { return "void"; }
 };
@@ -435,12 +435,12 @@ public: /* Methods: */
         return m_dataType->canAssign(*(o.m_dataType));
     }
 
-    static TypeNonVoid* create (Context& cxt, DataType* dtype);
-    static TypeNonVoid* create (Context& cxt, SecrecDataType dataType,
-                                SecrecDimType dimType = 0);
-    static TypeNonVoid* create (Context& cxt, SecurityType* secType,
-                                SecrecDataType dataType,
-                                SecrecDimType dimType = 0);
+    static TypeNonVoid* get (Context& cxt, DataType* dtype);
+    static TypeNonVoid* get (Context& cxt, SecrecDataType dataType,
+                             SecrecDimType dimType = 0);
+    static TypeNonVoid* get (Context& cxt, SecurityType* secType,
+                             SecrecDataType dataType,
+                             SecrecDimType dimType = 0);
 
 private: /* Fields: */
     const Kind  m_kind;

@@ -16,7 +16,6 @@ namespace SecreC {
 
 class CodeGen;
 class TypeChecker;
-class TreeNodeExpr;
 class TreeNodeProcDef;
 class TreeNode;
 #else
@@ -58,8 +57,6 @@ TreeNode *treenode_init_dimTypeF(unsigned dimType,
 /**
  * \class TreeNode
  * Abstract syntax tree, or abstract representation of the SecreC code.
- * AST handles all of the type checking logic, mainly because it rewrites
- * the tree in some occasions such as adding of explicit classify nodes.
  */
 class TreeNode {
     public: /* Types: */
@@ -409,6 +406,33 @@ class TreeNodeExpr: public TreeNode {
 
     private: /* Fields: */
         SecreC::Type       *m_resultType; ///< Type of resulting value.
+};
+
+/******************************************************************
+  TreeNodeStmt
+******************************************************************/
+
+/// Statements.
+class TreeNodeStmt: public TreeNode {
+public: /* Methods: */
+    inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNode(type, loc) {}
+
+
+    virtual CGStmtResult codeGenWith (CodeGen&) {
+        assert (false && "Statement code gen unimplemented.");
+        return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
+    }
+
+protected:
+
+    TreeNodeStmt* statementAt (unsigned i) const {
+        assert (i < children ().size ());
+        assert (dynamic_cast<TreeNodeStmt*>(children ().at (i)) != 0);
+        return static_cast<TreeNodeStmt*>(children ().at (i));
+    }
+
+    virtual TreeNode* cloneV () const = 0;
 };
 
 
@@ -815,6 +839,11 @@ class TreeNodeExprDeclassify: public TreeNodeExpr {
         virtual CGResult codeGenWith (CodeGen& cg);
         virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
+        TreeNodeExpr* expression () const {
+            assert (children ().size () == 1);
+            return expressionAt (0);
+        }
+
     protected:
 
         virtual TreeNode* cloneV () const {
@@ -1123,69 +1152,79 @@ class TreeNodeDomain : public TreeNode {
 
 /// Procedure definition.
 class TreeNodeProcDef: public TreeNode {
-    public: /* Methods: */
-        explicit inline TreeNodeProcDef(const YYLTYPE &loc)
-        : TreeNode(NODE_PROCDEF, loc), m_cachedType(0), m_procSymbol (0)
-        {
-            setContainingProcedureDirectly(this);
-        }
-        virtual inline ~TreeNodeProcDef() { }
+public: /* Methods: */
 
-        virtual inline void resetParent(TreeNode *parent) {
-            setParentDirectly(parent);
-        }
+    explicit inline TreeNodeProcDef(const YYLTYPE &loc)
+        : TreeNode(NODE_PROCDEF, loc)
+        , m_cachedType(0)
+        , m_procSymbol (0)
+    {
+        setContainingProcedureDirectly(this);
+    }
 
-        void setSymbol (SymbolProcedure* sym) {
-            assert (sym != 0);
-            m_procSymbol = sym;
-        }
+    virtual inline ~TreeNodeProcDef() { }
 
-        SymbolProcedure* symbol () const {
-            return m_procSymbol;
-        }
+    virtual inline void resetParent(TreeNode *parent) {
+        setParentDirectly(parent);
+    }
 
-        const std::string &procedureName() const;
+    void setSymbol (SymbolProcedure* sym) {
+        assert (sym != 0);
+        m_procSymbol = sym;
+    }
 
-        inline bool haveProcedureType() const { return m_cachedType != 0; }
-        SecreC::TypeNonVoid* procedureType() const {
-            assert(m_cachedType != 0);
-            return m_cachedType;
-        }
+    SymbolProcedure* symbol () const {
+        return m_procSymbol;
+    }
 
-        TreeNodeIdentifier* identifier () const {
-            assert (children ().size () > 1);
-            assert(dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
-            return static_cast<TreeNodeIdentifier*>(children ().at (0));
-        }
+    const std::string &procedureName() const;
 
-        TreeNodeType* returnType () const {
-            assert (children ().size () > 1);
-            assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
-            return static_cast<TreeNodeType*>(children().at(1));
-        }
+    inline bool haveProcedureType() const { return m_cachedType != 0; }
+    SecreC::TypeNonVoid* procedureType() const {
+        assert(m_cachedType != 0);
+        return m_cachedType;
+    }
 
-        ChildrenListConstIterator paramBegin () const {
-            assert (children ().size () > 2);
-            return children ().begin () + 3;
-        }
+    TreeNodeIdentifier* identifier () const {
+        assert (children ().size () > 1);
+        assert(dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+        return static_cast<TreeNodeIdentifier*>(children ().at (0));
+    }
 
-        ChildrenListConstIterator paramEnd () const {
-            return children ().end ();
-        }
+    TreeNodeType* returnType () const {
+        assert (children ().size () > 1);
+        assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+        return static_cast<TreeNodeType*>(children().at(1));
+    }
 
-        CGStmtResult codeGenWith (CodeGen& cg);
+    TreeNodeStmt* body () const {
+        assert (children ().size () > 2);
+        assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
+        return static_cast<TreeNodeStmt*>(children().at(2));
+    }
 
-    protected: /* Methods: */
+    ChildrenListConstIterator paramBegin () const {
+        assert (children ().size () > 2);
+        return children ().begin () + 3;
+    }
 
-        friend class TypeChecker;
+    ChildrenListConstIterator paramEnd () const {
+        return children ().end ();
+    }
 
-        virtual TreeNode* cloneV () const {
-            return new TreeNodeProcDef (m_location);
-        }
+    CGStmtResult codeGenWith (CodeGen& cg);
 
-    protected: /* Fields: */
-        SecreC::TypeNonVoid*  m_cachedType;
-        SymbolProcedure*      m_procSymbol;
+protected: /* Methods: */
+
+    friend class TypeChecker;
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeProcDef (m_location);
+    }
+
+protected: /* Fields: */
+    SecreC::TypeNonVoid*  m_cachedType;
+    SymbolProcedure*      m_procSymbol;
 };
 
 
@@ -1267,34 +1306,6 @@ class TreeNodeProgram: public TreeNode {
         virtual TreeNode* cloneV () const {
             return new TreeNodeProgram (m_location);
         }
-};
-
-
-/******************************************************************
-  TreeNodeStmt
-******************************************************************/
-
-/// Statements.
-class TreeNodeStmt: public TreeNode {
-public: /* Methods: */
-    inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
-        : TreeNode(type, loc) {}
-
-
-    virtual CGStmtResult codeGenWith (CodeGen&) {
-        assert (false && "Statement code gen unimplemented.");
-        return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
-    }
-
-protected:
-
-    TreeNodeStmt* statementAt (unsigned i) const {
-        assert (i < children ().size ());
-        assert (dynamic_cast<TreeNodeStmt*>(children ().at (i)) != 0);
-        return static_cast<TreeNodeStmt*>(children ().at (i));
-    }
-
-    virtual TreeNode* cloneV () const = 0;
 };
 
 

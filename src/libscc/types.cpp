@@ -241,17 +241,17 @@ std::string DataTypeProcedure::toString() const {
     return os.str();
 }
 
-PrivateSecType* PrivateSecType::create (Context& cxt, const std::string& name, SymbolKind* kind) {
+PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name, SymbolKind* kind) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.privateType (name, kind);
 }
 
-PublicSecType* PublicSecType::create (Context& cxt) {
+PublicSecType* PublicSecType::get (Context& cxt) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.publicType ();
 }
 
-DataTypeBasic* DataTypeBasic::create (Context& cxt,
+DataTypeBasic* DataTypeBasic::get (Context& cxt,
                                       SecrecDataType dataType,
                                       SecrecDimType dim)
 {
@@ -259,7 +259,7 @@ DataTypeBasic* DataTypeBasic::create (Context& cxt,
     return impl.basicDataType (impl.publicType (), dataType, dim);
 }
 
-DataTypeBasic* DataTypeBasic::create (Context& cxt,
+DataTypeBasic* DataTypeBasic::get (Context& cxt,
                                       SecurityType* secType,
                                       SecrecDataType dataType,
                                       SecrecDimType dim)
@@ -268,25 +268,25 @@ DataTypeBasic* DataTypeBasic::create (Context& cxt,
     return impl.basicDataType (secType, dataType, dim);
 }
 
-DataTypeVar* DataTypeVar::create (Context& cxt, DataType* base) {
+DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.varType (base);
 }
 
-DataTypeProcedureVoid* DataTypeProcedureVoid::create (Context& cxt,
+DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt,
                                                       const std::vector<DataType*>& params)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidProcedureType (params);
 }
 
-DataTypeProcedureVoid* DataTypeProcedureVoid::create (Context& cxt)
+DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidProcedureType (std::vector<DataType*> ());
 }
 
-DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
+DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
                                               const std::vector<DataType*>& params,
                                               DataType* returnType)
 {
@@ -294,7 +294,7 @@ DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
     return impl.procedureType (params, returnType);
 }
 
-DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
+DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
                                               DataTypeProcedureVoid* params,
                                               DataType* returnType)
 {
@@ -302,17 +302,17 @@ DataTypeProcedure* DataTypeProcedure::create (Context& cxt,
     return impl.procedureType (params->paramTypes (), returnType);
 }
 
-TypeVoid* TypeVoid::create (Context &cxt) {
+TypeVoid* TypeVoid::get (Context &cxt) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidType ();
 }
 
-TypeNonVoid* TypeNonVoid::create (Context& cxt, DataType* dtype) {
+TypeNonVoid* TypeNonVoid::get (Context& cxt, DataType* dtype) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.nonVoidType (dtype);
 }
 
-TypeNonVoid* TypeNonVoid::create (Context& cxt,
+TypeNonVoid* TypeNonVoid::get (Context& cxt,
                                   SecrecDataType dataType,
                                   SecrecDimType dimType)
 {
@@ -320,7 +320,7 @@ TypeNonVoid* TypeNonVoid::create (Context& cxt,
     return impl.nonVoidType (impl.basicDataType (impl.publicType (), dataType, dimType));
 }
 
-TypeNonVoid* TypeNonVoid::create (Context& cxt, SecurityType* secType,
+TypeNonVoid* TypeNonVoid::get (Context& cxt, SecurityType* secType,
                                   SecrecDataType dataType,
                                   SecrecDimType dimType)
 {

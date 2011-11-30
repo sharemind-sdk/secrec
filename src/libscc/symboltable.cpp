@@ -193,17 +193,9 @@ void SymbolTable::appendSymbol(Symbol *symbol) {
     m_table.push_back(symbol);
 }
 
-void SymbolTable::appendGlobalSymbol(Symbol *symbol) {
-    m_global->append (symbol);
-}
-
 SymbolLabel* SymbolTable::label (Imop* imop) {
     assert (imop != 0);
     return m_global->label (imop);
-}
-
-Symbol *SymbolTable::findGlobal(const std::string &name) const {
-    return m_global->find (name);
 }
 
 SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,

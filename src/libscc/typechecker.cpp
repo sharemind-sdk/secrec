@@ -84,7 +84,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     assert(destTypeNV->dataType()->kind() == DataType::VAR);
     assert(dynamic_cast<DTV*>(destTypeNV->dataType()) != 0);
     DTV* ddtv = static_cast<DTV*>(destTypeNV->dataType());
-    e->setResultType(TypeNonVoid::create (m_context, ddtv->dataType()));
+    e->setResultType(TypeNonVoid::get (m_context, ddtv->dataType()));
     return ICode::OK;
 }
 
@@ -116,7 +116,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType (TypeNonVoid::create (m_context,
+    root->setResultType (TypeNonVoid::get (m_context,
         eType->secrecSecType (), dType->dataType (), eType->secrecDimType ()));
     return ICode::OK;
 }
@@ -151,7 +151,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprIndex* root) {
         return s;
     }
 
-    root->setResultType(TypeNonVoid::create (m_context,
+    root->setResultType(TypeNonVoid::get (m_context,
         eType->secrecSecType(), eType->secrecDataType(), k));
     return ICode::OK;
 }
@@ -168,7 +168,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprSize* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT));
+        root->setResultType(TypeNonVoid::get (m_context, DATATYPE_INT));
     }
 
     return ICode::OK;
@@ -186,7 +186,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprShape* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT, 1));
+        root->setResultType(TypeNonVoid::get (m_context, DATATYPE_INT, 1));
     }
 
     return ICode::OK;
@@ -259,7 +259,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType(TypeNonVoid::create (m_context,
+    root->setResultType(TypeNonVoid::get (m_context,
         upperSecType(eTypes[0]->secrecSecType(), eTypes[1]->secrecSecType()),
         eTypes[0]->secrecDataType(),
         eTypes[0]->secrecDimType()));
@@ -308,7 +308,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
         return ICode::E_TYPE;
     }
 
-    root->setResultType (TypeNonVoid::create (m_context,
+    root->setResultType (TypeNonVoid::get (m_context,
         eType->secrecSecType(), eType->secrecDataType(), resDim));
     return ICode::OK;
 }
@@ -375,7 +375,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                     if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0)
                         break;
 
-                    root->setResultType(TNV::create (m_context, s0, d1, n0));
+                    root->setResultType(TNV::get (m_context, s0, d1, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_SUB:
                 case NODE_EXPR_BINARY_MUL:
@@ -383,7 +383,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 case NODE_EXPR_BINARY_DIV:
                     if (d1 != d2) break;
                     if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
-                    root->setResultType(TNV::create (m_context, s0, d1, n0));
+                    root->setResultType(TNV::get (m_context, s0, d1, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_EQ:
                 case NODE_EXPR_BINARY_GE:
@@ -392,12 +392,12 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 case NODE_EXPR_BINARY_LT:
                 case NODE_EXPR_BINARY_NE:
                     if (d1 != d2) break;
-                    root->setResultType(TNV::create (m_context, s0, DATATYPE_BOOL, n0));
+                    root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_LAND:
                 case NODE_EXPR_BINARY_LOR:
                     if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
-                    root->setResultType(TNV::create (m_context, s0, DATATYPE_BOOL, n0));
+                    root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_MATRIXMUL:
                     m_log.fatal() << "Matrix multiplication not yet supported. At "
@@ -469,7 +469,7 @@ ICode::Status TreeNodeExprBool::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprBool* e) {
     if (! e->haveResultType ()) {
-        e->setResultType (TypeNonVoid::create (m_context, DATATYPE_BOOL));
+        e->setResultType (TypeNonVoid::get (m_context, DATATYPE_BOOL));
     }
 
     return ICode::OK;
@@ -481,7 +481,7 @@ ICode::Status TreeNodeExprInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprInt* e) {
     if (! e->haveResultType()) {
-        e->setResultType(TypeNonVoid::create (m_context, DATATYPE_INT));
+        e->setResultType(TypeNonVoid::get (m_context, DATATYPE_INT));
     }
 
     return ICode::OK;
@@ -493,7 +493,7 @@ ICode::Status TreeNodeExprUInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprUInt* e) {
     if (! e->haveResultType()) {
-        e->setResultType(TypeNonVoid::create (m_context, DATATYPE_UINT));
+        e->setResultType(TypeNonVoid::get (m_context, DATATYPE_UINT));
     }
 
     return ICode::OK;
@@ -510,7 +510,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprClassify* root) {
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid(e)) return ICode::E_TYPE;
         assert (e->resultType()->secrecSecType()->isPublic ());
-        root->setResultType(TypeNonVoid::create (m_context,
+        root->setResultType(TypeNonVoid::get (m_context,
                 root->expectedType (),
                 e->resultType()->secrecDataType(),
                 e->resultType()->secrecDimType()));
@@ -537,7 +537,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprDeclassify* e) {
     Type* childType = child->resultType ();
     if (!childType->isVoid ()) {
         if (childType->secrecSecType ()->isPrivate ()) {
-            e->setResultType (TypeNonVoid::create (m_context,
+            e->setResultType (TypeNonVoid::get (m_context,
                 childType->secrecDataType (),
                 childType->secrecDimType ()));
             return ICode::OK;
@@ -589,7 +589,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         arguments.push_back (e);
     }
 
-    DataTypeProcedureVoid* argTypes = DataTypeProcedureVoid::create (m_context, argumentDataTypes);
+    DataTypeProcedureVoid* argTypes = DataTypeProcedureVoid::get (m_context, argumentDataTypes);
     SymbolProcedure* symProc = 0;
     if (s != 0 && s->symbolType () == Symbol::TEMPLATE) {
         Instantiation inst (static_cast<SymbolTemplate*>(s));
@@ -652,16 +652,16 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         }
 
         // Add implicit classify node if needed:
-        classifyIfNeeded (root, i + 1, TypeNonVoid::create (m_context, need));
+        classifyIfNeeded (root, i + 1, TypeNonVoid::get (m_context, need));
     }
 
     // Set result type:
     if (ft->kind() == TypeNonVoid::PROCEDURE) {
         assert(dynamic_cast<DTF*>(ft->dataType()) != 0);
         const DataTypeProcedure &rdt = *static_cast<DTF*>(ft->dataType());
-        root->setResultType(TypeNonVoid::create (m_context, rdt.returnType()));
+        root->setResultType(TypeNonVoid::get (m_context, rdt.returnType()));
     } else {
-        root->setResultType(TypeVoid::create (m_context));
+        root->setResultType(TypeVoid::get (m_context));
     }
 
     return ICode::OK;
@@ -691,7 +691,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
     TNV *type = static_cast<TNV*>(s->secrecType());
     assert(type->dataType()->kind() == DataType::VAR);
     assert(dynamic_cast<DTV*>(type->dataType()) != 0);
-    e->setResultType(TypeNonVoid::create (m_context,
+    e->setResultType(TypeNonVoid::get (m_context,
         static_cast<DTV*>(type->dataType())->dataType()));
     return ICode::OK;
 }
@@ -702,7 +702,7 @@ ICode::Status TreeNodeExprString::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprString* e) {
     if (!e->haveResultType()) {
-        e->setResultType (TypeNonVoid::create (m_context, DATATYPE_STRING));
+        e->setResultType (TypeNonVoid::get (m_context, DATATYPE_STRING));
     }
 
     return ICode::OK;
@@ -855,7 +855,7 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root, bool is
         return ICode::E_TYPE;
     }
 
-    root->setResultType (TypeNonVoid::create (m_context,
+    root->setResultType (TypeNonVoid::get (m_context,
         eType->secrecSecType (),
         eType->secrecDataType (),
         eType->secrecDimType ()));
@@ -892,16 +892,16 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
             return s;
         }
 
-        DataTypeProcedureVoid* voidProcType = DataTypeProcedureVoid::create (m_context, params);
+        DataTypeProcedureVoid* voidProcType = DataTypeProcedureVoid::get (m_context, params);
 
         if (rt->secrecType()->isVoid()) {
-            proc->m_cachedType = TypeNonVoid::create (m_context, voidProcType);
+            proc->m_cachedType = TypeNonVoid::get (m_context, voidProcType);
         }
         else {
             TNV* tt = static_cast<TNV*>(rt->secrecType());
             assert (tt->dataType()->kind() == DataType::BASIC);
-            proc->m_cachedType = TypeNonVoid::create (m_context,
-                DataTypeProcedure::create (m_context, voidProcType, tt->dataType ()));
+            proc->m_cachedType = TypeNonVoid::get (m_context,
+                DataTypeProcedure::get (m_context, voidProcType, tt->dataType ()));
         }
     }
 
@@ -1054,8 +1054,8 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
         }
     }
 
-    decl->m_type = TypeNonVoid::create (m_context,
-        DataTypeVar::create (m_context, dataType));
+    decl->m_type = TypeNonVoid::get (m_context,
+        DataTypeVar::get (m_context, dataType));
     return ICode::OK;
 }
 
@@ -1068,7 +1068,7 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
         TreeNodeTypeType* ty = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF *secty = ty->secType ();
-        SecurityType* secType = PublicSecType::create (getContext ());
+        SecurityType* secType = PublicSecType::get (getContext ());
         if (! secty->isPublic ()) {
             TreeNodeIdentifier* id = secty->identifier ();
             Symbol* sym = findIdentifier (id);
@@ -1081,15 +1081,15 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
                 return ICode::E_TYPE;
             }
 
-            secType =  static_cast<SymbolDomain*>(sym)->securityType ();
+            secType = static_cast<SymbolDomain*>(sym)->securityType ();
         }
 
-        ty->m_cachedType = TypeNonVoid::create (m_context,
+        ty->m_cachedType = TypeNonVoid::get (m_context,
             secType, ty->dataType ()->dataType (), ty->dimType ()->dimType());
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);
-        _ty->m_cachedType = TypeVoid::create (getContext ());
+        _ty->m_cachedType = TypeVoid::get (getContext ());
     }
 
     return ICode::OK;
@@ -1184,7 +1184,7 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, Typ
             TreeNodeExprClassify *ec = new TreeNodeExprClassify (secTy, child->location());
             ec->appendChild(child);
             ec->resetParent(node);
-            ec->setResultType (TypeNonVoid::create (m_context,
+            ec->setResultType (TypeNonVoid::get (m_context,
                 secTy, ty->secrecDataType (), ty->secrecDimType ()));
             child = ec;
         }

@@ -126,9 +126,9 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
     // Initialize shape:
     TypeNonVoid* dimType =
-        TypeNonVoid::create (getContext (),
-            DataTypeVar::create (getContext (),
-                DataTypeBasic::create (getContext (), DATATYPE_INT)));
+        TypeNonVoid::get (getContext (),
+            DataTypeVar::get (getContext (),
+                DataTypeBasic::get (getContext (), DATATYPE_INT)));
     for (unsigned i = 0; i < s->resultType ()->secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);

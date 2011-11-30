@@ -111,14 +111,14 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     // 4. initialze required temporary symbols
     std::vector<Symbol* > indices;
     Context& cxt = getContext ();
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (cxt, DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::get (cxt, DATATYPE_INT);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         indices.push_back(sym);
     }
 
     Symbol* offset = st->appendTemporary(pubIntTy);
-    Symbol* tmp_result = st->appendTemporary(TypeNonVoid::create (cxt,
+    Symbol* tmp_result = st->appendTemporary(TypeNonVoid::get (cxt,
         e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType()));
     Symbol* tmp_result2 = st->appendTemporary(pubIntTy);
 
@@ -236,14 +236,13 @@ CGResult CodeGen::cgExprSize (TreeNodeExprSize* e) {
         return CGResult (s);
     }
 
-    TreeNodeExpr* eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
-    CGResult result (codeGen (eArg));
+    CGResult result (codeGen (e->expression ()));
     if (!result.isOk ()) {
         return result;
     }
 
     Symbol* size = ConstantInt::get (getContext (), 1);
-    if (!eArg->resultType ()->isScalar()) {
+    if (!e->expression ()->resultType ()->isScalar()) {
         size = static_cast<SymbolSymbol*>(result.symbol())->getSizeSym();
     }
 
@@ -269,7 +268,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     }
 
     SymbolSymbol* resSym = generateResultSymbol (result, e);
-    TreeNodeExpr* eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
+    TreeNodeExpr* eArg = e->expression ();
     const CGResult& argResult (codeGen (eArg));
     append (result, argResult);
     if (result.isNotOk ()) {
@@ -318,22 +317,20 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     CGResult result;
     generateResultSymbol (result, e);
 
-    TreeNodeExpr* eArg1 = static_cast<TreeNodeExpr*>(e->children().at(0));
-    const CGResult& arg1Result (codeGen (eArg1));
+    const CGResult& arg1Result (codeGen (e->leftExpression ()));
     append (result, arg1Result);
     if (result.isNotOk ()) {
         return result;
     }
 
 
-    TreeNodeExpr* eArg2 = static_cast<TreeNodeExpr*>(e->children().at(1));
-    const CGResult& arg2Result (codeGen (eArg2));
+    const CGResult& arg2Result (codeGen (e->rightExpression ()));
     append (result, arg2Result);
     if (result.isNotOk ()) {
         return result;
     }
 
-    unsigned k = static_cast<TreeNodeExprInt*>(e->children().at(2))->value();
+    unsigned k = e->dimensionality ()->value ();
     unsigned n = e->resultType ()->secrecDimType();
     SymbolSymbol* arg1ResultSymbol = static_cast<SymbolSymbol*>(arg1Result.symbol ());
     SymbolSymbol* arg2ResultSymbol = static_cast<SymbolSymbol*>(arg2Result.symbol ());
@@ -378,7 +375,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     // Symbols for running indices:
     std::vector<Symbol* > indices;
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
     for (unsigned it = 0; it < n; ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         indices.push_back(sym);
@@ -419,7 +416,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     // t = x[j]
-    TypeNonVoid* elemType = TypeNonVoid::create (getContext (),
+    TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
         e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
     Symbol* tmp_elem = st->appendTemporary(elemType);
     i = new Imop (m_node, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
@@ -489,7 +486,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     }
 
     // Evaluate subexpression:
-    TreeNodeExpr* eArg = static_cast<TreeNodeExpr*>(e->children ().at (0));
+    TreeNodeExpr* eArg = e->reshapee ();
     CGResult result (codeGen (eArg));
     if (result.isNotOk ()) {
         return result;
@@ -532,7 +529,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     else {
         // Convert scalar to constant array:
         Symbol* tmp = rhs;
-        rhs = st->appendTemporary (TypeNonVoid::create (getContext (),
+        rhs = st->appendTemporary (TypeNonVoid::get (getContext (),
             eArg->resultType ()->secrecSecType (),
             eArg->resultType ()->secrecDataType (),
             e->resultType ()->secrecDimType ()));
@@ -561,8 +558,8 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         return CGResult (s);
     }
 
-    TreeNodeExpr* eArg1 = static_cast<TreeNodeExpr*>(e->children().at(0));
-    TreeNodeExpr* eArg2 = static_cast<TreeNodeExpr*>(e->children().at(1));
+    TreeNodeExpr* eArg1 = e->leftExpression ();
+    TreeNodeExpr* eArg2 = e->rightExpression ();
 
     /*
       If first sub-expression is public, then generate short-circuit code for
@@ -706,8 +703,8 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
     typedef TypeNonVoid TNV;
 
 
-    TreeNodeExpr *eArg1 = static_cast<TreeNodeExpr*>(e->children().at(0));
-    TreeNodeExpr *eArg2 = static_cast<TreeNodeExpr*>(e->children().at(1));
+    TreeNodeExpr *eArg1 = e->leftExpression ();
+    TreeNodeExpr *eArg2 = e->rightExpression ();
     CGBranchResult result;
 
     switch (e->type()) {
@@ -877,11 +874,11 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
     Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
     Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    /// \todo figure out how to set symbol for procedure in only single place
     if (e->symbolProcedure ()->target () != 0) {
         i->setCallDest (e->symbolProcedure ());
     }
     else {
+        // otherwise the instance has not been generated yet
         m_callsTo[e->symbolProcedure ()->decl ()].insert (i);
     }
 
@@ -923,8 +920,6 @@ CGBranchResult CodeGen::cgBoolExprProcCall (TreeNodeExprProcCall *e) {
 *******************************************************************************/
 
 CGResult TreeNodeExprRVariable::codeGenWith (CodeGen &cg) {
-    assert (children ().size () == 1);
-    assert (dynamic_cast<TreeNodeIdentifier*> (children().at (0)) != 0);
     return cg.cgExprRVariable (this);
 }
 
@@ -935,24 +930,19 @@ CGResult CodeGen::cgExprRVariable (TreeNodeExprRVariable *e) {
         return CGResult (s);
     }
 
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*> (e->children ().at (0));
-    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
+    SymbolSymbol* sym = m_tyChecker.getSymbol (e->identifier ());
     CGResult result;
     result.setResult (sym);
     return result;
 }
 
 CGBranchResult TreeNodeExprRVariable::codeGenBoolWith (CodeGen &cg) {
-    assert (havePublicBoolType());
-    assert (children ().size () == 1);
-    assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
     return cg.cgBoolExprRVariable (this);
 }
 
 CGBranchResult CodeGen::cgBoolExprRVariable (TreeNodeExprRVariable *e) {
-    TreeNodeIdentifier *id = static_cast<TreeNodeIdentifier*>(e->children().at(0));
     CGBranchResult result;
-    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
+    SymbolSymbol* sym = m_tyChecker.getSymbol (e->identifier ());
     Imop *i = new Imop (e, Imop::JT, 0, sym);
     code.push_imop (i);
     result.setFirstImop (i);
@@ -1001,9 +991,9 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
     }
 
     CGResult result;
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(e->children ().at (0));
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(e->children ().at (1));
-    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(e->children ().at (2));
+    TreeNodeExpr *e1 = e->conditional ();
+    TreeNodeExpr *e2 = e->trueBranch ();
+    TreeNodeExpr *e3 = e->falseBranch ();
 
     if (e1->havePublicBoolType()) {
         generateResultSymbol (result, e);
@@ -1122,10 +1112,10 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
 
         // Set up some temporary scalars:
         Context& cxt = getContext ();
-        Symbol* counter = st->appendTemporary(TypeNonVoid::create (cxt, DATATYPE_INT));
-        Symbol* b = st->appendTemporary(TypeNonVoid::create (cxt,
+        Symbol* counter = st->appendTemporary(TypeNonVoid::get (cxt, DATATYPE_INT));
+        Symbol* b = st->appendTemporary(TypeNonVoid::get (cxt,
             e1->resultType ()->secrecSecType (), e1->resultType ()->secrecDataType ()));
-        Symbol* t = st->appendTemporary(TypeNonVoid::create (cxt,
+        Symbol* t = st->appendTemporary(TypeNonVoid::get (cxt,
             e->resultType ()->secrecSecType (), e->resultType ()->secrecDataType ()));
 
         // r = e1
@@ -1179,24 +1169,19 @@ CGBranchResult TreeNodeExprTernary::codeGenBoolWith (CodeGen &cg) {
 
 CGBranchResult CodeGen::cgBoolExprTernary (TreeNodeExprTernary *e) {
 
-    // Generate code for boolean expression:
-    TreeNodeExpr *e1 = static_cast<TreeNodeExpr*>(e->children().at(0));
-    TreeNodeExpr *e2 = static_cast<TreeNodeExpr*>(e->children().at(1));
-    TreeNodeExpr *e3 = static_cast<TreeNodeExpr*>(e->children().at(2));
-
-    CGBranchResult result = codeGenBranch (e1);
+    CGBranchResult result = codeGenBranch ( e->conditional ());
     if (result.isNotOk ()) {
         return result;
     }
 
     // Generate code for first value child expression:
-    const CGBranchResult& trueResult = codeGenBranch (e2);
+    const CGBranchResult& trueResult = codeGenBranch (e->trueBranch ());
     if (trueResult.isNotOk ()) {
         return trueResult;
     }
 
     // Generate code for second value child expression:
-    const CGBranchResult& falseResult = codeGenBranch (e3);
+    const CGBranchResult& falseResult = codeGenBranch (e->falseBranch ());
     if (falseResult.isNotOk ()) {
         return falseResult;
     }
@@ -1307,7 +1292,7 @@ CGResult CodeGen::cgExprClassify (TreeNodeExprClassify *e) {
     }
 
     // Generate code for child expression
-    TreeNodeExpr* eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
+    TreeNodeExpr* eArg = e->expression ();
     CGResult result (codeGen (eArg));
     if (result.isNotOk ()) {
         return result;
@@ -1339,8 +1324,7 @@ CGResult CodeGen::cgExprDeclassify (TreeNodeExprDeclassify *e) {
     }
 
     // Generate code for child expression
-    TreeNodeExpr* eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
-    CGResult result (codeGen (eArg));
+    CGResult result (codeGen (e->expression ()));
     if (result.isNotOk ()) {
         return result;
     }
@@ -1456,7 +1440,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1581,7 +1565,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::create (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);

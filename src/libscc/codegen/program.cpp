@@ -37,7 +37,7 @@ CGStmtResult TreeNodeKind::codeGenWith (CodeGen &cg) {
 CGStmtResult CodeGen::cgKind (TreeNodeKind *kind) {
     typedef TreeNodeIdentifier TNI;
     const TNI* id = static_cast<const TNI*>(kind->children ().at (0));
-    if (st->findGlobal (id->value ()) != 0) {
+    if (st->find (id->value ()) != 0) {
         log.error () << "Redefining global symbol at " << kind->location ();
         return CGResult (ICode::E_TYPE);
     }
@@ -72,7 +72,7 @@ CGStmtResult CodeGen::cgDomain (TreeNodeDomain *dom) {
     }
 
     SymbolDomain* symDom = new SymbolDomain (
-        PrivateSecType::create (getContext (), idDomain->value (), kind));
+        PrivateSecType::get (getContext (), idDomain->value (), kind));
     symDom->setName (idDomain->value ());
     st->appendSymbol (symDom);
     return CGStmtResult ();
@@ -91,9 +91,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     typedef TypeNonVoid TNV;
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
-    assert(def->children ().size () >= 3);
-    assert(dynamic_cast<const TNI*> (def->children ().at (0)) != 0);
-    const TNI *id = static_cast<const TNI*> (def->children ().at (0));
+    const TNI *id = def->identifier ();
 
     CGStmtResult result;
     ICode::Status s = m_tyChecker.visit (def);
@@ -124,7 +122,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     newScope ();
 
     if (def->children ().size () > 3) {
-        for (CLCI it(def->children ().begin () + 3); it != def->children ().end (); ++ it) {
+        for (CLCI it(def->paramBegin ()); it != def->paramEnd (); ++ it) {
             assert ((*it)->type() == NODE_DECL);
             assert (dynamic_cast<TreeNodeStmtDecl*>(*it) != 0);
             TreeNodeStmtDecl* paramDecl = static_cast<TreeNodeStmtDecl*>(*it);
@@ -138,9 +136,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     }
 
     // Generate code for function body:
-    assert(dynamic_cast<TreeNodeStmt*>(def->children().at(2)) != 0);
-    TreeNodeStmt *body = static_cast<TreeNodeStmt*>(def->children().at(2));
-    const CGStmtResult& bodyResult (codeGenStmt (body));
+    const CGStmtResult& bodyResult (codeGenStmt (def->body ()));
     append (result, bodyResult);
     if (result.isNotOk ()) {
         return result;
@@ -259,7 +255,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     code.push_imop (retClean);
     code.push_imop (new Imop (prog, Imop::END));
 
-    // Handle functions:
+    // Generate procedures:
     BOOST_FOREACH (TreeNodeProcDef* procDef, procs) {
         append (result, procDef->codeGenWith (*this));
         if (result.isNotOk ()) {
@@ -267,6 +263,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
         }
     }
 
+    // Instantiate templates:
     SymbolTable* oldST = st;
     TreeNodeProcDef* procDef = 0;
     while (m_tyChecker.getForInstantiation (procDef, st)) {
@@ -285,7 +282,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     std::swap (oldST, st);
 
     // Check for "void main()":
-    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid::create (getContext ()));
+    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid::get (getContext ()));
     if (mainProc == 0) {
         log.fatal () << "No function \"void main()\" found!";
         result.setStatus (ICode::E_NO_MAIN);

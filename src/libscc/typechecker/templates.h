@@ -127,7 +127,6 @@ public: /* Methods: */
     }
 
     SymbolTable* getLocalST (const Instantiation& i) const {
-        std::cerr << "getLocalST:" << i << std::endl;
         return at (i).m_localSymbolTable;
     }
 
