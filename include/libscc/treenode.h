@@ -360,52 +360,66 @@ protected:
 
 /// Representation for expressions, also tracks type of resulting value (if there is one).
 class TreeNodeExpr: public TreeNode {
-    public: /* Methods: */
-        inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNode(type, loc), m_resultType(0) { }
-        virtual ~TreeNodeExpr() { }
+public: /* Methods: */
+    inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNode (type, loc)
+        , m_resultType (0)
+        , m_contextSecType (0)
+    { }
 
-        virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
+    virtual ~TreeNodeExpr() { }
 
-        inline bool haveResultType() const { return m_resultType != 0; }
+    virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
 
-        /// \todo move to type checker
-        inline bool havePublicBoolType() const {
-            assert(m_resultType != 0);
-            return m_resultType->secrecDataType() == DATATYPE_BOOL
-                   && m_resultType->secrecSecType()->isPublic ()
-                   && m_resultType->isScalar();
-        }
-        inline SecreC::Type* resultType() const {
-            assert(m_resultType != 0);
-            return m_resultType;
-        }
+    inline bool haveResultType() const { return m_resultType != 0; }
 
-        virtual CGResult codeGenWith (CodeGen& cg) = 0;
-        virtual CGBranchResult codeGenBoolWith (CodeGen&) {
-            assert (false && "Not implemented!");
-            return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
-        }
+    /// \todo move to type checker
+    inline bool havePublicBoolType() const {
+        assert(m_resultType != 0);
+        return m_resultType->secrecDataType() == DATATYPE_BOOL
+                && m_resultType->secrecSecType()->isPublic ()
+                && m_resultType->isScalar();
+    }
+    inline SecreC::Type* resultType() const {
+        assert(m_resultType != 0);
+        return m_resultType;
+    }
 
-    protected: /* Methods: */
+    virtual CGResult codeGenWith (CodeGen& cg) = 0;
+    virtual CGBranchResult codeGenBoolWith (CodeGen&) {
+        assert (false && "Not implemented!");
+        return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
+    }
 
-        friend class TypeChecker;
+    inline void setContextType (SecurityType* ty) {
+        m_contextSecType = ty;
+    }
 
-        inline void setResultType(SecreC::Type *type) {
-            assert(m_resultType == 0);
-            m_resultType = type;
-        }
+    inline SecurityType* contextSecType () const {
+        return m_contextSecType;
+    }
 
-        TreeNodeExpr* expressionAt (unsigned i) const {
-            assert (i < children ().size ());
-            assert (dynamic_cast<TreeNodeExpr*>(children ().at (i)) != 0);
-            return static_cast<TreeNodeExpr*>(children ().at (i));
-        }
+protected: /* Methods: */
 
-        virtual TreeNode* cloneV () const = 0;
+    friend class TypeChecker;
 
-    private: /* Fields: */
-        SecreC::Type       *m_resultType; ///< Type of resulting value.
+    inline void setResultType(SecreC::Type *type) {
+        assert(m_resultType == 0);
+        m_resultType = type;
+    }
+
+    TreeNodeExpr* expressionAt (unsigned i) const {
+        assert (i < children ().size ());
+        assert (dynamic_cast<TreeNodeExpr*>(children ().at (i)) != 0);
+        return static_cast<TreeNodeExpr*>(children ().at (i));
+    }
+
+    virtual TreeNode* cloneV () const = 0;
+
+protected: /* Fields: */
+
+    SecreC::Type*  m_resultType; ///< Type of resulting value.
+    SecurityType*  m_contextSecType; ///< Security type that context expects.
 };
 
 /******************************************************************
@@ -423,6 +437,8 @@ public: /* Methods: */
         assert (false && "Statement code gen unimplemented.");
         return CGStmtResult (ICode::E_NOT_IMPLEMENTED);
     }
+
+    SecurityType* returnSecurityType ();
 
 protected:
 
@@ -538,9 +554,15 @@ class TreeNodeExprCast: public TreeNodeExpr {
             return expressionAt (1);
         }
 
-        TreeNodeDataTypeF* castType () const {
-            assert (dynamic_cast<TreeNodeDataTypeF*>(children ().at (0)));
-            return static_cast<TreeNodeDataTypeF*>(children ().at (0));
+        TreeNodeSecTypeF* castType () const {
+            assert (children ().size () == 2);
+            assert (dynamic_cast<TreeNodeSecTypeF*>(children ().at (0)));
+            return static_cast<TreeNodeSecTypeF*>(children ().at (0));
+        }
+
+        bool isSecTypeCast () const {
+            assert (children ().size () == 2);
+            return children ().at (0)->type () == NODE_SECTYPE_F;
         }
 
     protected:
@@ -794,8 +816,9 @@ class TreeNodeExprClassify: public TreeNodeExpr {
     public: /* Methods: */
         inline TreeNodeExprClassify(SecurityType* ty, const YYLTYPE &loc)
             : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
-            , m_expectedType (ty)
-        { }
+        {
+            m_contextSecType = ty;
+        }
 
         virtual ICode::Status accept (TypeChecker& tyChecker);
 
@@ -806,21 +829,13 @@ class TreeNodeExprClassify: public TreeNodeExpr {
             return expressionAt (0);
         }
 
-        SecurityType* expectedType () const {
-            return m_expectedType;
-        }
-
     protected:
 
         virtual TreeNode* cloneV () const {
             assert (false && "ICE: Classify nodes are created during type checking and "
                     "it's assumed that procedures are cloned before type checking is performed.");
-            return new TreeNodeExprClassify (m_expectedType, m_location);
+            return new TreeNodeExprClassify (m_contextSecType, m_location);
         }
-
-
-    private:
-        SecurityType* const m_expectedType;
 };
 
 

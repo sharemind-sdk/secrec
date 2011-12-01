@@ -35,8 +35,7 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
 
 std::string mangleDataType (DataType* dty) {
     std::ostringstream os;
-    if (dty->secrecSecType ()->isPublic ())
-        os << "p"; // public typed procedures can't accept private
+    os << dty->secrecSecType ()->toString ();
     os << SecrecFundDataTypeToString(dty->secrecDataType());
     os << dty->secrecDimType();
     return os.str ();

@@ -563,4 +563,12 @@ std::string TreeNodeTypeType::stringHelper() const {
     return "";
 }
 
+/*******************************************************************************
+  TreeNodeStmt
+*******************************************************************************/
+
+SecurityType* TreeNodeStmt::returnSecurityType () {
+    return containingProcedure ()->procedureType ()->secrecSecType ();
+}
+
 } // namespace SecreC

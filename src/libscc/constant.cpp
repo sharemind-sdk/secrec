@@ -12,7 +12,8 @@ using namespace SecreC;
 using namespace std;
 
 template <SecrecDataType ty>
-Constant<ty>* getNumeric (Context& cxt, const typename SecrecTypeInfo<ty>::CType& value) {
+Constant<ty>* getNumeric (Context& cxt,
+                          const typename SecrecTypeInfo<ty>::CType& value) {
     ContextImpl& impl = *cxt.pImpl ();
     const pair<SecrecDataType, uint64_t> index (ty, value);
     map<pair<SecrecDataType, uint64_t>, Symbol*>::iterator

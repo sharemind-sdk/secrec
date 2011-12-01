@@ -152,7 +152,8 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     // evaluate shape if given, also compute size
     if (s->children ().size () > 2) {
         if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 1));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 1));
             pushImopAfter (result, i);
         }
 
@@ -171,18 +172,21 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
             Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (n), eResult.symbol ());
             pushImopAfter (result, i);
 
-            i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (),   eResult.symbol ());
+            i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (),
+                          eResult.symbol ());
             code.push_imop (i);
         }
     }
     else {
         if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 0));
             pushImopAfter (result, i);
         }
 
         for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
-            Imop* i = new Imop( s, Imop::ASSIGN, ns->getDim (it), ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop( s, Imop::ASSIGN, ns->getDim (it),
+                                ConstantInt::get (getContext (), 0));
             code.push_imop(i);
         }
     }
@@ -196,7 +200,8 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         }
         else {
 
-            SymbolSymbol* tns = st->appendTemporary(static_cast<TypeNonVoid*> (ns->secrecType ()));
+            SymbolSymbol* tns = st->appendTemporary(
+                        static_cast<TypeNonVoid*> (ns->secrecType ()));
 
             i = new Imop (s, Imop::PARAM, tns);
             pushImopAfter (result, i);
@@ -206,7 +211,8 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 code.push_imop(i);
             }
 
-            i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 1));
+            i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
+                          ConstantInt::get (getContext (), 1));
             pushImopAfter (result, i);
 
             for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
@@ -310,11 +316,13 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     }
     else {
         if (!isScalar && n == 0) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (), ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 0));
             pushImopAfter (result, i);
 
             for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
-                Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (it), ConstantInt::get (getContext (), 0));
+                Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (it),
+                                    ConstantInt::get (getContext (), 0));
                 code.push_imop (i);
             }
         }
@@ -384,6 +392,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     CGBranchResult condResult;
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
+        e1->setContextType (PublicSecType::get (getContext ()));
         ICode::Status status = e1->accept (m_tyChecker);
         if (status != ICode::OK) {
             result.setStatus (status);
@@ -479,6 +488,7 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
     CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
+    e->setContextType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -610,6 +620,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     // Conditional expression:
     CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
+    e->setContextType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -682,7 +693,6 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
     TreeNodeExpr *e = s->expression ();
-
     // Type check:
     CGStmtResult result;
     result.setStatus (m_tyChecker.visit (s));
@@ -795,6 +805,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     // Conditional expression:
 
     TreeNodeExpr *e = s->conditional ();
+    e->setContextType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -852,6 +863,7 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
 
     // Type check the expression
     TreeNodeExpr *e = s->expression ();
+    e->setContextType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
