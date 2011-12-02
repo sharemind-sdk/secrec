@@ -73,7 +73,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
 
     // Check types:
     if (checkAndLogIfVoid (src)) return ICode::E_TYPE;
-    if (!destType->canAssign (*srcType)) {
+    if (!destType->canAssign (srcType)) {
         m_log.fatal() << "Invalid assignment from value of type " << *srcType
                       << " to variable of type " << *destType << " at "
                       << e->location() << ".";
@@ -81,7 +81,13 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     }
 
     // Add implicit classify node if needed:
-    classifyIfNeeded (e, 1, destType);
+    src = classifyIfNeeded (src);
+    if (destType->secrecSecType () != src->resultType ()->secrecSecType ()) {
+        std::cerr << destType->toString () << " V.S."
+                  << src->resultType ()->toString () << std::endl;
+        return ICode::E_TYPE;
+    }
+
     assert(dynamic_cast<TNV*>(destType) != 0);
     TNV* destTypeNV = static_cast<TNV*>(destType);
     assert(destTypeNV->dataType()->kind() == DataType::VAR);
@@ -348,22 +354,34 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
         return ICode::OK;
     }
 
+    TreeNodeExpr *e1 = root->leftExpression ();
+    TreeNodeExpr *e2 = root->rightExpression ();
     SecreC::Type *eType1, *eType2;
 
+    if (root->contextSecType () != 0) {
+        e1->setContextType (root->contextSecType ());
+        e2->setContextType (root->contextSecType ());
+    }
+
     {
-        TreeNodeExpr *e1 = root->leftExpression ();
         ICode::Status s = visitExpr (e1);
         if (s != ICode::OK) return s;
         eType1 = e1->resultType();
-    }
-    {
-        TreeNodeExpr *e2 = root->rightExpression ();
-        ICode::Status s = visitExpr (e2);
+
+        s = visitExpr (e2);
         if (s != ICode::OK) return s;
         eType2 = e2->resultType();
     }
 
-    /// \todo implement more expressions
+    SecurityType* s1 = eType1->secrecSecType();
+    SecurityType* s2 = eType2->secrecSecType();
+    SecurityType* s0 = upperSecType(s1, s2);
+
+    if (root->contextSecType () == 0) {
+        e1->setContextType (s0);
+        e2->setContextType (s0);
+    }
+
     if (!eType1->isVoid() && !eType2->isVoid()
 #ifndef NDEBUG
         && (assert(dynamic_cast<const TNV*>(eType1) != 0), true)
@@ -373,26 +391,18 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
         && static_cast<const TNV*>(eType2)->kind() == TNV::BASIC)
     {
         // Add implicit classify nodes if needed:
-        {
-            TreeNodeExpr *e1 = classifyIfNeeded (root, 0, eType2);
-            eType1 = e1->resultType();
-        }
-        {
-            TreeNodeExpr *e2 = classifyIfNeeded (root, 1, eType1);
-            eType2 = e2->resultType();
-        }
-
+        e1 = classifyIfNeeded (e1);
+        eType1 = e1->resultType();
+        e2 = classifyIfNeeded (e2);
+        eType2 = e2->resultType();
 
         SecrecDataType d1 = eType1->secrecDataType();
         SecrecDataType d2 = eType2->secrecDataType();
-        SecurityType* s1 = eType1->secrecSecType();
-        SecurityType* s2 = eType2->secrecSecType();
         SecrecDimType n1 = eType1->secrecDimType();
         SecrecDimType n2 = eType2->secrecDimType();
 
         if (n1 == 0 || n2 == 0 || n1 == n2) {
             SecrecDimType n0 = upperDimType(n1, n2);
-            SecurityType* s0 = upperSecType(s1, s2);
             switch (root->type()) {
                 case NODE_EXPR_BINARY_ADD:
                     if (d1 != d2) break;
@@ -716,7 +726,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         }
 
         // Add implicit classify node if needed:
-        classifyIfNeeded (root, i + 1, TypeNonVoid::get (m_context, need));
+        classifyIfNeeded (static_cast<TreeNodeExpr*>(root->children ().at (i + 1)));
     }
 
     // Set result type:
@@ -852,8 +862,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* e) {
         }
     }
 
-    e2 = classifyIfNeeded (e, 1, eType3);
-    e3 = classifyIfNeeded (e, 2, eType2);
+    e2 = classifyIfNeeded (e2);
+    e3 = classifyIfNeeded (e3);
     assert(e2->resultType() == e3->resultType());
     e->setResultType(e2->resultType());
     return ICode::OK;
@@ -1108,47 +1118,30 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
         return ICode::E_TYPE;
     }
 
+    decl->m_type = TypeNonVoid::get (getContext (),
+        DataTypeVar::get (getContext (), dataType));
+
     if (decl->rightHandSide () != 0) {
+        if (decl->procParam ()) {
+            m_log.fatal () << "Declaration of procedure parameter may not have default value.";
+            m_log.fatal () << "Error at " << decl->location () << ".";
+            return ICode::E_TYPE;
+        }
+
         TreeNodeExpr *e = decl->rightHandSide ();
         e->setContextType (dataType->secrecSecType ());
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-
-        if (n == 0 && e->resultType()->isScalar() && justType->secrecDimType() > 0) {
-            m_log.fatal() << "Defining array without shape annotation with scalar at "
-                          << decl->location() << ".";
-            return ICode::E_TYPE;
-
-        }
-
-        if (e->resultType()->secrecSecType()->isPrivate () &&
-            justType->secrecSecType()->isPublic ())
-        {
-            m_log.fatal() << "Public variable is given a private initializer at "
-                          << decl->location() << ".";
+        if (! decl->m_type->canAssign (e->resultType ())) {
+            m_log.fatal () << "Illegal assignment at " << decl->location () << ".";
             return ICode::E_TYPE;
         }
 
-        if (e->resultType()->secrecDataType() != justType->secrecDataType()) {
-            m_log.fatal() << "Variable of type " << dataType->toString ()
-                          << " is given an initializer expression of type "
-                          << e->resultType() << " at " << decl->location() << ".";
-            return ICode::E_TYPE;
-        }
-
-        if (!e->resultType()->isScalar() &&
-            e->resultType()->secrecDimType() != justType->secrecDimType())
-        {
-            m_log.fatal() << "Variable of dimensionality " << dataType->secrecDimType()
-                          << " is given an initializer expression of dimensionality "
-                          << e->resultType()->secrecDimType() << " at " << decl->location() << ".";
-            return ICode::E_TYPE;
-        }
+        e = classifyIfNeeded (e);
     }
 
-    decl->m_type = TypeNonVoid::get (m_context,
-        DataTypeVar::get (m_context, dataType));
+
     return ICode::OK;
 }
 
@@ -1229,7 +1222,7 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
         e->setContextType (stmt->returnSecurityType ());
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
-        if (!procType->canAssign(*e->resultType ()) ||
+        if (!procType->canAssign(e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
             m_log.fatal () << "Cannot return value of type " << *e->resultType ()
@@ -1239,7 +1232,7 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
             return ICode::E_TYPE;
         }
 
-        classifyIfNeeded (stmt, 0, procType);
+        classifyIfNeeded (e);
     }
 
     return ICode::OK;
@@ -1268,25 +1261,34 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     return static_cast<SymbolSymbol*>(s);
 }
 
-
-TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNode* node, unsigned index, Type* ty) {
-    TreeNode *&child = node->children ().at (index);
-    assert(dynamic_cast<TreeNodeExpr*>(child) != 0);
-    if (!ty->isVoid ()) {
-        if (ty->secrecSecType ()->isPrivate () &&
-            static_cast<TreeNodeExpr*>(child)->resultType()->secrecSecType()->isPublic ())
-        {
-            SecurityType* secTy (ty->secrecSecType ());
-            TreeNodeExprClassify *ec = new TreeNodeExprClassify (secTy, child->location());
-            ec->appendChild(child);
-            ec->resetParent(node);
-            ec->setResultType (TypeNonVoid::get (m_context,
-                secTy, ty->secrecDataType (), ty->secrecDimType ()));
-            child = ec;
+TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child) {
+    if ((child->contextSecType () != 0) &&
+        child->contextSecType ()->isPrivate () &&
+        child->resultType()->secrecSecType()->isPublic ())
+    {
+        TreeNode* node = child->parent ();
+        SecurityType* secTy (child->contextSecType ());
+        TypeNonVoid* newTy = TypeNonVoid::get (getContext (), secTy,
+            child->resultType ()->secrecDataType (),
+            child->resultType ()->secrecDimType ());
+        TreeNodeExprClassify *ec = new TreeNodeExprClassify (secTy, child->location());
+        ec->appendChild (child);
+        ec->resetParent (node);
+        ec->setResultType (newTy);
+        BOOST_FOREACH (TreeNode*& n, node->children ()) {
+            if (n == child) {
+                n = ec;
+                break;
+            }
         }
+
+        // patch up context types just in case
+        child->setContextType (PublicSecType::get (getContext ()));
+        ec->setContextType (secTy);
+        child = ec;
     }
 
-    return static_cast<TreeNodeExpr*>(child);
+    return child;
 }
 
 bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {

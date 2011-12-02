@@ -92,10 +92,10 @@ private: /* Fields: */
     SymbolKind*   const m_kind;
 };
 
-inline bool latticeSecTypeLEQ (const SecurityType& a, const SecurityType& b) {
-    if (a.isPublic ()) return true;
-    if (b.isPublic ()) return false;
-    return &a == &b;
+inline bool latticeSecTypeLEQ (SecurityType* a, SecurityType* b) {
+    if (a->isPublic ()) return true;
+    if (b->isPublic ()) return false;
+    return a == b;
 }
 
 inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
@@ -133,7 +133,7 @@ public: /* Methods: */
 
     virtual std::string toString() const = 0;
 
-    virtual inline bool canAssign(const DataType &) const {
+    virtual inline bool canAssign(const DataType*) const {
         return false;
     }
 
@@ -143,8 +143,8 @@ public: /* Methods: */
      * convert public data to private and for interpreting scalar values
      * as arbitrary dimensional arrays.
      */
-    virtual inline bool latticeLEQ(DataType const& other) const {
-        return m_kind == other.m_kind;
+    virtual inline bool latticeLEQ(DataType const* other) const {
+        return m_kind == other->m_kind;
     }
 
 private: /* Fields: */
@@ -175,11 +175,12 @@ public: /* Methods: */
 
     virtual std::string toString() const;
 
-    virtual bool latticeLEQ(const DataType &other) const {
-        return  DataType::latticeLEQ(other)
-                && latticeSecTypeLEQ(*m_secType,*static_cast<const DataTypeBasic&>(other).m_secType)
-                && latticeDataTypeLEQ(m_dataType,static_cast<const DataTypeBasic &>(other).m_dataType)
-                && latticeDimTypeLEQ(m_dimType,static_cast<const DataTypeBasic &>(other).m_dimType);
+    virtual bool latticeLEQ(const DataType* _other) const {
+        const DataTypeBasic* other = static_cast<const DataTypeBasic*>(_other);
+        return  DataType::latticeLEQ (other)
+                && latticeSecTypeLEQ(m_secType, other->m_secType)
+                && latticeDataTypeLEQ(m_dataType, other->m_dataType)
+                && latticeDimTypeLEQ(m_dimType, other->m_dimType);
     }
 
     static DataTypeBasic* get (Context& cxt, SecrecDataType dataType, SecrecDimType dim = 0);
@@ -206,14 +207,14 @@ public: /* Methods: */
     DataType* dataType() const { return m_dataType; }
 
     virtual std::string toString() const;
-    virtual inline bool canAssign(const DataType &other) const {
-        return other.latticeLEQ(*m_dataType);
+    virtual inline bool canAssign(const DataType* other) const {
+        return other->latticeLEQ(m_dataType);
     }
 
-    virtual inline bool latticeLEQ(const DataType &other) const {
+    virtual inline bool latticeLEQ(const DataType* other) const {
         return
             m_dataType->DataType::latticeLEQ(other) &&
-            m_dataType->latticeLEQ(*static_cast<DataTypeVar const&>(other).m_dataType);
+            m_dataType->latticeLEQ(static_cast<const DataTypeVar*>(other)->m_dataType);
     }
 
     static DataTypeVar* get (Context& cxt, DataType* base);
@@ -243,7 +244,7 @@ public: /* Methods: */
     inline void addParamType(DataType* paramType) { m_params.push_back(paramType); }
     inline const std::vector<DataType*> &paramTypes() const { return m_params; }
 
-    virtual bool latticeLEQ(const DataType &) const {
+    virtual bool latticeLEQ(const DataType*) const {
         assert (false && "We don't define lattice structure on function types yet!");
         return false;
     }
@@ -278,11 +279,11 @@ public: /* Methods: */
 
     inline DataType* returnType() const { return m_ret; }
 
-    virtual inline bool canAssign(const DataType &other) const {
-        return other.latticeLEQ(*m_ret);
+    virtual inline bool canAssign(const DataType* other) const {
+        return other->latticeLEQ(m_ret);
     }
 
-    virtual bool latticeLEQ(const DataType &) const {
+    virtual bool latticeLEQ(const DataType*) const {
         assert (false && "We don't define lattice structure on function types yet!");
         return false;
     }
@@ -367,7 +368,7 @@ public: /* Methods: */
 
     virtual std::string toString() const = 0;
 
-    virtual inline bool canAssign(const Type &) const {
+    virtual inline bool canAssign(const Type*) const {
         return false;
     }
 
@@ -428,11 +429,11 @@ public: /* Methods: */
 
     virtual std::string toString() const;
 
-    virtual inline bool canAssign(const Type &other) const {
-        if (other.isVoid()) return false;
-        assert(dynamic_cast<const TypeNonVoid*>(&other) != 0);
-        const TypeNonVoid &o = static_cast<const TypeNonVoid&>(other);
-        return m_dataType->canAssign(*(o.m_dataType));
+    virtual inline bool canAssign(const Type* other) const {
+        if (other->isVoid ()) return false;
+        assert(dynamic_cast<const TypeNonVoid*>(other) != 0);
+        const TypeNonVoid* o = static_cast<const TypeNonVoid*>(other);
+        return m_dataType->canAssign (o->m_dataType);
     }
 
     static TypeNonVoid* get (Context& cxt, DataType* dtype);

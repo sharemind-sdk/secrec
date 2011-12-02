@@ -68,7 +68,7 @@ public: /* Methods: */
 
     /// \see TemplateInstantiator
     bool getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st);
-    TreeNodeExpr* classifyIfNeeded (TreeNode* node, unsigned index, Type* ty);
+    TreeNodeExpr* classifyIfNeeded (TreeNodeExpr* child);
 
     /// Check if given idenfier is in scope. Logs error message and returns NULL if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
