@@ -210,7 +210,8 @@ add_test_secrec_execute("scalars/41-param-order")
 add_test_secrec_execute("scalars/42-ra-fail")
 add_test_secrec_execute("scalars/43-domain-fail")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "Invalid assignment.*\\(9,5\\)\\(9,12\\)")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
+add_test_secrec_execute("scalars/44-classify")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
