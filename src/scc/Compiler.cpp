@@ -8,16 +8,18 @@
  */
 
 #include "Compiler.h"
-#include "RegisterAllocator.h"
-#include "Builtin.h"
-#include "TargetInfo.h"
+
+#include <iostream>
 
 #include <libscc/treenode.h>
 #include <libscc/dataflowanalysis.h>
 #include <libscc/intermediate.h>
 #include <libscc/blocks.h>
+#include <libscc/constant.h>
 
-#include <iostream>
+#include "RegisterAllocator.h"
+#include "Builtin.h"
+#include "TargetInfo.h"
 
 using namespace SecreC;
 
@@ -88,39 +90,6 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
 
     assert (dynamic_cast<VMLabel*>(label) != 0);
     return static_cast<VMLabel*>(label);
-}
-
-VMValue* getImm (VMSymbolTable& st, const Symbol* sym) {
-    assert (sym != 0);
-    assert (sym->symbolType () == Symbol::CONSTANT);
-    VMValue* imm = st.find (sym);
-    if (imm == 0) {
-        uint64_t value = 0xdeadbeef;
-        switch (sym->secrecType ()->secrecDataType ()) {
-            case DATATYPE_BOOL:   value = static_cast<const ConstantBool*>(sym)->value ();   break;
-            case DATATYPE_INT8:   value = static_cast<const ConstantInt8*>(sym)->value ();   break;
-            case DATATYPE_INT16:  value = static_cast<const ConstantInt16*>(sym)->value ();  break;
-            case DATATYPE_INT32:  value = static_cast<const ConstantInt32*>(sym)->value ();  break;
-            case DATATYPE_INT64:  value = static_cast<const ConstantInt64*>(sym)->value ();  break;
-            case DATATYPE_INT:    value = static_cast<const ConstantInt*>(sym)->value ();    break;
-            case DATATYPE_UINT8:  value = static_cast<const ConstantUInt8*>(sym)->value ();  break;
-            case DATATYPE_UINT16: value = static_cast<const ConstantUInt16*>(sym)->value (); break;
-            case DATATYPE_UINT32: value = static_cast<const ConstantUInt32*>(sym)->value (); break;
-            case DATATYPE_UINT64: value = static_cast<const ConstantUInt64*>(sym)->value (); break;
-            case DATATYPE_UINT:   value = static_cast<const ConstantUInt*>(sym)->value ();   break;
-            case DATATYPE_STRING:
-                assert (false && "No support for strings yet!");
-            default:
-                assert (false);
-                break;
-        }
-
-        imm = st.getImm (value);
-        st.store (sym, imm);
-    }
-
-    assert (dynamic_cast<VMImm*>(imm) != 0);
-    return imm;
 }
 
 }

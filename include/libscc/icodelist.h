@@ -33,7 +33,7 @@ class ICodeList : private ImopList {
 
         void resetIndexes();
 
-    private:
+    private: /* Fields: */
 
         unsigned m_counter;
 };

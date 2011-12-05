@@ -3,6 +3,7 @@
 #include "codegen.h"
 #include "treenode.h"
 #include "symboltable.h"
+#include "constant.h"
 #include "misc.h"
 
 

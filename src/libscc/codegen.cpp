@@ -1,5 +1,7 @@
 #include "codegen.h"
 
+#include "constant.h"
+
 namespace SecreC {
 
 /*******************************************************************************

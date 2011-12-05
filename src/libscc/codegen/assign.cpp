@@ -4,6 +4,7 @@
 #include "treenode.h"
 #include "symboltable.h"
 #include "codegen.h"
+#include "constant.h"
 
 /**
  * Code generation for assignment expression

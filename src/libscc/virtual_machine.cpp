@@ -1,6 +1,4 @@
 #include "virtual_machine.h"
-#include "symboltable.h"
-#include "blocks.h"
 
 #include <string>
 #include <sstream>
@@ -12,6 +10,10 @@
 #include <fstream>
 #include <stdint.h>
 #include <boost/preprocessor/control/if.hpp>
+
+#include "symboltable.h"
+#include "blocks.h"
+#include "constant.h"
 
 #define LEAVETRACE 0
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)

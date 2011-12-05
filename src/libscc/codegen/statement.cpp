@@ -1,8 +1,10 @@
 #include "treenode.h"
+
 #include "symboltable.h"
 #include "misc.h"
 #include "typechecker.h"
 #include "codegen.h"
+#include "constant.h"
 
 /**
  * Code generation for statements.
