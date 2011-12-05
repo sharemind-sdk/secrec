@@ -2,8 +2,10 @@
 
 #include <sstream>
 #include <iostream>
+
 #include "symboltable.h"
 #include "treenode.h"
+#include "constant.h"
 
 namespace {
 
