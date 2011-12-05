@@ -2,10 +2,13 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include <list>
+#include <vector>
 
 #include "symbol.h"
-#include "constant.h"
 
+/**
+ * \todo Rename the m_global field.
+ */
 
 namespace SecreC {
 
@@ -13,7 +16,6 @@ class Imop;
 class TreeNodeStmtDecl;
 class TreeNodeProcDef;
 class GlobalSymbols;
-class Block;
 
 /*******************************************************************************
   SymbolTable

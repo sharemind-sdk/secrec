@@ -173,6 +173,8 @@ SymbolTable::~SymbolTable() {
 }
 
 void SymbolTable::appendSymbol(Symbol *symbol) {
+    Symbol* prev = find (symbol->name ());
+    symbol->setPrevious (prev);
     m_table.push_back(symbol);
 }
 
@@ -205,23 +207,11 @@ Symbol *SymbolTable::find(const std::string &name) const {
 }
 
 std::list<Symbol* > SymbolTable::findAll (const std::string& name) const {
-    typedef Table::const_reverse_iterator STI;
+    Symbol* s = find (name);
     std::list<Symbol* > out;
-    const SymbolTable *c = this;
-    for (;;) {
-        const Table &t(c->m_table);
-        for (STI it (t.rbegin()); it != t.rend(); it++) {
-            if ((*it)->name() == name)
-                out.push_back (*it);
-        }
-        if (c->m_parent == 0) {
-            Symbol* s = m_global->find (name);
-            if (s != 0)
-                out.push_back (s);
-            break;
-        }
-
-        c = c->m_parent;
+    while (s) {
+        out.push_back (s);
+        s = s->previos ();
     }
 
     return out;
