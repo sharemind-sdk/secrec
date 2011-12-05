@@ -18,19 +18,28 @@
 #include "types.h"
 #include "treenode.h"
 
+/**
+ * This file contains functionality for template instantiation
+ * and for tracking, via the TemplateInstantiator class, which
+ * templates have been instantiated.
+ */
+
 namespace SecreC {
+
+typedef SecurityType* TemplateParam;
+typedef std::vector<TemplateParam> TemplateParams;
 
 /*******************************************************************************
   Instantiation
 *******************************************************************************/
 
-/// This class acts as index for template instances. Nameley a template instance
-/// is defined by it's declaration and the parameters it takes.
+/**
+ * This class acts as index for template instances. Nameley a template
+ * instance is defined by it's declaration and the parameters it takes.
+ */
 class Instantiation {
 public: /* Types: */
 
-    typedef SecurityType* TemplateParam;
-    typedef std::vector<TemplateParam> TemplateParams;
     typedef TemplateParams::iterator iterator;
     typedef TemplateParams::const_iterator const_iterator;
 

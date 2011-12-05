@@ -38,32 +38,6 @@ void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) 
     }
 }
 
-
-std::string mangleTemplateParameters (const std::vector<SecurityType*>& targs) {
-    std::ostringstream os;
-    if (! targs.empty ()) {
-        os << '(';
-        bool first = true;
-        BOOST_FOREACH (SecurityType* ty, targs) {
-            if (! first) os << ',';
-            os << ty->toString ();
-            first = false;
-        }
-
-        os << ')';
-    }
-
-    return os.str ();
-}
-
-std::string mangleProcedure (const std::string& name,
-                             DataTypeProcedureVoid* dt,
-                             const std::vector<SecurityType*>& targs)
-{
-    return "{proc}" + name + dt->mangle() + mangleTemplateParameters (targs);
-}
-
-
 } // anonymous namespace
 
 namespace SecreC {
@@ -205,41 +179,6 @@ void SymbolTable::appendSymbol(Symbol *symbol) {
 SymbolLabel* SymbolTable::label (Imop* imop) {
     assert (imop != 0);
     return m_global->label (imop);
-}
-
-SymbolProcedure *SymbolTable::appendProcedure(const TreeNodeProcDef &procdef,
-                                              const std::vector<SecurityType*>& targs) {
-    typedef DataTypeProcedureVoid DTPV;
-
-
-    assert(procdef.procedureType()->kind() == TypeNonVoid::PROCEDURE
-           || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
-    assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
-    DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
-    const std::string name = mangleProcedure ( procdef.procedureName(), dt, targs);
-    SymbolProcedure* ns = static_cast<SymbolProcedure*>(m_global->find (name));
-    if (ns == 0) {
-        ns = new SymbolProcedure(&procdef);
-        ns->setName(name);
-        m_global->append (ns);
-    }
-
-    return ns;
-}
-
-SymbolProcedure *SymbolTable::findGlobalProcedure(const std::string &name,
-                                                  DataTypeProcedureVoid* dt,
-                                                  const std::vector<SecurityType*>& targs)
-{
-    assert (!name.empty());
-    const std::string fn = mangleProcedure (name, dt, targs);
-    Symbol* sym = m_global->find (fn);
-    if (sym != 0) {
-        assert(dynamic_cast<SymbolProcedure*>(sym) != 0);
-        return static_cast<SymbolProcedure*>(sym);
-    }
-
-    return 0;
 }
 
 SymbolSymbol *SymbolTable::appendTemporary(TypeNonVoid* type) {

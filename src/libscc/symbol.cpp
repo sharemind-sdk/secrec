@@ -25,7 +25,10 @@ std::string SymbolKind::toString () const {
 
 std::string SymbolDomain::toString () const {
     std::ostringstream os;
-    os << "DOMAIN (" << name () << " : " << secrecType ()->toString () << ")";
+    os << "DOMAIN (" << name ();
+    if (secrecType ())
+        os << " : " << secrecType ()->toString ();
+    os << ')';
     return os.str ();
 }
 

@@ -246,7 +246,13 @@ std::string DataTypeProcedure::toString() const {
     return os.str();
 }
 
-PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name, SymbolKind* kind) {
+/*******************************************************************************
+  Static methods for constructing/getting types.
+*******************************************************************************/
+
+PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name,
+                                     SymbolKind* kind)
+{
     ContextImpl& impl = *cxt.pImpl ();
     return impl.privateType (name, kind);
 }
@@ -257,17 +263,17 @@ PublicSecType* PublicSecType::get (Context& cxt) {
 }
 
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
-                                      SecrecDataType dataType,
-                                      SecrecDimType dim)
+                                   SecrecDataType dataType,
+                                   SecrecDimType dim)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.basicDataType (impl.publicType (), dataType, dim);
 }
 
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
-                                      SecurityType* secType,
-                                      SecrecDataType dataType,
-                                      SecrecDimType dim)
+                                   SecurityType* secType,
+                                   SecrecDataType dataType,
+                                   SecrecDimType dim)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.basicDataType (secType, dataType, dim);
@@ -279,7 +285,7 @@ DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
 }
 
 DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt,
-                                                      const std::vector<DataType*>& params)
+                                                   const std::vector<DataType*>& params)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidProcedureType (params);
@@ -292,16 +298,16 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
 }
 
 DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
-                                              const std::vector<DataType*>& params,
-                                              DataType* returnType)
+                                           const std::vector<DataType*>& params,
+                                           DataType* returnType)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.procedureType (params, returnType);
 }
 
 DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
-                                              DataTypeProcedureVoid* params,
-                                              DataType* returnType)
+                                           DataTypeProcedureVoid* params,
+                                           DataType* returnType)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.procedureType (params->paramTypes (), returnType);
@@ -318,16 +324,18 @@ TypeNonVoid* TypeNonVoid::get (Context& cxt, DataType* dtype) {
 }
 
 TypeNonVoid* TypeNonVoid::get (Context& cxt,
-                                  SecrecDataType dataType,
-                                  SecrecDimType dimType)
+                               SecrecDataType dataType,
+                               SecrecDimType dimType)
 {
     ContextImpl& impl = *cxt.pImpl ();
-    return impl.nonVoidType (impl.basicDataType (impl.publicType (), dataType, dimType));
+    return impl.nonVoidType (impl.basicDataType (impl.publicType (),
+                                                 dataType, dimType));
 }
 
-TypeNonVoid* TypeNonVoid::get (Context& cxt, SecurityType* secType,
-                                  SecrecDataType dataType,
-                                  SecrecDimType dimType)
+TypeNonVoid* TypeNonVoid::get (Context& cxt,
+                               SecurityType* secType,
+                               SecrecDataType dataType,
+                               SecrecDimType dimType)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.nonVoidType (impl.basicDataType (secType, dataType, dimType));

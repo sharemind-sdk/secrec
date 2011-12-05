@@ -64,16 +64,8 @@ TreeNodeProcDef* TemplateInstantiator::add (const Instantiation& i, SymbolTable*
     if (it == m_instanceInfo.end ()) {
         TreeNode* cloned = i.getTemplate ()->decl ()->body ()->clone (0);
         InstanceInfo info;
-        SymbolTable* local = st;
-
+        SymbolTable* local = st->globalScope ()->newScope ();
         m_workList.push_back (i);
-
-        /// \todo not exactly perfect solution...
-        do {
-            local = local->parent ();
-        } while (local->parent () != 0);
-        local = local->newScope ();
-
         info.m_generatedBody = static_cast<TreeNodeProcDef*>(cloned);
         info.m_localSymbolTable = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));

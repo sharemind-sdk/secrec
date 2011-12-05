@@ -100,6 +100,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
         return result;
     }
 
+
     std::ostringstream os;
     os << "Start of function: " << id->value ();
     result.setFirstImop (pushComment (os.str ()));
@@ -249,7 +250,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
 
     // Generate procedures:
     BOOST_FOREACH (TreeNodeProcDef* procDef, procs) {
-        append (result, procDef->codeGenWith (*this));
+        append (result, cgProcDef (procDef));
         if (result.isNotOk ()) {
             return result;
         }
@@ -275,7 +276,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     std::swap (oldST, st);
 
     // Check for "void main()":
-    SP *mainProc = st->findGlobalProcedure ("main", DataTypeProcedureVoid::get (getContext ()));
+    SP *mainProc = m_tyChecker.mainProcedure ();
     if (mainProc == 0) {
         log.fatal () << "No function \"void main()\" found!";
         result.setStatus (ICode::E_NO_MAIN);

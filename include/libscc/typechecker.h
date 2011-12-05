@@ -70,26 +70,33 @@ public: /* Methods: */
     bool getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st);
     TreeNodeExpr* classifyIfNeeded (TreeNodeExpr* child);
 
-    /// Check if given idenfier is in scope. Logs error message and returns NULL if not.
+    /// Check if given idenfier is in scope. Logs error message
+    /// and returns NULL if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
+
+    /// Return symbol for the main procedure (if exists).
+    SymbolProcedure* mainProcedure ();
 
 
 protected:
 
-    /// \todo write more and better utility methods:
-
-    /// Check if given idenfier is in scope. Logs error message and returns NULL if not.
+    /// Check if given idenfier is in scope.
+    /// Logs error message and returns NULL if not.
     Symbol* findIdentifier (TreeNodeIdentifier* id) const;
 
-    ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root, bool isPrefix, bool isInc);
+    ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root,
+                                            bool isPrefix,
+                                            bool isInc);
     ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
-    ICode::Status populateParamTypes (std::vector<DataType*>& params, TreeNodeProcDef* proc);
+    ICode::Status populateParamTypes (std::vector<DataType*>& params,
+                                      TreeNodeProcDef* proc);
+    ICode::Status getInstance (SymbolProcedure*& proc,
+                               const Instantiation& inst);
 
-    ICode::Status getInstance (SymbolProcedure*& proc, const Instantiation& inst);
-
-    // Try to unify template with given parameter types. On success this procedure returns
-    // true, and gives bindings to quantifiers. No addition side effect are performed.
+    // Try to unify template with given parameter types. On success this
+    // procedure returns true, and gives bindings to quantifiers. No
+    // addition side effect are performed.
     bool unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const;
 
     /**
@@ -100,10 +107,10 @@ protected:
      * \param[out] symProc best matching procedure if single best one was found
      * \retval ICode::OK if best matching procedure was found
      */
-    ICode::Status findBestMatchingProc (
-            SymbolProcedure*& symProc,
-            const std::string& name,
-            DataTypeProcedureVoid* argTypes);
+    ICode::Status findBestMatchingProc (SymbolProcedure*& symProc,
+                                        const std::string& name,
+                                        SecurityType* contextTy,
+                                        DataTypeProcedureVoid* argTypes);
 
 private: /* Fields: */
 

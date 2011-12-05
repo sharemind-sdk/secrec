@@ -874,13 +874,7 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
     Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
     Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    if (e->symbolProcedure ()->target () != 0) {
-        i->setCallDest (e->symbolProcedure ());
-    }
-    else {
-        // otherwise the instance has not been generated yet
-        m_callsTo[e->symbolProcedure ()->decl ()].insert (i);
-    }
+    m_callsTo[e->symbolProcedure ()->decl ()].insert (i);
 
     c->setArg2 (st->label (i));
     pushImopAfter (result, i);

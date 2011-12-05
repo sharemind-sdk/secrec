@@ -62,6 +62,7 @@ SET(LIBSCC_SOURCES
     "src/libscc/typechecker.cpp"
     "src/libscc/typechecker/templates.h"
     "src/libscc/typechecker/templates.cpp"
+    "src/libscc/typechecker/procedures.cpp"
     "src/libscc/context_impl.h"
     "src/libscc/context_impl.cpp"
     "src/libscc/context.cpp"
