@@ -392,11 +392,11 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         return ICode::OK;
     }
 
-    Weight best (argTypes->paramTypes ().size () + 1, 0, 0);
+    Weight best (argTypes->paramTypes ().size () + 2, 0, 0);
     std::vector<Instantiation> bestMatches;
     BOOST_FOREACH (SymbolTemplate* s, findTemplates (m_st, name)) {
         Instantiation inst (s);
-        if (unify (inst, argTypes)) {
+        if (unify (inst, contextTy, argTypes)) {
             Weight w (inst.templateParamCount (),
                       inst.unrestrictedTemplateParamCount (),
                       inst.quantifiedDomainOccurrenceCount ());
@@ -429,7 +429,9 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
     return getInstance (symProc, bestMatches.front ());
 }
 
-bool TypeChecker::unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const {
+bool TypeChecker::unify (Instantiation& inst,
+                         SecurityType* contextTy,
+                         DataTypeProcedureVoid* argTypes) const {
     typedef std::map<std::string, SecurityType* > DomainMap;
     const TreeNodeTemplate* t = inst.getTemplate ()->decl ();
     DomainMap argDomains;
@@ -441,20 +443,44 @@ bool TypeChecker::unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) c
     {
         assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(_d);
-        TreeNodeIdentifier* styId = d->varType ()->secType ()->identifier ();
-        SecurityType*& ty = argDomains[styId->value ()];
+        TreeNodeType* argNodeTy = d->varType ();
         DataType* expectedTy = argTypes->paramTypes ().at (i ++);
+        if (argNodeTy->secType ()->isPublic ()) {
+            if (! expectedTy->secrecSecType ()->isPublic ())
+                return false;
+        }
+        else {
+            TreeNodeIdentifier* styId = argNodeTy->secType ()->identifier ();
+            SecurityType*& ty = argDomains[styId->value ()];
+            if (ty != 0 && ty != expectedTy->secrecSecType ())
+                return false;
 
-        if (ty != 0 && ty != expectedTy->secrecSecType ())
+            ty = expectedTy->secrecSecType ();
+        }
+
+        if (expectedTy->secrecDataType () != argNodeTy->dataType ()->dataType ())
             return false;
 
-        if (expectedTy->secrecDataType () != d->varType ()->dataType ()->dataType ())
+        if (expectedTy->secrecDimType () != argNodeTy->dimType ()->dimType ())
             return false;
 
-        if (expectedTy->secrecDimType () != d->varType ()->dimType ()->dimType ())
-            return false;
+    }
 
-        ty = expectedTy->secrecSecType ();
+    TreeNodeType* retNodeTy = t->body ()->returnType ();
+    if (retNodeTy->isNonVoid () && contextTy != 0) {
+        if (retNodeTy->secType ()->isPublic ()) {
+            if (! contextTy->isPublic ())
+                return false;
+        }
+        else {
+            TreeNodeIdentifier* styId = retNodeTy->secType ()->identifier ();
+            SecurityType*& ty = argDomains[styId->value ()];
+            if (ty != 0 && ty != contextTy) {
+                return false;
+            }
+
+            ty = contextTy;
+        }
     }
 
     std::list<SecurityType*> tmp;

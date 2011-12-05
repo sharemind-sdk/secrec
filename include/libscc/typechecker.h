@@ -97,7 +97,9 @@ protected:
     // Try to unify template with given parameter types. On success this
     // procedure returns true, and gives bindings to quantifiers. No
     // addition side effect are performed.
-    bool unify (Instantiation& inst, DataTypeProcedureVoid* argTypes) const;
+    bool unify (Instantiation& inst,
+                SecurityType* contextTy,
+                DataTypeProcedureVoid* argTypes) const;
 
     /**
      * \pre argTypes != 0

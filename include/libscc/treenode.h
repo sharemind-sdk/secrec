@@ -299,6 +299,11 @@ public: /* Methods: */
         return static_cast<TreeNodeDimTypeF*>(children().at (2));
     }
 
+    bool isNonVoid () const {
+        assert (children ().size () == 3 || children ().empty ());
+        return ! children ().empty ();
+    }
+
 protected: /* Fields: */
 
     friend class TypeChecker;
