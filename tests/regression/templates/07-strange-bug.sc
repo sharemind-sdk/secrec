@@ -1,7 +1,7 @@
-template <dom>
+template <domain dom>
 void do_nothing1 (dom int x) { }
 
-template <dom>
+template <domain dom>
 void do_nothing2 (dom int n) { }
 
 

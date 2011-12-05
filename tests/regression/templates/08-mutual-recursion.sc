@@ -1,11 +1,11 @@
 
-template <dom>
+template <domain dom>
 bool even (dom int n) {
     if (n == 0) return true;
     return odd (n - 1);
 }
 
-template <dom>
+template <domain dom>
 bool odd (dom int n) {
     if (n == 0) return false;
     return even (n - 1);

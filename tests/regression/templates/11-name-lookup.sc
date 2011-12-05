@@ -1,11 +1,11 @@
 kind a3p;
 
-template <dom>
+template <domain dom>
 void foo (dom int x) {
     assert (false);
 }
 
-template <dom : a3p>
+template <domain dom : a3p>
 void foo (dom int x) { }
 
 void foo (public int x) {

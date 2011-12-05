@@ -411,16 +411,16 @@ template_quantifiers
  ;
 
 template_quantifier
- : identifier ':' identifier
+ : DOMAIN identifier ':' identifier
   {
     $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
-    treenode_appendChild($$, $1);
-    treenode_appendChild($$, $3);
+    treenode_appendChild($$, $2);
+    treenode_appendChild($$, $4);
   }
- | identifier
+ | DOMAIN identifier
   {
     $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
-    treenode_appendChild($$, $1);
+    treenode_appendChild($$, $2);
   }
  ;
 

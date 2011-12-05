@@ -1,4 +1,4 @@
-template <dom>
+template <domain dom>
 dom int loop (dom int x) {
     if (false) /// to avoid actually recursing
         loop (x);

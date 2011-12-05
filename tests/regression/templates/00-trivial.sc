@@ -1,6 +1,6 @@
 kind a3p;
 
-template <dom>
+template <domain dom>
 void nothing (dom int x) { 
     return;
 }

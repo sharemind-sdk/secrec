@@ -1,5 +1,5 @@
 
-template <dom>
+template <domain dom>
 void hasTypeError (dom int x) {
     if (x) { }
 }
