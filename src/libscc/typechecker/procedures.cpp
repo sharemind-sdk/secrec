@@ -57,14 +57,9 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
     const std::string name = mangleProcedure (procdef.procedureName(), dt, targs);
-
-    SymbolProcedure* ns = static_cast<SymbolProcedure*>(st->find (name));
-    if (ns == 0) {
-        ns = new SymbolProcedure(&procdef);
-        ns->setName (name);
-        st->appendSymbol (ns);
-    }
-
+    SymbolProcedure* ns = new SymbolProcedure(&procdef);
+    ns->setName (name);
+    st->appendSymbol (ns);
     return ns;
 }
 
@@ -182,7 +177,7 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
                 DataTypeProcedure::get (m_context, voidProcType, tt->dataType ()));
         }
 
-        SymbolProcedure* procSym = appendProcedure (m_st->globalScope (), *proc);
+        SymbolProcedure* procSym = appendProcedure (m_st, *proc);
         proc->setSymbol (procSym);
 
         const std::string& shortName = "{proc}" + proc->identifier ()->value ();
@@ -375,6 +370,15 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
     assert (argTypes != 0);
     SymbolProcedure* procTempSymbol = 0;
     BOOST_FOREACH (SymbolProcedure* s, findProcedures (m_st, name, argTypes)) {
+        if (contextTy != 0) { // if we have context...
+            SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
+            if (! _ty->isVoid ()) { // and procedure is non-void...
+                TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
+                if (ty->secrecSecType () != contextTy) // skip unmatching definitions.
+                    continue;
+            }
+        }
+
         if (procTempSymbol != 0) {
             assert (false);
             return ICode::E_TYPE;
@@ -489,12 +493,12 @@ ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiat
     }
 
     const std::vector<SecurityType*> targs (inst.begin (), inst.end ());
-    proc = findProcedure (m_st,
+    proc = findProcedure (m_st->globalScope (),
         body->procedureName (),
         static_cast<DataTypeProcedureVoid*>(body->procedureType ()->dataType ()),
         targs);
     if (proc == 0) {
-        proc = appendProcedure (m_st, *body, targs);
+        proc = appendProcedure (m_st->globalScope (), *body, targs);
     }
 
     body->setSymbol (proc);
