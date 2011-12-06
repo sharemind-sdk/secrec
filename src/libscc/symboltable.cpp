@@ -43,114 +43,90 @@ void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) 
 namespace SecreC {
 
 /*******************************************************************************
-  GlobalSymbols
+  SymbolTable::OtherSymbols
 *******************************************************************************/
 
 /**
- * \brief class for handling global symbols.
- * \a GlobalSymbols class tracks symbols for constants, procedure names,
- *    global variables, and temporary variables created in intermediate code
- *    generation process.
+ * \brief class for handling some other symbols.
+ * \todo not sure if i should store them in symbol table
  */
-class GlobalSymbols {
-public:
-    GlobalSymbols ();
-    ~GlobalSymbols ();
+class SymbolTable::OtherSymbols {
+private: /* Types: */
+    typedef std::map<const Imop*, SymbolLabel* > LabelMap;
+public: /* Methods: */
+    OtherSymbols ()
+        : m_tempCount (0)
+    { }
 
-    // labels
-    SymbolLabel*     label (Imop* imop);
+    ~OtherSymbols () {
+        BOOST_FOREACH (LabelMap::value_type& v, m_labels) {
+            delete v.second;
+        }
 
-    // symbols for variables and procedures
-    Symbol*          find (const std::string& name) const;
-    void             append (Symbol* sym);
-    SymbolSymbol*    temporary (TypeNonVoid* type);
+        BOOST_FOREACH (SymbolSymbol* s, m_temporaries) {
+            delete s;
+        }
+    }
 
-    //
-    std::string toString () const;
+    SymbolLabel* label (Imop* imop) {
+        assert (imop != 0);
+        std::map<const Imop*, SymbolLabel*>::iterator
+                it = m_labels.find (imop);
+        if (it != m_labels.end ()) {
+            return it->second;
+        }
 
-private:
+        SymbolLabel* label = new SymbolLabel (imop);
+        std::ostringstream os;
+        os << "{label}" << imop;
+        label->setName (os.str ());
+        m_labels.insert (it, std::make_pair (imop, label));
+        return label;
+    }
 
-    std::map<const Imop*, SymbolLabel* >    m_labels;
-    std::map<std::string, Symbol* >         m_globals;
-    unsigned                                m_tempCount;
+    SymbolSymbol* temporary (TypeNonVoid* type) {
+        SymbolSymbol* tmp = new SymbolSymbol (type, true);
+        std::ostringstream os;
+        os << "{t}" << m_tempCount ++;
+        tmp->setName (os.str ());
+        m_temporaries.push_back (tmp);
+        return tmp;
+    }
+
+    std::string toString () const {
+        std::ostringstream os;
+        os << "Labels:\n";
+        BOOST_FOREACH (const LabelMap::value_type& v, m_labels)
+            os << '\t' << v.second->toString () << '\n';
+
+        os << "\nTemporaries:\n";
+        BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
+            os << '\t' << s->toString () << '\n';
+
+        return os.str ();
+    }
+
+private: /* Fields: */
+
+    std::map<const Imop*, SymbolLabel* >  m_labels;
+    std::vector<SymbolSymbol* >           m_temporaries;
+    unsigned                              m_tempCount;
 };
-
-GlobalSymbols::GlobalSymbols ()
-    : m_tempCount (0)
-{ }
-
-GlobalSymbols::~GlobalSymbols () {
-    deleteValues (m_labels);
-    deleteValues (m_globals);
-}
-
-SymbolLabel* GlobalSymbols::label (Imop *imop) {
-    assert (imop != 0);
-    std::map<const Imop*, SymbolLabel*>::iterator
-            it = m_labels.find (imop);
-    if (it != m_labels.end ()) {
-        return it->second;
-    }
-
-    SymbolLabel* label = new SymbolLabel (imop);
-    std::ostringstream os;
-    os << "{label}" << imop;
-    label->setName (os.str ());
-    m_labels.insert (it, std::make_pair (imop, label));
-    return label;
-}
-
-void GlobalSymbols::append (Symbol *sym) {
-    assert (sym != 0);
-    std::map<std::string, Symbol*>::iterator
-            it = m_globals.find (sym->name ());
-    if (it != m_globals.end ()) {
-        assert (false && "Appening symbol already in global symbol table.");
-        return;
-    }
-
-    m_globals.insert (it, std::make_pair (sym->name (), sym));
-}
-
-Symbol* GlobalSymbols::find (const std::string &name) const {
-    std::map<std::string, Symbol*>::const_iterator
-            it = m_globals.find (name);
-    Symbol* out = 0;
-    if (it != m_globals.end ()) {
-        out = it->second;
-    }
-
-    return out;
-}
-
-SymbolSymbol* GlobalSymbols::temporary (TypeNonVoid* type) {
-    SymbolSymbol* tmp = new SymbolSymbol (type, true);
-    std::ostringstream os;
-    os << "{t}" << m_tempCount ++;
-    tmp->setName (os.str ());
-    append (tmp);
-    return tmp;
-}
-
-std::string GlobalSymbols::toString () const {
-    std::ostringstream os;
-
-    os << "* Labels:\n";
-    printValues (m_labels, os);
-
-    os << "* Globals:\n";
-    printValues (m_globals, os);
-
-    return os.str ();
-}
 
 /*******************************************************************************
   SymbolTable
 *******************************************************************************/
 
+SymbolTable::SymbolTable ()
+    : m_parent (0)
+    , m_global (this)
+    , m_other (new OtherSymbols ())
+{ }
+
 SymbolTable::SymbolTable (SymbolTable *parent)
     : m_parent (parent)
-    , m_global (m_parent == 0 ? new GlobalSymbols () : m_parent->m_global)
+    , m_global (m_parent->m_global)
+    , m_other (m_parent->m_other)
 {
     // Intentionally empty
 }
@@ -168,7 +144,7 @@ SymbolTable::~SymbolTable() {
     }
 
     if (m_parent == 0) {
-        delete m_global;
+        delete m_other;
     }
 }
 
@@ -180,29 +156,24 @@ void SymbolTable::appendSymbol(Symbol *symbol) {
 
 SymbolLabel* SymbolTable::label (Imop* imop) {
     assert (imop != 0);
-    return m_global->label (imop);
+    return m_other->label (imop);
 }
 
 SymbolSymbol *SymbolTable::appendTemporary(TypeNonVoid* type) {
-    return m_global->temporary (type);
+    return m_other->temporary (type);
 }
 
 Symbol *SymbolTable::find(const std::string &name) const {
-    typedef Table::const_reverse_iterator STI;
-
     const SymbolTable *c = this;
-    for (;;) {
-        const Table &t(c->m_table);
-        for (STI it(t.rbegin()); it != t.rend(); it++) {
-            if ((*it)->name() == name)
-                return (*it);
-        }
-        if (c->m_parent == 0) {
-            return m_global->find (name);
+    while (c != 0) {
+        BOOST_REVERSE_FOREACH (Symbol* s, c->m_table) {
+            if (s->name () == name)
+                return s;
         }
 
         c = c->m_parent;
     }
+
     return 0;
 }
 
@@ -233,7 +204,7 @@ std::string SymbolTable::toString(unsigned level, unsigned indent,
 
     if (m_parent == 0) {
         os << "--- GLOBAL SCOPE ---" << std::endl;
-        os << m_global->toString ();
+        os << m_other->toString ();
     }
 
     if (newScope) {

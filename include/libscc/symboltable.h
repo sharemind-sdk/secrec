@@ -15,7 +15,6 @@ namespace SecreC {
 class Imop;
 class TreeNodeStmtDecl;
 class TreeNodeProcDef;
-class GlobalSymbols;
 
 /*******************************************************************************
   SymbolTable
@@ -29,39 +28,33 @@ class SymbolTable {
         SymbolTable& operator = (const SymbolTable&); // do not implement
 
     public: /* Methods: */
-        explicit SymbolTable(SymbolTable *parent = 0);
+        SymbolTable ();
+        explicit SymbolTable(SymbolTable *parent);
+
         ~SymbolTable();
 
         void appendSymbol(Symbol *symbol);
-
         SymbolSymbol *appendTemporary(TypeNonVoid* type);
+        SymbolLabel *label (Imop* imop);
 
+        Symbol *find(const std::string &name) const;
         std::list<Symbol* > findAll (const std::string& name) const;
 
-        SymbolLabel *label (Imop* imop);
-        Symbol *find(const std::string &name) const;
         SymbolTable *newScope();
+        SymbolTable* parent () const { return m_parent; }
+        SymbolTable* globalScope () const { return m_global; }
 
         std::string toString(unsigned level = 0, unsigned indent = 4,
                              bool newScope = true) const;
 
-        SymbolTable* parent () const {
-            return m_parent;
-        }
-
-        SymbolTable* globalScope () {
-            SymbolTable* st = this;
-            while (st->parent ()) {
-                st = st->parent ();
-            }
-
-            return st;
-        }
 
     private: /* Fields: */
+        class OtherSymbols;
+
         Table                     m_table;
-        SymbolTable*              m_parent;
-        GlobalSymbols*            m_global;
+        SymbolTable* const        m_parent;  ///< Parent scope.
+        SymbolTable* const        m_global;  ///< Global scope.
+        OtherSymbols* const       m_other;   ///< Temporaries and labels.
         std::list<SymbolTable* >  m_scopes;
 };
 
