@@ -163,6 +163,7 @@ public:
     CGStmtResult cgStmtPrint (TreeNodeStmtPrint* s);
     CGStmtResult cgStmtSyscall (TreeNodeStmtSyscall* s);
     CGStmtResult cgStmtPush (TreeNodeStmtPush* s);
+    CGStmtResult cgStmtPushRef (TreeNodeStmtPushRef* s);
 
     /// \}
 

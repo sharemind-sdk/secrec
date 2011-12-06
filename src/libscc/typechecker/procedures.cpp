@@ -463,7 +463,6 @@ bool TypeChecker::unify (Instantiation& inst,
 
         if (expectedTy->secrecDimType () != argNodeTy->dimType ()->dimType ())
             return false;
-
     }
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();

@@ -68,6 +68,8 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::PRINT,      0, 0, 0, 0,-1 }
     , { Imop::SYSCALL,    0, 0, 0, 0,-1 }
     , { Imop::PUSH,       0, 0, 0, 0,-1 }
+    , { Imop::PUSHREF,    0, 0, 0, 0,-1 }
+    , { Imop::PUSHCREF,   0, 0, 0, 0,-1 }
     , { Imop::RETCLEAN,   0, 0, 0, 0,-1 }
 };
 
@@ -452,6 +454,12 @@ std::string Imop::toString() const {
             break;
         case PUSH:
             os << "__PUSH " << a1name;
+            break;
+        case PUSHREF:
+            os << "__PUSHREF " << a1name;
+            break;
+        case PUSHCREF:
+            os << "__PUSHCREF " << a1name;
             break;
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";

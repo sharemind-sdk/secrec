@@ -1769,6 +1769,38 @@ protected:
     }
 };
 
+
+/******************************************************************
+  TreeNodeStmtPushRef
+******************************************************************/
+
+class TreeNodeStmtPushRef: public TreeNodeStmt {
+public: /* Methods: */
+    explicit inline TreeNodeStmtPushRef(const YYLTYPE &loc, bool isConstant = false)
+        : TreeNodeStmt(NODE_STMT_PUSH, loc)
+        , m_isConstant (isConstant)
+    {}
+
+    virtual CGStmtResult codeGenWith (CodeGen& cg);
+
+    TreeNodeIdentifier* identifier () const {
+        assert (children ().size () == 1);
+        assert (dynamic_cast<TreeNodeIdentifier*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeIdentifier*> (children ().at (0));
+    }
+
+    bool isConstant () const { return m_isConstant; }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStmtPushRef (m_location, m_isConstant);
+    }
+
+private:
+    const bool m_isConstant;
+};
+
 } // namespace SecreC
 
 #endif /* #ifdef __cplusplus */

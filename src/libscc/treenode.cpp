@@ -268,6 +268,10 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtSyscall(*loc));
         case NODE_STMT_PUSH:
             return (TreeNode*) (new SecreC::TreeNodeStmtPush(*loc));
+        case NODE_STMT_PUSHREF:
+            return (TreeNode*) (new SecreC::TreeNodeStmtPushRef(*loc, false));
+        case NODE_STMT_PUSHCREF:
+            return (TreeNode*) (new SecreC::TreeNodeStmtPushRef(*loc, true));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:

@@ -477,8 +477,16 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgPush (VMBlock& block, const Imop& imop) {
+    const char* name = 0;
+    switch (imop.type ()) {
+    case Imop::PUSH: name = "push"; break;
+    case Imop::PUSHREF: name = "pushref"; break;
+    case Imop::PUSHCREF: name = "pushcref"; break;
+    default: assert (false); break;
+    }
+
     assert (m_st.find (imop.arg1 ()) != 0);
-    block.push_back (VMInstruction () << "push" << m_st.find (imop.arg1 ()));
+    block.push_back (VMInstruction () << name << m_st.find (imop.arg1 ()));
 }
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
@@ -521,6 +529,8 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
             cgSyscall (block, imop);
             return;
         case Imop::PUSH:
+        case Imop::PUSHREF:
+        case Imop::PUSHCREF:
             cgPush (block, imop);
             return;
         case Imop::END:

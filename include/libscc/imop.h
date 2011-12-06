@@ -113,6 +113,8 @@ class Imop : public auto_unlink_hook {
             PRINT,      /* PRINT arg1; */
             SYSCALL,
             PUSH,
+            PUSHREF,
+            PUSHCREF,
             RETCLEAN,   /* RETCLEAN;             (Imop *arg2) */
 
             _NUM_INSTR  /* Number of instructions. Do not add anything after this. */

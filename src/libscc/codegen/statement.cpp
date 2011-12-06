@@ -763,6 +763,30 @@ CGStmtResult CodeGen::cgStmtPush (TreeNodeStmtPush* s) {
 }
 
 /*******************************************************************************
+  TreeNodeStmtPushRef
+*******************************************************************************/
+
+CGStmtResult TreeNodeStmtPushRef::codeGenWith (CodeGen& cg) {
+    return cg.cgStmtPushRef (this);
+}
+
+CGStmtResult CodeGen::cgStmtPushRef (TreeNodeStmtPushRef* s) {
+    TreeNodeIdentifier* id = s->identifier ();
+
+    CGStmtResult result;
+    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
+    if (sym == 0) {
+        result.setStatus (ICode::E_TYPE);
+        return result;
+    }
+
+    Imop::Type iType = s->isConstant () ? Imop::PUSHCREF : Imop::PUSHREF;
+    Imop* i = new Imop (s, iType, (Symbol*) 0, sym);
+    pushImopAfter (result, i);
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeStmtDoWhile
 *******************************************************************************/
 

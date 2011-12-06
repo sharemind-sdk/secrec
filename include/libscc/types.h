@@ -310,6 +310,7 @@ inline SecurityType* DataType::secrecSecType() const {
     case PROCEDUREVOID:
     default:
         assert (false && "Invalid security type!");
+        return 0;
     }
 }
 

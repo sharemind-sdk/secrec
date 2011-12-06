@@ -121,12 +121,14 @@ SymbolTable::SymbolTable ()
     : m_parent (0)
     , m_global (this)
     , m_other (new OtherSymbols ())
-{ }
+{
+    // Intentionally empty
+}
 
 SymbolTable::SymbolTable (SymbolTable *parent)
     : m_parent (parent)
-    , m_global (m_parent->m_global)
-    , m_other (m_parent->m_other)
+    , m_global (parent->m_global)
+    , m_other (parent->m_other)
 {
     // Intentionally empty
 }
@@ -180,7 +182,7 @@ Symbol *SymbolTable::find(const std::string &name) const {
 std::list<Symbol* > SymbolTable::findAll (const std::string& name) const {
     Symbol* s = find (name);
     std::list<Symbol* > out;
-    while (s) {
+    while (s != 0) {
         out.push_back (s);
         s = s->previos ();
     }

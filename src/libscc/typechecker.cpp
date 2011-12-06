@@ -81,8 +81,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     // Add implicit classify node if needed:
     src = classifyIfNeeded (src);
     if (destType->secrecSecType () != src->resultType ()->secrecSecType ()) {
-        std::cerr << destType->toString () << " V.S."
-                  << src->resultType ()->toString () << std::endl;
         return ICode::E_TYPE;
     }
 

@@ -125,7 +125,6 @@ bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b) {
     bool areLEQ = false;
     switch (getCastStyle (a, b)) {
     case CAST_EQUAL:
-    case CAST_IMPLICIT:
         areLEQ = true;
     default:
         break;
