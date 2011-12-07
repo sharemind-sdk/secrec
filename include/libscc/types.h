@@ -72,24 +72,30 @@ public: /* Methods: */
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
 
-    explicit PrivateSecType (const std::string& name, SymbolKind* kind)
+    explicit PrivateSecType (const std::string& name,
+                             SymbolKind* kind,
+                             unsigned index)
         : SecurityType (false)
         , m_name (name)
         , m_kind (kind)
+        , m_index (index)
     { }
 
     ~PrivateSecType () { }
 
     inline const std::string& name () const { return m_name; }
+    inline unsigned index () const { return m_index; }
     inline SymbolKind* securityKind () const { return m_kind; }
     std::string toString () const;
 
     static PrivateSecType* get (Context& cxt, const std::string& name, SymbolKind* kind);
+    static std::vector<PrivateSecType*> getAll (Context& cxt);
 
 private: /* Fields: */
 
     std::string   const m_name;
     SymbolKind*   const m_kind;
+    unsigned      const m_index;
 };
 
 inline bool latticeSecTypeLEQ (SecurityType* a, SecurityType* b) {

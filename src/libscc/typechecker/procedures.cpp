@@ -14,6 +14,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/foreach.hpp>
+#include <boost/range.hpp>
 
 #include "templates.h"
 
@@ -134,10 +135,8 @@ ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params,
                                                TreeNodeProcDef* proc) {
     typedef DataTypeVar DTV;
     params.clear ();
-    params.reserve (std::distance (proc->paramBegin (), proc->paramEnd ()));
-    BOOST_FOREACH (TreeNode* n, std::make_pair (proc->paramBegin (),
-                                                proc->paramEnd ()))
-    {
+    params.reserve (boost::distance (proc->paramRange ()));
+    BOOST_FOREACH (TreeNode* n, proc->paramRange ()) {
         assert(n->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl*>(n) != 0);
         TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(n);
@@ -231,7 +230,7 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
     }
 
     // Check that security types of parameters are either quantified or defined.
-    BOOST_FOREACH (TreeNode* _d, std::make_pair (body->paramBegin (), body->paramEnd ())) {
+    BOOST_FOREACH (TreeNode* _d, body->paramRange ()) {
         assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* t = d->varType ();
@@ -437,10 +436,7 @@ bool TypeChecker::unify (Instantiation& inst,
     DomainMap argDomains;
 
     unsigned i = 0;
-    BOOST_FOREACH (TreeNode* _d,
-                   std::make_pair (t->body ()->paramBegin (),
-                                   t->body ()->paramEnd ()))
-    {
+    BOOST_FOREACH (TreeNode* _d, t->body ()->paramRange ()) {
         assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* argNodeTy = d->varType ();

@@ -199,6 +199,7 @@ public:
     CGResult cgExprBinary (TreeNodeExprBinary* e);
     CGResult cgExprProcCall (TreeNodeExprProcCall* e);
     CGResult cgExprRVariable (TreeNodeExprRVariable* e);
+    CGResult cgExprDomainID (TreeNodeExprDomainID* e);
     CGResult cgExprString (TreeNodeExprString* e);
     CGResult cgExprTernary (TreeNodeExprTernary* e);
     CGResult cgExprInt (TreeNodeExprInt* e);

@@ -109,29 +109,14 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
     }
 
     TreeNodeSecTypeF* secTypeNode = root->castType ();
-    SecurityType* secType = 0;
-    if (secTypeNode->isPublic ()) {
-        secType = PublicSecType::get (getContext ());
-    }
-    else {
-        TreeNodeIdentifier* id = secTypeNode->identifier ();
-        Symbol* sym = findIdentifier (id);
-        if (sym == 0) { return ICode::E_TYPE; }
-        if (sym->symbolType () != Symbol::PDOMAIN) {
-            m_log.fatal () << "Cast expression expects security type identifier.";
-            m_log.fatal () << "Error at " << id->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        assert (dynamic_cast<SymbolDomain*>(sym) != 0);
-        secType = static_cast<SymbolDomain*>(sym)->securityType ();
-    }
-
+    ICode::Status status = visit (secTypeNode);
+    if (status != ICode::OK) return status;
     TreeNodeExpr* e = root->expression ();
-    e->setContextType (secType);
-    ICode::Status s = visitExpr (e);
-    if (s != ICode::OK) {
-        return s;
+    e->setContextType (secTypeNode->cachedType ());
+
+    status = visitExpr (e);
+    if (status != ICode::OK) {
+        return status;
     }
 
     if (checkAndLogIfVoid (e)) {
@@ -721,6 +706,48 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* e) {
     return ICode::OK;
 }
 
+
+ICode::Status TreeNodeExprDomainID::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprDomainID* e) {
+    if (e->haveResultType ())
+        return ICode::OK;
+
+    if (e->securityType ()->isPublic ()) {
+        m_log.fatal () << "Public security type does not have a domain ID.";
+        m_log.fatal () << "Error at " << e->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    ICode::Status status = visit (e->securityType ());
+    if (status != ICode::OK) return status;
+    e->setResultType (TypeNonVoid::get (getContext (), DATATYPE_UINT64));
+    return ICode::OK;
+}
+
+ICode::Status TypeChecker::visit (TreeNodeSecTypeF* ty) {
+    if (ty->cachedType () != 0)
+        return ICode::OK;
+
+    TreeNodeIdentifier* id = ty->identifier ();
+    Symbol* s = findIdentifier (id);
+    if (s == 0) {
+        return ICode::E_TYPE;
+    }
+
+    if (s->symbolType () != Symbol::PDOMAIN) {
+        m_log.fatal () << "Expecting privacy domain at " << ty->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    assert (dynamic_cast<SymbolDomain*>(s) != 0);
+    ty->setCachedType (static_cast<SymbolDomain*>(s)->securityType ());
+    return ICode::OK;
+}
+
+
 ICode::Status TreeNodeExprPrefix::accept (TypeChecker& tyChecker) {
     return tyChecker.visit (this);
 }
@@ -879,26 +906,16 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
 
     if (_ty->type () == NODE_TYPETYPE) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
-        TreeNodeTypeType* ty = static_cast<TreeNodeTypeType*>(_ty);
-        TreeNodeSecTypeF *secty = ty->secType ();
-        SecurityType* secType = PublicSecType::get (getContext ());
-        if (! secty->isPublic ()) {
-            TreeNodeIdentifier* id = secty->identifier ();
-            Symbol* sym = findIdentifier (id);
-            if (sym == 0) {
-                return ICode::E_TYPE;
-            }
-
-            if (sym->symbolType () != Symbol::PDOMAIN) {
-                m_log.error () << "Mismatching symbol at " << secty->location () << ", expecting domain name.";
-                return ICode::E_TYPE;
-            }
-
-            secType = static_cast<SymbolDomain*>(sym)->securityType ();
+        TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
+        TreeNodeSecTypeF* secTyNode = tyNode->secType ();
+        ICode::Status status = visit (secTyNode);
+        if (status != ICode::OK) {
+            return status;
         }
 
-        ty->m_cachedType = TypeNonVoid::get (m_context,
-            secType, ty->dataType ()->dataType (), ty->dimType ()->dimType());
+        SecurityType* secType = secTyNode->cachedType ();
+        tyNode->m_cachedType = TypeNonVoid::get (m_context,
+            secType, tyNode->dataType ()->dataType (), tyNode->dimType ()->dimType());
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);

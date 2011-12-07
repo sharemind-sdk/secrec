@@ -92,6 +92,7 @@ enum SecrecTreeNodeType {
     NODE_STMT_PUSH      = 0x18000,
     NODE_STMT_PUSHREF   = 0x19000,
     NODE_STMT_PUSHCREF  = 0x1a000,
+    NODE_EXPR_DOMAINID  = 0x1b000,
 
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,

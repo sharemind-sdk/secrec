@@ -3,6 +3,7 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <boost/foreach.hpp>
 
 #include "symbol.h"
 #include "context.h"
@@ -253,7 +254,18 @@ PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name,
                                      SymbolKind* kind)
 {
     ContextImpl& impl = *cxt.pImpl ();
-    return impl.privateType (name, kind);
+    return impl.privateType (name, kind, impl.m_pdCount ++);
+}
+
+std::vector<PrivateSecType*> PrivateSecType::getAll (Context& cxt) {
+    ContextImpl& impl = *cxt.pImpl ();
+    std::vector<PrivateSecType*> out;
+    typedef std::pair<std::string, PrivateSecType*> value_t;
+    BOOST_FOREACH (const value_t& v, impl.m_privSecTypes) {
+        out.push_back (v.second);
+    }
+
+    return out;
 }
 
 PublicSecType* PublicSecType::get (Context& cxt) {
@@ -312,7 +324,7 @@ DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
     return impl.procedureType (params->paramTypes (), returnType);
 }
 
-TypeVoid* TypeVoid::get (Context &cxt) {
+TypeVoid* TypeVoid::get (Context& cxt) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidType ();
 }

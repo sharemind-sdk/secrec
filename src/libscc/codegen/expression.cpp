@@ -949,6 +949,31 @@ CGBranchResult CodeGen::cgBoolExprRVariable (TreeNodeExprRVariable *e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprDomainID
+*******************************************************************************/
+
+CGResult TreeNodeExprDomainID::codeGenWith (CodeGen& cg) {
+    return cg.cgExprDomainID (this);
+}
+
+CGResult CodeGen::cgExprDomainID (TreeNodeExprDomainID* e) {
+    CGResult result;
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    SecurityType* secTy = e->securityType ()->cachedType ();
+    assert (dynamic_cast<PrivateSecType*>(secTy) != 0);
+    result.setResult (ConstantUInt64::get (
+        getContext (),
+        static_cast<PrivateSecType*>(secTy)->index ()));
+    return result;
+}
+
+
+/*******************************************************************************
   TreeNodeExprString
 *******************************************************************************/
 

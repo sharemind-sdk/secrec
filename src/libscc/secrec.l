@@ -97,6 +97,7 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "__push"     { stepLen(yyget_lloc(yyscanner), 6); return PUSH; }
 "__pushref"  { stepLen(yyget_lloc(yyscanner), 9); return PUSHREF; }
 "__pushcref" { stepLen(yyget_lloc(yyscanner), 10); return PUSHCREF; }
+"__domainid" { stepLen(yyget_lloc(yyscanner), 10); return DOMAINID; }
 
 
 

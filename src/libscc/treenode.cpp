@@ -129,6 +129,11 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_DOMAIN: return "DOMAIN";
         case NODE_TEMPLATE_DECL: return "TEMPLATE_DECL";
         case NODE_TEMPLATE_QUANT: return "TEMPLATE_QUANT";
+        case NODE_STMT_SYSCALL: return "STMT_SYSCALL";
+        case NODE_STMT_PUSH: return "STMT_PUSH";
+        case NODE_STMT_PUSHREF: return "STMT_PUSHREF";
+        case NODE_STMT_PUSHCREF: return "STMT_PUSHCREF";
+        case NODE_EXPR_DOMAINID: return "EXPR_DOMAINID";
         default: return "UNKNOWN";
     }
 }
@@ -272,6 +277,8 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtPushRef(*loc, false));
         case NODE_STMT_PUSHCREF:
             return (TreeNode*) (new SecreC::TreeNodeStmtPushRef(*loc, true));
+        case NODE_EXPR_DOMAINID:
+            return (TreeNode*) (new SecreC::TreeNodeExprDomainID(*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:

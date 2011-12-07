@@ -85,7 +85,7 @@
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
-%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF
+%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -946,6 +946,11 @@ postfix_expression
      treenode_appendChild($$, $3);
    }
  | cat_expression
+ | DOMAINID '(' sectype_specifier ')'
+   {
+     $$ = treenode_init (NODE_EXPR_DOMAINID, &@$);
+     treenode_appendChild($$, $3);
+   }
  | RESHAPE '(' argument_list ')'
    {
      unsigned i;

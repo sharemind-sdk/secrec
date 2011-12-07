@@ -63,6 +63,9 @@ class TreeNode {
         typedef std::deque<TreeNode*> ChildrenList;
         typedef ChildrenList::iterator ChildrenListIterator;
         typedef ChildrenList::const_iterator ChildrenListConstIterator;
+        typedef std::pair<ChildrenListIterator, ChildrenListIterator> ChildrenListRange;
+        typedef std::pair<ChildrenListConstIterator, ChildrenListConstIterator> ChildrenListConstRange;
+
 
     public: /* Methods: */
         TreeNode(SecrecTreeNodeType type, const YYLTYPE &loc);
@@ -184,11 +187,20 @@ class TreeNodeSecTypeF: public TreeNode {
         inline TreeNodeSecTypeF(bool isPublic, const YYLTYPE &loc)
             : TreeNode (NODE_SECTYPE_F, loc)
             , m_isPublic (isPublic)
+            , m_cachedType (0)
         { }
 
         inline bool isPublic () const { return m_isPublic; }
         virtual std::string stringHelper() const;
         virtual std::string xmlHelper() const;
+
+        SecurityType* cachedType () const { return m_cachedType; }
+
+        void setCachedType (SecurityType* ty) {
+            assert (m_cachedType == 0);
+            assert (ty != 0);
+            m_cachedType = ty;
+        }
 
         TreeNodeIdentifier* identifier () const {
             assert (children ().size () == 1);
@@ -203,7 +215,8 @@ class TreeNodeSecTypeF: public TreeNode {
         }
 
     private: /* Fields: */
-        const bool m_isPublic;
+        const bool     m_isPublic;
+        SecurityType*  m_cachedType;
 };
 
 /******************************************************************
@@ -1128,6 +1141,32 @@ class TreeNodeExprUnary: public TreeNodeExpr {
 };
 
 /******************************************************************
+  TreeNodeExprDomainID
+******************************************************************/
+
+/// Unary expressions such as regular (logical) negation.
+class TreeNodeExprDomainID: public TreeNodeExpr {
+    public: /* Methods: */
+        inline TreeNodeExprDomainID(const YYLTYPE &loc)
+            : TreeNodeExpr(NODE_EXPR_DOMAINID, loc) {}
+
+        virtual ICode::Status accept (TypeChecker& tyChecker);
+        virtual CGResult codeGenWith (CodeGen& cg);
+
+        TreeNodeSecTypeF* securityType () const {
+            assert (children ().size () == 1);
+            assert (dynamic_cast<TreeNodeSecTypeF*>(children ().at (0)) != 0);
+            return static_cast<TreeNodeSecTypeF*>(children ().at (0));
+        }
+
+    protected:
+
+        virtual TreeNode* cloneV () const {
+            return new TreeNodeExprDomainID (m_location);
+        }
+};
+
+/******************************************************************
   TreeNodeStmtKind
 ******************************************************************/
 
@@ -1221,6 +1260,10 @@ public: /* Methods: */
         assert (children ().size () > 2);
         assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
         return static_cast<TreeNodeStmt*>(children().at(2));
+    }
+
+    ChildrenListConstRange paramRange () const {
+        return std::make_pair (paramBegin (), paramEnd ());
     }
 
     ChildrenListConstIterator paramBegin () const {

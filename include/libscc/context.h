@@ -29,7 +29,7 @@ public: /* Fields: */
     Context ();
     ~Context ();
 
-    inline ContextImpl* pImpl () {
+    inline ContextImpl* pImpl () const {
         return m_pImpl;
     }
 

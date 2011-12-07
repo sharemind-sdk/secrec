@@ -57,13 +57,16 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeExprTernary* e);
     ICode::Status visit (TreeNodeExprAssign* e);
     ICode::Status visit (TreeNodeExprInt* e);
+    ICode::Status visit (TreeNodeExprDomainID* e);
 
-    ICode::Status visit (TreeNodeProcDef* proc);
-    ICode::Status visit (TreeNodeStmtDecl* decl);
+    ICode::Status visit (TreeNodeSecTypeF* ty);
     ICode::Status visit (TreeNodeType* _ty);
+
+    ICode::Status visit (TreeNodeStmtDecl* decl);
     ICode::Status visit (TreeNodeStmtPrint* stmt);
     ICode::Status visit (TreeNodeStmtReturn* stmt);
 
+    ICode::Status visit (TreeNodeProcDef* proc);
     ICode::Status visit (TreeNodeTemplate* templ);
 
     /// \see TemplateInstantiator
