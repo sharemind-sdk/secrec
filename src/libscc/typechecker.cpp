@@ -731,6 +731,11 @@ ICode::Status TypeChecker::visit (TreeNodeSecTypeF* ty) {
     if (ty->cachedType () != 0)
         return ICode::OK;
 
+    if (ty->isPublic ()) {
+        ty->setCachedType (PublicSecType::get (getContext ()));
+        return ICode::OK;
+    }
+
     TreeNodeIdentifier* id = ty->identifier ();
     Symbol* s = findIdentifier (id);
     if (s == 0) {
