@@ -214,6 +214,7 @@ SET_TESTS_PROPERTIES("scalars/43-domain-fail"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
 add_test_secrec_execute("scalars/44-classify")
 add_test_secrec_execute("scalars/45-return-type-overloading")
+add_test_secrec_execute("scalars/46-domain-id")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
