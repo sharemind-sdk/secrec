@@ -374,6 +374,13 @@ MKCALLBACK(RETVOID, 0, 0, 0, 0,
   CUR;
 )
 
+MKCALLBACK(DOMAINID, 1, 0, 0, 0,
+  const SymbolDomain* dom = static_cast<const SymbolDomain*>(ip->args[1].un_sym);
+  uintptr_t c = reinterpret_cast<uintptr_t>(dom->securityType ());
+  /// hopefully correct function will be selected
+  assignValue (dest, c);
+)
+
 MKCALLBACK(PUSH, 0, 1, 0, 0,
   m_stack.push(arg1);
 )
@@ -543,6 +550,7 @@ CallbackTy getCallback (const Imop& imop) {
       case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
       case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
       case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
+      case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
       default:
         assert (false && "Reached unfamiliar instruction.");
         break;
@@ -691,9 +699,13 @@ private:
         }
 
         /// workaround as scc doesn't support strings yet
-        if (imop.type () == Imop::ERROR ||
-            imop.type () == Imop::PRINT) {
+        switch (imop.type ()) {
+        case Imop::ERROR:
+        case Imop::PRINT:
+        case Imop::DOMAINID:
             i.args[nArgs ++] = toVMSym (imop.arg1 ());
+        default:
+            break;
         }
 
         i.callback = getCallback (imop);
