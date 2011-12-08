@@ -964,11 +964,19 @@ CGResult CodeGen::cgExprDomainID (TreeNodeExprDomainID* e) {
         return result;
     }
 
-    SecurityType* secTy = e->securityType ()->cachedType ();
-    assert (dynamic_cast<PrivateSecType*>(secTy) != 0);
-    result.setResult (ConstantUInt64::get (
-        getContext (),
-        static_cast<PrivateSecType*>(secTy)->index ()));
+    assert (dynamic_cast<TypeNonVoid*>(e->resultType ()) != 0);
+    TypeNonVoid* resultType = static_cast<TypeNonVoid*>(e->resultType ());
+    SymbolSymbol* t = st->appendTemporary (resultType);
+    Symbol* s = st->find (e->securityType ()->identifier ()->value ());
+    if (s == 0 || s->symbolType () != Symbol::PDOMAIN) {
+        assert (false && "ICE: Type checker must guarantee that!");
+        result.setStatus (ICode::E_TYPE);
+        return result;
+    }
+
+    Imop* i = new Imop (e, Imop::DOMAINID, t, static_cast<SymbolDomain*>(s));
+    result.setResult (t);
+    pushImopAfter (result, i);
     return result;
 }
 

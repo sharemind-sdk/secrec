@@ -49,6 +49,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::ALLOC,      1, 0, 0, 1,-1, 1 }
     // Other expressions:
     , { Imop::PARAM,      1, 0, 0, 1,-1, 1 }
+    , { Imop::DOMAINID,   1, 0, 0, 1,-1,-1 }
     , { Imop::CALL,       1, 0, 1, 1,-1, 1 }
     // Jumps:
     , { Imop::JUMP,       0, 1, 1, 0,-1, 1 }
@@ -396,6 +397,9 @@ std::string Imop::toString() const {
             break;
         case PARAM:
             os << ".PARAM " << dname;
+            break;
+        case DOMAINID:
+            os << dname << " = DOMAINID " << a1name;
             break;
         case JUMP:         /* GOTO d;                            */
             os << "GOTO " << tname;

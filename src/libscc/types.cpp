@@ -254,18 +254,7 @@ PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name,
                                      SymbolKind* kind)
 {
     ContextImpl& impl = *cxt.pImpl ();
-    return impl.privateType (name, kind, impl.m_pdCount ++);
-}
-
-std::vector<PrivateSecType*> PrivateSecType::getAll (Context& cxt) {
-    ContextImpl& impl = *cxt.pImpl ();
-    std::vector<PrivateSecType*> out;
-    typedef std::pair<std::string, PrivateSecType*> value_t;
-    BOOST_FOREACH (const value_t& v, impl.m_privSecTypes) {
-        out.push_back (v.second);
-    }
-
-    return out;
+    return impl.privateType (name, kind);
 }
 
 PublicSecType* PublicSecType::get (Context& cxt) {

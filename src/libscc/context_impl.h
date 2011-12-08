@@ -31,7 +31,6 @@ public: /* Methods: */
     ContextImpl ()
         : m_trueConstant (0)
         , m_falseConstant (0)
-        , m_pdCount (0)
     { }
 
     ~ContextImpl ();
@@ -39,8 +38,7 @@ public: /* Methods: */
     /* Security types: */
     PublicSecType* publicType ();
     PrivateSecType* privateType (const std::string& domain,
-                                 SymbolKind* kind,
-                                 unsigned index);
+                                 SymbolKind* kind);
 
     /* Data types: */
     DataTypeVar* varType (DataType* dtype);
@@ -74,8 +72,6 @@ public: /* Fields: */
     ConstantBool* m_falseConstant;
     std::map<std::string, ConstantString* > m_stringLiterals;
     std::map<std::pair<SecrecDataType, uint64_t>, Symbol*>  m_numericConstants;
-
-    unsigned m_pdCount;
 };
 
 } // namespace SecreC

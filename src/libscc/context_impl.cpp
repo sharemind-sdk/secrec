@@ -48,14 +48,13 @@ PublicSecType* ContextImpl::publicType () {
 }
 
 PrivateSecType* ContextImpl::privateType (const std::string& name,
-                                          SymbolKind* kind,
-                                          unsigned index)
+                                          SymbolKind* kind)
 {
     std::map<std::string, PrivateSecType*>::iterator
         i = m_privSecTypes.find (name);
     if (i == m_privSecTypes.end ()) {
         i = m_privSecTypes.insert (i,
-            std::make_pair (name, new PrivateSecType (name, kind, index)));
+            std::make_pair (name, new PrivateSecType (name, kind)));
     }
 
     return i->second;

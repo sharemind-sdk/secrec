@@ -77,7 +77,12 @@ class Imop : public auto_unlink_hook {
             STORE,     /*    d[arg1] = arg2;                    */
             LOAD,      /*    d = arg1[arg2];                    */
             ALLOC,     /*    d = ALLOC (arg1, arg2)             */
+
+            //-------------------
+            // Other expressions:
+            //-------------------
             PARAM,     /*    d = PARAM                          */
+            DOMAINID,  /*    d = DOMAINID((SymbolDomain*)arg1)  */
             CALL,      /*  arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)  */
 
             //-------
