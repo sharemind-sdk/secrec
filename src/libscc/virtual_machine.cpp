@@ -19,15 +19,15 @@
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
 #define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
 
+/**
+ * \todo Simple GC to clear allocated strings and vectors.
+ */
+
 namespace { // anonymous namespace
 
 using namespace SecreC;
 
-/**
- * Data structures:
- */
-
-// primitive values
+/// Primitive values of the VM.
 union Value {
     uint64_t            un_uint_val;
     uint32_t            un_uint32_val;
@@ -42,7 +42,22 @@ union Value {
     bool                un_bool_val;
 };
 
-inline void assignValue (Value& v, const std::string& r) { v.un_str_val = &r; }
+/// Get value based on the data type.
+template <SecrecDataType ty> typename SecrecTypeInfo<ty>::CType getValue (const Value&);
+template <> bool getValue<DATATYPE_BOOL> (const Value& v) { return v.un_bool_val; }
+template <> uint64_t getValue<DATATYPE_UINT64> (const Value& v) { return v.un_uint_val; }
+template <> int64_t getValue<DATATYPE_INT64> (const Value& v) { return v.un_int_val; }
+template <> uint64_t getValue<DATATYPE_UINT> (const Value& v) { return v.un_uint_val; }
+template <> int64_t getValue<DATATYPE_INT> (const Value& v) { return v.un_int_val; }
+template <> uint32_t getValue<DATATYPE_UINT32> (const Value& v) { return v.un_uint32_val; }
+template <> int32_t getValue<DATATYPE_INT32> (const Value& v) { return v.un_int32_val; }
+template <> uint16_t getValue<DATATYPE_UINT16> (const Value& v) { return v.un_uint16_val; }
+template <> int16_t getValue<DATATYPE_INT16> (const Value& v) { return v.un_int16_val; }
+template <> uint8_t getValue<DATATYPE_UINT8> (const Value& v) { return v.un_uint8_val; }
+template <> int8_t getValue<DATATYPE_INT8> (const Value& v) { return v.un_int8_val; }
+template <> std::string getValue<DATATYPE_STRING> (const Value& v) { return *v.un_str_val; }
+
+/// Set value based on C data type.
 inline void assignValue (Value& v, bool r) { v.un_bool_val = r; }
 inline void assignValue (Value& v, int8_t r) { v.un_int8_val = r; }
 inline void assignValue (Value& v, uint8_t r) { v.un_uint8_val = r; }
@@ -52,12 +67,11 @@ inline void assignValue (Value& v, int32_t r) { v.un_int32_val = r; }
 inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
 inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
 inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
-
-void reserve (Value& arr, unsigned n) {
-    arr.un_ptr = (Value*) malloc (sizeof (Value) * n);
+inline void assignValue (Value& v, const std::string& r) {
+    v.un_str_val = new std::string (r);
 }
 
-// stack for values
+/// Stack for values
 class ValueStack {
     ValueStack (const ValueStack&); // not copyable
     ValueStack& operator = (const ValueStack&); // not assignable
@@ -109,6 +123,10 @@ private:
 
 struct Instruction;
 
+/**
+ * Virtual machine symbol. May be either IR symbol, or pointer to some other
+ * instruction.  Additinally has a tag for if it's local or global symbol.
+ */
 struct VMSym {
     bool isLocal : 1;
     union {
@@ -127,9 +145,13 @@ struct VMSym {
         , un_sym (sym) { }
 };
 
+/// Very naive implementation of a memory store.
 typedef std::map<const Symbol*, Value> Store;
+
+/// Type of instantiated callback.
 typedef void (*CallbackTy)(const Instruction*);
 
+/// Instructions are composed of callback, and 4 arguments.
 struct Instruction {
     CallbackTy callback;
     VMSym args[4];
@@ -145,6 +167,7 @@ struct Instruction {
     ~Instruction () { }
 };
 
+/// Each frame has local store, old instruction pointer, and pointer to previous frame.
 struct Frame {
     Store                     m_local;
     const Instruction* const  m_old_ip;
@@ -161,7 +184,6 @@ private:
     Frame& operator = (const Frame&);
 };
 
-
 /**
  * State of the interpreter.
  * We have:
@@ -169,7 +191,6 @@ private:
  * - frame stack
  * - one register for temporary values, for example constants are stored in it
  * - store for global variables
- * - pointer to code
  */
 
 ValueStack m_stack;
@@ -180,15 +201,13 @@ void free_store (Store& store) {
     store.clear();
 }
 
-inline void push_frame (const Instruction* old_ip)
-{
+inline void push_frame (const Instruction* old_ip) {
     Frame* new_frame = new (std::nothrow) Frame (old_ip);
     new_frame->m_prev_frame = m_frames;
     m_frames = new_frame;
 }
 
-inline void pop_frame (void)
-{
+inline void pop_frame (void) {
     assert (m_frames != 0 && "No frames to pop!");
     Frame* temp = m_frames;
     m_frames = temp->m_prev_frame;
@@ -196,6 +215,7 @@ inline void pop_frame (void)
     delete temp;
 }
 
+// Force to not inline to make output assembler nicer.
 Value& lookup (VMSym sym) __attribute__ ((noinline));
 Value& lookup (VMSym sym)  {
     TRACE ("%s ", (sym.isLocal ? "LOCAL" : "GLOBAL"));
@@ -203,40 +223,11 @@ Value& lookup (VMSym sym)  {
     return store[sym.un_sym];
 }
 
-#define MKSTORESYM(sym, ARGTY, CODE) \
-    void storeSym (VMSym sym, ARGTY val) __attribute__ ((noinline)); \
-    void storeSym (VMSym sym, ARGTY val) { \
-        Store& store = sym.isLocal ? m_frames->m_local : m_global; \
-        CODE; \
-    }
-
-MKSTORESYM(sym, Value, store[sym.un_sym] = val)
-
-template <SecrecDataType ty>
-void storeConstantHelper (Value& out, const Symbol* c) {
-    assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
-}
-
-void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>::CType& value) {
-    SecrecDataType dtype = c->secrecType ()->secrecDataType ();
+// Force to not inline to make output assembler nicer.
+void storeSym (VMSym sym, Value val) __attribute__ ((noinline));
+void storeSym (VMSym sym, Value val) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
-    Value& out = store[sym.un_sym];
-    switch (dtype) {
-    case DATATYPE_BOOL: storeConstantHelper<DATATYPE_BOOL>(out, c); break;
-    case DATATYPE_STRING: storeConstantHelper<DATATYPE_STRING>(out, c); break;
-    case DATATYPE_INT: storeConstantHelper<DATATYPE_INT>(out, c); break;
-    case DATATYPE_UINT: storeConstantHelper<DATATYPE_UINT>(out, c); break;
-    case DATATYPE_INT8: storeConstantHelper<DATATYPE_INT8>(out, c); break;
-    case DATATYPE_UINT8: storeConstantHelper<DATATYPE_UINT8>(out, c); break;
-    case DATATYPE_INT16: storeConstantHelper<DATATYPE_INT16>(out, c); break;
-    case DATATYPE_UINT16: storeConstantHelper<DATATYPE_UINT16>(out, c); break;
-    case DATATYPE_INT32: storeConstantHelper<DATATYPE_INT32>(out, c); break;
-    case DATATYPE_UINT32: storeConstantHelper<DATATYPE_UINT32>(out, c); break;
-    case DATATYPE_INT64: storeConstantHelper<DATATYPE_INT64>(out, c); break;
-    case DATATYPE_UINT64: storeConstantHelper<DATATYPE_UINT64>(out, c); break;
-    default:
-        assert (false && "VM: reached invalid data type.");
-    }
+    store[sym.un_sym] = val;
 }
 
 
@@ -256,7 +247,8 @@ void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>
 #define CUR do { ip->callback (ip); return; } while (0)
 
 #define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, CODE) \
-    inline void NAME##_callback (const Instruction* ip) \
+    template <SecrecDataType ty>\
+    inline void __##NAME##_callback (const Instruction* ip) \
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
@@ -320,47 +312,35 @@ void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>
 DECLOP1 (ASSIGN, dest = arg1)
 DECLOP1 (CLASSIFY, dest = arg1)
 DECLOP1 (DECLASSIFY, dest = arg1)
-DECLOP1 (UNEG, dest.un_bool_val = !arg1.un_bool_val)
-DECLOP1 (UMINUS, dest.un_int_val  = -arg1.un_int_val)
-DECLOP2 (ADD, dest.un_int_val  = arg1.un_int_val + arg2.un_int_val)
-DECLOP2 (ADDSTR, dest.un_str_val = new (std::nothrow) std::string (*arg1.un_str_val + *arg2.un_str_val)) ///< \todo memory leak
-DECLOP2 (SUB, dest.un_int_val  = arg1.un_int_val - arg2.un_int_val)
-DECLOP2 (MUL, dest.un_int_val  = arg1.un_int_val * arg2.un_int_val)
-DECLOP2 (DIV, dest.un_int_val  = arg1.un_int_val / arg2.un_int_val)
-DECLOP2 (MOD, dest.un_int_val  = arg1.un_int_val % arg2.un_int_val)
-DECLOP2 (LE, dest.un_bool_val = arg1.un_int_val <= arg2.un_int_val)
-DECLOP2 (LT, dest.un_bool_val = arg1.un_int_val < arg2.un_int_val)
-DECLOP2 (GE, dest.un_bool_val = arg1.un_int_val >= arg2.un_int_val)
-DECLOP2 (GT, dest.un_bool_val = arg1.un_int_val > arg2.un_int_val)
-DECLOP2 (LAND, dest.un_bool_val = arg1.un_bool_val && arg2.un_bool_val)
-DECLOP2 (LOR, dest.un_bool_val = arg1.un_bool_val || arg2.un_bool_val)
-DECLOP2 (EQINT, dest.un_bool_val = arg1.un_int_val == arg2.un_int_val)
-DECLOP2 (EQUINT, dest.un_bool_val = arg1.un_uint_val == arg2.un_uint_val)
-DECLOP2 (EQBOOL, dest.un_bool_val = arg1.un_bool_val == arg2.un_bool_val)
-DECLOP2 (EQSTRING, dest.un_bool_val = *(arg1.un_str_val) == *(arg2.un_str_val))
-DECLOP2 (NEQINT, dest.un_bool_val = arg1.un_int_val != arg2.un_int_val)
-DECLOP2 (NEQUINT, dest.un_bool_val = arg1.un_uint_val != arg2.un_uint_val)
-DECLOP2 (NEQBOOL, dest.un_bool_val = arg1.un_bool_val != arg2.un_bool_val)
-DECLOP2 (NEQSTRING, dest.un_bool_val = *(arg1.un_str_val) != *(arg2.un_str_val))
+DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
+DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
+DECLOP2 (LOR, assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
+DECLOP1 (UMINUS, assignValue (dest, -getValue<ty>(arg1)))
+DECLOP2 (EQ,  assignValue (dest, getValue<ty>(arg1) == getValue<ty>(arg2)))
+DECLOP2 (NE,  assignValue (dest, getValue<ty>(arg1) != getValue<ty>(arg2)))
+DECLOP2 (ADD, assignValue (dest, getValue<ty>(arg1) +  getValue<ty>(arg2)))
+DECLOP2 (SUB, assignValue (dest, getValue<ty>(arg1) -  getValue<ty>(arg2)))
+DECLOP2 (MUL, assignValue (dest, getValue<ty>(arg1) *  getValue<ty>(arg2)))
+DECLOP2 (DIV, assignValue (dest, getValue<ty>(arg1) /  getValue<ty>(arg2)))
+DECLOP2 (MOD, assignValue (dest, getValue<ty>(arg1) %  getValue<ty>(arg2)))
+DECLOP2 (LE,  assignValue (dest, getValue<ty>(arg1) <= getValue<ty>(arg2)))
+DECLOP2 (LT,  assignValue (dest, getValue<ty>(arg1) <  getValue<ty>(arg2)))
+DECLOP2 (GE,  assignValue (dest, getValue<ty>(arg1) >= getValue<ty>(arg2)))
+DECLOP2 (GT,  assignValue (dest, getValue<ty>(arg1) >  getValue<ty>(arg2)))
+
 
 /**
  * Various jumps:
  */
 
-MKCALLBACK(JT, 0, 1, 0, 0, JUMPCOND (arg1.un_bool_val))
-MKCALLBACK(JF, 0, 1, 0, 0, JUMPCOND (!arg1.un_bool_val))
-MKCALLBACK(JEBOOL, 0, 1, 1, 0, JUMPCOND (arg1.un_bool_val == arg2.un_bool_val))
-MKCALLBACK(JEINT, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val == arg2.un_int_val))
-MKCALLBACK(JEUINT, 0, 1, 1, 0, JUMPCOND (arg1.un_uint_val == arg2.un_uint_val))
-MKCALLBACK(JESTR, 0, 1, 1, 0, JUMPCOND (*arg1.un_str_val == *arg2.un_str_val))
-MKCALLBACK(JNEBOOL, 0, 1, 1, 0, JUMPCOND (arg1.un_bool_val != arg2.un_bool_val))
-MKCALLBACK(JNEINT, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val != arg2.un_int_val))
-MKCALLBACK(JNEUINT, 0, 1, 1, 0, JUMPCOND (arg1.un_uint_val != arg2.un_uint_val))
-MKCALLBACK(JNESTR, 0, 1, 1, 0, JUMPCOND (*arg1.un_str_val != *arg2.un_str_val))
-MKCALLBACK(JLE, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val <= arg2.un_int_val))
-MKCALLBACK(JLT, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val < arg2.un_int_val))
-MKCALLBACK(JGE, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val >= arg2.un_int_val))
-MKCALLBACK(JGT, 0, 1, 1, 0, JUMPCOND (arg1.un_int_val > arg2.un_int_val))
+MKCALLBACK(JT,  0, 1, 0, 0, JUMPCOND (arg1.un_bool_val))
+MKCALLBACK(JF,  0, 1, 0, 0, JUMPCOND (!arg1.un_bool_val))
+MKCALLBACK(JE,  0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) == getValue<ty>(arg2)))
+MKCALLBACK(JNE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) != getValue<ty>(arg2)))
+MKCALLBACK(JLE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) <= getValue<ty>(arg2)))
+MKCALLBACK(JLT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) <  getValue<ty>(arg2)))
+MKCALLBACK(JGE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >= getValue<ty>(arg2)))
+MKCALLBACK(JGT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >  getValue<ty>(arg2)))
 
 /**
  * Miscellaneous or more complicated instructions:
@@ -381,7 +361,7 @@ MKCALLBACK(CALL, 0, 0, 0, 0,
     CUR;
 )
 
-MKCALLBACK(RETCLEAN, 0, 0, 0, 0, {} )
+MKCALLBACK(RETCLEAN, 0, 0, 0, 0, BLOCK())
 
 MKCALLBACK(RETVOID, 0, 0, 0, 0,
   assert (m_frames != 0);
@@ -413,7 +393,7 @@ MKCALLBACK(JUMP, 0, 0, 0, 0,
 MKCALLBACK(ALLOC, 1, 1, 1, 0,
     Value const& v = arg1;
     unsigned const n = arg2.un_uint_val;
-    reserve (dest, n);
+    dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
     for (Value* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
       *it = v;
 )
@@ -426,17 +406,187 @@ MKCALLBACK(STORE, 1, 1, 1, 0,
     dest.un_ptr[arg1.un_uint_val] = arg2;
 )
 
-MKCALLBACK(NOP, 0, 0, 0, 0, { })
+MKCALLBACK(NOP, 0, 0, 0, 0, BLOCK())
 
-MKCALLBACK(END, 0, 0, 0, 0, { exit (EXIT_SUCCESS); } )
-
-// vectorized callback if condition holds
-#define CONDVCALLBACK(NAME, cond) ((cond) ? NAME##_vec_callback : NAME##_callback)
+MKCALLBACK(END, 0, 0, 0, 0, exit (EXIT_SUCCESS); )
 
 /**
- * Compiler:
+ * Following macros deal with selecting proper specialization for
+ * instruction callbacks. Care must be taken to not instantiate callbacks
+ * on type arguments that would raise compil-time errors. For example we must
+ * not instantiate DIV callback on strings.
+ * Many of the macros assume that variables "callback", "ty", and "isVec" are set.
+ * All callbacks are SecrecDataType generic, even those that strictly do not need
+ * to be (those are simply instantiated with DATATYPE_INVALID).
  */
 
+#define GET_CALLBACK(NAME,TYPE) (__ ## NAME ## _callback<TYPE>)
+#define SET_CALLBACK(NAME,TYPE) do {\
+        callback = GET_CALLBACK(NAME,TYPE);\
+    } while (0)
+#define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,DATATYPE_INVALID)
+#define SWITCH_ONE(NAME,TYPE) case TYPE: SET_CALLBACK(NAME,TYPE); break;
+#define SWITCH_SIGNED(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_INT)\
+    SWITCH_ONE (NAME, DATATYPE_INT8)\
+    SWITCH_ONE (NAME, DATATYPE_INT16)\
+    SWITCH_ONE (NAME, DATATYPE_INT32)\
+    SWITCH_ONE (NAME, DATATYPE_INT64)
+#define SWITCH_UNSIGNED(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_UINT)\
+    SWITCH_ONE (NAME, DATATYPE_UINT8)\
+    SWITCH_ONE (NAME, DATATYPE_UINT16)\
+    SWITCH_ONE (NAME, DATATYPE_UINT32)\
+    SWITCH_ONE (NAME, DATATYPE_UINT64)
+#define SWITCH_ARITH(NAME)\
+    SWITCH_SIGNED(NAME)\
+    SWITCH_UNSIGNED(NAME)
+#define SWITCH_ANY(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_BOOL)\
+    SWITCH_ONE (NAME, DATATYPE_STRING)\
+    SWITCH_ARITH(NAME)
+#define SET_SPECIALIZE_CALLBACK(NAME, SWITCHER) do {\
+    assert (ty != DATATYPE_INVALID);\
+    switch (ty) {\
+    SWITCHER(NAME)\
+    default:\
+        assert (false && #NAME " is not declared on given type!");\
+        callback = 0; /* fallback failure if DEBUG is not set */ \
+    } } while (0)
+#define SET_SPECIALIZE_CALLBACK_V(NAME, SWITCHER) do {\
+    if (isVec) {\
+        SET_SPECIALIZE_CALLBACK(NAME ## _vec, SWITCHER);\
+    } else {\
+        SET_SPECIALIZE_CALLBACK(NAME, SWITCHER);\
+    }} while (0)
+#define SIMPLE_CALLBACK(NAME) GET_CALLBACK(NAME,DATATYPE_INVALID)
+#define SIMPLE_CALLBACK_V(NAME) (isVec ? SIMPLE_CALLBACK(NAME ## _vec) : SIMPLE_CALLBACK(NAME))
+#define SET_SIMPLE_CALLBACK_V(NAME) do {\
+    if (isVec) {\
+        SET_SIMPLE_CALLBACK(NAME ## _vec);\
+    } else {\
+        SET_SIMPLE_CALLBACK(NAME);\
+    }} while (0)
+
+/**
+ * Select instruction based on intermediate operator.
+ * Does not handle multi-callback operators.
+ */
+CallbackTy getCallback (const Imop& imop) {
+    CallbackTy callback = 0;
+    SecrecDataType ty = DATATYPE_INVALID;
+    const bool isVec = imop.isVectorized ();
+
+    // figure out the data type
+    switch (imop.type ()) {
+    case Imop::UMINUS:
+    case Imop::MUL:
+    case Imop::DIV:
+    case Imop::MOD:
+    case Imop::ADD:
+    case Imop::SUB:
+    case Imop::EQ:
+    case Imop::NE:
+    case Imop::LE:
+    case Imop::LT:
+    case Imop::GE:
+    case Imop::GT:
+    case Imop::JE:
+    case Imop::JNE:
+    case Imop::JLE:
+    case Imop::JLT:
+    case Imop::JGE:
+    case Imop::JGT:
+        ty = imop.arg1()->secrecType()->secrecDataType();
+    default:
+        break;
+    }
+
+    switch (imop.type ()) {
+      case Imop::ASSIGN:     SET_SIMPLE_CALLBACK_V(ASSIGN); break;
+      case Imop::CLASSIFY:   SET_SIMPLE_CALLBACK_V(CLASSIFY); break;
+      case Imop::DECLASSIFY: SET_SIMPLE_CALLBACK_V(DECLASSIFY); break;
+      case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
+      case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
+      case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
+      case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_SIGNED); break;
+      case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
+      case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;
+      case Imop::DIV:        SET_SPECIALIZE_CALLBACK_V(DIV,SWITCH_ARITH); break;
+      case Imop::MOD:        SET_SPECIALIZE_CALLBACK_V(MOD,SWITCH_ARITH); break;
+      case Imop::SUB:        SET_SPECIALIZE_CALLBACK_V(SUB,SWITCH_ARITH); break;
+      case Imop::LE:         SET_SPECIALIZE_CALLBACK_V(LE,SWITCH_ANY); break;
+      case Imop::LT:         SET_SPECIALIZE_CALLBACK_V(LT,SWITCH_ANY); break;
+      case Imop::GE:         SET_SPECIALIZE_CALLBACK_V(GE,SWITCH_ANY); break;
+      case Imop::GT:         SET_SPECIALIZE_CALLBACK_V(GT,SWITCH_ANY); break;
+      case Imop::EQ:         SET_SPECIALIZE_CALLBACK_V(EQ,SWITCH_ANY); break;
+      case Imop::NE:         SET_SPECIALIZE_CALLBACK_V(NE,SWITCH_ANY); break;
+      case Imop::JE:         SET_SPECIALIZE_CALLBACK(JE, SWITCH_ANY); break;
+      case Imop::JNE:        SET_SPECIALIZE_CALLBACK(JNE,SWITCH_ANY); break;
+      case Imop::JLE:        SET_SPECIALIZE_CALLBACK(JLE,SWITCH_ANY); break;
+      case Imop::JLT:        SET_SPECIALIZE_CALLBACK(JLT,SWITCH_ANY); break;
+      case Imop::JGE:        SET_SPECIALIZE_CALLBACK(JGE,SWITCH_ANY); break;
+      case Imop::JGT:        SET_SPECIALIZE_CALLBACK(JGT,SWITCH_ANY); break;
+      case Imop::JUMP:       SET_SIMPLE_CALLBACK(JUMP); break;
+      case Imop::JT:         SET_SIMPLE_CALLBACK(JT); break;
+      case Imop::JF:         SET_SIMPLE_CALLBACK(JF); break;
+      case Imop::COMMENT:    SET_SIMPLE_CALLBACK(NOP); break;
+      case Imop::ERROR:      SET_SIMPLE_CALLBACK(ERROR); break;
+      case Imop::PARAM:      SET_SIMPLE_CALLBACK(PARAM); break;
+      case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
+      case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
+      case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
+      case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
+      case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
+      case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
+      case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
+      default:
+        assert (false && "Reached unfamiliar instruction.");
+        break;
+    }
+
+    return callback;
+}
+
+/**
+ * All constants in VM are stored in global scope.
+ * This is pretty big hack, but makes the life a lot simpler.
+ * Following 2 function offer a way to store libscc constant symbols
+ * to the global scope.
+ */
+
+template <SecrecDataType ty>
+void storeConstantHelper (Value& out, const Symbol* c) {
+    assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
+}
+
+void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>::CType& value) {
+    SecrecDataType dtype = c->secrecType ()->secrecDataType ();
+    Store& store = sym.isLocal ? m_frames->m_local : m_global;
+    Value& out = store[sym.un_sym];
+    switch (dtype) {
+    case DATATYPE_BOOL: storeConstantHelper<DATATYPE_BOOL>(out, c); break;
+    case DATATYPE_STRING: storeConstantHelper<DATATYPE_STRING>(out, c); break;
+    case DATATYPE_INT: storeConstantHelper<DATATYPE_INT>(out, c); break;
+    case DATATYPE_UINT: storeConstantHelper<DATATYPE_UINT>(out, c); break;
+    case DATATYPE_INT8: storeConstantHelper<DATATYPE_INT8>(out, c); break;
+    case DATATYPE_UINT8: storeConstantHelper<DATATYPE_UINT8>(out, c); break;
+    case DATATYPE_INT16: storeConstantHelper<DATATYPE_INT16>(out, c); break;
+    case DATATYPE_UINT16: storeConstantHelper<DATATYPE_UINT16>(out, c); break;
+    case DATATYPE_INT32: storeConstantHelper<DATATYPE_INT32>(out, c); break;
+    case DATATYPE_UINT32: storeConstantHelper<DATATYPE_UINT32>(out, c); break;
+    case DATATYPE_INT64: storeConstantHelper<DATATYPE_INT64>(out, c); break;
+    case DATATYPE_UINT64: storeConstantHelper<DATATYPE_UINT64>(out, c); break;
+    default:
+        assert (false && "Invalid data type.");
+    }
+}
+
+
+/**
+ * Compiler, only non-trivial thing it does is tracking of jump locations
+ * because some intermediate code instructions compile into multiple callbacks.
+ */
 class Compiler {
 public: /* Types: */
 
@@ -530,85 +680,7 @@ private:
             dest = static_cast<const SymbolLabel*>(arg)->target ();
         }
 
-        switch (imop.type ()) {
-          case Imop::ASSIGN:         i.callback = CONDVCALLBACK(ASSIGN, nArgs == 3); break;
-          case Imop::CLASSIFY:       i.callback = CONDVCALLBACK(CLASSIFY, nArgs == 3); break;
-          case Imop::DECLASSIFY:     i.callback = CONDVCALLBACK(DECLASSIFY, nArgs == 3); break;
-          case Imop::UNEG:           i.callback = CONDVCALLBACK(UNEG, nArgs == 3); break;
-          case Imop::UMINUS:         i.callback = CONDVCALLBACK(UMINUS, nArgs == 3);break;
-          case Imop::MUL:            i.callback = CONDVCALLBACK(MUL, nArgs == 4); break;
-          case Imop::DIV:            i.callback = CONDVCALLBACK(DIV, nArgs == 4); break;
-          case Imop::MOD:            i.callback = CONDVCALLBACK(MOD, nArgs == 4); break;
-          case Imop::ADD:
-            switch (imop.arg1()->secrecType()->secrecDataType()) {
-              case DATATYPE_STRING:  i.callback = CONDVCALLBACK(ADDSTR, nArgs == 4); break;
-              default:               i.callback = CONDVCALLBACK(ADD, nArgs == 4); break;
-            }
-            break;
-          case Imop::SUB:            i.callback = CONDVCALLBACK(SUB, nArgs == 4); break;
-          case Imop::EQ:
-            switch (imop.arg1()->secrecType()->secrecDataType()) {
-              case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(EQBOOL, nArgs == 4); break;
-              case DATATYPE_INT:     i.callback = CONDVCALLBACK(EQINT, nArgs == 4); break;
-              case DATATYPE_UINT:    i.callback = CONDVCALLBACK(EQUINT, nArgs == 4); break;
-              case DATATYPE_STRING:  i.callback = CONDVCALLBACK(EQSTRING, nArgs == 4); break;
-              default: assert (false && "VM: invalid data type");
-            }
-            break;
-          case Imop::NE:
-            switch (imop.arg1()->secrecType()->secrecDataType()) {
-              case DATATYPE_BOOL:    i.callback = CONDVCALLBACK(NEQBOOL, nArgs == 4); break;
-              case DATATYPE_INT:     i.callback = CONDVCALLBACK(NEQINT, nArgs == 4); break;
-              case DATATYPE_UINT:    i.callback = CONDVCALLBACK(NEQUINT, nArgs == 4); break;
-              case DATATYPE_STRING:  i.callback = CONDVCALLBACK(NEQSTRING, nArgs == 4); break;
-              default: assert (false && "VM: invalid data type");
-            }
-            break;
-          case Imop::LE:             i.callback = CONDVCALLBACK(LE, nArgs == 4); break;
-          case Imop::LT:             i.callback = CONDVCALLBACK(LT, nArgs == 4); break;
-          case Imop::GE:             i.callback = CONDVCALLBACK(GE, nArgs == 4); break;
-          case Imop::GT:             i.callback = CONDVCALLBACK(GT, nArgs == 4); break;
-          case Imop::LAND:           i.callback = CONDVCALLBACK(LAND, nArgs == 4); break;
-          case Imop::LOR:            i.callback = CONDVCALLBACK(LOR, nArgs == 4); break;
-          case Imop::JUMP:           i.callback = JUMP_callback; break;
-          case Imop::JT:             i.callback = JT_callback; break;
-          case Imop::JF:             i.callback = JF_callback; break;
-          case Imop::JE:
-            switch (imop.arg1()->secrecType()->secrecDataType()) {
-              case DATATYPE_BOOL:    i.callback = JEBOOL_callback; break;
-              case DATATYPE_INT:     i.callback = JEINT_callback; break;
-              case DATATYPE_UINT:    i.callback = JEUINT_callback; break;
-              case DATATYPE_STRING:  i.callback = JESTR_callback; break;
-              default: assert (false && "VM: invalid data type");
-            }
-            break;
-          case Imop::JNE:
-            switch (imop.arg1()->secrecType()->secrecDataType()) {
-              case DATATYPE_BOOL:    i.callback = JNEBOOL_callback; break;
-              case DATATYPE_INT:     i.callback = JNEINT_callback; break;
-              case DATATYPE_UINT:    i.callback = JNEUINT_callback; break;
-              case DATATYPE_STRING:  i.callback = JNESTR_callback; break;
-              default: assert (false && "VM: invalid data type");
-            }
-            break;
-          case Imop::JLE:            i.callback = JLE_callback; break;
-          case Imop::JLT:            i.callback = JLT_callback; break;
-          case Imop::JGE:            i.callback = JGE_callback; break;
-          case Imop::JGT:            i.callback = JGT_callback; break;
-          case Imop::COMMENT:        i.callback = NOP_callback; break;
-          case Imop::ERROR:          i.callback = ERROR_callback; break;
-          case Imop::PARAM:          i.callback = PARAM_callback; break;
-          case Imop::RETCLEAN:       i.callback = RETCLEAN_callback; break;
-          case Imop::RETURNVOID:     i.callback = RETVOID_callback; break;
-          case Imop::ALLOC:          i.callback = ALLOC_callback; break;
-          case Imop::STORE:          i.callback = STORE_callback; break;
-          case Imop::LOAD:           i.callback = LOAD_callback; break;
-          case Imop::END:            i.callback = END_callback; break;
-          case Imop::PRINT:          i.callback = PRINT_callback; break;
-          default:
-            assert (false && "VM: Reached unfamiliar instruction.");
-        }
-
+        i.callback = getCallback (imop);
         emitInstruction (i, dest);
     }
 
@@ -637,7 +709,7 @@ private:
         while (!argList.empty ()) {
             const Symbol* sym = argList.top ();
             argList.pop ();
-            Instruction i (PUSH_callback);
+            Instruction i (SIMPLE_CALLBACK(PUSH));
             i.args[1] = toVMSym (sym);
             emitInstruction (i);
         }
@@ -646,12 +718,12 @@ private:
             "Malformed CALL instruction!");
 
         // CALL
-        Instruction i (CALL_callback);
+        Instruction i (SIMPLE_CALLBACK(CALL));
         emitInstruction (i, targetImop);
 
         // pop return values
         for (++ it; it != itEnd; ++ it) {
-            Instruction i (POP_callback);
+            Instruction i (SIMPLE_CALLBACK(POP));
             i.args[0] = toVMSym (*it);
             emitInstruction (i);
         }
@@ -673,13 +745,13 @@ private:
         for (++ it; it != itEnd; ++ it)
             rev.push (*it);
         while (!rev.empty ()) {
-            Instruction i (PUSH_callback);
+            Instruction i (SIMPLE_CALLBACK(PUSH));
             i.args[1] = toVMSym (rev.top ());
             emitInstruction (i);
             rev.pop ();
         }
 
-        Instruction i (RETVOID_callback);
+        Instruction i (SIMPLE_CALLBACK(RETVOID));
         emitInstruction (i);
     }
 
