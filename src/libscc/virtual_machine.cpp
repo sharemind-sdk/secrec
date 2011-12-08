@@ -220,6 +220,7 @@ Value& lookup (VMSym sym) __attribute__ ((noinline));
 Value& lookup (VMSym sym)  {
     TRACE ("%s ", (sym.isLocal ? "LOCAL" : "GLOBAL"));
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
+    assert (sym.un_sym != 0);
     return store[sym.un_sym];
 }
 
@@ -227,6 +228,7 @@ Value& lookup (VMSym sym)  {
 void storeSym (VMSym sym, Value val) __attribute__ ((noinline));
 void storeSym (VMSym sym, Value val) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
+    assert (sym.un_sym != 0);
     store[sym.un_sym] = val;
 }
 
