@@ -361,7 +361,7 @@ MKCALLBACK(CALL, 0, 0, 0, 0,
     CUR;
 )
 
-MKCALLBACK(RETCLEAN, 0, 0, 0, 0, BLOCK())
+MKCALLBACK(RETCLEAN, 0, 0, 0, 0, { })
 
 MKCALLBACK(RETVOID, 0, 0, 0, 0,
   assert (m_frames != 0);
@@ -406,7 +406,7 @@ MKCALLBACK(STORE, 1, 1, 1, 0,
     dest.un_ptr[arg1.un_uint_val] = arg2;
 )
 
-MKCALLBACK(NOP, 0, 0, 0, 0, BLOCK())
+MKCALLBACK(NOP, 0, 0, 0, 0, { })
 
 MKCALLBACK(END, 0, 0, 0, 0, exit (EXIT_SUCCESS); )
 
