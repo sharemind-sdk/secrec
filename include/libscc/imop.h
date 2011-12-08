@@ -41,11 +41,6 @@ typedef boost::intrusive::list_base_hook<
  *       instructions with proper type safe parameters.
  *       For example:
  *       static Imop* newJump (TreeNode* node, SymbolLabel* target) { ... }
- * \todo all implicitly parallel instructions should be removed from IL
- *       public machine should operate on scalars and perform system calls
- *       to sharemind platform for private operations.
- *       This, amongst other implications, means that classify/declassify need
- *       to be removed.
  */
 class Imop : public auto_unlink_hook {
     public: /* Types: */

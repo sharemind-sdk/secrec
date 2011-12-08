@@ -20,6 +20,7 @@ void CodeGen::codeGenSize (CGResult& result) {
     SymbolSymbol* resSym = 0;
     if ((resSym = dynamic_cast<SymbolSymbol*>(result.symbol ())) != 0) {
         Symbol* size = resSym->getSizeSym ();
+        if (size == 0) return;
         ConstantInt* one = ConstantInt::get (getContext (), 1);
         Imop* i = new Imop (m_node, Imop::ASSIGN, size, one);
         pushImopAfter (result, i);
@@ -44,8 +45,10 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
         pushImopAfter (result, i);
     }
 
-    i = new Imop (m_node, Imop::ASSIGN, resSym->getSizeSym (), sym->getSizeSym ());
-    pushImopAfter (result, i);
+    if (sym->getSizeSym () != 0) {
+        i = new Imop (m_node, Imop::ASSIGN, resSym->getSizeSym (), sym->getSizeSym ());
+        pushImopAfter (result, i);
+    }
 }
 
 void CodeGen::allocResult (CGResult& result)  {
@@ -72,7 +75,10 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
             sym->setDim (i, st->appendTemporary (ty));
         }
 
-        sym->setSizeSym (st->appendTemporary (ty));
+        if (node->resultType ()->secrecDimType () != 0) {
+            sym->setSizeSym (st->appendTemporary (ty));
+        }
+
         return sym;
     }
 

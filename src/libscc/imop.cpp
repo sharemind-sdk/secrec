@@ -18,59 +18,61 @@ struct ImopInfoBits {
     bool      isTerminator : 1;  ///< Instruction terminates a basic block
     bool      writesDest : 1;    ///< Instruction may write to destination operand
     unsigned  vecArgNum;         ///< Vectorised if number of operands equals to that
+    unsigned  useBegin;          ///< Points to first USE operand, ends with 0 or with last operand.
 };
 
 ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
-    //{ Imop::Type,       E, J, T, W, V }
+    //{ Imop::Type,       E, J, T, W, V, U }
     // Unary operators:
-      { Imop::ASSIGN,     1, 0, 0, 1, 3 }
-    , { Imop::CLASSIFY,   1, 0, 0, 1, 3 }
-    , { Imop::DECLASSIFY, 1, 0, 0, 1, 3 }
-    , { Imop::UNEG,       1, 0, 0, 1, 3 }
-    , { Imop::UMINUS,     1, 0, 0, 1, 3 }
+      { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
+    , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
+    , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
+    , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
+    , { Imop::UMINUS,     1, 0, 0, 1, 3, 1 }
     // Binary operators:
-    , { Imop::MUL,        1, 0, 0, 1, 4 }
-    , { Imop::DIV,        1, 0, 0, 1, 4 }
-    , { Imop::MOD,        1, 0, 0, 1, 4 }
-    , { Imop::ADD,        1, 0, 0, 1, 4 }
-    , { Imop::SUB,        1, 0, 0, 1, 4 }
-    , { Imop::EQ,         1, 0, 0, 1, 4 }
-    , { Imop::NE,         1, 0, 0, 1, 4 }
-    , { Imop::LE,         1, 0, 0, 1, 4 }
-    , { Imop::LT,         1, 0, 0, 1, 4 }
-    , { Imop::GE,         1, 0, 0, 1, 4 }
-    , { Imop::GT,         1, 0, 0, 1, 4 }
-    , { Imop::LAND,       1, 0, 0, 1, 4 }
-    , { Imop::LOR,        1, 0, 0, 1, 4 }
+    , { Imop::MUL,        1, 0, 0, 1, 4, 1 }
+    , { Imop::DIV,        1, 0, 0, 1, 4, 1 }
+    , { Imop::MOD,        1, 0, 0, 1, 4, 1 }
+    , { Imop::ADD,        1, 0, 0, 1, 4, 1 }
+    , { Imop::SUB,        1, 0, 0, 1, 4, 1 }
+    , { Imop::EQ,         1, 0, 0, 1, 4, 1 }
+    , { Imop::NE,         1, 0, 0, 1, 4, 1 }
+    , { Imop::LE,         1, 0, 0, 1, 4, 1 }
+    , { Imop::LT,         1, 0, 0, 1, 4, 1 }
+    , { Imop::GE,         1, 0, 0, 1, 4, 1 }
+    , { Imop::GT,         1, 0, 0, 1, 4, 1 }
+    , { Imop::LAND,       1, 0, 0, 1, 4, 1 }
+    , { Imop::LOR,        1, 0, 0, 1, 4, 1 }
+    // Array expressions:
+    , { Imop::STORE,      0, 0, 0, 0,-1, 0 }
+    , { Imop::LOAD,       1, 0, 0, 1,-1, 1 }
+    , { Imop::ALLOC,      1, 0, 0, 1,-1, 1 }
     // Other expressions:
-    , { Imop::STORE,      1, 0, 0, 0,-1 }
-    , { Imop::LOAD,       1, 0, 0, 1,-1 }
-    , { Imop::ALLOC,      1, 0, 0, 1,-1 }
-    , { Imop::PARAM,      1, 0, 0, 1,-1 }
-    , { Imop::CALL,       1, 0, 1, 1,-1 }
+    , { Imop::PARAM,      1, 0, 0, 1,-1, 1 }
+    , { Imop::CALL,       1, 0, 1, 1,-1, 1 }
     // Jumps:
-    , { Imop::JUMP,       0, 1, 1, 0,-1 }
-    , { Imop::JT,         0, 1, 1, 0,-1 }
-    , { Imop::JF,         0, 1, 1, 0,-1 }
-    , { Imop::JE,         0, 1, 1, 0,-1 }
-    , { Imop::JNE,        0, 1, 1, 0,-1 }
-    , { Imop::JLE,        0, 1, 1, 0,-1 }
-    , { Imop::JLT,        0, 1, 1, 0,-1 }
-    , { Imop::JGE,        0, 1, 1, 0,-1 }
-    , { Imop::JGT,        0, 1, 1, 0,-1 }
+    , { Imop::JUMP,       0, 1, 1, 0,-1, 1 }
+    , { Imop::JT,         0, 1, 1, 0,-1, 1 }
+    , { Imop::JF,         0, 1, 1, 0,-1, 1 }
+    , { Imop::JE,         0, 1, 1, 0,-1, 1 }
+    , { Imop::JNE,        0, 1, 1, 0,-1, 1 }
+    , { Imop::JLE,        0, 1, 1, 0,-1, 1 }
+    , { Imop::JLT,        0, 1, 1, 0,-1, 1 }
+    , { Imop::JGE,        0, 1, 1, 0,-1, 1 }
+    , { Imop::JGT,        0, 1, 1, 0,-1, 1 }
     // Terminators:
-    , { Imop::ERROR,      0, 0, 1, 0,-1 }
-    , { Imop::RETURNVOID, 0, 0, 1, 0,-1 }
-    , { Imop::RETURN,     0, 0, 1, 0,-1 }
-    , { Imop::END,        0, 0, 1, 0,-1 }
+    , { Imop::ERROR,      0, 0, 1, 0,-1,-1 }
+    , { Imop::RETURNVOID, 0, 0, 1, 0,-1,-1 }
+    , { Imop::RETURN,     0, 0, 1, 0,-1, 1 }
+    , { Imop::END,        0, 0, 1, 0,-1,-1 }
     // Other:
-    , { Imop::COMMENT,    0, 0, 0, 0,-1 }
-    , { Imop::PRINT,      0, 0, 0, 0,-1 }
-    , { Imop::SYSCALL,    0, 0, 0, 0,-1 }
-    , { Imop::PUSH,       0, 0, 0, 0,-1 }
-    , { Imop::PUSHREF,    0, 0, 0, 0,-1 }
-    , { Imop::PUSHCREF,   0, 0, 0, 0,-1 }
-    , { Imop::RETCLEAN,   0, 0, 0, 0,-1 }
+    , { Imop::COMMENT,    0, 0, 0, 0,-1,-1 }
+    , { Imop::PRINT,      0, 0, 0, 0,-1,-1 }
+    , { Imop::SYSCALL,    0, 0, 0, 0,-1, 1 }
+    , { Imop::PUSH,       0, 0, 0, 0,-1, 1 }
+    , { Imop::PUSHREF,    0, 0, 0, 0,-1, 1 }
+    , { Imop::PUSHCREF,   0, 0, 0, 0,-1, 1 }
+    , { Imop::RETCLEAN,   0, 0, 0, 0,-1,-1 }
 };
 
 const ImopInfoBits& getImopInfoBits (Imop::Type type) {
@@ -196,39 +198,24 @@ bool Imop::isVectorized () const {
     return getImopInfoBits (m_type).vecArgNum == argNum;
 }
 
+/// \todo make this more... reasonable...
 void Imop::getUse (std::vector<const Symbol *>& use) const {
-    OperandConstIterator i = operandsBegin ();
-    const OperandConstIterator e = operandsEnd ();
     use.clear ();
+    unsigned i = 0;
+    unsigned e = m_args.size ();
 
-    if (type () == CALL) {
-        for (++ i; *i != 0 && i != e; ++ i) {
-            use.push_back (*i);
+    // vectorised operations don't DEF any operands.
+    if (! isVectorized ()) {
+        i = getImopInfoBits (m_type).useBegin;
+    }
+
+    for (; i < e; ++ i) {
+        const Symbol* s = arg (i);
+        if (s == 0) {
+            break;
         }
 
-        return;
-    }
-
-    if (isExpr ()) {
-        if (!isVectorized ()) {
-            if (type () != STORE)
-                ++ i;
-        }
-
-        use.insert (use.end (), i, e);
-        return;
-    }
-
-    if (isJump () || type () == RETURN) {
-        use.insert (use.end (), ++ i, e);
-        return;
-    }
-
-    switch (type ()) {
-    case PUSH:
-        use.push_back (arg1 ());
-    default:
-        break;
+        use.push_back (s);
     }
 }
 
@@ -236,6 +223,7 @@ void Imop::getDef (std::vector<const Symbol *>& def) const {
     OperandConstIterator i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
     def.clear ();
+    // vectorised operantions don't DEF any operands.
     if (isVectorized ()) return;
     if (! getImopInfoBits (m_type).writesDest) {
         return;

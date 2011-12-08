@@ -693,7 +693,6 @@ private:
         /// workaround as scc doesn't support strings yet
         if (imop.type () == Imop::ERROR ||
             imop.type () == Imop::PRINT) {
-            std::cerr << imop.arg1 ()->toString () << std::endl;
             i.args[nArgs ++] = toVMSym (imop.arg1 ());
         }
 
