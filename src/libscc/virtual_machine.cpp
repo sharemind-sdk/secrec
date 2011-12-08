@@ -10,6 +10,7 @@
 #include <fstream>
 #include <stdint.h>
 #include <boost/preprocessor/control/if.hpp>
+#include <boost/foreach.hpp>
 
 #include "symboltable.h"
 #include "blocks.h"
@@ -348,13 +349,13 @@ MKCALLBACK(JGT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >  getValue<ty>(arg2)))
  * Miscellaneous or more complicated instructions:
  */
 
-MKCALLBACK (ERROR, 0, 1, 0, 0,
-    fprintf (stderr, "%s\n", arg1.un_str_val->c_str());
+MKCALLBACK (ERROR, 1, 0, 0, 0,
+    fprintf (stderr, "%s\n", dest.un_str_val->c_str());
     exit (EXIT_FAILURE);
 )
 
-MKCALLBACK (PRINT, 0, 1, 0, 0,
-    fprintf (stdout, "%s\n", arg1.un_str_val->c_str());
+MKCALLBACK (PRINT, 1, 0, 0, 0,
+    fprintf (stdout, "%s\n", dest.un_str_val->c_str());
 )
 
 MKCALLBACK(CALL, 0, 0, 0, 0,
@@ -668,18 +669,32 @@ private:
         Instruction i;
         const Imop* dest = 0;
 
-        for (nArgs = 0; nArgs < imop.nArgs(); ++ nArgs) {
-            Symbol const* sym = imop.arg(nArgs);
-            if (sym == 0) continue;
-            if (imop.type() == Imop::COMMENT) continue;
-            i.args[nArgs] = toVMSym (sym);
-        }
+        std::vector<const Symbol*> defs;
+        std::vector<const Symbol*> uses;
+        imop.getDef (defs);
+        imop.getUse (uses);
 
-        // compute destinations for jumps
         if (imop.isJump ()) {
             const Symbol* arg = imop.dest ();
+            i.args[nArgs ++] = toVMSym (arg);
             assert (dynamic_cast<const SymbolLabel*>(arg) != 0);
             dest = static_cast<const SymbolLabel*>(arg)->target ();
+        }
+        else {
+            BOOST_FOREACH (const Symbol* sym, defs) {
+                i.args[nArgs ++] = toVMSym (sym);
+            }
+        }
+
+        BOOST_FOREACH (const Symbol* sym, uses) {
+            i.args[nArgs ++] = toVMSym (sym);
+        }
+
+        /// workaround as scc doesn't support strings yet
+        if (imop.type () == Imop::ERROR ||
+            imop.type () == Imop::PRINT) {
+            std::cerr << imop.arg1 ()->toString () << std::endl;
+            i.args[nArgs ++] = toVMSym (imop.arg1 ());
         }
 
         i.callback = getCallback (imop);
