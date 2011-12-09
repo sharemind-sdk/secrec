@@ -52,7 +52,7 @@ public: /* Methods: */
     void insert (VMLabel* label, const BuiltinFunction& func);
 
     /// Generate bodies of inserted functions
-    void generateAll (VMCode& code, VMSymbolTable& st);
+    void generateAll (VMCodeSection& code, VMSymbolTable& st);
 
 protected:
 

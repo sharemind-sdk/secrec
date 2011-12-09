@@ -34,7 +34,7 @@ void BuiltinFunctions::insert (VMLabel* label, const BuiltinFunction& func) {
     }
 }
 
-void BuiltinFunctions::generateAll (VMCode& code, VMSymbolTable& st) {
+void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
     for (Map::iterator i = m_funtions.begin (), e = m_funtions.end (); i != e; ++ i) {
         VMFunction function (i->first);
         i->second->generate (function, st);

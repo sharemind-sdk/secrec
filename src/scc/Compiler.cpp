@@ -100,29 +100,48 @@ class Compiler::SyscallManager {
 private: /* Types: */
 
     typedef std::map<const ConstantString*, VMLabel*> SCMap;
+    typedef std::map<PrivateSecType*, VMLabel* > PDMap;
 
 public: /* Methods: */
 
-    SyscallManager () : m_st (0) { }
+    SyscallManager ()
+        : m_st (0)
+        , m_pdSection (0)
+        , m_scSection (0)
+    { }
+
     ~SyscallManager () { }
 
-    void init (VMSymbolTable& st) {
+    /// Creates required sections.
+    void init (VMSymbolTable& st, VMLinkingUnit& vmlu) {
         m_st = &st;
+        m_scSection = new VMBindingSection ("BIND");
+        m_pdSection = new VMBindingSection ("PDBIND");
+        vmlu.addSection (m_scSection);
+        vmlu.addSection (m_pdSection);
     }
 
-    void emitBindings (VMCode& code) {
-        for (SCMap::iterator i = m_syscalls.begin (); i != m_syscalls.end (); ++ i) {
-            code.addBinding (i->second, i->first->value ());
+    VMLabel* getPD (PrivateSecType* secTy) {
+        PDMap::iterator i = m_pds.find (secTy);
+        if (i == m_pds.end ()) {
+            std::ostringstream ss;
+            ss << ":PD_" << m_st->uniq ();
+            VMLabel* label = m_st->getLabel (ss.str ());
+            i = m_pds.insert (i, std::make_pair (secTy, label));
+            m_pdSection->addBinding (label, secTy->name ());
         }
+
+        return i->second;
     }
 
-    VMLabel* getSyscallBinding (const ConstantString* name) {
-        SCMap::iterator i = m_syscalls.find (name);
+    VMLabel* getSyscallBinding (const ConstantString* str) {
+        SCMap::iterator i = m_syscalls.find (str);
         if (i == m_syscalls.end ()) {
             std::ostringstream ss;
             ss << ":SC_" << m_st->uniq ();
             VMLabel* label = m_st->getLabel (ss.str ());
-            i = m_syscalls.insert (i, std::make_pair (name, label));
+            i = m_syscalls.insert (i, std::make_pair (str, label));
+            m_scSection->addBinding (label, str->name ());
         }
 
         return i->second;
@@ -130,8 +149,11 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    VMSymbolTable* m_st;
-    SCMap m_syscalls;
+    VMSymbolTable*     m_st;
+    VMBindingSection*  m_pdSection;
+    VMBindingSection*  m_scSection;
+    SCMap              m_syscalls;
+    PDMap              m_pds; ///< Privacy domains
 };
 
 /*******************************************************************************
@@ -140,6 +162,7 @@ private: /* Fields: */
 
 Compiler::Compiler (ICode& code)
     : m_code (code)
+    , m_target (0)
     , m_param (0)
     , m_funcs (new BuiltinFunctions ())
     , m_ra (new RegisterAllocator ())
@@ -152,20 +175,21 @@ Compiler::~Compiler () {
     delete m_scm;
 }
 
-void Compiler::run () {
+void Compiler::run (VMLinkingUnit& vmlu) {
     DataFlowAnalysisRunner runner;
-    LiveVariables lv;
-    runner.addAnalysis (&lv);
+    LiveVariables lva;
+    runner.addAnalysis (&lva);
     runner.run (m_code.program ());
-    m_ra->init (m_st, lv);
-    m_scm->init (m_st);
+    m_target = new VMCodeSection ();
+    m_ra->init (m_st, lva);
+    m_scm->init (m_st, vmlu);
     for (Program::iterator i = m_code.program ().begin (), e = m_code.program ().end (); i != e; ++ i) {
         cgProcedure (*i);
     }
 
-    m_funcs->generateAll (m_target, m_st);
-    m_target.setNumGlobals (m_ra->globalCount ());
-    m_scm->emitBindings (m_target);
+    m_funcs->generateAll (*m_target, m_st);
+    m_target->setNumGlobals (m_ra->globalCount ());
+    vmlu.addSection (m_target);
 }
 
 
@@ -204,7 +228,7 @@ void Compiler::cgProcedure (const Procedure& blocks) {
     }
 
     m_ra->exitFunction (function);
-    m_target.push_back (function);
+    m_target->push_back (function);
 }
 
 void Compiler::cgBlock (VMFunction& function, const Block& block) {
@@ -471,6 +495,15 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
+void Compiler::cgDomainID (VMBlock& block, const Imop& imop) {
+    assert (dynamic_cast<const SymbolDomain*>(imop.arg1 ()) != 0);
+    const SymbolDomain* dom = static_cast<const SymbolDomain*>(imop.arg1 ());
+    assert (dynamic_cast<PrivateSecType*>(dom->securityType ()) != 0);
+    PrivateSecType* secTy = static_cast<PrivateSecType*>(dom->securityType ());
+    VMLabel* label = m_scm->getPD (secTy);
+    block.push_back (VMInstruction () << "mov" << label << m_st.find (imop.dest ()));
+}
+
 void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
     VMLabel* label = m_scm->getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
     block.push_back (VMInstruction () << "syscall" << label << "imm");
@@ -524,6 +557,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
             return;
         case Imop::RETURN:
             cgReturn (block, imop);
+            return;
+        case Imop::DOMAINID:
+            cgDomainID (block, imop);
             return;
         case Imop::SYSCALL:
             cgSyscall (block, imop);

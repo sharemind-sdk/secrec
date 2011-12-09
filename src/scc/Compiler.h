@@ -41,9 +41,8 @@ public: /* Methods: */
     Compiler (SecreC::ICode& code);
     ~Compiler ();
 
-    void run ();
+    void run (VMLinkingUnit& vmlu);
 
-    VMCode& target () { return m_target; }
     VMSymbolTable& st () { return m_st; }
 
 protected:
@@ -61,7 +60,8 @@ protected:
     void cgAlloc (VMBlock& block, const SecreC::Imop& imop);
     void cgStore (VMBlock& block, const SecreC::Imop& imop);
     void cgLoad (VMBlock& block, const SecreC::Imop& imop);
-    void cgSyscall (VMBlock& block, const SecreC::Imop& imo);
+    void cgSyscall (VMBlock& block, const SecreC::Imop& imop);
+    void cgDomainID (VMBlock& block, const SecreC::Imop& imop);
     void cgPush (VMBlock& block, const SecreC::Imop& imop);
 
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
@@ -72,7 +72,7 @@ private: /* Fields: */
     class SyscallManager;
 
     SecreC::ICode&        m_code;    ///< SecreC intermediate code
-    VMCode                m_target;  ///< Target code
+    VMCodeSection*        m_target; ///< Target code
     VMSymbolTable         m_st;      ///< VM symbol table
     unsigned              m_param;   ///< Current param count
     BuiltinFunctions*     m_funcs;   ///< Bult-in functions

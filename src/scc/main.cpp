@@ -123,9 +123,10 @@ int main(int argc, char *argv[]) {
     }
 
     /* Compiler to assembly: */
+    VMLinkingUnit vmlu;
     Compiler compiler (icode);
-    compiler.run ();
-    *os << compiler.target () << endl;
+    compiler.run (vmlu);
+    *os << vmlu << endl;
     delete parseTree;
     return EXIT_SUCCESS;
 }

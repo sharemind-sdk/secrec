@@ -8,11 +8,13 @@
  */
 
 #include "VMCode.h"
-#include "VMValue.h"
 
 #include <cassert>
 #include <ostream>
 #include <iterator>
+#include <boost/foreach.hpp>
+
+#include "VMValue.h"
 
 namespace SecreCC {
 
@@ -52,30 +54,65 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMBinding& binding) {
-    os << binding.m_label->name () << " .bind_syscall \"" << binding.m_syscall << "\"";
+    os << binding.m_label->name () << " .bind \"" << binding.m_name << "\"";
     return  os;
 }
 
 /*******************************************************************************
-  VMCode
+  VMSection
 *******************************************************************************/
 
-std::ostream& operator << (std::ostream& os, const VMCode& code) {
-    if (! code.m_bindings.empty ()) {
-        os << ".section BIND\n";
-        std::copy (code.m_bindings.begin (), code.m_bindings.end (),
-                   std::ostream_iterator<VMBinding>(os, "\n"));
+std::ostream& operator << (std::ostream& os, const VMSection& section) {
+    os << ".section " << section.name () << '\n';
+    return section.printBodyV (os);
+}
+
+/*******************************************************************************
+  VMBindingSection
+*******************************************************************************/
+
+std::ostream& VMBindingSection::printBodyV (std::ostream& os) const {
+    std::copy (begin (), end (), std::ostream_iterator<VMBinding> (os, "\n"));
+    return os;
+}
+
+/*******************************************************************************
+  VMCodeSection
+*******************************************************************************/
+
+std::ostream& VMCodeSection::printBodyV (std::ostream& os) const {
+    if (numGlobals () > 0) {
+        os << "resizestack 0x" << std::hex  << numGlobals () << '\n';
     }
 
-    os << ".section TEXT\n";
-    if (code.numGlobals () > 0) {
-        os << "resizestack 0x" << std::hex  << code.numGlobals () << '\n';
-    }
+    std::copy (begin (), end (), std::ostream_iterator<VMFunction>(os, "\n"));
+    return os;
+}
 
-    std::copy (code.begin (), code.end (),
-               std::ostream_iterator<VMFunction>(os, "\n"));
+/*******************************************************************************
+  VMLinkingUnit
+*******************************************************************************/
+
+VMLinkingUnit::~VMLinkingUnit () {
+    BOOST_FOREACH (VMSection* section, m_sections) {
+        delete section;
+    }
+}
+
+void VMLinkingUnit::addSection (VMSection *section) {
+    assert (section != 0);
+    m_sections.push_back (section);
+}
+
+std::ostream& operator << (std::ostream& os, const VMLinkingUnit& vmlu) {
+    BOOST_FOREACH (VMSection* section, vmlu.m_sections) {
+        os << *section;
+    }
 
     return os;
 }
+
+
+
 
 } // namespace SecreCC

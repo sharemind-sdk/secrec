@@ -28,7 +28,6 @@ class VMLabel;
 *******************************************************************************/
 
 class VMBlock {
-
 public: /* Types: */
 
     typedef std::list<VMInstruction > InstList;
@@ -68,9 +67,7 @@ private: /* Fields: */
   VMFunction
 *******************************************************************************/
 
-
 class VMFunction {
-
 public: /* Types: */
 
     typedef std::list<VMBlock > BlockList;
@@ -121,9 +118,9 @@ private: /* Fields: */
 class VMBinding {
 public: /* Methods: */
 
-    VMBinding (VMLabel* label, std::string syscall)
+    VMBinding (VMLabel* label, std::string name)
         : m_label (label)
-        , m_syscall (syscall)
+        , m_name (name)
     { }
 
     ~VMBinding () { }
@@ -133,56 +130,143 @@ public: /* Methods: */
 private: /* Fields: */
 
     VMLabel*    const m_label;
-    std::string const m_syscall;
+    std::string const m_name;
 };
 
-
 /*******************************************************************************
-  VMCode
+  VMSection
 *******************************************************************************/
 
-class VMCode {
+class VMSection {
+public: /* Methods: */
 
+    VMSection (const char* name) : m_name (name) { }
+    virtual ~VMSection () { }
+
+    const char* name () const { return m_name; }
+    friend std::ostream& operator << (std::ostream& os, const VMSection& section);
+
+protected:
+
+    virtual std::ostream& printBodyV (std::ostream& os) const = 0;
+
+protected: /* Fields: */
+
+    const char* const m_name;
+};
+
+/*******************************************************************************
+  VMBindingSection
+*******************************************************************************/
+
+class VMBindingSection : public VMSection {
+private: /* Types: */
+    typedef std::list<VMBinding > BindingList;
+    typedef BindingList::iterator iterator;
+    typedef BindingList::const_iterator const_iterator;
+
+public: /* Methods: */
+
+
+    explicit VMBindingSection (const char* name)
+        : VMSection (name)
+    { }
+
+    virtual ~VMBindingSection () { }
+
+    void addBinding (VMLabel* label, const std::string& name) {
+        m_bindings.push_back (VMBinding (label, name));
+    }
+
+    iterator begin () { return m_bindings.begin (); }
+    iterator end () { return m_bindings.end (); }
+    const_iterator begin () const { return m_bindings.begin (); }
+    const_iterator end () const { return m_bindings.end (); }
+
+protected:
+
+    std::ostream& printBodyV (std::ostream& os) const;
+
+private: /* Fields: */
+
+    BindingList m_bindings;
+};
+
+/*******************************************************************************
+  VMCodeSection
+*******************************************************************************/
+
+class VMCodeSection : public VMSection {
 public: /* Types: */
 
     typedef std::list<VMFunction > FunctionList;
-    typedef std::list<VMBinding >  BindingList;
     typedef FunctionList::iterator iterator;
     typedef FunctionList::const_iterator const_iterator;
 
 public: /* Methods: */
 
-    VMCode () : m_numGlobals (0) { }
+    VMCodeSection ()
+        : VMSection ("TEXT")
+        , m_numGlobals (0)
+    { }
 
-    ~VMCode () { }
+    ~VMCodeSection () { }
 
     unsigned numGlobals () const { return m_numGlobals; }
     void setNumGlobals (unsigned n) { m_numGlobals = n; }
-    void addBinding (VMLabel* label, const std::string& name) {
-        m_bindings.push_back (VMBinding (label, name));
-    }
-
     iterator begin () { return m_functions.begin (); }
     iterator end () { return m_functions.end (); }
     const_iterator begin () const { return m_functions.begin (); }
     const_iterator end () const { return m_functions.end (); }
-    void push_back (const VMFunction& f) {
-        m_functions.push_back (f);
-    }
+    void push_back (const VMFunction& f) { m_functions.push_back (f); }
 
-    friend std::ostream& operator << (std::ostream& os, const VMCode& code);
+protected:
+
+    std::ostream& printBodyV (std::ostream& os) const;
 
 private: /* Fields: */
 
-    BindingList     m_bindings;
     FunctionList    m_functions;
     unsigned        m_numGlobals;
+};
+
+/*******************************************************************************
+  VMLinkingUnit
+*******************************************************************************/
+
+class VMLinkingUnit {
+private:
+
+    VMLinkingUnit (const VMLinkingUnit&); // DO NOT IMPLEMENT
+    void operator = (const VMLinkingUnit&); // DO NOT IMPPLEMENT
+
+public: /* Types: */
+
+    typedef std::list<VMSection* > SectionList;
+    typedef SectionList::iterator iterator;
+    typedef SectionList::const_iterator const_iterator;
+
+public: /* Methods: */
+
+    VMLinkingUnit () { }
+    ~VMLinkingUnit ();
+
+    /// Take ownership of the section.
+    /// The section will be released on destructions.
+    void addSection (VMSection* section);
+
+    friend std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code);
+
+private: /* Fields: */
+
+    SectionList m_sections;
 };
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block);
 std::ostream& operator << (std::ostream& os, const VMFunction& function);
 std::ostream& operator << (std::ostream& os, const VMBinding& binding);
-std::ostream& operator << (std::ostream& os, const VMCode& code);
+std::ostream& operator << (std::ostream& os, const VMSection& section);
+std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code);
 
 
 } // namespace SecreCC
