@@ -141,7 +141,7 @@ ADD_EXECUTABLE("scc"
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.0.1.0")
-TARGET_LINK_LIBRARIES("scc" "libscc")
+TARGET_LINK_LIBRARIES("scc" "libscc" ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
 ################################################################################
 # Installs:
