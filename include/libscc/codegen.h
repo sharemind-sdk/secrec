@@ -40,9 +40,14 @@ class Context;
  */
 class CodeGen {
 private:
+
     CodeGen& operator = (const CodeGen&); // do not implement
 
-public:
+private: /* Types: */
+
+    typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
+
+public: /* Methods: */
 
     inline explicit CodeGen (const CodeGen& other)
         : code (other.code)
@@ -216,7 +221,7 @@ public:
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
 
-    void allocResult (CGResult& result);
+    void allocResult (CGResult& result, Symbol* vals = 0);
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
@@ -231,7 +236,43 @@ protected: /* Fields: */
     CompileLog&   log;          ///< Compiler log.
     TreeNode*     m_node;       ///< Current tree node. \todo get rid of it somehow
     TypeChecker&  m_tyChecker;  ///< Instance of type checker.
-    std::map<const TreeNodeProcDef*, std::set<Imop*> > m_callsTo;
+    CallMap       m_callsTo;    ///< Map
+};
+
+/*******************************************************************************
+  ScopedAllocations
+*******************************************************************************/
+
+class ScopedAllocations : public CodeGen {
+private:
+    void operator = (const ScopedAllocations&); // DO NOT IMPLEMENT
+    ScopedAllocations (const ScopedAllocations&); // DO NOT IMPLEMENT
+
+private: /* Types: */
+
+    typedef std::vector<Symbol* > Allocations;
+
+public: /* Methods: */
+
+    ScopedAllocations (CodeGen& base, CGResult& result)
+        : CodeGen (base)
+        , m_result (result)
+    { }
+
+    ~ScopedAllocations () {
+        freeAllocs ();
+    }
+
+    void allocTemporary (Symbol* dest, Symbol* def, Symbol* size);
+
+private:
+
+    void freeAllocs ();
+
+private: /* Fields: */
+
+    CGResult&    m_result;
+    Allocations  m_allocs;
 };
 
 /*******************************************************************************
@@ -248,10 +289,12 @@ protected: /* Fields: */
  * Note that this is stride for column major order.
  */
 class CodeGenStride : public CodeGen {
-public:
+public: /* Types: */
+
     typedef std::vector<Symbol*> StrideList;
 
-public:
+public: /* Methods: */
+
     inline explicit CodeGenStride (CodeGen& base)
         : CodeGen (base) { }
 
@@ -267,7 +310,8 @@ public:
 
     CGResult codeGenStride (Symbol* sym);
 
-private:
+private: /* Fields: */
+
     StrideList m_stride;
 };
 
@@ -287,11 +331,12 @@ private:
  * \endcode
  */
 class CodeGenLoop : public CodeGen {
-public:
+public: /* Types: */
+
     typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
     typedef std::vector<Symbol* > IndexList;
 
-public:
+public: /* Methods: */
 
     inline explicit CodeGenLoop (const CodeGen& base)
         : CodeGen (base)
@@ -310,7 +355,8 @@ public:
     /// exit the loop
     CGResult exitLoop (const IndexList& indices);
 
-private:
+private: /* Fields: */
+
     std::stack<Imop* > m_jumpStack;  ///< Jump stack. Entering loop builds it, exiting loop consumes it.
 };
 
@@ -322,10 +368,12 @@ private:
  * \brief Code generation of a subscript (general indexing).
  */
 class CodeGenSubscript : public CodeGen {
-public:
+public: /* Types: */
+
     typedef std::vector<unsigned> SliceIndices;
     typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
-public:
+
+public: /* Methods: */
 
     inline explicit CodeGenSubscript (const CodeGen& base)
         : CodeGen (base)
@@ -343,7 +391,8 @@ public:
 
     CGResult codeGenSubscript (Symbol* x, TreeNode* node);
 
-private:
+private: /* Fields: */
+
     SliceIndices m_slices;  ///< Specifies which indices are slices.
     SPV          m_spv;     ///< List of ranges for every index.
 };

@@ -1,5 +1,7 @@
 #include "codegen.h"
 
+#include <boost/foreach.hpp>
+
 #include "constant.h"
 
 namespace SecreC {
@@ -33,8 +35,10 @@ void CodeGen::codeGenSize (CGResult& result) {
 }
 
 void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
-    SymbolSymbol* resSym = dynamic_cast<SymbolSymbol*>(result.symbol ());
-    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
+    assert (dynamic_cast<SymbolSymbol*>(result.symbol ()) != 0);
+    assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
+    SymbolSymbol* resSym = static_cast<SymbolSymbol*>(result.symbol ());
+    SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
     assert (sym != 0 && resSym != 0);
     dim_iterator dj = dim_begin (resSym);
     Imop* i = 0;
@@ -51,16 +55,18 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     }
 }
 
-void CodeGen::allocResult (CGResult& result)  {
+void CodeGen::allocResult (CGResult& result, Symbol* vals)  {
     if (result.symbol ()->secrecType ()->isScalar ()) {
-        log.warning () << "Allocating result for scala! Ignoring that.";
+        log.warning () << "Allocating result for scala! Ignoring.";
         return;
     }
 
     SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(result.symbol ());
-    Imop* i = new Imop (m_node, Imop::ALLOC, sym,
-                        defaultConstant (getContext (), sym->secrecType ()->secrecDataType ()),
-                        sym->getSizeSym ());
+    if (vals == 0) {
+        vals = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
+    }
+
+    Imop* i = new Imop (m_node, Imop::ALLOC, sym, vals, sym->getSizeSym ());
     pushImopAfter (result, i);
 }
 
@@ -84,6 +90,23 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 
     return 0;
 }
+
+/*******************************************************************************
+  ScopedAllocations
+*******************************************************************************/
+
+void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
+    Imop* i = new Imop (m_node, Imop::ALLOC, dest, def, size);
+    pushImopAfter (m_result, i);
+}
+
+void ScopedAllocations::freeAllocs () {
+    BOOST_FOREACH (Symbol* sym, m_allocs) {
+        Imop* i = new Imop (m_node, Imop::RELEASE, 0, sym);
+        pushImopAfter (m_result, i);
+    }
+}
+
 
 /*******************************************************************************
   CodeGenStride

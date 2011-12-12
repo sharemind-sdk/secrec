@@ -46,8 +46,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     result.setResult (destSym);
 
     // Generate code for righthand side:
-    assert (dynamic_cast<TreeNodeExpr*> (e->children().at (1)) != 0);
-    TreeNodeExpr *eArg2 = static_cast<TreeNodeExpr*>(e->children ().at (1));
+    TreeNodeExpr *eArg2 = e->rightHandSide ();
     const CGResult& arg2Result = codeGen (eArg2);
     append (result, arg2Result);
     if (result.isNotOk ()) {
@@ -260,16 +259,41 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         Imop *i = 0;
         if (e->resultType ()->isScalar()) {
             i = new Imop (e, iType, destSym, destSym, arg2Result.symbol ());
-        }
-        else {
-            Symbol* tmp = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
-            i = new Imop (e, Imop::ALLOC, tmp, arg2Result.symbol (), destSym->getSizeSym ());
             pushImopAfter (result, i);
 
-            i = new Imop (e, iType, destSym, destSym, tmp, destSym->getSizeSym());
         }
+        else {
+            ScopedAllocations allocs (*this, result);
+            Symbol* rhsSym = arg2Result.symbol ();
+            if (eArg2->resultType ()->isScalar ()) {
+                rhsSym = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+                allocs.allocTemporary (rhsSym, arg2Result.symbol (), destSym->getSizeSym ());
+            }
+            else {
+                std::stringstream ss;
+                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << ".";
+                Imop* jmp = new Imop (e, Imop::JUMP, (Symbol*) 0);
+                Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
+                SymbolLabel* errLabel = st->label (err);
+                SymbolSymbol* arg2ResultSymbol = static_cast<SymbolSymbol*>(arg2Result.symbol ());
 
-        pushImopAfter (result, i);
+                dim_iterator
+                        di = dim_begin (arg2ResultSymbol),
+                        dj = dim_begin (destSym),
+                        de = dim_end (arg2ResultSymbol);
+                for (; di != de; ++ di, ++ dj) {
+                    i = new Imop (e, Imop::JNE, errLabel, *di, *dj);
+                    code.push_imop (i);
+                }
+
+                code.push_imop (jmp);
+                result.addToNextList (jmp);
+                code.push_imop (err);
+            }
+
+            i = new Imop (e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
+            pushImopAfter (result, i);
+        }
     }
 
     return result;

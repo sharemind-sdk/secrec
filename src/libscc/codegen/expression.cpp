@@ -276,13 +276,8 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
         return result;
     }
 
-    Symbol* n = ConstantInt::get (getContext (),eArg->resultType ()->secrecDimType());
-    Imop* i = 0;
-
-    if (eArg->resultType ()->isScalar())
-        i = new Imop (m_node, Imop::ASSIGN, resSym, ConstantInt::get (getContext (), 0));
-    else
-        i = new Imop (m_node, Imop::ALLOC, resSym, ConstantInt::get (getContext (), 0), n);
+    Symbol* n = ConstantInt::get (getContext (), eArg->resultType ()->secrecDimType());
+    Imop* i = new Imop (e, Imop::ALLOC, resSym, ConstantInt::get (getContext (), 0), n);
     pushImopAfter (result, i);
 
     i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
@@ -292,7 +287,8 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
             dti = dim_begin (argResult.symbol()),
             dte = dim_end (argResult.symbol());
     for (unsigned count = 0; dti != dte; ++ dti, ++ count) {
-        Imop* i = new Imop(m_node, Imop::STORE, resSym, ConstantInt::get (getContext (),count), *dti);
+        Symbol* indexSym = ConstantInt::get (getContext (), count);
+        Imop* i = new Imop (e, Imop::STORE, resSym, indexSym, *dti);
         code.push_imop(i);
     }
 
@@ -388,9 +384,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
         return result;
     }
 
-    Symbol* rhs = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
-    Imop* i = new Imop (m_node, Imop::ALLOC, resSym, rhs, resSym->getSizeSym());
-    code.push_imop(i);
+    allocResult (result);
 
     CodeGenLoop loop (*this);
     append (result, loop.enterLoop (resSym, indices));
@@ -399,11 +393,11 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     Symbol* tmpInt = st->appendTemporary(pubIntTy);
 
     // j = 0 (right hand side index)
-    i = new Imop(m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
+    Imop* i = new Imop(m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
     code.push_imop(i);
 
     // IF (i_k >= d_k) GOTO T1;
-    i = new Imop(m_node, Imop::JGE, (Symbol*) 0, indices[k], arg1ResultSymbol->getDim(k));
+     i = new Imop(m_node, Imop::JGE, (Symbol*) 0, indices[k], arg1ResultSymbol->getDim(k));
     code.push_imop(i);
     result.addToNextList (i);
 
@@ -495,6 +489,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
     Symbol* rhs = result.symbol ();
     SymbolSymbol* resSym = generateResultSymbol (result, e);
+    ScopedAllocations allocs (*this, result);
 
     { // Eval subexpressions and copy dimensionalities:
         TreeNode::ChildrenListConstIterator it = e->children ().begin () + 1;
@@ -517,13 +512,14 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     allocResult (result);
 
     if (!eArg->resultType ()->isScalar()) {
+        assert (dynamic_cast<SymbolSymbol*>(rhs) != 0);
         // Check that new and old sizes are equal:
         Symbol* sizeSymbol = static_cast<SymbolSymbol*>(rhs)->getSizeSym ();
         Imop* jmp = new Imop (e, Imop::JE, (Symbol*) 0, sizeSymbol, resSym->getSizeSym ());
         pushImopAfter (result, jmp);
         result.addToNextList (jmp);
         std::stringstream ss;
-        ss << "ERROR: Mismatching sizes in reshape at " << e->location ();
+        ss << "ERROR: Mismatching sizes in reshape at " << e->location () << ".";
         Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
         code.push_imop (err);
     }
@@ -534,8 +530,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
             eArg->resultType ()->secrecSecType (),
             eArg->resultType ()->secrecDataType (),
             e->resultType ()->secrecDimType ()));
-        Imop* i = new Imop (e, Imop::ALLOC, rhs, tmp, resSym->getSizeSym ());
-        code.push_imop (i);
+        allocs.allocTemporary (rhs, tmp, resSym->getSizeSym ());
     }
 
     // Copy result:
@@ -601,6 +596,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     }
 
     CGResult result;
+    ScopedAllocations allocs (*this, result);
 
     // Generate code for first child expression:
     const CGResult& arg1Result (codeGen (eArg1));
@@ -627,8 +623,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         tmpe2->inheritShape (tmpe1);
         e1result = tmpe1;
         e2result = tmpe2;
-        Imop* i = new Imop (e, Imop::ALLOC, e2result, arg2Result.symbol (), tmpe1->getSizeSym ());
-        pushImopAfter (result, i);
+        allocs.allocTemporary (e2result, arg2Result.symbol (), tmpe1->getSizeSym ());
     }
     else
     if (eArg2->resultType ()->secrecDimType () > eArg1->resultType ()->secrecDimType ()) {
@@ -637,8 +632,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         tmpe1->inheritShape (tmpe2);
         e1result = tmpe1;
         e2result = tmpe2;
-        Imop* i = new Imop (e, Imop::ALLOC, e1result, arg1Result.symbol (), tmpe2->getSizeSym ());
-        pushImopAfter (result, i);
+        allocs.allocTemporary (e1result, arg1Result.symbol (), tmpe2->getSizeSym ());
     }
     else {
         std::stringstream ss;
@@ -1555,11 +1549,12 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
+    ScopedAllocations allocs (*this, result);
     Symbol* one = ConstantInt::get (getContext (), 1);
     if (!e->resultType ()->isScalar ()) {
-        one = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::ALLOC, one, ConstantInt::get (getContext (), 1), destSymSym->getSizeSym ());
-        pushImopAfter (result, i);
+        Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        allocs.allocTemporary (t, one,  destSymSym->getSizeSym ());
+        one = t;
     }
 
     // x = x `iType` 1
@@ -1688,11 +1683,12 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
+    ScopedAllocations allocs (*this, result);
     Symbol* one = ConstantInt::get (getContext (), 1);
     if (!e->resultType ()->isScalar ()) {
-        one = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
-        Imop* i = new Imop (e, Imop::ALLOC, one, ConstantInt::get (getContext (), 1), destSymSym->getSizeSym ());
-        pushImopAfter (result,i );
+        Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        allocs.allocTemporary (t, one,  destSymSym->getSizeSym ());
+        one = t;
     }
 
     // x = x `iType` 1
