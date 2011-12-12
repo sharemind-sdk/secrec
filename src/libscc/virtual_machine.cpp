@@ -408,6 +408,11 @@ MKCALLBACK(ALLOC, 1, 1, 1, 0,
       *it = v;
 )
 
+MKCALLBACK(RELEASE, 1, 0, 0, 0,
+  free (dest.un_ptr);
+  dest.un_ptr = 0;
+)
+
 MKCALLBACK(LOAD, 0, 1, 1, 0,
     storeSym (ip->args[0], arg1.un_ptr [arg2.un_uint_val]);
 )
@@ -546,6 +551,7 @@ CallbackTy getCallback (const Imop& imop) {
       case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
       case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
       case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
+      case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
       case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
       case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
       case Imop::END:        SET_SIMPLE_CALLBACK(END); break;

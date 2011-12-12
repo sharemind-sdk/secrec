@@ -47,6 +47,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::STORE,      0, 0, 0, 0,-1, 0 }
     , { Imop::LOAD,       1, 0, 0, 1,-1, 1 }
     , { Imop::ALLOC,      1, 0, 0, 1,-1, 1 }
+    , { Imop::RELEASE,    0, 0, 0, 0,-1, 1 }
     // Other expressions:
     , { Imop::PARAM,      1, 0, 0, 1,-1, 1 }
     , { Imop::DOMAINID,   1, 0, 0, 1,-1,-1 }
@@ -293,6 +294,9 @@ std::string Imop::toString() const {
         case ALLOC:
             os << dname << " = ALLOC " << a1name << " " << a2name;
             break;
+        case RELEASE:
+            os << "RELEASE " << a1name;
+            break;
         case STORE:
             os << dname << "[" << a1name << "] = " << a2name;
             break;
@@ -307,7 +311,7 @@ std::string Imop::toString() const {
             os << dname << " = -" << a1name;
             if (nArgs() == 3) os << " (" << a2name << ")";
             break;
-        case MUL:          /*   d = arg1 *  arg2;                */
+        case MUL:          /*   d = arg1 * arg2;                 */
             os << dname << " = " << a1name << " * " << a2name;
             if (nArgs() == 4) os << " (" << a3name << ")";
             break;
