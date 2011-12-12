@@ -367,22 +367,22 @@ MKCALLBACK(CALL, 0, 0, 0, 0,
 MKCALLBACK(RETCLEAN, 0, 0, 0, 0, { })
 
 MKCALLBACK(RETVOID, 0, 0, 0, 0,
-  assert (m_frames != 0);
-  const Instruction* new_i = m_frames->m_old_ip;
-  pop_frame();
-  ip = new_i;
-  CUR;
+    assert (m_frames != 0);
+    const Instruction* new_i = m_frames->m_old_ip;
+    pop_frame();
+    ip = new_i;
+    CUR;
 )
 
 MKCALLBACK(DOMAINID, 1, 0, 0, 0,
-  const SymbolDomain* dom = static_cast<const SymbolDomain*>(ip->args[1].un_sym);
-  uintptr_t c = reinterpret_cast<uintptr_t>(dom->securityType ());
-  /// hopefully correct function will be selected
-  assignValue (dest, c);
+    const SymbolDomain* dom = static_cast<const SymbolDomain*>(ip->args[1].un_sym);
+    uintptr_t c = reinterpret_cast<uintptr_t>(dom->securityType ());
+    /// hopefully correct function will be selected
+    assignValue (dest, c);
 )
 
 MKCALLBACK(PUSH, 0, 1, 0, 0,
-  m_stack.push(arg1);
+    m_stack.push(arg1);
 )
 
 MKCALLBACK(PARAM, 1, 0, 0, 0,
@@ -391,26 +391,27 @@ MKCALLBACK(PARAM, 1, 0, 0, 0,
 )
 
 MKCALLBACK(POP, 1, 0, 0, 0,
-  m_stack.top(dest);
-  m_stack.pop();
+    m_stack.top(dest);
+    m_stack.pop();
 )
 
 MKCALLBACK(JUMP, 0, 0, 0, 0,
-  ip = ip->args[0].un_inst;
-  CUR;
+    ip = ip->args[0].un_inst;
+    CUR;
 )
 
 MKCALLBACK(ALLOC, 1, 1, 1, 0,
-    Value const& v = arg1;
-    unsigned const n = arg2.un_uint_val;
+    const Value& v = arg1;
+    const unsigned n = arg2.un_uint_val;
     dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
     for (Value* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
       *it = v;
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
-  free (dest.un_ptr);
-  dest.un_ptr = 0;
+    assert (dest.un_ptr != 0);
+    free (dest.un_ptr);
+    dest.un_ptr = 0;
 )
 
 MKCALLBACK(LOAD, 0, 1, 1, 0,
@@ -518,46 +519,46 @@ CallbackTy getCallback (const Imop& imop) {
     }
 
     switch (imop.type ()) {
-      case Imop::ASSIGN:     SET_SIMPLE_CALLBACK_V(ASSIGN); break;
-      case Imop::CLASSIFY:   SET_SIMPLE_CALLBACK_V(CLASSIFY); break;
-      case Imop::DECLASSIFY: SET_SIMPLE_CALLBACK_V(DECLASSIFY); break;
-      case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
-      case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
-      case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
-      case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_SIGNED); break;
-      case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
-      case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;
-      case Imop::DIV:        SET_SPECIALIZE_CALLBACK_V(DIV,SWITCH_ARITH); break;
-      case Imop::MOD:        SET_SPECIALIZE_CALLBACK_V(MOD,SWITCH_ARITH); break;
-      case Imop::SUB:        SET_SPECIALIZE_CALLBACK_V(SUB,SWITCH_ARITH); break;
-      case Imop::LE:         SET_SPECIALIZE_CALLBACK_V(LE,SWITCH_ANY); break;
-      case Imop::LT:         SET_SPECIALIZE_CALLBACK_V(LT,SWITCH_ANY); break;
-      case Imop::GE:         SET_SPECIALIZE_CALLBACK_V(GE,SWITCH_ANY); break;
-      case Imop::GT:         SET_SPECIALIZE_CALLBACK_V(GT,SWITCH_ANY); break;
-      case Imop::EQ:         SET_SPECIALIZE_CALLBACK_V(EQ,SWITCH_ANY); break;
-      case Imop::NE:         SET_SPECIALIZE_CALLBACK_V(NE,SWITCH_ANY); break;
-      case Imop::JE:         SET_SPECIALIZE_CALLBACK(JE, SWITCH_ANY); break;
-      case Imop::JNE:        SET_SPECIALIZE_CALLBACK(JNE,SWITCH_ANY); break;
-      case Imop::JLE:        SET_SPECIALIZE_CALLBACK(JLE,SWITCH_ANY); break;
-      case Imop::JLT:        SET_SPECIALIZE_CALLBACK(JLT,SWITCH_ANY); break;
-      case Imop::JGE:        SET_SPECIALIZE_CALLBACK(JGE,SWITCH_ANY); break;
-      case Imop::JGT:        SET_SPECIALIZE_CALLBACK(JGT,SWITCH_ANY); break;
-      case Imop::JUMP:       SET_SIMPLE_CALLBACK(JUMP); break;
-      case Imop::JT:         SET_SIMPLE_CALLBACK(JT); break;
-      case Imop::JF:         SET_SIMPLE_CALLBACK(JF); break;
-      case Imop::COMMENT:    SET_SIMPLE_CALLBACK(NOP); break;
-      case Imop::ERROR:      SET_SIMPLE_CALLBACK(ERROR); break;
-      case Imop::PARAM:      SET_SIMPLE_CALLBACK(PARAM); break;
-      case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
-      case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
-      case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
-      case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
-      case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
-      case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
-      case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
-      case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
-      case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
-      default:
+    case Imop::ASSIGN:     SET_SIMPLE_CALLBACK_V(ASSIGN); break;
+    case Imop::CLASSIFY:   SET_SIMPLE_CALLBACK_V(CLASSIFY); break;
+    case Imop::DECLASSIFY: SET_SIMPLE_CALLBACK_V(DECLASSIFY); break;
+    case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
+    case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
+    case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
+    case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_SIGNED); break;
+    case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
+    case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;
+    case Imop::DIV:        SET_SPECIALIZE_CALLBACK_V(DIV,SWITCH_ARITH); break;
+    case Imop::MOD:        SET_SPECIALIZE_CALLBACK_V(MOD,SWITCH_ARITH); break;
+    case Imop::SUB:        SET_SPECIALIZE_CALLBACK_V(SUB,SWITCH_ARITH); break;
+    case Imop::LE:         SET_SPECIALIZE_CALLBACK_V(LE,SWITCH_ANY); break;
+    case Imop::LT:         SET_SPECIALIZE_CALLBACK_V(LT,SWITCH_ANY); break;
+    case Imop::GE:         SET_SPECIALIZE_CALLBACK_V(GE,SWITCH_ANY); break;
+    case Imop::GT:         SET_SPECIALIZE_CALLBACK_V(GT,SWITCH_ANY); break;
+    case Imop::EQ:         SET_SPECIALIZE_CALLBACK_V(EQ,SWITCH_ANY); break;
+    case Imop::NE:         SET_SPECIALIZE_CALLBACK_V(NE,SWITCH_ANY); break;
+    case Imop::JE:         SET_SPECIALIZE_CALLBACK(JE, SWITCH_ANY); break;
+    case Imop::JNE:        SET_SPECIALIZE_CALLBACK(JNE,SWITCH_ANY); break;
+    case Imop::JLE:        SET_SPECIALIZE_CALLBACK(JLE,SWITCH_ANY); break;
+    case Imop::JLT:        SET_SPECIALIZE_CALLBACK(JLT,SWITCH_ANY); break;
+    case Imop::JGE:        SET_SPECIALIZE_CALLBACK(JGE,SWITCH_ANY); break;
+    case Imop::JGT:        SET_SPECIALIZE_CALLBACK(JGT,SWITCH_ANY); break;
+    case Imop::JUMP:       SET_SIMPLE_CALLBACK(JUMP); break;
+    case Imop::JT:         SET_SIMPLE_CALLBACK(JT); break;
+    case Imop::JF:         SET_SIMPLE_CALLBACK(JF); break;
+    case Imop::COMMENT:    SET_SIMPLE_CALLBACK(NOP); break;
+    case Imop::ERROR:      SET_SIMPLE_CALLBACK(ERROR); break;
+    case Imop::PARAM:      SET_SIMPLE_CALLBACK(PARAM); break;
+    case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
+    case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
+    case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
+    case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
+    case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
+    case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
+    case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
+    case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
+    case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
+    default:
         assert (false && "Reached unfamiliar instruction.");
         break;
     }
@@ -651,16 +652,16 @@ private:
         VMSym out (true, sym );
 
         switch (sym->symbolType()) {
-            case Symbol::SYMBOL:
-                assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
-                        && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
-                if (static_cast<SymbolSymbol const*>(sym)->scopeType() == SymbolSymbol::GLOBAL)
-                    out.isLocal = false;
-                break;
-            case Symbol::CONSTANT:
+        case Symbol::SYMBOL:
+            assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
+                    && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
+            if (static_cast<SymbolSymbol const*>(sym)->scopeType() == SymbolSymbol::GLOBAL)
                 out.isLocal = false;
-                storeConstant (out, sym);
-            default: break;
+            break;
+        case Symbol::CONSTANT:
+            out.isLocal = false;
+            storeConstant (out, sym);
+        default: break;
         }
 
         return out;
@@ -673,10 +674,10 @@ private:
 
         // handle multi instruction IR instructions
         switch (imop.type ()) {
-            case Imop::CALL: compileCall (imop); return;
-            case Imop::RETURN: compileReturn (imop); return;
-            default:
-                break;
+        case Imop::CALL: compileCall (imop); return;
+        case Imop::RETURN: compileReturn (imop); return;
+        default:
+            break;
         }
 
         unsigned nArgs = 0;
