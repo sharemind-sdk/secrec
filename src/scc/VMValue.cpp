@@ -17,7 +17,7 @@ namespace SecreCC {
   VMValue
 ******************************************************************/
 
-std::ostream& operator << (std::ostream& os, 
+std::ostream& operator << (std::ostream& os,
                            const VMValue& value) {
     os << value.toString ();
     return os;

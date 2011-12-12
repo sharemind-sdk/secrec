@@ -220,6 +220,12 @@ public: /* Methods: */
     const_iterator end () const { return m_functions.end (); }
     void push_back (const VMFunction& f) { m_functions.push_back (f); }
 
+    /**
+     * \todo VMFunction is not that light-weight class. Should probably
+     * use the intrusive boost lists again, but this really is not the
+     * current bottle neck.
+     */
+
 protected:
 
     std::ostream& printBodyV (std::ostream& os) const;

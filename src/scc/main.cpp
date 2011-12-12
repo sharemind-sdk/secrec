@@ -14,99 +14,75 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <boost/program_options.hpp>
 
 #include <libscc/context.h>
 #include <libscc/intermediate.h>
 #include <libscc/treenode.h>
 #include <libscc/blocks.h>
 
-#include "args.h"
 #include "Compiler.h"
 
 using namespace std;
 using namespace SecreCC;
+namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
 
-    /* Parse command line arguments: */
-    const char* output_fname = 0;
-    const char* input_fname = 0;
-    while (true) {
-        static struct option options[] = 
-            { {"verbose", no_argument,       0, 'v'}
-            , {"help",    no_argument,       0, 'h'}
-            , {"output",  required_argument, 0, 'o'}
-            , { "optimize", no_argument,     0, 'O'}
-            , {0, 0, 0, 0}
-            };
+    po::options_description desc ("Available options");
+    desc.add_options ()
+            ("help,h", "Display this help message")
+            ("verbose,v", "Enable verbose output")
+            ("output,o", po::value<string>(), "Output file")
+            ("input", po::value<string>(), "Input file")
+            ;
+    po::positional_options_description p;
+    p.add("input", -1);
 
-        int option_index = 0;
-        const int c = getopt_long (argc, argv, "vhOo:", options, &option_index);
-        if (c == -1) {
-            break;
-        }
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+        options (desc).positional (p).run (), vm);
+    po::notify(vm);
 
-        switch (c) {
-            case 0:   /* intentionally empty*/   break;
-            case 'v': flags[Flag::Verbose] = 1;  break;
-            case 'h': flags[Flag::Help] = 1;     break;
-            case 'O': flags[Flag::Optimize] = 1; break;
-            case 'o':
-                if (flags[Flag::Output] != 0) {
-                    help ();
-                    return EXIT_FAILURE;
-                }
-
-                flags[Flag::Output] = 1;
-                output_fname = optarg;
-                break;
-            default: 
-                help ();
-                return EXIT_FAILURE;
-        }
+    bool verbose = false;
+    if (vm.count ("verbose")) {
+        verbose = true;
     }
 
-    if (flags[Flag::Help]) {
-        help ();
-        return EXIT_SUCCESS;
-    }
-
-    if (optind < argc) {
-        input_fname = argv[optind ++];
+    if (vm.count ("help")) {
+        cout << desc << "\n";
+        return EXIT_FAILURE;
     }
 
     /* Get input stream: */
     ostream* os = &cout;
     ofstream fout;
-    if (output_fname != 0) {
-        fout.open (output_fname);
+    if (vm.count ("output")) {
+        fout.open (vm["output"].as<string>().c_str ());
         os = &fout;
     }
 
     /* Parse the program: */
     SecreC::TreeNodeProgram* parseTree = 0;
     int parseResult = 0;
-    if (input_fname == 0) {
-        parseResult = sccparse (&parseTree);
-    }
-    else {
-        FILE *f = fopen(input_fname, "r");
+    if (vm.count ("input")) {
+        const std::string fname = vm["input"].as<string>();
+        FILE* f = fopen(fname.c_str (), "r");
         if (f != NULL) {
-            if (flags[Flag::Verbose]) {
-                cerr << "Parsing file: \"" << input_fname << "\"... ";
+            if (verbose) {
+                cerr << "Parsing file: \"" << fname << "\"... ";
                 cerr << flush;
             }
 
             parseResult = sccparse_file (f, &parseTree);
             fclose (f);
-
-            if (flags[Flag::Verbose]) {
-              cerr << "DONE!" << endl;
-            }
         } else {
-            cerr << "Unable to open file: \"" << input_fname << "\"" << endl;
+            cerr << "Unable to open file: \"" << fname << "\"" << endl;
             return EXIT_FAILURE;
         }
+    }
+    else {
+        parseResult = sccparse (&parseTree);
     }
 
     if (parseResult != 0) {

@@ -10,6 +10,7 @@
 #include "Compiler.h"
 
 #include <iostream>
+#include <boost/foreach.hpp>
 
 #include <libscc/treenode.h>
 #include <libscc/dataflowanalysis.h>
@@ -17,6 +18,7 @@
 #include <libscc/blocks.h>
 #include <libscc/constant.h>
 
+#include "SyscallManager.h"
 #include "RegisterAllocator.h"
 #include "Builtin.h"
 #include "TargetInfo.h"
@@ -96,66 +98,6 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
 
 namespace SecreCC {
 
-class Compiler::SyscallManager {
-private: /* Types: */
-
-    typedef std::map<const ConstantString*, VMLabel*> SCMap;
-    typedef std::map<PrivateSecType*, VMLabel* > PDMap;
-
-public: /* Methods: */
-
-    SyscallManager ()
-        : m_st (0)
-        , m_pdSection (0)
-        , m_scSection (0)
-    { }
-
-    ~SyscallManager () { }
-
-    /// Creates required sections.
-    void init (VMSymbolTable& st, VMLinkingUnit& vmlu) {
-        m_st = &st;
-        m_scSection = new VMBindingSection ("BIND");
-        m_pdSection = new VMBindingSection ("PDBIND");
-        vmlu.addSection (m_scSection);
-        vmlu.addSection (m_pdSection);
-    }
-
-    VMLabel* getPD (PrivateSecType* secTy) {
-        PDMap::iterator i = m_pds.find (secTy);
-        if (i == m_pds.end ()) {
-            std::ostringstream ss;
-            ss << ":PD_" << m_st->uniq ();
-            VMLabel* label = m_st->getLabel (ss.str ());
-            i = m_pds.insert (i, std::make_pair (secTy, label));
-            m_pdSection->addBinding (label, secTy->name ());
-        }
-
-        return i->second;
-    }
-
-    VMLabel* getSyscallBinding (const ConstantString* str) {
-        SCMap::iterator i = m_syscalls.find (str);
-        if (i == m_syscalls.end ()) {
-            std::ostringstream ss;
-            ss << ":SC_" << m_st->uniq ();
-            VMLabel* label = m_st->getLabel (ss.str ());
-            i = m_syscalls.insert (i, std::make_pair (str, label));
-            m_scSection->addBinding (label, str->name ());
-        }
-
-        return i->second;
-    }
-
-private: /* Fields: */
-
-    VMSymbolTable*     m_st;
-    VMBindingSection*  m_pdSection;
-    VMBindingSection*  m_scSection;
-    SCMap              m_syscalls;
-    PDMap              m_pds; ///< Privacy domains
-};
-
 /*******************************************************************************
   Compiler
 *******************************************************************************/
@@ -166,7 +108,7 @@ Compiler::Compiler (ICode& code)
     , m_param (0)
     , m_funcs (new BuiltinFunctions ())
     , m_ra (new RegisterAllocator ())
-    , m_scm (new Compiler::SyscallManager ())
+    , m_scm (new SyscallManager ())
 { }
 
 Compiler::~Compiler () {
@@ -183,8 +125,8 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     m_target = new VMCodeSection ();
     m_ra->init (m_st, lva);
     m_scm->init (m_st, vmlu);
-    for (Program::iterator i = m_code.program ().begin (), e = m_code.program ().end (); i != e; ++ i) {
-        cgProcedure (*i);
+    BOOST_FOREACH (const Procedure& proc, m_code.program ()) {
+        cgProcedure (proc);
     }
 
     m_funcs->generateAll (*m_target, m_st);

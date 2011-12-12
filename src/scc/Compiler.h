@@ -25,6 +25,7 @@ namespace SecreCC {
 
 class BuiltinFunctions;
 class RegisterAllocator;
+class SyscallManager;
 
 /*******************************************************************************
   Compiler
@@ -68,8 +69,6 @@ protected:
     void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
 
 private: /* Fields: */
-
-    class SyscallManager;
 
     SecreC::ICode&        m_code;    ///< SecreC intermediate code
     VMCodeSection*        m_target; ///< Target code

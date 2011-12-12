@@ -27,7 +27,7 @@ INCLUDE("config.local" OPTIONAL)
 # libscc
 ################################################################################
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED program_options)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
@@ -120,13 +120,14 @@ TARGET_LINK_LIBRARIES("sca" "libscc")
 include_directories("include/")
 ADD_EXECUTABLE("scc"
     "src/scc/main.cpp"
-    "src/scc/args.cpp"
     "src/scc/VMCode.h"
     "src/scc/VMCode.cpp"
     "src/scc/Compiler.h"
     "src/scc/Compiler.cpp"
     "src/scc/Builtin.h"
     "src/scc/Builtin.cpp"
+    "src/scc/SyscallManager.h"
+    "src/scc/SyscallManager.cpp"
     "src/scc/TargetInfo.h"
     "src/scc/TargetInfo.cpp"
     "src/scc/RegisterAllocator.h"
