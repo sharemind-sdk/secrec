@@ -11,7 +11,6 @@
 #include "VMCode.h"
 #include "VMSymbolTable.h"
 #include "VMValue.h"
-#include "args.h"
 
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
