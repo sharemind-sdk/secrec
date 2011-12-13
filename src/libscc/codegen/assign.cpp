@@ -21,7 +21,7 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
-    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV; // symbol pair vector
+    typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
     // Type check:
     ICode::Status s = m_tyChecker.visit (e);
@@ -59,14 +59,14 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     if (lval->children().size() == 2) {
 
         // 1. evaluate subscript
-        CodeGenSubscript cgSub (*this);
-        append (result, cgSub.codeGenSubscript (destSym, lval->children ().at (1)));
+        SubscriptInfo cgSub;
+        append (result, codeGenSubscript (cgSub, destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
             return result;
         }
 
         const SPV& spv = cgSub.spv ();
-        const std::vector<unsigned>& slices = cgSub.slices ();
+        const SubscriptInfo::SliceIndices& slices = cgSub.slices ();
 
         // 2. check that rhs has correct dimensions
         if (!eArg2->resultType ()->isScalar()) {
@@ -95,17 +95,17 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
 
         // 3. initialize stride
-        CodeGenStride stride (*this);
-        append (result, stride.codeGenStride (destSym));
+        ArrayStrideInfo stride (destSym);
+        append (result, codeGenStride (stride));
         if (result.isNotOk ()) {
             return result;
         }
 
         // 4. initialze running indices
-        std::vector<Symbol* > indices;
+        LoopInfo loopInfo;
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
             Symbol* sym = st->appendTemporary (pubIntTy);
-            indices.push_back (sym);
+            loopInfo.push_index (sym);
         }
 
         // 6. initialze symbols for offsets and temporary results
@@ -113,14 +113,12 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         Symbol* old_offset = st->appendTemporary(pubIntTy);
         Symbol* tmp_result2 = st->appendTemporary(pubIntTy);
 
-        CodeGenLoop loop (*this);
-
         // offset = 0
         Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         pushImopAfter (result, i);
 
         // 7. start
-        append (result, loop.enterLoop (spv, indices));
+        append (result, enterLoop (loopInfo, spv));
         if (result.isNotOk ()) {
             return result;
         }
@@ -132,8 +130,8 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             pushImopAfter (result, i);
 
             unsigned count = 0;
-            std::vector<Symbol* >::iterator itIt = indices.begin();
-            std::vector<Symbol* >::iterator itEnd = indices.end();
+            LoopInfo::iterator itIt = loopInfo.begin();
+            LoopInfo::iterator itEnd = loopInfo.end();
             for (; itIt != itEnd; ++ count, ++ itIt) {
                 // tmp_result2 = s[k] * idx[k]
                 i = new Imop (e, Imop::MUL, tmp_result2, stride.at (count), *itIt);
@@ -209,7 +207,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
        }
 
         // 9. loop exit
-        append (result, loop.exitLoop (indices));
+        append (result, exitLoop (loopInfo));
         if (result.isNotOk ()) {
             return result;
         }

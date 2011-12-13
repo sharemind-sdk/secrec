@@ -73,14 +73,14 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     Symbol* x = argResult.symbol ();
 
-    CodeGenSubscript subscript (*this);
-    append (result, subscript.codeGenSubscript (x, e->children ().at (1)));
+    SubscriptInfo subscript;
+    append (result, codeGenSubscript (subscript, x, e->children ().at (1)));
     if (result.isNotOk ()) {
         return result;
     }
 
-    const SPV& spv = subscript.spv ();
-    const std::vector<unsigned >& slices = subscript.slices ();
+    const SubscriptInfo::SPV& spv = subscript.spv ();
+    const SubscriptInfo::SliceIndices& slices = subscript.slices ();
 
     // 5. compute resulting shape
     {
@@ -110,12 +110,12 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     }
 
     // 4. initialze required temporary symbols
-    std::vector<Symbol* > indices;
+    LoopInfo loopInfo;
     Context& cxt = getContext ();
     TypeNonVoid* pubIntTy = TypeNonVoid::get (cxt, DATATYPE_INT);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
-        indices.push_back(sym);
+        loopInfo.push_index (sym);
     }
 
     Symbol* offset = st->appendTemporary(pubIntTy);
@@ -124,9 +124,11 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     Symbol* tmp_result2 = st->appendTemporary(pubIntTy);
 
     // 3. initialize strides
-    std::vector<CodeGenStride > strides (2, CodeGenStride (*this));
-    append (result, strides[0].codeGenStride (x));
-    append (result, strides[1].codeGenStride (resSym));
+    std::vector<ArrayStrideInfo > strides;
+    strides.push_back (x);
+    strides.push_back (resSym);
+    append (result, codeGenStride (strides[0]));
+    append (result, codeGenStride (strides[1]));
     if (result.isNotOk ()) {
         return result;
     }
@@ -136,9 +138,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         pushImopAfter (result, i);
     }
 
-    CodeGenLoop loop (*this);
-
-    append (result, loop.enterLoop (spv, indices));
+    append (result, enterLoop (loopInfo, spv));
     if (result.isNotOk ()) {
         return result;
     }
@@ -150,8 +150,8 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
         code.push_imop(i);
 
-        std::vector<Symbol* >::iterator itIt = indices.begin();
-        std::vector<Symbol* >::iterator itEnd = indices.end();
+        LoopInfo::iterator itIt = loopInfo.begin();
+        LoopInfo::iterator itEnd = loopInfo.end();
         for (unsigned k = 0; itIt != itEnd; ++ k, ++ itIt) {
             // tmp_result2 = s[k] * idx[k]
             i = new Imop (e, Imop::MUL, tmp_result2, strides[0].at (k), *itIt);
@@ -179,7 +179,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
             unsigned count = 0;
             for (std::vector<unsigned >::const_iterator it (slices.begin()); it != slices.end(); ++ it, ++ count) {
                 unsigned k = *it;
-                Symbol* idx = indices.at (k);
+                Symbol* idx = loopInfo.at (k);
 
                 i = new Imop (e, Imop::SUB, tmp_result2, idx, spv[k].first);
                 code.push_imop (i);
@@ -196,7 +196,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         }
     }
 
-    append (result, loop.exitLoop (indices));
+    append (result, exitLoop (loopInfo));
     return result;
 }
 
@@ -362,20 +362,23 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     code.push_imop(err);
 
     // Initialize strides:
-    std::vector<CodeGenStride > strides (3, CodeGenStride (*this));
-    append (result, strides[0].codeGenStride (arg1ResultSymbol));
-    append (result, strides[1].codeGenStride (arg2ResultSymbol));
-    append (result, strides[2].codeGenStride (resSym));
-    if (result.isNotOk ()) {
-        return result;
+    std::vector<ArrayStrideInfo > strides;
+    strides.push_back (arg1ResultSymbol);
+    strides.push_back (arg2ResultSymbol);
+    strides.push_back (resSym);
+    for (unsigned i = 0; i < 3; ++ i) {
+        append (result, codeGenStride (strides[i]));
+        if (result.isNotOk ()) {
+            return result;
+        }
     }
 
     // Symbols for running indices:
-    std::vector<Symbol* > indices;
+    LoopInfo loopInfo;
     TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
     for (unsigned it = 0; it < n; ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
-        indices.push_back(sym);
+        loopInfo.push_index (sym);
     }
 
     // Compute size and allocate resulting array:
@@ -386,8 +389,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     allocResult (result);
 
-    CodeGenLoop loop (*this);
-    append (result, loop.enterLoop (resSym, indices));
+    append (result, enterLoop (loopInfo, resSym));
 
     Symbol* offset = st->appendTemporary(pubIntTy);
     Symbol* tmpInt = st->appendTemporary(pubIntTy);
@@ -397,13 +399,13 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     code.push_imop(i);
 
     // IF (i_k >= d_k) GOTO T1;
-     i = new Imop(m_node, Imop::JGE, (Symbol*) 0, indices[k], arg1ResultSymbol->getDim(k));
+    i = new Imop(m_node, Imop::JGE, (Symbol*) 0, loopInfo.at (k), arg1ResultSymbol->getDim(k));
     code.push_imop(i);
     result.addToNextList (i);
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count < strides[0].size (); ++ count) {
-        Imop* i = new Imop(m_node, Imop::MUL, tmpInt, strides[0].at (count), indices[count]);
+        Imop* i = new Imop(m_node, Imop::MUL, tmpInt, strides[0].at (count), loopInfo.at (count));
         code.push_imop(i);
 
         i = new Imop(m_node, Imop::ADD, offset, offset, tmpInt);
@@ -424,14 +426,14 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     // compute j if i >= d (for e2)
     for (unsigned count = 0; count < strides[1].size (); ++ count) {
         if (count == k) {
-            i = new Imop (m_node, Imop::SUB, tmpInt, indices[count], arg1ResultSymbol->getDim(k));
+            i = new Imop (m_node, Imop::SUB, tmpInt, loopInfo.at (count), arg1ResultSymbol->getDim(k));
             pushImopAfter (result, i);
 
             i = new Imop (m_node, Imop::MUL, tmpInt, strides[1].at (count), tmpInt);
             code.push_imop(i);
         }
         else {
-            i = new Imop (m_node, Imop::MUL, tmpInt, strides[1].at (count), indices[count]);
+            i = new Imop (m_node, Imop::MUL, tmpInt, strides[1].at (count), loopInfo.at (count));
             pushImopAfter (result, i);
         }
 
@@ -450,7 +452,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count != strides[2].size (); ++ count) {
-        Imop* i = new Imop (m_node, Imop::MUL, tmpInt, strides[2].at (count), indices[count]);
+        Imop* i = new Imop (m_node, Imop::MUL, tmpInt, strides[2].at (count), loopInfo.at (count));
         code.push_imop (i);
 
         i = new Imop (m_node, Imop::ADD, offset, offset, tmpInt);
@@ -460,7 +462,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     i = new Imop (m_node, Imop::STORE, resSym, offset, tmp_elem);
     code.push_imop(i);
 
-    append (result, loop.exitLoop (indices));
+    append (result, exitLoop (loopInfo));
 
     return result;
 }
@@ -1472,7 +1474,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     assert (dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol* destSymSym = static_cast<SymbolSymbol*> (destSym);
     result.setResult (destSymSym);
-
     // either use ADD or SUB
     Imop::Type iType;
     switch (e->type ()) {
@@ -1487,33 +1488,30 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
         assert (!e->resultType ()->isScalar ());
-        CodeGenSubscript subInfo (*this);
-        append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
+        SubscriptInfo subInfo;
+        append (result, codeGenSubscript (subInfo, destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
             return result;
         }
 
-        const SPV& spv = subInfo.spv ();
-        CodeGenStride stride (*this);
-        append (result, stride.codeGenStride (destSym));
+        const SubscriptInfo::SPV& spv = subInfo.spv ();
+        ArrayStrideInfo stride (destSym);
+        append (result, codeGenStride (stride));
         if (result.isNotOk ()) {
             return result;
         }
 
         // Initialize required temporary symbols:
-        std::vector<Symbol* > indices;
+        LoopInfo loopInfo;
         Symbol* offset = st->appendTemporary(pubIntTy);
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
         Symbol* tmpValue = st->appendTemporary (pubIntTy);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
             Symbol* sym = st->appendTemporary(pubIntTy);
-            indices.push_back(sym);
+            loopInfo.push_index (sym);
         }
 
-        std::vector<Symbol*>::const_iterator idxIt;
-        CodeGenLoop loop (*this);
-
-        append (result, loop.enterLoop (spv, indices));
+        append (result, enterLoop (loopInfo, spv));
         if (result.isNotOk ()) {
             return result;
         }
@@ -1522,7 +1520,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
-        idxIt = indices.begin ();
+        LoopInfo::const_iterator idxIt = loopInfo.begin ();
         for (unsigned k = 0; k < stride.size (); ++ k, ++ idxIt) {
             i = new Imop (e, Imop::MUL, tmpResult, stride.at (k), *idxIt);
             code.push_imop (i);
@@ -1545,7 +1543,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         i = new Imop (e, Imop::STORE, destSymSym, offset, tmpValue);
         code.push_imop (i);
 
-        append (result, loop.exitLoop (indices));
+        append (result, exitLoop (loopInfo));
         return result;
     }
 
@@ -1578,7 +1576,7 @@ CGResult TreeNodeExprPostfix::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
-    typedef std::vector<std::pair<Symbol*, Symbol*> > SPV;
+    typedef SubscriptInfo::SPV SPV;
 
     // Type check:
     CGResult result;
@@ -1620,34 +1618,31 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
         assert (!e->resultType ()->isScalar ());
-        CodeGenSubscript subInfo (*this);
-        append (result, subInfo.codeGenSubscript (destSym, lval->children ().at (1)));
+        SubscriptInfo subInfo;
+        append (result, codeGenSubscript (subInfo, destSym, lval->children ().at (1)));
         if (result.isNotOk ()) {
             return result;
         }
 
         const SPV& spv = subInfo.spv ();
-        CodeGenStride stride (*this);
-        append (result, stride.codeGenStride (destSym));
+        ArrayStrideInfo stride (destSym);
+        append (result, codeGenStride (stride));
         if (result.isNotOk ()) {
             return result;
         }
 
         // Initialize required temporary symbols:
-        std::vector<Symbol* > indices;
+        LoopInfo loopInfo;
         Symbol* offset = st->appendTemporary(pubIntTy);
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
         Symbol* tmpValue = st->appendTemporary (pubIntTy);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
             Symbol* sym = st->appendTemporary(pubIntTy);
-            indices.push_back(sym);
+            loopInfo.push_index (sym);
         }
 
-        std::vector<Symbol*>::const_iterator idxIt;
 
-        CodeGenLoop loop (*this);
-
-        append (result, loop.enterLoop (spv, indices));
+        append (result, enterLoop (loopInfo, spv));
         if (result.isNotOk ()) {
             return result;
         }
@@ -1656,7 +1651,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
-        idxIt = indices.begin ();
+        LoopInfo::const_iterator idxIt = loopInfo.begin ();
         for (unsigned k = 0; k < stride.size (); ++ k, ++ idxIt) {
             i = new Imop (e, Imop::MUL, tmpResult, stride.at (k), *idxIt);
             code.push_imop (i);
@@ -1679,7 +1674,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         i = new Imop (e, Imop::STORE, destSymSym, offset, tmpValue);
         code.push_imop (i);
 
-        append (result, loop.exitLoop (indices));
+        append (result, exitLoop (loopInfo));
         return result;
     }
 

@@ -55,18 +55,18 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     }
 }
 
-void CodeGen::allocResult (CGResult& result, Symbol* vals)  {
+void CodeGen::allocResult (CGResult& result, Symbol* val)  {
     if (result.symbol ()->secrecType ()->isScalar ()) {
         log.warning () << "Allocating result for scala! Ignoring.";
         return;
     }
 
     SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(result.symbol ());
-    if (vals == 0) {
-        vals = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
+    if (val == 0) {
+        val = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
     }
 
-    Imop* i = new Imop (m_node, Imop::ALLOC, sym, vals, sym->getSizeSym ());
+    Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
     pushImopAfter (result, i);
 }
 
@@ -96,25 +96,21 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 *******************************************************************************/
 
 void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
-    Imop* i = new Imop (m_node, Imop::ALLOC, dest, def, size);
-    pushImopAfter (m_result, i);
+    Imop* i = new Imop (m_codeGen.currentNode (), Imop::ALLOC, dest, def, size);
+    m_codeGen.pushImopAfter (m_result, i);
 }
 
 void ScopedAllocations::freeAllocs () {
     BOOST_FOREACH (Symbol* sym, m_allocs) {
-        Imop* i = new Imop (m_node, Imop::RELEASE, 0, sym);
-        pushImopAfter (m_result, i);
+        Imop* i = new Imop (m_codeGen.currentNode (), Imop::RELEASE, 0, sym);
+        m_codeGen.pushImopAfter (m_result, i);
     }
 }
 
-
-/*******************************************************************************
-  CodeGenStride
-*******************************************************************************/
-
-CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
+CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
     TypeNonVoid* ty = TypeNonVoid::get (getContext (), DATATYPE_INT);
     CGResult result;
+    Symbol* tmp = strideInfo.symbol ();
     const unsigned n = tmp->secrecType ()->secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
         log.debug () << "Generating stride of scalar!";
@@ -122,78 +118,70 @@ CGResult CodeGenStride::codeGenStride (Symbol* tmp) {
     }
 
     SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
-    m_stride.clear ();
-    m_stride.reserve (n);
+    strideInfo.clear ();
+    strideInfo.reserve (n);
 
     for (unsigned it = 0; it < n; ++ it) {
-        m_stride.push_back (st->appendTemporary (ty));
+        strideInfo.push_back (st->appendTemporary (ty));
     }
 
-    Imop* i = new Imop (m_node, Imop::ASSIGN, m_stride[0], ConstantInt::get (getContext (), 1));
+    Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (0), ConstantInt::get (getContext (), 1));
     pushImopAfter (result, i);
 
     for (unsigned it = 1; it < n; ++ it) {
         Symbol* symDim = sym->getDim (it - 1);
-        i = new Imop (m_node, Imop::MUL, m_stride[it], m_stride[it - 1], symDim);
+        i = new Imop (m_node, Imop::MUL,
+            strideInfo.at (it), strideInfo.at (it - 1), symDim);
         code.push_imop(i);
     }
 
     return result;
 }
 
-/*******************************************************************************
-  CodeGenLoop
-*******************************************************************************/
-
-CGResult CodeGenLoop::enterLoop (Symbol* tmp, const IndexList& indices) {
-    assert (m_jumpStack.empty ());
-
+CGResult CodeGen::enterLoop (LoopInfo& loopInfo, Symbol* tmp) {
+    assert (loopInfo.empty ());
     CGResult result;
-    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
-    IndexList::const_iterator idxIt = indices.begin ();
-    assert (sym != 0);
-    for (unsigned count = 0; idxIt != indices.end (); ++ idxIt, ++ count) {
-        Symbol* idx  = *idxIt;
-
+    assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
+    SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
+    unsigned count = 0;
+    BOOST_FOREACH (Symbol* idx, loopInfo) {
         Imop* i = new Imop (m_node, Imop::ASSIGN, idx, ConstantInt::get (getContext (),0));
         code.push_imop (i);
         result.patchFirstImop (i);
 
-        i = new Imop (m_node, Imop::JGE, 0, idx, sym->getDim (count));
+        i = new Imop (m_node, Imop::JGE, 0, idx, sym->getDim (count ++));
         code.push_imop (i);
-        m_jumpStack.push (i);
+        loopInfo.pushJump (i);
     }
 
     return result;
 }
 
-CGResult CodeGenLoop::enterLoop (const SPV& spv, const IndexList& indices) {
-    assert (m_jumpStack.empty ());
-
+CGResult CodeGen::enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv) {
+    typedef SubscriptInfo::SPV SPV;
+    assert (loopInfo.empty ());
     CGResult result;
-    IndexList::const_iterator idxIt = indices.begin ();
-    for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it, ++ idxIt) {
-        Symbol* i_lo = it->first;
-        Symbol* i_hi = it->second;
+    LoopInfo::const_iterator idxIt = loopInfo.begin ();
+    BOOST_FOREACH (const SPV::value_type& v, spv) {
         Symbol* idx  = *idxIt;
 
-        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, i_lo);
+        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, v.first);
         code.push_imop (i);
         result.patchFirstImop (i);
 
-        i = new Imop (m_node, Imop::JGE, 0, idx, i_hi);
+        i = new Imop (m_node, Imop::JGE, 0, idx, v.second);
         code.push_imop (i);
-        m_jumpStack.push (i);
+        loopInfo.pushJump (i);
+        ++ idxIt;
     }
 
     return result;
 }
 
-CGResult CodeGenLoop::exitLoop (const IndexList& indices) {
+CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     CGResult result;
     Imop* prevJump = 0;
-    for (IndexList::const_reverse_iterator it (indices.rbegin ()); it != indices.rend (); ++ it) {
-        Symbol* idx = *it;
+    BOOST_REVERSE_FOREACH (Symbol* idx, loopInfo) {
         Imop* i = new Imop (m_node, Imop::ADD, idx, idx, ConstantInt::get (getContext (),1));
         code.push_imop (i);
         result.patchFirstImop (i);
@@ -203,9 +191,9 @@ CGResult CodeGenLoop::exitLoop (const IndexList& indices) {
 
         i = new Imop (m_node, Imop::JUMP, (Symbol*) 0);
         code.push_imop (i);
-        i->setJumpDest (st->label (m_jumpStack.top ()));
-        prevJump = m_jumpStack.top ();
-        m_jumpStack.pop ();
+        i->setJumpDest (st->label (loopInfo.top ()));
+        prevJump = loopInfo.top ();
+        loopInfo.pop ();
     }
 
     if (prevJump != 0) {
@@ -215,17 +203,16 @@ CGResult CodeGenLoop::exitLoop (const IndexList& indices) {
     return result;
 }
 
-/*******************************************************************************
-  CodeGenSubscript
-*******************************************************************************/
-
-CGResult CodeGenSubscript::codeGenSubscript (Symbol* tmp, TreeNode* node) {
+CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNode* node) {
+    typedef SubscriptInfo::SPV SPV;
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
     assert (node != 0);
     assert (tmp != 0);
     assert (node->type () == NODE_SUBSCRIPT);
 
+    SubscriptInfo::SliceIndices& m_slices = subInfo.m_slices;
+    SubscriptInfo::SPV& m_spv = subInfo.m_spv;
     m_slices.clear ();
     m_spv.clear ();
 

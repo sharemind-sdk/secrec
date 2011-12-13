@@ -18,10 +18,110 @@
 
 namespace SecreC {
 
+class CodeGen;
 class ICodeList;
 class SymbolTable;
 class CompileLog;
 class Context;
+
+/*******************************************************************************
+  SubscriptInfo
+*******************************************************************************/
+
+class SubscriptInfo {
+public: /* Types: */
+    typedef std::vector<unsigned> SliceIndices;
+    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
+
+    SubscriptInfo () { }
+    ~SubscriptInfo () { }
+
+    const SliceIndices& slices () const { return m_slices; }
+    const SPV& spv () const { return m_spv; }
+
+protected:
+
+    friend class CodeGen;
+
+private: /* Fields: */
+
+    SliceIndices m_slices;  ///< Specifies which indices are slices.
+    SPV          m_spv;     ///< List of ranges for every index.
+};
+
+/*******************************************************************************
+  LoopInfo
+*******************************************************************************/
+
+class LoopInfo {
+public: /* Types: */
+    typedef std::vector<Symbol* > IndexList;
+    typedef IndexList::iterator iterator;
+    typedef IndexList::const_iterator const_iterator;
+
+public: /* Methods: */
+    LoopInfo () { }
+    ~LoopInfo () {
+        assert (m_jumpStack.empty () && "The loop was not exited.");
+    }
+
+    void push_index (Symbol* symbol) { m_indices.push_back (symbol); }
+    Symbol* at (IndexList::size_type n) const { return m_indices.at (n); }
+    iterator begin () { return m_indices.begin (); }
+    iterator end () { return m_indices.end (); }
+    const_iterator begin () const { return m_indices.begin (); }
+    const_iterator end () const { return m_indices.end (); }
+
+protected:
+    friend class CodeGen;
+
+    void pushJump (Imop* imop) { m_jumpStack.push (imop); }
+    bool empty () const { return m_jumpStack.empty (); }
+    Imop* top () const { return m_jumpStack.top (); }
+    void pop () { return m_jumpStack.pop (); }
+
+private: /* Fields: */
+    IndexList          m_indices;
+    std::stack<Imop* > m_jumpStack;
+};
+
+/*******************************************************************************
+  ArrayStrideInfo
+*******************************************************************************/
+
+class ArrayStrideInfo {
+private: /* Types: */
+    typedef std::vector<Symbol*> StrideList;
+public:
+    typedef StrideList::iterator iterator;
+    typedef StrideList::const_iterator const_iterator;
+    typedef StrideList::size_type size_type;
+public: /* Methods: */
+
+    ArrayStrideInfo (Symbol* sym)
+        : m_symbol (sym)
+    { }
+
+    ~ArrayStrideInfo () { }
+
+    const_iterator begin () const { return m_stride.begin (); }
+    const_iterator end () const { return m_stride.end (); }
+    unsigned size () const { return m_stride.size (); }
+    Symbol* at (unsigned i) const { return m_stride.at (i); }
+
+protected:
+
+    void push_back (Symbol* s) { m_stride.push_back (s); }
+    void clear () { m_stride.clear (); }
+    void reserve (size_type n) { m_stride.reserve (n); }
+    Symbol* symbol () const { return m_symbol; }
+
+    friend class CodeGen;
+
+private: /* Fields: */
+    Symbol*    m_symbol;
+    StrideList m_stride;
+};
 
 /*******************************************************************************
   CodeGen
@@ -41,23 +141,18 @@ class Context;
 class CodeGen {
 private:
 
-    CodeGen& operator = (const CodeGen&); // do not implement
-
+    void operator = (const CodeGen&); // DO NOT IMPLEMENT
+    CodeGen (const CodeGen&); // DO NOT IMPLEMENT
 private: /* Types: */
 
     typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
 
 public: /* Methods: */
 
-    inline explicit CodeGen (const CodeGen& other)
-        : code (other.code)
-        , st (other.st)
-        , log (other.log)
-        , m_node (other.m_node)
-        , m_tyChecker (other.m_tyChecker)
-    { }
-
-    inline CodeGen (ICodeList &code, SymbolTable &st, CompileLog &log, TypeChecker& tyChecker)
+    inline CodeGen (ICodeList &code,
+                    SymbolTable& st,
+                    CompileLog& log,
+                    TypeChecker& tyChecker)
         : code (code)
         , st (&st)
         , log (log)
@@ -66,6 +161,10 @@ public: /* Methods: */
     { }
 
     inline ~CodeGen () { }
+
+    TreeNode* currentNode () const {
+        return m_node;
+    }
 
     inline Context& getContext () const {
         return m_tyChecker.getContext ();
@@ -218,10 +317,16 @@ public: /* Methods: */
     CGResult cgExprAssign (TreeNodeExprAssign* e);
     /// \}
 
+    CGResult codeGenSubscript (SubscriptInfo& subInfo, Symbol* x, TreeNode* node);
+    CGResult codeGenStride (ArrayStrideInfo& strideInfo);
+    CGResult enterLoop (LoopInfo& loopInfo, Symbol* sym);
+    CGResult enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv);
+    CGResult exitLoop (LoopInfo& loopInfo);
+
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
 
-    void allocResult (CGResult& result, Symbol* vals = 0);
+    void allocResult (CGResult& result, Symbol* val = 0);
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
@@ -243,7 +348,7 @@ protected: /* Fields: */
   ScopedAllocations
 *******************************************************************************/
 
-class ScopedAllocations : public CodeGen {
+class ScopedAllocations {
 private:
     void operator = (const ScopedAllocations&); // DO NOT IMPLEMENT
     ScopedAllocations (const ScopedAllocations&); // DO NOT IMPLEMENT
@@ -255,7 +360,7 @@ private: /* Types: */
 public: /* Methods: */
 
     ScopedAllocations (CodeGen& base, CGResult& result)
-        : CodeGen (base)
+        : m_codeGen (base)
         , m_result (result)
     { }
 
@@ -271,130 +376,9 @@ private:
 
 private: /* Fields: */
 
+    CodeGen&     m_codeGen;
     CGResult&    m_result;
     Allocations  m_allocs;
-};
-
-/*******************************************************************************
-  CodeGenStride
-*******************************************************************************/
-
-/**
- * \brief Code generation of a stride.
- *
- * Given multi-dimensional that has dimensionalities in
- * d_1, d_2, ..., d_n the stride is computed as follows:
- * 1, d_1, d_1 d_2, ..., d_1 d_2 ... d_{n-1}
- *
- * Note that this is stride for column major order.
- */
-class CodeGenStride : public CodeGen {
-public: /* Types: */
-
-    typedef std::vector<Symbol*> StrideList;
-
-public: /* Methods: */
-
-    inline explicit CodeGenStride (CodeGen& base)
-        : CodeGen (base) { }
-
-    inline ~CodeGenStride () { }
-
-    unsigned size () const {
-        return m_stride.size ();
-    }
-
-    Symbol* at (unsigned i) const {
-        return m_stride.at (i);
-    }
-
-    CGResult codeGenStride (Symbol* sym);
-
-private: /* Fields: */
-
-    StrideList m_stride;
-};
-
-
-/*******************************************************************************
-  CodeGenLoop
-*******************************************************************************/
-
-/**
- * \brief Generate code to loop over entire range of multi-dimensional value or limited slice of one.
- * \code
- * CodeGenLoop loop (*this);
- * append (result, loop.enterLoop (spv, indices));
- * // check result, and generate code for loop body
- * append (result, loop.exitLoop ());
- * return result;
- * \endcode
- */
-class CodeGenLoop : public CodeGen {
-public: /* Types: */
-
-    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
-    typedef std::vector<Symbol* > IndexList;
-
-public: /* Methods: */
-
-    inline explicit CodeGenLoop (const CodeGen& base)
-        : CodeGen (base)
-    { }
-
-    inline ~CodeGenLoop () {
-        assert (m_jumpStack.empty () && "The loop was destroyed before exiting!");
-    }
-
-    /// loop over entire range
-    CGResult enterLoop (Symbol* sym, const IndexList& indices);
-
-    /// loop over limited range
-    CGResult enterLoop (const SPV& spv, const IndexList& indices);
-
-    /// exit the loop
-    CGResult exitLoop (const IndexList& indices);
-
-private: /* Fields: */
-
-    std::stack<Imop* > m_jumpStack;  ///< Jump stack. Entering loop builds it, exiting loop consumes it.
-};
-
-/*******************************************************************************
-  CodeGenSubscript
-*******************************************************************************/
-
-/**
- * \brief Code generation of a subscript (general indexing).
- */
-class CodeGenSubscript : public CodeGen {
-public: /* Types: */
-
-    typedef std::vector<unsigned> SliceIndices;
-    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
-
-public: /* Methods: */
-
-    inline explicit CodeGenSubscript (const CodeGen& base)
-        : CodeGen (base)
-    { }
-
-    inline ~CodeGenSubscript () { }
-
-    const SliceIndices& slices () const {
-        return m_slices;
-    }
-
-    const SPV& spv () const {
-        return m_spv;
-    }
-
-    CGResult codeGenSubscript (Symbol* x, TreeNode* node);
-
-private: /* Fields: */
-
-    SliceIndices m_slices;  ///< Specifies which indices are slices.
-    SPV          m_spv;     ///< List of ranges for every index.
 };
 
 }
