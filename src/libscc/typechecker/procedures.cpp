@@ -379,7 +379,7 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         }
 
         if (procTempSymbol != 0) {
-            assert (false);
+            m_log.fatal () << "Multiple matching procedures!";
             return ICode::E_TYPE;
         }
 

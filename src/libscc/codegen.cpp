@@ -39,7 +39,6 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
     SymbolSymbol* resSym = static_cast<SymbolSymbol*>(result.symbol ());
     SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
-    assert (sym != 0 && resSym != 0);
     dim_iterator dj = dim_begin (resSym);
     Imop* i = 0;
 
@@ -55,7 +54,7 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     }
 }
 
-void CodeGen::allocResult (CGResult& result, Symbol* val)  {
+void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
     if (result.symbol ()->secrecType ()->isScalar ()) {
         log.warning () << "Allocating result for scala! Ignoring.";
         return;
@@ -67,6 +66,10 @@ void CodeGen::allocResult (CGResult& result, Symbol* val)  {
     }
 
     Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
+    if (! isVariable) {
+        result.addTempAlloc (sym);
+    }
+
     pushImopAfter (result, i);
 }
 
@@ -89,22 +92,6 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
     }
 
     return 0;
-}
-
-/*******************************************************************************
-  ScopedAllocations
-*******************************************************************************/
-
-void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
-    Imop* i = new Imop (m_codeGen.currentNode (), Imop::ALLOC, dest, def, size);
-    m_codeGen.pushImopAfter (m_result, i);
-}
-
-void ScopedAllocations::freeAllocs () {
-    BOOST_FOREACH (Symbol* sym, m_allocs) {
-        Imop* i = new Imop (m_codeGen.currentNode (), Imop::RELEASE, 0, sym);
-        m_codeGen.pushImopAfter (m_result, i);
-    }
 }
 
 CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
@@ -203,6 +190,37 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     return result;
 }
 
+void CodeGen::releaseTempAllocs (CGResult& result, Symbol* ex) {
+    BOOST_FOREACH (Symbol* s, result.tempAllocs ()) {
+        if (s != ex) {
+            Imop* i = new Imop (m_node, Imop::RELEASE, 0, s);
+            pushImopAfter (result, i);
+        }
+    }
+
+    result.clearTempAllocs ();
+}
+
+void CodeGen::releaseLocalAllocs (CGResult& result, Symbol* ex) {
+    BOOST_FOREACH (SymbolSymbol* sym, m_allocs) {
+        if (sym == ex) {
+            continue;
+        }
+
+        if (sym->scopeType () == SymbolSymbol::LOCAL) {
+            Imop* imop = new Imop (m_node, Imop::RELEASE, 0, sym);
+            pushImopAfter (result, imop);
+        }
+    }
+}
+
+void CodeGen::releaseGlobalAllocs (CGResult& result) {
+    BOOST_FOREACH (SymbolSymbol* sym, m_allocs) {
+        Imop* i = new Imop (m_node, Imop::RELEASE, 0, sym);
+        pushImopAfter (result, i);
+    }
+}
+
 CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNode* node) {
     typedef SubscriptInfo::SPV SPV;
     typedef TreeNode::ChildrenListConstIterator CLCI;
@@ -210,6 +228,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
     assert (node != 0);
     assert (tmp != 0);
     assert (node->type () == NODE_SUBSCRIPT);
+    assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
 
     SubscriptInfo::SliceIndices& m_slices = subInfo.m_slices;
     SubscriptInfo::SPV& m_spv = subInfo.m_spv;
@@ -217,14 +236,11 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
     m_spv.clear ();
 
     CGResult result;
-    CLCI it    = node->children ().begin ();
-    CLCI itEnd = node->children ().end ();
-    SymbolSymbol* x = dynamic_cast<SymbolSymbol*>(tmp);
-    assert (x != 0);
+    unsigned count = 0;
+    SymbolSymbol* x = static_cast<SymbolSymbol*>(tmp);
 
     // 1. evaluate the indices and manage the syntactic suggar
-    for (unsigned count = 0; it != itEnd; ++ it, ++ count) {
-        TreeNode* t = *it;
+    BOOST_FOREACH (TreeNode* t, node->children ()) {
         Symbol* r_lo = ConstantInt::get (getContext (), 0);
         Symbol* r_hi = x->getDim (count);
 
@@ -265,6 +281,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         }
 
         m_spv.push_back (std::make_pair (r_lo, r_hi));
+        ++ count;
     }
 
     // 2. check that indices are legal
@@ -298,6 +315,23 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         result.addToNextList (jmp);
         code.push_imop(err);
         return result;
+    }
+}
+
+/*******************************************************************************
+  ScopedAllocations
+*******************************************************************************/
+
+void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
+    Imop* i = new Imop (m_codeGen.currentNode (), Imop::ALLOC, dest, def, size);
+    m_codeGen.pushImopAfter (m_result, i);
+    m_allocs.push_back (dest);
+}
+
+void ScopedAllocations::freeAllocs () {
+    BOOST_FOREACH (Symbol* sym, m_allocs) {
+        Imop* i = new Imop (m_codeGen.currentNode (), Imop::RELEASE, 0, sym);
+        m_codeGen.pushImopAfter (m_result, i);
     }
 }
 

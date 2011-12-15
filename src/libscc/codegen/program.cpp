@@ -91,6 +91,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
     typedef TypeNonVoid TNV;
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
+    m_allocs.clear ();
     const TNI *id = def->identifier ();
 
     CGStmtResult result;
@@ -183,6 +184,8 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def) {
             }
 
             assert (fType->kind() == TNV::PROCEDUREVOID);
+            releaseLocalAllocs (result);
+
             Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
             i->setReturnDestFirstImop (st->label (result.firstImop ()));
             pushImopAfter (result, i);
@@ -286,6 +289,7 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     // Bind call to main(), i.e. mainCall:
     mainCall->setCallDest (mainProc);
     retClean->setArg2 (st->label (mainCall));
+    releaseGlobalAllocs (result);
     return result;
 }
 

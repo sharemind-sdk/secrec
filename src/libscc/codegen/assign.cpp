@@ -228,11 +228,14 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         if (e->resultType ()->isScalar()) {
             i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
         } else {
+            i = new Imop (e, Imop::RELEASE, 0, destSym);
+            pushImopAfter (result, i);
+
             if (eArg2->resultType ()->isScalar ()) {
                 i = new Imop (e, Imop::ALLOC, destSym, arg2Result.symbol (), destSym->getSizeSym ());
             }
             else {
-                allocResult (result);
+                allocResult (result, 0, true);
                 i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol (), destSym->getSizeSym ());
             }
         }

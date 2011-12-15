@@ -36,6 +36,8 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
             break;
         }
 
+        releaseTempAllocs (result);
+
         if (cResult.firstImop () == 0) {
             if (c->type () != NODE_DECL) {
                 log.fatal () << "Statement with no effect at " << c->location ();
@@ -123,8 +125,11 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     ns->setName (s->variableName ());
     st->appendSymbol (ns);
 
-    bool isScalar = s->resultType ()->isScalar ();
     unsigned n = 0;
+    const bool isScalar = s->resultType ()->isScalar ();
+    if (! isScalar) {
+        addAlloc (ns);
+    }
 
     // Initialize shape:
     TypeNonVoid* dimType =
@@ -511,6 +516,7 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
         return result;
     }
 
+
     assert (result.firstImop () != 0);
 
     // Generate code for first branch:
@@ -583,7 +589,10 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         return result;
     }
 
+
     if (s->expression () == 0) {
+        releaseLocalAllocs (result);
+
         Imop *i = new Imop (s, Imop::RETURNVOID, 0);
         i->setReturnDestFirstImop (st->label (s->containingProcedure ()->symbol ()->target ()));
         pushImopAfter (result, i);
@@ -593,6 +602,8 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
 
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
+        releaseTempAllocs (result, eResult.symbol ());
+        releaseLocalAllocs (result, eResult.symbol ());
         if (result.isNotOk ()) {
             return result;
         }
@@ -885,38 +896,40 @@ CGStmtResult TreeNodeStmtAssert::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
-    CGStmtResult result;
-
     // Type check the expression
     TreeNodeExpr *e = s->expression ();
     e->setContextType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
+        return CGStmtResult (status);
     }
 
     if (!e->havePublicBoolType()) {
         log.fatal() << "Conditional expression in assert statement must be of "
                        "type public bool in " << e->location();
-        result.setStatus (ICode::E_TYPE);
-        return result;
+        return CGStmtResult (ICode::E_TYPE);
     }
 
     CGBranchResult eResult (codeGenBranch (e));
     assert (eResult.firstImop () != 0);
-    append (result, eResult);
-    if (result.isNotOk ()) {
-        return result;
+    if (eResult.isNotOk ()) {
+        return eResult;
     }
+
+    CGStmtResult result;
+    result.addTempAllocs (eResult.tempAllocs ());
+    releaseTempAllocs (result);
+    releaseLocalAllocs (result);
 
     std::ostringstream ss;
     ss << "assert failed at " << s->location ();
     Imop *i = newError (s, ConstantString::get (getContext (), ss.str ()));
     pushImopAfter (result, i);
 
-    eResult.patchFalseList (st->label (i));
+    eResult.patchFalseList (st->label (result.firstImop ()));
     result.addToNextList (eResult.trueList ());
+    result.setFirstImop (eResult.firstImop ());
+    result.setTempAllocs (eResult.tempAllocs ());
     return result;
 }
 

@@ -39,7 +39,7 @@ class CompileLog;
  * Also serves as base class for other kinds of code gen results.
  */
 class CGResult {
-public:
+public: /* Methods: */
 
     inline explicit CGResult (ICode::Status s = ICode::OK)
         : m_result (0)
@@ -107,11 +107,34 @@ public:
         m_status = status;
     }
 
-private:
-    std::list<Imop* >   m_nextList;   ///< unpatched jumps to next imop
-    Symbol*             m_result;     ///< symbol the result is stored in
-    Imop*               m_firstImop;  ///< pointer to the first instruction
-    ICode::Status       m_status;     ///< status of the code generation
+    /// Temporary memory allocation. Will be cleared after evaluation the statement.
+    void addTempAlloc (Symbol* s) {
+        m_tempAllocs.push_back (s);
+    }
+
+    void setTempAllocs (const std::list<Symbol*>& allocs) {
+        m_tempAllocs = allocs;
+    }
+
+    void addTempAllocs (const std::list<Symbol*>& allocs) {
+        m_tempAllocs.insert (m_tempAllocs.end (),
+            allocs.begin (), allocs.end ());
+    }
+
+    const std::list<Symbol* >& tempAllocs () const {
+        return m_tempAllocs;
+    }
+
+    void clearTempAllocs () {
+        m_tempAllocs.clear ();
+    }
+
+private: /* Fields: */
+    std::list<Imop* >   m_nextList;     ///< unpatched jumps to next imop
+    Symbol*             m_result;       ///< symbol the result is stored in
+    Imop*               m_firstImop;    ///< pointer to the first instruction
+    std::list<Symbol* > m_tempAllocs;   ///< local memory allocations
+    ICode::Status       m_status;       ///< status of the code generation
 };
 
 /*******************************************************************************
@@ -167,7 +190,6 @@ public:
     void addToFalseList (Imop* imop) {
         m_falseList.push_back (imop);
     }
-
 
     void patchTrueList (SymbolLabel* dest) {
         patchList (m_trueList, dest);

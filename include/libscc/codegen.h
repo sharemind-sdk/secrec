@@ -143,9 +143,11 @@ private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT
     CodeGen (const CodeGen&); // DO NOT IMPLEMENT
+
 private: /* Types: */
 
     typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
+    typedef std::list<SymbolSymbol*> AllocList;
 
 public: /* Methods: */
 
@@ -206,6 +208,7 @@ public: /* Methods: */
             result.patchNextList (st->label (other.firstImop ()));
         }
 
+        result.addTempAllocs (other.tempAllocs ());
         result.addToNextList (other.nextList ());
         if (other.isNotOk ()) {
             result.setStatus (other.status ());
@@ -317,16 +320,26 @@ public: /* Methods: */
     CGResult cgExprAssign (TreeNodeExprAssign* e);
     /// \}
 
+    /// Memory management
+    /// \{
+    void allocResult (CGResult& result, Symbol* val = 0, bool isVariable = false);
+    void releaseTempAllocs (CGResult& result, Symbol* ex = 0);
+    void addAlloc (SymbolSymbol* sym) { m_allocs.push_back (sym); }
+    void releaseLocalAllocs (CGResult& result, Symbol* ex = 0);
+    void releaseGlobalAllocs (CGResult& result);
+    /// \}
+
+    /// Looping, and indexing.
+    /// \{
     CGResult codeGenSubscript (SubscriptInfo& subInfo, Symbol* x, TreeNode* node);
     CGResult codeGenStride (ArrayStrideInfo& strideInfo);
     CGResult enterLoop (LoopInfo& loopInfo, Symbol* sym);
     CGResult enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv);
     CGResult exitLoop (LoopInfo& loopInfo);
+    /// \}
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
-
-    void allocResult (CGResult& result, Symbol* val = 0);
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
@@ -342,6 +355,7 @@ protected: /* Fields: */
     TreeNode*     m_node;       ///< Current tree node. \todo get rid of it somehow
     TypeChecker&  m_tyChecker;  ///< Instance of type checker.
     CallMap       m_callsTo;    ///< Map
+    AllocList     m_allocs;
 };
 
 /*******************************************************************************

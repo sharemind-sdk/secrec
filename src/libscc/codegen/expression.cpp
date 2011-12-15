@@ -102,10 +102,14 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     {
         Symbol* def = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
         Imop* i = 0;
-        if (!isScalar)
+        if (!isScalar) {
             i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
-        else
+            result.addTempAlloc (resSym);
+        }
+        else {
             i = newAssign (e, resSym, def);
+        }
+
         pushImopAfter (result, i);
     }
 
@@ -279,6 +283,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     Symbol* n = ConstantInt::get (getContext (), eArg->resultType ()->secrecDimType());
     Imop* i = new Imop (e, Imop::ALLOC, resSym, ConstantInt::get (getContext (), 0), n);
     pushImopAfter (result, i);
+    result.addTempAlloc (resSym);
 
     i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
     code.push_imop(i);
@@ -879,6 +884,9 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
 
     if (!e->resultType ()->isVoid ()) {
         codeGenSize (result);
+        if (! e->resultType ()->isScalar ()) {
+            result.addTempAlloc (result.symbol ());
+        }
     }
 
     return result;
@@ -1036,6 +1044,8 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
             return result;
         }
 
+        Symbol* needToFree = 0;
+
         if (!e->resultType ()->isVoid ()) {
             if (!eTrueResult.symbol ()->secrecType ()->isScalar ()) {
                 SymbolSymbol* resultSymbol = static_cast<SymbolSymbol*>(result.symbol ());
@@ -1044,10 +1054,12 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
                                     defaultConstant (getContext (), eTrueResult.symbol ()->secrecType ()->secrecDataType ()),
                                     resultSymbol->getSizeSym ());
                 pushImopAfter (eTrueResult, i);
+                needToFree = resultSymbol;
             }
 
             Imop* i = newAssign (e, result.symbol (), eTrueResult.symbol ());
             pushImopAfter (eTrueResult, i);
+            releaseTempAllocs (eTrueResult);
         }
 
         result.patchFirstImop (eTrueResult.firstImop ());
@@ -1072,11 +1084,17 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
                                     defaultConstant (getContext (), eFalseResult.symbol ()->secrecType ()->secrecDataType ()),
                                     resultSymbol->getSizeSym ());
                 pushImopAfter (eFalseResult, i);
+                needToFree = resultSymbol;
             }
 
             Imop* i = newAssign (e, result.symbol (), eFalseResult.symbol ());
             pushImopAfter (eFalseResult, i);
-        }        
+            releaseTempAllocs (eFalseResult);
+        }
+
+        if (needToFree) {
+            result.addTempAlloc (needToFree);
+        }
 
         // Link boolean expression code to the rest of the code:
         e1Result.patchTrueList (st->label (eTrueResult.firstImop ()));
