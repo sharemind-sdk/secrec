@@ -28,6 +28,13 @@ namespace { // anonymous namespace
 
 using namespace SecreC;
 
+std::vector<std::string*> stringHeap;
+void releaseStringHeap () {
+    BOOST_FOREACH (std::string* str, stringHeap) {
+        delete str;
+    }
+}
+
 /// Primitive values of the VM.
 union Value {
     uint64_t            un_uint_val;
@@ -69,7 +76,9 @@ inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
 inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
 inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
 inline void assignValue (Value& v, const std::string& r) {
-    v.un_str_val = new std::string (r);
+    std::string* copy =  new std::string (r);
+    v.un_str_val = copy;
+    stringHeap.push_back (copy);
 }
 
 /// Stack for values
@@ -821,6 +830,7 @@ int VirtualMachine::run (const Program& pr) {
 
     free (code);
     free_store (m_global);
+    releaseStringHeap ();
 
     return status;
 }
