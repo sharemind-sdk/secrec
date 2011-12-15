@@ -150,7 +150,7 @@ struct VMSym {
 typedef std::map<const Symbol*, Value> Store;
 
 /// Type of instantiated callback.
-typedef void (*CallbackTy)(const Instruction*);
+typedef int (*CallbackTy)(const Instruction*);
 
 /// Instructions are composed of callback, and 4 arguments.
 struct Instruction {
@@ -245,13 +245,13 @@ void storeSym (VMSym sym, Value val) {
 
 // Note that returns after callback explicitly tell compiler that callbacks
 // don't return. That should make tail call detection trivial.
-#define NEXT do { ((ip + 1)->callback (ip + 1)); return; } while (0)
+#define NEXT do { return ((ip + 1)->callback (ip + 1)); } while (0)
 
-#define CUR do { ip->callback (ip); return; } while (0)
+#define CUR do { return ip->callback (ip); } while (0)
 
 #define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, CODE) \
     template <SecrecDataType ty>\
-    inline void __##NAME##_callback (const Instruction* ip) \
+    inline int __##NAME##_callback (const Instruction* ip) \
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
@@ -351,7 +351,7 @@ MKCALLBACK(JGT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >  getValue<ty>(arg2)))
 
 MKCALLBACK (ERROR, 1, 0, 0, 0,
     fprintf (stderr, "%s\n", dest.un_str_val->c_str());
-    exit (EXIT_FAILURE);
+    return EXIT_FAILURE;
 )
 
 MKCALLBACK (PRINT, 1, 0, 0, 0,
@@ -424,7 +424,7 @@ MKCALLBACK(STORE, 1, 1, 1, 0,
 
 MKCALLBACK(NOP, 0, 0, 0, 0, { })
 
-MKCALLBACK(END, 0, 0, 0, 0, exit (EXIT_SUCCESS); )
+MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
 
 /**
  * Following macros deal with selecting proper specialization for
@@ -559,7 +559,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
     default:
-        assert (false && "Reached unfamiliar instruction.");
+        assert (false && "Reached unsupported instruction.");
         break;
     }
 
@@ -567,7 +567,7 @@ CallbackTy getCallback (const Imop& imop) {
 }
 
 /**
- * All constants in VM are stored in global scope.
+ * All constants in VM are stored in global store.
  * This is pretty big hack, but makes the life a lot simpler.
  * Following 2 function offer a way to store libscc constant symbols
  * to the global scope.
@@ -578,7 +578,7 @@ void storeConstantHelper (Value& out, const Symbol* c) {
     assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
 }
 
-void storeConstant (VMSym sym, const Symbol* c) { // typename SecrecTypeInfo<ty>::CType& value) {
+void storeConstant (VMSym sym, const Symbol* c) {
     SecrecDataType dtype = c->secrecType ()->secrecDataType ();
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     Value& out = store[sym.un_sym];
@@ -807,16 +807,22 @@ private:
 
 namespace SecreC {
 
-void VirtualMachine::run (const Program& pr) {
+int VirtualMachine::run (const Program& pr) {
     Compiler comp;
     Instruction* code = comp.runOn (pr);
 
     // execute
     push_frame (0);
-    code->callback (code);
-    pop_frame ();
+    int status = code->callback (code);
+
+    while (m_frames != 0) {
+        pop_frame ();
+    }
+
     free (code);
     free_store (m_global);
+
+    return status;
 }
 
 std::string VirtualMachine::toString(void) {

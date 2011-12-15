@@ -10,7 +10,7 @@ class Program;
 class VirtualMachine {
 public:
     inline VirtualMachine() { }
-    void run (const Program&);
+    int run (const Program&);
     std::string toString(void);
 };
 

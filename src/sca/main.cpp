@@ -2,6 +2,7 @@
 #include <cstring>
 #include <getopt.h>
 #include <iostream>
+#include <memory>
 
 #include <libscc/context.h>
 #include <libscc/blocks.h>
@@ -61,11 +62,13 @@ static int flags[Flag::Count];
 
 static
 int run (const char* filename) {
-    SecreC::TreeNodeProgram *parseTree = 0;
+    std::auto_ptr<SecreC::TreeNodeProgram> parseTree;
     int exitCode = 0;
 
     if (filename == 0) {
-        exitCode = sccparse(&parseTree);
+        SecreC::TreeNodeProgram* tmpTree = 0;
+        exitCode = sccparse(&tmpTree);
+        parseTree.reset (tmpTree);
     } else {
         FILE *f = fopen(filename, "r");
         if (f != NULL) {
@@ -74,7 +77,9 @@ int run (const char* filename) {
                 cerr << flush;
             }
 
-            exitCode = sccparse_file(f, &parseTree);
+            SecreC::TreeNodeProgram* tmpTree = 0;
+            exitCode = sccparse_file(f, &tmpTree);
+            parseTree.reset (tmpTree);
             fclose(f);
 
             if (flags[Flag::Verbose]) {
@@ -86,18 +91,19 @@ int run (const char* filename) {
         }
     }
 
-    fflush(stdout);
-    fflush(stderr);
+    fflush (stdout);
+    fflush (stderr);
 
     if (exitCode == 0) {
-        assert(parseTree != 0);
+        assert(parseTree.get () != 0);
         if (flags[Flag::PrintAst]) {
           cout << parseTree->toString() << endl << endl;
         }
 
         SecreC::Context context;
         SecreC::ICode icode;
-        icode.init (context, parseTree);
+
+        icode.init (context, parseTree.get ());
 
         if (icode.status() == SecreC::ICode::OK) {
             SecreC::Program& pr = icode.program ();
@@ -105,6 +111,16 @@ int run (const char* filename) {
             if (flags[Flag::Verbose]) {
               cerr << "Valid intermediate code generated." << endl
                    << icode.compileLog();
+            }
+
+            if (flags[Flag::Eval]) {
+                SecreC::VirtualMachine eval;
+                exitCode = eval.run (pr);
+                if (flags[Flag::Verbose]) {
+                    cerr << eval.toString();
+                }
+
+                return exitCode;
             }
 
             if (flags[Flag::PrintST]) {
@@ -118,14 +134,6 @@ int run (const char* filename) {
             if (flags[Flag::CFGDotty]) {
                 pr.toDotty (cout);
                 cout << std::flush;
-            }
-
-            if (flags[Flag::Eval]) {
-                SecreC::VirtualMachine eval;
-                eval.run (pr);
-                if (flags[Flag::Verbose]) {
-                    cerr << eval.toString();
-                }
             }
 
             // Run data flow analysis and print the results:
@@ -154,7 +162,6 @@ int run (const char* filename) {
         }
     }
 
-    delete parseTree;
     return exitCode;
 }
 
