@@ -14,6 +14,8 @@
 #include <ostream>
 #include <string>
 
+#include "VMDataType.h"
+
 namespace SecreCC {
 
 class VMValue;
@@ -32,6 +34,7 @@ public: /* Methods: */
     VMInstruction& operator << (const char* str) { return arg (str); }
     VMInstruction& operator << (VMValue* val) { return arg (val); }
     VMInstruction& operator << (unsigned n) { return arg (n); }
+    VMInstruction& operator << (VMDataType ty) { return arg (dataTypeToStr (ty)); }
 
 protected:
 

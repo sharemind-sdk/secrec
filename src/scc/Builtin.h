@@ -10,11 +10,11 @@
 #ifndef BUILTIN_H
 #define BUILTIN_H
 
+#include <map>
+
 #include "VMValue.h"
 #include "VMCode.h"
 #include "VMSymbolTable.h"
-
-#include <map>
 
 namespace SecreC {
     class Imop;

@@ -8,12 +8,14 @@
  */
 
 #include "Builtin.h"
-#include "TargetInfo.h"
+
+#include <sstream>
 
 #include <libscc/imop.h>
 #include <libscc/symbol.h>
 
-#include <sstream>
+#include "VMDataType.h"
+
 
 namespace SecreCC {
 
@@ -106,9 +108,13 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     using namespace SecreC;
     const Imop& imop = *m_imop;
     const unsigned n = imop.nArgs ();
+    assert (n > 0);
     assert (imop.isVectorized ());
-    VMImm* argSize = st.getImm (secrecDTypeSize (imop.arg1 ()->secrecType ()->secrecDataType ()));
-    VMImm* destSize = st.getImm (secrecDTypeSize (imop.dest ()->secrecType ()->secrecDataType ()));
+    VMDataType argTy = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+    VMDataType destTy = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
+    assert (argTy != VM_INVALID && destTy != VM_INVALID);
+    VMImm* argSize = st.getImm (sizeInBytes (argTy));
+    VMImm* destSize = st.getImm (sizeInBytes (destTy));
 
     VMBlock entryB (0, 0);
 
@@ -186,7 +192,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         }
 
         VMInstruction instr;
-        instr << name << secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+        instr << name << argTy;
         for (unsigned i = 0; i < n - 1; ++ i)
             instr << rTmp [i];
         middleB.push_back (instr);

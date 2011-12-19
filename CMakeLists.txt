@@ -128,8 +128,6 @@ ADD_EXECUTABLE("scc"
     "src/scc/Builtin.cpp"
     "src/scc/SyscallManager.h"
     "src/scc/SyscallManager.cpp"
-    "src/scc/TargetInfo.h"
-    "src/scc/TargetInfo.cpp"
     "src/scc/RegisterAllocator.h"
     "src/scc/RegisterAllocator.cpp"
     "src/scc/VMInstruction.h"
@@ -137,7 +135,8 @@ ADD_EXECUTABLE("scc"
     "src/scc/VMSymbolTable.h"
     "src/scc/VMSymbolTable.cpp"
     "src/scc/VMValue.h"
-    "src/scc/VMValue.cpp")
+    "src/scc/VMValue.cpp"
+    "src/scc/VMDataType.h")
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.0.1.0")

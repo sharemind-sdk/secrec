@@ -15,6 +15,8 @@
 #include <list>
 #include <ostream>
 
+#include "VMDataType.h"
+
 namespace SecreC {
     class Block;
 } // namespace SecreC
@@ -58,9 +60,9 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    const VMLabel*        m_name;
-    const SecreC::Block*  m_secrecBlock;
-    InstList              m_instructions;
+    const VMLabel*        const  m_name;
+    const SecreC::Block*  const  m_secrecBlock;
+    InstList                     m_instructions;
 };
 
 /*******************************************************************************
@@ -193,6 +195,66 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
+  VMDataSection
+*******************************************************************************/
+
+class VMDataSection : public VMSection {
+private:
+    VMDataSection (const VMDataSection&); // DO NOT IMPLEMENT
+    void operator = (const VMDataSection&); // DO NOT IMPLEMENT
+public: /* Types: */
+
+    enum Type {
+        DATA = 0,
+        RODATA
+    };
+
+    struct Record {
+    private:
+        void operator = (const Record&); // DO NOT IMPLEMENT
+    public:
+        Record (VMLabel* label, const char* type, const std::string& value)
+            : m_label (label)
+            , m_dataType (type)
+            , m_value (value)
+        { }
+
+        VMLabel*      const  m_label;
+        const char*   const  m_dataType;
+        std::string   const  m_value;
+
+        std::ostream& print (std::ostream& os) const;
+    };
+
+private:
+
+    typedef std::list<Record > Records;
+
+public: /* Methods: */
+
+    explicit VMDataSection (Type type)
+        : VMSection (type == RODATA ? "RODATA" : "DATA")
+        , m_type (type)
+    { }
+
+    virtual ~VMDataSection () { }
+
+    void addRecord (VMLabel* l, const char* t, const std::string& v) {
+        m_records.push_back (Record (l, t, v));
+    }
+
+protected:
+
+    std::ostream& printBodyV (std::ostream& os) const;
+
+private: /* Fields: */
+
+    const Type  m_type;
+    Records     m_records;
+};
+
+
+/*******************************************************************************
   VMCodeSection
 *******************************************************************************/
 
@@ -261,7 +323,8 @@ public: /* Methods: */
     /// The section will be released on destructions.
     void addSection (VMSection* section);
 
-    friend std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code);
+    friend std::ostream&
+    operator << (std::ostream& os, const VMLinkingUnit& code);
 
 private: /* Fields: */
 
@@ -273,6 +336,8 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function);
 std::ostream& operator << (std::ostream& os, const VMBinding& binding);
 std::ostream& operator << (std::ostream& os, const VMSection& section);
 std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code);
+std::ostream& operator << (std::ostream& os, const VMDataSection::Record& record);
+
 
 
 } // namespace SecreCC

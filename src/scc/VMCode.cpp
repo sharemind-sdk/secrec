@@ -40,7 +40,8 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
     assert (function.name () != 0);
     os << function.name ()->name () << '\n';
     if (function.numLocals () != 0) {
-        assert (! function.isStart () && "Must not have local registers in global scope");
+        assert (! function.isStart ()
+                && "Must not have local registers in global scope");
         os << "resizestack 0x" << std::hex  << function.numLocals () << '\n';
     }
 
@@ -77,12 +78,37 @@ std::ostream& VMBindingSection::printBodyV (std::ostream& os) const {
 }
 
 /*******************************************************************************
+  VMDataSection
+*******************************************************************************/
+
+std::ostream& VMDataSection::Record::print (std::ostream& os) const {
+    if (m_label) {
+        os << m_label->name () << ' ';
+    }
+
+    os << m_dataType << ' ';
+    os << m_value;
+    return os;
+}
+
+std::ostream&
+operator << (std::ostream& os, const VMDataSection::Record& record) {
+    return record.print (os);
+}
+
+std::ostream& VMDataSection::printBodyV (std::ostream& os) const {
+    std::copy (m_records.begin (), m_records.end (),
+        std::ostream_iterator<VMDataSection::Record>(os, "\n"));
+    return os;
+}
+
+/*******************************************************************************
   VMCodeSection
 *******************************************************************************/
 
 std::ostream& VMCodeSection::printBodyV (std::ostream& os) const {
     if (numGlobals () > 0) {
-        os << "resizestack 0x" << std::hex  << numGlobals () << '\n';
+        os << "resizestack 0x" << std::hex << numGlobals () << '\n';
     }
 
     std::copy (begin (), end (), std::ostream_iterator<VMFunction>(os, "\n"));

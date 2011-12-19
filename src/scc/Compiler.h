@@ -59,6 +59,7 @@ protected:
     void cgReturn (VMBlock& block, const SecreC::Imop& imop);
     void cgArithm (VMBlock& block, const SecreC::Imop& imop);
     void cgAlloc (VMBlock& block, const SecreC::Imop& imop);
+    void cgRelease (VMBlock& block, const SecreC::Imop& imop);
     void cgStore (VMBlock& block, const SecreC::Imop& imop);
     void cgLoad (VMBlock& block, const SecreC::Imop& imop);
     void cgSyscall (VMBlock& block, const SecreC::Imop& imop);
@@ -68,10 +69,12 @@ protected:
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
     void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
 
+    VMValue* find (const SecreC::Symbol* sym) const;
+
 private: /* Fields: */
 
     SecreC::ICode&        m_code;    ///< SecreC intermediate code
-    VMCodeSection*        m_target; ///< Target code
+    VMCodeSection*        m_target;  ///< Target code
     VMSymbolTable         m_st;      ///< VM symbol table
     unsigned              m_param;   ///< Current param count
     BuiltinFunctions*     m_funcs;   ///< Bult-in functions
