@@ -28,7 +28,7 @@ std::string escape (const std::string& str) {
         }
     }
 
-    os << '"';
+    os << "\\0\"";
     return os.str ();
 }
 

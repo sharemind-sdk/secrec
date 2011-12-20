@@ -138,13 +138,14 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     m_ra = new RegisterAllocator ();
     m_scm = new SyscallManager ();
     m_strLit = new StringLiterals ();
+    RegisterAllocator::LVPtr lv (new LiveVariables ());
     DataFlowAnalysisRunner runner;
-    LiveVariables lva;
 
-    runner.addAnalysis (&lva);
+
+    runner.addAnalysis (lv.get ());
     runner.run (m_code.program ());
     m_target = codeSec;
-    m_ra->init (m_st, lva);
+    m_ra->init (m_st, lv);
     m_scm->init (m_st, scSec, pdSec);
     m_strLit->init (m_st, rodataSec);
 
@@ -155,9 +156,6 @@ void Compiler::run (VMLinkingUnit& vmlu) {
 
     m_funcs->generateAll (*m_target, m_st);
     m_target->setNumGlobals (m_ra->globalCount ());
-
-    // for safety, as lva variable falls out of scope here:
-    m_ra->invalidateLVA ();
 }
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {

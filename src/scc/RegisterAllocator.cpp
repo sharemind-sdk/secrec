@@ -284,15 +284,11 @@ RegisterAllocator::~RegisterAllocator () {
     delete m_inferenceGraph;
 }
 
-void RegisterAllocator::init (VMSymbolTable& st, SecreC::LiveVariables& lv) {
-    assert (m_st == 0 && m_lv == 0 && m_inferenceGraph == 0);
+void RegisterAllocator::init (VMSymbolTable& st, LVPtr lv) {
+    assert (m_st == 0 && m_lv.get () == 0 && m_inferenceGraph == 0);
     m_st = &st;
-    m_lv = &lv;
+    m_lv = lv;
     m_inferenceGraph = new InferenceGraph ();
-}
-
-void RegisterAllocator::invalidateLVA () {
-    m_lv = 0;
 }
 
 VMVReg* RegisterAllocator::temporaryReg () {

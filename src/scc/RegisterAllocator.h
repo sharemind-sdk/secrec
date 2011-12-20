@@ -12,6 +12,7 @@
 
 #include <set>
 #include <stack>
+#include <memory>
 
 namespace SecreC {
     class Imop;
@@ -35,6 +36,7 @@ class VMFunction;
 class RegisterAllocator {
 public: /* Types: */
 
+    typedef std::auto_ptr<SecreC::LiveVariables > LVPtr;
     typedef std::set<const SecreC::Symbol*> Symbols;
     typedef std::set<VMVReg*> RegSet;
     typedef std::stack<VMVReg*> RegStack;
@@ -44,9 +46,7 @@ public: /* Methods: */
     RegisterAllocator ();
     ~RegisterAllocator ();
 
-    void init (VMSymbolTable& st, SecreC::LiveVariables& lv);
-
-    void invalidateLVA ();
+    void init (VMSymbolTable& st, LVPtr lv);
 
     VMVReg* temporaryReg ();
 
@@ -68,7 +68,7 @@ private: /* Fields: */
     class InferenceGraph;
 
     VMSymbolTable*          m_st;
-    SecreC::LiveVariables*  m_lv;
+    LVPtr                   m_lv; ///< Pointer to live variables.
     InferenceGraph*         m_inferenceGraph;
     RegSet                  m_live;
     RegStack                m_temporaries;
