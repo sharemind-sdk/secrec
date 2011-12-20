@@ -277,18 +277,29 @@ private: /* Fields: */
 RegisterAllocator::RegisterAllocator ()
     : m_st (0)
     , m_lv (0)
-    , m_inferenceGraph (new InferenceGraph ())
+    , m_inferenceGraph (0)
 { }
 
 RegisterAllocator::~RegisterAllocator () {
     delete m_inferenceGraph;
 }
 
+void RegisterAllocator::init (VMSymbolTable& st, SecreC::LiveVariables& lv) {
+    assert (m_st == 0 && m_lv == 0 && m_inferenceGraph == 0);
+    m_st = &st;
+    m_lv = &lv;
+    m_inferenceGraph = new InferenceGraph ();
+}
+
+void RegisterAllocator::invalidateLVA () {
+    m_lv = 0;
+}
+
 VMVReg* RegisterAllocator::temporaryReg () {
     VMVReg* reg = m_st->getVReg (m_isGlobal);
     m_temporaries.push (reg);
     m_inferenceGraph->addNode (reg);
-    for (std::set<VMVReg*>::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
+    for (RegSet::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
         m_inferenceGraph->addEdge (reg, *i);
     }
 
@@ -371,7 +382,7 @@ void RegisterAllocator::defSymbol (const Symbol* symbol) {
     assert (dynamic_cast<VMVReg*>(reg) != 0);
     VMVReg* vreg = static_cast<VMVReg*>(reg);
     m_inferenceGraph->addNode (vreg);
-    for (std::set<VMVReg*>::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
+    for (RegSet::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
         m_inferenceGraph->addEdge (vreg, *i);
     }
 

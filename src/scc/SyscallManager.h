@@ -46,7 +46,7 @@ public: /* Methods: */
      * The binding requested by the get methods will be added
      * into the apropriate sections.
      */
-    void init (VMSymbolTable& st, VMLinkingUnit& vmlu);
+    void init (VMSymbolTable& st, VMBindingSection* sc, VMBindingSection* pd);
 
     /// Request a label for a security domain.
     VMLabel* getPD (SecreC::PrivateSecType* secTy);

@@ -36,16 +36,17 @@ class RegisterAllocator {
 public: /* Types: */
 
     typedef std::set<const SecreC::Symbol*> Symbols;
+    typedef std::set<VMVReg*> RegSet;
+    typedef std::stack<VMVReg*> RegStack;
 
 public: /* Methods: */
 
     RegisterAllocator ();
     ~RegisterAllocator ();
 
-    void init (VMSymbolTable& st, SecreC::LiveVariables& lv) {
-        m_st = &st;
-        m_lv = &lv;
-    }
+    void init (VMSymbolTable& st, SecreC::LiveVariables& lv);
+
+    void invalidateLVA ();
 
     VMVReg* temporaryReg ();
 
@@ -69,8 +70,8 @@ private: /* Fields: */
     VMSymbolTable*          m_st;
     SecreC::LiveVariables*  m_lv;
     InferenceGraph*         m_inferenceGraph;
-    std::set<VMVReg*>       m_live;
-    std::stack<VMVReg*>     m_temporaries;
+    RegSet                  m_live;
+    RegStack                m_temporaries;
     bool                    m_isGlobal;
 };
 

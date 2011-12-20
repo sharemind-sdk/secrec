@@ -16,12 +16,12 @@ SyscallManager::SyscallManager ()
 SyscallManager::~SyscallManager () { }
 
 /// Creates required sections.
-void SyscallManager::init (VMSymbolTable& st, VMLinkingUnit& vmlu) {
+void SyscallManager::init (VMSymbolTable& st,
+                           VMBindingSection* sc,
+                           VMBindingSection* pd) {
     m_st = &st;
-    m_scSection = new VMBindingSection ("BIND");
-    m_pdSection = new VMBindingSection ("PDBIND");
-    vmlu.addSection (m_scSection);
-    vmlu.addSection (m_pdSection);
+    m_scSection = sc;
+    m_pdSection = pd;
 }
 
 VMLabel* SyscallManager::getPD (SecreC::PrivateSecType* secTy) {

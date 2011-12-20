@@ -19,6 +19,7 @@
 #include <libscc/constant.h>
 
 #include "SyscallManager.h"
+#include "StringLiterals.h"
 #include "RegisterAllocator.h"
 #include "Builtin.h"
 #include "VMDataType.h"
@@ -106,32 +107,57 @@ Compiler::Compiler (ICode& code)
     : m_code (code)
     , m_target (0)
     , m_param (0)
-    , m_funcs (new BuiltinFunctions ())
-    , m_ra (new RegisterAllocator ())
-    , m_scm (new SyscallManager ())
+    , m_funcs (0)
+    , m_ra (0)
+    , m_scm (0)
+    , m_strLit (0)
 { }
 
 Compiler::~Compiler () {
     delete m_funcs;
     delete m_ra;
     delete m_scm;
+    delete m_strLit;
 }
 
 void Compiler::run (VMLinkingUnit& vmlu) {
+
+    // Create and add the linking unit sections:
+    VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
+    VMBindingSection* pdSec = new VMBindingSection ("PDBIND");
+    VMBindingSection* scSec = new VMBindingSection ("BIND");
+    VMCodeSection* codeSec = new VMCodeSection ();
+
+    vmlu.addSection (pdSec);
+    vmlu.addSection (scSec);
+    vmlu.addSection (rodataSec);
+    vmlu.addSection (codeSec);
+
+    // Create and initialize components:
+    m_funcs = new BuiltinFunctions ();
+    m_ra = new RegisterAllocator ();
+    m_scm = new SyscallManager ();
+    m_strLit = new StringLiterals ();
     DataFlowAnalysisRunner runner;
     LiveVariables lva;
+
     runner.addAnalysis (&lva);
     runner.run (m_code.program ());
-    m_target = new VMCodeSection ();
+    m_target = codeSec;
     m_ra->init (m_st, lva);
-    m_scm->init (m_st, vmlu);
+    m_scm->init (m_st, scSec, pdSec);
+    m_strLit->init (m_st, rodataSec);
+
+    // Finally generate code:
     BOOST_FOREACH (const Procedure& proc, m_code.program ()) {
         cgProcedure (proc);
     }
 
     m_funcs->generateAll (*m_target, m_st);
     m_target->setNumGlobals (m_ra->globalCount ());
-    vmlu.addSection (m_target);
+
+    // for safety, as lva variable falls out of scope here:
+    m_ra->invalidateLVA ();
 }
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {
@@ -255,10 +281,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     m_funcs->insert (target, BuiltinAlloc (size));
 
     block.push_back (
-        VMInstruction ()
-            << "call"
-            << target
-            << find (imop.dest ())
+        VMInstruction () << "call" << target << find (imop.dest ())
     );
 }
 

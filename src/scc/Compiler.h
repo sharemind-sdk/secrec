@@ -26,6 +26,7 @@ namespace SecreCC {
 class BuiltinFunctions;
 class RegisterAllocator;
 class SyscallManager;
+class StringLiterals;
 
 /*******************************************************************************
   Compiler
@@ -80,6 +81,7 @@ private: /* Fields: */
     BuiltinFunctions*     m_funcs;   ///< Bult-in functions
     RegisterAllocator*    m_ra;      ///< Instance of register allocator
     SyscallManager*       m_scm;
+    StringLiterals*       m_strLit;  ///< String literals
 };
 
 } // namespace SecreCC
