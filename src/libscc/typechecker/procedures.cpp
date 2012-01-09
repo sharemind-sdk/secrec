@@ -234,10 +234,12 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
         assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* t = d->varType ();
-        TreeNodeIdentifier* id = t->secType ()->identifier ();
-        if (quantifiedDomains.find (id->value ()) == quantifiedDomains.end ()) {
-            if (! t->secType ()->isPublic () && findIdentifier (id) == 0) {
-                return ICode::E_TYPE;
+        if (! t->secType ()->isPublic ()) {
+            TreeNodeIdentifier* id = t->secType ()->identifier ();
+            if (quantifiedDomains.find (id->value ()) == quantifiedDomains.end ()) {
+                if (findIdentifier (id) == 0) {
+                    return ICode::E_TYPE;
+                }
             }
         }
     }

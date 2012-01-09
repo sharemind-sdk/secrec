@@ -43,9 +43,11 @@ unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
         assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* t = d->varType ();
-        TreeNodeIdentifier* id = t->secType ()->identifier ();
-        if (quantifiedDomains.find (id->value ()) != quantifiedDomains.end ()) {
-            ++ count;
+        if (! t->secType ()->isPublic ()) {
+            TreeNodeIdentifier* id = t->secType ()->identifier ();
+            if (quantifiedDomains.find (id->value ()) != quantifiedDomains.end ()) {
+                ++ count;
+            }
         }
     }
 
