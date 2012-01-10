@@ -1,6 +1,8 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
+#include <iterator>
+
 #include "types.h"
 
 
@@ -147,17 +149,12 @@ class SymbolSymbol: public Symbol {
         const bool             m_isTemporary;
 };
 
+
 template <typename BaseTy, typename ElemTy >
-class DimIterator : std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
+class DimIterator : public std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
 public: /* Types: */
 
-    typedef std::iterator<std::bidirectional_iterator_tag, ElemTy* > Super;
     typedef DimIterator<BaseTy, ElemTy > Self;
-    using typename Super::pointer;
-    using typename Super::value_type;
-    using typename Super::reference;
-    using typename Super::iterator_category;
-    using typename Super::difference_type;
 
 public: /* Methods: */
 
@@ -179,10 +176,10 @@ public: /* Methods: */
 
     inline bool operator == (const Self& i) const { return m_index == i.m_index; }
     inline bool operator != (const Self& i) const { return m_index != i.m_index; }
-    inline value_type operator*() const { return m_symbol->m_dims[m_index]; }
-    inline value_type operator->() const { return operator * (); }
-    inline value_type& operator*() { return m_symbol->m_dims[m_index]; }
-    inline value_type& operator->() { return operator * (); }
+    inline ElemTy* operator*() const { return m_symbol->m_dims[m_index]; }
+    inline ElemTy* operator->() const { return operator * (); }
+    inline ElemTy*& operator*() { return m_symbol->m_dims[m_index]; }
+    inline ElemTy*& operator->() { return operator * (); }
     inline Self& operator ++ () { ++ m_index; return *this; }
     inline Self  operator ++ (int) { Self tmp = *this; ++ m_index; return tmp; }
     inline Self& operator -- () { -- m_index; return *this; }
