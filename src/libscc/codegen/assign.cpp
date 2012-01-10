@@ -235,8 +235,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                 i = new Imop (e, Imop::ALLOC, destSym, arg2Result.symbol (), destSym->getSizeSym ());
             }
             else {
-                allocResult (result, 0, true);
-                i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol (), destSym->getSizeSym ());
+                i = new Imop (e, Imop::COPY, destSym, arg2Result.symbol (), destSym->getSizeSym ());
             }
         }
 
@@ -261,7 +260,6 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         if (e->resultType ()->isScalar()) {
             i = new Imop (e, iType, destSym, destSym, arg2Result.symbol ());
             pushImopAfter (result, i);
-
         }
         else {
             ScopedAllocations allocs (*this, result);

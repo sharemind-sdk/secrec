@@ -148,12 +148,16 @@ class SymbolSymbol: public Symbol {
 };
 
 template <typename BaseTy, typename ElemTy >
-class DimIterator : std::iterator<std::bidirectional_iterator_tag, ElemTy > {
+class DimIterator : std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
 public: /* Types: */
 
-    typedef std::iterator<std::bidirectional_iterator_tag, ElemTy > Super;
+    typedef std::iterator<std::bidirectional_iterator_tag, ElemTy* > Super;
     typedef DimIterator<BaseTy, ElemTy > Self;
-    typedef typename Super::pointer pointer;
+    using typename Super::pointer;
+    using typename Super::value_type;
+    using typename Super::reference;
+    using typename Super::iterator_category;
+    using typename Super::difference_type;
 
 public: /* Methods: */
 
@@ -175,8 +179,10 @@ public: /* Methods: */
 
     inline bool operator == (const Self& i) const { return m_index == i.m_index; }
     inline bool operator != (const Self& i) const { return m_index != i.m_index; }
-    inline pointer operator*() const { return m_symbol->m_dims[m_index]; }
-    inline pointer operator->() const { return operator * (); }
+    inline value_type operator*() const { return m_symbol->m_dims[m_index]; }
+    inline value_type operator->() const { return operator * (); }
+    inline value_type& operator*() { return m_symbol->m_dims[m_index]; }
+    inline value_type& operator->() { return operator * (); }
     inline Self& operator ++ () { ++ m_index; return *this; }
     inline Self  operator ++ (int) { Self tmp = *this; ++ m_index; return tmp; }
     inline Self& operator -- () { -- m_index; return *this; }
@@ -199,6 +205,8 @@ inline dim_iterator dim_begin (Symbol* symbol) { return dim_begin (dynamic_cast<
 inline dim_iterator dim_end (Symbol* symbol) { return dim_end (dynamic_cast<SymbolSymbol*>(symbol)); }
 inline dim_const_iterator dim_begin (const Symbol* symbol) { return dim_begin (dynamic_cast<const SymbolSymbol*>(symbol)); }
 inline dim_const_iterator dim_end (const Symbol* symbol) { return dim_end (dynamic_cast<const SymbolSymbol*>(symbol)); }
+inline std::pair<dim_iterator, dim_iterator> dim_range (Symbol* symbol) { return std::make_pair (dim_begin (symbol), dim_end (symbol)); }
+inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol* symbol) { return std::make_pair (dim_begin (symbol), dim_end (symbol)); }
 /// \}
 
 /*******************************************************************************

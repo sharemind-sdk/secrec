@@ -1,5 +1,7 @@
 #include "treenode.h"
 
+#include <boost/foreach.hpp>
+
 #include "symboltable.h"
 #include "misc.h"
 #include "typechecker.h"
@@ -164,12 +166,9 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
             pushImopAfter (result, i);
         }
 
-        TreeNode::ChildrenListConstIterator
-                ei = s->children ().at (2)->children ().begin (),
-                ee = s->children ().at (2)->children ().end ();
-        for (; ei != ee; ++ ei, ++ n) {
-            assert (dynamic_cast<TreeNodeExpr*> (*ei) != 0);
-            TreeNodeExpr* e = static_cast<TreeNodeExpr*> (*ei);
+        BOOST_FOREACH (TreeNode* _e, s->children ().at (2)->children ()) {
+            assert (dynamic_cast<TreeNodeExpr*>(_e) != 0);
+            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(_e);
             const CGResult& eResult = codeGen (e);
             append (result, eResult);
             if (result.isNotOk ()) {
@@ -182,6 +181,7 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
             i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (),
                           eResult.symbol ());
             code.push_imop (i);
+            ++ n;
         }
     }
     else {
@@ -200,16 +200,30 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
     if (s->procParam ()) {
         Imop *i = 0;
+        SymbolSymbol* tns = st->appendTemporary(
+                    static_cast<TypeNonVoid*>(ns->secrecType ()));
 
         if (isScalar) {
-            i = new Imop (s, Imop::PARAM, ns);
-            pushImopAfter (result, i);
+            if (isString) {
+                i = new Imop (s, Imop::PARAM, tns);
+                pushImopAfter (result, i);
+
+                i = new Imop (s, Imop::PUSHCREF, 0, tns);
+                code.push_imop (i);
+
+                i = new Imop (s, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                i = new Imop (s, Imop::PARAM, ns);
+                pushImopAfter (result, i);
+            }
         }
         else {
-
-            SymbolSymbol* tns = st->appendTemporary(
-                        static_cast<TypeNonVoid*> (ns->secrecType ()));
-
             i = new Imop (s, Imop::PARAM, tns);
             pushImopAfter (result, i);
 
@@ -220,30 +234,22 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
             i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
                           ConstantInt::get (getContext (), 1));
-            pushImopAfter (result, i);
+            code.push_imop (i);
 
             for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
                 i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (), *di);
                 code.push_imop(i);
             }
 
-            i = new Imop (s, Imop::ALLOC, ns,
-                defaultConstant (getContext (), ns->secrecType ()->secrecDataType ()),
-                ns->getSizeSym ());
-            code.push_imop (i);
-
-            i = new Imop (s, Imop::ASSIGN, ns, tns, ns->getSizeSym());
+            i = new Imop (s, Imop::COPY, ns, tns, ns->getSizeSym ());
             code.push_imop (i);
         }
     }
-    else
+    else // Regular declaration, right hand side is defined:
     if (s->children ().size () > 3) {
 
         // evaluate rhs
-        TreeNode *t = s->children ().at (3);
-        assert ((t->type () & NODE_EXPR_MASK) != 0x0);
-        assert (dynamic_cast<TreeNodeExpr*> (t) != 0);
-        TreeNodeExpr *e = static_cast<TreeNodeExpr*>(t);
+        TreeNodeExpr *e = s->rightHandSide ();
         const CGResult& eResult = codeGen (e);
         append (result, eResult);
         if (result.isNotOk ()) {
@@ -260,18 +266,17 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 assert (s->resultType ()->secrecDimType() == e->resultType()->secrecDimType());
 
                 SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
-                dim_iterator
-                    di = dim_begin (ns),
-                    dj = dim_begin (eResultSymbol),
-                    de = dim_end (ns);
-                for (; di != de; ++ di, ++ dj) {
-                    Imop* i = new Imop (s, Imop::ASSIGN, *di, *dj);
+                dim_iterator srcIter = dim_begin (eResultSymbol);
+                BOOST_FOREACH (Symbol* destSym, dim_range (ns)) {
+                    assert (srcIter != dim_end (eResultSymbol));
+                    Imop* i = new Imop (s, Imop::ASSIGN, destSym, *srcIter);
                     pushImopAfter (result, i);
+                    ++ srcIter;
                 }
 
                 if (!isScalar) {
                     Imop* i = newAssign (s,  ns->getSizeSym (), eResultSymbol->getSizeSym ());
-                    code.push_imop(i);
+                    pushImopAfter (result, i);
                 }
 
                 Imop* i = new Imop (s, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym());
@@ -296,18 +301,16 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
                 Imop* err = newError (s, ConstantString::get (getContext (), ss.str ()));
                 SymbolLabel* errLabel = st->label (err);
                 SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
-                dim_iterator
-                        di = dim_begin (eResultSymbol),
-                        dj = dim_begin (ns),
-                        de = dim_end (eResultSymbol);
-                for (; di != de; ++ di, ++ dj) {
-                    Imop* i = new Imop (s, Imop::JNE, (Symbol*) 0, *di, *dj);
+                dim_iterator lhsDimIter = dim_begin (ns);
+                BOOST_FOREACH (Symbol* rhsDim, dim_range (eResultSymbol)) {
+                    Imop* i = new Imop (s, Imop::JNE, (Symbol*) 0, rhsDim, *lhsDimIter);
                     i->setJumpDest (errLabel);
                     pushImopAfter (result, i);
+                    ++ lhsDimIter;
                 }
 
                 Imop* jmp = new Imop (s, Imop::JUMP, (Symbol*) 0);
-                Imop* i = new Imop (s, Imop::ASSIGN, ns, eResultSymbol, ns->getSizeSym ());
+                Imop* i = new Imop (s, Imop::COPY, ns, eResultSymbol, ns->getSizeSym ());
                 jmp->setJumpDest (st->label(i));
                 pushImopAfter (result, jmp);
                 code.push_imop(err);
@@ -334,33 +337,38 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
             }
         }
 
+        Symbol* def = defaultConstant (getContext (),  s->resultType ()->secrecDataType ());
         Imop *i = 0;
         if (isScalar) {
-            i = new Imop (s, Imop::ASSIGN, ns, (Symbol*) 0);
+            if (isString) {
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+
+                i = new Imop (s, Imop::PUSHCREF, 0, def);
+                pushImopAfter (result, i);
+
+                i = new Imop (s, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                i = new Imop (s, Imop::ASSIGN, ns, def);
+                pushImopAfter (result, i);
+
+            }
         }
         else {
-            i = new Imop (s, Imop::ALLOC, ns, (Symbol*) 0, (Symbol*) 0);
+            i = new Imop (s, Imop::ALLOC, ns, def, 0);
             if (n == 0) {
                 i->setArg2 (ConstantInt::get (getContext (), 0));
             }
             else {
                 i->setArg2 (ns->getSizeSym());
             }
+
+            pushImopAfter (result, i);
         }
-
-        pushImopAfter (result, i);
-
-        typedef DataTypeBasic DTB;
-        typedef DataTypeVar DTV;
-        assert (s->resultType ()->dataType ()->kind () == DataType::VAR);
-        assert (dynamic_cast<DTV*> (s->resultType ()->dataType ()) != 0);
-        const DTV &dtv (*static_cast<DTV*> (s->resultType ()->dataType ()));
-        assert (dtv.dataType()->kind() == DataType::BASIC);
-        assert (dynamic_cast<DTB*> (dtv.dataType ()) != 0);
-        const DTB &dtb (*static_cast<DTB*> (dtv.dataType ()));
-
-        Symbol *def = defaultConstant (getContext (), dtb.dataType ());
-        i->setArg1(def);
     }
 
     return result;
@@ -589,7 +597,6 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
         return result;
     }
 
-
     if (s->expression () == 0) {
         releaseLocalAllocs (result);
 
@@ -792,7 +799,7 @@ CGStmtResult CodeGen::cgStmtPushRef (TreeNodeStmtPushRef* s) {
     }
 
     Imop::Type iType = s->isConstant () ? Imop::PUSHCREF : Imop::PUSHREF;
-    Imop* i = new Imop (s, iType, (Symbol*) 0, sym);
+    Imop* i = new Imop (s, iType, 0, sym);
     pushImopAfter (result, i);
     return result;
 }

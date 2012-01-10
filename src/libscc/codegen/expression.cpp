@@ -179,7 +179,6 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         if (!isScalar) {
             i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
             code.push_imop (i);
-
             unsigned count = 0;
             for (std::vector<unsigned >::const_iterator it (slices.begin()); it != slices.end(); ++ it, ++ count) {
                 unsigned k = *it;
@@ -516,7 +515,6 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
     // Compute new size:
     codeGenSize (result);
-    allocResult (result);
 
     if (!eArg->resultType ()->isScalar()) {
         assert (dynamic_cast<SymbolSymbol*>(rhs) != 0);
@@ -541,8 +539,9 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     }
 
     // Copy result:
-    Imop* i = new Imop (e, Imop::ASSIGN, resSym, rhs, resSym->getSizeSym ());
+    Imop* i = new Imop (e, Imop::COPY, resSym, rhs, resSym->getSizeSym ());
     pushImopAfter (result, i);
+    m_allocs.push_back (resSym);
     return result;
 }
 
@@ -1616,11 +1615,16 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
     // r = x
     SymbolSymbol* r = generateResultSymbol (result, e);
-    copyShapeFrom (result, destSymSym);
-    allocResult (result);
-    Imop* i = newAssign (e, r, destSymSym);
-    pushImopAfter (result, i);
-
+    if (! destSymSym->secrecType ()->isScalar ()) {
+        copyShapeFrom (result, destSymSym);
+        Imop* i = new Imop (e, Imop::COPY, r, destSymSym, destSymSym->getSizeSym ());
+        addAlloc (r);
+        pushImopAfter (result, i);
+    }
+    else {
+        Imop* i = newAssign (e, r, destSymSym);
+        pushImopAfter (result, i);
+    }
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -1633,7 +1637,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    // ++ x[e1,..,ek]
+    // x[e1,..,ek] ++
     if (lval->children().size() == 2) {
         assert (!e->resultType ()->isScalar ());
         SubscriptInfo subInfo;
@@ -1666,7 +1670,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         }
 
         // compute offset:
-        i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
         code.push_imop (i);
 
         LoopInfo::const_iterator idxIt = loopInfo.begin ();
@@ -1705,7 +1709,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     }
 
     // x = x `iType` 1
-    i = newBinary (e, iType, destSymSym, destSymSym, one);
+    Imop* i = newBinary (e, iType, destSymSym, destSymSym, one);
     code.push_imop (i);
 
     return result;

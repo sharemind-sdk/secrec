@@ -290,13 +290,10 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
-    assert (imop.type () == Imop::ASSIGN   ||
-            imop.type () == Imop::CLASSIFY ||
-            imop.type () == Imop::DECLASSIFY);
+    assert (imop.type () == Imop::ASSIGN);
 
     VMInstruction instr;
     instr << "mov";
-
     if (imop.isVectorized ()) {
         VMValue* rSize = m_ra->temporaryReg ();
         VMValue* rNum = find (imop.arg2 ());
@@ -319,6 +316,95 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
 
     block.push_back (instr);
 }
+
+/// For now this perform public copy
+/// \todo emit syscall(s)
+void Compiler::cgClassify (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::CLASSIFY);
+    assert (imop.dest ()->secrecType ()->secrecSecType ()->isPrivate ());
+    assert (imop.arg1 ()->secrecType ()->secrecSecType ()->isPublic ());
+    VMInstruction instr;
+    instr << "mov";
+    if (imop.isVectorized ()) {
+        VMValue* rSize = m_ra->temporaryReg ();
+        VMValue* rNum = find (imop.arg2 ());
+        VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+        assert (ty != VM_INVALID);
+        const unsigned elemSize = sizeInBytes (ty);
+        block.push_back (
+            VMInstruction ()
+                << "tmul uint64" << rSize << rNum
+                << m_st.getImm (elemSize)
+        );
+
+        instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
+        instr << "mem" << find (imop.dest ()) << "imm 0x0";
+        instr << rSize;
+    }
+    else {
+        instr << find (imop.arg1 ()) << find (imop.dest ());
+    }
+
+    block.push_back (instr);
+}
+
+/// For now this perform public copy
+/// \todo emit syscall(s)
+void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::DECLASSIFY);
+    assert (imop.dest ()->secrecType ()->secrecSecType ()->isPublic ());
+    assert (imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ());
+    VMInstruction instr;
+    instr << "mov";
+    if (imop.isVectorized ()) {
+        VMValue* rSize = m_ra->temporaryReg ();
+        VMValue* rNum = find (imop.arg2 ());
+        VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+        assert (ty != VM_INVALID);
+        const unsigned elemSize = sizeInBytes (ty);
+        block.push_back (
+            VMInstruction ()
+                << "tmul uint64" << rSize << rNum
+                << m_st.getImm (elemSize)
+        );
+
+        instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
+        instr << "mem" << find (imop.dest ()) << "imm 0x0";
+        instr << rSize;
+    }
+    else {
+        instr << find (imop.arg1 ()) << find (imop.dest ());
+    }
+
+    block.push_back (instr);
+}
+
+void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::COPY);
+
+    VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+    assert (ty != VM_INVALID);
+    const unsigned elemSize = sizeInBytes (ty);
+    VMValue* rNum = find (imop.arg2 ());
+    VMValue* rSize = m_ra->temporaryReg ();
+    block.push_back (
+        VMInstruction ()
+            << "tmul uint64" << rSize << rNum
+            << m_st.getImm (elemSize));
+    block.push_back (VMInstruction () << "uinc uint64" << rSize); // fehh!
+
+    VMInstruction alloc_instr;
+    alloc_instr << "alloc" << find (imop.dest ()) << rSize;
+    block.push_back (alloc_instr);
+
+    VMInstruction copy_instr;
+    copy_instr << "mov";
+    copy_instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
+    copy_instr << "mem" << find (imop.dest ()) << "imm 0x0";
+    copy_instr << rSize;
+    block.push_back (copy_instr);
+}
+
 
 void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::CALL);
@@ -519,10 +605,17 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
     }
 
     switch (imop.type ()) {
-        case Imop::CLASSIFY:   // \todo
-        case Imop::DECLASSIFY: // \todo
+        case Imop::CLASSIFY:
+            cgClassify (block, imop);
+            return;
+        case Imop::DECLASSIFY:
+            cgDeclassify (block, imop);
+            return;
         case Imop::ASSIGN:
             cgAssign (block, imop);
+            return;
+        case Imop::COPY:
+            cgCopy (block, imop);
             return;
         case Imop::ALLOC:
             cgAlloc (block, imop);

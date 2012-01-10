@@ -120,8 +120,8 @@ public:
 
 private:
     Value*   m_bptr;
-    unsigned m_offset;
-    unsigned m_size;
+    size_t   m_offset;
+    size_t   m_size;
 
     void increase_size () {
         m_size = ((m_size + 1) * 3) / 2;
@@ -276,7 +276,7 @@ void storeSym (VMSym sym, Value val) {
 #define DECLOP1(NAME,CODE) \
     MKCALLBACK(NAME, 1, 1, 0, 0, CODE) \
     MKCALLBACK(NAME ## _vec, 1, 1, 1, 0, BLOCK( \
-        unsigned s = arg2.un_uint_val; \
+        const size_t s = arg2.un_uint_val; \
         Value* desti = dest.un_ptr; \
         Value* end = dest.un_ptr + s; \
         Value* arg1i = arg1.un_ptr; \
@@ -292,7 +292,7 @@ void storeSym (VMSym sym, Value val) {
 #define DECLOP2(NAME,CODE) \
     MKCALLBACK(NAME, 1, 1, 1, 0, CODE) \
     MKCALLBACK(NAME ## _vec, 1, 1, 1, 1, BLOCK( \
-        unsigned s = arg3.un_uint_val; \
+        const size_t s = arg3.un_uint_val; \
         Value* desti = dest.un_ptr; \
         Value* end = dest.un_ptr + s; \
         Value* arg1i = arg1.un_ptr; \
@@ -415,6 +415,12 @@ MKCALLBACK(ALLOC, 1, 1, 1, 0,
     dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
     for (Value* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
       *it = v;
+)
+
+MKCALLBACK(COPY, 1, 1, 1, 0,
+    const size_t n = arg2.un_uint_val;
+    dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
+    memcpy (dest.un_ptr, arg1.un_ptr, sizeof (Value) * n);
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
@@ -561,6 +567,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
     case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
     case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
+    case Imop::COPY:       SET_SIMPLE_CALLBACK(COPY); break;
     case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
     case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
     case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
@@ -620,7 +627,7 @@ public: /* Types: */
     typedef std::vector<std::pair<Instruction, const Imop* > > UnlinkedCode;
     typedef std::map<const Imop*, unsigned > ImopAddrs;
 
-public:
+public: /* Methods: */
 
     Compiler () : m_codeSize (0) { }
     ~Compiler () { }
@@ -639,7 +646,7 @@ public:
         }
 
         out = (Instruction*) calloc(sizeof (Instruction), m_codeSize);
-        for (unsigned i = 0; i != m_codeSize; ++ i) {
+        for (size_t i = 0; i != m_codeSize; ++ i) {
             out[i] = m_code[i].first;
             const Imop* dest = m_code[i].second;
             if (dest != 0) {
@@ -804,11 +811,11 @@ private:
         ++ m_codeSize;
     }
 
-private:
+private: /* Fields: */
 
-    UnlinkedCode m_code;
-    unsigned m_codeSize;
-    ImopAddrs m_addrs;
+    UnlinkedCode   m_code;
+    size_t         m_codeSize;
+    ImopAddrs      m_addrs;
 };
 
 
@@ -824,6 +831,8 @@ int VirtualMachine::run (const Program& pr) {
     push_frame (0);
     int status = code->callback (code);
 
+    // Program might exit from within a procedure, and if that
+    // happens we nee to unwind all the frames to clear the memory.
     while (m_frames != 0) {
         pop_frame ();
     }

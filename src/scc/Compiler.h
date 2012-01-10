@@ -55,6 +55,9 @@ protected:
 
     void cgJump (VMBlock& block, const SecreC::Imop& imop);
     void cgAssign (VMBlock& block, const SecreC::Imop& imop);
+    void cgClassify (VMBlock& block, const SecreC::Imop& imop);
+    void cgDeclassify (VMBlock& block, const SecreC::Imop& imop);
+    void cgCopy (VMBlock& block, const SecreC::Imop& imop);
     void cgCall (VMBlock& block, const SecreC::Imop& imop);
     void cgParam (VMBlock& block, const SecreC::Imop& imop);
     void cgReturn (VMBlock& block, const SecreC::Imop& imop);
@@ -79,8 +82,8 @@ private: /* Fields: */
     VMSymbolTable         m_st;      ///< VM symbol table
     unsigned              m_param;   ///< Current param count
     BuiltinFunctions*     m_funcs;   ///< Bult-in functions
-    RegisterAllocator*    m_ra;      ///< Instance of register allocator
-    SyscallManager*       m_scm;
+    RegisterAllocator*    m_ra;      ///< Register allocator
+    SyscallManager*       m_scm;     ///< The syscall manager
     StringLiterals*       m_strLit;  ///< String literals
 };
 

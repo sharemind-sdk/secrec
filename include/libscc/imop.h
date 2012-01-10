@@ -77,6 +77,7 @@ class Imop : public auto_unlink_hook {
             STORE,     /*    d[arg1] = arg2;                    */
             LOAD,      /*    d = arg1[arg2];                    */
             ALLOC,     /*    d = ALLOC (arg1, arg2)             */
+            COPY,      /*    d = COPY arg1 arg2                 */
             RELEASE,   /*    RELEASE arg1                       */
 
             //-------------------
@@ -99,18 +100,18 @@ class Imop : public auto_unlink_hook {
             JGE,       /* if (arg1 >= arg2) GOTO d;            */
             JGT,       /* if (arg1 >  arg2) GOTO d;            */
 
-            //--------------------
+            //-----------------------
             // Procedure terminating:
-            //--------------------
-            ERROR,      /* // arg1                            */
-            RETURNVOID, /* RETURN;               (Imop *arg2) */
+            //-----------------------
+            ERROR,      /* ERROR ((ConstantString*) arg1)      */
+            RETURNVOID, /* RETURN;               (Imop *arg2)  */
             RETURN,     /* RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n */
-            END,        /* END PROGRAM                        */
+            END,        /* END PROGRAM                         */
 
             //--------------------
             // Misc. instructions:
             //--------------------
-            COMMENT,    /* // arg1                            */
+            COMMENT,    /* // (ConstantString*) arg1           */
             PRINT,      /* PRINT arg1; */
             SYSCALL,
             PUSH,
