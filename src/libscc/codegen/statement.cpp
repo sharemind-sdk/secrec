@@ -129,7 +129,9 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
     unsigned n = 0;
     const bool isScalar = s->resultType ()->isScalar ();
-    if (! isScalar) {
+    const bool isString = s->resultType ()->secrecDataType () == DATATYPE_STRING;
+    assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
+    if (! isScalar || isString) {
         addAlloc (ns);
     }
 
@@ -320,10 +322,24 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
 
         // scalar_type x = scalar;
         if (s->resultType ()->isScalar()) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns, eResult.symbol ());
-            pushImopAfter (result, i);
+            if (isString) {
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+
+                Imop* i = new Imop (s, Imop::PUSHCREF, 0, eResult.symbol ());
+                pushImopAfter (result, i);
+
+                i = new Imop (s, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                Imop* i = new Imop (s, Imop::ASSIGN, ns, eResult.symbol ());
+                pushImopAfter (result, i);
+            }
         }
-    }
+    } // Regular declaration, right hand side is missing:
     else {
         if (!isScalar && n == 0) {
             Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),

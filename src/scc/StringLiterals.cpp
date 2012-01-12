@@ -52,7 +52,7 @@ void StringLiterals::init (VMSymbolTable& st, VMDataSection* section) {
     m_dataSection = section;
 }
 
-VMLabel* StringLiterals::getLiteral (SecreC::ConstantString* str) {
+VMLabel* StringLiterals::getLiteral (const SecreC::ConstantString* str) {
     LitMap::iterator i = m_literals.find (str);
     if (i == m_literals.end ()) {
         std::stringstream os;
