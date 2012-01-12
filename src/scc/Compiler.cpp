@@ -53,6 +53,10 @@ const char* imopToVMName (const Imop& imop) {
     }
 }
 
+bool isString (const Symbol* sym) {
+    return sym->secrecType ()->secrecDataType () == DATATYPE_STRING;
+}
+
 /**
  * Functions for mapping SecreC symbols to VM values:
  */
@@ -583,16 +587,35 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgPush (VMBlock& block, const Imop& imop) {
-    const char* name = 0;
-    switch (imop.type ()) {
-    case Imop::PUSH: name = "push"; break;
-    case Imop::PUSHREF: name = "pushref"; break;
-    case Imop::PUSHCREF: name = "pushcref"; break;
-    default: assert (false); break;
+    assert (imop.arg1 () != 0);
+
+    const Symbol* arg = imop.arg1 ();
+    bool isStr = isString (arg);
+    VMInstruction instr;
+
+    if (imop.type () == Imop::PUSHCREF && isStr) {
+        const ConstantString* str = static_cast<const ConstantString*>(arg);
+        VMVReg* len = m_ra->temporaryReg ();
+        VMLabel* rodata = m_st.getLabel (":RODATA");
+        VMLabel* strstart = m_strLit->getLiteral (str);
+        block.push_back (VMInstruction () << "getsize" << len << rodata);
+        block.push_back (VMInstruction () << "bsub" << VM_UINT64 << len << strstart);
+        instr << "pushcrefpart" << "mem" << rodata << strstart << len;
+        block.push_back (instr);
     }
 
-    assert (find (imop.arg1 ()) != 0);
-    block.push_back (VMInstruction () << name << find (imop.arg1 ()));
+    switch (imop.type ()) {
+    case Imop::PUSH:     instr << "push";     break;
+    case Imop::PUSHREF:  instr << "pushref";  break;
+    case Imop::PUSHCREF: instr << "pushcref"; break;
+    default:
+        assert (false);
+        break;
+    }
+
+    if (isStr) instr << "mem";
+    instr << find (imop.arg1 ());
+    block.push_back (instr);
 }
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
