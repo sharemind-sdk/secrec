@@ -388,6 +388,15 @@ TreeNode *treenode_init_dimTypeF(
     return (TreeNode*) new SecreC::TreeNodeDimTypeF(dimType, *loc);
 }
 
+TreeNode *treenode_init_opdef(enum SecrecOperator op, YYLTYPE *loc) {
+    SecreC::TreeNode* node = new SecreC::TreeNodeOpDef (op, *loc);
+    std::ostringstream os;
+    os << "__operator" << op;
+    treenode_appendChild (node, SecreC::treenode_init_identifier (os.str ().c_str (), loc));
+    return node;
+}
+
+
 /*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
@@ -421,31 +430,76 @@ std::string TreeNodeDimTypeF::xmlHelper() const {
 }
 
 /*******************************************************************************
+  OverloadableOperator
+*******************************************************************************/
+
+std::string OverloadableOperator::operatorName () const {
+    std::ostringstream os;
+    os << "__operator" << getOperator ();
+    return os.str ();
+}
+
+/*******************************************************************************
+  TreeNodeExprUnary
+*******************************************************************************/
+
+SecrecOperator TreeNodeExprUnary::getOperatorV () const {
+    switch (type ()) {
+        case NODE_EXPR_UNEG: return SCOP_UN_NEG;
+        case NODE_EXPR_UMINUS: return SCOP_UN_MINUS;
+        default: return SCOP_NONE;
+    }
+}
+
+
+/*******************************************************************************
   TreeNodeExprBinary
 *******************************************************************************/
 
 const char *TreeNodeExprBinary::operatorString() const {
-    switch (type()) {
-        case NODE_EXPR_BINARY_ADD:  return "+";
-        case NODE_EXPR_BINARY_SUB:  return "-";
-        case NODE_EXPR_BINARY_MUL:  return "*";
-        case NODE_EXPR_BINARY_MOD:  return "%";
-        case NODE_EXPR_BINARY_DIV:  return "/";
-        case NODE_EXPR_BINARY_EQ:   return "==";
-        case NODE_EXPR_BINARY_GE:   return ">=";
-        case NODE_EXPR_BINARY_GT:   return ">";
-        case NODE_EXPR_BINARY_LE:   return "<=";
-        case NODE_EXPR_BINARY_LT:   return "<";
-        case NODE_EXPR_BINARY_NE:   return "!=";
-        case NODE_EXPR_BINARY_LAND: return "&&";
-        case NODE_EXPR_BINARY_LOR:  return "||";
-        case NODE_EXPR_BINARY_MATRIXMUL: return "#";
+    switch (getOperator ()) {
+        case SCOP_BIN_ADD:  return "+";
+        case SCOP_BIN_SUB:  return "-";
+        case SCOP_BIN_MUL:  return "*";
+        case SCOP_BIN_MOD:  return "%";
+        case SCOP_BIN_DIV:  return "/";
+        case SCOP_BIN_EQ:   return "==";
+        case SCOP_BIN_GE:   return ">=";
+        case SCOP_BIN_GT:   return ">";
+        case SCOP_BIN_LE:   return "<=";
+        case SCOP_BIN_LT:   return "<";
+        case SCOP_BIN_NE:   return "!=";
+        case SCOP_BIN_LAND: return "&&";
+        case SCOP_BIN_LOR:  return "||";
         default:
             assert(false); // shouldn't happen
     }
 
     return "?";
 }
+
+SecrecOperator TreeNodeExprBinary::getOperatorV () const {
+    switch (type ()) {
+        case NODE_EXPR_BINARY_ADD:  return SCOP_BIN_ADD;
+        case NODE_EXPR_BINARY_SUB:  return SCOP_BIN_SUB;
+        case NODE_EXPR_BINARY_MUL:  return SCOP_BIN_MUL;
+        case NODE_EXPR_BINARY_MOD:  return SCOP_BIN_MOD;
+        case NODE_EXPR_BINARY_DIV:  return SCOP_BIN_DIV;
+        case NODE_EXPR_BINARY_EQ:   return SCOP_BIN_EQ;
+        case NODE_EXPR_BINARY_GE:   return SCOP_BIN_GE;
+        case NODE_EXPR_BINARY_GT:   return SCOP_BIN_GT;
+        case NODE_EXPR_BINARY_LE:   return SCOP_BIN_LE;
+        case NODE_EXPR_BINARY_LT:   return SCOP_BIN_LT;
+        case NODE_EXPR_BINARY_NE:   return SCOP_BIN_NE;
+        case NODE_EXPR_BINARY_LAND: return SCOP_BIN_LAND;
+        case NODE_EXPR_BINARY_LOR:  return SCOP_BIN_LOR;
+        default:
+            assert (false); // shouldn't happen
+    }
+
+    return SCOP_NONE;
+}
+
 
 /*******************************************************************************
   TreeNodeExprBool

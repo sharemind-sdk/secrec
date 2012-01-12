@@ -223,20 +223,25 @@ CGStmtResult CodeGen::cgProgram (TreeNodeProgram* prog) {
     }
 
     BOOST_FOREACH (TreeNode* decl, prog->children ()) {
-        if (decl->type () == NODE_PROCDEF) {
+        switch (decl->type ()) {
+        case NODE_PROCDEF:
+        case NODE_OPDEF:
             assert (dynamic_cast<TreeNodeProcDef*>(decl) != 0);
             procs.push_back (static_cast<TreeNodeProcDef*>(decl));
-        }
-        else
-        if (decl->type () == NODE_TEMPLATE_DECL) {
+            break;
+
+        case NODE_TEMPLATE_DECL: {
             assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
             ICode::Status status = m_tyChecker.visit (static_cast<TreeNodeTemplate*>(decl));
             if (status != ICode::OK) {
                 result.setStatus (status);
                 return result;
             }
+
+            break;
         }
-        else {
+
+        default:
             append (result, cgGlobalDecl (decl));
             if (result.isNotOk ()) {
                 return result;

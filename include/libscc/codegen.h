@@ -280,15 +280,13 @@ public: /* Methods: */
      * in branching context such as \a if statement and \a ternary  expressions.
      */
     /// \{
+    CGBranchResult cgBoolSimple (TreeNodeExpr *e);
     CGBranchResult cgBoolExprCast (TreeNodeExprCast* e);
     CGBranchResult cgBoolExprUnary (TreeNodeExprUnary* e);
-    CGBranchResult cgBoolExprIndex (TreeNodeExprIndex* e);
     CGBranchResult cgBoolExprBinary (TreeNodeExprBinary* e);
-    CGBranchResult cgBoolExprProcCall (TreeNodeExprProcCall* e);
     CGBranchResult cgBoolExprRVariable (TreeNodeExprRVariable* e);
     CGBranchResult cgBoolExprTernary (TreeNodeExprTernary* e);
     CGBranchResult cgBoolExprBool (TreeNodeExprBool* e);
-    CGBranchResult cgBoolExprDeclassify (TreeNodeExprDeclassify* e);
     CGBranchResult cgBoolExprAssign (TreeNodeExprAssign* e);
     /// \}
 
@@ -344,8 +342,15 @@ public: /* Methods: */
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
 
+    CGResult cgProcCall (SymbolProcedure* symProc,
+                         SecreC::Type* returnType,
+                         const std::vector<TreeNodeExpr*>& args);
+
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
+
+    /// generate symbol for given type
+    SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
 
 protected: /* Fields: */
 

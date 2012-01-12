@@ -73,25 +73,31 @@ void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
     pushImopAfter (result, i);
 }
 
-SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
-    TypeNonVoid* ty = TypeNonVoid::get (getContext (), DATATYPE_INT);
-    assert (node->haveResultType ());
-    if (!node->resultType ()->isVoid()) {
-        assert (dynamic_cast<TypeNonVoid*>(node->resultType()) != 0);
-        SymbolSymbol* sym = st->appendTemporary(static_cast<TypeNonVoid*>(node->resultType()));
+
+SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty) {
+    if (! _ty->isVoid ()) {
+        TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
+        TypeNonVoid* intTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
+        SymbolSymbol* sym = st->appendTemporary (ty);
         result.setResult (sym);
-        for (unsigned i = 0; i < node->resultType ()->secrecDimType(); ++ i) {
-            sym->setDim (i, st->appendTemporary (ty));
+
+        for (unsigned i = 0; i < ty->secrecDimType(); ++ i) {
+            sym->setDim (i, st->appendTemporary (intTy));
         }
 
-        if (node->resultType ()->secrecDimType () != 0) {
-            sym->setSizeSym (st->appendTemporary (ty));
+        if (ty->secrecDimType () != 0) {
+            sym->setSizeSym (st->appendTemporary (intTy));
         }
 
         return sym;
     }
 
     return 0;
+}
+
+SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
+    assert (node->haveResultType ());
+    return generateResultSymbol (result, node->resultType ());
 }
 
 CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {

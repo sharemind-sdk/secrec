@@ -39,7 +39,7 @@ unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
         quantifiedDomains.insert (quant->domain ()->value ());
     }
 
-    BOOST_FOREACH (TreeNode* _d, std::make_pair (body->paramBegin (), body->paramEnd ())) {
+    BOOST_FOREACH (TreeNode* _d, body->paramRange ()) {
         assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
         TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* t = d->varType ();

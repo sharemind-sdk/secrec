@@ -808,6 +808,7 @@ CGStmtResult CodeGen::cgStmtPushRef (TreeNodeStmtPushRef* s) {
     TreeNodeIdentifier* id = s->identifier ();
 
     CGStmtResult result;
+
     SymbolSymbol* sym = m_tyChecker.getSymbol (id);
     if (sym == 0) {
         result.setStatus (ICode::E_TYPE);

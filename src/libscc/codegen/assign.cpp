@@ -23,6 +23,7 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
 CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
+
     // Type check:
     ICode::Status s = m_tyChecker.visit (e);
     if (s != ICode::OK) {
@@ -226,7 +227,22 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
         Imop *i = 0;
         if (e->resultType ()->isScalar()) {
-            i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
+            if (e->resultType ()->secrecDataType () == DATATYPE_STRING) {
+                i = new Imop (e, Imop::RELEASE, (Symbol*) 0, destSym);
+                pushImopAfter (result, i);
+
+                i = new Imop (e, Imop::PUSHCREF, arg2Result.symbol ());
+                pushImopAfter (result, i);
+
+                i = new Imop (e, Imop::PUSHREF, destSym);
+                pushImopAfter (result, i);
+
+                ConstantString* sc_strcpy = ConstantString::get (getContext (), "strcpy");
+                i = new Imop (e, Imop::SYSCALL, (Symbol*) 0, sc_strcpy);
+            }
+            else {
+                i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
+            }
         } else {
             i = new Imop (e, Imop::RELEASE, 0, destSym);
             pushImopAfter (result, i);

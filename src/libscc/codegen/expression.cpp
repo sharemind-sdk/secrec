@@ -1,7 +1,10 @@
-#include <stack>
-
 #include "codegen.h"
 #include "treenode.h"
+
+#include <stack>
+
+#include <boost/foreach.hpp>
+
 #include "symboltable.h"
 #include "constant.h"
 #include "misc.h"
@@ -12,6 +15,23 @@
  */
 
 namespace SecreC {
+
+CGBranchResult CodeGen::cgBoolSimple (TreeNodeExpr *e) {
+    CGBranchResult result (codeGen (e));
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    Imop *i = new Imop (e, Imop::JT, 0, result.symbol ());
+    pushImopAfter (result, i);
+    result.addToTrueList (i);
+
+    i = new Imop (e, Imop::JUMP, 0);
+    code.push_imop (i);
+    result.addToFalseList (i);
+
+    return result;
+}
 
 /******************************************************************
   TreeNodeExprCast
@@ -205,25 +225,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
 CGBranchResult TreeNodeExprIndex::codeGenBoolWith (CodeGen &cg) {
     assert (havePublicBoolType());
-    return cg.cgBoolExprIndex (this);
-}
-
-CGBranchResult CodeGen::cgBoolExprIndex (TreeNodeExprIndex *e) {
-    CGBranchResult result (codeGen (e));
-    if (!result.isOk ()) {
-        return result;
-    }
-
-    Symbol* resultSym = result.symbol ();
-    Imop *i = new Imop (m_node, Imop::JT, 0, resultSym);
-    pushImopAfter (result, i);
-    result.addToTrueList (i);
-
-    i = new Imop (m_node, Imop::JUMP, 0);
-    code.push_imop (i);
-    result.addToFalseList (i);
-
-    return result;
+    return cg.cgBoolSimple (this);
 }
 
 /******************************************************************
@@ -563,6 +565,13 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
     TreeNodeExpr* eArg1 = e->leftExpression ();
     TreeNodeExpr* eArg2 = e->rightExpression ();
 
+    if (e->isOverloaded ()) {
+        std::vector<TreeNodeExpr* > params;
+        params.push_back (eArg1);
+        params.push_back (eArg2);
+        return cgProcCall (e->procSymbol (), e->resultType (), params);
+    }
+
     /*
       If first sub-expression is public, then generate short-circuit code for
       logical && and logical ||.
@@ -645,14 +654,12 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         ss << "Mismaching shapes in addition at " << e->location();
         Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
         SymbolLabel* errLabel = st->label (err);
-        dim_iterator
-                di = dim_begin (e1result),
-                dj = dim_begin (e2result),
-                de = dim_end (e1result);
-        for (; di != de; ++ di, ++ dj) {
-            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, *di, *dj);
+        dim_iterator dj = dim_begin (e2result);
+        BOOST_FOREACH (Symbol* dim, dim_range (e1result)) {
+            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, dim, *dj);
             i->setJumpDest (errLabel);
             pushImopAfter (result, i);
+            ++ dj;
         }
 
         jmp = new Imop(e, Imop::JUMP, (Symbol*) 0);
@@ -696,12 +703,16 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
 }
 
 CGBranchResult TreeNodeExprBinary::codeGenBoolWith (CodeGen &cg) {
-    assert (havePublicBoolType());
+    assert (havePublicBoolType ());
     return cg.cgBoolExprBinary (this);
 }
 
 CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
     typedef TypeNonVoid TNV;
+
+    if (e->isOverloaded ()) {
+        return cgBoolSimple (e);
+    }
 
 
     TreeNodeExpr *eArg1 = e->leftExpression ();
@@ -719,8 +730,6 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
               code for logical && and logical ||.
             */
             if (static_cast<TNV*>(eArg1->resultType())->secrecSecType()->isPublic ()) {
-                /// \todo I'm quite sure this is incorrect, we are not handling next lists!
-
                 // Generate code for first child expression:
                 result = codeGenBranch (eArg1);
                 if (result.isNotOk ()) {
@@ -838,25 +847,17 @@ CGResult TreeNodeExprProcCall::codeGenWith (CodeGen &cg) {
     return cg.cgExprProcCall (this);
 }
 
-CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
-    // Type check:
-    ICode::Status s = m_tyChecker.visit (e);
-    if (s != ICode::OK) {
-        return CGResult (s);
-    }
-
+CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
+                              SecreC::Type* returnType,
+                              const std::vector<TreeNodeExpr*>& args)
+{
     CGResult result;
-    SymbolSymbol* r = generateResultSymbol (result, e);
+    SymbolSymbol* r = generateResultSymbol (result, returnType);
     std::list<Symbol*> argList, retList;
 
     // Initialize arguments:
-    for (CLCI it (e->children().begin() + 1); it != e->children ().end (); ++ it) {
-        assert (((*it)->type() & NODE_EXPR_MASK) != 0x0);
-        assert (dynamic_cast<TreeNodeExpr*> (*it) != 0);
-        TreeNodeExpr *eArg = static_cast<TreeNodeExpr*> (*it);
-        const CGResult& argResult (codeGen (eArg));
+    BOOST_FOREACH (TreeNodeExpr* arg, args) {
+        const CGResult& argResult (codeGen (arg));
         append (result, argResult);
         if (result.isNotOk ()) {
             return result;
@@ -868,22 +869,22 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     }
 
     // prep return values:
-    if (!e->resultType ()->isVoid ()) {
+    if (!returnType->isVoid ()) {
         retList.insert (retList.end (), dim_begin (r), dim_end (r));
         retList.push_back (r);
     }
 
-    Imop* i = newCall (e, retList.begin (), retList.end (), argList.begin (), argList.end ());
-    Imop *c = new Imop (e, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    m_callsTo[e->symbolProcedure ()->decl ()].insert (i);
+    Imop* i = newCall (m_node, retList.begin (), retList.end (), argList.begin (), argList.end ());
+    Imop *c = new Imop (m_node, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+    m_callsTo[symProc->decl ()].insert (i);
 
     c->setArg2 (st->label (i));
     pushImopAfter (result, i);
     code.push_imop (c);
 
-    if (!e->resultType ()->isVoid ()) {
+    if (! returnType->isVoid ()) {
         codeGenSize (result);
-        if (! e->resultType ()->isScalar ()) {
+        if (! returnType->isScalar ()) {
             result.addTempAlloc (result.symbol ());
         }
     }
@@ -891,26 +892,28 @@ CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
     return result;
 }
 
-CGBranchResult TreeNodeExprProcCall::codeGenBoolWith (CodeGen &cg) {
-    assert (havePublicBoolType());
-    return cg.cgBoolExprProcCall (this);
-}
+CGResult CodeGen::cgExprProcCall (TreeNodeExprProcCall *e) {
+    typedef TreeNode::ChildrenListConstIterator CLCI;
 
-CGBranchResult CodeGen::cgBoolExprProcCall (TreeNodeExprProcCall *e) {
-    CGBranchResult result (codeGen (e));
-    if (result.isNotOk ()) {
-        return result;
+    // Type check:
+    ICode::Status s = m_tyChecker.visit (e);
+    if (s != ICode::OK) {
+        return CGResult (s);
     }
 
-    Imop *i = new Imop (e, Imop::JT, 0, result.symbol ());
-    code.push_imop (i);
-    result.addToTrueList (i);
+    std::vector<TreeNodeExpr* > args;
+    BOOST_FOREACH (TreeNode* _arg, e->paramRange ()) {
+        assert ((_arg->type() & NODE_EXPR_MASK) != 0x0);
+        assert (dynamic_cast<TreeNodeExpr*> (_arg) != 0);
+        args.push_back (static_cast<TreeNodeExpr*> (_arg));
+    }
 
-    i = new Imop (e, Imop::JUMP, 0);
-    code.push_imop (i);
-    result.addToFalseList (i);
+    return cgProcCall (e->symbolProcedure (), e->resultType (), args);
+}
 
-    return result;
+CGBranchResult TreeNodeExprProcCall::codeGenBoolWith (CodeGen &cg) {
+    assert (havePublicBoolType());
+    return cg.cgBoolSimple (this);
 }
 
 /*******************************************************************************
@@ -1384,24 +1387,7 @@ CGResult CodeGen::cgExprDeclassify (TreeNodeExprDeclassify *e) {
 
 CGBranchResult TreeNodeExprDeclassify::codeGenBoolWith (CodeGen &cg) {
     assert(havePublicBoolType());
-    return cg.cgBoolExprDeclassify (this);
-}
-
-CGBranchResult CodeGen::cgBoolExprDeclassify (TreeNodeExprDeclassify *e) {
-    CGBranchResult result (codeGen (e));
-    if (result.isNotOk ()) {
-        return result;
-    }
-
-    Imop *i = new Imop (e, Imop::JT, 0, result.symbol ());
-    pushImopAfter (result, i);
-    result.addToTrueList (i);
-
-    i = new Imop (e, Imop::JUMP, 0);
-    code.push_imop (i);
-    result.addToFalseList (i);
-
-    return result;
+    return cg.cgBoolSimple (this);
 }
 
 /*******************************************************************************
@@ -1419,8 +1405,14 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
         return CGResult (s);
     }
 
+    if (e->isOverloaded ()) {
+        std::vector<TreeNodeExpr* > params;
+        params.push_back (e->expression ());
+        return cgProcCall (e->procSymbol (), e->resultType (), params);
+    }
+
     // Generate code for child expression:
-    TreeNodeExpr *eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
+    TreeNodeExpr *eArg = e->expression ();
     CGResult result (codeGen (eArg));
     if (!result.isOk ()) {
         return result;
@@ -1439,21 +1431,24 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
 }
 
 CGBranchResult TreeNodeExprUnary::codeGenBoolWith (CodeGen &cg) {
-    assert (havePublicBoolType());
-    assert (type() == NODE_EXPR_UNEG);
+    assert (havePublicBoolType ());
     return cg.cgBoolExprUnary (this);
 }
 
 CGBranchResult CodeGen::cgBoolExprUnary (TreeNodeExprUnary *e) {
     // Generate code for child expression:
-    TreeNodeExpr *eArg = static_cast<TreeNodeExpr*>(e->children().at(0));
-    CGBranchResult result = codeGenBranch (eArg);
-    if (!result.isOk ()) {
+    if (e->isOverloaded ()) {
+        return cgBoolSimple (e);
+    }
+    else {
+        CGBranchResult result = codeGenBranch (e->expression ());
+        if (!result.isOk ()) {
+            return result;
+        }
+
+        result.swapTrueFalse ();
         return result;
     }
-
-    result.swapTrueFalse ();
-    return result;
 }
 
 /******************************************************************

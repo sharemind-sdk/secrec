@@ -20,6 +20,25 @@ extern "C" {
 union YYSTYPE;
 struct YYLTYPE;
 
+enum SecrecOperator {
+    SCOP_NONE     = 0x00,
+    SCOP_BIN_MUL  = 0x01,
+    SCOP_BIN_DIV  = 0x02,
+    SCOP_BIN_MOD  = 0x03,
+    SCOP_BIN_ADD  = 0x04,
+    SCOP_BIN_SUB  = 0x05,
+    SCOP_BIN_EQ   = 0x06,
+    SCOP_BIN_NE   = 0x07,
+    SCOP_BIN_LE   = 0x08,
+    SCOP_BIN_GT   = 0x09,
+    SCOP_BIN_GE   = 0x0a,
+    SCOP_BIN_LT   = 0x0b,
+    SCOP_BIN_LAND = 0x0c,
+    SCOP_BIN_LOR  = 0x0d,
+    SCOP_UN_NEG   = 0x10,
+    SCOP_UN_MINUS = 0x20
+};
+
 enum SecrecTreeNodeType {
     /** Just a node for counting, internal use only. */
     NODE_INTERNAL_USE     = 0x0,
@@ -80,6 +99,7 @@ enum SecrecTreeNodeType {
     NODE_STMT_EXPR      = 0x09000,
     NODE_STMT_ASSERT    = 0x0a000,
     NODE_DECL           = 0x0b000,
+    NODE_OPDEF          = 0x0c000,
     NODE_PROCDEF        = 0x0e000,
     NODE_PROGRAM        = 0x10000,
     NODE_DIMENSIONS     = 0x11000,

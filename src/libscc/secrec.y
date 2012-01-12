@@ -9,6 +9,31 @@
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
+  struct TreeNode *init_binop (enum SecrecOperator op, YYLTYPE* loc,
+                               struct TreeNode *ret, struct TreeNode *body,
+                               struct TreeNode *arg1, struct TreeNode *arg2)
+  {
+      struct TreeNode* out = treenode_init_opdef (op, loc);
+      /* indentifier is added automatically by treenode_init_opdef! */
+      treenode_appendChild(out, ret);
+      treenode_appendChild(out, body);
+      treenode_appendChild(out, arg1);
+      treenode_appendChild(out, arg2);
+      return out;
+  }
+
+  struct TreeNode *init_unop (enum SecrecOperator op, YYLTYPE* loc,
+                              struct TreeNode *ret, struct TreeNode *body,
+                              struct TreeNode *arg1)
+  {
+      struct TreeNode* out = treenode_init_opdef (op, loc);
+      /* indentifier is added automatically by treenode_init_opdef! */
+      treenode_appendChild(out, ret);
+      treenode_appendChild(out, body);
+      treenode_appendChild(out, arg1);
+      return out;
+  }
+
   struct TreeNode *ensure_rValue(struct TreeNode *node) {
      struct TreeNode *t = 0;
 
@@ -85,7 +110,7 @@
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
-%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID
+%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -111,6 +136,7 @@
 %type <treenode> domain_declaration
 %type <treenode> kind_declaration
 %type <treenode> procedure_definition
+%type <treenode> operator_definition
 %type <treenode> initializer
 %type <treenode> dimensions
 %type <treenode> dimension_list
@@ -153,7 +179,7 @@
 %type <treenode> cat_expression
 %type <treenode> argument_list
 %type <treenode> primary_expression
-%type <treenode> constant
+%type <treenode> literal
 %type <treenode> identifier
 %type <treenode> uint_literal
 %type <treenode> int_literal
@@ -326,54 +352,18 @@ sectype_specifier
  ;
 
 datatype_specifier
- : BOOL
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_BOOL, &@$);
-   }
- | INT
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT, &@$);
-   }
- | UINT
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT, &@$);
-   }
- | INT8
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT8, &@$);
-   }
- | UINT8
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT8, &@$);
-   }
- | INT16
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT16, &@$);
-   }
- | UINT16
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT16, &@$);
-   }
- | INT32
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT32, &@$);
-   }
- | UINT32
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT32, &@$);
-   }
- | INT64
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_INT64, &@$);
-   }
- | UINT64
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_UINT64, &@$);
-   }
- | STRING
-   {
-     $$ = (struct TreeNode *) treenode_init_dataTypeF(DATATYPE_STRING, &@$);
-   }
+ : BOOL    { $$ = treenode_init_dataTypeF(DATATYPE_BOOL,   &@$); }
+ | INT     { $$ = treenode_init_dataTypeF(DATATYPE_INT,    &@$); }
+ | UINT    { $$ = treenode_init_dataTypeF(DATATYPE_UINT,   &@$); }
+ | INT8    { $$ = treenode_init_dataTypeF(DATATYPE_INT8,   &@$); }
+ | UINT8   { $$ = treenode_init_dataTypeF(DATATYPE_UINT8,  &@$); }
+ | INT16   { $$ = treenode_init_dataTypeF(DATATYPE_INT16,  &@$); }
+ | UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_UINT16, &@$); }
+ | INT32   { $$ = treenode_init_dataTypeF(DATATYPE_INT32,  &@$); }
+ | UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_UINT32, &@$); }
+ | INT64   { $$ = treenode_init_dataTypeF(DATATYPE_INT64,  &@$); }
+ | UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_UINT64, &@$); }
+ | STRING  { $$ = treenode_init_dataTypeF(DATATYPE_STRING, &@$); }
  ;
 
 dimtype_specifier
@@ -437,7 +427,8 @@ procedure_type_specifier
  ;
 
 procedure_definition
- : procedure_type_specifier identifier '(' ')' compound_statement
+ : operator_definition
+ | procedure_type_specifier identifier '(' ')' compound_statement
    {
      $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
@@ -482,6 +473,40 @@ procedure_parameter
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
    }
+ ;
+
+/* uhoh... */
+operator_definition
+ :  type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_MUL , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_DIV , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_MOD , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_ADD , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_SUB , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_EQ  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_NE  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_LE  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_GT  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_GE  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_LT  , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_LAND, &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+    { $$ = init_binop (SCOP_BIN_LOR , &@$, $1, $9, $5, $7); }
+ |  type_specifier OPERATOR UNEG '(' procedure_parameter ')' compound_statement
+    { $$ = init_unop (SCOP_UN_NEG, &@$, $1, $7, $5); }
+ |  type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
+    { $$ = init_unop (SCOP_UN_MINUS , &@$, $1, $7, $5); }
  ;
 
 /*******************************************************************************
@@ -725,11 +750,6 @@ assignment_expression /* WARNING: RIGHT RECURSION */
  ;
 
 lvalue
-/* : unary_expression
-   {
-     $$ = treenode_init(NODE_EXPR_LVARIABLE, &@$);
-     treenode_appendChild($$, $1);
-   }*/
   : identifier
     {
       $$ = treenode_init(NODE_LVALUE, &@$);
@@ -932,7 +952,6 @@ postfix_expression
 : DECLASSIFY '(' expression ')'
   {
     $$ = treenode_init(NODE_EXPR_DECLASSIFY, &@$);
-    /* treenode_appendChild($$, ensure_rValue($1)); */
     treenode_appendChild($$, $3);
   }
  | SIZE '(' expression ')'
@@ -963,21 +982,17 @@ postfix_expression
      }
      treenode_free($3);
    }
-/* : postfix_expression '(' ')'*/
  | identifier '(' ')'
    {
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
-     /* treenode_appendChild($$, ensure_rValue($1)); */
      treenode_appendChild($$, $1);
    }
-/* | postfix_expression '(' argument_list ')' */
  | identifier '(' argument_list ')'
    {
      unsigned i;
      unsigned n;
 
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
-     /* treenode_appendChild($$, ensure_rValue($1));*/
      treenode_appendChild($$, $1);
      n = treenode_numChildren($3);
      for (i = 0; i < n; i++) {
@@ -1018,7 +1033,7 @@ primary_expression
      $$ = treenode_init(NODE_EXPR_RVARIABLE, &@$);
      treenode_appendChild($$, $1);
    }
- | constant
+ | literal
  ;
 
 uint_literal
@@ -1053,7 +1068,7 @@ bool_literal
    }
  ;
 
-constant
+literal
  : int_literal
  | uint_literal
  | string_literal

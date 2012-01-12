@@ -97,6 +97,28 @@ protected:
     ICode::Status getInstance (SymbolProcedure*& proc,
                                const Instantiation& inst);
 
+    ICode::Status checkParams (const std::vector<TreeNodeExpr*>& arguments,
+                               DataTypeProcedureVoid*& argTypes);
+
+
+    ICode::Status checkProcCall (SymbolProcedure* symProc,
+                                 DataTypeProcedureVoid* argTypes,
+                                 SecreC::Type*& resultType);
+
+    /**
+     * \brief Type check a procedure, and classify parameters if needed.
+     * \param[in] name name of the procedure to call
+     * \param[in] contextSecType context security type
+     * \param[int] arguments argument expressions
+     * \param[out] resultType resulting type of the procedure call
+     * \param[out] symProc symbol of the procedure which will be called
+     */
+    ICode::Status checkProcCall (TreeNodeIdentifier* name,
+                                 SecurityType* contextSecType,
+                                 const std::vector<TreeNodeExpr*>& arguments,
+                                 SecreC::Type*& resultType,
+                                 SymbolProcedure*& symProc);
+
     // Try to unify template with given parameter types. On success this
     // procedure returns true, and gives bindings to quantifiers. No
     // addition side effect are performed.
@@ -105,12 +127,15 @@ protected:
                 DataTypeProcedureVoid* argTypes) const;
 
     /**
+     * \brief Looks for a best matching procedure or template.
+     *
+     * Raises error if multiple matches are found. If no matches are found
+     * returns \a OK, and sets \a symProc to \a NULL.
+     *
      * \pre argTypes != 0
-     * \post symProc != 0 if returned status is OK
      * \param[in] name name of the procedure/template
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found
-     * \retval ICode::OK if best matching procedure was found
      */
     ICode::Status findBestMatchingProc (SymbolProcedure*& symProc,
                                         const std::string& name,

@@ -50,6 +50,7 @@ TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
                                   YYLTYPE *loc);
 TreeNode *treenode_init_dimTypeF(unsigned dimType,
                                  YYLTYPE *loc);
+TreeNode *treenode_init_opdef(enum SecrecOperator op, YYLTYPE *loc);
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -376,7 +377,8 @@ protected:
   TreeNodeExpr
 ******************************************************************/
 
-/// Representation for expressions, also tracks type of resulting value (if there is one).
+/// Representation for expressions, also tracks type of resulting
+/// value (if there is one).
 class TreeNodeExpr: public TreeNode {
 public: /* Methods: */
     inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
@@ -752,39 +754,92 @@ class TreeNodeExprReshape: public TreeNodeExpr {
         }
 };
 
+/******************************************************************
+  OverloadableOperator
+******************************************************************/
+
+class OverloadableOperator {
+public: /* Methods: */
+
+    OverloadableOperator ()
+        : m_operator (SCOP_NONE)
+        , m_symbolProcedure (0)
+    { }
+
+    SecrecOperator getOperator () const {
+        if (m_operator == SCOP_NONE) { // unlikeley
+            m_operator = getOperatorV ();
+            assert ((m_operator != SCOP_NONE) &&
+                    "getOperatorV returned undefined operator.");
+        }
+
+        return m_operator;
+    }
+
+    std::string operatorName () const;
+
+    SymbolProcedure* procSymbol () const {
+        return m_symbolProcedure;
+    }
+
+    void setProcSymbol (SymbolProcedure* proc) {
+        m_symbolProcedure = proc;
+    }
+
+    bool isOverloaded () const { return procSymbol () != 0; }
+
+protected:
+
+    virtual SecrecOperator getOperatorV () const = 0;
+
+private: /* Fields: */
+
+    mutable SecrecOperator m_operator; // cached
+    SymbolProcedure* m_symbolProcedure;
+};
+
 
 /******************************************************************
   TreeNodeExprBinary
 ******************************************************************/
 
 /// Binary expressions.
-class TreeNodeExprBinary: public TreeNodeExpr {
-    public: /* Methods: */
-        inline TreeNodeExprBinary(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNodeExpr(type, loc) {}
+class TreeNodeExprBinary: public TreeNodeExpr, public OverloadableOperator {
+public: /* Methods: */
+    inline TreeNodeExprBinary(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNodeExpr(type, loc)
+    { }
 
-        const char *operatorString() const;
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+    virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
-        virtual ICode::Status accept (TypeChecker& tyChecker);
+    TreeNodeExpr* leftExpression () const {
+        assert (children ().size () == 2);
+        return expressionAt (0);
+    }
 
-        virtual CGResult codeGenWith (CodeGen& cg);
-        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+    TreeNodeExpr* rightExpression () const {
+        assert (children ().size () == 2);
+        return expressionAt (1);
+    }
 
-        TreeNodeExpr* leftExpression () const {
-            assert (children ().size () == 2);
-            return expressionAt (0);
-        }
+    const char *operatorString() const;
 
-        TreeNodeExpr* rightExpression () const {
-            assert (children ().size () == 2);
-            return expressionAt (1);
-        }
+protected:
 
-    protected:
+    TreeNodeExprBinary (SecrecTreeNodeType type,
+                        const YYLTYPE &loc,
+                        const OverloadableOperator& ov)
+        : TreeNodeExpr(type, loc)
+        , OverloadableOperator (ov)
+    { }
 
-        virtual TreeNode* cloneV () const {
-            return new TreeNodeExprBinary (m_type, m_location);
-        }
+    virtual SecrecOperator getOperatorV () const;
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprBinary (m_type, m_location, *this);
+    }
 };
 
 
@@ -915,6 +970,12 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
             assert(children().at(0)->type() == NODE_IDENTIFIER);
             assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
             return static_cast<TreeNodeIdentifier*>(children().at(0));
+        }
+
+        ChildrenListConstRange paramRange () const {
+            assert (!children ().empty ());
+            return std::make_pair (++ children ().begin (),
+                                      children ().end ());
         }
 
     protected:
@@ -1098,19 +1159,19 @@ class TreeNodeExprPrefix: public TreeNodeExpr {
 
 /// Postfix increment and decrement.
 class TreeNodeExprPostfix: public TreeNodeExpr {
-    public: /* Methods: */
-        inline TreeNodeExprPostfix(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNodeExpr(type, loc) {}
+public: /* Methods: */
+    inline TreeNodeExprPostfix(SecrecTreeNodeType type, const YYLTYPE &loc)
+        : TreeNodeExpr(type, loc)
+    { }
 
-        virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
 
-        virtual CGResult codeGenWith (CodeGen& cg);
+protected:
 
-    protected:
-
-        virtual TreeNode* cloneV () const {
-            return new TreeNodeExprPostfix (m_type, m_location);
-        }
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprPostfix (m_type, m_location);
+    }
 };
 
 
@@ -1119,25 +1180,35 @@ class TreeNodeExprPostfix: public TreeNodeExpr {
 ******************************************************************/
 
 /// Unary expressions such as regular (logical) negation.
-class TreeNodeExprUnary: public TreeNodeExpr {
-    public: /* Methods: */
-        inline TreeNodeExprUnary(SecrecTreeNodeType type, const YYLTYPE &loc)
-            : TreeNodeExpr(type, loc) {}
+class TreeNodeExprUnary: public TreeNodeExpr, public OverloadableOperator {
+public: /* Methods: */
+    inline TreeNodeExprUnary(SecrecTreeNodeType type,
+                             const YYLTYPE &loc)
+        : TreeNodeExpr(type, loc)
+    { }
 
-        virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+    virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
-        virtual CGResult codeGenWith (CodeGen& cg);
-        virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+    TreeNodeExpr* expression () const {
+        return expressionAt (0);
+    }
 
-        TreeNodeExpr* expression () const {
-            return expressionAt (0);
-        }
+protected:
 
-    protected:
+    TreeNodeExprUnary (SecrecTreeNodeType type,
+                       const YYLTYPE &loc,
+                       const OverloadableOperator& ov)
+        : TreeNodeExpr(type, loc)
+        , OverloadableOperator (ov)
+    { }
 
-        virtual TreeNode* cloneV () const {
-            return new TreeNodeExprUnary (m_type, m_location);
-        }
+    virtual SecrecOperator getOperatorV () const;
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprUnary (m_type, m_location, *this);
+    }
 };
 
 /******************************************************************
@@ -1211,7 +1282,18 @@ class TreeNodeDomain : public TreeNode {
 
 /// Procedure definition.
 class TreeNodeProcDef: public TreeNode {
-public: /* Methods: */
+protected: /* Methods: */
+
+    explicit inline TreeNodeProcDef(SecrecTreeNodeType type,
+                                    const YYLTYPE &loc)
+        : TreeNode (type, loc)
+        , m_cachedType(0)
+        , m_procSymbol (0)
+    {
+        setContainingProcedureDirectly(this);
+    }
+
+public:
 
     explicit inline TreeNodeProcDef(const YYLTYPE &loc)
         : TreeNode(NODE_PROCDEF, loc)
@@ -1290,6 +1372,36 @@ protected: /* Fields: */
     SymbolProcedure*      m_procSymbol;
 };
 
+/******************************************************************
+  TreeNodeOpDef
+******************************************************************/
+
+class TreeNodeOpDef: public TreeNodeProcDef {
+public: /* Methods: */
+
+    explicit inline TreeNodeOpDef(SecrecOperator op,
+                                  const YYLTYPE &loc)
+        : TreeNodeProcDef (NODE_OPDEF, loc)
+        , m_operator (op)
+    { }
+
+    inline ~TreeNodeOpDef() { }
+
+    SecrecOperator getOperator () const { return m_operator; }
+
+    CGStmtResult codeGenWith (CodeGen& cg);
+
+protected: /* Methods: */
+
+    friend class TypeChecker;
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeOpDef (m_operator, m_location);
+    }
+
+protected: /* Fields: */
+    const SecrecOperator  m_operator;
+};
 
 /******************************************************************
   TreeNodeQuantifier
@@ -1332,7 +1444,9 @@ protected:
 class TreeNodeTemplate : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeTemplate(const YYLTYPE &loc)
-        : TreeNode(NODE_TEMPLATE_DECL, loc) {}
+        : TreeNode(NODE_TEMPLATE_DECL, loc)
+        , m_contextDependance (false)
+    { }
 
     TreeNodeProcDef* body () const {
         assert (children ().size () == 2);
@@ -1345,11 +1459,20 @@ public: /* Methods: */
         return children ().at (0)->children ();
     }
 
+    void setContextDependance (bool contextDependance) {
+        m_contextDependance = contextDependance;
+    }
+
+    bool isContextDependent () const { return m_contextDependance; }
+
 protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeTemplate (m_location);
     }
+
+private: /* Fields: */
+    bool m_contextDependance; /// true if the template resolution requires context
 };
 
 /******************************************************************
@@ -1448,7 +1571,6 @@ public: /* Methods: */
     virtual inline ~TreeNodeStmtDecl() { }
 
     const std::string &variableName() const;
-
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 

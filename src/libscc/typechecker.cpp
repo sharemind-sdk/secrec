@@ -337,7 +337,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
 
     TreeNodeExpr *e1 = root->leftExpression ();
     TreeNodeExpr *e2 = root->rightExpression ();
-    SecreC::Type *eType1, *eType2;
+    SecreC::TypeNonVoid *eType1, *eType2;
 
     if (root->contextSecType () != 0) {
         e1->setContextType (root->contextSecType ());
@@ -347,35 +347,63 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
     {
         ICode::Status s = visitExpr (e1);
         if (s != ICode::OK) return s;
-        eType1 = e1->resultType();
+        if (checkAndLogIfVoid (e1)) return ICode::E_TYPE;
+        assert (dynamic_cast<TNV*>(e1->resultType()) != 0);
+        eType1 = static_cast<TNV*>(e1->resultType());
 
         s = visitExpr (e2);
         if (s != ICode::OK) return s;
-        eType2 = e2->resultType();
+        if (checkAndLogIfVoid (e2)) return ICode::E_TYPE;
+        assert(dynamic_cast<TNV*>(e2->resultType ()) != 0);
+        eType2 = static_cast<TNV*>(e2->resultType ());
     }
 
-    SecurityType* s1 = eType1->secrecSecType();
-    SecurityType* s2 = eType2->secrecSecType();
-    SecurityType* s0 = upperSecType(s1, s2);
-
-    if (root->contextSecType () == 0) {
-        e1->setContextType (s0);
-        e2->setContextType (s0);
-    }
-
-    if (!eType1->isVoid() && !eType2->isVoid()
-#ifndef NDEBUG
-        && (assert(dynamic_cast<const TNV*>(eType1) != 0), true)
-        && (assert(dynamic_cast<const TNV*>(eType2) != 0), true)
-#endif
-        && static_cast<const TNV*>(eType1)->kind() == TNV::BASIC
+    if (   static_cast<const TNV*>(eType1)->kind() == TNV::BASIC
         && static_cast<const TNV*>(eType2)->kind() == TNV::BASIC)
     {
+        { // check if operator is overloaded
+            SymbolProcedure* match = 0;
+            std::vector<DataType*> argumentDataTypes;
+            DataTypeProcedureVoid* argTypes = 0;
+            argumentDataTypes.push_back (eType1->dataType ());
+            argumentDataTypes.push_back (eType2->dataType ());
+            argTypes = DataTypeProcedureVoid::get (getContext (),
+                                                   argumentDataTypes);
+            ICode::Status s = findBestMatchingProc (match, root->operatorName (),
+                                                    root->contextSecType (), argTypes);
+            if (s != ICode::OK) {
+                m_log.fatal () << "Error at " << root->location () << ".";
+                return s;
+            }
+
+            if (match != 0) { // overloaded operator
+                SecreC::Type* resultType = 0;
+                s = checkProcCall (match, argTypes, resultType);
+                if (s != ICode::OK) {
+                    return s;
+                }
+
+                assert (resultType != 0);
+                root->setResultType (resultType);
+                root->setProcSymbol (match);
+                return ICode::OK;
+            }
+        }
+
+        SecurityType* s1 = eType1->secrecSecType();
+        SecurityType* s2 = eType2->secrecSecType();
+        SecurityType* s0 = upperSecType(s1, s2);
+
+        if (root->contextSecType () == 0) {
+            e1->setContextType (s0);
+            e2->setContextType (s0);
+        }
+
         // Add implicit classify nodes if needed:
         e1 = classifyIfNeeded (e1);
-        eType1 = e1->resultType();
+        eType1 = static_cast<TNV*>(e1->resultType());
         e2 = classifyIfNeeded (e2);
-        eType2 = e2->resultType();
+        eType2 = static_cast<TNV*>(e2->resultType());
 
         SecrecDataType d1 = eType1->secrecDataType();
         SecrecDataType d2 = eType2->secrecDataType();
@@ -450,22 +478,49 @@ ICode::Status TypeChecker::visit (TreeNodeExprUnary* root) {
     if (s != ICode::OK) return s;
     SecreC::Type* eType = e->resultType();
 
-    /// \todo implement for matrixes also
     if (!eType->isVoid()
         && (assert(dynamic_cast<TypeNonVoid*>(eType) != 0), true)
         && static_cast<TypeNonVoid*>(eType)->kind() == TypeNonVoid::BASIC)
     {
-        TypeNonVoid* et = static_cast<TypeNonVoid*>(eType);
-        assert(dynamic_cast<DTB*>(et->dataType()) != 0);
-        const DTB &bType = *static_cast<DTB*>(et->dataType());
+        TypeNonVoid* et = static_cast<TypeNonVoid*> (eType);
+        assert (dynamic_cast<DTB*>(et->dataType()) != 0);
+        DTB* bType = static_cast<DTB*>(et->dataType());
 
-        if (root->type() == NODE_EXPR_UNEG && bType.dataType() == DATATYPE_BOOL) {
+        { // check if operator is overloaded
+            SymbolProcedure* match = 0;
+            std::vector<DataType*> argumentDataTypes;
+            DataTypeProcedureVoid* argTypes = 0;
+            argumentDataTypes.push_back (bType);
+            argTypes = DataTypeProcedureVoid::get (getContext (),
+                                                   argumentDataTypes);
+            ICode::Status s = findBestMatchingProc (match, root->operatorName (),
+                                                    root->contextSecType (), argTypes);
+            if (s != ICode::OK) {
+                m_log.fatal () << "Error at " << root->location () << ".";
+                return s;
+            }
+
+            if (match != 0) { // overloaded operator
+                SecreC::Type* resultType = 0;
+                s = checkProcCall (match, argTypes, resultType);
+                if (s != ICode::OK) {
+                    return s;
+                }
+
+                assert (resultType != 0);
+                root->setResultType (resultType);
+                root->setProcSymbol (match);
+                return ICode::OK;
+            }
+        }
+
+        if (root->type() == NODE_EXPR_UNEG && bType->dataType() == DATATYPE_BOOL) {
             root->setResultType(et);
             return ICode::OK;
         }
         else
         if (root->type() == NODE_EXPR_UMINUS) {
-            if (isSignedNumericDataType (bType.dataType())) {
+            if (isSignedNumericDataType (bType->dataType())) {
                 root->setResultType (et);
                 return ICode::OK;
             }
