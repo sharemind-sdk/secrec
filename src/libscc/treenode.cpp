@@ -30,6 +30,24 @@ TreeNode::~TreeNode() {
     }
 }
 
+TreeNode* TreeNode::clone (TreeNode* parent) const {
+    TreeNode* out = cloneV ();
+
+    if (parent) {
+        out->resetParent (parent);
+    }
+
+    for (ChildrenListConstIterator
+         i = m_children.begin (),
+         e = m_children.end (); i != e; ++ i)
+    {
+        const TreeNode* n = *i;
+        out->m_children.push_back (n->clone (out));
+    }
+
+    return out;
+}
+
 TreeNodeProcDef* TreeNode::containingProcedure() {
     if (m_procedure != 0) return m_procedure;
     if (m_parent != 0) {
@@ -396,6 +414,36 @@ TreeNode *treenode_init_opdef(enum SecrecOperator op, YYLTYPE *loc) {
     return node;
 }
 
+/*******************************************************************************
+  TreeNodeSecTypeF
+*******************************************************************************/
+
+void TreeNodeSecTypeF::setCachedType (SecurityType* ty) {
+    assert (m_cachedType == 0);
+    assert (ty != 0);
+    m_cachedType = ty;
+}
+
+TreeNodeIdentifier* TreeNodeSecTypeF::identifier () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+    return static_cast<TreeNodeIdentifier*>(children ().at (0));
+}
+
+std::string TreeNodeSecTypeF::stringHelper() const {
+    std::ostringstream os;
+    if (m_isPublic)
+        os << "public";
+    else
+        os << static_cast<TreeNodeIdentifier*>(children ().at (0))->value ();
+    return os.str();
+}
+
+std::string TreeNodeSecTypeF::xmlHelper() const {
+    std::ostringstream os;
+    os << "type=\"" << stringHelper () << "\"";
+    return os.str();
+}
 
 /*******************************************************************************
   TreeNodeDataTypeF
@@ -430,6 +478,38 @@ std::string TreeNodeDimTypeF::xmlHelper() const {
 }
 
 /*******************************************************************************
+  TreeNodeType
+*******************************************************************************/
+
+SecreC::Type* TreeNodeType::secrecType () const {
+    assert (m_cachedType != 0);
+    return m_cachedType;
+}
+
+TreeNodeSecTypeF* TreeNodeType::secType () const {
+    assert (children().size() == 3);
+    assert (dynamic_cast<TreeNodeSecTypeF*>(children().at (0)) != 0);
+    return static_cast<TreeNodeSecTypeF*>(children().at (0));
+}
+
+TreeNodeDataTypeF* TreeNodeType::dataType () const {
+    assert (children().size() == 3);
+    assert (dynamic_cast<TreeNodeDataTypeF*>(children().at (1)) != 0);
+    return static_cast<TreeNodeDataTypeF*>(children().at (1));
+}
+
+TreeNodeDimTypeF* TreeNodeType::dimType () const {
+    assert (children().size() == 3);
+    assert (dynamic_cast<TreeNodeDimTypeF*>(children().at (2)) != 0);
+    return static_cast<TreeNodeDimTypeF*>(children().at (2));
+}
+
+bool TreeNodeType::isNonVoid () const {
+    assert (children ().size () == 3 || children ().empty ());
+    return ! children ().empty ();
+}
+
+/*******************************************************************************
   OverloadableOperator
 *******************************************************************************/
 
@@ -437,6 +517,33 @@ std::string OverloadableOperator::operatorName () const {
     std::ostringstream os;
     os << "__operator" << getOperator ();
     return os.str ();
+}
+
+/*******************************************************************************
+  TreeNodeExpr
+*******************************************************************************/
+
+bool TreeNodeExpr::havePublicBoolType() const {
+    assert(m_resultType != 0);
+    return m_resultType->secrecDataType() == DATATYPE_BOOL
+            && m_resultType->secrecSecType()->isPublic ()
+            && m_resultType->isScalar();
+}
+
+SecreC::Type* TreeNodeExpr::resultType() const {
+    assert(m_resultType != 0);
+    return m_resultType;
+}
+
+void TreeNodeExpr::setResultType (SecreC::Type *type) {
+    assert(m_resultType == 0);
+    m_resultType = type;
+}
+
+TreeNodeExpr* TreeNodeExpr::expressionAt (unsigned i) const {
+    assert (i < children ().size ());
+    assert (dynamic_cast<TreeNodeExpr*>(children ().at (i)) != 0);
+    return static_cast<TreeNodeExpr*>(children ().at (i));
 }
 
 /*******************************************************************************
@@ -451,10 +558,33 @@ SecrecOperator TreeNodeExprUnary::getOperatorV () const {
     }
 }
 
+/*******************************************************************************
+  OverloadableOperator
+*******************************************************************************/
+
+SecrecOperator OverloadableOperator::getOperator () const {
+    if (m_operator == SCOP_NONE) { // unlikeley
+        m_operator = getOperatorV ();
+        assert ((m_operator != SCOP_NONE) &&
+                "getOperatorV returned undefined operator.");
+    }
+
+    return m_operator;
+}
 
 /*******************************************************************************
   TreeNodeExprBinary
 *******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprBinary::leftExpression () const {
+    assert (children ().size () == 2);
+    return expressionAt (0);
+}
+
+TreeNodeExpr* TreeNodeExprBinary::rightExpression () const {
+    assert (children ().size () == 2);
+    return expressionAt (1);
+}
 
 const char *TreeNodeExprBinary::operatorString() const {
     switch (getOperator ()) {
@@ -500,6 +630,56 @@ SecrecOperator TreeNodeExprBinary::getOperatorV () const {
     return SCOP_NONE;
 }
 
+/*******************************************************************************
+  TreeNodeExprClassify
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprClassify::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (0);
+}
+
+TreeNode* TreeNodeExprClassify::cloneV () const {
+    assert (false && "ICE: Classify nodes are created during type checking and "
+            "it's assumed that procedures are cloned before type checking is performed.");
+    return new TreeNodeExprClassify (m_contextSecType, m_location);
+}
+
+/*******************************************************************************
+  TreeNodeExprDeclassify
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprDeclassify::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (0);
+}
+
+/*******************************************************************************
+  TreeNodeExprProcCall
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeExprProcCall::procName () const {
+    assert (!children ().empty ());
+    assert(children().at(0)->type() == NODE_IDENTIFIER);
+    assert(dynamic_cast<TreeNodeIdentifier*>(children().at(0)) != 0);
+    return static_cast<TreeNodeIdentifier*>(children().at(0));
+}
+
+TreeNode::ChildrenListConstRange TreeNodeExprProcCall::paramRange () const {
+    assert (!children ().empty ());
+    return std::make_pair (++ children ().begin (),
+                              children ().end ());
+}
+
+/*******************************************************************************
+  TreeNodeExprRVariable
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeExprRVariable::identifier () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)));
+    return static_cast<TreeNodeIdentifier*>(children ().at (0));
+}
 
 /*******************************************************************************
   TreeNodeExprBool
@@ -526,6 +706,152 @@ std::string TreeNodeExprString::xmlHelper() const {
     os << "value=\"string:" << xmlEncode(m_value) << "\"";
     return os.str();
 }
+
+/*******************************************************************************
+  TreeNodeExprTernary
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprTernary::conditional () const {
+    assert(children().size() == 3);
+    assert((children().at(0)->type() & NODE_EXPR_MASK) != 0x0);
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(0)) != 0);
+    return static_cast<TreeNodeExpr*>(children().at(0));
+}
+
+TreeNodeExpr* TreeNodeExprTernary::trueBranch () const {
+    assert(children().size() == 3);
+    assert((children().at(1)->type() & NODE_EXPR_MASK) != 0x0);
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(1)) != 0);
+    return static_cast<TreeNodeExpr*>(children().at(1));
+}
+
+TreeNodeExpr* TreeNodeExprTernary::falseBranch () const {
+    assert(children().size() == 3);
+    assert((children().at(2)->type() & NODE_EXPR_MASK) != 0x0);
+    assert(dynamic_cast<TreeNodeExpr*>(children().at(2)) != 0);
+    return static_cast<TreeNodeExpr*>(children().at(2));
+}
+
+/*******************************************************************************
+  TreeNodeExprAssign
+*******************************************************************************/
+
+TreeNode* TreeNodeExprAssign::slice () const {
+    assert (children ().size () == 2);
+    TreeNode *e1 = children().at(0);
+    if (e1->children().size() == 2) {
+        return e1->children ().at (1);
+    }
+
+    return 0;
+}
+
+TreeNodeIdentifier* TreeNodeExprAssign::identifier () const {
+    assert (children ().size () == 2);
+    TreeNode *e1 = children().at(0);
+    assert(e1 != 0);
+    assert(e1->type() == NODE_LVALUE);
+    assert(e1->children().size() > 0 && e1->children().size() <= 2);
+    assert(dynamic_cast<TreeNodeIdentifier*>(e1->children().at(0)) != 0);
+    return static_cast<TreeNodeIdentifier*>(e1->children().at(0));
+}
+
+TreeNodeExpr* TreeNodeExprAssign::rightHandSide () const {
+    assert(children().size() == 2);
+    return expressionAt (1);
+}
+
+/*******************************************************************************
+  TreeNodeExprCast
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprCast::expression () const {
+    assert (children ().size () == 2);
+    return expressionAt (1);
+}
+
+TreeNodeSecTypeF* TreeNodeExprCast::castType () const {
+    assert (children ().size () == 2);
+    assert (dynamic_cast<TreeNodeSecTypeF*>(children ().at (0)));
+    return static_cast<TreeNodeSecTypeF*>(children ().at (0));
+}
+
+bool TreeNodeExprCast::isSecTypeCast () const {
+    assert (children ().size () == 2);
+    return children ().at (0)->type () == NODE_SECTYPE_F;
+}
+
+/*******************************************************************************
+  TreeNodeExprIndex
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprIndex::expression () const {
+    assert (children().size() == 2);
+    return expressionAt (0);
+}
+
+TreeNode* TreeNodeExprIndex::indices () const {
+    assert (children().size() == 2);
+    return children ().at (1);
+}
+
+/*******************************************************************************
+  TreeNodeExprSize
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprSize::expression () const {
+    assert (children().size() == 1);
+    return expressionAt (0);
+}
+
+/*******************************************************************************
+  TreeNodeExprShape
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprShape::expression () const {
+    assert (children().size() == 1);
+    return expressionAt (0);
+}
+
+/*******************************************************************************
+  TreeNodeExprReshape
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprReshape::reshapee () const {
+    assert (children ().size() >= 1);
+    return expressionAt (0);
+}
+
+TreeNodeExpr* TreeNodeExprReshape::dimensionality (unsigned i) {
+    return expressionAt (i + 1); /// will perform the range check too
+}
+
+/*******************************************************************************
+  TreeNodeExprCat
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprCat::leftExpression () const {
+    assert (children().size() == 3 ||
+            children().size() == 2);
+    return expressionAt (0);
+}
+TreeNodeExpr* TreeNodeExprCat::rightExpression () const {
+    assert (children().size() == 3 ||
+            children().size() == 2);
+    return expressionAt (1);
+}
+
+TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
+    if (children ().size () == 3) {
+        TreeNodeExpr* e = expressionAt (2);
+        assert (dynamic_cast<TreeNodeExprInt*>(e) != 0);
+        return static_cast<TreeNodeExprInt*>(e);
+    }
+
+    return 0;
+}
+
+
 /*******************************************************************************
   TreeNodeExprInt
 *******************************************************************************/
@@ -568,6 +894,83 @@ const std::string &TreeNodeProcDef::procedureName() const {
     return static_cast<const TreeNodeIdentifier*>(children().at(0))->value();
 }
 
+TreeNodeIdentifier* TreeNodeProcDef::identifier () const {
+    assert (children ().size () > 1);
+    assert(dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+    return static_cast<TreeNodeIdentifier*>(children ().at (0));
+}
+
+TreeNodeType* TreeNodeProcDef::returnType () const {
+    assert (children ().size () > 1);
+    assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+    return static_cast<TreeNodeType*>(children().at(1));
+}
+
+TreeNodeStmt* TreeNodeProcDef::body () const {
+    assert (children ().size () > 2);
+    assert(dynamic_cast<TreeNodeStmt*>(children().at(2)) != 0);
+    return static_cast<TreeNodeStmt*>(children().at(2));
+}
+
+TreeNode::ChildrenListConstRange TreeNodeProcDef::paramRange () const {
+    return std::make_pair (paramBegin (), paramEnd ());
+}
+
+TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramBegin () const {
+    assert (children ().size () > 2);
+    return children ().begin () + 3;
+}
+
+TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramEnd () const {
+    return children ().end ();
+}
+
+/*******************************************************************************
+  TreeNodeQuantifier
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeQuantifier::domain () {
+    assert (children ().size () == 1 || children ().size () == 2);
+    assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (0)) != 0);
+    return static_cast<TreeNodeIdentifier*>(children ().at (0));
+}
+
+// will equal to zero, if kind not specified
+TreeNodeIdentifier* TreeNodeQuantifier::kind () {
+    assert (children ().size () == 1 || children ().size () == 2);
+    if (children ().size () == 2) {
+        assert (dynamic_cast<TreeNodeIdentifier*>(children ().at (1)) != 0);
+        return static_cast<TreeNodeIdentifier*>(children ().at (1));
+    }
+
+    return 0;
+}
+
+/*******************************************************************************
+  TreeNodeTemplate
+*******************************************************************************/
+
+TreeNodeProcDef* TreeNodeTemplate::body () const {
+    assert (children ().size () == 2);
+    assert (dynamic_cast<TreeNodeProcDef*>(children ().at (1)) != 0);
+    return static_cast<TreeNodeProcDef*>(children ().at (1));
+}
+
+TreeNode::ChildrenList& TreeNodeTemplate::quantifiers () const {
+    assert (children ().size () == 2);
+    return children ().at (0)->children ();
+}
+
+/*******************************************************************************
+  TreeNodeExprDomainID
+*******************************************************************************/
+
+TreeNodeSecTypeF* TreeNodeExprDomainID::securityType () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeSecTypeF*>(children ().at (0)) != 0);
+    return static_cast<TreeNodeSecTypeF*>(children ().at (0));
+}
+
 /*******************************************************************************
   TreeNodeIdentifier
 *******************************************************************************/
@@ -584,29 +987,32 @@ std::string TreeNodeIdentifier::xmlHelper() const {
     return os.str();
 }
 
-
-/*******************************************************************************
-  TreeNodeSecTypeF
-*******************************************************************************/
-
-std::string TreeNodeSecTypeF::stringHelper() const {
-    std::ostringstream os;
-    if (m_isPublic)
-        os << "public";
-    else
-        os << static_cast<TreeNodeIdentifier*>(children ().at (0))->value ();
-    return os.str();
-}
-
-std::string TreeNodeSecTypeF::xmlHelper() const {
-    std::ostringstream os;
-    os << "type=\"" << stringHelper () << "\"";
-    return os.str();
-}
-
 /*******************************************************************************
   TreeNodeStmtDecl
 *******************************************************************************/
+
+TreeNodeType* TreeNodeStmtDecl::varType () const {
+    assert(children().size() >= 2);
+    assert(dynamic_cast<TreeNodeType*>(children().at(1)) != 0);
+    return static_cast<TreeNodeType*>(children().at(1));
+}
+
+TreeNode* TreeNodeStmtDecl::shape () const {
+    if (children().size() > 2) {
+        return children ().at (2);
+    }
+
+    return 0;
+}
+
+TreeNodeExpr* TreeNodeStmtDecl::rightHandSide () const {
+    if (children ().size () > 3) {
+        assert(dynamic_cast<TreeNodeExpr*>(children().at(3)) != 0);
+        return static_cast<TreeNodeExpr*>(children().at(3));
+    }
+
+    return 0;
+}
 
 const std::string &TreeNodeStmtDecl::variableName() const {
     typedef TreeNodeIdentifier TNI;
@@ -616,6 +1022,172 @@ const std::string &TreeNodeStmtDecl::variableName() const {
 
     assert(dynamic_cast<TNI*>(children().at(0)) != 0);
     return static_cast<TNI*>(children().at(0))->value();
+}
+
+/*******************************************************************************
+  TreeNodeStmtDoWhile
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtDoWhile::conditional () const {
+    assert (children ().size () == 2);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (1)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (1));
+}
+
+TreeNodeStmt* TreeNodeStmtDoWhile::body () const {
+    assert (children ().size () == 2);
+    return statementAt (0);
+}
+
+/*******************************************************************************
+  TreeNodeStmtExpr
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtExpr::expression () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (0));
+}
+
+/*******************************************************************************
+  TreeNodeStmtAssert
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtAssert::expression () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (0));
+}
+
+/*******************************************************************************
+  TreeNodeStmtFor
+*******************************************************************************/
+
+TreeNode* TreeNodeStmtFor::initializer () const {
+    assert (children ().size () == 4);
+    if (children ().at (0)->type () != NODE_EXPR_NONE) {
+        return children ().at (0);
+    }
+
+    return 0;
+}
+
+TreeNodeExpr* TreeNodeStmtFor::conditional () const {
+    assert (children ().size () == 4);
+    if (children ().at (1)->type () != NODE_EXPR_NONE) {
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (1)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (1));
+    }
+
+    return 0;
+}
+
+TreeNodeExpr* TreeNodeStmtFor::iteratorExpr () const {
+    assert (children ().size () == 4);
+    if (children ().at (2)->type () != NODE_EXPR_NONE) {
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (2)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (2));
+    }
+
+    return 0;
+}
+
+TreeNodeStmt* TreeNodeStmtFor::body () const {
+    assert (children ().size () == 4);
+    assert (dynamic_cast<TreeNodeStmt*>(children ().at (3)) != 0);
+    return static_cast<TreeNodeStmt*>(children ().at (3));
+}
+
+/*******************************************************************************
+  TreeNodeStmtIf
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtIf::conditional () const {
+    assert (children ().size () == 2 || children ().size () == 3);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return (static_cast<TreeNodeExpr*> (children ().at (0)));
+}
+
+TreeNodeStmt* TreeNodeStmtIf::trueBranch () const {
+    assert (children ().size () == 2 || children ().size () == 3);
+    return statementAt (1);
+}
+
+TreeNodeStmt* TreeNodeStmtIf::falseBranch () const {
+    assert (children ().size () == 2 || children ().size () == 3);
+    if (children ().size () == 3) {
+        return statementAt (2);
+    }
+
+    return 0;
+}
+
+/*******************************************************************************
+  TreeNodeStmtReturn
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtReturn::expression () const {
+    if (!children ().empty ()) {
+        assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+        return static_cast<TreeNodeExpr*> (children ().at (0));
+    }
+
+    return 0;
+}
+
+/*******************************************************************************
+  TreeNodeStmtWhile
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtWhile::conditional () const {
+    assert (children ().size () == 2);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (0));
+}
+
+TreeNodeStmt* TreeNodeStmtWhile::body () const {
+    assert (children ().size () == 2);
+    return statementAt (1);
+}
+
+/*******************************************************************************
+  TreeNodeStmtPrint
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtPrint::expression () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (0));
+}
+
+/*******************************************************************************
+  TreeNodeStmtSyscall
+*******************************************************************************/
+
+TreeNodeExprString* TreeNodeStmtSyscall::expression () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeExprString*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExprString*> (children ().at (0));
+}
+
+/*******************************************************************************
+  TreeNodeStmtPush
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeStmtPush::expression () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeExpr*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeExpr*> (children ().at (0));
+}
+
+/*******************************************************************************
+  TreeNodeStmtPushRef
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeStmtPushRef::identifier () const {
+    assert (children ().size () == 1);
+    assert (dynamic_cast<TreeNodeIdentifier*> (children ().at (0)) != 0);
+    return static_cast<TreeNodeIdentifier*> (children ().at (0));
 }
 
 /*******************************************************************************
@@ -631,6 +1203,12 @@ std::string TreeNodeTypeType::stringHelper() const {
 /*******************************************************************************
   TreeNodeStmt
 *******************************************************************************/
+
+TreeNodeStmt* TreeNodeStmt::statementAt (unsigned i) const {
+    assert (i < children ().size ());
+    assert (dynamic_cast<TreeNodeStmt*>(children ().at (i)) != 0);
+    return static_cast<TreeNodeStmt*>(children ().at (i));
+}
 
 SecurityType* TreeNodeStmt::returnSecurityType () {
     return containingProcedure ()->procedureType ()->secrecSecType ();
