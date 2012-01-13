@@ -217,6 +217,7 @@ SET_TESTS_PROPERTIES("scalars/43-domain-fail"
 add_test_secrec_execute("scalars/44-classify")
 add_test_secrec_execute("scalars/45-return-type-overloading")
 add_test_secrec_execute("scalars/46-domain-id")
+add_test_secrec_execute("scalars/47-operator-overloading")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
