@@ -360,7 +360,6 @@ protected: /* Methods: */
     friend class TypeChecker;
 
     void setResultType(SecreC::Type *type);
-    TreeNodeExpr* expressionAt (unsigned i) const;
 
 protected: /* Fields: */
 
@@ -385,8 +384,6 @@ public: /* Methods: */
 protected:
 
     virtual TreeNode* cloneV () const = 0;
-
-    TreeNodeStmt* statementAt (unsigned i) const;
 };
 
 /******************************************************************
@@ -943,9 +940,7 @@ public: /* Methods: */
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
-    TreeNodeExpr* expression () const {
-        return expressionAt (0);
-    }
+    TreeNodeExpr* expression () const;
 
 protected:
 
