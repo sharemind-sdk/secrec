@@ -477,35 +477,35 @@ procedure_parameter
 
 /* uhoh... */
 operator_definition
- :  type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ :  procedure_type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_MUL , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_DIV , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_MOD , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_ADD , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_SUB , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_EQ  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_NE  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LE  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_GT  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_GE  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LT  , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LAND, &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LOR , &@$, $1, $9, $5, $7); }
- |  type_specifier OPERATOR UNEG '(' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR UNEG '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_NEG, &@$, $1, $7, $5); }
- |  type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_MINUS , &@$, $1, $7, $5); }
  ;
 
