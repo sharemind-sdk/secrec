@@ -285,6 +285,10 @@ add_test_secrec_execute("templates/09-recursive-call-of-different-instance")
 add_test_secrec_execute("templates/10-overloading")
 add_test_secrec_execute("templates/11-name-lookup")
 add_test_secrec_execute("templates/12-return-type-overloading")
+add_test_secrec_execute("templates/13-various")
+add_test_secrec_execute("templates/14-ambiguous-lookup")
+SET_TESTS_PROPERTIES("templates/14-ambiguous-lookup"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(14,5\\)\\(14,15\\)")
 
 
 # Run Qt4 tests if qt is found
