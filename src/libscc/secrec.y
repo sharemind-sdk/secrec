@@ -34,6 +34,18 @@
       return out;
   }
 
+  struct TreeNode *treenode_move_children (struct TreeNode* from,
+                                           struct TreeNode* to)
+  {
+      assert (from != 0);
+      assert (to != 0);
+      unsigned i;
+      unsigned n = treenode_numChildren (from);
+      for (i = 0; i < n; ++ i) {
+          treenode_appendChild (to, treenode_childAt (from, i));
+      }
+  }
+
   struct TreeNode *ensure_rValue(struct TreeNode *node) {
      struct TreeNode *t = 0;
 
@@ -177,7 +189,7 @@
 %type <treenode> postfix_op
 %type <treenode> prefix_op
 %type <treenode> cat_expression
-%type <treenode> argument_list
+%type <treenode> expression_list
 %type <treenode> primary_expression
 %type <treenode> literal
 %type <treenode> identifier
@@ -290,19 +302,27 @@ dimensions
    }
  ;
 
-dimension_list
- : dimension_list ',' expression
-   {
-     $$ = $1;
+expression_list
+ : expression_list ',' expression
+   { $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $3);
    }
  | expression
    {
-     $$ = treenode_init(NODE_DIMENSIONS, &@$);
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
    }
+ ;
 
+dimension_list
+ : expression_list
+   {
+     $$ = treenode_init (NODE_DIMENSIONS, &@$);
+     treenode_move_children ($1, $$);
+     treenode_free ($1);
+   }
+ ;
 
 /*******************************************************************************
   Types:
@@ -437,18 +457,11 @@ procedure_definition
    }
  | procedure_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
    {
-     unsigned i;
-     unsigned n;
-
      $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $6);
-
-     n = treenode_numChildren($4);
-     for (i = 0; i < n; i++) {
-         treenode_appendChild($$, treenode_childAt($4, i));
-     }
+     treenode_move_children ($4, $$);
      treenode_free($4);
    }
  ;
@@ -503,7 +516,7 @@ operator_definition
     { $$ = init_binop (SCOP_BIN_LAND, &@$, $1, $9, $5, $7); }
  |  procedure_type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LOR , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR UNEG '(' procedure_parameter ')' compound_statement
+ |  procedure_type_specifier OPERATOR '!' '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_NEG, &@$, $1, $7, $5); }
  |  procedure_type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_MINUS , &@$, $1, $7, $5); }
@@ -970,16 +983,10 @@ postfix_expression
      $$ = treenode_init (NODE_EXPR_DOMAINID, &@$);
      treenode_appendChild($$, $3);
    }
- | RESHAPE '(' argument_list ')'
+ | RESHAPE '(' expression_list ')'
    {
-     unsigned i;
-     unsigned n;
-
      $$ = treenode_init(NODE_EXPR_RESHAPE, &@$);
-     n = treenode_numChildren($3);
-     for (i = 0; i < n; i++) {
-         treenode_appendChild($$, ensure_rValue(treenode_childAt($3, i)));
-     }
+     treenode_move_children ($3, $$);
      treenode_free($3);
    }
  | identifier '(' ')'
@@ -987,17 +994,11 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      treenode_appendChild($$, $1);
    }
- | identifier '(' argument_list ')'
+ | identifier '(' expression_list ')'
    {
-     unsigned i;
-     unsigned n;
-
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      treenode_appendChild($$, $1);
-     n = treenode_numChildren($3);
-     for (i = 0; i < n; i++) {
-         treenode_appendChild($$, ensure_rValue(treenode_childAt($3, i)));
-     }
+     treenode_move_children ($3, $$);
      treenode_free($3);
    }
  | postfix_expression subscript
@@ -1007,19 +1008,6 @@ postfix_expression
      treenode_appendChild($$, $2);
    }
  | primary_expression
- ;
-
-argument_list
- : argument_list ',' expression
-   { $$ = $1;
-     treenode_setLocation($$, &@$);
-     treenode_appendChild($$, $3);
-   }
- | expression
-   {
-     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
-     treenode_appendChild($$, $1);
-   }
  ;
 
 primary_expression
