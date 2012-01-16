@@ -251,7 +251,6 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
         TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
         TreeNodeType* t = d->varType ();
         if (! t->secType ()->isPublic ()) {
-            std::cerr << t->toString () << std::endl;
             TreeNodeIdentifier* id = t->secType ()->identifier ();
             if (retSecTyIdent != 0) {
                 if (id->value () == retSecTyIdent->value ()) {
