@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 #include "symboltable.h"
 #include "typechecker.h"
@@ -41,11 +42,10 @@ TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE &loc)
 }
 
 TreeNode::~TreeNode() {
-    typedef ChildrenListConstIterator CLCI;
-    for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
-        assert((*it) != 0);
-        if ((*it)->m_parent == this) {
-            delete *it;
+    BOOST_FOREACH (TreeNode* child, m_children) {
+        assert (child != 0);
+        if (child->m_parent == this) {
+            delete child; // that's kinda sad
         }
     }
 }
@@ -57,11 +57,7 @@ TreeNode* TreeNode::clone (TreeNode* parent) const {
         out->resetParent (parent);
     }
 
-    for (ChildrenListConstIterator
-         i = m_children.begin (),
-         e = m_children.end (); i != e; ++ i)
-    {
-        const TreeNode* n = *i;
+    BOOST_FOREACH (TreeNode* n, m_children) {
         out->m_children.push_back (n->clone (out));
     }
 
@@ -177,8 +173,6 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
 }
 
 std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
-    typedef ChildrenListConstIterator CLCI;
-
     std::ostringstream os;
 
     os << std::string (startIndent, ' ');
@@ -190,17 +184,15 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
 
     os << " at " << location();
 
-    for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
+    BOOST_FOREACH (TreeNode* child, m_children) {
         os << std::endl;
-        assert((*it)->parent() == this);
-        os << (*it)->toString(indent, startIndent + indent);
+        assert(child->parent() == this);
+        os << child->toString(indent, startIndent + indent);
     }
     return os.str();
 }
 
 std::string TreeNode::toXml(bool full) const {
-    typedef ChildrenListConstIterator CLCI;
-
     std::ostringstream os;
     if (full) {
         os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
@@ -215,9 +207,9 @@ std::string TreeNode::toXml(bool full) const {
         os << "/>";
     } else {
         os << '>';
-        for (CLCI it(m_children.begin()); it != m_children.end(); it++) {
-            assert((*it)->parent() == this);
-            os << (*it)->toXml(false);
+        BOOST_FOREACH (TreeNode* child, m_children) {
+            assert(child->parent() == this);
+            os << child->toXml(false);
         }
         os << "</" << typeName(m_type) << '>';
     }
@@ -377,6 +369,14 @@ void treenode_prependChild(TreeNode *parent,
 
 void treenode_setLocation(TreeNode *node, YYLTYPE *loc) {
     return ((SecreC::TreeNode*) node)->setLocation(*loc);
+}
+
+void treenode_moveChildren (TreeNode* from, TreeNode* to) {
+    BOOST_FOREACH (TreeNode* child, from->children ()) {
+        to->appendChild (child);
+    }
+
+    from->children ().clear ();
 }
 
 TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc) {
@@ -987,7 +987,7 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 
 TreeNodeType* TreeNodeStmtDecl::varType () const {
     assert(children().size() >= 2);
-    return childAt<TreeNodeType>(this, 1);
+    return childAt<TreeNodeType>(this, 0);
 }
 
 TreeNode* TreeNodeStmtDecl::shape () const {
@@ -1008,7 +1008,7 @@ TreeNodeExpr* TreeNodeStmtDecl::rightHandSide () const {
 
 const std::string &TreeNodeStmtDecl::variableName() const {
     assert(children().size() > 0 && children().size() <= 4);
-    return childAt<TreeNodeIdentifier>(this, 0)->value ();
+    return childAt<TreeNodeIdentifier>(this, 1)->value ();
 }
 
 /*******************************************************************************

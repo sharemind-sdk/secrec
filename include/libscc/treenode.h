@@ -38,6 +38,7 @@ TreeNode *treenode_childAt(const TreeNode *node, unsigned index);
 void treenode_appendChild(TreeNode *parent, TreeNode *child);
 void treenode_prependChild(TreeNode *parent, TreeNode *child);
 void treenode_setLocation(TreeNode *node, YYLTYPE *loc);
+void treenode_moveChildren (TreeNode* from, TreeNode* to);
 
 TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
 TreeNode *treenode_init_int(int value, YYLTYPE *loc);

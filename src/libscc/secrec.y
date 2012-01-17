@@ -34,18 +34,6 @@
       return out;
   }
 
-  struct TreeNode *treenode_move_children (struct TreeNode* from,
-                                           struct TreeNode* to)
-  {
-      assert (from != 0);
-      assert (to != 0);
-      unsigned i;
-      unsigned n = treenode_numChildren (from);
-      for (i = 0; i < n; ++ i) {
-          treenode_appendChild (to, treenode_childAt (from, i));
-      }
-  }
-
   struct TreeNode *ensure_rValue(struct TreeNode *node) {
      struct TreeNode *t = 0;
 
@@ -144,16 +132,17 @@
 
 %type <treenode> global_declarations
 %type <treenode> global_declaration
+%type <treenode> variable_initialization
 %type <treenode> variable_declaration
 %type <treenode> domain_declaration
 %type <treenode> kind_declaration
 %type <treenode> procedure_definition
 %type <treenode> operator_definition
-%type <treenode> initializer
+%type <treenode> maybe_dimensions
 %type <treenode> dimensions
 %type <treenode> dimension_list
 %type <treenode> type_specifier
-%type <treenode> procedure_type_specifier
+%type <treenode> return_type_specifier
 %type <treenode> datatype_specifier
 %type <treenode> sectype_specifier
 %type <treenode> dimtype_specifier
@@ -235,10 +224,10 @@ global_declarations
 
 global_declaration
  : variable_declaration ';'
- | procedure_definition
- | template_declaration
  | domain_declaration ';'
  | kind_declaration ';'
+ | procedure_definition
+ | template_declaration
  ;
 
 kind_declaration
@@ -258,41 +247,41 @@ domain_declaration
    }
  ;
 
-variable_declaration
- : type_specifier identifier
+maybe_dimensions
+ : /* nothing */
    {
-     $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
+     $$ = (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$);
    }
- | type_specifier identifier '=' initializer
+ | dimensions
    {
-     $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$));
-     treenode_appendChild($$, ensure_rValue($4));
-   }
- | type_specifier identifier dimensions
-   {
-     $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
-   }
- | type_specifier identifier dimensions '=' initializer
-   {
-     $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
-     treenode_appendChild($$, ensure_rValue($5));
+     $$ = $1;
    }
  ;
 
-initializer
- : expression
+variable_initialization
+ : identifier maybe_dimensions
+   {
+     $$ = (struct TreeNode *) treenode_init (NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+   }
+ | identifier maybe_dimensions '=' expression
+   {
+     $$ = (struct TreeNode *) treenode_init (NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, ensure_rValue ($4));
+   }
+ ;
+
+variable_declaration
+ : type_specifier variable_initialization
+   {
+     $$ = treenode_init(NODE_DECL, &@$);
+     treenode_appendChild ($$, $1);
+     treenode_moveChildren ($2, $$);
+     treenode_free ($2);
+   }
  ;
 
 dimensions
@@ -319,10 +308,11 @@ dimension_list
  : expression_list
    {
      $$ = treenode_init (NODE_DIMENSIONS, &@$);
-     treenode_move_children ($1, $$);
+     treenode_moveChildren ($1, $$);
      treenode_free ($1);
    }
  ;
+
 
 /*******************************************************************************
   Types:
@@ -387,12 +377,12 @@ datatype_specifier
  ;
 
 dimtype_specifier
-  : '[' '[' INT_LITERAL ']' ']'
-    {
-        $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
-        free ($3);
-    }
-  ;
+ : '[' '[' INT_LITERAL ']' ']'
+   {
+      $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
+      free ($3);
+   }
+ ;
 
 /*******************************************************************************
   Templates:
@@ -438,7 +428,7 @@ template_quantifier
   Procedures:
 *******************************************************************************/
 
-procedure_type_specifier
+return_type_specifier
  : VOID
    {
      $$ = (struct TreeNode *) treenode_init(NODE_TYPEVOID, &@$);
@@ -448,20 +438,20 @@ procedure_type_specifier
 
 procedure_definition
  : operator_definition
- | procedure_type_specifier identifier '(' ')' compound_statement
+ | return_type_specifier identifier '(' ')' compound_statement
    {
      $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $5);
    }
- | procedure_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
+ | return_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
    {
      $$ = treenode_init(NODE_PROCDEF, &@$);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $6);
-     treenode_move_children ($4, $$);
+     treenode_moveChildren ($4, $$);
      treenode_free($4);
    }
  ;
@@ -483,42 +473,42 @@ procedure_parameter
  : type_specifier identifier
    {
      $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
    }
  ;
 
 /* uhoh... */
 operator_definition
- :  procedure_type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ :  return_type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_MUL , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_DIV , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_MOD , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_ADD , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_SUB , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_EQ  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_NE  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LE  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_GT  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_GE  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LT  , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LAND, &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
     { $$ = init_binop (SCOP_BIN_LOR , &@$, $1, $9, $5, $7); }
- |  procedure_type_specifier OPERATOR '!' '(' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '!' '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_NEG, &@$, $1, $7, $5); }
- |  procedure_type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
+ |  return_type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
     { $$ = init_unop (SCOP_UN_MINUS , &@$, $1, $7, $5); }
  ;
 
@@ -633,7 +623,7 @@ for_statement
    }
  ;
 
-maybe_expression /* Helper nonterminal for expression? */
+maybe_expression
  : /* empty */ { $$ = treenode_init(NODE_EXPR_NONE, &@$); }
  | expression
  ;
@@ -696,23 +686,25 @@ indices
       $$ = treenode_init(NODE_SUBSCRIPT, &@$);
       treenode_appendChild($$, $1);
     }
+  ;
 
 /* Precedence of slicing operator? Right now it binds weakest as it can appear
  * in very specific context. However, if we ever wish for "foo : bar" evaluate
  * to value in some other context we need to figure out sane precedence.
  */
 index
-  : maybe_expression ':' maybe_expression
-    {
-      $$ = treenode_init(NODE_INDEX_SLICE, &@$);
-      treenode_appendChild($$, ensure_rValue($1));
-      treenode_appendChild($$, ensure_rValue($3));
-    }
-  | expression
-    {
-      $$ = treenode_init(NODE_INDEX_INT, &@$);
-      treenode_appendChild($$, ensure_rValue($1));
-    }
+ : maybe_expression ':' maybe_expression
+   {
+     $$ = treenode_init(NODE_INDEX_SLICE, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | expression
+   {
+     $$ = treenode_init(NODE_INDEX_INT, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+   }
+ ;
 
 /*******************************************************************************
   Expressions:
@@ -986,7 +978,7 @@ postfix_expression
  | RESHAPE '(' expression_list ')'
    {
      $$ = treenode_init(NODE_EXPR_RESHAPE, &@$);
-     treenode_move_children ($3, $$);
+     treenode_moveChildren ($3, $$);
      treenode_free($3);
    }
  | identifier '(' ')'
@@ -998,7 +990,7 @@ postfix_expression
    {
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
      treenode_appendChild($$, $1);
-     treenode_move_children ($3, $$);
+     treenode_moveChildren ($3, $$);
      treenode_free($3);
    }
  | postfix_expression subscript
@@ -1025,18 +1017,20 @@ primary_expression
  ;
 
 uint_literal
-  : UINT_LITERAL
+ : UINT_LITERAL
    {
      $$ = treenode_init_uint(atoi($1), &@$);
      free($1);
    }
+ ;
 
 int_literal
  : INT_LITERAL
-  {
-    $$ = treenode_init_int(atoi($1), &@$);
-    free($1);
-  }
+   {
+     $$ = treenode_init_int(atoi($1), &@$);
+     free($1);
+   }
+ ;
 
 string_literal
  : STRING_LITERAL
@@ -1044,16 +1038,11 @@ string_literal
      $$ = treenode_init_string($1, &@$);
      free($1);
    }
+ ;
 
 bool_literal
- : TRUE_B
-   {
-     $$ = treenode_init_bool(0 == 0, &@$);
-   }
- | FALSE_B
-   {
-     $$ = treenode_init_bool(1 != 1, &@$);
-   }
+ : TRUE_B   { $$ = treenode_init_bool(0 == 0, &@$); }
+ | FALSE_B  { $$ = treenode_init_bool(1 != 1, &@$); }
  ;
 
 literal
@@ -1069,6 +1058,7 @@ identifier
      $$ = treenode_init_identifier($1, &@$);
      free($1);
    }
+ ;
 
 %%
 
