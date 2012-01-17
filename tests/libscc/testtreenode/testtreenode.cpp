@@ -57,8 +57,6 @@ void TestTreeNode::testInitBool() {
     TreeNodeExprBool n(value, loc);
     QCOMPARE(n.type(), NODE_LITE_BOOL);
     QCOMPARE(n.value(), value);
-    n.setValue(!value);
-    QCOMPARE(n.value(), !value);
 }
 
 void TestTreeNode::testInitBool_data() {
@@ -71,13 +69,10 @@ void TestTreeNode::testInitInt() {
     DEFLOC(loc,1,2,3,4);
 
     QFETCH(int, value1);
-    QFETCH(int, value2);
 
     TreeNodeExprInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_INT);
     QCOMPARE(n.value(), value1);
-    n.setValue(value2);
-    QCOMPARE(n.value(), value2);
 }
 
 void TestTreeNode::testInitInt_data() {
@@ -95,13 +90,10 @@ void TestTreeNode::testInitUInt() {
     DEFLOC(loc,1,2,3,4);
 
     QFETCH(unsigned, value1);
-    QFETCH(unsigned, value2);
 
     TreeNodeExprUInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_UINT);
     QCOMPARE(n.value(), value1);
-    n.setValue(value2);
-    QCOMPARE(n.value(), value2);
 }
 
 void TestTreeNode::testInitUInt_data() {
@@ -122,8 +114,6 @@ void TestTreeNode::testInitString() {
     TreeNodeExprString n(value1.toStdString(), loc);
     QCOMPARE(n.type(), NODE_LITE_STRING);
     QCOMPARE(n.value(), value1.toStdString());
-    n.setValue(value2.toStdString());
-    QCOMPARE(n.value(), value2.toStdString());
 }
 
 void TestTreeNode::testInitString_data() {

@@ -29,7 +29,6 @@ TreeNodeExpr* expressionAt (const TreeNode* node, unsigned i) {
 
 }
 
-
 namespace SecreC {
 
 TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE &loc)
@@ -446,7 +445,8 @@ void TreeNodeSecTypeF::setCachedType (SecurityType* ty) {
 }
 
 TreeNodeIdentifier* TreeNodeSecTypeF::identifier () const {
-    assert (children ().size () == 1);
+    assert (children ().size () == 1 &&
+            "Called on public type?");
     return childAt<TreeNodeIdentifier>(this, 0);
 }
 

@@ -143,7 +143,6 @@ public: /* Methods: */
     inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
         : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
 
-    inline void setValue(const std::string &value) { m_value = value; }
     inline const std::string &value() const { return m_value; }
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper() const;
@@ -155,7 +154,7 @@ protected:
     }
 
 private: /* Fields: */
-    std::string m_value;
+    const std::string m_value;
 };
 
 /******************************************************************
@@ -214,7 +213,7 @@ protected:
     }
 
 private: /* Fields: */
-    SecrecDataType m_dataType;
+    const SecrecDataType m_dataType;
 };
 
 /******************************************************************
@@ -241,7 +240,7 @@ protected:
     }
 
 private: /* Fields: */
-    unsigned m_dimType;
+    const unsigned m_dimType;
 };
 
 /******************************************************************
@@ -662,7 +661,6 @@ public: /* Methods: */
     inline TreeNodeExprBool(bool value, const YYLTYPE &loc)
         : TreeNodeExpr(NODE_LITE_BOOL, loc), m_value(value) {}
 
-    inline void setValue(bool value) { m_value = value; }
     inline bool value() const { return m_value; }
 
     virtual ICode::Status accept (TypeChecker& tyChecker);
@@ -681,7 +679,7 @@ protected:
 
 
 private: /* Fields: */
-    bool m_value;
+    const bool m_value;
 };
 
 /******************************************************************
@@ -805,10 +803,6 @@ public: /* Methods: */
         , m_value(value)
     { }
 
-
-    inline void setValue(const std::string &value) {
-        m_value = value;
-    }
     inline const std::string &value() const { return m_value; }
 
     virtual std::string stringHelper() const;
@@ -824,7 +818,7 @@ protected:
     }
 
 private: /* Fields: */
-    std::string m_value;
+    const std::string m_value;
 };
 
 /******************************************************************
@@ -862,7 +856,6 @@ public: /* Methods: */
     inline TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
         : TreeNodeExpr(NODE_LITE_UINT, loc), m_value(value) {}
 
-    inline void setValue(unsigned value) { m_value = value; }
     inline unsigned value() const { return m_value; }
 
     virtual std::string stringHelper() const;
@@ -878,7 +871,7 @@ protected:
     }
 
 private: /* Fields: */
-    unsigned m_value;
+    const unsigned m_value;
 };
 
 /******************************************************************
