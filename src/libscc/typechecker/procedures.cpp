@@ -150,6 +150,7 @@ ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params,
     return ICode::OK;
 }
 
+
 /// Procedure definitions.
 ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
     typedef TypeNonVoid TNV;

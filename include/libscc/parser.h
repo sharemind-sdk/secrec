@@ -87,6 +87,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_POSTFIX_DEC = 0x260, /* expr --                  */
     NODE_EXPR_PREFIX_INC  = 0x270, /* ++ expr                  */
     NODE_EXPR_PREFIX_DEC  = 0x280, /* -- expr                  */
+    NODE_EXPR_DOMAINID    = 0x290, /* __domainid (expr)        */
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x01000,
     NODE_STMT_FOR       = 0x02000,
@@ -112,7 +113,7 @@ enum SecrecTreeNodeType {
     NODE_STMT_PUSH      = 0x18000,
     NODE_STMT_PUSHREF   = 0x19000,
     NODE_STMT_PUSHCREF  = 0x1a000,
-    NODE_EXPR_DOMAINID  = 0x1b000,
+    NODE_VAR_INIT       = 0x1b000,
 
     NODE_TYPETYPE       = 0x100000,
     NODE_TYPEVOID       = 0x200000,

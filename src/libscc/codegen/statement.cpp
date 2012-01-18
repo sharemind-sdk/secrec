@@ -23,15 +23,13 @@ CGStmtResult TreeNodeStmtCompound::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
     CGStmtResult result;
 
     newScope ();
 
-    for (CLCI it (s->children ().begin ()); it != s->children ().end (); ++ it) {
-        assert(dynamic_cast<TreeNodeStmt*> (*it) != 0);
-        TreeNodeStmt *c = static_cast<TreeNodeStmt*> (*it);
+    BOOST_FOREACH (TreeNode* _c, s->children ()) {
+        assert(dynamic_cast<TreeNodeStmt*> (_c) != 0);
+        TreeNodeStmt *c = static_cast<TreeNodeStmt*> (_c);
         const CGStmtResult& cResult = codeGenStmt (c);
         append (result, cResult);
         if (result.isNotOk ()) {
@@ -107,8 +105,288 @@ CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
   TreeNodeStmtDecl
 *******************************************************************************/
 
+CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
+                                 bool isGlobal, bool isProcParam) {
+    CGStmtResult result;
+
+    ICode::Status status = m_tyChecker.checkVarInit (ty, varInit);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    // Initialize the new symbol (for initializer target)
+    SymbolSymbol::ScopeType scopeType = isGlobal ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL;
+    const bool isScalar = ty->isScalar ();
+    const bool isString = ty->secrecDataType () == DATATYPE_STRING;
+
+    SymbolSymbol *ns = new SymbolSymbol (ty);
+    ns->setScopeType (scopeType);
+    ns->setName (varInit->variableName ());
+    st->appendSymbol (ns);
+
+    unsigned n = 0;
+    assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
+    if (! isScalar || isString) {
+        addAlloc (ns);
+    }
+
+    // Initialize shape:
+    TypeNonVoid* dimType =
+        TypeNonVoid::get (getContext (),
+            DataTypeVar::get (getContext (),
+                DataTypeBasic::get (getContext (), DATATYPE_INT)));
+    for (unsigned i = 0; i < ty->secrecDimType(); ++ i) {
+        SymbolSymbol* sym = new SymbolSymbol (dimType);
+        sym->setScopeType (scopeType);
+        std::stringstream ss;
+        ss << varInit->variableName () << "{d" << i << "}";
+        sym->setName (ss.str ());
+        st->appendSymbol (sym);
+        ns->setDim (i, sym);
+    }
+
+    if (!isScalar) { // set size symbol
+        SymbolSymbol* sizeSym = new SymbolSymbol (dimType);
+        sizeSym->setScopeType (scopeType);
+        std::stringstream ss;
+        ss << varInit->variableName () << "{size}";
+        sizeSym->setName (ss.str ());
+        st->appendSymbol (sizeSym);
+        ns->setSizeSym (sizeSym);
+    }
+
+    // evaluate shape if given, also compute size
+    if (! varInit->shape ()->children ().empty ()) {
+        if (!isScalar) {
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 1));
+            pushImopAfter (result, i);
+        }
+
+        BOOST_FOREACH (TreeNode* _e, varInit->shape ()->children ()) {
+            assert (dynamic_cast<TreeNodeExpr*>(_e) != 0);
+            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(_e);
+            const CGResult& eResult = codeGen (e);
+            append (result, eResult);
+            if (result.isNotOk ()) {
+                return result;
+            }
+
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (n), eResult.symbol ());
+            pushImopAfter (result, i);
+
+            i = new Imop (varInit, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (),
+                          eResult.symbol ());
+            code.push_imop (i);
+            ++ n;
+        }
+    }
+    else {
+        if (!isScalar) {
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 0));
+            pushImopAfter (result, i);
+        }
+
+        for (unsigned it = 0; it < ty->secrecDimType (); ++ it) {
+            Imop* i = new Imop( varInit, Imop::ASSIGN, ns->getDim (it),
+                                ConstantInt::get (getContext (), 0));
+            code.push_imop(i);
+        }
+    }
+
+    if (isProcParam) {
+        Imop *i = 0;
+        SymbolSymbol* tns = st->appendTemporary(
+                    static_cast<TypeNonVoid*>(ns->secrecType ()));
+
+        if (isScalar) {
+            if (isString) {
+                i = new Imop (varInit, Imop::PARAM, tns);
+                pushImopAfter (result, i);
+
+                i = new Imop (varInit, Imop::PUSHCREF, 0, tns);
+                code.push_imop (i);
+
+                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                i = new Imop (varInit, Imop::PARAM, ns);
+                pushImopAfter (result, i);
+            }
+        }
+        else {
+            i = new Imop (varInit, Imop::PARAM, tns);
+            pushImopAfter (result, i);
+
+            for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
+                i = new Imop (varInit, Imop::PARAM, *di);
+                code.push_imop(i);
+            }
+
+            i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
+                          ConstantInt::get (getContext (), 1));
+            code.push_imop (i);
+
+            for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
+                i = new Imop (varInit, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (), *di);
+                code.push_imop(i);
+            }
+
+            i = new Imop (varInit, Imop::COPY, ns, tns, ns->getSizeSym ());
+            code.push_imop (i);
+        }
+    }
+    else // Regular declaration, right hand side is defined:
+    if (varInit->rightHandSide () != 0) {
+
+        // evaluate rhs
+        TreeNodeExpr *e = varInit->rightHandSide ();
+        const CGResult& eResult = codeGen (e);
+        append (result, eResult);
+        if (result.isNotOk ()) {
+            return result;
+        }
+
+        // type x = foo;
+        if (ty->secrecDimType () > 0 && n == 0) {
+            if (ty->secrecDimType () > e->resultType ()->secrecDimType ()) {
+                Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym());
+                pushImopAfter (result, i);
+            }
+            else {
+                assert (ty->secrecDimType() == e->resultType()->secrecDimType());
+
+                SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
+                dim_iterator srcIter = dim_begin (eResultSymbol);
+                BOOST_FOREACH (Symbol* destSym, dim_range (ns)) {
+                    assert (srcIter != dim_end (eResultSymbol));
+                    Imop* i = new Imop (varInit, Imop::ASSIGN, destSym, *srcIter);
+                    pushImopAfter (result, i);
+                    ++ srcIter;
+                }
+
+                if (!isScalar) {
+                    Imop* i = newAssign (varInit,  ns->getSizeSym (), eResultSymbol->getSizeSym ());
+                    pushImopAfter (result, i);
+                }
+
+                Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym());
+                pushImopAfter (result, i);
+
+                i = newAssign (varInit, ns, eResultSymbol);
+                code.push_imop (i);
+            }
+        }
+
+        // arr x[e1,...,en] = foo;
+        if (n > 0 && ty->secrecDimType () == n) {
+            if (ty->secrecDimType() > e->resultType ()->secrecDimType ()) {
+                // fill lhs with constant value
+                Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym ());
+                pushImopAfter (result, i);
+            }
+            else {
+                // check that shapes match and assign
+                std::stringstream ss;
+                ss << "Shape mismatch at " << varInit->location ();
+                Imop* err = newError (varInit, ConstantString::get (getContext (), ss.str ()));
+                SymbolLabel* errLabel = st->label (err);
+                SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
+                dim_iterator lhsDimIter = dim_begin (ns);
+                BOOST_FOREACH (Symbol* rhsDim, dim_range (eResultSymbol)) {
+                    Imop* i = new Imop (varInit, Imop::JNE, (Symbol*) 0, rhsDim, *lhsDimIter);
+                    i->setJumpDest (errLabel);
+                    pushImopAfter (result, i);
+                    ++ lhsDimIter;
+                }
+
+                Imop* jmp = new Imop (varInit, Imop::JUMP, (Symbol*) 0);
+                Imop* i = new Imop (varInit, Imop::COPY, ns, eResultSymbol, ns->getSizeSym ());
+                jmp->setJumpDest (st->label(i));
+                pushImopAfter (result, jmp);
+                code.push_imop(err);
+                code.push_imop(i);
+            }
+        }
+
+        // scalar_type x = scalar;
+        if (ty->isScalar()) {
+            if (isString) {
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+
+                Imop* i = new Imop (varInit, Imop::PUSHCREF, 0, eResult.symbol ());
+                pushImopAfter (result, i);
+
+                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                Imop* i = new Imop (varInit, Imop::ASSIGN, ns, eResult.symbol ());
+                pushImopAfter (result, i);
+            }
+        }
+    } // Regular declaration, right hand side is missing:
+    else {
+        if (!isScalar && n == 0) {
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
+                                ConstantInt::get (getContext (), 0));
+            pushImopAfter (result, i);
+
+            for (unsigned it = 0; it < ty->secrecDimType (); ++ it) {
+                Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it),
+                                    ConstantInt::get (getContext (), 0));
+                code.push_imop (i);
+            }
+        }
+
+        Symbol* def = defaultConstant (getContext (),  ty->secrecDataType ());
+        Imop *i = 0;
+        if (isScalar) {
+            if (isString) {
+                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
+
+                i = new Imop (varInit, Imop::PUSHCREF, 0, def);
+                pushImopAfter (result, i);
+
+                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
+                code.push_imop (i);
+
+                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
+                code.push_imop (i);
+            }
+            else {
+                i = new Imop (varInit, Imop::ASSIGN, ns, def);
+                pushImopAfter (result, i);
+
+            }
+        }
+        else {
+            i = new Imop (varInit, Imop::ALLOC, ns, def, 0);
+            if (n == 0) {
+                i->setArg2 (ConstantInt::get (getContext (), 0));
+            }
+            else {
+                i->setArg2 (ns->getSizeSym());
+            }
+
+            pushImopAfter (result, i);
+        }
+    }
+
+    return result;
+}
+
 CGStmtResult TreeNodeStmtDecl::codeGenWith (CodeGen& cg) {
-    assert (children ().size () > 0 && children ().size () <= 4);
     return cg.cgStmtDecl (this);
 }
 
@@ -120,270 +398,15 @@ CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
         return result;
     }
 
-    // Initialize the new symbol (for initializer target)
-    SymbolSymbol *ns = new SymbolSymbol (s->resultType ());
-    SymbolSymbol::ScopeType scopeType = s->global () ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL;
-    ns->setScopeType (scopeType);
-    ns->setName (s->variableName ());
-    st->appendSymbol (ns);
+    const bool isGlobal = s->global ();
+    const bool isProcParam = s->procParam ();
 
-    unsigned n = 0;
-    const bool isScalar = s->resultType ()->isScalar ();
-    const bool isString = s->resultType ()->secrecDataType () == DATATYPE_STRING;
-    assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
-    if (! isScalar || isString) {
-        addAlloc (ns);
-    }
-
-    // Initialize shape:
-    TypeNonVoid* dimType =
-        TypeNonVoid::get (getContext (),
-            DataTypeVar::get (getContext (),
-                DataTypeBasic::get (getContext (), DATATYPE_INT)));
-    for (unsigned i = 0; i < s->resultType ()->secrecDimType(); ++ i) {
-        SymbolSymbol* sym = new SymbolSymbol (dimType);
-        sym->setScopeType (scopeType);
-        std::stringstream ss;
-        ss << s->variableName () << "{d" << i << "}";
-        sym->setName (ss.str ());
-        st->appendSymbol (sym);
-        ns->setDim (i, sym);
-    }
-
-    if (!isScalar) { // set size symbol
-        SymbolSymbol* sizeSym = new SymbolSymbol (dimType);
-        sizeSym->setScopeType (scopeType);
-        std::stringstream ss;
-        ss << s->variableName () << "{size}";
-        sizeSym->setName (ss.str ());
-        st->appendSymbol (sizeSym);
-        ns->setSizeSym (sizeSym);
-    }
-
-    // evaluate shape if given, also compute size
-    if (s->children ().size () > 2) {
-        if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 1));
-            pushImopAfter (result, i);
-        }
-
-        BOOST_FOREACH (TreeNode* _e, s->children ().at (2)->children ()) {
-            assert (dynamic_cast<TreeNodeExpr*>(_e) != 0);
-            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(_e);
-            const CGResult& eResult = codeGen (e);
-            append (result, eResult);
-            if (result.isNotOk ()) {
-                return result;
-            }
-
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (n), eResult.symbol ());
-            pushImopAfter (result, i);
-
-            i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (),
-                          eResult.symbol ());
-            code.push_imop (i);
-            ++ n;
-        }
-    }
-    else {
-        if (!isScalar) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
-            pushImopAfter (result, i);
-        }
-
-        for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
-            Imop* i = new Imop( s, Imop::ASSIGN, ns->getDim (it),
-                                ConstantInt::get (getContext (), 0));
-            code.push_imop(i);
-        }
-    }
-
-    if (s->procParam ()) {
-        Imop *i = 0;
-        SymbolSymbol* tns = st->appendTemporary(
-                    static_cast<TypeNonVoid*>(ns->secrecType ()));
-
-        if (isScalar) {
-            if (isString) {
-                i = new Imop (s, Imop::PARAM, tns);
-                pushImopAfter (result, i);
-
-                i = new Imop (s, Imop::PUSHCREF, 0, tns);
-                code.push_imop (i);
-
-                i = new Imop (s, Imop::PUSHREF, 0, ns);
-                code.push_imop (i);
-
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
-                code.push_imop (i);
-            }
-            else {
-                i = new Imop (s, Imop::PARAM, ns);
-                pushImopAfter (result, i);
-            }
-        }
-        else {
-            i = new Imop (s, Imop::PARAM, tns);
-            pushImopAfter (result, i);
-
-            for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
-                i = new Imop (s, Imop::PARAM, *di);
-                code.push_imop(i);
-            }
-
-            i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
-                          ConstantInt::get (getContext (), 1));
-            code.push_imop (i);
-
-            for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
-                i = new Imop (s, Imop::MUL, ns->getSizeSym (), ns->getSizeSym (), *di);
-                code.push_imop(i);
-            }
-
-            i = new Imop (s, Imop::COPY, ns, tns, ns->getSizeSym ());
-            code.push_imop (i);
-        }
-    }
-    else // Regular declaration, right hand side is defined:
-    if (s->children ().size () > 3) {
-
-        // evaluate rhs
-        TreeNodeExpr *e = s->rightHandSide ();
-        const CGResult& eResult = codeGen (e);
-        append (result, eResult);
+    BOOST_FOREACH (TreeNode* _varInit, s->initializers ()) {
+        assert (dynamic_cast<TreeNodeVarInit*>(_varInit) != 0);
+        TreeNodeVarInit* varInit = static_cast<TreeNodeVarInit*>(_varInit);
+        append (result, cgVarInit (s->resultType (), varInit, isGlobal, isProcParam));
         if (result.isNotOk ()) {
             return result;
-        }
-
-        // type x = foo;
-        if (s->resultType ()->secrecDimType () > 0 && n == 0) {
-            if (s->resultType ()->secrecDimType () > e->resultType ()->secrecDimType ()) {
-                Imop* i = new Imop (s, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym());
-                pushImopAfter (result, i);
-            }
-            else {
-                assert (s->resultType ()->secrecDimType() == e->resultType()->secrecDimType());
-
-                SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
-                dim_iterator srcIter = dim_begin (eResultSymbol);
-                BOOST_FOREACH (Symbol* destSym, dim_range (ns)) {
-                    assert (srcIter != dim_end (eResultSymbol));
-                    Imop* i = new Imop (s, Imop::ASSIGN, destSym, *srcIter);
-                    pushImopAfter (result, i);
-                    ++ srcIter;
-                }
-
-                if (!isScalar) {
-                    Imop* i = newAssign (s,  ns->getSizeSym (), eResultSymbol->getSizeSym ());
-                    pushImopAfter (result, i);
-                }
-
-                Imop* i = new Imop (s, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym());
-                pushImopAfter (result, i);
-
-                i = newAssign (s, ns, eResultSymbol);
-                code.push_imop (i);
-            }
-        }
-
-        // arr x[e1,...,en] = foo;
-        if (n > 0 && s->resultType ()->secrecDimType () == n) {
-            if (s->resultType ()->secrecDimType() > e->resultType ()->secrecDimType ()) {
-                // fill lhs with constant value
-                Imop* i = new Imop (s, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym ());
-                pushImopAfter (result, i);
-            }
-            else {
-                // check that shapes match and assign
-                std::stringstream ss;
-                ss << "Shape mismatch at " << s->location ();
-                Imop* err = newError (s, ConstantString::get (getContext (), ss.str ()));
-                SymbolLabel* errLabel = st->label (err);
-                SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
-                dim_iterator lhsDimIter = dim_begin (ns);
-                BOOST_FOREACH (Symbol* rhsDim, dim_range (eResultSymbol)) {
-                    Imop* i = new Imop (s, Imop::JNE, (Symbol*) 0, rhsDim, *lhsDimIter);
-                    i->setJumpDest (errLabel);
-                    pushImopAfter (result, i);
-                    ++ lhsDimIter;
-                }
-
-                Imop* jmp = new Imop (s, Imop::JUMP, (Symbol*) 0);
-                Imop* i = new Imop (s, Imop::COPY, ns, eResultSymbol, ns->getSizeSym ());
-                jmp->setJumpDest (st->label(i));
-                pushImopAfter (result, jmp);
-                code.push_imop(err);
-                code.push_imop(i);
-            }
-        }
-
-        // scalar_type x = scalar;
-        if (s->resultType ()->isScalar()) {
-            if (isString) {
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-
-                Imop* i = new Imop (s, Imop::PUSHCREF, 0, eResult.symbol ());
-                pushImopAfter (result, i);
-
-                i = new Imop (s, Imop::PUSHREF, 0, ns);
-                code.push_imop (i);
-
-                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
-                code.push_imop (i);
-            }
-            else {
-                Imop* i = new Imop (s, Imop::ASSIGN, ns, eResult.symbol ());
-                pushImopAfter (result, i);
-            }
-        }
-    } // Regular declaration, right hand side is missing:
-    else {
-        if (!isScalar && n == 0) {
-            Imop* i = new Imop (s, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
-            pushImopAfter (result, i);
-
-            for (unsigned it = 0; it < s->resultType ()->secrecDimType (); ++ it) {
-                Imop* i = new Imop (s, Imop::ASSIGN, ns->getDim (it),
-                                    ConstantInt::get (getContext (), 0));
-                code.push_imop (i);
-            }
-        }
-
-        Symbol* def = defaultConstant (getContext (),  s->resultType ()->secrecDataType ());
-        Imop *i = 0;
-        if (isScalar) {
-            if (isString) {
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-
-                i = new Imop (s, Imop::PUSHCREF, 0, def);
-                pushImopAfter (result, i);
-
-                i = new Imop (s, Imop::PUSHREF, 0, ns);
-                code.push_imop (i);
-
-                i = new Imop (s, Imop::SYSCALL, 0, sc_strdup);
-                code.push_imop (i);
-            }
-            else {
-                i = new Imop (s, Imop::ASSIGN, ns, def);
-                pushImopAfter (result, i);
-
-            }
-        }
-        else {
-            i = new Imop (s, Imop::ALLOC, ns, def, 0);
-            if (n == 0) {
-                i->setArg2 (ConstantInt::get (getContext (), 0));
-            }
-            else {
-                i->setArg2 (ns->getSizeSym());
-            }
-
-            pushImopAfter (result, i);
         }
     }
 

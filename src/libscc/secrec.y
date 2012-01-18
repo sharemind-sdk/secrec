@@ -133,6 +133,7 @@
 %type <treenode> global_declarations
 %type <treenode> global_declaration
 %type <treenode> variable_initialization
+%type <treenode> variable_initializations
 %type <treenode> variable_declaration
 %type <treenode> domain_declaration
 %type <treenode> kind_declaration
@@ -261,26 +262,53 @@ maybe_dimensions
 variable_initialization
  : identifier maybe_dimensions
    {
-     $$ = (struct TreeNode *) treenode_init (NODE_INTERNAL_USE, &@$);
+     $$ = (struct TreeNode *) treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
  | identifier maybe_dimensions '=' expression
    {
-     $$ = (struct TreeNode *) treenode_init (NODE_INTERNAL_USE, &@$);
+     $$ = (struct TreeNode *) treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, ensure_rValue ($4));
    }
  ;
 
+variable_initializations
+ : variable_initializations ',' variable_initialization
+   {
+     $$ = $1;
+     treenode_setLocation($$, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | variable_initialization
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+   }
+ ;
+
 variable_declaration
- : type_specifier variable_initialization
+ : type_specifier variable_initializations
    {
      $$ = treenode_init(NODE_DECL, &@$);
      treenode_appendChild ($$, $1);
      treenode_moveChildren ($2, $$);
      treenode_free ($2);
+   }
+ ;
+
+procedure_parameter
+ : type_specifier identifier
+   {
+     TreeNode* var_init = treenode_init (NODE_VAR_INIT, &@$);
+     treenode_appendChild (var_init, $2);
+     treenode_appendChild (var_init, treenode_init (NODE_DIMENSIONS, &@$));
+
+     $$ = treenode_init (NODE_DECL, &@$);
+     treenode_appendChild ($$, $1);
+     treenode_appendChild ($$, var_init);
    }
  ;
 
@@ -466,15 +494,6 @@ procedure_parameter_list
    {
      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
-   }
- ;
-
-procedure_parameter
- : type_specifier identifier
-   {
-     $$ = treenode_init(NODE_DECL, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $2);
    }
  ;
 

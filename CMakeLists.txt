@@ -218,6 +218,8 @@ add_test_secrec_execute("scalars/44-classify")
 add_test_secrec_execute("scalars/45-return-type-overloading")
 add_test_secrec_execute("scalars/46-domain-id")
 add_test_secrec_execute("scalars/47-operator-overloading")
+add_test_secrec_execute("scalars/48-multiple-var-decl")
+add_test_secrec_execute("scalars/49-multiple-var-decl-bug")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")

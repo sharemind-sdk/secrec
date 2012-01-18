@@ -168,6 +168,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_STMT_PUSHREF: return "STMT_PUSHREF";
         case NODE_STMT_PUSHCREF: return "STMT_PUSHCREF";
         case NODE_EXPR_DOMAINID: return "EXPR_DOMAINID";
+        case NODE_VAR_INIT: return "VAR_INIT";
         default: return "UNKNOWN";
     }
 }
@@ -186,7 +187,7 @@ std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
 
     BOOST_FOREACH (TreeNode* child, m_children) {
         os << std::endl;
-        assert(child->parent() == this);
+        assert (child->parent() == this);
         os << child->toString(indent, startIndent + indent);
     }
     return os.str();
@@ -325,6 +326,8 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeQuantifier (*loc));
         case NODE_TEMPLATE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeTemplate (*loc));
+        case NODE_VAR_INIT:
+            return (TreeNode*) (new SecreC::TreeNodeVarInit (*loc));
         default:
             assert(type != NODE_IDENTIFIER);
             assert((type & NODE_LITE_MASK) == 0x0);
@@ -986,29 +989,42 @@ std::string TreeNodeIdentifier::xmlHelper() const {
 *******************************************************************************/
 
 TreeNodeType* TreeNodeStmtDecl::varType () const {
-    assert(children().size() >= 2);
+    assert (children().size () >= 2);
     return childAt<TreeNodeType>(this, 0);
 }
 
-TreeNode* TreeNodeStmtDecl::shape () const {
-    if (children().size() > 2) {
-        return children ().at (2);
+TreeNodeVarInit* TreeNodeStmtDecl::initializer () const {
+    assert (children().size () >= 2);
+    return childAt<TreeNodeVarInit>(this, 1);
+}
+
+TreeNode::ChildrenListConstRange TreeNodeStmtDecl::initializers () const {
+    assert (children().size () >= 2);
+    return std::make_pair (++ m_children.begin (),
+                              m_children.end ());
+}
+
+TreeNode* TreeNodeVarInit::shape () const {
+    assert(children().size() > 0 && children().size() <= 3);
+    if (children().size() > 1) {
+        return children ().at (1);
     }
 
     return 0;
 }
 
-TreeNodeExpr* TreeNodeStmtDecl::rightHandSide () const {
-    if (children ().size () > 3) {
-        return expressionAt (this, 3);
+TreeNodeExpr* TreeNodeVarInit::rightHandSide () const {
+    assert(children().size() > 0 && children().size() <= 3);
+    if (children ().size () > 2) {
+        return expressionAt (this, 2);
     }
 
     return 0;
 }
 
-const std::string &TreeNodeStmtDecl::variableName() const {
-    assert(children().size() > 0 && children().size() <= 4);
-    return childAt<TreeNodeIdentifier>(this, 1)->value ();
+const std::string &TreeNodeVarInit::variableName() const {
+    assert(children().size() > 0 && children().size() <= 3);
+    return childAt<TreeNodeIdentifier>(this, 0)->value ();
 }
 
 /*******************************************************************************

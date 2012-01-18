@@ -29,7 +29,8 @@ extern "C" {
 
 /* C interface for yacc: */
 
-TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
+TreeNode *treenode_init(enum SecrecTreeNodeType type,
+                        const YYLTYPE *loc);
 void treenode_free(TreeNode *node);
 enum SecrecTreeNodeType treenode_type(TreeNode *node);
 const YYLTYPE *treenode_location(const TreeNode *node);
@@ -63,16 +64,19 @@ TreeNode *treenode_init_opdef(enum SecrecOperator op, YYLTYPE *loc);
 
 /**
  * \class TreeNode
- * Abstract syntax tree, or abstract representation of the SecreC code.
+ * Abstract representation of the SecreC code.
  */
 class TreeNode {
 public: /* Types: */
     typedef std::deque<TreeNode*> ChildrenList;
     typedef ChildrenList::iterator ChildrenListIterator;
-    typedef ChildrenList::const_iterator ChildrenListConstIterator;
-    typedef std::pair<ChildrenListIterator, ChildrenListIterator>
+    typedef ChildrenList::const_iterator
+        ChildrenListConstIterator;
+    typedef std::pair< ChildrenListIterator
+                     , ChildrenListIterator>
         ChildrenListRange;
-    typedef std::pair<ChildrenListConstIterator, ChildrenListConstIterator>
+    typedef std::pair< ChildrenListConstIterator
+                     , ChildrenListConstIterator>
         ChildrenListConstRange;
 
 public: /* Methods: */
@@ -98,8 +102,8 @@ public: /* Methods: */
     ChildrenListConstIterator begin () const { return children ().begin (); }
     ChildrenListConstIterator end () const { return children ().end (); }
 
-    std::string toString(unsigned indentation = 2, unsigned startIndent = 0)
-    const;
+    std::string toString(unsigned indentation = 2,
+                         unsigned startIndent = 0) const;
     virtual inline std::string stringHelper() const { return ""; }
 
     std::string toXml(bool full = false) const;
@@ -444,7 +448,6 @@ protected:
 
 /**
  * For now both data and security type casts.
- * \todo Casts of security types will fail for now.
  * \todo Split those when type checking.
  */
 class TreeNodeExprCast: public TreeNodeExpr {
@@ -1246,16 +1249,47 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeVarInit
+******************************************************************/
+
+class TreeNodeVarInit : public TreeNode {
+public: /* Methods: */
+    TreeNodeVarInit (const YYLTYPE &loc)
+        : TreeNode (NODE_VAR_INIT, loc)
+    { }
+
+    virtual ~TreeNodeVarInit () { }
+
+    const std::string &variableName() const;
+
+    /// \retval 0 if shape is not specified
+    TreeNode* shape () const;
+
+    /// \retval 0 if right hand side is not defined
+    TreeNodeExpr* rightHandSide () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeVarInit (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeStmtDecl
 ******************************************************************/
 
 /// Declaration statement. Also tracks if the scope is global or not.
 class TreeNodeStmtDecl: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtDecl(const YYLTYPE &loc)
-        : TreeNodeStmt(NODE_DECL, loc), m_type(0), m_global(false),
-          m_procParam(false) {}
-    virtual inline ~TreeNodeStmtDecl() { }
+
+    explicit TreeNodeStmtDecl (const YYLTYPE &loc)
+        : TreeNodeStmt (NODE_DECL, loc)
+        , m_type (0)
+        , m_global (false)
+        , m_procParam (false) { }
+
+    virtual ~TreeNodeStmtDecl() { }
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
@@ -1263,6 +1297,7 @@ public: /* Methods: */
         assert(m_type != 0);
         return m_type;
     }
+
     inline bool haveResultType() const { return m_type != 0; }
 
     inline bool global() const { return m_global; }
@@ -1270,10 +1305,22 @@ public: /* Methods: */
     inline bool procParam() const { return m_procParam; }
     inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
 
-    const std::string &variableName() const;
+    /// Returns the first variable initializer.
+    TreeNodeVarInit* initializer () const;
+    ChildrenListConstRange initializers () const;
     TreeNodeType* varType () const;
-    TreeNode* shape () const;
-    TreeNodeExpr* rightHandSide () const;
+
+    const std::string &variableName() const {
+        return initializer ()->variableName ();
+    }
+
+    TreeNode* shape () const {
+        return initializer ()->shape ();
+    }
+
+    TreeNodeExpr* rightHandSide () const {
+        return initializer ()->rightHandSide ();
+    }
 
 protected:
 
@@ -1512,7 +1559,8 @@ protected:
 
 class TreeNodeStmtPushRef: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtPushRef(const YYLTYPE &loc, bool isConstant = false)
+    explicit inline TreeNodeStmtPushRef(const YYLTYPE &loc,
+                                        bool isConstant = false)
         : TreeNodeStmt(NODE_STMT_PUSH, loc)
         , m_isConstant (isConstant)
     {}

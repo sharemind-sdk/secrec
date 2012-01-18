@@ -80,6 +80,8 @@ public: /* Methods: */
     /// Return symbol for the main procedure (if exists).
     SymbolProcedure* mainProcedure ();
 
+    ICode::Status checkVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
+
 
 protected:
 

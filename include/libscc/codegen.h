@@ -352,6 +352,9 @@ public: /* Methods: */
     /// generate symbol for given type
     SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
 
+    CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
+                            bool isGlobal, bool isProcParam);
+
 protected: /* Fields: */
 
     ICodeList&    code;         ///< The code new instructions are emitted to.

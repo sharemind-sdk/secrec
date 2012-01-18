@@ -1,6 +1,7 @@
 #include "typechecker.h"
 
 #include <boost/foreach.hpp>
+#include <boost/range.hpp>
 
 #include "typechecker/templates.h"
 
@@ -335,6 +336,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
         return ICode::OK;
     }
 
+
     TreeNodeExpr *e1 = root->leftExpression ();
     TreeNodeExpr *e2 = root->rightExpression ();
     SecreC::TypeNonVoid *eType1, *eType2;
@@ -389,6 +391,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 return ICode::OK;
             }
         }
+
 
         SecurityType* s1 = eType1->secrecSecType();
         SecurityType* s2 = eType2->secrecSecType();
@@ -881,7 +884,56 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root,
 }
 
 
+ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
+                                         TreeNodeVarInit* varInit)
+{
+    unsigned n = 0;
 
+    BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
+        e->setContextType (PublicSecType::get (getContext ()));
+        ICode::Status s = visitExpr (e);
+        if (s != ICode::OK) return s;
+        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+        if (   !e->resultType()->secrecDataType() == DATATYPE_INT
+            || !e->resultType()->isScalar()
+            ||  e->resultType()->secrecSecType()->isPrivate ())
+        {
+            m_log.fatal() << "Expecting public unsigned integer scalar at "
+                          << e->location() << ".";
+            return ICode::E_TYPE;
+        }
+
+        ++ n;
+    }
+
+    if (n > 0 && n != ty->secrecDimType()) {
+        m_log.fatal() << "Mismatching number of shape components in declaration at "
+                      << varInit->location() << ".";
+        return ICode::E_TYPE;
+    }
+
+    if (varInit->rightHandSide () != 0) {
+        TreeNodeExpr *e = varInit->rightHandSide ();
+        e->setContextType (ty->secrecSecType ());
+        ICode::Status s = visitExpr (e);
+        if (s != ICode::OK) return s;
+        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+        if (! ty->canAssign (e->resultType ())) {
+            m_log.fatal () << "Illegal assignment at " << varInit->location () << ".";
+            return ICode::E_TYPE;
+        }
+
+        (void) classifyIfNeeded (e);
+    }
+
+    return ICode::OK;
+}
+
+// Note that declarations are type checked very lazility, checks of
+// individual variable initializations will be requested by the code
+// generator (see CodeGen::cgVarInit).
 ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
     typedef DataTypeBasic DTB;
     typedef TreeNodeType TNT;
@@ -904,57 +956,16 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
     assert(dynamic_cast<DTB*>(justType->dataType()) != 0);
     DTB* dataType = static_cast<DTB*>(justType->dataType());
 
-    unsigned n = 0;
-    if (decl->shape () != 0) {
-        BOOST_FOREACH (TreeNode* node, decl->shape ()->children ()) {
-            assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
-            TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
-            e->setContextType (PublicSecType::get (getContext ()));
-            s = visitExpr (e);
-            if (s != ICode::OK) return s;
-            if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-            if (   !e->resultType()->secrecDataType() == DATATYPE_INT
-                || !e->resultType()->isScalar()
-                ||  e->resultType()->secrecSecType()->isPrivate ())
-            {
-                m_log.fatal() << "Expecting public unsigned integer scalar at "
-                              << e->location() << ".";
-                return ICode::E_TYPE;
-            }
-
-            ++ n;
-        }
-    }
-
-    if (n > 0 && n != justType->secrecDimType()) {
-        m_log.fatal() << "Mismatching number of shape components in declaration at "
-                      << decl->location() << ".";
-        return ICode::E_TYPE;
-    }
-
     decl->m_type = TypeNonVoid::get (getContext (),
         DataTypeVar::get (getContext (), dataType));
 
-    if (decl->rightHandSide () != 0) {
-        if (decl->procParam ()) {
-            m_log.fatal () << "Declaration of procedure parameter may not have default value.";
-            m_log.fatal () << "Error at " << decl->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        TreeNodeExpr *e = decl->rightHandSide ();
-        e->setContextType (dataType->secrecSecType ());
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
-        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        if (! decl->m_type->canAssign (e->resultType ())) {
-            m_log.fatal () << "Illegal assignment at " << decl->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        e = classifyIfNeeded (e);
+    if (decl->procParam ()) {
+        // some sanity checks that parser did its work correctly.
+        assert (boost::size (decl->initializers ()) == 1);
+        assert (decl->initializer () != 0);
+        assert (decl->shape ()->children ().empty ());
+        assert (decl->initializer ()->rightHandSide () == 0);
     }
-
 
     return ICode::OK;
 }
