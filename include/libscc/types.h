@@ -149,7 +149,7 @@ public: /* Methods: */
     }
 
 private: /* Fields: */
-    Kind m_kind;
+    Kind const m_kind;
 };
 
 /*******************************************************************************
@@ -184,13 +184,19 @@ public: /* Methods: */
                 && latticeDimTypeLEQ(m_dimType, other->m_dimType);
     }
 
-    static DataTypeBasic* get (Context& cxt, SecrecDataType dataType, SecrecDimType dim = 0);
-    static DataTypeBasic* get (Context& cxt, SecurityType* secType, SecrecDataType dataType, SecrecDimType dim = 0);
+    static DataTypeBasic* get (Context& cxt,
+                               SecrecDataType dataType,
+                               SecrecDimType dim = 0);
+
+    static DataTypeBasic* get (Context& cxt,
+                               SecurityType* secType,
+                               SecrecDataType dataType,
+                               SecrecDimType dim = 0);
 
 private: /* Fields: */
-    SecurityType* m_secType;
-    SecrecDataType m_dataType;
-    SecrecDimType m_dimType;
+    SecurityType*   const m_secType;
+    SecrecDataType  const m_dataType;
+    SecrecDimType   const m_dimType;
 };
 
 /*******************************************************************************
@@ -222,7 +228,7 @@ public: /* Methods: */
 
 
 private: /* Fields: */
-    DataType *m_dataType;
+    DataType* const m_dataType;
 };
 
 /*******************************************************************************
@@ -242,7 +248,6 @@ public: /* Methods: */
     virtual std::string toString() const;
     std::string mangle() const;
 
-    inline void addParamType(DataType* paramType) { m_params.push_back(paramType); }
     inline const std::vector<DataType*> &paramTypes() const { return m_params; }
 
     virtual bool latticeLEQ(const DataType*) const {
@@ -254,7 +259,7 @@ public: /* Methods: */
     static DataTypeProcedureVoid* get (Context& cxt);
 
 private: /* Fields: */
-    std::vector<DataType*> m_params;
+    std::vector<DataType*> const m_params;
 };
 
 /*******************************************************************************
@@ -446,8 +451,8 @@ public: /* Methods: */
                              SecrecDimType dimType = 0);
 
 private: /* Fields: */
-    const Kind  m_kind;
-    DataType*   m_dataType;
+    Kind       const m_kind;
+    DataType*  const m_dataType;
 };
 
 inline SecurityType* Type::secrecSecType() const {
