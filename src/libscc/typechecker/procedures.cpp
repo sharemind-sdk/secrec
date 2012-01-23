@@ -427,10 +427,6 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
 }
 
 ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
-    typedef DataTypeProcedureVoid DTFV;
-    typedef DataTypeProcedure DTF;
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
     if (root->haveResultType ()) {
         return ICode::OK;
     }

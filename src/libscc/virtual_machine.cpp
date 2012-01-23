@@ -448,14 +448,14 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
  * not instantiate DIV callback on strings.
  * Many of the macros assume that variables "callback", "ty", and "isVec" are set.
  * All callbacks are SecrecDataType generic, even those that strictly do not need
- * to be (those are simply instantiated with DATATYPE_INVALID).
+ * to be (those are simply instantiated with DATATYPE_UNDEFINED).
  */
 
 #define GET_CALLBACK(NAME,TYPE) (__ ## NAME ## _callback<TYPE>)
 #define SET_CALLBACK(NAME,TYPE) do {\
         callback = GET_CALLBACK(NAME,TYPE);\
     } while (0)
-#define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,DATATYPE_INVALID)
+#define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,DATATYPE_UNDEFINED)
 #define SWITCH_ONE(NAME,TYPE) case TYPE: SET_CALLBACK(NAME,TYPE); break;
 #define SWITCH_SIGNED(NAME)\
     SWITCH_ONE (NAME, DATATYPE_INT)\
@@ -477,7 +477,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     SWITCH_ONE (NAME, DATATYPE_STRING)\
     SWITCH_ARITH(NAME)
 #define SET_SPECIALIZE_CALLBACK(NAME, SWITCHER) do {\
-    assert (ty != DATATYPE_INVALID);\
+    assert (ty != DATATYPE_UNDEFINED);\
     switch (ty) {\
     SWITCHER(NAME)\
     default:\
@@ -490,7 +490,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     } else {\
         SET_SPECIALIZE_CALLBACK(NAME, SWITCHER);\
     }} while (0)
-#define SIMPLE_CALLBACK(NAME) GET_CALLBACK(NAME,DATATYPE_INVALID)
+#define SIMPLE_CALLBACK(NAME) GET_CALLBACK(NAME,DATATYPE_UNDEFINED)
 #define SIMPLE_CALLBACK_V(NAME) (isVec ? SIMPLE_CALLBACK(NAME ## _vec) : SIMPLE_CALLBACK(NAME))
 #define SET_SIMPLE_CALLBACK_V(NAME) do {\
     if (isVec) {\
@@ -505,7 +505,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
  */
 CallbackTy getCallback (const Imop& imop) {
     CallbackTy callback = 0;
-    SecrecDataType ty = DATATYPE_INVALID;
+    SecrecDataType ty = DATATYPE_UNDEFINED;
     const bool isVec = imop.isVectorized ();
 
     // figure out the data type

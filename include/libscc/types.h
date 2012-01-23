@@ -333,7 +333,7 @@ inline SecrecDataType DataType::secrecDataType() const {
             return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDataType();
         case PROCEDUREVOID:
         default:
-            return DATATYPE_INVALID;
+            return DATATYPE_UNDEFINED;
     }
 }
 

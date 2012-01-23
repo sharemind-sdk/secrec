@@ -16,21 +16,24 @@ using namespace SecreC;
 
 inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {
-        case DATATYPE_INVALID: return "invalid";
-        case DATATYPE_BOOL:    return "bool";
-        case DATATYPE_INT8:    return "int8";
-        case DATATYPE_INT16:   return "int16";
-        case DATATYPE_INT32:   return "int32";
-        case DATATYPE_INT64:   return "int64";
-        case DATATYPE_INT:     return "int";
-        case DATATYPE_UINT8:   return "uint8";
-        case DATATYPE_UINT16:  return "uint16";
-        case DATATYPE_UINT32:  return "uint32";
-        case DATATYPE_UINT64:  return "uint64";
-        case DATATYPE_UINT:    return "uint";
-        case DATATYPE_STRING:  return "string";
-        case NUM_DATATYPES:    assert (false && "ICE!"); break;
+    case DATATYPE_UNDEFINED: return "undefined";
+    case DATATYPE_BOOL:      return "bool";
+    case DATATYPE_INT8:      return "int8";
+    case DATATYPE_INT16:     return "int16";
+    case DATATYPE_INT32:     return "int32";
+    case DATATYPE_INT64:     return "int64";
+    case DATATYPE_INT:       return "int";
+    case DATATYPE_UINT8:     return "uint8";
+    case DATATYPE_UINT16:    return "uint16";
+    case DATATYPE_UINT32:    return "uint32";
+    case DATATYPE_UINT64:    return "uint64";
+    case DATATYPE_UINT:      return "uint";
+    case DATATYPE_STRING:    return "string";
+    case NUM_DATATYPES:
+        assert (false && "ICE!"); break;
+        break;
     }
+
     return 0;
 }
 
@@ -105,11 +108,11 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
     if (latticeDataTypeLEQ (a, b)) return b;
     if (latticeDataTypeLEQ (b, a)) return a;
 
-    SecrecDataType best = DATATYPE_INVALID;
+    SecrecDataType best = DATATYPE_UNDEFINED;
     for (unsigned i = 0; i < (unsigned) NUM_DATATYPES; ++ i) {
         SecrecDataType ty = (SecrecDataType) i;
         if (latticeDataTypeLEQ (a, ty) && latticeDataTypeLEQ (b, ty)) {
-            if (best == DATATYPE_INVALID || latticeDataTypeLEQ (ty, best)) {
+            if (best == DATATYPE_UNDEFINED || latticeDataTypeLEQ (ty, best)) {
                 best = ty;
             }
         }

@@ -830,8 +830,9 @@ TreeNodeExpr* TreeNodeExprReshape::reshapee () const {
     return expressionAt (this, 0);
 }
 
-TreeNodeExpr* TreeNodeExprReshape::dimensionality (unsigned i) {
-    return expressionAt (this, i + 1); /// will perform the range check too
+TreeNode::ChildrenListConstRange TreeNodeExprReshape::dimensions () {
+    return std::make_pair (++ m_children.begin (),
+                              m_children.end ());
 }
 
 /*******************************************************************************
@@ -1188,14 +1189,6 @@ std::string TreeNodeTypeType::stringHelper() const {
     if (m_cachedType != 0)
         return secrecType()->toString();
     return "";
-}
-
-/*******************************************************************************
-  TreeNodeStmt
-*******************************************************************************/
-
-SecurityType* TreeNodeStmt::returnSecurityType () {
-    return containingProcedure ()->procedureType ()->secrecSecType ();
 }
 
 } // namespace SecreC

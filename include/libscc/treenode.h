@@ -97,14 +97,22 @@ public: /* Methods: */
     void prependChild(TreeNode *child);
     void setLocation(const YYLTYPE &location);
 
-    ChildrenListIterator begin () { return children ().begin (); }
-    ChildrenListIterator end () { return children ().end (); }
-    ChildrenListConstIterator begin () const { return children ().begin (); }
-    ChildrenListConstIterator end () const { return children ().end (); }
+    ChildrenListIterator begin () {
+        return children ().begin ();
+    }
+    ChildrenListIterator end () {
+        return children ().end ();
+    }
+    ChildrenListConstIterator begin () const {
+        return children ().begin ();
+    }
+    ChildrenListConstIterator end () const {
+        return children ().end ();
+    }
 
     std::string toString(unsigned indentation = 2,
                          unsigned startIndent = 0) const;
-    virtual inline std::string stringHelper() const { return ""; }
+    virtual std::string stringHelper() const { return ""; }
 
     std::string toXml(bool full = false) const;
     virtual inline std::string xmlHelper() const { return ""; }
@@ -114,8 +122,11 @@ public: /* Methods: */
     TreeNode* clone (TreeNode* parent) const;
 
 protected: /* Methods: */
-    inline void setParentDirectly(TreeNode *parent) { m_parent = parent; }
-    inline void setContainingProcedureDirectly (TreeNodeProcDef *p) {
+    void setParentDirectly(TreeNode *parent) {
+        m_parent = parent;
+    }
+
+    void setContainingProcedureDirectly (TreeNodeProcDef *p) {
         m_procedure = p;
     }
 
@@ -145,8 +156,11 @@ protected: /* Fields: */
 
 class TreeNodeIdentifier: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeIdentifier(const std::string &value, const YYLTYPE &loc)
-        : TreeNode(NODE_IDENTIFIER, loc), m_value(value) {}
+    inline TreeNodeIdentifier(const std::string &value,
+                              const YYLTYPE &loc)
+        : TreeNode(NODE_IDENTIFIER, loc)
+        , m_value(value)
+    { }
 
     inline const std::string &value() const { return m_value; }
     virtual std::string stringHelper() const;
@@ -254,7 +268,8 @@ private: /* Fields: */
 
 class TreeNodeType : public TreeNode {
 public: /* Methods: */
-    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeType(SecrecTreeNodeType type,
+                        const YYLTYPE &loc)
         : TreeNode(type, loc)
         , m_cachedType (0)
     { }
@@ -269,7 +284,9 @@ protected:
 
     friend class TypeChecker;
 
-    inline TreeNodeType(SecrecTreeNodeType type, const YYLTYPE &loc, SecreC::Type* ty)
+    inline TreeNodeType(SecrecTreeNodeType type,
+                        const YYLTYPE &loc,
+                        SecreC::Type* ty)
         : TreeNode(type, loc)
         , m_cachedType (ty)
     { }
@@ -326,17 +343,22 @@ protected:
 /// value (if there is one).
 class TreeNodeExpr: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeExpr(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeExpr(SecrecTreeNodeType type,
+                        const YYLTYPE &loc)
         : TreeNode (type, loc)
         , m_resultType (0)
         , m_contextSecType (0)
+        , m_contextDataType (DATATYPE_UNDEFINED)
+        , m_contextDimType (-1)
     { }
 
     virtual ~TreeNodeExpr() { }
 
     virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
 
-    inline bool haveResultType() const { return m_resultType != 0; }
+    inline bool haveResultType() const {
+        return m_resultType != 0;
+    }
 
     /// \todo move to type checker
     bool havePublicBoolType() const;
@@ -349,12 +371,28 @@ public: /* Methods: */
         return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
     }
 
-    inline void setContextType (SecurityType* ty) {
+    void setContextSecType (SecurityType* ty) {
         m_contextSecType = ty;
     }
 
-    inline SecurityType* contextSecType () const {
+    SecurityType* contextSecType () const {
         return m_contextSecType;
+    }
+
+    void setContextDataType (SecrecDataType dataType) {
+        m_contextDataType = dataType;
+    }
+
+    SecrecDataType contextDataType () const {
+        return m_contextDataType;
+    }
+
+    void setContextDimType (SecrecDimType dim) {
+        m_contextDimType = dim;
+    }
+
+    int contextDimType () const {
+        return m_contextDimType;
     }
 
 protected: /* Methods: */
@@ -367,8 +405,10 @@ protected: /* Methods: */
 
 protected: /* Fields: */
 
-    SecreC::Type*  m_resultType; ///< Type of resulting value.
-    SecurityType*  m_contextSecType; ///< Security type that context expects.
+    SecreC::Type*   m_resultType; ///< Type of resulting value.
+    SecurityType*   m_contextSecType; ///< Expected security type.
+    SecrecDataType  m_contextDataType; ///< Expected data type.
+    int             m_contextDimType; ///< Expected dim type, undefined if negative.
 };
 
 /******************************************************************
@@ -382,8 +422,6 @@ public: /* Methods: */
         : TreeNode(type, loc) { }
 
     virtual CGStmtResult codeGenWith (CodeGen&) = 0;
-
-    SecurityType* returnSecurityType ();
 
 protected:
 
@@ -576,7 +614,7 @@ public:
 
     /// \todo use range or iterators?
     /// that requires a iterator that casts to expression
-    TreeNodeExpr* dimensionality (unsigned i);
+    TreeNode::ChildrenListConstRange dimensions ();
 
 protected:
 
@@ -626,9 +664,11 @@ private: /* Fields: */
 ******************************************************************/
 
 /// Binary expressions.
-class TreeNodeExprBinary: public TreeNodeExpr, public OverloadableOperator {
+class TreeNodeExprBinary: public TreeNodeExpr,
+                          public OverloadableOperator {
 public: /* Methods: */
-    inline TreeNodeExprBinary(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeExprBinary(SecrecTreeNodeType type,
+                              const YYLTYPE &loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -696,7 +736,8 @@ private: /* Fields: */
  */
 class TreeNodeExprClassify: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprClassify(SecurityType* ty, const YYLTYPE &loc)
+    inline TreeNodeExprClassify(SecurityType* ty,
+                                const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
     {
         m_contextSecType = ty;
@@ -885,7 +926,8 @@ private: /* Fields: */
 /// Prefix increment and decrement.
 class TreeNodeExprPrefix: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprPrefix(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeExprPrefix(SecrecTreeNodeType type,
+                              const YYLTYPE &loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -907,7 +949,8 @@ protected:
 /// Postfix increment and decrement.
 class TreeNodeExprPostfix: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprPostfix(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeExprPostfix(SecrecTreeNodeType type,
+                               const YYLTYPE &loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -926,7 +969,8 @@ protected:
 ******************************************************************/
 
 /// Unary expressions such as regular (logical) negation.
-class TreeNodeExprUnary: public TreeNodeExpr, public OverloadableOperator {
+class TreeNodeExprUnary: public TreeNodeExpr,
+                         public OverloadableOperator {
 public: /* Methods: */
     inline TreeNodeExprUnary(SecrecTreeNodeType type,
                              const YYLTYPE &loc)
@@ -981,7 +1025,7 @@ protected:
   TreeNodeStmtKind
 ******************************************************************/
 
-/// Declaration statement. Also tracks if the scope is global or not.
+/// Declaration statement. Also tracks if the scope is global.
 class TreeNodeKind : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeKind(const YYLTYPE &loc)
@@ -1000,7 +1044,7 @@ protected:
   TreeNodeStmtDomain
 ******************************************************************/
 
-/// Declaration statement. Also tracks if the scope is global or not.
+/// Declaration statement. Also tracks if the scope is global.
 class TreeNodeDomain : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeDomain(const YYLTYPE &loc)
@@ -1059,7 +1103,10 @@ public:
 
     const std::string &procedureName() const;
 
-    inline bool haveProcedureType() const { return m_cachedType != 0; }
+    inline bool haveProcedureType() const {
+        return m_cachedType != 0;
+    }
+
     SecreC::TypeNonVoid* procedureType() const {
         assert(m_cachedType != 0);
         return m_cachedType;
@@ -1157,7 +1204,9 @@ public: /* Methods: */
         m_contextDependance = contextDependance;
     }
 
-    bool isContextDependent () const { return m_contextDependance; }
+    bool isContextDependent () const {
+        return m_contextDependance;
+    }
 
 protected:
 
@@ -1166,7 +1215,8 @@ protected:
     }
 
 private: /* Fields: */
-    bool m_contextDependance; /// true if the template resolution requires context
+    bool m_contextDependance; /**< true if the template resolution
+                                   requires context */
 };
 
 /******************************************************************
@@ -1279,7 +1329,7 @@ protected:
   TreeNodeStmtDecl
 ******************************************************************/
 
-/// Declaration statement. Also tracks if the scope is global or not.
+/// Declaration statement. Also tracks if the scope is global.
 class TreeNodeStmtDecl: public TreeNodeStmt {
 public: /* Methods: */
 
@@ -1301,9 +1351,13 @@ public: /* Methods: */
     inline bool haveResultType() const { return m_type != 0; }
 
     inline bool global() const { return m_global; }
-    inline void setGlobal(bool isGlobal = true) { m_global = isGlobal; }
+    inline void setGlobal(bool isGlobal = true) {
+        m_global = isGlobal;
+    }
     inline bool procParam() const { return m_procParam; }
-    inline void setProcParam(bool procParam = true) { m_procParam = procParam; }
+    inline void setProcParam(bool procParam = true) {
+        m_procParam = procParam;
+    }
 
     /// Returns the first variable initializer.
     TreeNodeVarInit* initializer () const;

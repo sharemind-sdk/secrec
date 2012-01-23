@@ -446,7 +446,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     CGBranchResult condResult;
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
-        e1->setContextType (PublicSecType::get (getContext ()));
+        e1->setContextSecType (PublicSecType::get (getContext ()));
         ICode::Status status = e1->accept (m_tyChecker);
         if (status != ICode::OK) {
             result.setStatus (status);
@@ -542,7 +542,7 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
     CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
-    e->setContextType (PublicSecType::get (getContext ()));
+    e->setContextSecType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -679,7 +679,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     // Conditional expression:
     CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
-    e->setContextType (PublicSecType::get (getContext ()));
+    e->setContextSecType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -889,7 +889,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     // Conditional expression:
 
     TreeNodeExpr *e = s->conditional ();
-    e->setContextType (PublicSecType::get (getContext ()));
+    e->setContextSecType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         result.setStatus (status);
@@ -945,7 +945,7 @@ CGStmtResult TreeNodeStmtAssert::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     // Type check the expression
     TreeNodeExpr *e = s->expression ();
-    e->setContextType (PublicSecType::get (getContext ()));
+    e->setContextSecType (PublicSecType::get (getContext ()));
     ICode::Status status = e->accept (m_tyChecker);
     if (status != ICode::OK) {
         return CGStmtResult (status);

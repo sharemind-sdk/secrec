@@ -105,14 +105,12 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     // 5. compute resulting shape
     {
         pushComment ("Computing shape:");
-        std::vector<unsigned>::const_iterator
-                it = slices.begin(),
-                itEnd = slices.end();
-        for (unsigned count = 0; it != itEnd; ++ it, ++ count) {
-            int k = *it;
+        unsigned count = 0;
+        BOOST_FOREACH (unsigned k, subscript.slices ()) {
             Symbol* sym = resSym->getDim (count);
             Imop* i = new Imop (e, Imop::SUB, sym, spv[k].second, spv[k].first);
             pushImopAfter (result, i);
+            ++ count;
         }
 
         codeGenSize (result);
@@ -200,8 +198,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
             i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
             code.push_imop (i);
             unsigned count = 0;
-            for (std::vector<unsigned >::const_iterator it (slices.begin()); it != slices.end(); ++ it, ++ count) {
-                unsigned k = *it;
+            BOOST_FOREACH (unsigned k, slices) {
                 Symbol* idx = loopInfo.at (k);
 
                 i = new Imop (e, Imop::SUB, tmp_result2, idx, spv[k].first);
@@ -212,6 +209,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
                 i = new Imop (e, Imop::ADD, offset, offset, tmp_result2);
                 code.push_imop (i);
+                ++ count;
             }
 
             i = new Imop (e, Imop::STORE, resSym, offset, tmp_result);
@@ -289,13 +287,12 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
     code.push_imop(i);
 
-    dim_iterator
-            dti = dim_begin (argResult.symbol()),
-            dte = dim_end (argResult.symbol());
-    for (unsigned count = 0; dti != dte; ++ dti, ++ count) {
+    unsigned count = 0;
+    BOOST_FOREACH (Symbol* sizeSym, dim_range (argResult.symbol ())) {
         Symbol* indexSym = ConstantInt::get (getContext (), count);
-        Imop* i = new Imop (e, Imop::STORE, resSym, indexSym, *dti);
+        Imop* i = new Imop (e, Imop::STORE, resSym, indexSym, sizeSym);
         code.push_imop(i);
+        ++ count;
     }
 
     codeGenSize (result);
@@ -500,11 +497,12 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     ScopedAllocations allocs (*this, result);
 
     { // Eval subexpressions and copy dimensionalities:
-        TreeNode::ChildrenListConstIterator it = e->children ().begin () + 1;
         dim_iterator dimIt = dim_begin (resSym);
-        for (; it != e->children().end(); ++ it, ++ dimIt) {
-            TreeNodeExpr* eArgi = static_cast<TreeNodeExpr*>(*it);
-            const CGResult& argResult (codeGen (eArgi));
+        BOOST_FOREACH (TreeNode* _dim, e->dimensions ()) {
+            assert (dimIt != dim_end (resSym));
+            assert (dynamic_cast<TreeNodeExpr*>(_dim) != 0);
+            TreeNodeExpr* dim = static_cast<TreeNodeExpr*>(_dim);
+            const CGResult& argResult (codeGen (dim));
             append (result, argResult);
             if (result.isNotOk ()) {
                 return result;
@@ -512,6 +510,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
             Imop* i = new Imop (e, Imop::ASSIGN, *dimIt, argResult.symbol ());
             pushImopAfter (result, i);
+            ++ dimIt;
         }
     }
 
@@ -860,7 +859,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
         const CGResult& argResult (codeGen (arg));
         append (result, argResult);
         if (result.isNotOk ()) {
-            return result;
+           return result;
         }
 
         Symbol* sym = argResult.symbol ();
