@@ -284,7 +284,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     pushImopAfter (result, i);
     result.addTempAlloc (resSym);
 
-    i = new Imop (m_node, Imop::ASSIGN, resSym->getDim (0), n);
+    i = new Imop (e, Imop::ASSIGN, resSym->getDim (0), n);
     code.push_imop(i);
 
     unsigned count = 0;
@@ -339,26 +339,26 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
     ss << "Different sized dimensions in concat at " << e->location() << ".";
-    Imop* err = newError (m_node, ConstantString::get (getContext (), ss.str ()));
+    Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
     SymbolLabel* errLabel = st->label(err);
     for (unsigned it = 0; it < e->resultType ()->secrecDimType(); ++ it) {
         Symbol* s1 = arg1ResultSymbol->getDim(it);
         Symbol* s2 = arg2ResultSymbol->getDim(it);
         if (it == k) {
-            Imop* i = new Imop (m_node, Imop::ADD, resSym->getDim(it), s1, s2);
+            Imop* i = new Imop (e, Imop::ADD, resSym->getDim(it), s1, s2);
             pushImopAfter (result, i);
         }
         else {
-            Imop* i = new Imop (m_node, Imop::JNE, (Symbol*) 0, s1, s2);
+            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, s1, s2);
             pushImopAfter (result, i);
             i->setJumpDest(errLabel);
 
-            i = new Imop (m_node, Imop::ASSIGN, resSym->getDim(it), s1);
+            i = new Imop (e, Imop::ASSIGN, resSym->getDim(it), s1);
             code.push_imop(i);
         }
     }
 
-    Imop* jmp = new Imop (m_node, Imop::JUMP, (Symbol*) 0);
+    Imop* jmp = new Imop (e, Imop::JUMP, (Symbol*) 0);
     pushImopAfter (result, jmp);
     result.addToNextList (jmp);
 
@@ -398,20 +398,20 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     Symbol* tmpInt = st->appendTemporary(pubIntTy);
 
     // j = 0 (right hand side index)
-    Imop* i = new Imop(m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
+    Imop* i = new Imop(e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
     code.push_imop(i);
 
     // IF (i_k >= d_k) GOTO T1;
-    i = new Imop(m_node, Imop::JGE, (Symbol*) 0, loopInfo.at (k), arg1ResultSymbol->getDim(k));
+    i = new Imop(e, Imop::JGE, (Symbol*) 0, loopInfo.at (k), arg1ResultSymbol->getDim(k));
     code.push_imop(i);
     result.addToNextList (i);
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count < strides[0].size (); ++ count) {
-        Imop* i = new Imop(m_node, Imop::MUL, tmpInt, strides[0].at (count), loopInfo.at (count));
+        Imop* i = new Imop(e, Imop::MUL, tmpInt, strides[0].at (count), loopInfo.at (count));
         code.push_imop(i);
 
-        i = new Imop(m_node, Imop::ADD, offset, offset, tmpInt);
+        i = new Imop(e, Imop::ADD, offset, offset, tmpInt);
         code.push_imop(i);
     }
 
@@ -419,50 +419,50 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
         e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
     Symbol* tmp_elem = st->appendTemporary(elemType);
-    i = new Imop (m_node, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
+    i = new Imop (e, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
     code.push_imop(i);
 
     // jump out
-    Imop* jump_out = new Imop(m_node, Imop::JUMP, (Symbol*) 0);
+    Imop* jump_out = new Imop(e, Imop::JUMP, (Symbol*) 0);
     code.push_imop (jump_out);
 
     // compute j if i >= d (for e2)
     for (unsigned count = 0; count < strides[1].size (); ++ count) {
         if (count == k) {
-            i = new Imop (m_node, Imop::SUB, tmpInt, loopInfo.at (count), arg1ResultSymbol->getDim(k));
+            i = new Imop (e, Imop::SUB, tmpInt, loopInfo.at (count), arg1ResultSymbol->getDim(k));
             pushImopAfter (result, i);
 
-            i = new Imop (m_node, Imop::MUL, tmpInt, strides[1].at (count), tmpInt);
+            i = new Imop (e, Imop::MUL, tmpInt, strides[1].at (count), tmpInt);
             code.push_imop(i);
         }
         else {
-            i = new Imop (m_node, Imop::MUL, tmpInt, strides[1].at (count), loopInfo.at (count));
+            i = new Imop (e, Imop::MUL, tmpInt, strides[1].at (count), loopInfo.at (count));
             pushImopAfter (result, i);
         }
 
-        i = new Imop (m_node, Imop::ADD, offset, offset, tmpInt);
+        i = new Imop (e, Imop::ADD, offset, offset, tmpInt);
         code.push_imop(i);
     }
 
     // t = y[j]
-    i = new Imop (m_node, Imop::LOAD, tmp_elem, arg2Result.symbol (), offset);
+    i = new Imop (e, Imop::LOAD, tmp_elem, arg2Result.symbol (), offset);
     pushImopAfter (result, i);
 
     // out: r[i] = t
-    i = new Imop (m_node, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
+    i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (),0));
     code.push_imop(i);
     jump_out->setJumpDest (st->label (i));
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count != strides[2].size (); ++ count) {
-        Imop* i = new Imop (m_node, Imop::MUL, tmpInt, strides[2].at (count), loopInfo.at (count));
+        Imop* i = new Imop (e, Imop::MUL, tmpInt, strides[2].at (count), loopInfo.at (count));
         code.push_imop (i);
 
-        i = new Imop (m_node, Imop::ADD, offset, offset, tmpInt);
+        i = new Imop (e, Imop::ADD, offset, offset, tmpInt);
         code.push_imop (i);
     }
 
-    i = new Imop (m_node, Imop::STORE, resSym, offset, tmp_elem);
+    i = new Imop (e, Imop::STORE, resSym, offset, tmp_elem);
     code.push_imop(i);
 
     append (result, exitLoop (loopInfo));
@@ -1307,7 +1307,7 @@ CGBranchResult TreeNodeExprBool::codeGenBoolWith (CodeGen &cg) {
 
 CGBranchResult CodeGen::cgBoolExprBool (TreeNodeExprBool *e) {
     CGBranchResult result;
-    Imop *i = new Imop(m_node, Imop::JUMP, 0);
+    Imop *i = new Imop(e, Imop::JUMP, 0);
     code.push_imop (i);
     result.setFirstImop (i);
 
@@ -1347,7 +1347,7 @@ CGResult CodeGen::cgExprClassify (TreeNodeExprClassify *e) {
     resSym->inheritShape (argSym);
     allocResult (result);
 
-    Imop *i = newUnary (m_node, Imop::CLASSIFY, resSym, argSym);
+    Imop *i = newUnary (e, Imop::CLASSIFY, resSym, argSym);
     pushImopAfter (result, i);
     return result;
 }
@@ -1424,7 +1424,7 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
 
     // Generate code for unary expression:
     Imop::Type iType = (e->type() == NODE_EXPR_UNEG) ? Imop::UNEG : Imop::UMINUS;
-    Imop *i = newUnary (m_node, iType, result.symbol (), eResult);
+    Imop *i = newUnary (e, iType, result.symbol (), eResult);
     pushImopAfter (result, i);
     return result;
 }
