@@ -4,6 +4,7 @@ void main () {
         int16 i16; uint16 u16;
         int32 i32; uint32 u32;
         int64 i64; uint64 u64;
+        assert (true);
     }
 
     { // integer literals are typed based on context
@@ -11,6 +12,7 @@ void main () {
         int16 i16  = 1; uint16 u16 = 1;
         int32 i32  = 1; uint32 u32 = 1;
         int64 i64  = 1; uint64 u64 = 1;
+        assert (true);
     }
 
     { // context from expression
@@ -18,6 +20,7 @@ void main () {
         int16 i16  = 1*1; uint16 u16 = 1+1;
         int32 i32  = 1-1; uint32 u32 = 1+1;
         int64 i64  = 1/1; uint64 u64 = 1+1;
+        assert (true);
     }
 
     {
@@ -25,6 +28,7 @@ void main () {
         int16 i16  = - 1;
         int32 i32  = - 1;
         int64 i64  = - 1;
+        assert (true);
     }
 
     return;
