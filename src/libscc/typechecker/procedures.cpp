@@ -538,6 +538,13 @@ bool TypeChecker::unify (Instantiation& inst,
         }
     }
 
+    //
+    // Following is little strange as the type AST nodes have not
+    // yet been visited by the type checker and thus don't have the
+    // cached type. There probably is much nicer solution to what im doing
+    // but ill stick to what works for now.
+    //
+
     unsigned i = 0;
     BOOST_FOREACH (TreeNode* _d, t->body ()->paramRange ()) {
         assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
@@ -565,19 +572,34 @@ bool TypeChecker::unify (Instantiation& inst,
     }
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();
-    if (retNodeTy->isNonVoid () && tyCxt.haveContextSecType ()) {
-        if (retNodeTy->secType ()->isPublic ()) {
-            if (! tyCxt.contextSecType ()->isPublic ())
-                return false;
-        }
-        else {
-            TreeNodeIdentifier* styId = retNodeTy->secType ()->identifier ();
-            SecurityType*& ty = argDomains[styId->value ()];
-            if (ty != 0 && ty != tyCxt.contextSecType ()) {
-                return false;
+    if (retNodeTy->isNonVoid ()) {
+        if (tyCxt.haveContextSecType ()) {
+            if (retNodeTy->secType ()->isPublic ()) {
+                if (! tyCxt.contextSecType ()->isPublic ())
+                    return false;
             }
+            else {
+                TreeNodeIdentifier* styId = retNodeTy->secType ()->identifier ();
+                SecurityType*& ty = argDomains[styId->value ()];
+                if (ty != 0 && ty != tyCxt.contextSecType ()) {
+                    return false;
+                }
 
-            ty = tyCxt.contextSecType ();
+                ty = tyCxt.contextSecType ();
+            }
+        }
+
+        if (! tyCxt.matchDataType (retNodeTy->dataType ()->dataType ()))
+            return false;
+
+        if (! tyCxt.matchDimType (retNodeTy->dimType ()->dimType ())) {
+            return false;
+        }
+    }
+    else {
+        // this is not very pretty either...
+        if (tyCxt.haveContextDataType ()) {
+            return false;
         }
     }
 
