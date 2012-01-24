@@ -128,8 +128,8 @@ class SymbolSymbol: public Symbol {
         inline void setScopeType(ScopeType type) { m_scopeType = type; }
         inline bool isTemporary () const { return m_isTemporary; }
 
-        inline Symbol* getDim (unsigned i) { return m_dims[i]; }
-        inline void setDim (unsigned i, Symbol* sym) { m_dims[i] = sym; }
+        inline Symbol* getDim (SecrecDimType i) { return m_dims[i]; }
+        inline void setDim (SecrecDimType i, Symbol* sym) { m_dims[i] = sym; }
         Symbol* getSizeSym () { return m_size; }
         void setSizeSym (Symbol* sym) { m_size = sym; }
         void inheritShape (Symbol* from);

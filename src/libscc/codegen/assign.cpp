@@ -80,7 +80,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             SymbolLabel* errLabel = st->label (err);
             SymbolSymbol* arg2ResultSymbol = static_cast<SymbolSymbol*>(arg2Result.symbol ());
 
-            for (unsigned k = 0; k < eArg2->resultType ()->secrecDimType(); ++ k) {
+            for (SecrecDimType k = 0; k < eArg2->resultType ()->secrecDimType(); ++ k) {
                 Symbol* tsym = st->appendTemporary (pubIntTy);
                 Imop* i = new Imop (e, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
                 pushImopAfter (result, i);

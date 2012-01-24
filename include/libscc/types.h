@@ -470,6 +470,102 @@ inline SecrecDimType Type::secrecDimType() const {
     return static_cast<const TypeNonVoid&>(*this).dataType()->secrecDimType();
 }
 
+/*******************************************************************************
+  TypeContext
+*******************************************************************************/
+
+/**
+ * Type context may or may not define security, data, or dimensionality types.
+ * We use NULL to represent undefined security type, DATATYPE_UNDEFINED to
+ * represent undefined data type, and finally any negative value for undefined
+ * dimensionality types.
+ */
+class TypeContext {
+public: /* Methods: */
+
+    TypeContext (SecurityType* secType,
+                 SecrecDataType dataType,
+                 SecrecDimType dimType)
+        : m_contextSecType (secType)
+        , m_contextDataType (dataType)
+        , m_contextDimType (dimType)
+    { }
+
+    TypeContext ()
+        : m_contextSecType (0)
+        , m_contextDataType (DATATYPE_UNDEFINED)
+        , m_contextDimType (-1)
+    { }
+
+    void setContextSecType (SecurityType* secTy) {
+        m_contextSecType = secTy;
+    }
+
+    void setContextDataType (SecrecDataType dataType) {
+        m_contextDataType = dataType;
+    }
+
+    void setContextDimType (SecrecDimType dimType) {
+        m_contextDimType = dimType;
+    }
+
+    SecurityType* contextSecType () const {
+        return m_contextSecType;
+    }
+
+    SecrecDataType contextDataType () const {
+        return m_contextDataType;
+    }
+
+    SecrecDimType contextDimType () const {
+        return m_contextDimType;
+    }
+
+    bool haveContextSecType () const {
+        return m_contextSecType != 0;
+    }
+
+    bool haveContextDataType () const {
+        return m_contextDataType != DATATYPE_UNDEFINED;
+    }
+
+    bool haveContextDimType () const {
+        return m_contextDimType >= 0;
+    }
+
+    bool matchSecType (SecurityType* secType) const {
+        assert (secType != 0);
+        if (! haveContextSecType ()) {
+            return true;
+        }
+
+        return secType == contextSecType ();
+    }
+
+    bool matchDataType (SecrecDataType dataType) const {
+        assert (dataType != DATATYPE_UNDEFINED);
+        if (! haveContextDataType ()) {
+            return true;
+        }
+
+        return dataType == m_contextDataType;
+    }
+
+    bool matchDimType (SecrecDimType dimType) const {
+        assert (dimType >= 0);
+        if (! haveContextDimType ()) {
+            return true;
+        }
+
+        return dimType == m_contextDimType;
+    }
+
+protected: /* Fields: */
+    SecurityType*    m_contextSecType;
+    SecrecDataType   m_contextDataType;
+    SecrecDimType    m_contextDimType;
+};
+
 
 } // namespace SecreC
 

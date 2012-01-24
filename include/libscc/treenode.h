@@ -341,15 +341,12 @@ protected:
 
 /// Representation for expressions, also tracks type of resulting
 /// value (if there is one).
-class TreeNodeExpr: public TreeNode {
+class TreeNodeExpr: public TreeNode, public TypeContext {
 public: /* Methods: */
     inline TreeNodeExpr(SecrecTreeNodeType type,
                         const YYLTYPE &loc)
         : TreeNode (type, loc)
         , m_resultType (0)
-        , m_contextSecType (0)
-        , m_contextDataType (DATATYPE_UNDEFINED)
-        , m_contextDimType (-1)
     { }
 
     virtual ~TreeNodeExpr() { }
@@ -375,26 +372,6 @@ public: /* Methods: */
         m_contextSecType = ty;
     }
 
-    SecurityType* contextSecType () const {
-        return m_contextSecType;
-    }
-
-    void setContextDataType (SecrecDataType dataType) {
-        m_contextDataType = dataType;
-    }
-
-    SecrecDataType contextDataType () const {
-        return m_contextDataType;
-    }
-
-    void setContextDimType (SecrecDimType dim) {
-        m_contextDimType = dim;
-    }
-
-    int contextDimType () const {
-        return m_contextDimType;
-    }
-
 protected: /* Methods: */
 
     virtual TreeNode* cloneV () const = 0;
@@ -406,9 +383,6 @@ protected: /* Methods: */
 protected: /* Fields: */
 
     SecreC::Type*   m_resultType; ///< Type of resulting value.
-    SecurityType*   m_contextSecType; ///< Expected security type.
-    SecrecDataType  m_contextDataType; ///< Expected data type.
-    int             m_contextDimType; ///< Expected dim type, undefined if negative.
 };
 
 /******************************************************************

@@ -330,8 +330,8 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
         return result;
     }
 
-    unsigned k = e->dimensionality ()->value ();
-    unsigned n = e->resultType ()->secrecDimType();
+    SecrecDimType k = e->dimensionality ()->value ();
+    SecrecDimType n = e->resultType ()->secrecDimType();
     SymbolSymbol* arg1ResultSymbol = static_cast<SymbolSymbol*>(arg1Result.symbol ());
     SymbolSymbol* arg2ResultSymbol = static_cast<SymbolSymbol*>(arg2Result.symbol ());
     SymbolSymbol* resSym = static_cast<SymbolSymbol*>(result.symbol ());
@@ -341,7 +341,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     ss << "Different sized dimensions in concat at " << e->location() << ".";
     Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
     SymbolLabel* errLabel = st->label(err);
-    for (unsigned it = 0; it < e->resultType ()->secrecDimType(); ++ it) {
+    for (SecrecDimType it = 0; it < e->resultType ()->secrecDimType(); ++ it) {
         Symbol* s1 = arg1ResultSymbol->getDim(it);
         Symbol* s2 = arg2ResultSymbol->getDim(it);
         if (it == k) {
@@ -379,7 +379,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     // Symbols for running indices:
     LoopInfo loopInfo;
     TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
-    for (unsigned it = 0; it < n; ++ it) {
+    for (SecrecDimType it = 0; it < n; ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         loopInfo.push_index (sym);
     }
@@ -427,7 +427,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     code.push_imop (jump_out);
 
     // compute j if i >= d (for e2)
-    for (unsigned count = 0; count < strides[1].size (); ++ count) {
+    for (SecrecDimType count = 0; count < strides[1].size (); ++ count) {
         if (count == k) {
             i = new Imop (e, Imop::SUB, tmpInt, loopInfo.at (count), arg1ResultSymbol->getDim(k));
             pushImopAfter (result, i);
@@ -874,7 +874,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     }
 
     Imop* i = newCall (m_node, retList.begin (), retList.end (), argList.begin (), argList.end ());
-    Imop *c = new Imop (m_node, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+    Imop* c = new Imop (m_node, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
     m_callsTo[symProc->decl ()].insert (i);
 
     c->setArg2 (st->label (i));

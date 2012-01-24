@@ -437,7 +437,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
             argTypes = DataTypeProcedureVoid::get (getContext (),
                                                    argumentDataTypes);
             ICode::Status s = findBestMatchingProc (match, root->operatorName (),
-                                                    root->contextSecType (), argTypes);
+                                                    *root, argTypes);
             if (s != ICode::OK) {
                 m_log.fatal () << "Error at " << root->location () << ".";
                 return s;
@@ -561,7 +561,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprUnary* root) {
             argTypes = DataTypeProcedureVoid::get (getContext (),
                                                    argumentDataTypes);
             ICode::Status s = findBestMatchingProc (match, root->operatorName (),
-                                                    root->contextSecType (), argTypes);
+                                                    *root, argTypes);
             if (s != ICode::OK) {
                 m_log.fatal () << "Error at " << root->location () << ".";
                 return s;
@@ -926,7 +926,7 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root,
     TreeNodeIdentifier *e =
             static_cast<TreeNodeIdentifier*>(lval->children ().at(0));
     SecreC::Type* eType = getSymbol (e)->secrecType ();
-    unsigned destDim = eType->secrecDimType ();
+    SecrecDimType destDim = eType->secrecDimType ();
     if (lval->children ().size () == 2) {
         ICode::Status s = checkIndices (lval->children ().at (1), destDim);
         if (s != ICode::OK) {
@@ -969,7 +969,7 @@ ICode::Status TypeChecker::checkPostfixPrefixIncDec (TreeNodeExpr* root,
 ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
                                          TreeNodeVarInit* varInit)
 {
-    unsigned n = 0;
+    SecrecDimType n = 0;
 
     BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
         assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
@@ -1200,7 +1200,7 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     return false;
 }
 
-ICode::Status TypeChecker::checkIndices (TreeNode* node, unsigned& destDim) {
+ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim) {
     typedef TreeNode::ChildrenListConstIterator CLCI;
     assert (node->type() == NODE_SUBSCRIPT);
     destDim = 0;

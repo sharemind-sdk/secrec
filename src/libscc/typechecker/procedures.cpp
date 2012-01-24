@@ -167,13 +167,13 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
                 DataTypeProcedureVoid::get (getContext (), params);
 
         if (rt->secrecType()->isVoid()) {
-            proc->m_cachedType = TypeNonVoid::get (m_context, voidProcType);
+            proc->m_cachedType = TypeNonVoid::get (getContext (), voidProcType);
         }
         else {
             TNV* tt = static_cast<TNV*>(rt->secrecType());
             assert (tt->dataType()->kind() == DataType::BASIC);
-            proc->m_cachedType = TypeNonVoid::get (m_context,
-                DataTypeProcedure::get (m_context, voidProcType, tt->dataType ()));
+            proc->m_cachedType = TypeNonVoid::get (getContext (),
+                DataTypeProcedure::get (getContext (), voidProcType, tt->dataType ()));
         }
 
         SymbolProcedure* procSym = appendProcedure (m_st, *proc);
@@ -342,7 +342,7 @@ ICode::Status TypeChecker::checkProcCall (SymbolProcedure* symProc,
 }
 
 ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
-                                          SecurityType* contextSecType,
+                                          const TypeContext& tyCxt,
                                           const std::vector<TreeNodeExpr*>& arguments,
                                           SecreC::Type*& resultType,
                                           SymbolProcedure*& symProc)
@@ -367,8 +367,7 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
     DataTypeProcedureVoid* argTypes =
             DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
     ICode::Status status = findBestMatchingProc (symProc, name->value (),
-                                                 contextSecType,
-                                                 argTypes);
+                                                 tyCxt, argTypes);
     if (status != ICode::OK) {
         return status;
     }
@@ -442,8 +441,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         arguments.push_back (arg);
     }
 
-    ICode::Status s = checkProcCall (id, root->contextSecType (),
-                                     arguments, resultType, symProc);
+    ICode::Status s = checkProcCall (id, *root, arguments, resultType, symProc);
     if (s != ICode::OK) {
         m_log.fatal () << "Error at " << root->location () << ".";
         return s;
@@ -456,7 +454,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
 
 ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
                                                  const std::string& name,
-                                                 SecurityType* contextTy,
+                                                 const TypeContext& tyCxt,
                                                  DataTypeProcedureVoid* argTypes)
 {
     typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
@@ -464,13 +462,18 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
     assert (argTypes != 0);
     SymbolProcedure* procTempSymbol = 0;
     BOOST_FOREACH (SymbolProcedure* s, findProcedures (m_st, name, argTypes)) {
-        if (contextTy != 0) { // if we have context...
-            SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
-            if (! _ty->isVoid ()) { // and procedure is non-void...
-                TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
-                if (ty->secrecSecType () != contextTy) // skip unmatching definitions.
-                    continue;
-            }
+        SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
+        if (! _ty->isVoid ()) { // and procedure is non-void...
+            assert (dynamic_cast<TypeNonVoid*>(_ty) != 0);
+            TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
+            if (! tyCxt.matchSecType (ty->secrecSecType ()))   continue;
+            if (! tyCxt.matchDataType (ty->secrecDataType ())) continue;
+            if (! tyCxt.matchDimType (ty->secrecDimType ()))   continue;
+        }
+        else {
+            // if the procedure is void, and context expects non-void then skip
+            // non-void context has to at-least have data type specified
+            if (tyCxt.haveContextDataType ()) continue;
         }
 
         if (procTempSymbol != 0) {
@@ -490,7 +493,7 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
     std::vector<Instantiation> bestMatches;
     BOOST_FOREACH (SymbolTemplate* s, findTemplates (m_st, name)) {
         Instantiation inst (s);
-        if (unify (inst, contextTy, argTypes)) {
+        if (unify (inst, tyCxt, argTypes)) {
             const Weight w (inst.templateParamCount (),
                             inst.unrestrictedTemplateParamCount (),
                             inst.quantifiedDomainOccurrenceCount ());
@@ -523,14 +526,14 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
 }
 
 bool TypeChecker::unify (Instantiation& inst,
-                         SecurityType* contextTy,
+                         const TypeContext& tyCxt,
                          DataTypeProcedureVoid* argTypes) const {
     typedef std::map<std::string, SecurityType* > DomainMap;
     const TreeNodeTemplate* t = inst.getTemplate ()->decl ();
     DomainMap argDomains;
 
     if (inst.getTemplate ()->decl ()->isContextDependent ()) {
-        if (contextTy == 0) {
+        if (! tyCxt.haveContextSecType ()) {
             return false;
         }
     }
@@ -562,19 +565,19 @@ bool TypeChecker::unify (Instantiation& inst,
     }
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();
-    if (retNodeTy->isNonVoid () && contextTy != 0) {
+    if (retNodeTy->isNonVoid () && tyCxt.haveContextSecType ()) {
         if (retNodeTy->secType ()->isPublic ()) {
-            if (! contextTy->isPublic ())
+            if (! tyCxt.contextSecType ()->isPublic ())
                 return false;
         }
         else {
             TreeNodeIdentifier* styId = retNodeTy->secType ()->identifier ();
             SecurityType*& ty = argDomains[styId->value ()];
-            if (ty != 0 && ty != contextTy) {
+            if (ty != 0 && ty != tyCxt.contextSecType ()) {
                 return false;
             }
 
-            ty = contextTy;
+            ty = tyCxt.contextSecType ();
         }
     }
 

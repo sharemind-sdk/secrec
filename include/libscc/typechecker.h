@@ -92,7 +92,7 @@ protected:
     ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root,
                                             bool isPrefix,
                                             bool isInc);
-    ICode::Status checkIndices (TreeNode* node, unsigned& destDim);
+    ICode::Status checkIndices (TreeNode* node, SecrecDimType& destDim);
     bool checkAndLogIfVoid (TreeNodeExpr* e);
     ICode::Status populateParamTypes (std::vector<DataType*>& params,
                                       TreeNodeProcDef* proc);
@@ -116,7 +116,7 @@ protected:
      * \param[out] symProc symbol of the procedure which will be called
      */
     ICode::Status checkProcCall (TreeNodeIdentifier* name,
-                                 SecurityType* contextSecType,
+                                 const TypeContext& tyCxt,
                                  const std::vector<TreeNodeExpr*>& arguments,
                                  SecreC::Type*& resultType,
                                  SymbolProcedure*& symProc);
@@ -125,7 +125,7 @@ protected:
     // procedure returns true, and gives bindings to quantifiers. No
     // addition side effect are performed.
     bool unify (Instantiation& inst,
-                SecurityType* contextTy,
+                const TypeContext& tyCxt,
                 DataTypeProcedureVoid* argTypes) const;
 
     /**
@@ -141,7 +141,7 @@ protected:
      */
     ICode::Status findBestMatchingProc (SymbolProcedure*& symProc,
                                         const std::string& name,
-                                        SecurityType* contextTy,
+                                        const TypeContext& tyCxt,
                                         DataTypeProcedureVoid* argTypes);
 
 private: /* Fields: */

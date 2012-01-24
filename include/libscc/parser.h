@@ -143,7 +143,7 @@ enum SecrecDataType {
     NUM_DATATYPES
 };
 
-typedef unsigned SecrecDimType;
+typedef int SecrecDimType; /**< Dimensionality type is undefined if negative! */
 
 /**
     Parses SecreC from the standard input.

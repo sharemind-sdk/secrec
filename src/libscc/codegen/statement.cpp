@@ -125,7 +125,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     ns->setName (varInit->variableName ());
     st->appendSymbol (ns);
 
-    unsigned n = 0;
+    SecrecDimType n = 0;
     assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
     if (! isScalar || isString) {
         addAlloc (ns);
@@ -136,7 +136,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
         TypeNonVoid::get (getContext (),
             DataTypeVar::get (getContext (),
                 DataTypeBasic::get (getContext (), DATATYPE_INT)));
-    for (unsigned i = 0; i < ty->secrecDimType(); ++ i) {
+    for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);
         std::stringstream ss;
@@ -189,7 +189,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
             pushImopAfter (result, i);
         }
 
-        for (unsigned it = 0; it < ty->secrecDimType (); ++ it) {
+        for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
             Imop* i = new Imop( varInit, Imop::ASSIGN, ns->getDim (it),
                                 ConstantInt::get (getContext (), 0));
             code.push_imop(i);
@@ -342,7 +342,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                                 ConstantInt::get (getContext (), 0));
             pushImopAfter (result, i);
 
-            for (unsigned it = 0; it < ty->secrecDimType (); ++ it) {
+            for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
                 Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it),
                                     ConstantInt::get (getContext (), 0));
                 code.push_imop (i);
