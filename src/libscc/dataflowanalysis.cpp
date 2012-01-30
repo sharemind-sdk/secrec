@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <utility>
+#include <boost/foreach.hpp>
 
 #include "intermediate.h"
 #include "misc.h"
@@ -197,15 +198,12 @@ void ReachingDefinitions::inFrom(const Block &from, const Block &to, bool global
 }
 
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
-    typedef std::vector<const Symbol*> SV;
     SDefs old = out;
-    SV defs;
     out = in;
     for (Block::const_iterator it = b.begin (); it != b.end (); it++) {
         const Imop& imop = *it;
-        imop.getDef (defs);
-        for (SV::const_iterator i = defs.begin (), e = defs.end (); i != e; ++ i) {
-            Defs& d = out[*i].first;
+        BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
+            Defs& d = out[symbol].first;
             d.clear ();
             d.insert (&imop);
         }
@@ -346,20 +344,15 @@ std::string Dominators::toString (const Program& pr) const {
 *******************************************************************************/
 
 void LiveVariables::start (const Program &pr) {
-    std::vector<const Symbol*> use, def;
     FOREACH_BLOCK (bi, pr) {
         typedef Imop::OperandConstIterator OCI;
         for (Block::const_iterator it (bi->begin ()); it != bi->end (); ++ it) {
-            const Imop& imop = *it;
-            imop.getDef (def);
-            imop.getUse (use);
-
-            for (std::vector<const Symbol*>::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
-                useSymbol (*bi, *i);
+            BOOST_FOREACH (const Symbol* sym, it->useRange ()) {
+                useSymbol (*bi, sym);
             }
 
-            for (std::vector<const Symbol*>::const_iterator i = def.begin (), e = def.end (); i != e; ++ i) {
-                defSymbol (*bi, *i);
+            BOOST_FOREACH (const Symbol* sym, it->defRange ()) {
+                defSymbol (*bi, sym);
             }
         }
     }

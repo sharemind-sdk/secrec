@@ -8,17 +8,18 @@
  */
 
 #include "RegisterAllocator.h"
-#include "VMCode.h"
-#include "VMSymbolTable.h"
-#include "VMValue.h"
+
+#include <algorithm>
+#include <iostream>
+#include <boost/foreach.hpp>
 
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
 #include <libscc/dataflowanalysis.h>
 
-#include <algorithm>
-#include <iostream>
-#include <boost/foreach.hpp>
+#include "VMCode.h"
+#include "VMSymbolTable.h"
+#include "VMValue.h"
 
 using namespace SecreC;
 
@@ -54,10 +55,9 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
             case DATATYPE_UINT32: value = static_cast<const ConstantUInt32*>(sym)->value (); break;
             case DATATYPE_UINT64: value = static_cast<const ConstantUInt64*>(sym)->value (); break;
             case DATATYPE_UINT:   value = static_cast<const ConstantUInt*>(sym)->value ();   break;
-            case DATATYPE_STRING:
-                assert (false && "No support for strings yet!");
+            case DATATYPE_STRING: /* string literals are not managed by the RA */ return;
             default:
-                assert (false);
+                assert (false && "Undefined SecreC data type.");
                 break;
         }
 
@@ -86,11 +86,14 @@ class IGraphImpl {
 public: /* Types: */
 
     typedef std::map<VMVReg*, std::set<VMVReg*> > Type;
+    typedef Type::value_type value_type;
     typedef Type::iterator Iterator;
     typedef Type::const_iterator ConstIterator;
     typedef std::set<VMVReg*> Neighbours;
     typedef Neighbours::iterator NIterator;
     typedef Neighbours::const_iterator NConstIterator;
+    typedef std::pair<NIterator, NIterator> NRange;
+    typedef std::pair<NConstIterator, NConstIterator> NConstRange;
 
 private:
 
@@ -155,15 +158,14 @@ public: /* Methods: */
         unsigned count = 0;
         order (vertices);
         colors.clear ();
-        for (unsigned k = 0; k < vertices.size (); ++ k) {
-            VMVReg* v = vertices[k];
+        BOOST_FOREACH (VMVReg* v, vertices) {
             std::set<unsigned> candidates = usedRegisters;
             candidates -= neighbours[v];
             const unsigned color = candidates.empty () ? (count ++) : *candidates.begin ();
             usedRegisters.insert (color);
             colors[v] = color;
-            for (NConstIterator i = beginNeighbours (v), e = endNeighbours (v); i != e; ++ i) {
-                neighbours[*i].insert (color);
+            BOOST_FOREACH (VMVReg* u, neighbourRange (v)) {
+                neighbours[u].insert (color);
             }
         }
 
@@ -176,8 +178,8 @@ public: /* Methods: */
         label (labels);
         for (ConstIterator i = begin (), e = end (); i != e; ++ i) {
             const unsigned from = labels[i->first];
-            for (NConstIterator j = i->second.begin (), f = i->second.end (); j != f; ++ j) {
-                const unsigned to = labels[*j];
+            BOOST_FOREACH (VMVReg* u, i->second) {
+                const unsigned to = labels[u];
                 if (from <= to)
                     std::cerr << from << " - " << to << std::endl;
             }
@@ -190,8 +192,18 @@ protected:
     ConstIterator begin () const { return m_nodes.begin (); }
     Iterator end () { return m_nodes.end (); }
     ConstIterator end () const { return m_nodes.end (); }
-    NConstIterator beginNeighbours (VMVReg* v) const { return m_nodes.find (v)->second.begin (); }
-    NConstIterator endNeighbours (VMVReg* v) const { return m_nodes.find (v)->second.end (); }
+
+    NConstIterator beginNeighbours (VMVReg* v) const {
+        return m_nodes.find (v)->second.begin ();
+    }
+
+    NConstIterator endNeighbours (VMVReg* v) const {
+        return m_nodes.find (v)->second.end ();
+    }
+
+    NConstRange neighbourRange (VMVReg* v) const {
+        return std::make_pair (beginNeighbours (v), endNeighbours (v));
+    }
 
 private: /* Fields: */
 
@@ -340,17 +352,12 @@ void RegisterAllocator::exitBlock (VMBlock &block) {
 void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     typedef std::vector<const Symbol*> SV;
 
-    SV use, def;
-    imop.getUse (use);
-    imop.getDef (def);
-
     while (! m_temporaries.empty ()) {
         m_live.erase (m_temporaries.top ());
         m_temporaries.pop ();
     }
 
-    for (SV::const_iterator i = use.begin (), e = use.end (); i != e; ++ i) {
-        const Symbol* symbol = *i;
+    BOOST_FOREACH (const Symbol* symbol, imop.useRange ()) {
         switch (symbol->symbolType ()) {
         case Symbol::SYMBOL:
             assert (m_st->find (symbol) != 0);
@@ -362,8 +369,8 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
         }
     }
 
-    for (SV::const_iterator i = def.begin (), e = def.end (); i != e; ++ i) {
-        defSymbol (*i);
+    BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
+        defSymbol (symbol);
     }
 }
 

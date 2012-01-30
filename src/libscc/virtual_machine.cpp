@@ -700,11 +700,6 @@ private:
         Instruction i;
         const Imop* dest = 0;
 
-        std::vector<const Symbol*> defs;
-        std::vector<const Symbol*> uses;
-        imop.getDef (defs);
-        imop.getUse (uses);
-
         if (imop.isJump ()) {
             const Symbol* arg = imop.dest ();
             i.args[nArgs ++] = toVMSym (arg);
@@ -712,12 +707,12 @@ private:
             dest = static_cast<const SymbolLabel*>(arg)->target ();
         }
         else {
-            BOOST_FOREACH (const Symbol* sym, defs) {
+            BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
                 i.args[nArgs ++] = toVMSym (sym);
             }
         }
 
-        BOOST_FOREACH (const Symbol* sym, uses) {
+        BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
             i.args[nArgs ++] = toVMSym (sym);
         }
 

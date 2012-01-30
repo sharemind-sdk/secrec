@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <boost/range.hpp>
 
 #include "symboltable.h"
 #include "treenode.h"
@@ -201,44 +202,37 @@ bool Imop::isVectorized () const {
     return getImopInfoBits (m_type).vecArgNum == argNum;
 }
 
-/// \todo make this more... reasonable...
-void Imop::getUse (std::vector<const Symbol *>& use) const {
-    use.clear ();
-    unsigned i = 0;
-    unsigned e = m_args.size ();
-
-    // vectorised operations don't DEF any operands.
+Imop::OperandConstRange Imop::useRange () const {
+    size_t off = 0;
     if (! isVectorized ()) {
-        i = getImopInfoBits (m_type).useBegin;
+        off = getImopInfoBits (m_type).useBegin;
+        if (off > m_args.size ())
+            off = m_args.size ();
     }
 
-    for (; i < e; ++ i) {
-        const Symbol* s = arg (i);
-        if (s == 0) {
-            break;
-        }
-
-        use.push_back (s);
-    }
+    OperandConstIterator i = m_args.begin () + off;
+    OperandConstIterator e = i;
+    for (; e != m_args.end () && *e != 0; ++ e);
+    return std::make_pair (i, e);
 }
 
-void Imop::getDef (std::vector<const Symbol *>& def) const {
+Imop::OperandConstRange Imop::defRange () const {
     OperandConstIterator i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
-    def.clear ();
+
     // vectorised operantions don't DEF any operands.
-    if (isVectorized ()) return;
+    if (isVectorized ()) return std::make_pair (i, i);
     if (! getImopInfoBits (m_type).writesDest) {
-        return;
+        return std::make_pair (i, i);
     }
 
     if (type () == CALL) {
         for  (++ i ; *i != 0 && i != e; ++ i);
-        def.insert (def.end (), ++ i, e);
-        return;
+        if (i != m_args.end () && *i == 0) ++ i;
+        return std::make_pair (i, e);
     }
 
-    def.push_back (dest ());
+    return std::make_pair (i, i + 1);
 }
 
 const Imop *Imop::callDest() const {

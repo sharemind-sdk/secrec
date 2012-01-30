@@ -47,6 +47,8 @@ class Imop : public auto_unlink_hook {
         typedef std::vector<const Symbol* > OperandList;
         typedef OperandList::iterator OperandIterator;
         typedef OperandList::const_iterator OperandConstIterator;
+        typedef std::pair<OperandIterator, OperandIterator> OperandRange;
+        typedef std::pair<OperandConstIterator, OperandConstIterator> OperandConstRange;
 
         enum Type {
             //-------------
@@ -201,8 +203,8 @@ class Imop : public auto_unlink_hook {
             return m_type == COMMENT;
         }
 
-        void getUse (std::vector<const Symbol*>& use) const;
-        void getDef (std::vector<const Symbol*>& def) const;
+        OperandConstRange useRange () const;
+        OperandConstRange defRange () const;
 
         std::string toString() const;
 
