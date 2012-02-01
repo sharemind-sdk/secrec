@@ -55,6 +55,7 @@ class Imop : public auto_unlink_hook {
             // Expressions:
             //-------------
             ASSIGN = 0, /*   d = arg1 {arg2};                   */
+            CAST,       /*   d = arg1 {arg2};                   */
             CLASSIFY,   /*   d = CLASSIFY(arg1 {, arg2});       */
             DECLASSIFY, /*   d = DECLASSIFY(arg1 {, arg2});     */
             UNEG,       /*   d = !arg1 {arg2};                  */

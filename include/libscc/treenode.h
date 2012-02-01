@@ -472,8 +472,7 @@ public: /* Methods: */
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
-    TreeNodeSecTypeF* castType () const;
-    bool isSecTypeCast () const;
+    TreeNodeDataTypeF* dataType () const;
 
 protected:
 
@@ -992,6 +991,29 @@ protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprDomainID (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeExprDomainID
+******************************************************************/
+
+class TreeNodeExprQualified : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprQualified(const YYLTYPE &loc)
+        : TreeNodeExpr(NODE_EXPR_TYPE_QUAL, loc) {}
+
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+    virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const;
+    ChildrenListConstRange types () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprQualified (m_location);
     }
 };
 

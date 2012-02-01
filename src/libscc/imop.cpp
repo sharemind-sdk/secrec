@@ -26,6 +26,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     //{ Imop::Type,       E, J, T, W, V, U }
     // Unary operators:
       { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
+    , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
@@ -283,6 +284,11 @@ std::string Imop::toString() const {
             break;
         case DECLASSIFY:   /*   d = DECLASSIFY(arg1);            */
             os << dname << " = DECLASSIFY(" << a1name;
+            if (nArgs() == 3) os << ", " << a2name;
+            os << ")";
+            break;
+        case CAST:         /* d = CAST (arg1 {, arg2})           */
+            os << dname << " = CAST(" << a1name;
             if (nArgs() == 3) os << ", " << a2name;
             os << ")";
             break;

@@ -124,6 +124,7 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 ">=" { stepLen(yyget_lloc(yyscanner), 2); return GE_OP; }
 "==" { stepLen(yyget_lloc(yyscanner), 2); return EQ_OP; }
 "!=" { stepLen(yyget_lloc(yyscanner), 2); return NE_OP; }
+"::" { stepLen(yyget_lloc(yyscanner), 2); return TYPE_QUAL; }
 ":"  { stepChar(yyget_lloc(yyscanner)); return ':'; }
 ";"  { stepChar(yyget_lloc(yyscanner)); return ';'; }
 "{"  { stepChar(yyget_lloc(yyscanner)); return '{'; }
@@ -143,7 +144,7 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "<"  { stepChar(yyget_lloc(yyscanner)); return '<'; }
 ">"  { stepChar(yyget_lloc(yyscanner)); return '>'; }
 "?"  { stepChar(yyget_lloc(yyscanner)); return '?'; }
-"#"  { stepChar(yyget_lloc(yyscanner)); return '#'; }
+ /* "#"  { stepChar(yyget_lloc(yyscanner)); return '#'; } */
 
 "\n\r" { newline(yyget_lloc(yyscanner)); }
 "\r\n" { newline(yyget_lloc(yyscanner)); }

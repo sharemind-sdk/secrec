@@ -16,6 +16,7 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b);
 
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m);
 bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b);
+bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b);
 
 bool isNumericDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);
@@ -350,7 +351,7 @@ inline SecrecDimType DataType::secrecDimType() const {
             return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDimType();
         case PROCEDUREVOID:
         default:
-            return 0; // or maybe -1 for invalid dimensionalities?
+            return -1;
     }
 }
 
@@ -479,6 +480,8 @@ inline SecrecDimType Type::secrecDimType() const {
  * We use NULL to represent undefined security type, DATATYPE_UNDEFINED to
  * represent undefined data type, and finally any negative value for undefined
  * dimensionality types.
+ * The context may be entirely undefined for example in the case of procedure
+ * parameters, or partially defined if qualified expression is used.
  */
 class TypeContext {
 public: /* Methods: */

@@ -30,7 +30,7 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     case DATATYPE_UINT:      return "uint";
     case DATATYPE_STRING:    return "string";
     case NUM_DATATYPES:
-        assert (false && "ICE!"); break;
+        assert (false && "ICE!");
         break;
     }
 
@@ -95,6 +95,7 @@ namespace SecreC {
 
 
 CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
+    assert (from < NUM_DATATYPES && to < NUM_DATATYPES);
     return dataTypeCasts[from][to];
 }
 
@@ -126,15 +127,23 @@ bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
 }
 
 bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b) {
-    bool areLEQ = false;
     switch (getCastStyle (a, b)) {
     case CAST_EQUAL:
-        areLEQ = true;
+        return true;
     default:
-        break;
+        return false;
     }
+}
 
-    return areLEQ;
+bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b) {
+    switch (getCastStyle (a, b)) {
+    case CAST_EQUAL:
+    case CAST_IMPLICIT:
+    case CAST_EXPLICIT:
+        return true;
+    default:
+        return false;
+    }
 }
 
 
@@ -270,6 +279,8 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
                                    SecrecDimType dim)
 {
     ContextImpl& impl = *cxt.pImpl ();
+    assert (dataType != DATATYPE_UNDEFINED);
+    assert (dim >= 0);
     return impl.basicDataType (impl.publicType (), dataType, dim);
 }
 
@@ -279,6 +290,9 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
                                    SecrecDimType dim)
 {
     ContextImpl& impl = *cxt.pImpl ();
+    assert (secType != 0);
+    assert (dataType != DATATYPE_UNDEFINED);
+    assert (dim >= 0);
     return impl.basicDataType (secType, dataType, dim);
 }
 
@@ -331,6 +345,8 @@ TypeNonVoid* TypeNonVoid::get (Context& cxt,
                                SecrecDimType dimType)
 {
     ContextImpl& impl = *cxt.pImpl ();
+    assert (dataType != DATATYPE_UNDEFINED);
+    assert (dimType >= 0);
     return impl.nonVoidType (impl.basicDataType (impl.publicType (),
                                                  dataType, dimType));
 }

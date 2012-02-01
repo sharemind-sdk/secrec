@@ -221,6 +221,7 @@ add_test_secrec_execute("scalars/47-operator-overloading")
 add_test_secrec_execute("scalars/48-multiple-var-decl")
 add_test_secrec_execute("scalars/49-multiple-var-decl-bug")
 add_test_secrec_execute("scalars/50-integer-types")
+add_test_secrec_execute("scalars/51-qualified-expressions")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")

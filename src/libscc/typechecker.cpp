@@ -8,14 +8,14 @@
 namespace {
 using namespace SecreC;
 
-void setContextType (TreeNodeExpr* e, TypeNonVoid* ty) {
+void setContextType (TypeContext* e, TypeNonVoid* ty) {
     assert (e != 0 && ty != 0);
     e->setContextDataType (ty->secrecDataType ());
     e->setContextSecType (ty->secrecSecType ());
     e->setContextDimType (ty->secrecDimType ());
 }
 
-void setContextType (TreeNodeExpr* e, Type* ty) {
+void setContextType (TypeContext* e, Type* ty) {
     assert (e != 0);
     if (ty == 0 || ty->isVoid ()) {
         return;
@@ -25,14 +25,14 @@ void setContextType (TreeNodeExpr* e, Type* ty) {
     setContextType (e, static_cast<TypeNonVoid*>(ty));
 }
 
-void setContextType (TreeNodeExpr* to, TreeNodeExpr* from) {
+void setContextType (TypeContext* to, TreeNodeExpr* from) {
     assert (to != 0 && from != 0);
     to->setContextDataType (from->contextDataType ());
     to->setContextDimType (from->contextDimType ());
     to->setContextSecType (from->contextSecType ());
 }
 
-void setContextPublicIntScalar (TreeNodeExpr* e, Context& cxt) {
+void setContextPublicIntScalar (TypeContext* e, Context& cxt) {
     assert (e != 0);
     e->setContextDataType (DATATYPE_INT);
     e->setContextDimType (0);
@@ -139,27 +139,29 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
     if (root->haveResultType ())
         return ICode::OK;
 
-    if (! root->isSecTypeCast ()) {
-        m_log.fatal () << "Only security type casts are allowed.";
-        m_log.fatal () << "Error at " << root->location () << ".";
+    TreeNodeExpr* subExpr = root->expression ();
+    SecrecDataType resultingDType = root->dataType ()->dataType ();
+    subExpr->setContextDataType (resultingDType);
+    ICode::Status status = visitExpr (subExpr);
+    if (status != ICode::OK) {
+        return status;
+    }
+
+    SecreC::Type* ty = subExpr->resultType ();
+    SecrecDataType givenDType = ty->secrecDataType ();
+    if (! latticeExplicitLEQ (givenDType, resultingDType)) {
+        m_log.fatal () << "Unable to perform cast at "
+                       << root->location () << ".";
         return ICode::E_TYPE;
     }
 
-    TreeNodeSecTypeF* secTypeNode = root->castType ();
-    ICode::Status status = visit (secTypeNode);
-    if (status != ICode::OK) return status;
 
-    TreeNodeExpr* e = root->expression ();
-    e->setContextSecType (secTypeNode->cachedType ());
-    e->setContextDataType (root->contextDataType ());
-    e->setContextDimType (root->contextDimType ());
+    root->setResultType (
+        TypeNonVoid::get (getContext (),
+            ty->secrecSecType (),
+            resultingDType,
+            ty->secrecDimType ()));
 
-    status = visitExpr (e);
-    if (status != ICode::OK) return status;
-    if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-
-    TypeNonVoid* eType = static_cast<TypeNonVoid*>(e->resultType ());
-    root->setResultType (eType);
     return ICode::OK;
 }
 
@@ -864,6 +866,78 @@ ICode::Status TypeChecker::visit (TreeNodeExprDomainID* e) {
     ICode::Status status = visit (e->securityType ());
     if (status != ICode::OK) return status;
     e->setResultType (TypeNonVoid::get (getContext (), DATATYPE_UINT64));
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprQualified::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
+    if (e->haveResultType ())
+        return ICode::OK;
+
+    ICode::Status status = ICode::OK;
+    TreeNodeExpr* subExpr = e->expression ();
+    BOOST_FOREACH (TreeNode* _node, e->types ()) {
+        switch (_node->type ()) {
+        case NODE_SECTYPE_F: {
+            TreeNodeSecTypeF* secTy = static_cast<TreeNodeSecTypeF*>(_node);
+            status = visit (secTy);
+            if (status != ICode::OK) return status;
+            subExpr->setContextSecType (secTy->cachedType ());
+            }
+            break;
+        case NODE_DATATYPE_F:
+            subExpr->setContextDataType (
+                static_cast<TreeNodeDataTypeF*>(_node)->dataType ());
+            break;
+        case NODE_DIMTYPE_F:
+            subExpr->setContextDimType (
+                static_cast<TreeNodeDataTypeF*>(_node)->dataType ());
+            break;
+        default:
+            assert (false && "ICE: expression qualified over non-type!");
+            break;
+        }
+    }
+
+    status = visitExpr (subExpr);
+    if (status != ICode::OK) return status;
+
+    /* Check that the actual type matches the qualified type: */
+
+    if (subExpr->haveContextDataType ()) {
+        if (subExpr->contextDataType () !=
+                subExpr->resultType ()->secrecDataType ()) {
+            m_log.fatal () << "Data type of the expression at "
+                           << subExpr->location ()
+                           << " does not match the qualified type.";
+            return ICode::E_TYPE;
+        }
+    }
+
+    if (subExpr->haveContextDimType ()) {
+        if (subExpr->contextDimType () !=
+                subExpr->resultType ()->secrecDimType ()) {
+            m_log.fatal () << "Dimensionality type of the expression at "
+                           << subExpr->location ()
+                           << " does not match the qualified type.";
+            return ICode::E_TYPE;
+        }
+    }
+
+    if (subExpr->haveContextSecType ()) {
+        if (subExpr->contextSecType () !=
+                subExpr->resultType ()->secrecSecType ()) {
+            m_log.fatal () << "Security type of the expression at "
+                           << subExpr->location ()
+                           << " does not match the qualified type.";
+            return ICode::E_TYPE;
+        }
+    }
+
+    e->setResultType (subExpr->resultType ());
     return ICode::OK;
 }
 

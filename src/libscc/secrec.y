@@ -119,6 +119,8 @@
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
+%left TYPE_QUAL
+%left '?' ':'
 %left LOR_OP
 %left LAND_OP
 %nonassoc EQ_OP NE_OP
@@ -190,6 +192,7 @@
 %type <treenode> template_declaration
 %type <treenode> template_quantifiers
 %type <treenode> template_quantifier
+%type <treenode> qualified_expression
 
 %type <nothing> program
 
@@ -729,6 +732,20 @@ index
   Expressions:
 *******************************************************************************/
 
+lvalue
+ : identifier
+   {
+     $$ = treenode_init(NODE_LVALUE, &@$);
+     treenode_appendChild($$, $1);
+   }
+ | identifier subscript
+   {
+     $$ = treenode_init(NODE_LVALUE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $2);
+   }
+ ;
+
 expression
  : assignment_expression
  ;
@@ -770,22 +787,32 @@ assignment_expression /* WARNING: RIGHT RECURSION */
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
- | conditional_expression
+ | qualified_expression
  ;
 
-lvalue
-  : identifier
-    {
-      $$ = treenode_init(NODE_LVALUE, &@$);
-      treenode_appendChild($$, $1);
-    }
-  | identifier subscript
-    {
-      $$ = treenode_init(NODE_LVALUE, &@$);
-      treenode_appendChild($$, $1);
-      treenode_appendChild($$, $2);
-    }
-  ;
+qualified_expression
+ : qualified_expression TYPE_QUAL sectype_specifier
+   {
+     $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+
+   }
+ | qualified_expression TYPE_QUAL datatype_specifier
+   {
+     $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+
+   }
+ | qualified_expression TYPE_QUAL dimtype_specifier
+   {
+     $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+   }
+ | conditional_expression
+ ;
 
 conditional_expression
  : logical_or_expression '?' expression ':' expression
@@ -902,12 +929,6 @@ multiplicative_expression
 
 cast_expression
  : '(' datatype_specifier ')' cast_expression
-   {
-     $$ = treenode_init(NODE_EXPR_CAST, &@$);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, $4);
-   }
- | '(' sectype_specifier ')' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_CAST, &@$);
      treenode_appendChild($$, $2);

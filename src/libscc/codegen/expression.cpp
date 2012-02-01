@@ -42,9 +42,29 @@ CGResult TreeNodeExprCast::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprCast (TreeNodeExprCast *e) {
-    TreeNodeExpr* eArg (static_cast<TreeNodeExpr*>(e->children ().at (1)));
-    log.warning () << "Generating code for partially implemented expression.";
-    return eArg->codeGenWith (*this);
+    CGResult result;
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    TreeNodeExpr* subExpr = e->expression ();
+    const CGResult& subResult = codeGen (subExpr);
+    append (result, subResult);
+    SymbolSymbol* sym = generateResultSymbol (result, e->resultType ());
+    if (subExpr->resultType ()->isScalar ()) {
+        Imop* imop = new Imop (e, Imop::CAST, sym, subResult.symbol ());
+        pushImopAfter (result, imop);
+    }
+    else {
+        copyShapeFrom (result, subResult.symbol ());
+        allocResult (result);
+        Imop* imop = new Imop (e, Imop::CAST, sym, subResult.symbol (), sym->getSizeSym ());
+        pushImopAfter (result, imop);
+    }
+
+    return result;
 }
 
 CGBranchResult TreeNodeExprCast::codeGenBoolWith (CodeGen &cg) {
@@ -53,9 +73,7 @@ CGBranchResult TreeNodeExprCast::codeGenBoolWith (CodeGen &cg) {
 }
 
 CGBranchResult CodeGen::cgBoolExprCast (TreeNodeExprCast *e) {
-    TreeNodeExpr* eArg (static_cast<TreeNodeExpr*>(e->children ().at (1)));
-    log.warning () << "Generating code for partially implemented expression.";
-    return eArg->codeGenBoolWith (*this);
+    return cgBoolSimple (e);
 }
 
 /******************************************************************
@@ -985,6 +1003,34 @@ CGResult CodeGen::cgExprDomainID (TreeNodeExprDomainID* e) {
     return result;
 }
 
+/*******************************************************************************
+  TreeNodeExprQualified
+*******************************************************************************/
+
+CGResult TreeNodeExprQualified::codeGenWith (CodeGen& cg) {
+    return cg.cgExprQualified (this);
+}
+
+CGResult CodeGen::cgExprQualified (TreeNodeExprQualified* e) {
+    CGResult result;
+
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    return codeGen (e->expression ());
+}
+
+CGBranchResult TreeNodeExprQualified::codeGenBoolWith (CodeGen& cg) {
+    assert (havePublicBoolType ());
+    return cg.cgBoolExprQualified (this);
+}
+
+CGBranchResult CodeGen::cgBoolExprQualified (TreeNodeExprQualified *e) {
+    return codeGenBranch (e->expression ());
+}
 
 /*******************************************************************************
   TreeNodeExprString

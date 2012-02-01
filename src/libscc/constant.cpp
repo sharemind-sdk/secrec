@@ -23,7 +23,7 @@ Constant<ty>* getNumeric (Context& cxt,
         i = impl.m_numericConstants.insert (i,
             make_pair (index, new Constant<ty>(value, tnv)));
         ostringstream os;
-        os << "{const" << SecrecTypeInfo<ty>::CName << "}" << value;
+        os << "{const" << SecrecTypeInfo<ty>::CName << "}" << static_cast<uint64_t>(value);
         i->second->setName (os.str ());
     }
 

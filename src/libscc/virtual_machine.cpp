@@ -81,6 +81,13 @@ inline void assignValue (Value& v, const std::string& r) {
     stringHeap.push_back (copy);
 }
 
+/// Statically typed value casting.
+template <SecrecDataType toTy, SecrecDataType fromTy >
+void castValue (Value& dest, const Value& from) {
+    typedef typename SecrecTypeInfo<toTy>::CType toCType;
+    assignValue (dest, static_cast<toCType>(getValue<fromTy>(from)));
+}
+
 /// Stack for values
 class ValueStack {
     ValueStack (const ValueStack&); // not copyable
@@ -242,6 +249,27 @@ void storeSym (VMSym sym, Value val) {
     store[sym.un_sym] = val;
 }
 
+// Quick and dirty solution.
+template <SecrecDataType fromTy >
+void castValueDyn (SecrecDataType toTy, Value& dest, const Value& from) {
+    switch (toTy) {
+    case DATATYPE_BOOL:   castValue<DATATYPE_BOOL,fromTy>(dest, from); break;
+    case DATATYPE_INT:    castValue<DATATYPE_INT,fromTy>(dest, from); break;
+    case DATATYPE_UINT:   castValue<DATATYPE_UINT,fromTy>(dest, from); break;
+    case DATATYPE_INT8:   castValue<DATATYPE_INT8,fromTy>(dest, from); break;
+    case DATATYPE_UINT8:  castValue<DATATYPE_UINT8,fromTy>(dest, from); break;
+    case DATATYPE_INT16:  castValue<DATATYPE_INT16,fromTy>(dest, from); break;
+    case DATATYPE_UINT16: castValue<DATATYPE_UINT16,fromTy>(dest, from); break;
+    case DATATYPE_INT32:  castValue<DATATYPE_INT32,fromTy>(dest, from); break;
+    case DATATYPE_UINT32: castValue<DATATYPE_UINT32,fromTy>(dest, from); break;
+    case DATATYPE_INT64:  castValue<DATATYPE_INT64,fromTy>(dest, from); break;
+    case DATATYPE_UINT64: castValue<DATATYPE_UINT64,fromTy>(dest, from); break;
+    default:
+        assert (false);
+        exit (1);
+    }
+}
+
 
 /**
  * Macros to simplify code generation:
@@ -316,7 +344,6 @@ void storeSym (VMSym sym, Value val) {
     ip = newIp; \
     CUR;
 
-
 /**
  * Unary and binary regular and vectorized ops:
  */
@@ -324,6 +351,7 @@ void storeSym (VMSym sym, Value val) {
 DECLOP1 (ASSIGN, dest = arg1)
 DECLOP1 (CLASSIFY, dest = arg1)
 DECLOP1 (DECLASSIFY, dest = arg1)
+DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1))
 DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
 DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
 DECLOP2 (LOR, assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
@@ -476,6 +504,9 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     SWITCH_ONE (NAME, DATATYPE_BOOL)\
     SWITCH_ONE (NAME, DATATYPE_STRING)\
     SWITCH_ARITH(NAME)
+#define SWITCH_NONSTRING(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_BOOL)\
+    SWITCH_ARITH(NAME)
 #define SET_SPECIALIZE_CALLBACK(NAME, SWITCHER) do {\
     assert (ty != DATATYPE_UNDEFINED);\
     switch (ty) {\
@@ -510,6 +541,7 @@ CallbackTy getCallback (const Imop& imop) {
 
     // figure out the data type
     switch (imop.type ()) {
+    case Imop::CAST:
     case Imop::UMINUS:
     case Imop::MUL:
     case Imop::DIV:
@@ -537,6 +569,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::ASSIGN:     SET_SIMPLE_CALLBACK_V(ASSIGN); break;
     case Imop::CLASSIFY:   SET_SIMPLE_CALLBACK_V(CLASSIFY); break;
     case Imop::DECLASSIFY: SET_SIMPLE_CALLBACK_V(DECLASSIFY); break;
+    case Imop::CAST:       SET_SPECIALIZE_CALLBACK_V(CAST,SWITCH_NONSTRING); break;
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
     case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;

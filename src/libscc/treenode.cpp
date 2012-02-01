@@ -310,6 +310,8 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeStmtPushRef(*loc, true));
         case NODE_EXPR_DOMAINID:
             return (TreeNode*) (new SecreC::TreeNodeExprDomainID(*loc));
+        case NODE_EXPR_TYPE_QUAL:
+            return (TreeNode*) (new SecreC::TreeNodeExprQualified (*loc));
         case NODE_DECL:
             return (TreeNode*) (new SecreC::TreeNodeStmtDecl(*loc));
         case NODE_TYPETYPE:
@@ -779,14 +781,9 @@ TreeNodeExpr* TreeNodeExprCast::expression () const {
     return expressionAt (this, 1);
 }
 
-TreeNodeSecTypeF* TreeNodeExprCast::castType () const {
+TreeNodeDataTypeF* TreeNodeExprCast::dataType () const {
     assert (children ().size () == 2);
-    return childAt<TreeNodeSecTypeF>(this, 0);
-}
-
-bool TreeNodeExprCast::isSecTypeCast () const {
-    assert (children ().size () == 2);
-    return children ().at (0)->type () == NODE_SECTYPE_F;
+    return childAt<TreeNodeDataTypeF>(this, 0);
 }
 
 /*******************************************************************************
@@ -967,6 +964,20 @@ TreeNode::ChildrenList& TreeNodeTemplate::quantifiers () const {
 TreeNodeSecTypeF* TreeNodeExprDomainID::securityType () const {
     assert (children ().size () == 1);
     return childAt<TreeNodeSecTypeF>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeExprQualified
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprQualified::expression () const {
+    assert (children ().size () >= 2);
+    return expressionAt (this, 0);
+}
+
+TreeNode::ChildrenListConstRange TreeNodeExprQualified::types () const {
+    assert (children ().size () >= 2);
+    return std::make_pair (++ children ().begin (), children ().end ());
 }
 
 /*******************************************************************************

@@ -288,6 +288,7 @@ public: /* Methods: */
     CGBranchResult cgBoolExprTernary (TreeNodeExprTernary* e);
     CGBranchResult cgBoolExprBool (TreeNodeExprBool* e);
     CGBranchResult cgBoolExprAssign (TreeNodeExprAssign* e);
+    CGBranchResult cgBoolExprQualified (TreeNodeExprQualified* e);
     /// \}
 
     /**
@@ -305,6 +306,7 @@ public: /* Methods: */
     CGResult cgExprProcCall (TreeNodeExprProcCall* e);
     CGResult cgExprRVariable (TreeNodeExprRVariable* e);
     CGResult cgExprDomainID (TreeNodeExprDomainID* e);
+    CGResult cgExprQualified (TreeNodeExprQualified* e);
     CGResult cgExprString (TreeNodeExprString* e);
     CGResult cgExprTernary (TreeNodeExprTernary* e);
     CGResult cgExprInt (TreeNodeExprInt* e);
