@@ -52,15 +52,20 @@ CGResult CodeGen::cgExprCast (TreeNodeExprCast *e) {
     TreeNodeExpr* subExpr = e->expression ();
     const CGResult& subResult = codeGen (subExpr);
     append (result, subResult);
+    Imop::Type iType = Imop::CAST;
+    if (e->resultType ()->secrecDataType () ==
+            subExpr->resultType ()->secrecDataType ()) {
+        iType = Imop::ASSIGN;
+    }
     SymbolSymbol* sym = generateResultSymbol (result, e->resultType ());
     if (subExpr->resultType ()->isScalar ()) {
-        Imop* imop = new Imop (e, Imop::CAST, sym, subResult.symbol ());
+        Imop* imop = new Imop (e, iType, sym, subResult.symbol ());
         pushImopAfter (result, imop);
     }
     else {
         copyShapeFrom (result, subResult.symbol ());
         allocResult (result);
-        Imop* imop = new Imop (e, Imop::CAST, sym, subResult.symbol (), sym->getSizeSym ());
+        Imop* imop = new Imop (e, iType, sym, subResult.symbol (), sym->getSizeSym ());
         pushImopAfter (result, imop);
     }
 
@@ -1303,7 +1308,9 @@ CGResult CodeGen::cgExprInt (TreeNodeExprInt *e) {
     }
 
     CGResult result;
-    result.setResult (ConstantInt::get (getContext (), e->value ()));
+    result.setResult (
+        numericConstant (getContext (),
+            e->resultType ()->secrecDataType (), e->value ()));
     return result;
 }
 
@@ -1322,7 +1329,9 @@ CGResult CodeGen::cgExprUInt (TreeNodeExprUInt *e) {
     }
 
     CGResult result;
-    result.setResult (ConstantUInt::get (getContext (), e->value ()));
+    result.setResult (
+        numericConstant (getContext (),
+            e->resultType ()->secrecDataType (), e->value ()));
     return result;
 }
 

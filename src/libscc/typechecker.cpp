@@ -25,7 +25,7 @@ void setContextType (TypeContext* e, Type* ty) {
     setContextType (e, static_cast<TypeNonVoid*>(ty));
 }
 
-void setContextType (TypeContext* to, TreeNodeExpr* from) {
+void setContextType (TypeContext* to, TypeContext* from) {
     assert (to != 0 && from != 0);
     to->setContextDataType (from->contextDataType ());
     to->setContextDimType (from->contextDimType ());

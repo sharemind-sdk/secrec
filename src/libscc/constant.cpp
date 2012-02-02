@@ -187,19 +187,25 @@ ConstantUInt64* ConstantUInt64::get (Context &cxt, const CType &value) {
 Symbol* defaultConstant (Context& cxt, SecrecDataType ty) {
     switch (ty) {
     case DATATYPE_BOOL:   return ConstantBool::get (cxt, false); break;
-    case DATATYPE_INT:    return ConstantInt::get (cxt, 0); break;
-    case DATATYPE_UINT:   return ConstantUInt::get (cxt, 0); break;
-    case DATATYPE_INT8:   return ConstantInt8::get (cxt, 0); break;
-    case DATATYPE_UINT8:  return ConstantUInt8::get (cxt, 0); break;
-    case DATATYPE_INT16:  return ConstantInt16::get (cxt, 0); break;
-    case DATATYPE_UINT16: return ConstantUInt16::get (cxt, 0); break;
-    case DATATYPE_INT32:  return ConstantInt32::get (cxt, 0); break;
-    case DATATYPE_UINT32: return ConstantUInt32::get (cxt, 0); break;
-    case DATATYPE_INT64:  return ConstantInt64::get (cxt, 0); break;
-    case DATATYPE_UINT64: return ConstantUInt64::get (cxt, 0); break;
     case DATATYPE_STRING: return ConstantString::get (cxt, ""); break;
+    default:              return  numericConstant (cxt, ty, 0); break;
+    }
+}
+
+Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
+    switch (ty) {
+    case DATATYPE_INT:    return ConstantInt::get (cxt, value); break;
+    case DATATYPE_UINT:   return ConstantUInt::get (cxt, value); break;
+    case DATATYPE_INT8:   return ConstantInt8::get (cxt, value); break;
+    case DATATYPE_UINT8:  return ConstantUInt8::get (cxt, value); break;
+    case DATATYPE_INT16:  return ConstantInt16::get (cxt, value); break;
+    case DATATYPE_UINT16: return ConstantUInt16::get (cxt, value); break;
+    case DATATYPE_INT32:  return ConstantInt32::get (cxt, value); break;
+    case DATATYPE_UINT32: return ConstantUInt32::get (cxt, value); break;
+    case DATATYPE_INT64:  return ConstantInt64::get (cxt, value); break;
+    case DATATYPE_UINT64: return ConstantUInt64::get (cxt, value); break;
     default:
-        assert (false && "TODO");
+        assert (false && "Not numeric constant");
         return 0;
     }
 }

@@ -84,7 +84,7 @@ typedef Constant<DATATYPE_INT64> ConstantInt64;
 typedef Constant<DATATYPE_UINT64> ConstantUInt64;
 
 Symbol* defaultConstant (Context& cxt, SecrecDataType ty);
-
+Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
 }
 
 #endif
