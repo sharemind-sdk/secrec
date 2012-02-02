@@ -563,6 +563,8 @@ public: /* Methods: */
         return dimType == m_contextDimType;
     }
 
+    std::string toString () const;
+
 protected: /* Fields: */
     SecurityType*    m_contextSecType;
     SecrecDataType   m_contextDataType;
@@ -586,6 +588,11 @@ inline std::ostream &operator<<(std::ostream &out, const SecreC::Type &type) {
 
 inline std::ostream &operator<<(std::ostream &out, const SecreC::DataType &type) {
     out << type.toString();
+    return out;
+}
+
+inline std::ostream &operator<<(std::ostream &out, const SecreC::TypeContext& cxt) {
+    out << cxt.toString();
     return out;
 }
 
