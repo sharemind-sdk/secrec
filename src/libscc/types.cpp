@@ -39,9 +39,11 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
 
 std::string mangleDataType (DataType* dty) {
     std::ostringstream os;
-    os << dty->secrecSecType ()->toString ();
-    os << SecrecFundDataTypeToString(dty->secrecDataType());
+    os << '(';
+    os << *dty->secrecSecType () << ',';
+    os << dty->secrecDataType() << ',';
     os << dty->secrecDimType();
+    os << ')';
     return os.str ();
 }
 
@@ -365,9 +367,9 @@ TypeNonVoid* TypeNonVoid::get (Context& cxt,
 *******************************************************************************/
 
 TypeNonVoid::TypeNonVoid(DataType* dataType)
-     : Type(false)
+     : Type (false)
      , m_kind (kindToKind (dataType->kind ()))
-     , m_dataType(dataType)
+     , m_dataType (dataType)
 { }
 
 std::string TypeNonVoid::toString() const {

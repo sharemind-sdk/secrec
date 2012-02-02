@@ -30,7 +30,7 @@ void mangleTemplateParameters (std::ostream& os,
         bool first = true;
         BOOST_FOREACH (SecurityType* ty, targs) {
             if (! first) os << ',';
-            os << ty->toString ();
+            os << *ty;
             first = false;
         }
 
@@ -373,7 +373,9 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
     }
 
     if (symProc == 0) {
-        m_log.fatal () << "No matching procedure definitions.";
+        m_log.fatal () << "No matching procedure definitions for:";
+        m_log.fatal () << '\t' << mangleProcedure (name->value (), argTypes, TemplateParams ());
+        m_log.fatal () << "In context " << tyCxt.toString () << ".";
         return ICode::E_TYPE;
     }
 
