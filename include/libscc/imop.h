@@ -32,10 +32,6 @@ typedef boost::intrusive::list_base_hook<
  * - RETURN instruction is now only used to return non-arrays, to return arrays
  *   one must use stack.
  *
- * \todo no unsafe C style casting into Symbol* should ever happen.
- *       Only such use remaining is "COMMENT" instruction, I think this
- *       instruction should be removed and there should be another way of
- *       attaching comments to intermediate code.
  * \todo instead of "newing" instructions all the constructors should be
  *       private and there should be special functions for creating new
  *       instructions with proper type safe parameters.
