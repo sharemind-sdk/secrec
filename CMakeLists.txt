@@ -268,6 +268,7 @@ add_test_secrec_execute("arrays/40-prefix-postfix-incdec")
 add_test_secrec_execute("arrays/41-for-decl")
 add_test_secrec_execute("arrays/42-inc-bug")
 add_test_secrec_execute("arrays/43-arith-assignment-bug")
+add_test_secrec_execute("arrays/44-casts")
 
 # Tests for templates:
 add_test_secrec_execute("templates/00-trivial")
