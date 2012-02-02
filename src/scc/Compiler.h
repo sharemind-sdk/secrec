@@ -55,6 +55,7 @@ protected:
 
     void cgJump (VMBlock& block, const SecreC::Imop& imop);
     void cgAssign (VMBlock& block, const SecreC::Imop& imop);
+    void cgCast (VMBlock& block, const SecreC::Imop& imop);
     void cgClassify (VMBlock& block, const SecreC::Imop& imop);
     void cgDeclassify (VMBlock& block, const SecreC::Imop& imop);
     void cgCopy (VMBlock& block, const SecreC::Imop& imop);

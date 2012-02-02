@@ -17,6 +17,7 @@
 #include <libscc/intermediate.h>
 #include <libscc/blocks.h>
 #include <libscc/constant.h>
+#include <libscc/types.h>
 
 #include "SyscallManager.h"
 #include "StringLiterals.h"
@@ -55,6 +56,10 @@ const char* imopToVMName (const Imop& imop) {
 
 bool isString (const Symbol* sym) {
     return sym->secrecType ()->secrecDataType () == DATATYPE_STRING;
+}
+
+VMDataType getVMDataType (const Symbol* sym) {
+    return secrecDTypeToVMDType (sym->secrecType ()->secrecDataType ());
 }
 
 /**
@@ -97,6 +102,53 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
 
     assert (dynamic_cast<VMLabel*>(label) != 0);
     return static_cast<VMLabel*>(label);
+}
+
+
+void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
+    switch (iType) {
+    case Imop::CAST:       os << "cast";        break;
+    case Imop::CLASSIFY:   os << "classify";    break;
+    case Imop::DECLASSIFY: os << "declassify";  break;
+    case Imop::RELEASE:    os << "delete";      break;
+    case Imop::COPY:       os << "copy";        break;
+    case Imop::ADD:        os << "add";         break;
+    case Imop::MUL:        os << "mul";         break;
+    case Imop::MOD:        os << "mod";         break;
+    case Imop::DIV:        os << "div";         break;
+    case Imop::LAND:       os << "and";         break;
+    case Imop::LOR:        os << "or";          break;
+    case Imop::EQ:         os << "eq";          break;
+    case Imop::GT:         os << "gt";          break;
+    case Imop::GE:         os << "gte";         break;
+    case Imop::LT:         os << "lt";          break;
+    case Imop::LE:         os << "lte";         break;
+    case Imop::STORE:      os << "store";       break;
+    case Imop::LOAD:       os << "load";        break;
+    default: break;
+    }
+}
+
+void syscallMangleSecrecDataType (std::ostream& os, SecrecDataType ty) {
+    switch (ty) {
+    case DATATYPE_BOOL:    os << "bit"; break;
+    case DATATYPE_UINT8:   os << "uint8"; break;
+    case DATATYPE_UINT16:  os << "uint16"; break;
+    case DATATYPE_UINT32:  os << "uint32"; break;
+    case DATATYPE_UINT64:  os << "uint64"; break;
+    case DATATYPE_INT8:    os << "int8"; break;
+    case DATATYPE_INT16:   os << "int16"; break;
+    case DATATYPE_INT32:   os << "int32"; break;
+    case DATATYPE_INT64:   os << "int64"; break;
+    default: break;
+    }
+}
+
+void syscallMangleScope (std::ostream& os, TypeNonVoid* tnv) {
+    if (tnv->secrecSecType ()->isPrivate ()) {
+        PrivateSecType* secTy = static_cast<PrivateSecType*>(tnv->secrecSecType ());
+        os << secTy->name () << "::";
+    }
 }
 
 }
@@ -321,6 +373,49 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
+void Compiler::cgCast (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::CAST);
+    VMDataType destTy = getVMDataType (imop.dest ());
+    VMDataType srcTy = getVMDataType (imop.arg1 ());
+
+    if (imop.isVectorized ()) {
+        std::stringstream ss;
+
+        block.push_back (VMInstruction () << "push" << find (imop.dest ()));
+        block.push_back (VMInstruction () << "push" << find (imop.arg1 ()));
+        block.push_back (VMInstruction () << "push" << find (imop.arg2 ()));
+
+        VMLabel* target = 0;
+        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+            ss << ":vec_cast_bool_" << srcTy;
+            target = m_st.getLabel (ss.str ());
+            m_funcs->insert (target, BuiltinVBoolCast (srcTy));
+        }
+        else {
+            ss << ":vec_cast_" << destTy << "_" << srcTy;
+            target = m_st.getLabel (ss.str ());
+            m_funcs->insert (target, BuiltinVCast (destTy, srcTy));
+        }
+
+        block.push_back (VMInstruction () << "call" << target << "imm");
+    }
+    else {
+        VMInstruction instr;
+        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+            instr << "tgt" << destTy << find (imop.dest ())
+                  << loadToRegister (block, imop.arg1 ())
+                  << m_st.getImm (0);
+        }
+        else {
+            instr << "convert";
+            instr << srcTy << loadToRegister (block, imop.arg1 ());
+            instr << destTy << find (imop.dest ());
+        }
+        block.push_back (instr);
+
+    }
+}
+
 /// For now this perform public copy
 /// \todo emit syscall(s)
 void Compiler::cgClassify (VMBlock& block, const Imop& imop) {
@@ -536,7 +631,7 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     assert (imop.isExpr ());
-    VMDataType ty = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
+    VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
 
     if (imop.isVectorized ()) {
@@ -636,6 +731,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
             return;
         case Imop::ASSIGN:
             cgAssign (block, imop);
+            return;
+        case Imop::CAST:
+            cgCast (block, imop);
             return;
         case Imop::COPY:
             cgCopy (block, imop);

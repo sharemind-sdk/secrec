@@ -48,6 +48,7 @@ public: /* Methods: */
 
     unsigned uniq () { return m_uniq ++; }
 
+    VMLabel* getUniqLabel ();
     VMImm*   getImm (uint64_t value);
     VMReg*   getReg (unsigned number);
     VMStack* getStack (unsigned number);

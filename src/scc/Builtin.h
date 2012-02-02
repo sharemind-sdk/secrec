@@ -102,6 +102,52 @@ private:
     const SecreC::Imop* const m_imop;
 };
 
+/*******************************************************************************
+  BuiltinVCast
+*******************************************************************************/
+
+class BuiltinVCast : public BuiltinFunction {
+public:
+    BuiltinVCast (VMDataType dest, VMDataType src)
+        : m_dest (dest)
+        , m_src (src)
+    { }
+
+    ~BuiltinVCast () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinVCast (m_dest, m_src);
+    }
+
+private:
+    const VMDataType m_dest;
+    const VMDataType m_src;
+};
+
+/*******************************************************************************
+  BuiltinVBoolCast
+*******************************************************************************/
+
+class BuiltinVBoolCast : public BuiltinFunction {
+public:
+    BuiltinVBoolCast (VMDataType src)
+        : m_src (src)
+    { }
+
+    ~BuiltinVBoolCast () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinVBoolCast (m_src);
+    }
+
+private:
+    const VMDataType m_src;
+};
+
 
 } // namespace SecreCC
 

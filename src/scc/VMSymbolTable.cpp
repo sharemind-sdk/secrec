@@ -8,12 +8,15 @@
  */
 
 #include "VMSymbolTable.h"
-#include "VMValue.h"
 
 #include <libscc/symbol.h>
 
 #include <map>
 #include <set>
+#include <sstream>
+
+#include "VMValue.h"
+
 
 namespace {
 
@@ -134,6 +137,12 @@ VMLabel* VMSymbolTable::getLabel (const std::string& name) {
     }
 
     return i->second;
+}
+
+VMLabel* VMSymbolTable::getUniqLabel () {
+    std::ostringstream os;
+    os << ":LU_" << uniq ();
+    return getLabel (os.str ());
 }
 
 }

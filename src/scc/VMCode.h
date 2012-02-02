@@ -98,8 +98,9 @@ public: /* Methods: */
     iterator end () { return m_blocks.end (); }
     const_iterator begin () const { return m_blocks.begin (); }
     const_iterator end () const { return m_blocks.end (); }
-    void push_back (const VMBlock& b) {
+    VMFunction& push_back (const VMBlock& b) {
         m_blocks.push_back (b);
+        return *this;
     }
 
     friend std::ostream& operator << (std::ostream& os, const VMFunction& function);

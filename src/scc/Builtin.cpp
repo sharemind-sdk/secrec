@@ -232,5 +232,92 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     function.push_back (returnB);
 }
 
+/*******************************************************************************
+  BuiltinVCast
+*******************************************************************************/
+
+void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
+    VMImm* srcSize = st.getImm (sizeInBytes (m_src));
+    VMImm* destSize = st.getImm (sizeInBytes (m_dest));
+    VMStack* dest = st.getStack (0);
+    VMStack* src = st.getStack (1);
+    VMStack* size = st.getStack (2);
+    VMStack* srcOff = st.getStack (3);
+    VMStack* destOff = st.getStack (4);
+    VMStack* temp = st.getStack (5);
+
+    VMLabel* middleL = st.getUniqLabel ();
+    VMLabel* exitL = st.getUniqLabel ();
+
+    ///////////////
+    // Entry block:
+    VMBlock entryB (0, 0);
+    entryB.push_back (VMInstruction () << "resizestack" << 6);
+    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << srcOff);
+    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << destOff);
+    entryB.push_back (VMInstruction () << "bmul" << VM_UINT64 << size << srcSize);
+    entryB.push_back (VMInstruction () << "jge" << exitL << "uint64" << srcOff << size);
+
+
+    VMBlock middleB (middleL, 0);
+    middleB.push_back (VMInstruction () << "mov" << "mem" << src << srcOff << temp << srcSize);
+    middleB.push_back (VMInstruction () << "convert" << m_src << temp << m_dest << temp);
+    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << destSize);
+    middleB.push_back (VMInstruction () << "badd" << VM_UINT64 << srcOff << srcSize);
+    middleB.push_back (VMInstruction () << "badd" << VM_UINT64 << destOff << destSize);
+    middleB.push_back (VMInstruction () << "jlt" << middleL << "uint64" << srcOff << size);
+
+    VMBlock exitB (exitL, 0);
+    exitB.push_back (VMInstruction () << "return imm 0x0");
+
+    function.push_back (entryB)
+            .push_back (middleB)
+            .push_back (exitB);
+    return;
+}
+
+/*******************************************************************************
+  BuiltinVBoolCast
+*******************************************************************************/
+
+void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
+    VMImm* srcSize = st.getImm (sizeInBytes (m_src));
+    VMImm* destSize = st.getImm (sizeInBytes (
+        secrecDTypeToVMDType (DATATYPE_BOOL)));
+    VMStack* dest = st.getStack (0);
+    VMStack* src = st.getStack (1);
+    VMStack* size = st.getStack (2);
+    VMStack* srcOff = st.getStack (3);
+    VMStack* destOff = st.getStack (4);
+    VMStack* temp = st.getStack (5);
+
+    VMLabel* middleL = st.getUniqLabel ();
+    VMLabel* exitL = st.getUniqLabel ();
+
+    ///////////////
+    // Entry block:
+    VMBlock entryB (0, 0);
+    entryB.push_back (VMInstruction () << "resizestack" << 6);
+    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << srcOff);
+    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << destOff);
+    entryB.push_back (VMInstruction () << "bmul uint64" << size << srcSize);
+    entryB.push_back (VMInstruction () << "jge" << exitL << "uint64" << srcOff << size);
+
+    VMBlock middleB (middleL, 0);
+    middleB.push_back (VMInstruction () << "mov" << "mem" << src << srcOff << temp << srcSize);
+    middleB.push_back (VMInstruction () << "bgt" << m_src << temp << st.getImm (0));
+    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << srcSize);
+    middleB.push_back (VMInstruction () << "badd uint64" << srcOff << srcSize);
+    middleB.push_back (VMInstruction () << "badd uint64" << destOff << destSize);
+    middleB.push_back (VMInstruction () << "jlt" << middleL << "uint64" << srcOff << size);
+
+    VMBlock exitB (exitL, 0);
+    exitB.push_back (VMInstruction () << "return imm 0x0");
+
+    function.push_back (entryB)
+            .push_back (middleB)
+            .push_back (exitB);
+    return;
+}
 
 } // namespace SecreCC
