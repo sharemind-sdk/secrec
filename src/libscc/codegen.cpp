@@ -81,7 +81,7 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty
         SymbolSymbol* sym = st->appendTemporary (ty);
         result.setResult (sym);
 
-        for (unsigned i = 0; i < ty->secrecDimType(); ++ i) {
+        for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
             sym->setDim (i, st->appendTemporary (intTy));
         }
 

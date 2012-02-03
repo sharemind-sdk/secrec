@@ -241,11 +241,11 @@ private: /* Fields: */
 
 class TreeNodeDimTypeF: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeDimTypeF(unsigned dimType,
+    inline TreeNodeDimTypeF(SecrecDimType dimType,
                             const YYLTYPE &loc)
         : TreeNode(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
 
-    unsigned dimType() const {
+    SecrecDimType dimType() const {
         return m_dimType;
     }
 
@@ -259,7 +259,7 @@ protected:
     }
 
 private: /* Fields: */
-    const unsigned m_dimType;
+    const SecrecDimType m_dimType;
 };
 
 /******************************************************************

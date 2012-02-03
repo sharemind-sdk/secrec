@@ -71,7 +71,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
         // 2. check that rhs has correct dimensions
         if (!eArg2->resultType ()->isScalar()) {
-            assert (eArg2->resultType ()->secrecDimType() == slices.size ());
+            assert (static_cast<size_t>(eArg2->resultType ()->secrecDimType ()) == slices.size ());
 
             std::stringstream ss;
             ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << ".";

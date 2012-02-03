@@ -15,16 +15,6 @@ void setContextType (TypeContext* e, TypeNonVoid* ty) {
     e->setContextDimType (ty->secrecDimType ());
 }
 
-void setContextType (TypeContext* e, Type* ty) {
-    assert (e != 0);
-    if (ty == 0 || ty->isVoid ()) {
-        return;
-    }
-
-    assert (dynamic_cast<TypeNonVoid*>(ty) != 0);
-    setContextType (e, static_cast<TypeNonVoid*>(ty));
-}
-
 void setContextType (TypeContext* to, TypeContext* from) {
     assert (to != 0 && from != 0);
     to->setContextDataType (from->contextDataType ());
@@ -187,7 +177,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprIndex* root) {
     SecrecDimType k = 0;
     SecrecDimType n = eType->secrecDimType();
 
-    if (root->indices ()->children ().size () != n) {
+    if (root->indices ()->children ().size () != static_cast<size_t>(n)) {
         m_log.fatal() << "Incorrent number of indices at"
                       << e->location() << ".";
         return ICode::E_TYPE;

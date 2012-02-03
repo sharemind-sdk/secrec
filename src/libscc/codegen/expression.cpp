@@ -450,7 +450,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     code.push_imop (jump_out);
 
     // compute j if i >= d (for e2)
-    for (SecrecDimType count = 0; count < strides[1].size (); ++ count) {
+    for (SecrecDimType count = 0; static_cast<size_t>(count) < strides[1].size (); ++ count) {
         if (count == k) {
             i = new Imop (e, Imop::SUB, tmpInt, loopInfo.at (count), arg1ResultSymbol->getDim(k));
             pushImopAfter (result, i);
