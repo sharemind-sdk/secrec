@@ -29,15 +29,15 @@ class Symbol {
         };
     public: /* Methods: */
 
-        inline Symbol(Type symbolType, SecreC::TypeNonVoid* valueType)
-            : m_symbolType(symbolType)
-            , m_type(valueType)
+        inline Symbol(Type symbolType, TypeNonVoid* valueType)
+            : m_symbolType (symbolType)
+            , m_type (valueType)
             , m_previous (0)
         { }
 
         explicit inline Symbol (Type symbolType)
             : m_symbolType (symbolType)
-            , m_type(0)
+            , m_type (0)
             , m_previous (0)
         { }
 
@@ -47,7 +47,7 @@ class Symbol {
         inline Type symbolType() const { return m_symbolType; }
         inline const std::string &name() const { return m_name; }
         inline void setName(const std::string &name) { m_name = name; }
-        inline SecreC::Type* secrecType() const { return m_type; }
+        inline TypeNonVoid* secrecType() const { return m_type; }
         Symbol* previos () const { return m_previous; }
         void setPrevious (Symbol* prev) {
             assert (m_previous == 0);
@@ -57,10 +57,10 @@ class Symbol {
         virtual std::string toString() const = 0;
 
     private: /* Fields: */
-        const Type     m_symbolType;
-        std::string    m_name;
-        SecreC::Type*  m_type;
-        Symbol*        m_previous; ///< Previous symbol with same name.
+        const Type          m_symbolType;
+        std::string         m_name;
+        TypeNonVoid* const  m_type; ///< Type of the symbol or NULL.
+        Symbol*             m_previous; ///< Previous symbol with same name.
 };
 
 /*******************************************************************************

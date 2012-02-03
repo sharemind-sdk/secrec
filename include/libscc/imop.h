@@ -156,6 +156,7 @@ class Imop : public auto_unlink_hook {
 
         OperandConstIterator operandsBegin () const { return m_args.begin (); }
         OperandConstIterator operandsEnd () const { return m_args.end (); }
+        const OperandList& operands () const { return m_args; }
 
         inline const Symbol *dest() const { return arg(0); }
         inline const Symbol *arg1() const { return arg(1); }
@@ -178,7 +179,7 @@ class Imop : public auto_unlink_hook {
         }
 
         // everything to do with jumping to labels and calling functions
-        SymbolLabel const* jumpDest() const;
+        const SymbolLabel* jumpDest() const;
         void setJumpDest (SymbolLabel *dest);
         const Imop *callDest() const;
         void setCallDest(SymbolProcedure *proc);
