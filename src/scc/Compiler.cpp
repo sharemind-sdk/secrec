@@ -125,31 +125,74 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::LE:         os << "lte";         break;
     case Imop::STORE:      os << "store";       break;
     case Imop::LOAD:       os << "load";        break;
-    default: break;
+    default:                                    break;
     }
 }
 
 void syscallMangleSecrecDataType (std::ostream& os, SecrecDataType ty) {
     switch (ty) {
-    case DATATYPE_BOOL:    os << "bit"; break;
-    case DATATYPE_UINT8:   os << "uint8"; break;
-    case DATATYPE_UINT16:  os << "uint16"; break;
-    case DATATYPE_UINT32:  os << "uint32"; break;
-    case DATATYPE_UINT64:  os << "uint64"; break;
-    case DATATYPE_INT8:    os << "int8"; break;
-    case DATATYPE_INT16:   os << "int16"; break;
-    case DATATYPE_INT32:   os << "int32"; break;
-    case DATATYPE_INT64:   os << "int64"; break;
-    default: break;
+    case DATATYPE_BOOL:    os << "bit";      break;
+    case DATATYPE_UINT8:   os << "uint8";    break;
+    case DATATYPE_UINT16:  os << "uint16";   break;
+    case DATATYPE_UINT32:  os << "uint32";   break;
+    case DATATYPE_UINT64:  os << "uint64";   break;
+    case DATATYPE_INT8:    os << "int8";     break;
+    case DATATYPE_INT16:   os << "int16";    break;
+    case DATATYPE_INT32:   os << "int32";    break;
+    case DATATYPE_INT64:   os << "int64";    break;
+    default:                                 break;
     }
 }
 
-void syscallMangleScope (std::ostream& os, TypeNonVoid* tnv) {
+void syscallMangleNamespace (std::ostream& os, TypeNonVoid* tnv) {
     if (tnv->secrecSecType ()->isPrivate ()) {
         PrivateSecType* secTy = static_cast<PrivateSecType*>(tnv->secrecSecType ());
         os << secTy->name () << "::";
     }
 }
+
+class SyscallName {
+public: /* Methods: */
+    SyscallName () { }
+
+    SyscallName& operator << (const char* name) {
+        m_os << name;
+        return *this;
+    }
+
+    SyscallName& operator << (char c) {
+        m_os << c;
+        return *this;
+    }
+
+    SyscallName& operator << (const std::string& name) {
+        m_os << name;
+        return *this;
+    }
+
+    SyscallName& operator << (TypeNonVoid* tnv) {
+        syscallMangleNamespace (m_os, tnv);
+        return *this;
+    }
+
+    SyscallName& operator << (Imop::Type iType) {
+        syscallMangleImopType (m_os, iType);
+        return *this;
+    }
+
+    SyscallName& operator << (SecrecDataType ty) {
+        syscallMangleSecrecDataType (m_os, ty);
+        return *this;
+    }
+
+    std::string str () const {
+        return m_os.str ();
+    }
+
+private: /* Fields: */
+    std::ostringstream   m_os;
+};
+
 
 }
 
@@ -236,7 +279,7 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
 }
 
 void Compiler::cgProcedure (const Procedure& blocks) {
-    VMLabel* name = 0; 
+    VMLabel* name = 0;
     if (blocks.name () == 0)
         name = st ().getLabel (":start"); // NULL instead?
     else
@@ -657,7 +700,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     VMInstruction instr;
     instr << name << ty << find (imop.dest ());
 
-    Imop::OperandConstIterator 
+    Imop::OperandConstIterator
         i = imop.operandsBegin (),
         e = imop.operandsEnd ();
     for (++ i; i != e; ++ i) {
@@ -674,6 +717,11 @@ void Compiler::cgDomainID (VMBlock& block, const Imop& imop) {
     PrivateSecType* secTy = static_cast<PrivateSecType*>(dom->securityType ());
     VMLabel* label = m_scm->getPD (secTy);
     block.push_back (VMInstruction () << "mov" << label << find (imop.dest ()));
+}
+
+void Compiler::emitSyscall (VMBlock& block, const std::string& name) {
+    VMLabel* label = m_scm->getSyscallBinding (name);
+    block.push_back (VMInstruction () << "syscall" << label << "imm");
 }
 
 void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
@@ -693,8 +741,8 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
         VMVReg* len = m_ra->temporaryReg ();
         VMLabel* rodata = m_st.getLabel (":RODATA");
         VMLabel* strstart = m_strLit->getLiteral (str);
-        block.push_back (VMInstruction () << "getsize" << len << rodata);
-        block.push_back (VMInstruction () << "bsub" << VM_UINT64 << len << strstart);
+        block.push_new () << "getsize" << len << rodata;
+        block.push_new () << "bsub" << VM_UINT64 << len << strstart;
         instr << "pushcrefpart" << "mem" << rodata << strstart << len;
         block.push_back (instr);
     }
@@ -711,6 +759,17 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     if (isStr) instr << "mem";
     instr << find (imop.arg1 ());
     block.push_back (instr);
+}
+
+
+void Compiler::syscallPushImopArgs (VMBlock& block, const Imop& imop) {
+    BOOST_FOREACH (const Symbol* def, imop.defRange ()) {
+        block.push_new () << "pushref" << find (def);
+    }
+
+    BOOST_FOREACH (const Symbol* use, imop.useRange ()) {
+        block.push_new () << "push" << find (use);
+    }
 }
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
@@ -792,8 +851,98 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
     }
 
     std::cerr << imop.toString () << std::endl;
-    
+
     assert (false && "Unable to handle instruction!");
+}
+
+/**
+ * Private operations:
+ */
+
+void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+
+    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        block.push_new () << "push" << find (sym);
+    }
+
+    if (! imop.isVectorized ()) {
+        block.push_new () << "push" << st ().getImm (1);
+    }
+
+    // namespace::opname_dtype_vec
+    SyscallName scname;
+    scname << ty << imop.type () << '_' << ty->secrecDataType () << "_vec";
+    emitSyscall (block, scname.str ());
+}
+
+void Compiler::cgPrivateAlloc (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+
+    block.push_new () << "pushref" << find (imop.dest ()); // mem
+    block.push_new () << "push" << find (imop.arg2 ()); // size of array
+
+    SyscallName sc_new;
+    sc_new << ty << "new_" << ty->secrecDataType () << "_vec";
+    emitSyscall (block, sc_new.str ());
+
+    block.push_new () << "push" << find (imop.dest ()); // mem
+    block.push_new () << "push" << find (imop.arg1 ()); // default value
+    block.push_new () << "push" << find (imop.arg2 ()); // size
+
+    SyscallName sc_init;
+    sc_init << ty << "init_" << ty->secrecDataType () << "_vec";
+    emitSyscall (block, sc_init.str ());
+}
+
+void Compiler::cgPrivateRelease (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.arg1 ()->secrecType ();
+    block.push_new () << "push" << find (imop.arg1 ());
+    SyscallName sc_delete;
+    sc_delete << ty << "delete_"  << ty->secrecDataType () << "_vec";
+    emitSyscall (block, sc_delete.str ());
+}
+
+void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.arg1 ()->secrecType ();
+
+    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        block.push_new () << "push" << find (sym);
+    }
+
+    if (! imop.isVectorized ()) {
+        block.push_new () << "push" << st ().getImm (1);
+    }
+
+    SyscallName sc_cast;
+    sc_cast << ty << "conv_" << ty->secrecDataType () << "_to_"
+            << imop.dest ()->secrecType ()->secrecDataType ()
+            << "_vec";
+    emitSyscall (block, sc_cast.str ());
+}
+
+void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+
+    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        block.push_new () << "push" << find (sym);
+    }
+
+    SyscallName sc_load;
+    sc_load << ty << "load_" << ty->secrecDataType () << "_vec";
+    emitSyscall (block, sc_load.str ());
+}
+
+void Compiler::cgPrivateStore (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+
+    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        block.push_new () << "push" << find (sym);
+    }
+
+    SyscallName sc_store;
+    sc_store << ty << "store_" << ty->secrecDataType () << "_vec";
+    emitSyscall (block, sc_store.str ());
 }
 
 } // namespac SecreC

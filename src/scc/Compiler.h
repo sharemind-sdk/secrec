@@ -53,6 +53,9 @@ protected:
     void cgBlock (VMFunction& func, const SecreC::Block& block);
     void cgImop (VMBlock& block, const SecreC::Imop& imop);
 
+    /**
+     * Code generation for various intermediate instructions:
+     */
     void cgJump (VMBlock& block, const SecreC::Imop& imop);
     void cgAssign (VMBlock& block, const SecreC::Imop& imop);
     void cgCast (VMBlock& block, const SecreC::Imop& imop);
@@ -71,9 +74,23 @@ protected:
     void cgDomainID (VMBlock& block, const SecreC::Imop& imop);
     void cgPush (VMBlock& block, const SecreC::Imop& imop);
 
+    /**
+     * Operations performed through syscalls:
+     */
+    void syscallPushImopArgs (VMBlock& block, const SecreC::Imop& imop);
+    void emitSyscall (VMBlock& block, const std::string& name);
+    void cgPrivateArithm (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateAlloc (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateRelease (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateCast (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateLoad (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateStore (VMBlock& block, const SecreC::Imop& imop);
+
+    /**
+     * Convenience operations:
+     */
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
     void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
-
     VMValue* find (const SecreC::Symbol* sym) const;
 
 private: /* Fields: */

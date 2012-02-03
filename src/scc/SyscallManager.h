@@ -33,7 +33,7 @@ class VMBindingSection;
 class SyscallManager {
 private: /* Types: */
 
-    typedef std::map<const SecreC::ConstantString*, VMLabel*> SCMap;
+    typedef std::map<std::string, VMLabel*> SCMap;
     typedef std::map<SecreC::PrivateSecType*, VMLabel* > PDMap;
 
 public: /* Methods: */
@@ -53,6 +53,7 @@ public: /* Methods: */
 
     /// Request a label for a syscall of given name.
     VMLabel* getSyscallBinding (const SecreC::ConstantString* str);
+    VMLabel* getSyscallBinding (const std::string& name);
 
 private: /* Fields: */
 

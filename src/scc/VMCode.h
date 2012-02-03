@@ -56,6 +56,11 @@ public: /* Methods: */
         m_instructions.push_back (i);
     }
 
+    VMInstruction& push_new (void) {
+        m_instructions.push_back (VMInstruction ());
+        return m_instructions.back ();
+    }
+
     friend std::ostream& operator << (std::ostream& os, const VMBlock& block);
 
 private: /* Fields: */

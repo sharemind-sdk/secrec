@@ -38,13 +38,17 @@ VMLabel* SyscallManager::getPD (SecreC::PrivateSecType* secTy) {
 }
 
 VMLabel* SyscallManager::getSyscallBinding (const SecreC::ConstantString* str) {
-    SCMap::iterator i = m_syscalls.find (str);
+  return getSyscallBinding (str->name ());
+}
+
+VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {
+    SCMap::iterator i = m_syscalls.find (name);
     if (i == m_syscalls.end ()) {
         std::ostringstream ss;
         ss << ":SC_" << m_st->uniq ();
         VMLabel* label = m_st->getLabel (ss.str ());
-        i = m_syscalls.insert (i, std::make_pair (str, label));
-        m_scSection->addBinding (label, str->name ());
+        i = m_syscalls.insert (i, std::make_pair (name, label));
+        m_scSection->addBinding (label, name);
     }
 
     return i->second;
