@@ -9,9 +9,8 @@ class Program;
 
 class VirtualMachine {
 public:
-    inline VirtualMachine() { }
+    inline VirtualMachine () { }
     int run (const Program&);
-    std::string toString(void);
 };
 
 }

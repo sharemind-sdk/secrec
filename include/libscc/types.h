@@ -450,6 +450,7 @@ public: /* Methods: */
     static TypeNonVoid* get (Context& cxt, SecurityType* secType,
                              SecrecDataType dataType,
                              SecrecDimType dimType = 0);
+    static TypeNonVoid* getIndexType (Context& cxt);
 
 private: /* Fields: */
     Kind       const m_kind;

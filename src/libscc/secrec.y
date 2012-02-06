@@ -394,8 +394,8 @@ sectype_specifier
 
 datatype_specifier
  : BOOL    { $$ = treenode_init_dataTypeF(DATATYPE_BOOL,   &@$); }
- | INT     { $$ = treenode_init_dataTypeF(DATATYPE_INT,    &@$); }
- | UINT    { $$ = treenode_init_dataTypeF(DATATYPE_UINT,   &@$); }
+ | INT     { $$ = treenode_init_dataTypeF(DATATYPE_INT64,    &@$); }
+ | UINT    { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,   &@$); }
  | INT8    { $$ = treenode_init_dataTypeF(DATATYPE_INT8,   &@$); }
  | UINT8   { $$ = treenode_init_dataTypeF(DATATYPE_UINT8,  &@$); }
  | INT16   { $$ = treenode_init_dataTypeF(DATATYPE_INT16,  &@$); }

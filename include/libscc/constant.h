@@ -26,12 +26,10 @@ DECL_TRAIT (int8_t,      DATATYPE_INT8)
 DECL_TRAIT (int16_t,     DATATYPE_INT16)
 DECL_TRAIT (int32_t,     DATATYPE_INT32)
 DECL_TRAIT (int64_t,     DATATYPE_INT64)
-DECL_TRAIT (int64_t,     DATATYPE_INT)
 DECL_TRAIT (uint8_t,     DATATYPE_UINT8)
 DECL_TRAIT (uint16_t,    DATATYPE_UINT16)
 DECL_TRAIT (uint32_t,    DATATYPE_UINT32)
 DECL_TRAIT (uint64_t,    DATATYPE_UINT64)
-DECL_TRAIT (uint64_t,    DATATYPE_UINT)
 #undef DECL_TRAIT
 
 template <SecrecDataType ty >
@@ -72,8 +70,6 @@ private: /* Fields: */
 
 typedef Constant<DATATYPE_STRING> ConstantString;
 typedef Constant<DATATYPE_BOOL> ConstantBool;
-typedef Constant<DATATYPE_INT> ConstantInt;
-typedef Constant<DATATYPE_UINT> ConstantUInt;
 typedef Constant<DATATYPE_INT8> ConstantInt8;
 typedef Constant<DATATYPE_UINT8> ConstantUInt8;
 typedef Constant<DATATYPE_INT16> ConstantInt16;
@@ -81,7 +77,9 @@ typedef Constant<DATATYPE_UINT16> ConstantUInt16;
 typedef Constant<DATATYPE_INT32> ConstantInt32;
 typedef Constant<DATATYPE_UINT32> ConstantUInt32;
 typedef Constant<DATATYPE_INT64> ConstantInt64;
+typedef Constant<DATATYPE_INT64> ConstantInt;
 typedef Constant<DATATYPE_UINT64> ConstantUInt64;
+typedef Constant<DATATYPE_UINT64> ConstantUInt;
 
 Symbol* defaultConstant (Context& cxt, SecrecDataType ty);
 Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);

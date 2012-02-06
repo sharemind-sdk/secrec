@@ -54,7 +54,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
 
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {

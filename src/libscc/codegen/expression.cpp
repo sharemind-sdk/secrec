@@ -14,6 +14,21 @@
  * Code generation for expressions.
  */
 
+namespace {
+
+using namespace SecreC;
+
+bool canShortCircuit (SecrecTreeNodeType nodeTy,
+                      SecreC::Type* lhs, SecreC::Type* rhs) {
+    return ((nodeTy == NODE_EXPR_BINARY_LAND || nodeTy == NODE_EXPR_BINARY_LOR) &&
+            lhs->secrecSecType ()->isPublic () &&
+            rhs->secrecSecType ()->isPublic () &&
+            lhs->isScalar () && rhs->isScalar ());
+}
+
+}
+
+
 namespace SecreC {
 
 CGBranchResult CodeGen::cgBoolSimple (TreeNodeExpr *e) {
@@ -157,7 +172,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     // 4. initialze required temporary symbols
     LoopInfo loopInfo;
     Context& cxt = getContext ();
-    TypeNonVoid* pubIntTy = TypeNonVoid::get (cxt, DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (cxt);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         loopInfo.push_index (sym);
@@ -401,7 +416,7 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     // Symbols for running indices:
     LoopInfo loopInfo;
-    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
     for (SecrecDimType it = 0; it < n; ++ it) {
         Symbol* sym = st->appendTemporary(pubIntTy);
         loopInfo.push_index (sym);
@@ -598,11 +613,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
       If first sub-expression is public, then generate short-circuit code for
       logical && and logical ||.
     */
-    if (   eArg1->resultType ()->secrecSecType ()->isPublic ()
-        && eArg1->resultType ()->isScalar ()
-        && eArg2->resultType ()->isScalar ()
-        && (e->type () == NODE_EXPR_BINARY_LAND || e->type () == NODE_EXPR_BINARY_LOR))
-    {
+    if (canShortCircuit (e->type (), eArg1->resultType (), eArg2->resultType ())) {
         // Generate code for first child expression:
         CGResult result (codeGen (eArg1));
         Symbol* oldSym = result.symbol ();
@@ -1206,7 +1217,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
 
         // Set up some temporary scalars:
         Context& cxt = getContext ();
-        Symbol* counter = st->appendTemporary(TypeNonVoid::get (cxt, DATATYPE_INT));
+        Symbol* counter = st->appendTemporary(TypeNonVoid::getIndexType (cxt));
         Symbol* b = st->appendTemporary(TypeNonVoid::get (cxt,
             e1->resultType ()->secrecSecType (), e1->resultType ()->secrecDataType ()));
         Symbol* t = st->appendTemporary(TypeNonVoid::get (cxt,
@@ -1530,7 +1541,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);
@@ -1652,7 +1663,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
-    TypeNonVoid* pubIntTy = TypeNonVoid::get (getContext (), DATATYPE_INT);
+    TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
 
     // Generate code for child expression:
     TreeNode* lval = e->children ().at (0);

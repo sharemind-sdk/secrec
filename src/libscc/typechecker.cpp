@@ -24,9 +24,19 @@ void setContextType (TypeContext* to, TypeContext* from) {
 
 void setContextPublicIntScalar (TypeContext* e, Context& cxt) {
     assert (e != 0);
-    e->setContextDataType (DATATYPE_INT);
+    e->setContextDataType (DATATYPE_INT64);
     e->setContextDimType (0);
     e->setContextSecType (PublicSecType::get (cxt));
+}
+
+bool isPublicIntScalar (SecreC::Type* ty) {
+    if (! ty->isVoid ()) {
+        return ty->secrecDataType () == DATATYPE_INT64 &&
+               ty->secrecSecType ()->isPublic () &&
+               ty->secrecDimType () == 0;
+    }
+
+    return false;
 }
 
 } // anonymous namespace
@@ -205,7 +215,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprSize* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(TypeNonVoid::get (getContext (), DATATYPE_INT));
+        root->setResultType(TypeNonVoid::getIndexType (getContext ()));
     }
 
     return ICode::OK;
@@ -223,7 +233,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprShape* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        root->setResultType(TypeNonVoid::get (getContext (), DATATYPE_INT, 1));
+        root->setResultType(TypeNonVoid::get (getContext (), DATATYPE_INT64, 1));
     }
 
     return ICode::OK;
@@ -298,10 +308,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
     if (checkAndLogIfVoid (e3)) return ICode::E_TYPE;
 
     TNV* e3Type = static_cast<TNV*>(e3->resultType());
-    if (!e3Type->isScalar() ||
-        e3Type->secrecDataType() != DATATYPE_INT ||
-        e3Type->secrecSecType()->isPrivate ())
-    {
+    if (! isPublicIntScalar (e3Type)) {
         m_log.fatal() << "Expected public scalar integer at "
                       << root->dimensionality ()->location()
                       << " got " << *e3Type << ".";
@@ -346,10 +353,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
 
         if (checkAndLogIfVoid (dim)) return ICode::E_TYPE;
         TNV* dimType = static_cast<TNV*>(dim->resultType());
-        if (dimType->secrecDataType() != DATATYPE_INT ||
-            dimType->secrecSecType()->isPrivate () ||
-            !dimType->isScalar())
-        {
+        if (! isPublicIntScalar (dimType)) {
             m_log.fatal() << "Expected public integer scalar at "
                           << dim->location()
                           << " got " << dimType->toString() << ".";
@@ -474,7 +478,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
             switch (root->type()) {
                 case NODE_EXPR_BINARY_ADD:
                     if (d1 != d2) break;
-                    if ((d1 & (DATATYPE_INT|DATATYPE_UINT|DATATYPE_STRING)) == 0x0)
+                    if (! isNumericDataType (d1) && d1 != DATATYPE_STRING)
                         break;
 
                     root->setResultType(TNV::get (m_context, s0, d1, n0));
@@ -484,7 +488,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
                 case NODE_EXPR_BINARY_MOD:
                 case NODE_EXPR_BINARY_DIV:
                     if (d1 != d2) break;
-                    if ((d1 & (DATATYPE_INT|DATATYPE_UINT)) == 0x0) break;
+                    if (! isNumericDataType (d1)) break;
                     root->setResultType(TNV::get (m_context, s0, d1, n0));
                     return ICode::OK;
                 case NODE_EXPR_BINARY_EQ:
@@ -613,7 +617,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprInt* e) {
     if (! e->haveResultType()) {
         switch (e->contextDataType ()) {
         case DATATYPE_UNDEFINED:
-            e->setResultType(TypeNonVoid::get (getContext (), DATATYPE_INT));
+            e->setResultType(TypeNonVoid::get (getContext (), DATATYPE_INT64));
             break;
         case DATATYPE_BOOL:
         case DATATYPE_STRING:
@@ -634,10 +638,19 @@ ICode::Status TreeNodeExprUInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprUInt* e) {
     if (! e->haveResultType()) {
-        e->setResultType(TypeNonVoid::get (getContext (), DATATYPE_UINT));
+        switch (e->contextDataType ()) {
+        case DATATYPE_UNDEFINED:
+            e->setResultType(TypeNonVoid::get (getContext (), DATATYPE_UINT64));
+            break;
+        case DATATYPE_BOOL:
+        case DATATYPE_STRING:
+            m_log.fatal () << "Expected numeric type.";
+            m_log.fatal () << "Error at " << e->location () << ".";
+            return ICode::E_TYPE;
+        default:
+            e->setResultType (TypeNonVoid::get (getContext (), e->contextDataType ()));
+        }
     }
-
-    return ICode::OK;
 }
 
 ICode::Status TreeNodeExprClassify::accept (TypeChecker& tyChecker) {
@@ -1042,10 +1055,7 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-        if (   !e->resultType()->secrecDataType() == DATATYPE_INT
-            || !e->resultType()->isScalar()
-            ||  e->resultType()->secrecSecType()->isPrivate ())
-        {
+        if (! isPublicIntScalar (e->resultType ())) {
             m_log.fatal() << "Expecting public unsigned integer scalar at "
                           << e->location() << ".";
             return ICode::E_TYPE;
@@ -1298,10 +1308,7 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim)
 
             TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
 
-            if (eTy->secrecSecType()->isPrivate () ||
-                eTy->secrecDataType() != DATATYPE_INT ||
-                eTy->secrecDimType() > 0)
-            {
+            if (! isPublicIntScalar (eTy)) {
                 m_log.fatal() << "Invalid type for index at " << e->location() << ". "
                               << "Expected public integer scalar, got " << *eTy << ".";
                 return ICode::E_TYPE;

@@ -37,8 +37,6 @@ namespace SecreC {
 
 const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "Bool";
 const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "String";
-const char* SecrecTypeInfo<DATATYPE_INT>::CName = "Int";
-const char* SecrecTypeInfo<DATATYPE_UINT>::CName = "UInt";
 const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "Int8";
 const char* SecrecTypeInfo<DATATYPE_UINT8>::CName = "UInt8";
 const char* SecrecTypeInfo<DATATYPE_INT16>::CName = "Int16";
@@ -70,15 +68,6 @@ ConstantBool* ConstantBool::get (Context& cxt, const bool& value) {
     }
 
     return value ? impl.m_trueConstant : impl.m_falseConstant;
-}
-
-/*******************************************************************************
-  SymbolConstantInt
-*******************************************************************************/
-
-template <>
-ConstantInt* ConstantInt::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_INT> (cxt, value);
 }
 
 /*******************************************************************************
@@ -139,15 +128,6 @@ ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
 }
 
 /*******************************************************************************
-  SymbolConstantUInt
-*******************************************************************************/
-
-template <>
-ConstantUInt* ConstantUInt::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_UINT> (cxt, value);
-}
-
-/*******************************************************************************
   SymbolConstantUInt8
 *******************************************************************************/
 
@@ -194,8 +174,6 @@ Symbol* defaultConstant (Context& cxt, SecrecDataType ty) {
 
 Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
     switch (ty) {
-    case DATATYPE_INT:    return ConstantInt::get (cxt, value); break;
-    case DATATYPE_UINT:   return ConstantUInt::get (cxt, value); break;
     case DATATYPE_INT8:   return ConstantInt8::get (cxt, value); break;
     case DATATYPE_UINT8:  return ConstantUInt8::get (cxt, value); break;
     case DATATYPE_INT16:  return ConstantInt16::get (cxt, value); break;

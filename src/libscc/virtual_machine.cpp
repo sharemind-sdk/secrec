@@ -55,8 +55,6 @@ template <SecrecDataType ty> typename SecrecTypeInfo<ty>::CType getValue (const 
 template <> bool getValue<DATATYPE_BOOL> (const Value& v) { return v.un_bool_val; }
 template <> uint64_t getValue<DATATYPE_UINT64> (const Value& v) { return v.un_uint_val; }
 template <> int64_t getValue<DATATYPE_INT64> (const Value& v) { return v.un_int_val; }
-template <> uint64_t getValue<DATATYPE_UINT> (const Value& v) { return v.un_uint_val; }
-template <> int64_t getValue<DATATYPE_INT> (const Value& v) { return v.un_int_val; }
 template <> uint32_t getValue<DATATYPE_UINT32> (const Value& v) { return v.un_uint32_val; }
 template <> int32_t getValue<DATATYPE_INT32> (const Value& v) { return v.un_int32_val; }
 template <> uint16_t getValue<DATATYPE_UINT16> (const Value& v) { return v.un_uint16_val; }
@@ -254,8 +252,6 @@ template <SecrecDataType fromTy >
 void castValueDyn (SecrecDataType toTy, Value& dest, const Value& from) {
     switch (toTy) {
     case DATATYPE_BOOL:   castValue<DATATYPE_BOOL,fromTy>(dest, from); break;
-    case DATATYPE_INT:    castValue<DATATYPE_INT,fromTy>(dest, from); break;
-    case DATATYPE_UINT:   castValue<DATATYPE_UINT,fromTy>(dest, from); break;
     case DATATYPE_INT8:   castValue<DATATYPE_INT8,fromTy>(dest, from); break;
     case DATATYPE_UINT8:  castValue<DATATYPE_UINT8,fromTy>(dest, from); break;
     case DATATYPE_INT16:  castValue<DATATYPE_INT16,fromTy>(dest, from); break;
@@ -486,13 +482,11 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
 #define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,DATATYPE_UNDEFINED)
 #define SWITCH_ONE(NAME,TYPE) case TYPE: SET_CALLBACK(NAME,TYPE); break;
 #define SWITCH_SIGNED(NAME)\
-    SWITCH_ONE (NAME, DATATYPE_INT)\
     SWITCH_ONE (NAME, DATATYPE_INT8)\
     SWITCH_ONE (NAME, DATATYPE_INT16)\
     SWITCH_ONE (NAME, DATATYPE_INT32)\
     SWITCH_ONE (NAME, DATATYPE_INT64)
 #define SWITCH_UNSIGNED(NAME)\
-    SWITCH_ONE (NAME, DATATYPE_UINT)\
     SWITCH_ONE (NAME, DATATYPE_UINT8)\
     SWITCH_ONE (NAME, DATATYPE_UINT16)\
     SWITCH_ONE (NAME, DATATYPE_UINT32)\
@@ -634,8 +628,6 @@ void storeConstant (VMSym sym, const Symbol* c) {
     switch (dtype) {
     case DATATYPE_BOOL: storeConstantHelper<DATATYPE_BOOL>(out, c); break;
     case DATATYPE_STRING: storeConstantHelper<DATATYPE_STRING>(out, c); break;
-    case DATATYPE_INT: storeConstantHelper<DATATYPE_INT>(out, c); break;
-    case DATATYPE_UINT: storeConstantHelper<DATATYPE_UINT>(out, c); break;
     case DATATYPE_INT8: storeConstantHelper<DATATYPE_INT8>(out, c); break;
     case DATATYPE_UINT8: storeConstantHelper<DATATYPE_UINT8>(out, c); break;
     case DATATYPE_INT16: storeConstantHelper<DATATYPE_INT16>(out, c); break;
@@ -870,28 +862,6 @@ int VirtualMachine::run (const Program& pr) {
     releaseStringHeap ();
 
     return status;
-}
-
-std::string VirtualMachine::toString(void) {
-    std::stringstream os;
-    os << "Store:\n";
-    for (Store::const_iterator i(m_global.begin()); i != m_global.end(); ++ i) {
-        const Symbol* sym = (Symbol const*) i->first;
-        const Value& val = i->second;
-        os << sym->toString() << " -> ";
-        switch (sym->secrecType()->secrecDataType()) {
-        case DATATYPE_BOOL: os << val.un_bool_val; break;
-        case DATATYPE_INT: os << val.un_int_val; break;
-        case DATATYPE_UINT: os << val.un_uint_val; break;
-        case DATATYPE_STRING: os << *val.un_str_val; break;
-        default:
-            assert (false);
-        }
-
-        os << '\n';
-    }
-
-    return os.str();
 }
 
 }

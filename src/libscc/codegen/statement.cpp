@@ -135,7 +135,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     TypeNonVoid* dimType =
         TypeNonVoid::get (getContext (),
             DataTypeVar::get (getContext (),
-                DataTypeBasic::get (getContext (), DATATYPE_INT)));
+                DataTypeBasic::get (getContext (), DATATYPE_INT64)));
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);
