@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
-#include <getopt.h>
 #include <iostream>
 #include <iomanip>
 #include <fstream>

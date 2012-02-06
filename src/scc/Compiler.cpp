@@ -104,7 +104,6 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
     return static_cast<VMLabel*>(label);
 }
 
-
 void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     switch (iType) {
     case Imop::CAST:       os << "cast";        break;

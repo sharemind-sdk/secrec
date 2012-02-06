@@ -49,12 +49,10 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
             case DATATYPE_INT16:  value = static_cast<const ConstantInt16*>(sym)->value ();  break;
             case DATATYPE_INT32:  value = static_cast<const ConstantInt32*>(sym)->value ();  break;
             case DATATYPE_INT64:  value = static_cast<const ConstantInt64*>(sym)->value ();  break;
-            case DATATYPE_INT:    value = static_cast<const ConstantInt*>(sym)->value ();    break;
             case DATATYPE_UINT8:  value = static_cast<const ConstantUInt8*>(sym)->value ();  break;
             case DATATYPE_UINT16: value = static_cast<const ConstantUInt16*>(sym)->value (); break;
             case DATATYPE_UINT32: value = static_cast<const ConstantUInt32*>(sym)->value (); break;
             case DATATYPE_UINT64: value = static_cast<const ConstantUInt64*>(sym)->value (); break;
-            case DATATYPE_UINT:   value = static_cast<const ConstantUInt*>(sym)->value ();   break;
             case DATATYPE_STRING: /* string literals are not managed by the RA */ return;
             default:
                 assert (false && "Undefined SecreC data type.");
