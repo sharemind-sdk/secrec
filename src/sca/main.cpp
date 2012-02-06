@@ -113,16 +113,6 @@ int run (const char* filename) {
                    << icode.compileLog();
             }
 
-            if (flags[Flag::Eval]) {
-                SecreC::VirtualMachine eval;
-                exitCode = eval.run (pr);
-                if (flags[Flag::Verbose]) {
-                    cerr << eval.toString();
-                }
-
-                return exitCode;
-            }
-
             if (flags[Flag::PrintST]) {
                 cerr << icode.symbols () << endl;
             }
@@ -138,7 +128,6 @@ int run (const char* filename) {
 
             // Run data flow analysis and print the results:
             if (flags[Flag::Analysis] > 0) {
-                /// \todo need better solution than this if any more analysis are added
                 SecreC::DataFlowAnalysisRunner runner;
                 SecreC::ReachingDefinitions rd;
                 SecreC::ReachingJumps rj;
@@ -154,6 +143,12 @@ int run (const char* filename) {
 
                 runner.run(pr);
                 cout << runner.toString (pr) << endl;
+            }
+
+            if (flags[Flag::Eval]) {
+                SecreC::VirtualMachine eval;
+                exitCode = eval.run (pr);
+                return exitCode;
             }
         } else {
             cerr << "Error generating valid intermediate code." << endl
