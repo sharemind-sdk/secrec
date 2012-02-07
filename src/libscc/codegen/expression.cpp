@@ -1544,6 +1544,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
 
     // Generate code for child expression:
+    Symbol* one = numericConstant (getContext (), e->resultType ()->secrecDataType (), 1);
     TreeNode* lval = e->children ().at (0);
     TreeNodeIdentifier* e1 = static_cast<TreeNodeIdentifier*>(lval->children ().at (0));
     Symbol *destSym = st->find (e1->value ());
@@ -1581,11 +1582,21 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         // Initialize required temporary symbols:
         LoopInfo loopInfo;
         Symbol* offset = st->appendTemporary(pubIntTy);
+        TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
+            e->resultType ()->secrecSecType (),
+            e->resultType ()->secrecDataType ());
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
-        Symbol* tmpValue = st->appendTemporary (pubIntTy);
+        Symbol* tmpElem = st->appendTemporary (elemType);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
             Symbol* sym = st->appendTemporary(pubIntTy);
             loopInfo.push_index (sym);
+        }
+
+        if (elemType->secrecSecType ()->isPrivate ()) {
+            Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (elemType));
+            Imop* i = new Imop (e, Imop::CLASSIFY, t, one);
+            pushImopAfter (result, i);
+            one = t;
         }
 
         append (result, enterLoop (loopInfo, spv));
@@ -1609,15 +1620,15 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         // increment the value:
 
         // t = x[offset]
-        i = new Imop (e, Imop::LOAD, tmpValue, destSymSym, offset);
+        i = new Imop (e, Imop::LOAD, tmpElem, destSymSym, offset);
         code.push_imop (i);
 
         // t = t + 1
-        i = new Imop (e, iType, tmpValue, tmpValue, ConstantInt::get (getContext (), 1));
+        i = new Imop (e, iType, tmpElem, tmpElem, one);
         code.push_imop (i);
 
         // x[offset] = t
-        i = new Imop (e, Imop::STORE, destSymSym, offset, tmpValue);
+        i = new Imop (e, Imop::STORE, destSymSym, offset, tmpElem);
         code.push_imop (i);
 
         append (result, exitLoop (loopInfo));
@@ -1625,7 +1636,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     }
 
     ScopedAllocations allocs (*this, result);
-    Symbol* one = ConstantInt::get (getContext (), 1);
     if (!e->resultType ()->isScalar ()) {
         Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
         allocs.allocTemporary (t, one,  destSymSym->getSizeSym ());
@@ -1672,6 +1682,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     assert (destSym->symbolType() == Symbol::SYMBOL);
     assert (dynamic_cast<SymbolSymbol*>(destSym) != 0);
     SymbolSymbol* destSymSym = static_cast<SymbolSymbol*> (destSym);
+    Symbol* one = numericConstant (getContext (), e->resultType ()->secrecDataType (), 1);
 
     // r = x
     SymbolSymbol* r = generateResultSymbol (result, e);
@@ -1715,14 +1726,23 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
         // Initialize required temporary symbols:
         LoopInfo loopInfo;
+        TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
+            e->resultType ()->secrecSecType (),
+            e->resultType ()->secrecDataType ());
         Symbol* offset = st->appendTemporary(pubIntTy);
         Symbol* tmpResult = st->appendTemporary(pubIntTy);
-        Symbol* tmpValue = st->appendTemporary (pubIntTy);
+        Symbol* tmpElem = st->appendTemporary (elemType);
         for (SPV::const_iterator it (spv.begin ()); it != spv.end (); ++ it) {
             Symbol* sym = st->appendTemporary(pubIntTy);
             loopInfo.push_index (sym);
         }
 
+        if (elemType->secrecSecType ()->isPrivate ()) {
+            Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (elemType));
+            Imop* i = new Imop (e, Imop::CLASSIFY, t, one);
+            pushImopAfter (result, i);
+            one = t;
+        }
 
         append (result, enterLoop (loopInfo, spv));
         if (result.isNotOk ()) {
@@ -1745,15 +1765,15 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         // increment the value:
 
         // t = x[offset]
-        i = new Imop (e, Imop::LOAD, tmpValue, destSymSym, offset);
+        i = new Imop (e, Imop::LOAD, tmpElem, destSymSym, offset);
         code.push_imop (i);
 
         // t = t + 1
-        i = new Imop (e, iType, tmpValue, tmpValue, ConstantInt::get (getContext (), 1));
+        i = new Imop (e, iType, tmpElem, tmpElem, one);
         code.push_imop (i);
 
         // x[offset] = t
-        i = new Imop (e, Imop::STORE, destSymSym, offset, tmpValue);
+        i = new Imop (e, Imop::STORE, destSymSym, offset, tmpElem);
         code.push_imop (i);
 
         append (result, exitLoop (loopInfo));
@@ -1761,12 +1781,18 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     }
 
     ScopedAllocations allocs (*this, result);
-    Symbol* one = ConstantInt::get (getContext (), 1);
     if (!e->resultType ()->isScalar ()) {
         Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
         allocs.allocTemporary (t, one,  destSymSym->getSizeSym ());
         one = t;
     }
+    else
+    if (e->resultType ()->secrecSecType ()->isPrivate ()) {
+        Symbol* t = st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        Imop* i = new Imop (e, Imop::CLASSIFY, t, one);
+        pushImopAfter (result, i);
+        one = t;
+   }
 
     // x = x `iType` 1
     Imop* i = newBinary (e, iType, destSymSym, destSymSym, one);
