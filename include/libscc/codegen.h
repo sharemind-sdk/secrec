@@ -357,6 +357,8 @@ public: /* Methods: */
     CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                             bool isGlobal, bool isProcParam);
 
+    Symbol* getSizeOr (Symbol* sym, int64_t val);
+
 protected: /* Fields: */
 
     ICodeList&    code;         ///< The code new instructions are emitted to.

@@ -365,20 +365,19 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 code.push_imop (i);
             }
             else {
-                i = new Imop (varInit, Imop::ASSIGN, ns, def);
+                if (ns->secrecType ()->secrecSecType ()->isPrivate ()) {
+                    i = new Imop (varInit, Imop::CLASSIFY, ns, def);
+                }
+                else {
+                    i = new Imop (varInit, Imop::ASSIGN, ns, def);
+                }
+
                 pushImopAfter (result, i);
 
             }
         }
         else {
-            i = new Imop (varInit, Imop::ALLOC, ns, def, 0);
-            if (n == 0) {
-                i->setArg2 (ConstantInt::get (getContext (), 0));
-            }
-            else {
-                i->setArg2 (ns->getSizeSym());
-            }
-
+            i = new Imop (varInit, Imop::ALLOC, ns, def, getSizeOr (ns, 0));
             pushImopAfter (result, i);
         }
     }

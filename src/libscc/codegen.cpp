@@ -17,6 +17,20 @@ Imop* CodeGen::pushComment (const std::string& comment) {
     return c;
 }
 
+Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
+    assert (sym != 0);
+    Symbol* sizeSym = ConstantInt::get (getContext (), val);
+    if (sym->symbolType () == Symbol::SYMBOL) {
+        assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
+        SymbolSymbol* symsym = static_cast<SymbolSymbol*>(sym);
+        if (symsym->getSizeSym () != 0) {
+            sizeSym = symsym->getSizeSym ();
+        }
+    }
+
+    return sizeSym;
+}
+
 void CodeGen::codeGenSize (CGResult& result) {
     assert (result.symbol () != 0);
     SymbolSymbol* resSym = 0;
