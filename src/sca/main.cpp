@@ -62,11 +62,11 @@ static int flags[Flag::Count];
 
 static
 int run (const char* filename) {
-    std::auto_ptr<SecreC::TreeNodeProgram> parseTree;
+    std::auto_ptr<SecreC::TreeNodeModule> parseTree;
     int exitCode = 0;
 
     if (filename == 0) {
-        SecreC::TreeNodeProgram* tmpTree = 0;
+        SecreC::TreeNodeModule* tmpTree = 0;
         exitCode = sccparse(&tmpTree);
         parseTree.reset (tmpTree);
     } else {
@@ -77,7 +77,7 @@ int run (const char* filename) {
                 cerr << flush;
             }
 
-            SecreC::TreeNodeProgram* tmpTree = 0;
+            SecreC::TreeNodeModule* tmpTree = 0;
             exitCode = sccparse_file(f, &tmpTree);
             parseTree.reset (tmpTree);
             fclose(f);
