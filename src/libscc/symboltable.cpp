@@ -95,11 +95,7 @@ public: /* Methods: */
 
     std::string toString () const {
         std::ostringstream os;
-        os << "Labels:\n";
-        BOOST_FOREACH (const LabelMap::value_type& v, m_labels)
-            os << '\t' << v.second->toString () << '\n';
-
-        os << "\nTemporaries:\n";
+        os << "Temporaries:\n";
         BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
             os << '\t' << s->toString () << '\n';
 
@@ -117,43 +113,59 @@ private: /* Fields: */
   SymbolTable
 *******************************************************************************/
 
-SymbolTable::SymbolTable ()
+SymbolTable::SymbolTable (const std::string& name)
     : m_parent (0)
     , m_global (this)
     , m_other (new OtherSymbols ())
+    , m_imports (1, this)
+    , m_name (name)
 {
     // Intentionally empty
 }
 
-SymbolTable::SymbolTable (SymbolTable *parent)
+SymbolTable::SymbolTable (SymbolTable *parent, const std::string& name)
     : m_parent (parent)
     , m_global (parent->m_global)
     , m_other (parent->m_other)
+    , m_imports (1, this)
+    , m_name (name)
 {
     // Intentionally empty
 }
 
 SymbolTable::~SymbolTable() {
-    typedef std::vector<Symbol*>::const_iterator SVCI;
-    typedef std::list<SymbolTable*>::const_iterator STLCI;
+    BOOST_FOREACH (Symbol* sym, m_table)
+        delete sym;
 
-    for (SVCI it(m_table.begin()); it != m_table.end(); it++) {
-        delete (*it);
-    }
+    BOOST_FOREACH (SymbolTable* table, m_scopes)
+        delete table;
 
-    for (STLCI it(m_scopes.begin()); it != m_scopes.end(); ++ it ) {
-        delete *(it);
-    }
-
-    if (m_parent == 0) {
+    if (m_parent == 0)
         delete m_other;
-    }
 }
 
-void SymbolTable::appendSymbol(Symbol *symbol) {
-    Symbol* prev = find (symbol->name ());
-    symbol->setPrevious (prev);
-    m_table.push_back(symbol);
+bool SymbolTable::addImport (SymbolTable* st) {
+    assert (st != 0);
+    if (std::find (m_imports.begin (), m_imports.end (), st) != m_imports.end ()) {
+        m_imports.push_back (st);
+        return true;
+    }
+
+    return false;
+}
+
+Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
+    BOOST_REVERSE_FOREACH (SymbolTable* import, m_imports)
+        BOOST_REVERSE_FOREACH (Symbol* s, import->m_table)
+            if (s->name () == name)
+                return s;
+    return 0;
+}
+
+void SymbolTable::appendSymbol (Symbol* symbol) {
+    assert (symbol != 0);
+    symbol->setPrevious (findFromCurrentScope (symbol->name ()));
+    m_table.push_back (symbol);
 }
 
 SymbolLabel* SymbolTable::label (Imop* imop) {
@@ -161,27 +173,25 @@ SymbolLabel* SymbolTable::label (Imop* imop) {
     return m_other->label (imop);
 }
 
-SymbolSymbol *SymbolTable::appendTemporary(TypeNonVoid* type) {
+SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
     return m_other->temporary (type);
 }
 
-Symbol *SymbolTable::find(const std::string &name) const {
+Symbol *SymbolTable::find (const std::string& name) const {
     const SymbolTable *c = this;
     while (c != 0) {
-        BOOST_REVERSE_FOREACH (Symbol* s, c->m_table) {
-            if (s->name () == name)
-                return s;
-        }
-
+        Symbol* s = c->findFromCurrentScope (name);
+        if (s != 0)
+            return s;
         c = c->m_parent;
     }
 
     return 0;
 }
 
-std::list<Symbol* > SymbolTable::findAll (const std::string& name) const {
+std::vector<Symbol* > SymbolTable::findAll (const std::string& name) const {
     Symbol* s = find (name);
-    std::list<Symbol* > out;
+    std::vector<Symbol* > out;
     while (s != 0) {
         out.push_back (s);
         s = s->previos ();
@@ -191,36 +201,32 @@ std::list<Symbol* > SymbolTable::findAll (const std::string& name) const {
 }
 
 SymbolTable *SymbolTable::newScope () {
-    SymbolTable *scope = new SymbolTable(this);
-    m_scopes.push_back(scope);
+    SymbolTable *scope = new SymbolTable (this);
+    m_scopes.push_back (scope);
     return scope;
 }
 
 std::string SymbolTable::toString(unsigned level, unsigned indent,
                                   bool newScope) const
 {
-    typedef Table::const_iterator STCI;
-    typedef std::list<SymbolTable*>::const_iterator STLCI;
-
     std::ostringstream os;
 
     if (m_parent == 0) {
-        os << "--- GLOBAL SCOPE ---" << std::endl;
+        os << "--- Other Symbols ---" << std::endl;
         os << m_other->toString ();
     }
 
-    if (newScope) {
+    printIndent(os, level, indent);
+    os << "==  " << m_name << " ==" << std::endl;
+
+
+    BOOST_FOREACH (Symbol* sym, m_table) {
         printIndent(os, level, indent);
-        os << "--- NEW SCOPE ---" << std::endl;
+        os << ' ' << sym->toString () << std::endl;
     }
 
-    for (STCI it(m_table.begin()); it != m_table.end(); it++) {
-        printIndent(os, level, indent);
-        os << ' ' << (**it) << std::endl;
-    }
-
-    for (STLCI it(m_scopes.begin()); it != m_scopes.end(); it++) {
-        os << (*it)->toString(level+1, indent);
+    BOOST_FOREACH (SymbolTable* table, m_scopes) {
+        os << table->toString(level+1, indent);
     }
 
     return os.str();

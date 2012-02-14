@@ -99,6 +99,8 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "__pushcref" { stepLen(yyget_lloc(yyscanner), 10); return PUSHCREF; }
 "__domainid" { stepLen(yyget_lloc(yyscanner), 10); return DOMAINID; }
 "operator"   { stepLen(yyget_lloc(yyscanner), 8); return OPERATOR; }
+"module"     { stepLen(yyget_lloc(yyscanner), 6); return MODULE; }
+"import"     { stepLen(yyget_lloc(yyscanner), 6); return IMPORT; }
 
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }

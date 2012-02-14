@@ -27,7 +27,7 @@ INCLUDE("config.local" OPTIONAL)
 # libscc
 ################################################################################
 
-find_package(Boost REQUIRED program_options)
+find_package(Boost REQUIRED program_options filesystem)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
@@ -66,6 +66,9 @@ SET(LIBSCC_SOURCES
     "src/libscc/context_impl.h"
     "src/libscc/context_impl.cpp"
     "src/libscc/context.cpp"
+    "src/libscc/ModuleInfo.h"
+    "src/libscc/ModuleInfo.cpp"
+    "src/libscc/ModuleMap.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 SET(LIBSCC_HEADERS
@@ -86,7 +89,8 @@ SET(LIBSCC_HEADERS
     "include/libscc/symboltable.h"
     "include/libscc/types.h"
     "include/libscc/typechecker.h"
-    "include/libscc/context.h")
+    "include/libscc/context.h"
+    "include/libscc/ModuleMap.h")
 
 SET_SOURCE_FILES_PROPERTIES("src/libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
@@ -100,7 +104,9 @@ SET_TARGET_PROPERTIES("libscc" PROPERTIES
     OUTPUT_NAME "scc"
     LIBRARY_OUTPUT_DIRECTORY "lib/"
     VERSION "0.3.0.0"
-    SOVERSION "0.3")
+    SOVERSION "0.3"
+    CLEAN_DIRECT_OUTPUT 1)
+TARGET_LINK_LIBRARIES("libscc" "${Boost_FILESYSTEM_LIBRARY}")
 
 ################################################################################
 # sca
@@ -142,7 +148,9 @@ ADD_EXECUTABLE("scc"
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.0.1.0")
-TARGET_LINK_LIBRARIES("scc" "libscc" ${Boost_PROGRAM_OPTIONS_LIBRARY})
+TARGET_LINK_LIBRARIES("scc" "libscc"
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY})
 
 ################################################################################
 # Installs:
@@ -151,6 +159,7 @@ TARGET_LINK_LIBRARIES("scc" "libscc" ${Boost_PROGRAM_OPTIONS_LIBRARY})
 INSTALL(TARGETS "libscc" "sca" "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
     PUBLIC_HEADER DESTINATION "include")
 
 ################################################################################

@@ -16,6 +16,7 @@
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
+#include "ModuleInfo.h"
 #include "templates.h"
 
 namespace {
@@ -152,9 +153,10 @@ ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params,
 
 
 /// Procedure definitions.
-ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
+ICode::Status TypeChecker::visit (TreeNodeProcDef* proc, SymbolTable* localScope) {
     typedef TypeNonVoid TNV;
     if (proc->m_cachedType == 0) {
+        std::swap (m_st, localScope);
         TreeNodeType* rt = proc->returnType ();
         ICode::Status s = visit (rt);
         if (s != ICode::OK) return s;
@@ -175,6 +177,8 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc) {
             proc->m_cachedType = TypeNonVoid::get (getContext (),
                 DataTypeProcedure::get (getContext (), voidProcType, tt->dataType ()));
         }
+
+        std::swap (m_st, localScope);
 
         SymbolProcedure* procSym = appendProcedure (m_st, *proc);
         proc->setSymbol (procSym);
@@ -461,6 +465,7 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
 {
     typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
 
+    // Look for regular procedures:
     assert (argTypes != 0);
     SymbolProcedure* procTempSymbol = 0;
     BOOST_FOREACH (SymbolProcedure* s, findProcedures (m_st, name, argTypes)) {
@@ -491,10 +496,12 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         return ICode::OK;
     }
 
+    // Look for templates:
     Weight best (argTypes->paramTypes ().size () + 2, 0, 0);
     std::vector<Instantiation> bestMatches;
     BOOST_FOREACH (SymbolTemplate* s, findTemplates (m_st, name)) {
         Instantiation inst (s);
+        assert (s->decl ()->containingModule () != 0);
         if (unify (inst, tyCxt, argTypes)) {
             const Weight w (inst.templateParamCount (),
                             inst.unrestrictedTemplateParamCount (),
@@ -605,7 +612,8 @@ bool TypeChecker::unify (Instantiation& inst,
         }
     }
 
-    std::list<SecurityType*> tmp;
+    std::vector<SecurityType*> tmp;
+    tmp.reserve (t->quantifiers ().size ());
 
     BOOST_FOREACH (TreeNode* _quant, t->quantifiers ()) {
         TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
@@ -631,25 +639,29 @@ bool TypeChecker::unify (Instantiation& inst,
 }
 
 ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiation& inst) {
-    TreeNodeProcDef* body = m_instantiator->add (inst, m_st);
-    SymbolTable* localST = m_instantiator->getLocalST (inst);
-    std::swap (localST, m_st);
-    ICode::Status status = visit (body);
-    std::swap (localST, m_st);
+    ModuleInfo* mod = inst.getTemplate ()->decl ()->containingModule ();
+    InstanceInfo info = m_instantiator->add (inst, *mod);
+    TreeNodeProcDef* body = info.m_generatedBody;
+    SymbolTable* moduleST = info.m_moduleInfo->codeGenState ().st ();
+    SymbolTable* localST = info.m_localScope;
+    assert (localST->parent () == moduleST);
+    std::swap (m_st, moduleST);
+    ICode::Status status = visit (body, localST);
     if (status != ICode::OK) {
         return status;
     }
 
     const std::vector<SecurityType*> targs (inst.begin (), inst.end ());
-    proc = findProcedure (m_st->globalScope (),
+    proc = findProcedure (m_st,
         body->procedureName (),
         static_cast<DataTypeProcedureVoid*>(body->procedureType ()->dataType ()),
         targs);
     if (proc == 0) {
-        proc = appendProcedure (m_st->globalScope (), *body, targs);
+        proc = appendProcedure (m_st, *body, targs);
     }
 
     body->setSymbol (proc);
+    std::swap (m_st, moduleST);
     return ICode::OK;
 }
 

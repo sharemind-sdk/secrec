@@ -124,6 +124,112 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
+  ScopedAllocations
+*******************************************************************************/
+
+class ScopedAllocations {
+private:
+    void operator = (const ScopedAllocations&); // DO NOT IMPLEMENT
+    ScopedAllocations (const ScopedAllocations&); // DO NOT IMPLEMENT
+
+private: /* Types: */
+
+    typedef std::vector<Symbol* > Allocations;
+
+public: /* Methods: */
+
+    ScopedAllocations (CodeGen& base, CGResult& result)
+        : m_codeGen (base)
+        , m_result (result)
+    { }
+
+    ~ScopedAllocations () {
+        freeAllocs ();
+    }
+
+    void allocTemporary (Symbol* dest, Symbol* def, Symbol* size);
+
+private:
+
+    void freeAllocs ();
+
+private: /* Fields: */
+
+    CodeGen&     m_codeGen;
+    CGResult&    m_result;
+    Allocations  m_allocs;
+};
+
+/*******************************************************************************
+  CodeGenState
+*******************************************************************************/
+
+/**
+ * The part of code generator that needs to be stored and resumed on demand.
+ * For example we might pause code generation at some scope to type check and
+ * generate code for some imported module. After the code generation previous
+ * state needs to be resumed.
+ */
+class CodeGenState {
+protected: /* Types: */
+
+    typedef std::vector<SymbolSymbol*> AllocList;
+
+public:
+
+    typedef ImopList::const_iterator InsertPoint;
+
+public: /* Methods: */
+
+    CodeGenState ()
+        : m_st (0)
+        , m_node (0)
+    { }
+
+    CodeGenState (InsertPoint it, SymbolTable* st)
+        : m_insertPoint (it)
+        , m_st (st)
+        , m_node (0)
+    { }
+
+    CodeGenState& operator = (CodeGenState state) {
+        swapState (state);
+        return *this;
+    }
+
+    ~CodeGenState () { }
+
+    TreeNode* currentNode () const {
+        return m_node;
+    }
+
+    void setImopInsertPoint (InsertPoint it) {
+        m_insertPoint = it;
+    }
+
+    SymbolTable* st () const { return m_st; }
+
+    void setSymbolTable (SymbolTable* st) { m_st = st; }
+
+    friend class CodeGen;
+
+private:
+
+    void swapState (CodeGenState& st) {
+        std::swap (m_insertPoint, st.m_insertPoint);
+        std::swap (m_st, st.m_st);
+        std::swap (m_node, st.m_node);
+        std::swap (m_allocs, st.m_allocs);
+    }
+
+private: /* Fields: */
+    InsertPoint   m_insertPoint;  ///< Location before which to insert instructions.
+    SymbolTable*  m_st;           ///< Pointer to symbol table of current scope.
+    TreeNode*     m_node;         ///< Current tree node.
+    AllocList     m_allocs;       ///< Current allocations.
+};
+
+/*******************************************************************************
   CodeGen
 *******************************************************************************/
 
@@ -138,7 +244,7 @@ private: /* Fields: */
  *
  * \todo It should be possible to remove the m_node member. Figure that out.
  */
-class CodeGen {
+class CodeGen : public CodeGenState {
 private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT
@@ -147,41 +253,53 @@ private:
 private: /* Types: */
 
     typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
-    typedef std::list<SymbolSymbol*> AllocList;
+
 
 public: /* Methods: */
 
-    inline CodeGen (ICodeList &code,
-                    SymbolTable& st,
-                    CompileLog& log,
-                    TypeChecker& tyChecker)
-        : code (code)
-        , st (&st)
-        , log (log)
-        , m_node (0)
-        , m_tyChecker (tyChecker)
+    CodeGen (Context& cxt, ICodeList& code, ICode& icode)
+        : CodeGenState (code.end (), &icode.symbols ())
+        , m_code (code)
+        , m_log (icode.compileLog ())
+        , m_modules (icode.modules ())
+        , m_tyChecker (icode.symbols (), icode.compileLog (), cxt)
     { }
 
-    inline ~CodeGen () { }
+    ~CodeGen () { }
 
-    TreeNode* currentNode () const {
-        return m_node;
+    void push_imop (Imop* imop) {
+        m_code.insert (m_insertPoint, imop);
     }
 
-    inline Context& getContext () const {
+    Context& getContext () const {
         return m_tyChecker.getContext ();
     }
 
+    void updateTypeChecker () {
+        m_tyChecker.setScope (*m_st);
+    }
+
+    void swap (CodeGenState& state) {
+        swapState (state);
+        updateTypeChecker ();
+    }
+
+    void setScope (SymbolTable* st) {
+        m_st = st;
+        updateTypeChecker ();
+    }
+
     void newScope () {
-        st = st->newScope ();
-        m_tyChecker.setScope (*st);
+        m_st = m_st->newScope ();
+        updateTypeChecker ();
     }
 
     void popScope () {
-        st = st->parent ();
-        m_tyChecker.setScope (*st);
+        m_st = m_st->parent ();
+        updateTypeChecker ();
     }
 
+    Imop* newComment (const std::string& commnet) const;
     Imop* pushComment (const std::string& comment);
 
     /**
@@ -193,8 +311,8 @@ public: /* Methods: */
         assert (imop != 0);
         result.patchFirstImop (imop);
         if (!result.nextList ().empty ())
-            result.patchNextList (st->label (imop));
-        code.push_imop (imop);
+            result.patchNextList (m_st->label (imop));
+        m_code.push_imop (imop);
     }
 
     /**
@@ -205,7 +323,7 @@ public: /* Methods: */
         result.patchFirstImop (other.firstImop ());
         // we check for empty next list to avoid creating label
         if (other.firstImop () && !result.nextList ().empty ()) {
-            result.patchNextList (st->label (other.firstImop ()));
+            result.patchNextList (m_st->label (other.firstImop ()));
         }
 
         result.addTempAllocs (other.tempAllocs ());
@@ -215,40 +333,22 @@ public: /* Methods: */
         }
     }
 
-    inline CGResult codeGen (TreeNodeExpr* e) {
-        TreeNode* const oldNode = m_node;
-        m_node = e;
-        const CGResult& r (e->codeGenWith (*this));
-        m_node = oldNode;
-        return r;
-    }
-
-    inline CGBranchResult codeGenBranch (TreeNodeExpr* e) {
-        TreeNode* oldNode = m_node;
-        m_node = e;
-        const CGBranchResult& r (e->codeGenBoolWith (*this));
-        m_node = oldNode;
-        return r;
-    }
-
-    CGStmtResult codeGenStmt (TreeNodeStmt* e) {
-        TreeNode* oldNode = m_node;
-        m_node = e;
-        const CGStmtResult& r (e->codeGenWith (*this));
-        m_node = oldNode;
-        return r;
-    }
+    CGResult codeGen (TreeNodeExpr* e);
+    CGBranchResult codeGenBranch (TreeNodeExpr* e);
+    CGStmtResult codeGenStmt (TreeNodeStmt* s);
 
     /**
      * \name Top level code.
      * Methods for top level program code generation.
      */
      /// \{
-    CGStmtResult cgProgram (TreeNodeProgram* prog);
-    CGStmtResult cgProcDef (TreeNodeProcDef* def);
+    CGStmtResult cgMainModule (TreeNodeProgram* prog, ModuleInfo* mod);
+    CGStmtResult cgModule (TreeNodeModule* mod);
     CGStmtResult cgDomain (TreeNodeDomain* dom);
     CGStmtResult cgKind (TreeNodeKind* kind);
+    CGStmtResult cgImport (TreeNodeImport* imp);
     CGStmtResult cgGlobalDecl (TreeNode* decl);
+    CGStmtResult cgProcDef (TreeNodeProcDef* def, SymbolTable* localScope);
     /// \}
 
     /**
@@ -271,7 +371,6 @@ public: /* Methods: */
     CGStmtResult cgStmtSyscall (TreeNodeStmtSyscall* s);
     CGStmtResult cgStmtPush (TreeNodeStmtPush* s);
     CGStmtResult cgStmtPushRef (TreeNodeStmtPushRef* s);
-
     /// \}
 
     /**
@@ -327,6 +426,7 @@ public: /* Methods: */
     void addAlloc (SymbolSymbol* sym) { m_allocs.push_back (sym); }
     void releaseLocalAllocs (CGResult& result, Symbol* ex = 0);
     void releaseGlobalAllocs (CGResult& result);
+    void clearAllocs () { m_allocs.clear (); }
     /// \}
 
     /// Looping, and indexing.
@@ -359,54 +459,46 @@ public: /* Methods: */
 
     Symbol* getSizeOr (Symbol* sym, int64_t val);
 
-protected: /* Fields: */
-
-    ICodeList&    code;         ///< The code new instructions are emitted to.
-    SymbolTable*  st;           ///< Symbol table.
-    CompileLog&   log;          ///< Compiler log.
-    TreeNode*     m_node;       ///< Current tree node. \todo get rid of it somehow
-    TypeChecker&  m_tyChecker;  ///< Instance of type checker.
-    CallMap       m_callsTo;    ///< Map
-    AllocList     m_allocs;
-};
-
-/*******************************************************************************
-  ScopedAllocations
-*******************************************************************************/
-
-class ScopedAllocations {
-private:
-    void operator = (const ScopedAllocations&); // DO NOT IMPLEMENT
-    ScopedAllocations (const ScopedAllocations&); // DO NOT IMPLEMENT
-
-private: /* Types: */
-
-    typedef std::vector<Symbol* > Allocations;
-
-public: /* Methods: */
-
-    ScopedAllocations (CodeGen& base, CGResult& result)
-        : m_codeGen (base)
-        , m_result (result)
-    { }
-
-    ~ScopedAllocations () {
-        freeAllocs ();
-    }
-
-    void allocTemporary (Symbol* dest, Symbol* def, Symbol* size);
-
-private:
-
-    void freeAllocs ();
-
 private: /* Fields: */
 
-    CodeGen&     m_codeGen;
-    CGResult&    m_result;
-    Allocations  m_allocs;
+    // Components owned by others:
+    ICodeList&    m_code;         ///< Generated sequence of IR instructions.
+    CompileLog&   m_log;          ///< Compiler log.
+    ModuleMap&    m_modules;      ///< Mapping from names to modules.
+
+    // Local components:
+    TypeChecker   m_tyChecker;    ///< Instance of type checker.
+    CallMap       m_callsTo;      ///< Unpatched procedure calls.
 };
 
-}
+
+/*******************************************************************************
+  ScopedStateUse
+*******************************************************************************/
+
+/**
+ * RAII class that on construction creates backup of CodeGen state
+ * and switches to using given new state. On destruction restores
+ * the backup.
+ */
+class ScopedStateUse {
+public:
+    ScopedStateUse (CodeGen& codeGen, const CodeGenState& state)
+        : m_codeGen (codeGen)
+        , m_state (state)
+    {
+        m_codeGen.swap (m_state);
+    }
+
+    ~ScopedStateUse () {
+        m_codeGen.swap (m_state);
+    }
+
+private:
+    CodeGen&      m_codeGen;
+    CodeGenState  m_state;
+};
+
+} // namespace SecreC
 
 #endif

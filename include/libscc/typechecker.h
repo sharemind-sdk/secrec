@@ -5,6 +5,7 @@
 
 namespace SecreC {
 
+struct InstanceInfo;
 class CompileLog;
 class SymbolTable;
 class Instantiation;
@@ -67,11 +68,11 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeStmtPrint* stmt);
     ICode::Status visit (TreeNodeStmtReturn* stmt);
 
-    ICode::Status visit (TreeNodeProcDef* proc);
+    ICode::Status visit (TreeNodeProcDef* proc, SymbolTable* localScope);
     ICode::Status visit (TreeNodeTemplate* templ);
 
     /// \see TemplateInstantiator
-    bool getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st);
+    bool getForInstantiation (InstanceInfo&);
     TreeNodeExpr* classifyIfNeeded (TreeNodeExpr* child);
 
     /// Check if given idenfier is in scope. Logs error message
@@ -112,7 +113,7 @@ protected:
      * \brief Type check a procedure, and classify parameters if needed.
      * \param[in] name name of the procedure to call
      * \param[in] contextSecType context security type
-     * \param[int] arguments argument expressions
+     * \param[in] arguments argument expressions
      * \param[out] resultType resulting type of the procedure call
      * \param[out] symProc symbol of the procedure which will be called
      */

@@ -7,14 +7,14 @@
 #ifdef __cplusplus
 namespace SecreC {
     class TreeNode;
-    class TreeNodeProgram;
+    class TreeNodeModule;
 } // namespace SecreC
 #define TYPE_TREENODE        SecreC::TreeNode*
-#define TYPE_TREENODEPROGRAM SecreC::TreeNodeProgram*
+#define TYPE_TREENODEMODULE  SecreC::TreeNodeModule*
 extern "C" {
 #else /* #ifdef __cplusplus */
 #define TYPE_TREENODE        void*
-#define TYPE_TREENODEPROGRAM void*
+#define TYPE_TREENODEMODULE void*
 #endif /* #ifdef __cplusplus */
 
 union YYSTYPE;
@@ -124,7 +124,9 @@ enum SecrecTreeNodeType {
     NODE_DOMAIN         = 0x600000,
     NODE_KIND           = 0x700000,
     NODE_TEMPLATE_DECL  = 0x800000,
-    NODE_TEMPLATE_QUANT = 0x900000
+    NODE_TEMPLATE_QUANT = 0x900000,
+    NODE_MODULE         = 0xa00000,
+    NODE_IMPORT         = 0xb00000
 };
 
 enum SecrecDataType {
@@ -151,7 +153,7 @@ typedef int SecrecDimType; /**< Dimensionality type is undefined if negative! */
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse(TYPE_TREENODEPROGRAM *result);
+extern int sccparse(TYPE_TREENODEMODULE *result);
 
 /**
     Parses SecreC from the given input.
@@ -161,7 +163,7 @@ extern int sccparse(TYPE_TREENODEPROGRAM *result);
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result);
+extern int sccparse_file(FILE *input, TYPE_TREENODEMODULE *result);
 
 /**
     Parses SecreC from the given memory region.
@@ -173,7 +175,7 @@ extern int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result);
     \retval 2 Parsing failed due to memory exhaustion.
     \retval 3 Parsing failed because the input could not be read.
 */
-extern int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEPROGRAM *result);
+extern int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result);
 
 union YYSTYPE {
     TYPE_TREENODE treenode;

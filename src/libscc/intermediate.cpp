@@ -9,11 +9,11 @@
 
 namespace SecreC {
 
-ICode::Status ICode::init(Context& cxt, TreeNodeProgram *program) {
+ICode::Status ICode::init(Context& cxt, TreeNodeModule *mod) {
+    assert (mod != 0);
     ICodeList code;
-    TypeChecker tyChecker (m_symbols, m_log, cxt);
-    CodeGen cg (code, m_symbols, m_log, tyChecker);
-    m_status = program->codeGenWith (cg);
+    CodeGen cg (cxt, code, *this);
+    m_status = mod->codeGenWith (cg).status ();
     if (m_status != OK) {
         return m_status;
     }

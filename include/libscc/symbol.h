@@ -49,10 +49,7 @@ class Symbol {
         inline void setName(const std::string &name) { m_name = name; }
         inline TypeNonVoid* secrecType() const { return m_type; }
         Symbol* previos () const { return m_previous; }
-        void setPrevious (Symbol* prev) {
-            assert (m_previous == 0);
-            m_previous = prev;
-        }
+        void setPrevious (Symbol* prev) { m_previous = prev; }
 
         virtual std::string toString() const = 0;
 
@@ -211,18 +208,18 @@ inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol
 *******************************************************************************/
 
 class SymbolProcedure: public Symbol {
-    public: /* Methods: */
-        SymbolProcedure(const TreeNodeProcDef *procdef);
+public: /* Methods: */
+    SymbolProcedure(const TreeNodeProcDef *procdef);
 
-        inline const TreeNodeProcDef *decl() const { return m_decl; }
-        inline Imop *target() const { return m_target; }
-        inline void setTarget(Imop *target) { m_target = target; }
+    inline const TreeNodeProcDef *decl() const { return m_decl; }
+    inline Imop *target() const { return m_target; }
+    inline void setTarget(Imop *target) { m_target = target; }
 
-        virtual std::string toString() const;
+    virtual std::string toString() const;
 
-    private: /* Fields: */
-        const TreeNodeProcDef *m_decl;
-        Imop                  *m_target;
+private: /* Fields: */
+    const TreeNodeProcDef*  const  m_decl;
+    Imop*                          m_target;
 };
 
 
@@ -239,7 +236,7 @@ class SymbolTemplate: public Symbol {
         virtual std::string toString() const;
 
     private: /* Fields: */
-        const TreeNodeTemplate *m_templ;
+        const TreeNodeTemplate* m_templ;
 };
 
 

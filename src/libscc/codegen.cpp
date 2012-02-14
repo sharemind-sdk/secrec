@@ -10,10 +10,39 @@ namespace SecreC {
   CodeGen
 *******************************************************************************/
 
-Imop* CodeGen::pushComment (const std::string& comment) {
+CGResult CodeGen::codeGen (TreeNodeExpr* e) {
+    TreeNode* const oldNode = m_node;
+    m_node = e;
+    const CGResult& r (e->codeGenWith (*this));
+    m_node = oldNode;
+    return r;
+}
+
+CGBranchResult CodeGen::codeGenBranch (TreeNodeExpr* e) {
+    TreeNode* oldNode = m_node;
+    m_node = e;
+    const CGBranchResult& r (e->codeGenBoolWith (*this));
+    m_node = oldNode;
+    return r;
+}
+
+CGStmtResult CodeGen::codeGenStmt (TreeNodeStmt* s) {
+    TreeNode* oldNode = m_node;
+    m_node = s;
+    const CGStmtResult& r (s->codeGenWith (*this));
+    m_node = oldNode;
+    return r;
+}
+
+Imop* CodeGen::newComment (const std::string& comment) const {
     ConstantString* str = ConstantString::get (getContext (), comment);
     Imop* c = new Imop (0, Imop::COMMENT, 0, str);
-    code.push_imop (c);
+    return c;
+}
+
+Imop* CodeGen::pushComment (const std::string& comment) {
+    Imop* c = newComment (comment);
+    push_imop (c);
     return c;
 }
 
@@ -43,7 +72,7 @@ void CodeGen::codeGenSize (CGResult& result) {
 
         for (dim_iterator it = dim_begin (resSym), e = dim_end (resSym); it != e; ++ it) {
             i = new Imop (m_node, Imop::MUL, size, size, *it);
-            code.push_imop (i);
+            push_imop (i);
         }
     }
 }
@@ -70,7 +99,7 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
 
 void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
     if (result.symbol ()->secrecType ()->isScalar ()) {
-        log.warning () << "Allocating result for scala! Ignoring.";
+        m_log.warning () << "Allocating result for scala! Ignoring.";
         return;
     }
 
@@ -92,15 +121,15 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty
     if (! _ty->isVoid ()) {
         TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
         TypeNonVoid* intTy = TypeNonVoid::getIndexType (getContext ());
-        SymbolSymbol* sym = st->appendTemporary (ty);
+        SymbolSymbol* sym = m_st->appendTemporary (ty);
         result.setResult (sym);
 
         for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
-            sym->setDim (i, st->appendTemporary (intTy));
+            sym->setDim (i, m_st->appendTemporary (intTy));
         }
 
         if (ty->secrecDimType () != 0) {
-            sym->setSizeSym (st->appendTemporary (intTy));
+            sym->setSizeSym (m_st->appendTemporary (intTy));
         }
 
         return sym;
@@ -120,7 +149,7 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
     Symbol* tmp = strideInfo.symbol ();
     const unsigned n = tmp->secrecType ()->secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
-        log.debug () << "Generating stride of scalar!";
+        m_log.debug () << "Generating stride of scalar!";
         return result;
     }
 
@@ -129,7 +158,7 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
     strideInfo.reserve (n);
 
     for (unsigned it = 0; it < n; ++ it) {
-        strideInfo.push_back (st->appendTemporary (ty));
+        strideInfo.push_back (m_st->appendTemporary (ty));
     }
 
     Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (0), ConstantInt::get (getContext (), 1));
@@ -139,7 +168,7 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
         Symbol* symDim = sym->getDim (it - 1);
         i = new Imop (m_node, Imop::MUL,
             strideInfo.at (it), strideInfo.at (it - 1), symDim);
-        code.push_imop(i);
+        push_imop(i);
     }
 
     return result;
@@ -153,11 +182,11 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, Symbol* tmp) {
     unsigned count = 0;
     BOOST_FOREACH (Symbol* idx, loopInfo) {
         Imop* i = new Imop (m_node, Imop::ASSIGN, idx, ConstantInt::get (getContext (),0));
-        code.push_imop (i);
+        push_imop (i);
         result.patchFirstImop (i);
 
         i = new Imop (m_node, Imop::JGE, 0, idx, sym->getDim (count ++));
-        code.push_imop (i);
+        push_imop (i);
         loopInfo.pushJump (i);
     }
 
@@ -173,11 +202,11 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv) 
         Symbol* idx  = *idxIt;
 
         Imop* i = new Imop (m_node, Imop::ASSIGN, idx, v.first);
-        code.push_imop (i);
+        push_imop (i);
         result.patchFirstImop (i);
 
         i = new Imop (m_node, Imop::JGE, 0, idx, v.second);
-        code.push_imop (i);
+        push_imop (i);
         loopInfo.pushJump (i);
         ++ idxIt;
     }
@@ -190,15 +219,15 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     Imop* prevJump = 0;
     BOOST_REVERSE_FOREACH (Symbol* idx, loopInfo) {
         Imop* i = new Imop (m_node, Imop::ADD, idx, idx, ConstantInt::get (getContext (),1));
-        code.push_imop (i);
+        push_imop (i);
         result.patchFirstImop (i);
         if (prevJump != 0) {
-            prevJump->setJumpDest (st->label (i));
+            prevJump->setJumpDest (m_st->label (i));
         }
 
         i = new Imop (m_node, Imop::JUMP, (Symbol*) 0);
-        code.push_imop (i);
-        i->setJumpDest (st->label (loopInfo.top ()));
+        push_imop (i);
+        i->setJumpDest (m_st->label (loopInfo.top ()));
         prevJump = loopInfo.top ();
         loopInfo.pop ();
     }
@@ -294,7 +323,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         }
         else {
             // if there is no upper bound then make one up
-            r_hi = st->appendTemporary (TypeNonVoid::getIndexType (getContext ()));
+            r_hi = m_st->appendTemporary (TypeNonVoid::getIndexType (getContext ()));
             ConstantInt* one = ConstantInt::get (getContext (), 1);
             Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo,one);
             pushImopAfter (result, i);
@@ -310,7 +339,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         ss << "Index out of bounds at " << m_node->location () << ".";
         Imop* jmp = new Imop(m_node, Imop::JUMP, (Symbol*) 0);
         Imop* err = newError (m_node, ConstantString::get (getContext (), ss.str ()));
-        SymbolLabel* errLabel = st->label (err);
+        SymbolLabel* errLabel = m_st->label (err);
 
         dim_iterator dit = dim_begin (x);
         for (SPV::iterator it  (m_spv.begin ()); it != m_spv.end (); ++ it, ++ dit) {
@@ -323,17 +352,17 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
             i->setJumpDest (errLabel);
 
             i = new Imop(m_node, Imop::JGT, (Symbol*) 0, s_lo, s_hi);
-            code.push_imop(i);
+            push_imop(i);
             i->setJumpDest(errLabel);
 
             i = new Imop(m_node, Imop::JGT, (Symbol*) 0, s_hi, d);
-            code.push_imop(i);
+            push_imop(i);
             i->setJumpDest(errLabel);
         }
 
         pushImopAfter (result, jmp);
         result.addToNextList (jmp);
-        code.push_imop(err);
+        push_imop(err);
         return result;
     }
 }

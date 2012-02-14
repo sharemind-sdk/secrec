@@ -82,16 +82,19 @@ SymbolLabel::SymbolLabel (Imop* target)
 { }
 
 std::string SymbolLabel::toString() const {
-    std::ostringstream os;
-    os << "Lable to ";
-    if (m_target->block () != 0) {
-        os << "block " << m_target->block()->index ();
-    }
-    else {
-        os << "imop " << m_target->index ();
-    }
+    return "";
+    /// \todo i have broken this at some point
+//    std::ostringstream os;
+//    os << "Lable to ";
+//    assert (m_target != 0);
+//    if (m_target->block () != 0) {
+//        os << "block " << m_target->block()->index ();
+//    }
+//    else {
+//        os << "imop " << m_target->index ();
+//    }
 
-    return os.str ();
+//    return os.str ();
 }
 
 /*******************************************************************************

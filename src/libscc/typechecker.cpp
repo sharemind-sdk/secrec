@@ -58,8 +58,8 @@ TypeChecker::~TypeChecker () {
     delete m_instantiator;
 }
 
-bool TypeChecker::getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st) {
-    return m_instantiator->getForInstantiation (proc, st);
+bool TypeChecker::getForInstantiation (InstanceInfo& info) {
+    return m_instantiator->getForInstantiation (info);
 }
 
 ICode::Status TreeNodeExprAssign::accept (TypeChecker& tyChecker) {

@@ -11,6 +11,8 @@
 
 #include <boost/foreach.hpp>
 
+#include "ModuleInfo.h"
+
 namespace SecreC {
 
 /*******************************************************************************
@@ -61,15 +63,17 @@ unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
 
 /// \todo figure out how to delay copying of procedures even more (or completeley avoid
 /// if possible).
-TreeNodeProcDef* TemplateInstantiator::add (const Instantiation& i, SymbolTable* st) {
+const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInfo& mod) {
     std::map<const Instantiation, InstanceInfo >::iterator it = m_instanceInfo.find (i);
     if (it == m_instanceInfo.end ()) {
         TreeNode* cloned = i.getTemplate ()->decl ()->body ()->clone (0);
         InstanceInfo info;
-        SymbolTable* local = st->globalScope ()->newScope ();
+        SymbolTable* local = mod.codeGenState ().st ()->newScope ();
+        local->setName ("Template " + i.getTemplate ()->name ());
         m_workList.push_back (i);
         info.m_generatedBody = static_cast<TreeNodeProcDef*>(cloned);
-        info.m_localSymbolTable = local;
+        info.m_moduleInfo = &mod;
+        info.m_localScope = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
         Instantiation::const_iterator secIt = i.begin ();
@@ -84,17 +88,19 @@ TreeNodeProcDef* TemplateInstantiator::add (const Instantiation& i, SymbolTable*
         }
     }
 
-    return it->second.m_generatedBody;
+    return it->second;
 }
 
-bool TemplateInstantiator::getForInstantiation (TreeNodeProcDef*& proc, SymbolTable*& st) {
+bool TemplateInstantiator::getForInstantiation (InstanceInfo& info) {
     while (! m_workList.empty ()) {
         Instantiation i = m_workList.front ();
         m_workList.pop_front ();
         if (! isInstantiated (i)) {
+            info = m_instanceInfo[i];
+            assert (info.m_generatedBody != 0);
+            assert (info.m_moduleInfo != 0);
+            assert (info.m_localScope != 0);
             m_generated.insert (i);
-            proc = m_instanceInfo[i].m_generatedBody;
-            st = m_instanceInfo[i].m_localSymbolTable;
             return true;
         }
     }

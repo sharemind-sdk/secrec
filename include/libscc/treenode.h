@@ -16,6 +16,7 @@ namespace SecreC {
 
 class CodeGen;
 class TypeChecker;
+class ModuleInfo;
 class TreeNodeProcDef;
 class TreeNode;
 #else
@@ -1115,8 +1116,6 @@ public:
     ChildrenListConstIterator paramBegin () const;
     ChildrenListConstIterator paramEnd () const;
 
-    CGStmtResult codeGenWith (CodeGen& cg);
-
 protected: /* Methods: */
 
     friend class TypeChecker;
@@ -1191,6 +1190,7 @@ public: /* Methods: */
     explicit inline TreeNodeTemplate(const YYLTYPE &loc)
         : TreeNode(NODE_TEMPLATE_DECL, loc)
         , m_contextDependance (false)
+        , m_containingModule (0)
     { }
 
     TreeNodeProcDef* body () const;
@@ -1204,6 +1204,14 @@ public: /* Methods: */
         return m_contextDependance;
     }
 
+    ModuleInfo* containingModule () const {
+        return m_containingModule;
+    }
+
+    void setContainingModule (ModuleInfo& mod) {
+        m_containingModule = &mod;
+    }
+
 protected:
 
     virtual TreeNode* cloneV () const {
@@ -1213,6 +1221,7 @@ protected:
 private: /* Fields: */
     bool m_contextDependance; /**< true if the template resolution
                                    requires context */
+    ModuleInfo* m_containingModule;
 };
 
 /******************************************************************
@@ -1225,12 +1234,57 @@ public: /* Methods: */
     explicit inline TreeNodeProgram(const YYLTYPE &loc)
         : TreeNode(NODE_PROGRAM, loc) {}
 
-    ICode::Status codeGenWith (CodeGen& cg);
-
 protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeProgram (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeImport
+******************************************************************/
+
+class TreeNodeImport : public TreeNode {
+public: /* Methods: */
+    inline TreeNodeImport(const YYLTYPE &loc)
+        : TreeNode (NODE_IMPORT, loc)
+    { }
+
+    CGStmtResult codeGenWith (CodeGen& cg);
+
+    virtual ~TreeNodeImport () { }
+    const std::string& name () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeImport (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeModule
+******************************************************************/
+
+class TreeNodeModule : public TreeNode {
+public: /* Methods: */
+    inline TreeNodeModule(const YYLTYPE &loc)
+        : TreeNode (NODE_MODULE, loc)
+    { }
+
+    virtual ~TreeNodeModule () { }
+
+    CGStmtResult codeGenWith (CodeGen& cg);
+
+    bool hasName () const;
+    std::string name () const;
+    TreeNodeProgram* program () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeModule (m_location);
     }
 };
 

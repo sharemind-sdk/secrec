@@ -111,6 +111,7 @@
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
+%token IMPORT MODULE
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -193,11 +194,14 @@
 %type <treenode> template_quantifiers
 %type <treenode> template_quantifier
 %type <treenode> qualified_expression
+%type <treenode> import_declaration
+%type <treenode> import_declarations
+%type <treenode> program
 
-%type <nothing> program
+%type <nothing> module
 
 /* Starting nonterminal: */
-%start program
+%start module
 
 %%
 
@@ -205,10 +209,34 @@
   Program and variable declarations:
 *******************************************************************************/
 
+module
+ : MODULE identifier ';' program
+   {
+     $$ = 0;
+     *parseTree = treenode_init (NODE_MODULE, &@$);
+     treenode_appendChild (*parseTree, $4);
+     treenode_appendChild (*parseTree, $2);
+   }
+ | program
+   {
+    $$ = 0;
+    *parseTree = treenode_init (NODE_MODULE, &@$);
+    treenode_appendChild (*parseTree, $1);
+   }
+ ;
+
 program
- : global_declarations
-   { $$ = 0;
-     *parseTree = $1;
+ : import_declarations global_declarations
+   {
+     $$ = treenode_init (NODE_PROGRAM, &@$);
+     treenode_moveChildren ($1, $$);
+     treenode_moveChildren ($2, $$);
+     treenode_free ($1);
+     treenode_free ($2);
+   }
+ | global_declarations
+   {
+     $$ = $1;
    }
  ;
 
@@ -223,6 +251,27 @@ global_declarations
    {
      $$ = treenode_init(NODE_PROGRAM, &@$);
      treenode_appendChild($$, $1);
+   }
+ ;
+
+import_declarations
+ : import_declarations import_declaration
+   {
+     $$ = $1;
+     treenode_appendChild ($$, $2);
+   }
+ | import_declaration
+   {
+    $$ = treenode_init (NODE_INTERNAL_USE, &@$);
+    treenode_appendChild ($$, $1);
+   }
+ ;
+
+import_declaration
+ : IMPORT identifier ';'
+   {
+     $$ = treenode_init (NODE_IMPORT, &@$);
+     treenode_appendChild ($$, $2);
    }
  ;
 
@@ -1113,7 +1162,7 @@ void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
             s);
 }
 
-int sccparse(TYPE_TREENODEPROGRAM *result) {
+int sccparse(TYPE_TREENODEMODULE *result) {
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
@@ -1122,7 +1171,7 @@ int sccparse(TYPE_TREENODEPROGRAM *result) {
     return r;
 }
 
-int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result) {
+int sccparse_file(FILE *input, TYPE_TREENODEMODULE *result) {
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
@@ -1132,7 +1181,7 @@ int sccparse_file(FILE *input, TYPE_TREENODEPROGRAM *result) {
     return r;
 }
 
-int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEPROGRAM *result) {
+int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
     FILE *memoryFile;
     yyscan_t scanner;
     int r;

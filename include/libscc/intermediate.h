@@ -7,38 +7,44 @@
 #include "imop.h"
 #include "log.h"
 #include "symboltable.h"
-#include "types.h"
+#include "ModuleMap.h"
 
 namespace SecreC {
 
-class TreeNodeProgram;
+class TreeNodeModule;
+class Context;
 
 class ICode {
-    private:
-        ICode (const ICode&); // do not implement
-        ICode& operator = (const ICode&); // do not implement
-    public: /* Types: */
-        enum Status { NOT_READY, OK, E_NOT_IMPLEMENTED, E_EMPTY_PROGRAM,
-                      E_NO_MAIN, E_TYPE, E_OTHER, E_NO_MEM };
+private:
+    ICode (const ICode&); // do not implement
+    ICode& operator = (const ICode&); // do not implement
+public: /* Types: */
+    enum Status { NOT_READY, OK, E_NOT_IMPLEMENTED, E_EMPTY_PROGRAM,
+                  E_NO_MAIN, E_TYPE, E_OTHER, E_NO_MEM };
 
-    public: /* Methods: */
-        inline ICode()
-            : m_status(NOT_READY) {}
+public: /* Methods: */
+    ICode ()
+        : m_status (NOT_READY)
+    {}
 
-        Status init(Context& cxt, TreeNodeProgram *p);
+    Status init (Context& cxt, TreeNodeModule* mod);
 
-        const SymbolTable &symbols() const { return m_symbols; }
-        Program& program () { return m_program; }
-        const Program& program () const { return m_program; }
-        Status status() const { return m_status; }
-        const CompileLog &compileLog() const { return m_log; }
+    SymbolTable& symbols () { return m_symbols; }
+    const SymbolTable& symbols () const { return m_symbols; }
+    Program& program () { return m_program; }
+    const Program& program () const { return m_program; }
+    Status status () const { return m_status; }
+    CompileLog& compileLog () { return m_log; }
+    const CompileLog& compileLog () const { return m_log; }
+    ModuleMap& modules () { return m_modules; }
 
-    private: /* Fields: */
+private: /* Fields: */
 
-        SymbolTable m_symbols;
-        Program     m_program;
-        Status      m_status;
-        CompileLog  m_log;
+    SymbolTable  m_symbols;
+    ModuleMap    m_modules;
+    Program      m_program;
+    Status       m_status;
+    CompileLog   m_log;
 };
 
 
