@@ -13,7 +13,10 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+
+#include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 #include <libscc/context.h>
 #include <libscc/intermediate.h>
@@ -32,6 +35,7 @@ int main(int argc, char *argv[]) {
     desc.add_options ()
             ("help,h", "Display this help message")
             ("verbose,v", "Enable verbose output")
+            ("include,I", po::value<vector<string > >(), "Directory for module search path.")
             ("output,o", po::value<string>(), "Output file")
             ("input", po::value<string>(), "Input file")
             ;
@@ -62,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* Parse the program: */
-    SecreC::TreeNodeProgram* parseTree = 0;
+    SecreC::TreeNodeModule* parseTree = 0;
     int parseResult = 0;
     if (vm.count ("input")) {
         const std::string fname = vm["input"].as<string>();
@@ -91,6 +95,14 @@ int main(int argc, char *argv[]) {
     /* Translate to intermediate code: */
     SecreC::Context context;
     SecreC::ICode icode;
+
+    /* Collect possible include files: */
+    if (vm.count ("include")) {
+        BOOST_FOREACH (const string& name, vm["include"].as<vector<string > >()) {
+            icode.modules ().addSearchPath (name);
+        }
+    }
+
     if (icode.init (context, parseTree) != SecreC::ICode::OK) {
         ::operator << (cerr << "Error generating valid intermediate code." << endl
                       , icode.compileLog ());
