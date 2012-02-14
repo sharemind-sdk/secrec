@@ -15,6 +15,7 @@
 #include "symboltable.h"
 #include "blocks.h"
 #include "constant.h"
+#include "treenode.h"
 
 #define LEAVETRACE 0
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
@@ -524,6 +525,12 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
         SET_SIMPLE_CALLBACK(NAME);\
     }} while (0)
 
+bool matchTypes (Type* ty1, Type* ty2) {
+    return  ty1->secrecDataType () == ty2->secrecDataType () &&
+            ty1->secrecDimType () == ty2->secrecDimType () &&
+            ty1->secrecSecType () == ty2->secrecSecType ();
+}
+
 /**
  * Select instruction based on intermediate operator.
  * Does not handle multi-callback operators.
@@ -535,13 +542,12 @@ CallbackTy getCallback (const Imop& imop) {
 
     // figure out the data type
     switch (imop.type ()) {
-    case Imop::CAST:
-    case Imop::UMINUS:
     case Imop::MUL:
     case Imop::DIV:
     case Imop::MOD:
     case Imop::ADD:
     case Imop::SUB:
+        assert (matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ()));
     case Imop::EQ:
     case Imop::NE:
     case Imop::LE:
@@ -554,9 +560,21 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::JLT:
     case Imop::JGE:
     case Imop::JGT:
+        assert (matchTypes (imop.arg2 ()->secrecType (), imop.arg1 ()->secrecType ()));
+    case Imop::UMINUS:
+    case Imop::CAST:
         ty = imop.arg1()->secrecType()->secrecDataType();
     default:
         break;
+    }
+
+    if (imop.type () == Imop::ASSIGN) {
+        if (! matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ())) {
+            std::cerr << imop.toString () << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
+            std::cerr << imop.dest ()->secrecType ()->toString () << std::endl;
+            std::cerr << imop.arg1 ()->secrecType ()->toString () << std::endl;
+            assert (false);
+        }
     }
 
     switch (imop.type ()) {

@@ -169,6 +169,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_STMT_PUSHCREF: return "STMT_PUSHCREF";
         case NODE_EXPR_DOMAINID: return "EXPR_DOMAINID";
         case NODE_VAR_INIT: return "VAR_INIT";
+        case NODE_MODULE: return "MODULE";
+        case NODE_IMPORT: return "IMPORT";
         default: return "UNKNOWN";
     }
 }
@@ -330,6 +332,10 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeTemplate (*loc));
         case NODE_VAR_INIT:
             return (TreeNode*) (new SecreC::TreeNodeVarInit (*loc));
+        case NODE_MODULE:
+            return (TreeNode*) (new SecreC::TreeNodeModule (*loc));
+        case NODE_IMPORT:
+            return (TreeNode*) (new SecreC::TreeNodeImport (*loc));
         default:
             assert(type != NODE_IDENTIFIER);
             assert((type & NODE_LITE_MASK) == 0x0);
@@ -1201,5 +1207,38 @@ std::string TreeNodeTypeType::stringHelper() const {
         return secrecType()->toString();
     return "";
 }
+
+/*******************************************************************************
+  TreeNodeModule
+*******************************************************************************/
+
+bool TreeNodeModule::hasName () const {
+    return children ().size () == 2;
+}
+
+std::string TreeNodeModule::name () const {
+    assert (children ().size () == 1 || children ().size () == 2);
+
+    if (hasName ()) {
+        return childAt<TreeNodeIdentifier>(this, 1)->value ();
+    }
+
+    return "";
+}
+
+TreeNodeProgram* TreeNodeModule::program () const {
+    assert (children ().size () == 1 || children ().size () == 2);
+    return childAt<TreeNodeProgram>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeImport
+*******************************************************************************/
+
+const std::string& TreeNodeImport::name () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeIdentifier>(this, 0)->value ();
+}
+
 
 } // namespace SecreC
