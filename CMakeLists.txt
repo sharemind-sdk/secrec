@@ -117,7 +117,8 @@ ADD_EXECUTABLE("sca" "src/sca/main.cpp")
 SET_TARGET_PROPERTIES("sca" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin/"
     VERSION "0.3.0.0")
-TARGET_LINK_LIBRARIES("sca" "libscc")
+TARGET_LINK_LIBRARIES("sca" "libscc"
+    ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
 ################################################################################
 # scc
