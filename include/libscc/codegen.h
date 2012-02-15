@@ -312,7 +312,7 @@ public: /* Methods: */
         result.patchFirstImop (imop);
         if (!result.nextList ().empty ())
             result.patchNextList (m_st->label (imop));
-        m_code.push_imop (imop);
+        push_imop (imop);
     }
 
     /**
