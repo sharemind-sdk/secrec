@@ -1,8 +1,13 @@
 #include <cassert>
 #include <cstring>
-#include <getopt.h>
 #include <iostream>
 #include <memory>
+
+#include <boost/program_options.hpp>
+#include <boost/foreach.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/iostreams/stream_buffer.hpp>
+#include <boost/iostreams/device/file.hpp>
 
 #include <libscc/context.h>
 #include <libscc/blocks.h>
@@ -12,68 +17,121 @@
 #include <libscc/treenode.h>
 #include <libscc/virtual_machine.h>
 
+
 using namespace std;
+namespace po = boost::program_options;
+namespace io = boost::iostreams;
 
-void help (void) {
-  cout <<
-  "Usage: sca [options] [file]\n"
-  "Options:\n"
-  "  -h, --help           this help\n"
-  "  -v, --verbose        some extra information\n"
-  "      --print-ast      print abstract syntax tree\n"
-  "      --print-st       print symbol tabel\n"
-  "      --cfg-dotty      output CFG as dotty graph\n"
-  "  -e, --eval           evaluate the code\n"
-  "  -a, --analysis       select analysis that you wish to enable\n"
-  "                       Possible comma separated values are:\n"
-  "                       \"rd\"  reaching definitions\n"
-  "                       \"rj\"  reaching jumps\n"
-  "                       \"rdc\" reaching declassify\n"
-  "                       \"lv\"  live variables\n"
-  "                       \"dom\" dominators\n"
-  << endl;
+struct Configuration {
+    bool m_verbose;
+    bool m_help;
+    bool m_printST;
+    bool m_printAST;
+    bool m_printCFG;
+    bool m_printIR;
+    bool m_eval;
+    bool m_stdin;
+    bool m_stdout;
+
+    string m_output;
+    string m_input;
+    set<string > m_includes;
+    set<string > m_analysis;
+
+    Configuration ()
+        : m_verbose (false)
+        , m_help (false)
+        , m_printST (false)
+        , m_printAST (false)
+        , m_printCFG (false)
+        , m_printIR (false)
+        , m_eval (false)
+        , m_stdin (true)
+        , m_stdout (true)
+    { }
+
+    ~Configuration () { }
+
+    void read (const po::variables_map& vm) {
+        m_verbose = vm.count ("verbose");
+        m_help = vm.count ("help");
+        m_eval = vm.count ("eval");
+        m_printST = vm.count ("print-st");
+        m_printAST = vm.count ("print-ast");
+        m_printCFG = vm.count ("print-cfg");
+        m_printIR = vm.count ("print-ir");
+
+        if (vm.count ("output")) {
+            m_stdout = false;
+            m_output = vm["output"].as<string>();
+        }
+
+        if (vm.count ("input")) {
+            m_stdin = false;
+            m_input = vm["input"].as<string>();
+        }
+
+        if (vm.count ("include")) {
+            const vector<string >& v = vm["include"].as<vector<string > >();
+            m_includes.insert (v.begin (), v.end ());
+        }
+
+        if (vm.count ("analysis")) {
+            const vector<string >& v = vm["analysis"].as<vector<string > > ();
+            m_analysis.insert (v.begin (), v.end ());
+        }
+    }
+};
+
+SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
+    if (name == "rd") {
+        return new SecreC::ReachingDefinitions ();
+    }
+
+    if (name == "rj")  {
+        return new SecreC::ReachingJumps ();
+    }
+
+    if (name == "rdc") {
+        return new SecreC::ReachingDeclassify ();
+    }
+
+    if (name == "lv") {
+        return new SecreC::LiveVariables ();
+    }
+
+    if (name == "dom") {
+        return new SecreC::Dominators ();
+    }
+
+    return 0;
 }
 
-// top level commands
-namespace Flag {
-enum Name {
-    Verbose = 0,
-    Help,
-    PrintAst,
-    PrintST,
-    CFGDotty,
-    Eval,
-    Analysis,
-    Count
-};
-}
-
-// arguments to --analysis command
-enum AnalysisType {
-    ReachingDefs       = 0x01,
-    ReachingJumps      = 0x02,
-    ReachingDeclassify = 0x04,
-    ConstantFolding    = 0x08,
-    LiveVariables      = 0x10,
-    Dominators         = 0x20
-};
-
-static int flags[Flag::Count];
-
-static
-int run (const char* filename) {
+int run (const Configuration& cfg) {
     std::auto_ptr<SecreC::TreeNodeModule> parseTree;
-    int exitCode = 0;
+    std::ostream out (cout.rdbuf ());
+    io::stream_buffer<io::file_sink > fileBuf;
 
-    if (filename == 0) {
+    if (! cfg.m_stdout) {
+        fileBuf.open (cfg.m_output);
+        if (! fileBuf.is_open ()) {
+            std::cerr << "Unable to open \"" << cfg.m_output << "\" for output.";
+            return EXIT_FAILURE;
+        }
+
+        out.rdbuf (&fileBuf);
+    }
+
+    int exitCode = 0;
+    if (cfg.m_stdin) {
         SecreC::TreeNodeModule* tmpTree = 0;
         exitCode = sccparse(&tmpTree);
         parseTree.reset (tmpTree);
     } else {
-        FILE *f = fopen(filename, "r");
+        FILE *f = fopen (cfg.m_input.c_str (), "r");
         if (f != NULL) {
-            if (flags[Flag::Verbose]) {
-                cerr << "Parsing file: \"" << filename << "\"... ";
+            if (cfg.m_verbose) {
+                cerr << "Parsing file: \"" << cfg.m_input << "\"... ";
                 cerr << flush;
             }
 
@@ -82,139 +140,126 @@ int run (const char* filename) {
             parseTree.reset (tmpTree);
             fclose(f);
 
-            if (flags[Flag::Verbose]) {
+            if (cfg.m_verbose) {
               cerr << "DONE!" << endl;
             }
         } else {
-            cerr << "Unable to open file: " << filename << endl;
-            return 1;
+            cerr << "Unable to open file: \"" << cfg.m_input << '\"' << endl;
+            return EXIT_FAILURE;
         }
     }
 
-    fflush (stdout);
-    fflush (stderr);
+    if (exitCode != 0) {
+        cerr << "Parsing input file failed." << endl;
+        return EXIT_FAILURE;
+    }
 
-    if (exitCode == 0) {
-        assert(parseTree.get () != 0);
-        if (flags[Flag::PrintAst]) {
-          cout << parseTree->toString() << endl << endl;
-        }
+    out << flush;
+    cerr << flush;
 
-        SecreC::Context context;
-        SecreC::ICode icode;
+    assert (parseTree.get () != 0);
+    if (cfg.m_printAST) {
+        out << parseTree->toString() << endl;
+        return EXIT_SUCCESS;
+    }
 
-        icode.init (context, parseTree.get ());
+    SecreC::Context context;
+    SecreC::ICode icode;
 
-        if (icode.status() == SecreC::ICode::OK) {
-            SecreC::Program& pr = icode.program ();
+    BOOST_FOREACH (const std::string& path, cfg.m_includes) {
+        icode.modules ().addSearchPath (path);
+    }
 
-            if (flags[Flag::Verbose]) {
-              cerr << "Valid intermediate code generated." << endl
-                   << icode.compileLog();
-            }
+    icode.init (context, parseTree.get ());
 
-            if (flags[Flag::PrintST]) {
-                cerr << icode.symbols () << endl;
-            }
+    if (icode.status() == SecreC::ICode::OK) {
+        SecreC::Program& pr = icode.program ();
 
-            if (flags[Flag::Verbose]) {
-                cerr << pr.toString() << endl;
-            }
-
-            if (flags[Flag::CFGDotty]) {
-                pr.toDotty (cout);
-                cout << std::flush;
-            }
-
-            // Run data flow analysis and print the results:
-            if (flags[Flag::Analysis] > 0) {
-                SecreC::DataFlowAnalysisRunner runner;
-                SecreC::ReachingDefinitions rd;
-                SecreC::ReachingJumps rj;
-                SecreC::ReachingDeclassify rdc;
-                SecreC::LiveVariables lv;
-                SecreC::Dominators dom;
-
-                if (flags[Flag::Analysis] & ReachingDefs)       runner.addAnalysis(&rd);
-                if (flags[Flag::Analysis] & ReachingJumps)      runner.addAnalysis(&rj);
-                if (flags[Flag::Analysis] & ReachingDeclassify) runner.addAnalysis(&rdc);
-                if (flags[Flag::Analysis] & LiveVariables)      runner.addAnalysis(&lv);
-                if (flags[Flag::Analysis] & Dominators)         runner.addAnalysis(&dom);
-
-                runner.run(pr);
-                cout << runner.toString (pr) << endl;
-            }
-
-            if (flags[Flag::Eval]) {
-                SecreC::VirtualMachine eval;
-                exitCode = eval.run (pr);
-                return exitCode;
-            }
-        } else {
-            cerr << "Error generating valid intermediate code." << endl
+        if (cfg.m_verbose) {
+            cerr << "Valid intermediate code generated." << endl
                  << icode.compileLog();
-            exitCode = 1;
         }
+
+        if (cfg.m_printST) {
+            out << icode.symbols () << endl;
+            return EXIT_SUCCESS;
+        }
+
+        if (cfg.m_printIR) {
+            out << pr.toString() << endl;
+            return EXIT_SUCCESS;
+        }
+
+        if (cfg.m_printCFG) {
+            pr.toDotty (out);
+            out << flush;
+            return EXIT_SUCCESS;
+        }
+
+        // Run data flow analysis and print the results:
+        if (! cfg.m_analysis.empty ()) {
+            SecreC::DataFlowAnalysisRunner runner;
+            boost::ptr_vector<SecreC::DataFlowAnalysis> analysis;
+            BOOST_FOREACH (const std::string& name, cfg.m_analysis) {
+                SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
+                if (a != 0) {
+                    analysis.push_back (a);
+                    runner.addAnalysis (a);
+                }
+            }
+
+            runner.run (pr);
+            out << runner.toString (pr) << endl;
+        }
+
+        if (cfg.m_eval) {
+            SecreC::VirtualMachine eval;
+            return eval.run (pr);
+        }
+    } else {
+        cerr << "Error generating valid intermediate code." << endl
+             << icode.compileLog();
+        return EXIT_FAILURE;
     }
 
-    return exitCode;
+    return EXIT_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
-    char* filename = 0;
+    po::options_description desc ("Available options");
+    desc.add_options ()
+            ("help,h",    "Display this help message")
+            ("verbose,v", "Enable verbose output")
+            ("output,o",   po::value<string>(), "Output file")
+            ("input",      po::value<string>(), "Input file")
+            ("include,I",  po::value<vector<string > >(),
+             "Directory for module search path.")
+            ("eval,e", "Evaluate the program")
+            ("print-ast", "Print the abstract syntax tree")
+            ("print-st",  "Print the symbol table")
+            ("print-cfg", "Print the control flow graph")
+            ("print-ir",  "Print the intermediate represetnation")
+            ("analysis,a", po::value<vector<string > >(),
+             "Run specified analysis. Options are:\n"
+             "\t\"rd\"  -- reaching definitions\n"
+             "\t\"rj\"  -- reaching jumps\n"
+             "\t\"rdc\" -- reaching declassify\n"
+             "\t\"lv\"  -- live variables\n"
+             "\t\"dom\" -- dominators\n");
+    po::positional_options_description p;
+    p.add("input", -1);
 
-    while (1) {
-      static struct option options[] = {
-        {"verbose",      no_argument,       0,                      'v'},
-        {"help",         no_argument,       0,                      'h'},
-        {"print-ast",    no_argument,       &flags[Flag::PrintAst],  1 },
-        {"print-st",     no_argument,       &flags[Flag::PrintST],   1 },
-        {"cfg-dotty",    no_argument,       &flags[Flag::CFGDotty],  1 },
-        {"eval",         no_argument,       0,                      'e'},
-        {"analysis",     optional_argument, 0,                      'a'},
-        {0, 0, 0, 0}
-      };
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+        options (desc).positional (p).run (), vm);
+    po::notify(vm);
 
-      int option_index = 0;
-      int c = getopt_long (argc, argv, "vhea::", options, &option_index);
-      char *str = optarg;
-
-      if (c == -1) {
-        break;
-      }
-
-      switch (c) {
-        case 0:  /* intentionally empty */ break;
-        case 'v': flags[Flag::Verbose] = 1; break;
-        case 'e': flags[Flag::Eval] = 1;    break;
-        case 'h': flags[Flag::Help] = 1;    break;
-        case 'a':
-          while (1) {
-            const char* token = strtok (str, ",");
-            if (token == 0) break;
-            if (strcmp (token, "rd") == 0)  flags[Flag::Analysis] |= ReachingDefs;
-            if (strcmp (token, "rj") == 0)  flags[Flag::Analysis] |= ReachingJumps;
-            if (strcmp (token, "rdc") == 0) flags[Flag::Analysis] |= ReachingDeclassify;
-            if (strcmp (token, "lv") == 0)  flags[Flag::Analysis] |= LiveVariables;
-            if (strcmp (token, "dom") == 0) flags[Flag::Analysis] |= Dominators;
-            str = NULL;
-          }
-
-          break;
-        default:
-          help ();
-          return 1;
-      }
+    Configuration cfg;
+    cfg.read (vm);
+    if (cfg.m_help) {
+        cout << desc << "\n";
+        return EXIT_SUCCESS;
     }
 
-    if (flags[Flag::Help]) {
-      help ();
-      return 0;
-    }
-
-    if (optind < argc) {
-      filename = argv[optind ++];
-    }
-
-    return run (filename);
+    return run (cfg);
 }
