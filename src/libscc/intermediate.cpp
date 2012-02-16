@@ -13,7 +13,7 @@ ICode::Status ICode::init(Context& cxt, TreeNodeModule *mod) {
     assert (mod != 0);
     ICodeList code;
     CodeGen cg (cxt, code, *this);
-    m_status = mod->codeGenWith (cg).status ();
+    m_status = cg.cgMain (mod).status ();
     if (m_status != OK) {
         return m_status;
     }

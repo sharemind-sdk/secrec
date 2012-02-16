@@ -55,8 +55,6 @@ public: /* Methods: */
     std::string toString(unsigned level = 0, unsigned indent = 4,
                          bool newScope = true) const;
 
-private:
-
     /**
      * Find a symbol in current scope, follow imported modules.
      * \retval 0 if name is not found in the current scope.

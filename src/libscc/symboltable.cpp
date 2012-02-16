@@ -146,7 +146,7 @@ SymbolTable::~SymbolTable() {
 
 bool SymbolTable::addImport (SymbolTable* st) {
     assert (st != 0);
-    if (std::find (m_imports.begin (), m_imports.end (), st) != m_imports.end ()) {
+    if (std::find (m_imports.begin (), m_imports.end (), st) == m_imports.end ()) {
         m_imports.push_back (st);
         return true;
     }
@@ -217,7 +217,16 @@ std::string SymbolTable::toString(unsigned level, unsigned indent,
     }
 
     printIndent(os, level, indent);
-    os << "==  " << m_name << " ==" << std::endl;
+    os << "==  " << m_name << " (";
+    BOOST_FOREACH (SymbolTable* import, m_imports) {
+        if (import != this) {
+            os << ", ";
+        }
+
+        os << import;
+    }
+
+    os << ") ==" << std::endl;
 
 
     BOOST_FOREACH (Symbol* sym, m_table) {

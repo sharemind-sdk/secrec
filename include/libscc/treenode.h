@@ -1028,7 +1028,6 @@ public: /* Methods: */
     explicit inline TreeNodeKind(const YYLTYPE &loc)
         : TreeNode (NODE_KIND, loc) { }
     virtual inline ~TreeNodeKind() { }
-    CGStmtResult codeGenWith (CodeGen& cg);
 
 protected:
 
@@ -1047,7 +1046,6 @@ public: /* Methods: */
     explicit inline TreeNodeDomain(const YYLTYPE &loc)
         : TreeNode (NODE_DOMAIN, loc) { }
     virtual inline ~TreeNodeDomain() { }
-    CGStmtResult codeGenWith (CodeGen& cg);
 
 protected:
 
@@ -1251,8 +1249,6 @@ public: /* Methods: */
         : TreeNode (NODE_IMPORT, loc)
     { }
 
-    CGStmtResult codeGenWith (CodeGen& cg);
-
     virtual ~TreeNodeImport () { }
     const std::string& name () const;
 
@@ -1274,8 +1270,6 @@ public: /* Methods: */
     { }
 
     virtual ~TreeNodeModule () { }
-
-    CGStmtResult codeGenWith (CodeGen& cg);
 
     bool hasName () const;
     std::string name () const;

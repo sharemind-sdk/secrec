@@ -18,6 +18,8 @@
 
 namespace SecreC {
 
+class TreeNodeProgram;
+
 /*******************************************************************************
   ModuleInfo
 *******************************************************************************/
@@ -40,12 +42,14 @@ public:
 public: /* Methods: */
 
     ModuleInfo ()
-        : m_status (CGStarted)
+        : m_status (CGNotStarted)
+        , m_body (0)
     { }
 
     explicit ModuleInfo (const directory_entry& location)
         : m_location (location)
         , m_status (CGNotStarted)
+        , m_body (0)
     { }
 
     ~ModuleInfo () { }
@@ -56,11 +60,15 @@ public: /* Methods: */
     CGStatus status () const { return m_status; }
     void setStatus (ModuleInfo::CGStatus status) { m_status = status; }
     CodeGenState& codeGenState () { return m_cgState; }
+    TreeNodeModule* body () const { return m_body; }
+    void setBody (TreeNodeModule* body) { m_body = body; }
+    ICode::Status read ();
 
 private: /* Fields: */
     directory_entry   const  m_location;
     CGStatus                 m_status;
     CodeGenState             m_cgState;
+    TreeNodeModule*          m_body;
 };
 
 } // namespace SecreC

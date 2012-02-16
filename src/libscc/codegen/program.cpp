@@ -14,30 +14,9 @@
 
 namespace SecreC {
 
-CGStmtResult CodeGen::cgGlobalDecl (TreeNode *decl) {
-    switch (decl->type ()) {
-    case NODE_DECL:
-        static_cast<TreeNodeStmtDecl*>(decl)->setGlobal (true);
-        return static_cast<TreeNodeStmtDecl*>(decl)->codeGenWith (*this);
-    case NODE_KIND:
-        return static_cast<TreeNodeKind*>(decl)->codeGenWith (*this);
-    case NODE_DOMAIN:
-        return static_cast<TreeNodeDomain*>(decl)->codeGenWith (*this);
-    case NODE_IMPORT:
-        return static_cast<TreeNodeImport*>(decl)->codeGenWith (*this);
-    default:
-        assert (false && "UNREACHABLE");
-        return CGStmtResult (ICode::E_OTHER);
-    }
-}
-
 /*******************************************************************************
   TreeNodeKind
 *******************************************************************************/
-
-CGStmtResult TreeNodeKind::codeGenWith (CodeGen &cg) {
-    return cg.cgKind (this);
-}
 
 CGStmtResult CodeGen::cgKind (TreeNodeKind *kind) {
     typedef TreeNodeIdentifier TNI;
@@ -58,10 +37,6 @@ CGStmtResult CodeGen::cgKind (TreeNodeKind *kind) {
 /*******************************************************************************
   TreeNodeDomain
 *******************************************************************************/
-
-CGStmtResult TreeNodeDomain::codeGenWith (CodeGen &cg) {
-    return cg.cgDomain (this);
-}
 
 CGStmtResult CodeGen::cgDomain (TreeNodeDomain *dom) {
     typedef TreeNodeIdentifier TNI;
@@ -209,154 +184,114 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
   TreeNodeModule
 *******************************************************************************/
 
-CGStmtResult TreeNodeModule::codeGenWith (CodeGen& cg) {
-    return cg.cgModule (this);
-}
-
-CGStmtResult CodeGen::cgModule (TreeNodeModule* modNode) {
-    TreeNode* nameNode = modNode->children ().at (0);
-    ModuleInfo* modInfo = 0;
-    if (modNode->hasName ()) {
-        modInfo = m_modules.findModule (modNode->name ());
-
-        if (modInfo == 0) {
-            m_log.fatal () << "Module \"" << modNode->name () << "\" not found.";
-            m_log.fatal () << "Error at " << nameNode->location () << ".";
-            return CGResult (ICode::E_OTHER);
-        }
-
-        if (modNode->name () != modInfo->fileNameStem ()) {
-            m_log.fatal () << "File name does not match with module name.";
-            m_log.fatal () << "Error at " << nameNode->location () << ".";
-            return CGResult (ICode::E_OTHER);
-        }
-
-        if (modInfo->status () != ModuleInfo::CGStarted) {
-            m_log.fatal () << "ICE: attempting to generate code for module that's not yet parsed.";
-            return CGResult (ICode::E_OTHER);
-        }
-    }
-    else {
-        modInfo = new ModuleInfo ();
-        std::auto_ptr<ModuleInfo> newMod (modInfo);
-        if (! m_modules.addModule ("__main", newMod)) {
-            m_log.fatal () << "Error creating main module at " << modNode->location () << ".";
-            return CGResult (ICode::E_OTHER);
-        }
-
-        assert (newMod.get () == 0 && "ModuleMap did not take ownership!");
-        CodeGenState& cgState = modInfo->codeGenState ();
-        modInfo->setStatus (ModuleInfo::CGStarted);
-        cgState.m_insertPoint = m_code.end ();
-        cgState.m_node = modNode;
-        cgState.m_st = m_st->newScope ();
-        cgState.m_st->setName ("Module");
-    }
-
-
-    assert (modInfo->codeGenState ().currentNode () == modNode);
-    const CGStmtResult& result = cgMainModule (modNode->program (), modInfo);
-    if (result.isNotOk ()) {
-        return result;
-    }
-
-    modInfo->setStatus (ModuleInfo::CGDone);
-    return result;
-}
-
-/*******************************************************************************
-  TreeNodeImport
-*******************************************************************************/
-
-CGStmtResult TreeNodeImport::codeGenWith (CodeGen& cg) {
-    return cg.cgImport (this);
-}
-
-CGStmtResult CodeGen::cgImport (TreeNodeImport* import) {
-    ModuleInfo* mod = m_modules.findModule (import->name ());
-    if (mod == 0) {
-        m_log.fatal () << "Module \"" << import->name () << "\" not found within search path.";
-        m_log.fatal () << "Error at " << import->location () << ".";
-        return CGResult (ICode::E_OTHER);
-    }
-
-    switch (mod->status ()) {
-    case ModuleInfo::CGDone: break;
-    case ModuleInfo::CGStarted:
-        /// \todo better error here
-        m_log.fatal () << "Recursive modules.";
-        m_log.fatal () << "Error at " << import->location () << ".";
-        return CGResult (ICode::E_NOT_IMPLEMENTED);
-    case ModuleInfo::CGNotStarted:
-        break;
-    }
-
-    m_log.fatal () << "\\todo CodeGen::cgImport";
-    return CGResult (ICode::E_NOT_IMPLEMENTED);
-}
-
-/*******************************************************************************
-  TreeNodeProgram
-*******************************************************************************/
-
-CGStmtResult CodeGen::cgMainModule (TreeNodeProgram* prog, ModuleInfo* mod) {
+CGStmtResult CodeGen::cgModule (ModuleInfo* mod) {
     typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
 
+    assert (mod->status () == ModuleInfo::CGNotStarted);
+    SymbolTable* moduleScope = m_st->newScope ();
+    moduleScope->setName ("Module " + mod->body ()->name ());
+    mod->codeGenState ().m_node = mod->body ();
+    mod->codeGenState ().m_st = moduleScope;
+    mod->codeGenState ().m_insertPoint = m_code.end ();
+
     CGStmtResult result;
-    std::vector<TreeNodeProcDef*> procs;
-    ScopedStateUse use (*this, mod->codeGenState ());
+    TreeNodeProgram* prog = mod->body ()->program ();
 
     if (prog->children().empty()) {
-        m_log.fatal() << "Program is empty";
+        m_log.fatal() << "Program is empty.";
         result.setStatus (ICode::E_EMPTY_PROGRAM);
         return result;
     }
 
+    mod->setStatus (ModuleInfo::CGStarted);
+
+    // Generate globals to global scope:
+    BOOST_FOREACH (TreeNode* decl, prog->children ()) {
+        switch (decl->type ()) {
+        case NODE_DECL:
+            static_cast<TreeNodeStmtDecl*>(decl)->setGlobal (true);
+            append (result, cgStmtDecl (static_cast<TreeNodeStmtDecl*>(decl)));
+            break;
+        case NODE_KIND:
+            append (result, cgKind (static_cast<TreeNodeKind*>(decl)));
+            break;
+        case NODE_DOMAIN:
+            append (result, cgDomain (static_cast<TreeNodeDomain*>(decl)));
+            break;
+        case NODE_IMPORT:
+            append (result, cgImport (static_cast<TreeNodeImport*>(decl), mod));
+            break;
+        default:
+            /* Intentionally empty */
+            break;
+        }
+
+        if (result.isNotOk ()) {
+            return result;
+        }
+    }
+
+    // Generate module local stuff:
+    ScopedStateUse use (*this, mod->codeGenState ());
     BOOST_FOREACH (TreeNode* decl, prog->children ()) {
         switch (decl->type ()) {
         case NODE_PROCDEF:
-        case NODE_OPDEF:
-            assert (dynamic_cast<TreeNodeProcDef*>(decl) != 0);
-            procs.push_back (static_cast<TreeNodeProcDef*>(decl));
+        case NODE_OPDEF: {
+            TreeNodeProcDef* procDef = static_cast<TreeNodeProcDef*>(decl);
+            SymbolTable* localScope = m_st->newScope ();
+            localScope->setName ("Procedure");
+            append (result, cgProcDef (procDef, localScope));
             break;
-
+        }
         case NODE_TEMPLATE_DECL: {
             assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
             TreeNodeTemplate* templ = static_cast<TreeNodeTemplate*>(decl);
             templ->setContainingModule (*mod);
             ICode::Status status = m_tyChecker.visit (templ);
-            if (status != ICode::OK) {
-                result.setStatus (status);
-                return result;
-            }
-
+            result.setStatus (status);
+            break;
+        }
+        default:
+            /* Intentionally empty */
             break;
         }
 
-        default:
-            append (result, cgGlobalDecl (decl));
-            if (result.isNotOk ()) {
-                return result;
-            }
-        }
-    }
-
-    // Insert main call after declarations:
-    Imop *mainCall = newCall (prog);
-    Imop *retClean = new Imop (prog, Imop::RETCLEAN, 0, 0, 0);
-    pushImopAfter (result, mainCall);
-    push_imop (retClean);
-    push_imop (new Imop (prog, Imop::END));
-
-    // Generate procedures:
-    BOOST_FOREACH (TreeNodeProcDef* procDef, procs) {
-        SymbolTable* localScope = m_st->newScope ();
-        assert (localScope->parent () == m_st);
-        localScope->setName ("Procedure");
-        append (result, cgProcDef (procDef, localScope));
         if (result.isNotOk ()) {
             return result;
         }
+    }
+
+    mod->setStatus (ModuleInfo::CGDone);
+
+    return result;
+}
+
+CGStmtResult CodeGen::cgMain (TreeNodeModule* mainModule) {
+
+    ModuleInfo* modInfo = new ModuleInfo ();
+    {
+        std::auto_ptr<ModuleInfo> newMod (modInfo);
+        if (! m_modules.addModule ("__main", newMod)) {
+            m_log.fatal () << "Error creating main module at "
+                           << mainModule->location () << ".";
+            return CGResult (ICode::E_TYPE);
+        }
+
+        assert (newMod.get () == 0);
+    }
+
+    pushComment ("Start of globals:");
+    Imop* i = newComment ("Start of procedures:");
+    push_imop (i);
+
+    // insert instructions for globals before this point
+    m_insertPoint = m_code.iterator_to (*i);
+    CodeGenState& cgState = modInfo->codeGenState ();
+    modInfo->setBody (mainModule);
+
+    CGStmtResult result = cgModule (modInfo);
+    if (result.isNotOk ()) {
+        return result;
     }
 
     // Instantiate templates:
@@ -374,7 +309,16 @@ CGStmtResult CodeGen::cgMainModule (TreeNodeProgram* prog, ModuleInfo* mod) {
         BOOST_FOREACH (Imop* imop, v.second)
             imop->setCallDest (v.first->symbol ());
 
-    // Check for "void main()":
+    // Insert main call after globals have been instantiated:
+    TreeNodeProgram* prog = mainModule->program ();
+    Imop *mainCall = newCall (prog);
+    Imop *retClean = new Imop (prog, Imop::RETCLEAN, 0, 0, 0);
+    pushImopAfter (result, mainCall);
+    push_imop (retClean);
+    releaseGlobalAllocs (result);
+    push_imop (new Imop (prog, Imop::END));
+
+    ScopedStateUse use (*this, cgState); // we need to look in main module
     SymbolProcedure *mainProc = m_tyChecker.mainProcedure ();
     if (mainProc == 0) {
         m_log.fatal () << "No function \"void main()\" found!";
@@ -385,8 +329,49 @@ CGStmtResult CodeGen::cgMainModule (TreeNodeProgram* prog, ModuleInfo* mod) {
     // Bind call to main(), i.e. mainCall:
     mainCall->setCallDest (mainProc);
     retClean->setArg2 (m_st->label (mainCall));
-    releaseGlobalAllocs (result);
     return result;
 }
+
+/*******************************************************************************
+  TreeNodeImport
+*******************************************************************************/
+
+CGStmtResult CodeGen::cgImport (TreeNodeImport* import, ModuleInfo* modContext) {
+    CGStmtResult result;
+    ModuleInfo* mod = m_modules.findModule (import->name ());
+    if (mod == 0) {
+        m_log.fatal () << "Module \"" << import->name () << "\" not found within search path.";
+        m_log.fatal () << "Error at " << import->location () << ".";
+        result.setStatus (ICode::E_OTHER);
+        return result;
+    }
+
+    switch (mod->status ()) {
+    case ModuleInfo::CGDone:break;
+    case ModuleInfo::CGStarted:
+        /// \todo better error here
+        m_log.fatal () << "Recursive modules.";
+        m_log.fatal () << "Error at " << import->location () << ".";
+        result.setStatus (ICode::E_NOT_IMPLEMENTED);
+        break;
+    case ModuleInfo::CGNotStarted: {
+            result.setStatus (mod->read ());
+            if (result.isNotOk ()) {
+                return result;
+            }
+
+            append (result, cgModule (mod));
+            if (result.isNotOk ()) {
+                return result;
+            }
+
+            break;
+        }
+    }
+
+    modContext->codeGenState ().st ()->addImport (mod->codeGenState ().st ());
+    return result;
+}
+
 
 } // namespace SecreC

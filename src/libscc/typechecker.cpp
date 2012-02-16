@@ -1048,6 +1048,11 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
 {
     SecrecDimType n = 0;
 
+    if (m_st->findFromCurrentScope (varInit->variableName ()) != 0) {
+        m_log.fatal () << "Redeclaration of variable at " << varInit->location () << ".";
+        return ICode::E_TYPE;
+    }
+
     BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
         assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);

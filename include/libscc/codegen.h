@@ -342,12 +342,12 @@ public: /* Methods: */
      * Methods for top level program code generation.
      */
      /// \{
-    CGStmtResult cgMainModule (TreeNodeProgram* prog, ModuleInfo* mod);
-    CGStmtResult cgModule (TreeNodeModule* mod);
+    CGStmtResult cgMain (TreeNodeModule* mainModule);
+    CGStmtResult cgModule (ModuleInfo* mod);
+    CGStmtResult cgProgram (TreeNodeProgram* prog);
     CGStmtResult cgDomain (TreeNodeDomain* dom);
     CGStmtResult cgKind (TreeNodeKind* kind);
-    CGStmtResult cgImport (TreeNodeImport* imp);
-    CGStmtResult cgGlobalDecl (TreeNode* decl);
+    CGStmtResult cgImport (TreeNodeImport* imp, ModuleInfo* modContext);
     CGStmtResult cgProcDef (TreeNodeProcDef* def, SymbolTable* localScope);
     /// \}
 
