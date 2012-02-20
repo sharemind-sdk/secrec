@@ -77,7 +77,8 @@ protected:
     /**
      * Operations performed through syscalls:
      */
-    void syscallPushImopArgs (VMBlock& block, const SecreC::Imop& imop);
+    void cgNewPrivate (VMBlock& block, const SecreC::Symbol* dest, const SecreC::Symbol* size = 0);
+    void emitSyscall (VMBlock& block, VMValue* dest, const std::string& name);
     void emitSyscall (VMBlock& block, const std::string& name);
     void cgPrivateArithm (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateAlloc (VMBlock& block, const SecreC::Imop& imop);
