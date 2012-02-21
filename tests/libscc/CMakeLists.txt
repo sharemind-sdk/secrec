@@ -1,0 +1,5 @@
+find_package(Qt4)
+IF (QT4_FOUND)
+    add_subdirectory (testparse)
+    add_subdirectory (testtreenode)
+ENDIF ()
