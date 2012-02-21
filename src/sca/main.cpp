@@ -248,11 +248,19 @@ int main(int argc, char *argv[]) {
              "\t\"dom\" -- dominators\n");
     po::positional_options_description p;
     p.add("input", -1);
-
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-        options (desc).positional (p).run (), vm);
-    po::notify(vm);
+
+    try {
+        p.add("input", -1);
+        po::store(po::command_line_parser(argc, argv).
+                  options (desc).positional (p).run (), vm);
+        po::notify(vm);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what () << std::endl;
+        std::cerr << desc << std::endl;
+        return EXIT_FAILURE;
+    }
 
     Configuration cfg;
     cfg.read (vm);

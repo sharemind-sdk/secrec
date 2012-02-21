@@ -17,6 +17,7 @@
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/iostreams/stream.hpp>
 
 #include <libscc/context.h>
 #include <libscc/intermediate.h>
@@ -33,19 +34,28 @@ int main(int argc, char *argv[]) {
 
     po::options_description desc ("Available options");
     desc.add_options ()
-            ("help,h", "Display this help message")
-            ("verbose,v", "Enable verbose output")
+            ("help,h", "Display this help message.")
+            ("verbose,v", "Enable verbose output.")
             ("include,I", po::value<vector<string > >(), "Directory for module search path.")
-            ("output,o", po::value<string>(), "Output file")
-            ("input", po::value<string>(), "Input file")
+            ("assemble,S", "Output assembly.")
+            ("compile,c", "Compile to bytecode.")
+            ("output,o", po::value<string>(), "Output file.")
+            ("input", po::value<string>(), "Input file.")
             ;
     po::positional_options_description p;
     p.add("input", -1);
-
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-        options (desc).positional (p).run (), vm);
-    po::notify(vm);
+
+    try {
+        po::store(po::command_line_parser (argc, argv).
+                  options (desc).positional (p).run (), vm);
+        po::notify(vm);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what () << std::endl;
+        std::cerr << desc << std::endl;
+        return EXIT_FAILURE;
+    }
 
     bool verbose = false;
     if (vm.count ("verbose")) {
@@ -54,19 +64,24 @@ int main(int argc, char *argv[]) {
 
     if (vm.count ("help")) {
         cout << desc << "\n";
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
-    /* Get input stream: */
-    ostream* os = &cout;
+    /* Get output stream: */
+    ostream os (cout.rdbuf ());
     ofstream fout;
     if (vm.count ("output")) {
         fout.open (vm["output"].as<string>().c_str ());
-        os = &fout;
+        if (! fout.is_open ()) {
+            cerr << "Failed to open output file." << endl;
+            return EXIT_FAILURE;
+        }
+
+        os.rdbuf (fout.rdbuf ());
     }
 
     /* Parse the program: */
-    SecreC::TreeNodeModule* parseTree = 0;
+    std::auto_ptr<SecreC::TreeNodeModule> parseTree;
     int parseResult = 0;
     if (vm.count ("input")) {
         const std::string fname = vm["input"].as<string>();
@@ -77,7 +92,9 @@ int main(int argc, char *argv[]) {
                 cerr << flush;
             }
 
-            parseResult = sccparse_file (f, &parseTree);
+            SecreC::TreeNodeModule* ast = 0;
+            parseResult = sccparse_file (f, &ast);
+            parseTree.reset (ast);
             fclose (f);
         } else {
             cerr << "Unable to open file: \"" << fname << "\"" << endl;
@@ -85,7 +102,9 @@ int main(int argc, char *argv[]) {
         }
     }
     else {
-        parseResult = sccparse (&parseTree);
+        SecreC::TreeNodeModule* ast = 0;
+        parseResult = sccparse (&ast);
+        parseTree.reset (ast);
     }
 
     if (parseResult != 0) {
@@ -103,17 +122,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (icode.init (context, parseTree) != SecreC::ICode::OK) {
+    if (icode.init (context, parseTree.get ()) != SecreC::ICode::OK) {
         ::operator << (cerr << "Error generating valid intermediate code." << endl
                       , icode.compileLog ());
         return EXIT_FAILURE;
     }
 
-    /* Compiler to assembly: */
+    /* Compiler: */
     VMLinkingUnit vmlu;
     Compiler compiler (icode);
     compiler.run (vmlu);
-    *os << vmlu << endl;
-    delete parseTree;
+    os << vmlu << endl;
     return EXIT_SUCCESS;
 }
