@@ -108,7 +108,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
 
     // Check types:
     if (checkAndLogIfVoid (src)) return ICode::E_TYPE;
-    if (!destType->canAssign (srcType)) {
+    if (! latticeDataTypeLEQ (srcType->secrecDataType (), destType->secrecDataType ()) ||
+        ! latticeSecTypeLEQ (srcType->secrecSecType (), destType->secrecSecType ())) {
         m_log.fatal() << "Invalid assignment from value of type " << *srcType
                       << " to variable of type " << *destType << " at "
                       << e->location() << ".";
@@ -118,6 +119,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     // Add implicit classify node if needed:
     src = classifyIfNeeded (src);
     if (destType->secrecSecType () != src->resultType ()->secrecSecType ()) {
+        m_log.fatal () << "Internal compile error: security types don't match after classification.";
+        m_log.fatal () << "Error at " << e->location () << ".";
         return ICode::E_TYPE;
     }
 
