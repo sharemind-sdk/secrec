@@ -209,9 +209,38 @@ public: /* Methods: */
         return m_os.str ();
     }
 
+    static std::string arithm (TypeNonVoid* ty, Imop::Type iType);
+    static std::string cast (TypeNonVoid* from, TypeNonVoid* to);
+    static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true);
+
 private: /* Fields: */
     std::ostringstream   m_os;
 };
+
+std::string SyscallName::basic (TypeNonVoid* ty, const char* name,  bool needDataType) {
+    SyscallName scname;
+    scname << ty << name;
+    if (needDataType) {
+        scname << '_' << ty->secrecDataType ();
+    }
+
+    scname << "_vec";
+    return scname.str ();
+}
+
+std::string SyscallName::arithm (TypeNonVoid* ty, Imop::Type iType) {
+    SyscallName scname;
+    scname << ty << iType << '_' << ty->secrecDataType () << "_vec";
+    return scname.str ();
+}
+
+std::string SyscallName::cast (TypeNonVoid* from, TypeNonVoid* to) {
+    SyscallName scname;
+    scname << from << "conv_" << from->secrecDataType () << "_to_"
+            << to->secrecDataType ()
+            << "_vec";
+    return scname.str ();
+}
 
 
 }
@@ -414,6 +443,11 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
 void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ASSIGN);
 
+    if (isPrivate (imop)) {
+        cgPrivateAssign (block, imop);
+        return;
+    }
+
     VMInstruction instr;
     instr << "mov";
     if (imop.isVectorized ()) {
@@ -485,6 +519,11 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
 void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::COPY);
 
+    if (isPrivate (imop)) {
+        cgPrivateCopy (block, imop);
+        return;
+    }
+
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
     const unsigned elemSize = sizeInBytes (ty);
@@ -494,7 +533,7 @@ void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
         VMInstruction ()
             << "tmul uint64" << rSize << rNum
             << m_st.getImm (elemSize));
-    block.push_back (VMInstruction () << "uinc uint64" << rSize); // fehh!
+    block.push_back (VMInstruction () << "uinc uint64" << rSize); // fehh! no 0 sized memory regions
 
     VMInstruction alloc_instr;
     alloc_instr << "alloc" << find (imop.dest ()) << rSize;
@@ -817,16 +856,32 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
  * Private operations:
  */
 
-
 void Compiler::cgNewPrivate (VMBlock& block, const Symbol* dest, const Symbol* size) {
     TypeNonVoid* ty = dest->secrecType ();
     VMValue* s = (size == 0 ? m_st.getImm (1) : find (size));
     VMValue* d = find (dest);
-    SyscallName sc_new;
-    sc_new << ty << "new_" << ty->secrecDataType () << "_vec";
     block.push_new () << "push" << getPD (m_scm, dest);
     block.push_new () << "push" << s;
-    emitSyscall (block, d, sc_new.str ());
+    emitSyscall (block, d, SyscallName::basic (ty, "new"));
+}
+
+void Compiler::cgPrivateAssign (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+    if (! imop.isVectorized ()) {
+        cgNewPrivate (block, imop.dest ());
+    }
+
+    block.push_new () << "push" << getPD (m_scm, imop.dest ());
+    block.push_new () << "push" << find (imop.dest ());
+    block.push_new () << "push" << find (imop.arg1 ());
+    emitSyscall (block, SyscallName::basic (ty, "assign"));
+}
+
+void Compiler::cgPrivateCopy (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
+    block.push_new () << "push" << getPD (m_scm, imop.dest ());
+    block.push_new () << "push" << find (imop.arg1 ());
+    emitSyscall (block, find (imop.dest ()), SyscallName::basic (ty, "copy"));
 }
 
 void Compiler::cgClassify (VMBlock& block, const Imop& imop) {
@@ -837,13 +892,11 @@ void Compiler::cgClassify (VMBlock& block, const Imop& imop) {
         cgNewPrivate (block, imop.dest ());
     }
 
-    SecreC::TypeNonVoid* ty = imop.dest ()->secrecType ();
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
-    SyscallName scname;
-    scname << ty << "classify_" << ty->secrecDataType () << "_vec";
-    emitSyscall (block, scname.str ());
+    emitSyscall (block, SyscallName::basic (ty, imop.isVectorized () ? "classify" : "init"));
 }
 
 void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
@@ -851,6 +904,8 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
     assert (imop.dest ()->secrecType ()->secrecSecType ()->isPublic ());
     assert (imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ());
     assert (false && "TODO");
+    (void) block;
+    (void) imop;
 }
 
 void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
@@ -860,7 +915,6 @@ void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
 
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
-    block.push_new () << "push" << find (imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     switch (imop.type ()) {
     case Imop::UNEG:
@@ -870,72 +924,60 @@ void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
         block.push_new () << "push" << find (imop.arg2 ());
         break;
     }
-
-    SyscallName scname;
-    scname << ty << imop.type () << '_' << ty->secrecDataType () << "_vec";
-    emitSyscall (block, scname.str ());
+    block.push_new () << "push" << find (imop.dest ());
+    emitSyscall (block, SyscallName::arithm (ty, imop.type ()));
 }
 
 void Compiler::cgPrivateAlloc (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     VMLabel* pd = getPD (m_scm, imop.dest ());
     cgNewPrivate (block, imop.dest (), imop.arg2 ());
-    SyscallName sc_init;
-    sc_init << ty << "init_" << ty->secrecDataType () << "_vec";
     block.push_new () << "push" << pd;
-    block.push_new () << "push" << find (imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
-    emitSyscall (block, sc_init.str ());
+    const bool privateArg = imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ();
+    emitSyscall (block, SyscallName::basic (ty, privateArg ? "fill" : "init"));
+    block.push_new () << "push" << find (imop.dest ());
 }
 
 void Compiler::cgPrivateRelease (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.arg1 ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.arg1 ());
     block.push_new () << "push" << find (imop.arg1 ());
-    SyscallName sc_delete;
-    sc_delete << ty << "delete_"  << ty->secrecDataType () << "_vec";
-    emitSyscall (block, sc_delete.str ());
+    emitSyscall (block, SyscallName::basic (ty, "delete"));
 }
 
 void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
-
+    TypeNonVoid* ty = imop.dest ()->secrecType ();
     if (! imop.isVectorized ()) {
         cgNewPrivate (block, imop.dest ());
     }
 
-    TypeNonVoid* ty = imop.arg1 ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
-    SyscallName sc_cast;
-    sc_cast << ty << "conv_" << ty->secrecDataType () << "_to_"
-            << imop.dest ()->secrecType ()->secrecDataType ()
-            << "_vec";
-    emitSyscall (block, sc_cast.str ());
+    emitSyscall (block, SyscallName::cast (ty, imop.dest ()->secrecType ()));
 }
 
 void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
-
-    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
-        block.push_new () << "push" << find (sym);
+    if (! imop.isVectorized ()) {
+        cgNewPrivate (block, imop.dest ());
     }
 
-    SyscallName sc_load;
-    sc_load << ty << "load_" << ty->secrecDataType () << "_vec";
-    emitSyscall (block, sc_load.str ());
+    block.push_new () << "push" << getPD (m_scm, imop.dest ());
+    block.push_new () << "push" << find (imop.dest ());
+    block.push_new () << "push" << find (imop.arg1 ());
+    block.push_new () << "push" << find (imop.arg2 ());
+    emitSyscall (block, SyscallName::basic (ty, "load"));
 }
 
 void Compiler::cgPrivateStore (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
-
-    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
-        block.push_new () << "push" << find (sym);
-    }
-
-    SyscallName sc_store;
-    sc_store << ty << "store_" << ty->secrecDataType () << "_vec";
-    emitSyscall (block, sc_store.str ());
+    block.push_new () << "push" << getPD (m_scm, imop.dest ());
+    block.push_new () << "push" << find (imop.dest ());
+    block.push_new () << "push" << find (imop.arg1 ());
+    block.push_new () << "push" << find (imop.arg2 ());
+    emitSyscall (block, SyscallName::basic (ty, "store"));
 }
 
 } // namespac SecreC

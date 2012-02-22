@@ -80,6 +80,8 @@ protected:
     void cgNewPrivate (VMBlock& block, const SecreC::Symbol* dest, const SecreC::Symbol* size = 0);
     void emitSyscall (VMBlock& block, VMValue* dest, const std::string& name);
     void emitSyscall (VMBlock& block, const std::string& name);
+    void cgPrivateAssign (VMBlock& block, const SecreC::Imop& imop);
+    void cgPrivateCopy (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateArithm (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateAlloc (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateRelease (VMBlock& block, const SecreC::Imop& imop);
