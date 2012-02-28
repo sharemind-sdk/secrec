@@ -47,8 +47,9 @@ std::string SymbolSymbol::toString() const {
 
 void SymbolSymbol::inheritShape (Symbol* from) {
     assert (from != 0);
-    SymbolSymbol* t = 0;
-    if ((t = dynamic_cast<SymbolSymbol*>(from)) != 0) {
+    if (from->symbolType () == Symbol::SYMBOL) {
+        assert (dynamic_cast<SymbolSymbol*>(from) != 0);
+        SymbolSymbol* t = static_cast<SymbolSymbol*>(from);
         setSizeSym(t->getSizeSym());
         std::copy (t->m_dims.begin (), t->m_dims.end (), m_dims.begin ());
     }

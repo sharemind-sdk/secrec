@@ -44,6 +44,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         assert (dynamic_cast<SymbolSymbol*> (t) != 0);
         destSym = static_cast<SymbolSymbol*> (t);
     }
+
     result.setResult (destSym);
 
     // Generate code for righthand side:
@@ -227,22 +228,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
         Imop *i = 0;
         if (e->resultType ()->isScalar()) {
-            if (e->resultType ()->secrecDataType () == DATATYPE_STRING) {
-                i = new Imop (e, Imop::RELEASE, (Symbol*) 0, destSym);
-                pushImopAfter (result, i);
-
-                i = new Imop (e, Imop::PUSHCREF, arg2Result.symbol ());
-                pushImopAfter (result, i);
-
-                i = new Imop (e, Imop::PUSHREF, destSym);
-                pushImopAfter (result, i);
-
-                ConstantString* sc_strcpy = ConstantString::get (getContext (), "strcpy");
-                i = new Imop (e, Imop::SYSCALL, (Symbol*) 0, sc_strcpy);
-            }
-            else {
-                i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
-            }
+            i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
         } else {
             i = new Imop (e, Imop::RELEASE, 0, destSym);
             pushImopAfter (result, i);

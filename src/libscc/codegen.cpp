@@ -97,6 +97,17 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     }
 }
 
+void CodeGen::registerResource (CGResult& result, Symbol* sym, bool isVariable) {
+    if (! isVariable) {
+        result.addTempResource (sym);
+    }
+    else {
+        assert (sym->symbolType () == Symbol::SYMBOL);
+        assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
+        addAlloc (static_cast<SymbolSymbol*>(sym));
+    }
+}
+
 void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
     if (result.symbol ()->secrecType ()->isScalar ()) {
         m_log.warning () << "Allocating result for scala! Ignoring.";
@@ -109,11 +120,8 @@ void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
     }
 
     Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
-    if (! isVariable) {
-        result.addTempAlloc (sym);
-    }
-
     pushImopAfter (result, i);
+    registerResource (result, sym, isVariable);
 }
 
 
@@ -373,6 +381,12 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
 
 void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
     Imop* i = new Imop (m_codeGen.currentNode (), Imop::ALLOC, dest, def, size);
+    m_codeGen.pushImopAfter (m_result, i);
+    m_allocs.push_back (dest);
+}
+
+void ScopedAllocations::classifyTemporary (Symbol* dest, Symbol* src) {
+    Imop* i = new Imop (m_codeGen.currentNode (), Imop::CLASSIFY, dest, src);
     m_codeGen.pushImopAfter (m_result, i);
     m_allocs.push_back (dest);
 }

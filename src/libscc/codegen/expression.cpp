@@ -161,7 +161,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         Imop* i = 0;
         if (!isScalar) {
             i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
-            result.addTempAlloc (resSym);
+            result.addTempResource (resSym);
         }
         else {
             i = newAssign (e, resSym, def);
@@ -321,7 +321,7 @@ CGResult CodeGen::cgExprShape (TreeNodeExprShape *e) {
     Symbol* n = ConstantInt::get (getContext (), eArg->resultType ()->secrecDimType());
     Imop* i = new Imop (e, Imop::ALLOC, resSym, ConstantInt::get (getContext (), 0), n);
     pushImopAfter (result, i);
-    result.addTempAlloc (resSym);
+    result.addTempResource (resSym);
 
     i = new Imop (e, Imop::ASSIGN, resSym->getDim (0), n);
     push_imop(i);
@@ -919,7 +919,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     if (! returnType->isVoid ()) {
         codeGenSize (result);
         if (! returnType->isScalar ()) {
-            result.addTempAlloc (result.symbol ());
+            result.addTempResource (result.symbol ());
         }
     }
 
@@ -1157,7 +1157,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         }
 
         if (needToFree) {
-            result.addTempAlloc (needToFree);
+            result.addTempResource (needToFree);
         }
 
         // Link boolean expression code to the rest of the code:
@@ -1564,6 +1564,8 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
+    ScopedAllocations allocs (*this, result);
+
     // ++ x[e1,..,ek]
     if (lval->children().size() == 2) {
         assert (!e->resultType ()->isScalar ());
@@ -1595,8 +1597,7 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
 
         if (elemType->secrecSecType ()->isPrivate ()) {
             Symbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*> (elemType));
-            Imop* i = new Imop (e, Imop::CLASSIFY, t, one);
-            pushImopAfter (result, i);
+            allocs.classifyTemporary (t, one);
             one = t;
         }
 
@@ -1636,7 +1637,6 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
         return result;
     }
 
-    ScopedAllocations allocs (*this, result);
     if (!e->resultType ()->isScalar ()) {
         SymbolSymbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*>(e->resultType ()));
         t->inheritShape (destSymSym);
@@ -1645,9 +1645,8 @@ CGResult CodeGen::cgExprPrefix (TreeNodeExprPrefix *e) {
     }
     else
     if (e->resultType ()->secrecSecType ()->isPrivate ()) {
-        SymbolSymbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*>(e->resultType ()));
-        Imop* i = newUnary (e, Imop::CLASSIFY, t, one);
-        pushImopAfter (result, i);
+        SymbolSymbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+        allocs.classifyTemporary (t, one);
         one = t;
     }
 
@@ -1717,6 +1716,8 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
         return result;
     }
 
+    ScopedAllocations allocs (*this, result);
+
     // x[e1,..,ek] ++
     if (lval->children().size() == 2) {
         assert (!e->resultType ()->isScalar ());
@@ -1748,8 +1749,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
         if (elemType->secrecSecType ()->isPrivate ()) {
             Symbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*> (elemType));
-            Imop* i = new Imop (e, Imop::CLASSIFY, t, one);
-            pushImopAfter (result, i);
+            allocs.classifyTemporary (t, one);
             one = t;
         }
 
@@ -1791,7 +1791,6 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
 
     // x ++
 
-    ScopedAllocations allocs (*this, result);
     if (!e->resultType ()->isScalar ()) {
         SymbolSymbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
         allocs.allocTemporary (t, one,  destSymSym->getSizeSym ());
@@ -1801,8 +1800,7 @@ CGResult CodeGen::cgExprPostfix (TreeNodeExprPostfix *e) {
     else
     if (e->resultType ()->secrecSecType ()->isPrivate ()) {
         SymbolSymbol* t = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
-        Imop* i = newUnary (e, Imop::CLASSIFY, t, one);
-        pushImopAfter (result, i);
+        allocs.classifyTemporary (t, one);
         one = t;
    }
 

@@ -7,8 +7,8 @@
 
 namespace {
 
-inline void patchList(std::list<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
-    typedef std::list<SecreC::Imop*>::const_iterator IVCI;
+inline void patchList(std::vector<SecreC::Imop*> &list, SecreC::SymbolLabel *dest) {
+    typedef std::vector<SecreC::Imop*>::const_iterator IVCI;
     for (IVCI it(list.begin()); it != list.end(); it++) {
         (*it)->setJumpDest(dest);
     }
@@ -53,11 +53,11 @@ public: /* Methods: */
         return m_firstImop;
     }
 
-    void setNextList (const std::list<Imop*>& list) {
+    void setNextList (const std::vector<Imop*>& list) {
         m_nextList = list;
     }
 
-    const std::list<Imop*>& nextList (void) const {
+    const std::vector<Imop*>& nextList (void) const {
         return m_nextList;
     }
 
@@ -65,7 +65,7 @@ public: /* Methods: */
         m_nextList.push_back (imop);
     }
 
-    void addToNextList (const std::list<Imop* >& nl) {
+    void addToNextList (const std::vector<Imop* >& nl) {
         m_nextList.insert (m_nextList.end (), nl.begin (), nl.end ());
     }
 
@@ -108,20 +108,20 @@ public: /* Methods: */
     }
 
     /// Temporary memory allocation. Will be cleared after evaluation the statement.
-    void addTempAlloc (Symbol* s) {
+    void addTempResource (Symbol* s) {
         m_tempAllocs.push_back (s);
     }
 
-    void setTempAllocs (const std::list<Symbol*>& allocs) {
+    void setTempAllocs (const std::vector<Symbol*>& allocs) {
         m_tempAllocs = allocs;
     }
 
-    void addTempAllocs (const std::list<Symbol*>& allocs) {
+    void addTempAllocs (const std::vector<Symbol*>& allocs) {
         m_tempAllocs.insert (m_tempAllocs.end (),
             allocs.begin (), allocs.end ());
     }
 
-    const std::list<Symbol* >& tempAllocs () const {
+    const std::vector<Symbol* >& tempAllocs () const {
         return m_tempAllocs;
     }
 
@@ -130,11 +130,11 @@ public: /* Methods: */
     }
 
 private: /* Fields: */
-    std::list<Imop* >   m_nextList;     ///< unpatched jumps to next imop
-    Symbol*             m_result;       ///< symbol the result is stored in
-    Imop*               m_firstImop;    ///< pointer to the first instruction
-    std::list<Symbol* > m_tempAllocs;   ///< local memory allocations
-    ICode::Status       m_status;       ///< status of the code generation
+    std::vector<Imop* >   m_nextList;     ///< unpatched jumps to next imop
+    Symbol*               m_result;       ///< symbol the result is stored in
+    Imop*                 m_firstImop;    ///< pointer to the first instruction
+    std::vector<Symbol* > m_tempAllocs;   ///< local memory allocations
+    ICode::Status         m_status;       ///< status of the code generation
 };
 
 /*******************************************************************************
@@ -159,19 +159,19 @@ public:
         std::swap (m_trueList, m_falseList);
     }
 
-    const std::list<Imop*>& trueList () const {
+    const std::vector<Imop*>& trueList () const {
         return m_trueList;
     }
 
-    const std::list<Imop*>& falseList () const {
+    const std::vector<Imop*>& falseList () const {
         return m_falseList;
     }
 
-    void setTrueList (const std::list<Imop*>& tl) {
+    void setTrueList (const std::vector<Imop*>& tl) {
         m_trueList = tl;
     }
 
-    void setFalseList (const std::list<Imop*>& fl) {
+    void setFalseList (const std::vector<Imop*>& fl) {
         m_falseList = fl;
     }
 
@@ -179,11 +179,11 @@ public:
         m_trueList.push_back (imop);
     }
 
-    void addToFalseList (const std::list<Imop*>& fl) {
+    void addToFalseList (const std::vector<Imop*>& fl) {
         m_falseList.insert (m_falseList.end (), fl.begin (), fl.end ());
     }
 
-    void addToTrueList (const std::list<Imop*>& tl) {
+    void addToTrueList (const std::vector<Imop*>& tl) {
         m_trueList.insert (m_trueList.end (), tl.begin (), tl.end ());
     }
 
@@ -200,8 +200,8 @@ public:
     }
 
 private:
-    std::list<Imop* > m_trueList;    ///< unpatched jumps in case conditional is true
-    std::list<Imop* > m_falseList;   ///< unpatched jumps in case conditional is false
+    std::vector<Imop* > m_trueList;    ///< unpatched jumps in case conditional is true
+    std::vector<Imop* > m_falseList;   ///< unpatched jumps in case conditional is false
 };
 
 /*******************************************************************************
@@ -240,11 +240,11 @@ public:
         m_continueList.push_back (imop);
     }
 
-    void addToBreakList (const std::list<Imop*>& bl) {
+    void addToBreakList (const std::vector<Imop*>& bl) {
         m_breakList.insert (m_breakList.end (), bl.begin (), bl.end ());
     }
 
-    void addToContinueList (const std::list<Imop*>& cl) {
+    void addToContinueList (const std::vector<Imop*>& cl) {
         m_continueList.insert (m_continueList.end (), cl.begin (), cl.end ());
     }
 
@@ -256,13 +256,13 @@ public:
         patchList (m_continueList, dest);
     }
 
-    const std::list<Imop*>& breakList () const {
+    const std::vector<Imop*>& breakList () const {
         return m_breakList;
     }
 
     void clearBreakList () { m_breakList.clear (); }
 
-    const std::list<Imop*>& continueList () const {
+    const std::vector<Imop*>& continueList () const {
         return m_continueList;
     }
 
@@ -275,9 +275,9 @@ public:
     }
 
 private:
-    std::list<Imop*>  m_continueList;  ///< Unpatched continue jumps.
-    std::list<Imop*>  m_breakList;     ///< Unpatched break jumps.
-    int               m_resultFlags;   ///< Flag to track the possibilities that control flow may take.
+    std::vector<Imop*>  m_continueList;  ///< Unpatched continue jumps.
+    std::vector<Imop*>  m_breakList;     ///< Unpatched break jumps.
+    int                 m_resultFlags;   ///< Flag to track the possibilities that control flow may take.
 };
 
 }

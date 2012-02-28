@@ -119,6 +119,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     SymbolSymbol::ScopeType scopeType = isGlobal ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL;
     const bool isScalar = ty->isScalar ();
     const bool isString = ty->secrecDataType () == DATATYPE_STRING;
+    const bool isPrivate = ty->secrecSecType ()->isPrivate ();
 
     SymbolSymbol *ns = new SymbolSymbol (ty);
     ns->setScopeType (scopeType);
@@ -127,15 +128,12 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
     SecrecDimType n = 0;
     assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
-    if (! isScalar || isString) {
+    if (! isScalar || isString || isPrivate) {
         addAlloc (ns);
     }
 
     // Initialize shape:
-    TypeNonVoid* dimType =
-        TypeNonVoid::get (getContext (),
-            DataTypeVar::get (getContext (),
-                DataTypeBasic::get (getContext (), DATATYPE_INT64)));
+    TypeNonVoid* dimType = TypeNonVoid::getIndexType (getContext ());
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         SymbolSymbol* sym = new SymbolSymbol (dimType);
         sym->setScopeType (scopeType);

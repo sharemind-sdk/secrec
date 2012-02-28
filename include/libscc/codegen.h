@@ -148,6 +148,7 @@ public: /* Methods: */
     }
 
     void allocTemporary (Symbol* dest, Symbol* def, Symbol* size);
+    void classifyTemporary (Symbol* dest, Symbol* src);
 
 private:
 
@@ -421,6 +422,7 @@ public: /* Methods: */
 
     /// Memory management
     /// \{
+    void registerResource (CGResult& result, Symbol* sym, bool isVariable = false);
     void allocResult (CGResult& result, Symbol* val = 0, bool isVariable = false);
     void releaseTempAllocs (CGResult& result, Symbol* ex = 0);
     void addAlloc (SymbolSymbol* sym) { m_allocs.push_back (sym); }
