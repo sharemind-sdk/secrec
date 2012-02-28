@@ -444,14 +444,16 @@ MKCALLBACK(ALLOC, 1, 1, 1, 0,
 
 MKCALLBACK(COPY, 1, 1, 1, 0,
     const size_t n = arg2.un_uint_val;
-    dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
+    dest.un_ptr = static_cast<Value*>(malloc (sizeof (Value) * n));
     memcpy (dest.un_ptr, arg1.un_ptr, sizeof (Value) * n);
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
-    assert (dest.un_ptr != 0);
-    free (dest.un_ptr);
-    dest.un_ptr = 0;
+    if (ip->args[0].un_sym->secrecType ()->secrecSecType ()->isPublic ()) {
+        assert (dest.un_ptr != 0);
+        free (dest.un_ptr);
+        dest.un_ptr = 0;
+    }
 )
 
 MKCALLBACK(LOAD, 0, 1, 1, 0,
