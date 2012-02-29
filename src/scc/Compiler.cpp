@@ -631,6 +631,12 @@ void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::LOAD);
+
+    if (isPrivate (imop)) {
+        cgPrivateLoad (block, imop);
+        return;
+    }
+
     VMValue* rOffset = m_ra->temporaryReg ();
 
     VMInstruction tmpInstr;
@@ -655,6 +661,12 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgStore (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::STORE);
+
+    if (isPrivate (imop)) {
+        cgPrivateStore (block, imop);
+        return;
+    }
+
     VMValue* rOffset = m_ra->temporaryReg ();
 
     VMInstruction tmpInstr;
@@ -982,10 +994,7 @@ void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
-    if (! imop.isVectorized ()) {
-        cgNewPrivate (block, imop.dest ());
-    }
-
+    cgNewPrivate (block, imop.dest ());
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.arg2 ());
@@ -996,8 +1005,8 @@ void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
 void Compiler::cgPrivateStore (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
-    block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.arg2 ());
+    block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.dest ());
     emitSyscall (block, SyscallName::basic (ty, "store"));
 }
