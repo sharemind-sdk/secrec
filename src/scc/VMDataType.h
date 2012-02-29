@@ -42,7 +42,7 @@ inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     case DATATYPE_UINT16: return VM_UINT16;
     case DATATYPE_UINT32: return VM_UINT32;
     case DATATYPE_UINT64: return VM_UINT64;
-    case DATATYPE_BOOL:   return VM_UINT64;
+    case DATATYPE_BOOL:   return VM_UINT8;
     default:              return VM_INVALID;
     }
 }
