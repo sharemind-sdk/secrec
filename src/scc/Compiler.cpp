@@ -31,6 +31,16 @@ namespace {
 
 using namespace SecreCC;
 
+VMDataType representationType (TypeNonVoid* tnv) {
+    VMDataType ty = secrecDTypeToVMDType (tnv->secrecDataType ());
+    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate ()) {
+        // arrays, and private values are represented by an handle
+        ty = VM_UINT64;
+    }
+
+    return ty;
+}
+
 const char* imopToVMName (const Imop& imop) {
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
@@ -211,20 +221,23 @@ public: /* Methods: */
 
     static std::string arithm (TypeNonVoid* ty, Imop::Type iType);
     static std::string cast (TypeNonVoid* from, TypeNonVoid* to);
-    static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true);
+    static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true, bool needVec = true);
 
 private: /* Fields: */
     std::ostringstream   m_os;
 };
 
-std::string SyscallName::basic (TypeNonVoid* ty, const char* name,  bool needDataType) {
+std::string SyscallName::basic (TypeNonVoid* ty, const char* name,  bool needDataType, bool needVec) {
     SyscallName scname;
     scname << ty << name;
     if (needDataType) {
         scname << '_' << ty->secrecDataType ();
     }
 
-    scname << "_vec";
+    if (needVec) {
+        scname << "_vec";
+    }
+
     return scname.str ();
 }
 
@@ -588,16 +601,15 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
-    VMDataType ty = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
+    VMDataType ty = representationType (imop.dest ()->secrecType ());
+
     assert (ty != VM_INVALID);
-    block.push_back (
-        VMInstruction ()
-            << "mov cref"
-            << m_st.getImm (m_param ++)
-            << "0x0" // offset 0
-            << find (imop.dest ())
-            << m_st.getImm (sizeInBytes (ty))
-    );
+    block.push_new ()
+        << "mov cref"
+        << m_st.getImm (m_param ++)
+        << "0x0" // offset 0
+        << find (imop.dest ())
+        << m_st.getImm (sizeInBytes (ty));
 }
 
 void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
@@ -613,7 +625,7 @@ void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
     unsigned retCount = 0;
     for (++ it; it != itEnd; ++ it) {
         VMInstruction movI;
-        VMDataType ty = secrecDTypeToVMDType ((*it)->secrecType ()->secrecDataType ());
+        VMDataType ty = representationType ((*it)->secrecType ());
         assert (ty != VM_INVALID);
         movI << "mov"
              << find (*it);
@@ -785,6 +797,20 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
+void Compiler::cgError (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::ERROR);
+    assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
+    /*
+    VMVReg* temp = m_ra->temporaryReg ();
+    const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
+    VMLabel* offset = m_strLit->getLiteral (str);
+    block.push_new () << "mov imm :RODATA" << temp;
+    block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
+    emitSyscall (block, "error");
+    */
+    block.push_new () << "halt imm 0xff";
+}
+
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
     m_ra->getReg (imop);
@@ -849,7 +875,7 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         block.push_new () << "halt imm 0x0";
         return;
     case Imop::ERROR:
-        block.push_new () << "halt imm 0xff";
+        cgError (block, imop);
         return;
     case Imop::RETCLEAN:
     case Imop::COMMENT:

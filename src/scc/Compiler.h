@@ -73,6 +73,7 @@ protected:
     void cgSyscall (VMBlock& block, const SecreC::Imop& imop);
     void cgDomainID (VMBlock& block, const SecreC::Imop& imop);
     void cgPush (VMBlock& block, const SecreC::Imop& imop);
+    void cgError (VMBlock& block, const SecreC::Imop& imop);
 
     /**
      * Operations performed through syscalls:
