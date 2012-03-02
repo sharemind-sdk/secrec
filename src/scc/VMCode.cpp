@@ -86,6 +86,7 @@ std::ostream& VMDataSection::Record::print (std::ostream& os) const {
         os << m_label->name () << ' ';
     }
 
+    os << ".data" << ' ';
     os << m_dataType << ' ';
     os << m_value;
     return os;

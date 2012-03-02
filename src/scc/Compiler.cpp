@@ -34,7 +34,7 @@ using namespace SecreCC;
 VMDataType representationType (TypeNonVoid* tnv) {
     VMDataType ty = secrecDTypeToVMDType (tnv->secrecDataType ());
     if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate ()) {
-        // arrays, and private values are represented by an handle
+        // arrays, and private values are represented by a handle
         ty = VM_UINT64;
     }
 
