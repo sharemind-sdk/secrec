@@ -410,7 +410,7 @@ MKCALLBACK(RETVOID, 0, 0, 0, 0,
 
 MKCALLBACK(DOMAINID, 1, 0, 0, 0,
     const SymbolDomain* dom = static_cast<const SymbolDomain*>(ip->args[1].un_sym);
-    uintptr_t c = reinterpret_cast<uintptr_t>(dom->securityType ());
+    uint64_t c = reinterpret_cast<uint64_t>(dom->securityType ());
     /// hopefully correct function will be selected
     assignValue (dest, c);
 )
