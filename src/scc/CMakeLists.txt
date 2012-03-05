@@ -24,7 +24,7 @@ SET(SCC_SOURCES
     "VMValue.cpp"
     "VMDataType.h")
 
-include_directories("${CMAKE_SOURCE_DIR}/include/")
+include_directories("${CMAKE_SOURCE_DIR}/include/" "${Boost_INCLUDE_DIR}")
 ADD_EXECUTABLE("scc" ${SCC_SOURCES})
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"

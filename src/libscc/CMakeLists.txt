@@ -74,7 +74,8 @@ SET_SOURCE_FILES_PROPERTIES("libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
 include_directories(
     "${CMAKE_SOURCE_DIR}/include/libscc/"
     "${CMAKE_SOURCE_DIR}/src/libscc/"
-    "${CMAKE_CURRENT_BINARY_DIR}")
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    "${Boost_INCLUDE_DIR}")
 
 ADD_LIBRARY("libscc" SHARED
     ${LIBSCC_SOURCES}

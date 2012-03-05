@@ -2,7 +2,7 @@
 # sca
 ################################################################################
 
-include_directories("${CMAKE_SOURCE_DIR}/include/")
+include_directories("${CMAKE_SOURCE_DIR}/include/" "${Boost_INCLUDE_DIR}")
 ADD_EXECUTABLE("sca" "main.cpp")
 SET_TARGET_PROPERTIES("sca" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
