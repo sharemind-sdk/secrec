@@ -2,7 +2,6 @@
 # libscc
 ################################################################################
 
-find_package(Boost COMPONENTS thread program_options filesystem REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
@@ -75,7 +74,7 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/include/libscc/"
     "${CMAKE_SOURCE_DIR}/src/libscc/"
     "${CMAKE_CURRENT_BINARY_DIR}"
-    "${Boost_INCLUDE_DIR}")
+    ${Boost_INCLUDE_DIRS})
 
 ADD_LIBRARY("libscc" SHARED
     ${LIBSCC_SOURCES}
@@ -87,7 +86,7 @@ SET_TARGET_PROPERTIES("libscc" PROPERTIES
     VERSION "0.3.0.0"
     SOVERSION "0.3"
     CLEAN_DIRECT_OUTPUT 1)
-TARGET_LINK_LIBRARIES("libscc" "${Boost_FILESYSTEM_LIBRARY}")
+TARGET_LINK_LIBRARIES("libscc" "${Boost_SYSTEM_LIBRARY}" "${Boost_FILESYSTEM_LIBRARY}")
 INSTALL(TARGETS "libscc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
