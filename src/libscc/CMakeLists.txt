@@ -2,7 +2,7 @@
 # libscc
 ################################################################################
 
-find_package(Boost COMPONENTS thread program_options filesystem REQUIRED)
+find_package(Boost COMPONENTS thread program_options filesystem system REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
@@ -11,6 +11,8 @@ BISON_TARGET(SECREC_PARSER "secrec.y"
 FLEX_TARGET(SECREC_LEXER "secrec.l"
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
 ADD_FLEX_BISON_DEPENDENCY(SECREC_LEXER SECREC_PARSER)
+
+message (STATUS "${Boost_SYSTEM_LIBRARY}")
 
 SET(FLEX_BISON_SOURCES
     "secrec.l"
@@ -87,7 +89,7 @@ SET_TARGET_PROPERTIES("libscc" PROPERTIES
     VERSION "0.3.0.0"
     SOVERSION "0.3"
     CLEAN_DIRECT_OUTPUT 1)
-TARGET_LINK_LIBRARIES("libscc" "${Boost_FILESYSTEM_LIBRARY}")
+TARGET_LINK_LIBRARIES("libscc" "${Boost_FILESYSTEM_LIBRARY}" "${Boost_SYSTEM_LIBRARY}")
 INSTALL(TARGETS "libscc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
