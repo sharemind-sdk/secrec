@@ -24,6 +24,8 @@ class DataFlowAnalysis {
     public: /* Methods: */
         inline DataFlowAnalysis(bool forward, bool backward) : m_forward(forward), m_backward(backward) {}
 
+        virtual ~DataFlowAnalysis () { }
+
         inline bool isForward() const { return m_forward; }
         inline bool isBackward() const { return m_backward; }
 
