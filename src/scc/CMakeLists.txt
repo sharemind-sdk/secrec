@@ -32,6 +32,8 @@ ENDIF(NOT SHAREMIND_LIBAS_SOURCE_DIR)
 # scc
 ################################################################################
 
+find_package(Boost COMPONENTS iostreams REQUIRED)
+
 SET(SCC_SOURCES
     "main.cpp"
     "VMCode.h"
@@ -55,8 +57,11 @@ SET(SCC_SOURCES
     "VMDataType.h")
 
 include_directories("${CMAKE_SOURCE_DIR}/include/"
-                    ${Boost_INCLUDE_DIRS}
-                    "${SHAREMIND_EXT_LIBAS_DIR}/src")
+                    "${SHAREMIND_EXT_LIBAS_DIR}/src"
+                    "${SHAREMIND_EXT_LIBEXECUTABLE_DIR}/src"
+                    "${SHAREMIND_EXT_LIBVMI_DIR}/src"
+                    "${SHAREMIND_EXT_VM_GLOBALS_DIR}/include"
+                    ${Boost_INCLUDE_DIRS})
 ADD_EXECUTABLE("scc" ${SCC_SOURCES})
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
@@ -64,7 +69,9 @@ SET_TARGET_PROPERTIES("scc" PROPERTIES
 TARGET_LINK_LIBRARIES("scc" "libscc" "libas"
     "${Boost_PROGRAM_OPTIONS_LIBRARY}"
     "${Boost_SYSTEM_LIBRARY}"
-    "${Boost_FILESYSTEM_LIBRARY}")
+    "${Boost_FILESYSTEM_LIBRARY}"
+    "${Boost_IOSTREAMS_LIBRARY}"
+    )
 INSTALL(TARGETS "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
