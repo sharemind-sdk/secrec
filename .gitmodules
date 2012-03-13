@@ -1,0 +1,15 @@
+[submodule "ext/libas"]
+	path = ext/libas
+	url = ssh://sharemind.cyber.ee/projects/sharemind/git/libas.git
+[submodule "ext/libexecutable"]
+	path = ext/libexecutable
+	url = ssh://sharemind.cyber.ee/projects/sharemind/git/libexecutable.git
+[submodule "ext/libvmi"]
+	path = ext/libvmi
+	url = ssh://sharemind.cyber.ee/projects/sharemind/git/libvmi.git
+[submodule "ext/vm_m4"]
+	path = ext/vm_m4
+	url = ssh://sharemind.cyber.ee/projects/sharemind/git/vm_m4.git
+[submodule "ext/vm_globals"]
+	path = ext/vm_globals
+	url = ssh://sharemind.cyber.ee/projects/sharemind/git/vm_globals.git
