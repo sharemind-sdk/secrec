@@ -136,7 +136,7 @@ bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
      desc.add_options ()
              ("help,h", "Display this help message.")
              ("verbose,v", "Enable verbose output.")
-             ("include,I", po::value<vector<string > >(), "Directory for module search path.")
+             ("include,I", po::value<vector<string> >(), "Directory for module search path.")
              ("assemble,S", "Output assembly.")
              ("output,o", po::value<string>(), "Output file.")
              ("input", po::value<string>(), "Input file.")
@@ -146,9 +146,9 @@ bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
      po::variables_map vm;
 
      try {
-         po::store(po::command_line_parser (argc, argv).
-                   options (desc).positional (p).run (), vm);
-         po::notify(vm);
+         po::store (po::command_line_parser (argc, argv).
+            options (desc).positional (p).run (), vm);
+         po::notify (vm);
      }
      catch (const std::exception& e) {
          cerr << e.what () << endl;
@@ -242,7 +242,7 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
     {
         io::stream<io::mapped_file_source > fin (p.string ());
         if (! fin.is_open ()) {
-            cerr << "Failed to mmap a temporary file file \"" << p
+            cerr << "Failed to mmap a temporary file \"" << p
                  << "\" for reading!" << endl;
             return false;
         }
@@ -262,7 +262,7 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
             const char* smasErrorStr = SharemindAssemblerError_toString (r);
             assert (smasErrorStr);
 
-            cerr << "Error: ";
+            cerr << "ICE: Assembling error: ";
             if (errorToken) {
                 cerr << '(' << errorToken->start_line << ", "
                             << errorToken->start_column << ", "
@@ -281,13 +281,18 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
     size_t outputLength = 0;
     ScopedFree ptr (sharemind_assembler_link (0x0, &lus, &outputLength, 0));
     os.write (static_cast<const char*>(ptr.get ()), outputLength);
+    if (os.bad ()) {
+        cerr << "Writing bytecode to output failed." << endl;
+        return false;
+    }
+
     return true;
 }
 
 } // anonymous namespace
 
 
-int main(int argc, char *argv[]) {
+int main (int argc, char *argv[]) {
     ProgramOptions opts;
 
     if (! readProgramOptions (argc, argv, &opts)) {
