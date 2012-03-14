@@ -28,11 +28,9 @@
 #include <libscc/treenode.h>
 #include <libscc/blocks.h>
 
-extern "C" {
 #include <sharemind/libas/assemble.h>
 #include <sharemind/libas/linker.h>
 #include <sharemind/libas/tokenizer.h>
-}
 
 #include "Compiler.h"
 
@@ -140,7 +138,6 @@ bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
              ("verbose,v", "Enable verbose output.")
              ("include,I", po::value<vector<string > >(), "Directory for module search path.")
              ("assemble,S", "Output assembly.")
-             ("compile,c", "Compile to bytecode.")
              ("output,o", po::value<string>(), "Output file.")
              ("input", po::value<string>(), "Input file.")
              ;
@@ -170,7 +167,6 @@ bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
 
      opts->verbose = vm.count ("verbose");
      opts->assembleOnly = vm.count ("assemble");
-     opts->assembleOnly = !vm.count ("compile");
 
      if (vm.count ("output")) {
          opts->output = vm["output"].as<string>();
@@ -190,9 +186,8 @@ bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
 /*
  * Parse a secrec program, returns 0 on failure.
  */
-auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts) {
+auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts, int* errorCode) {
     SecreC::TreeNodeModule* ast = 0;
-    int parseResult = 0;
 
     if (opts.input) {
         const std::string& fname = opts.input.get ();
@@ -203,7 +198,7 @@ auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts) {
                 cerr << flush;
             }
 
-            parseResult = sccparse_file (f, &ast);
+            *errorCode = sccparse_file (f, &ast);
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
@@ -211,11 +206,7 @@ auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts) {
     }
     else {
         SecreC::TreeNodeModule* ast = 0;
-        parseResult = sccparse (&ast);
-    }
-
-    if (parseResult != 0) {
-        cerr << "Parsing failed! Error code " << parseResult << "." << endl;
+        *errorCode = sccparse (&ast);
     }
 
     return auto_ptr<SecreC::TreeNodeModule> (ast);
@@ -318,7 +309,7 @@ int main(int argc, char *argv[]) {
 
         fileBuf.open (opts.output.get (), mode);
         if (! fileBuf.is_open ()) {
-            cerr << "Failed to open output file." << endl;
+            cerr << "Failed to open the output file \"" << opts.output.get () << "\"." << endl;
             return EXIT_FAILURE;
         }
 
@@ -326,8 +317,10 @@ int main(int argc, char *argv[]) {
     }
 
     /* Parse the program: */
-    std::auto_ptr<SecreC::TreeNodeModule> parseTree = parseProgram (opts);
-    if (parseTree.get () == 0) {
+    int parseErrorCode = 0;
+    std::auto_ptr<SecreC::TreeNodeModule> parseTree = parseProgram (opts, &parseErrorCode);
+    if (parseErrorCode != 0) {
+        cerr << "Parsing failed! Error code " << parseErrorCode << "." << endl;
         return EXIT_FAILURE;
     }
     
