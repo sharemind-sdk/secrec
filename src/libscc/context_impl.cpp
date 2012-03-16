@@ -13,15 +13,15 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/foreach.hpp>
-#include <boost/range/adaptors.hpp>
 
 #include "types.h"
 
 namespace {
 template <typename Key, typename T >
 void eraseAll (const std::map<Key, T*>& m) {
-    BOOST_FOREACH (T* value, boost::adaptors::values (m)) {
-        delete value;
+    typedef const typename std::map<Key, T*>::value_type value_type;
+    BOOST_FOREACH (const value_type& p, m) {
+        delete p.second;
     }
 }
 } // anonymous namespace
