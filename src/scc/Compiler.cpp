@@ -116,7 +116,7 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
 
 void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     switch (iType) {
-    case Imop::CAST:       os << "cast";        break;
+    case Imop::CAST:       os << "conv";        break;
     case Imop::CLASSIFY:   os << "classify";    break;
     case Imop::DECLASSIFY: os << "declassify";  break;
     case Imop::RELEASE:    os << "delete";      break;
@@ -140,7 +140,7 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
 
 void syscallMangleSecrecDataType (std::ostream& os, SecrecDataType ty) {
     switch (ty) {
-    case DATATYPE_BOOL:    os << "bit";      break;
+    case DATATYPE_BOOL:    os << "bool";     break;
     case DATATYPE_UINT8:   os << "uint8";    break;
     case DATATYPE_UINT16:  os << "uint16";   break;
     case DATATYPE_UINT32:  os << "uint32";   break;
@@ -973,7 +973,7 @@ void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
         cgNewPrivate (block, imop.dest ());
     }
 
-    TypeNonVoid* ty = imop.dest ()->secrecType ();
+    TypeNonVoid* ty = imop.arg1 ()->secrecType ();
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     switch (imop.type ()) {
