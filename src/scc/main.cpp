@@ -81,9 +81,6 @@ private:
  * RAII for SharemindAssemblerLinkingUnits.
  */
 class ScopedAsmLinkingUnits : public SharemindAssemblerLinkingUnits, boost::noncopyable {
-    ScopedAsmLinkingUnits (const ScopedAsmLinkingUnits&);
-    void operator = (const ScopedAsmLinkingUnits&);
-
 public:
     ScopedAsmLinkingUnits () {
         SharemindAssemblerLinkingUnits_init (this);
