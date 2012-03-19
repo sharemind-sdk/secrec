@@ -11,20 +11,21 @@ namespace {
 std::string escape (const std::string& str) {
     std::ostringstream os;
 
-    os << '"';
+    os << '\"';
     BOOST_FOREACH (char c, str) {
         switch (c) {
-        case '\'': os << "\\'"; break;
-        case '"':  os << "\\\""; break;
+        case '\'': os << "\\\'"; break;
+        case '\"': os << "\\\""; break;
+        case '\?': os << "\\?";  break;
         case '\\': os << "\\\\"; break;
-        case '\a': os << "\\a"; break;
-        case '\b': os << "\\b"; break;
-        case '\f': os << "\\f"; break;
-        case '\n': os << "\\n"; break;
-        case '\r': os << "\\r"; break;
-        case '\t': os << "\\t"; break;
-        case '\v': os << "\\v"; break;
-        default:   os << c;
+        case '\a': os << "\\a";  break;
+        case '\b': os << "\\b";  break;
+        case '\f': os << "\\f";  break;
+        case '\n': os << "\\n";  break;
+        case '\r': os << "\\r";  break;
+        case '\t': os << "\\t";  break;
+        case '\v': os << "\\v";  break;
+        default:   os << c;      break;
         }
     }
 
