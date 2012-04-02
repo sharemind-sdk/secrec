@@ -15,7 +15,6 @@ SyscallManager::SyscallManager ()
 
 SyscallManager::~SyscallManager () { }
 
-/// Creates required sections.
 void SyscallManager::init (VMSymbolTable& st,
                            VMBindingSection* sc,
                            VMBindingSection* pd) {

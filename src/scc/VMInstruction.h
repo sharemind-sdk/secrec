@@ -24,6 +24,10 @@ class VMValue;
   VMInstruction
 ******************************************************************/
 
+/*
+ * TODO: this is very inefficient
+ */
+
 class VMInstruction {
 
 public: /* Methods: */

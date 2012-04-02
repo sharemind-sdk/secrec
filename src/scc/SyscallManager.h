@@ -30,6 +30,9 @@ class VMBindingSection;
   SyscallManager
 *******************************************************************************/
 
+/**
+ * Class to manage mapping system calls and protection domains to labels.
+ */
 class SyscallManager {
 private: /* Types: */
 
@@ -41,17 +44,10 @@ public: /* Methods: */
     SyscallManager ();
     ~SyscallManager ();
 
-    /**
-     * Creates required section in the VM linking unit.
-     * The binding requested by the get methods will be added
-     * into the apropriate sections.
-     */
     void init (VMSymbolTable& st, VMBindingSection* sc, VMBindingSection* pd);
 
-    /// Request a label for a security domain.
     VMLabel* getPD (SecreC::PrivateSecType* secTy);
 
-    /// Request a label for a syscall of given name.
     VMLabel* getSyscallBinding (const SecreC::ConstantString* str);
     VMLabel* getSyscallBinding (const std::string& name);
 
@@ -60,7 +56,7 @@ private: /* Fields: */
     VMSymbolTable*     m_st; ///< Labels are managed by the VM symbol table.
     VMBindingSection*  m_pdSection; ///< Section for security domains.
     VMBindingSection*  m_scSection; ///< Section for syscalls.
-    SCMap              m_syscalls;
+    SCMap              m_syscalls; ///< Sharemin system calls.
     PDMap              m_pds; ///< Privacy domains
 };
 

@@ -21,8 +21,13 @@ class VMSymbolTable;
   VMValue
 ******************************************************************/
 
-/// VMValues must only be constructed by VMSymbolTable
+/**
+ * Representation of Sharemind virtual machine values.
+ * Only (de)allocated by the VM symbol table class.
+ */
 class VMValue {
+    friend class VMSymbolTable;
+
 public: /* Types: */
 
     enum Type {
@@ -45,7 +50,6 @@ public:
     
     virtual std::string toString () const = 0;
     friend std::ostream& operator << (std::ostream& os, const VMValue& value);
-    friend class VMSymbolTable;
 
 private: /* Fields: */
 
@@ -59,6 +63,7 @@ std::ostream& operator << (std::ostream& os, const VMValue& value);
 ******************************************************************/
 
 class VMImm : public VMValue {
+    friend class VMSymbolTable;
 
 protected: /* Methods: */
 
@@ -73,7 +78,6 @@ public:
 
     uint64_t value () const { return m_value; }
     std::string toString () const;
-    friend class VMSymbolTable;
 
 private: /* Fields: */
 
@@ -85,6 +89,7 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMStack : public VMValue {
+    friend class VMSymbolTable;
 
 protected: /* Methods: */
 
@@ -99,7 +104,6 @@ public:
 
     unsigned number () const { return m_number; }
     std::string toString () const;
-    friend class VMSymbolTable;
 
 private: /* Fields: */
 
@@ -111,6 +115,7 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMReg : public VMValue {
+    friend class VMSymbolTable;
 
 protected: /* Methods: */
 
@@ -125,7 +130,6 @@ public:
 
     unsigned number () const { return m_number; }
     std::string toString () const;
-    friend class VMSymbolTable;
 
 private: /* Fields: */
 
@@ -137,6 +141,7 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMLabel : public VMValue {
+    friend class VMSymbolTable;
 
 protected: /* Methods: */
 
@@ -151,7 +156,6 @@ public:
 
     inline const std::string& name () const { return m_name; }
     std::string toString () const;
-    friend class VMSymbolTable;
 
 private: /* Fields: */
 
@@ -163,10 +167,12 @@ private: /* Fields: */
 ******************************************************************/
 
 /**
- * Virtual Register.
- * Representation of unallocated registers.
+ * Virtual register.
+ * Representation of unallocated registers. Will be set to concrete registers
+ * at the register allocation pass.
  */
 class VMVReg: public VMValue {
+    friend class VMSymbolTable;
 
 protected: /* Methods: */
 
@@ -187,9 +193,7 @@ public:
         m_actualReg = reg;
     }
 
-    friend class VMSymbolTable;
-
-private:
+private: /* Fields: */
 
     VMValue*    m_actualReg;
     const bool  m_isGlobal;

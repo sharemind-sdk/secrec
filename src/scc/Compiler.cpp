@@ -899,12 +899,15 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
  */
 
 void Compiler::cgNewPrivate (VMBlock& block, const Symbol* dest, const Symbol* size) {
-    TypeNonVoid* ty = dest->secrecType ();
-    VMValue* s = (size == 0 ? m_st.getImm (1) : find (size));
     VMValue* d = find (dest);
-    block.push_new () << "push" << getPD (m_scm, dest);
-    block.push_new () << "push" << s;
-    emitSyscall (block, d, SyscallName::basic (ty, "new"));
+    // TODO: this is a hack, fix in IR code generation
+    if (m_allocatedScalars.insert (d).second) {
+        TypeNonVoid* ty = dest->secrecType ();
+        VMValue* s = (size == 0 ? m_st.getImm (1) : find (size));
+        block.push_new () << "push" << getPD (m_scm, dest);
+        block.push_new () << "push" << s;
+        emitSyscall (block, d, SyscallName::basic (ty, "new"));
+    }
 }
 
 void Compiler::cgPrivateAssign (VMBlock& block, const Imop& imop) {

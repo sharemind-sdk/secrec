@@ -29,6 +29,9 @@ class VMLabel;
   VMBlock
 *******************************************************************************/
 
+/**
+ * Basic block of VM code instructions.
+ */
 class VMBlock {
 public: /* Types: */
 
@@ -74,6 +77,9 @@ private: /* Fields: */
   VMFunction
 *******************************************************************************/
 
+/**
+ * Representation of SecreC function in the VM
+ */
 class VMFunction {
 public: /* Types: */
 
@@ -87,7 +93,6 @@ public: /* Methods: */
         : m_name (name)
         , m_isStart (false)
         , m_numLocals (0)
-
     { }
 
     ~VMFunction () { }
@@ -112,10 +117,10 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-   BlockList       m_blocks;
-   const VMLabel*  m_name;
-   bool            m_isStart;
-   unsigned        m_numLocals;
+   BlockList       m_blocks;  ///< VM blocks that define this function.
+   const VMLabel*  m_name; ///< Name of the function.
+   bool            m_isStart; ///< Special function to mark the start of the byte code.
+   unsigned        m_numLocals; ///< Number of local registers, either "reg" or "stack".
 };
 
 

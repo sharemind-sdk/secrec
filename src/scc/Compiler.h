@@ -13,6 +13,8 @@
 #include "VMCode.h"
 #include "VMSymbolTable.h"
 
+#include <set>
+
 namespace SecreC {
 class Procedure;
 class Block;
@@ -107,6 +109,7 @@ private: /* Fields: */
     RegisterAllocator*    m_ra;      ///< Register allocator
     SyscallManager*       m_scm;     ///< The syscall manager
     StringLiterals*       m_strLit;  ///< String literals
+    std::set<VMValue*>    m_allocatedScalars;
 };
 
 } // namespace SecreCC
