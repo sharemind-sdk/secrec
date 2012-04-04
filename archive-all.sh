@@ -102,8 +102,14 @@ BYTES=`wc -c "$OUTFILE" | cut -d ' ' -f 1`
 echo 'Details:'
 echo "  Filename:  ${OUTFILE}"
 echo "  File size: $BYTES bytes`echo $BYTES|awk '{s[2**30]="G";s[2**20]="M";s[1024]="k";for(x=2**30;x>=1024;x/=1024){if($1>=x){printf " (%.2f %sB)\n",$1/x,s[x];break}}}'`"
-echo "  MD5SUM:    `md5sum \"${OUTFILE}\" |cut -b -32`"
-echo "  SHA1SUM:   `sha1sum \"${OUTFILE}\" |cut -b -40`"
-echo "  SHA256SUM: `sha256sum \"${OUTFILE}\" |cut -b -64`"
+type md5sum >/dev/null 2>&1 && echo "  MD5SUM:    `md5sum \"${OUTFILE}\" |cut -b -32`"
+SHA1SUM=`(type sha1sum >/dev/null 2>&1 && echo sha1sum) || (type shasum >/dev/null 2>&1 && echo shasum -a 1)`
+SHA256SUM=`(type sha256sum >/dev/null 2>&1 && echo sha256sum) || (type shasum >/dev/null 2>&1 && echo shasum -a 256)`
+if [ ! -z "$SHA1SUM" ]; then
+  echo "  SHA1SUM:   `$SHA1SUM \"${OUTFILE}\" |cut -b -40`"
+fi
+if [ ! -z "$SHA256SUM" ]; then
+  echo "  SHA256SUM: `$SHA256SUM \"${OUTFILE}\" |cut -b -64`"
+fi
 
 exit $EXIT_SUCCESS
