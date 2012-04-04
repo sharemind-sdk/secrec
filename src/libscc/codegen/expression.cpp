@@ -522,7 +522,7 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
     Symbol* rhs = result.symbol ();
     SymbolSymbol* resSym = generateResultSymbol (result, e);
-    ScopedAllocations allocs (*this, result);
+//    ScopedAllocations allocs (*this, result);
 
     { // Eval subexpressions and copy dimensionalities:
         dim_iterator dimIt = dim_begin (resSym);
@@ -544,8 +544,10 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 
     // Compute new size:
     codeGenSize (result);
+    Imop::Type iType;
 
     if (!eArg->resultType ()->isScalar()) {
+        iType = Imop::COPY;
         assert (dynamic_cast<SymbolSymbol*>(rhs) != 0);
         // Check that new and old sizes are equal:
         Symbol* sizeSymbol = static_cast<SymbolSymbol*>(rhs)->getSizeSym ();
@@ -558,17 +560,22 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
         push_imop (err);
     }
     else {
+        iType = Imop::ALLOC;
         // Convert scalar to constant array:
-        Symbol* tmp = rhs;
-        rhs = m_st->appendTemporary (TypeNonVoid::get (getContext (),
-            eArg->resultType ()->secrecSecType (),
-            eArg->resultType ()->secrecDataType (),
-            e->resultType ()->secrecDimType ()));
-        allocs.allocTemporary (rhs, tmp, resSym->getSizeSym ());
+//        Symbol* tmp = rhs;
+//        rhs = m_st->appendTemporary (TypeNonVoid::get (getContext (),
+//            eArg->resultType ()->secrecSecType (),
+//            eArg->resultType ()->secrecDataType (),
+//            e->resultType ()->secrecDimType ()));
+//        Imop* i = new Imop (e, Imop::ALLOC, resSym, tmp, resSym->getSizeSym ());
+//        pushImopAfter (result, i);
+//        m_allocs.push_back (dest);
+//        result.addTempResource (resSym);
+//        allocs.allocTemporary (rhs, tmp, resSym->getSizeSym ());
     }
 
     // Copy result:
-    Imop* i = new Imop (e, Imop::COPY, resSym, rhs, resSym->getSizeSym ());
+    Imop* i = new Imop (e, iType, resSym, rhs, resSym->getSizeSym ());
     pushImopAfter (result, i);
     m_allocs.push_back (resSym);
     return result;
