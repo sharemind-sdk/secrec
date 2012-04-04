@@ -16,6 +16,9 @@ OLDPATH=`pwd`
 SCRIPT_FULLNAME="$0"
 SCRIPT_PATH="`dirname \"$0\"`"
 
+TAR=tar
+type gnutar >/dev/null 2>&1 && TAR=gnutar
+
 function usage {
   SCRIPT_NAME=${SCRIPT_FULLNAME:${#SCRIPT_PATH}}
   SCRIPT_NAME=${SCRIPT_NAME:1}
@@ -70,16 +73,16 @@ fi
 
 cd "$SCRIPT_PATH" # Go to script path
 
-TMPOUTFILE=`mktemp`
+TMPOUTFILE=`mktemp XXXXXX`
 git archive "--prefix=${PREFIX}/" --format=tar HEAD -o "$TMPOUTFILE"
 
-TMPSUBMODULEFILE=`mktemp`
+TMPSUBMODULEFILE=`mktemp XXXXXX`
 for SUBMODULEPATH in ext/*; do
   > "$TMPSUBMODULEFILE"
   cd "$SUBMODULEPATH" # Go to submodule path
   git archive --prefix="${PREFIX}/${SUBMODULEPATH}/" --format=tar HEAD -o "$TMPSUBMODULEFILE"
   cd - 2>&1 > /dev/null # Return from submodule path
-  tar --concatenate "--file=$TMPOUTFILE" "$TMPSUBMODULEFILE"
+  $TAR --concatenate "--file=$TMPOUTFILE" "$TMPSUBMODULEFILE"
 done
 rm -f "$TMPSUBMODULEFILE"
 
