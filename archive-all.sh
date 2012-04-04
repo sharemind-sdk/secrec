@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #  This file is a part of the Sharemind framework.
 #  Copyright (C) Cybernetica AS
@@ -10,6 +10,13 @@
 
 EXIT_FAILURE=1
 EXIT_SUCCESS=0
+
+if [ -z "$TMPDIR" ]; then
+  echo 'Error: $TMPDIR not properly set in environment!' >&2
+  exit $EXIT_FAILURE
+fi
+TMPTEMPLATE="${TMPDIR}/`basename $0`.XXXXXX"
+
 PREFIX=
 
 OLDPATH=`pwd`
@@ -73,10 +80,10 @@ fi
 
 cd "$SCRIPT_PATH" # Go to script path
 
-TMPOUTFILE=`mktemp XXXXXX`
+TMPOUTFILE=`mktemp ${TMPTEMPLATE}`
 git archive "--prefix=${PREFIX}/" --format=tar HEAD -o "$TMPOUTFILE"
 
-TMPSUBMODULEFILE=`mktemp XXXXXX`
+TMPSUBMODULEFILE=`mktemp ${TMPTEMPLATE}`
 for SUBMODULEPATH in ext/*; do
   > "$TMPSUBMODULEFILE"
   cd "$SUBMODULEPATH" # Go to submodule path
@@ -91,10 +98,10 @@ cd "$OLDPATH" # Return to caller path
 bzip2 --best "$TMPOUTFILE" --stdout > "$OUTFILE"
 rm -f "$TMPOUTFILE"
 
-BYTES=`stat '--format=%s' "$OUTFILE"`
+BYTES=`wc -c "$OUTFILE" | cut -d ' ' -f 1`
 echo 'Details:'
 echo "  Filename:  ${OUTFILE}"
-echo "  File size: $BYTES bytes`echo $BYTES|awk '{s[2**30]="G";s[2**20]="M";hum[1024]="k";for(x=2**30;x>=1024;x/=1024){if($1>=x){printf " (%.2f %sB)\n",$1/x,s[x];break}}}'`"
+echo "  File size: $BYTES bytes`echo $BYTES|awk '{s[2**30]="G";s[2**20]="M";s[1024]="k";for(x=2**30;x>=1024;x/=1024){if($1>=x){printf " (%.2f %sB)\n",$1/x,s[x];break}}}'`"
 echo "  MD5SUM:    `md5sum \"${OUTFILE}\" |cut -b -32`"
 echo "  SHA1SUM:   `sha1sum \"${OUTFILE}\" |cut -b -40`"
 echo "  SHA256SUM: `sha256sum \"${OUTFILE}\" |cut -b -64`"
