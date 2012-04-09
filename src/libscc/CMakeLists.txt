@@ -38,6 +38,7 @@ SET(LIBSCC_SOURCES
     "typechecker/templates.h"
     "typechecker/templates.cpp"
     "typechecker/procedures.cpp"
+    "analysis/ReachingDeclassify.cpp"
     "context_impl.h"
     "context_impl.cpp"
     "context.cpp"
@@ -50,6 +51,7 @@ SET(LIBSCC_SOURCES
 SET(LIBSCC_HEADERS
     "${CMAKE_SOURCE_DIR}/include/libscc/codegen.h"
     "${CMAKE_SOURCE_DIR}/include/libscc/dataflowanalysis.h"
+    "${CMAKE_SOURCE_DIR}/include/libscc/analysis/ReachingDeclassify.h"
     "${CMAKE_SOURCE_DIR}/include/libscc/imop.h"
     "${CMAKE_SOURCE_DIR}/include/libscc/log.h"
     "${CMAKE_SOURCE_DIR}/include/libscc/parser.h"
