@@ -898,22 +898,30 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
  * Private operations:
  */
 
-void Compiler::cgNewPrivate (VMBlock& block, const Symbol* dest, const Symbol* size) {
+
+void Compiler::cgNewPrivateScalar (VMBlock& block, const Symbol* dest) {
     VMValue* d = find (dest);
+    TypeNonVoid* ty = dest->secrecType ();
     // TODO: this is a hack, fix in IR code generation
     if (m_allocatedScalars.insert (d).second) {
-        TypeNonVoid* ty = dest->secrecType ();
-        VMValue* s = (size == 0 ? m_st.getImm (1) : find (size));
         block.push_new () << "push" << getPD (m_scm, dest);
-        block.push_new () << "push" << s;
+        block.push_new () << "push" << m_st.getImm (1);
         emitSyscall (block, d, SyscallName::basic (ty, "new"));
     }
+}
+
+void Compiler::cgNewPrivate (VMBlock& block, const Symbol* dest, const Symbol* size) {
+    VMValue* d = find (dest);
+    TypeNonVoid* ty = dest->secrecType ();
+    block.push_new () << "push" << getPD (m_scm, dest);
+    block.push_new () << "push" << find (size);
+    emitSyscall (block, d, SyscallName::basic (ty, "new"));
 }
 
 void Compiler::cgPrivateAssign (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     if (! imop.isVectorized ()) {
-        cgNewPrivate (block, imop.dest ());
+        cgNewPrivateScalar (block, imop.dest ());
     }
 
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
@@ -944,7 +952,7 @@ void Compiler::cgClassify (VMBlock& block, const Imop& imop) {
         emitSyscall (block, SyscallName::basic (ty, "classify"));
     }
     else {
-        cgNewPrivate (block, imop.dest ());
+        cgNewPrivateScalar (block, imop.dest ());
         block.push_new () << "push" << getPD (m_scm, imop.dest ());
         block.push_new () << "push" << find (imop.arg1 ());
         block.push_new () << "push" << find (imop.dest ());
@@ -973,7 +981,7 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
     if (! imop.isVectorized ()) {
-        cgNewPrivate (block, imop.dest ());
+        cgNewPrivateScalar (block, imop.dest ());
     }
 
     TypeNonVoid* ty = imop.arg1 ()->secrecType ();
@@ -1012,7 +1020,7 @@ void Compiler::cgPrivateRelease (VMBlock& block, const Imop& imop) {
 void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     if (! imop.isVectorized ()) {
-        cgNewPrivate (block, imop.dest ());
+        cgNewPrivateScalar (block, imop.dest ());
     }
 
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
@@ -1023,7 +1031,7 @@ void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
-    cgNewPrivate (block, imop.dest ());
+    cgNewPrivateScalar (block, imop.dest ());
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.arg2 ());

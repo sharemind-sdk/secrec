@@ -81,6 +81,7 @@ protected:
      * Operations performed through syscalls:
      */
     void cgNewPrivate (VMBlock& block, const SecreC::Symbol* dest, const SecreC::Symbol* size = 0);
+    void cgNewPrivateScalar (VMBlock& block, const SecreC::Symbol* dest);
     void emitSyscall (VMBlock& block, VMValue* dest, const std::string& name);
     void emitSyscall (VMBlock& block, const std::string& name);
     void cgPrivateAssign (VMBlock& block, const SecreC::Imop& imop);
