@@ -16,6 +16,7 @@
 #include <libscc/parser.h>
 #include <libscc/treenode.h>
 #include <libscc/virtual_machine.h>
+#include <libscc/analysis/ReachingDeclassify.h>
 
 
 using namespace std;
