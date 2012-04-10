@@ -32,7 +32,10 @@
 /* =============================================================================
   Character classes
 ============================================================================= */
+BINARYDIGIT     [0-1]
+OCTALDIGIT      [0-7]
 DIGIT           [0-9]
+HEXDIGIT        [0-9a-fA-F]
 UNDERSCORE      _
 WHITESPACE      [ \t]
 /* WHITESPACE      [[:space:]] */
@@ -105,8 +108,10 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 
-0|[1-9]{DIGIT}* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return INT_LITERAL; }
-0(0|[1-9]{DIGIT}*) { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return UINT_LITERAL; }
+0b{BINARYDIGIT}+ { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return BIN_LITERAL; }
+0o{OCTALDIGIT}+  { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return OCT_LITERAL; }
+0x{HEXDIGIT}+ { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return HEX_LITERAL; }
+0|[1-9]{DIGIT}* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DEC_LITERAL; }
 \"(\\.|[^\\"])*\" {
     stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));
     yyget_lval(yyscanner)->str = strndup(yyget_text(yyscanner) + 1, yyget_leng(yyscanner) - 2);

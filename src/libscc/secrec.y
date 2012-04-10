@@ -3,11 +3,44 @@
   struct TreeNode;
   #include <assert.h>
   #include <stdio.h>
+  #include <stdint.h>
   #include "parser.h"
   #include "lex_secrec.h"
   #include "treenode.h"
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
+
+  uint64_t char_to_digit (char c) {
+      if ('0' <= c && c <= '9')
+          return c - '0';
+      if ('a' <= c && c <= 'f')
+          return (c - 'a') + 10;
+      if ('A' <= c && c <= 'F')
+          return (c - 'A') + 10;
+      assert (0 && "Invalid digit character!");
+      return 0;
+  }
+
+  uint64_t convert_to_base (const char* input, uint64_t base) {
+      assert (base == 2 || base == 8 || base == 10 || base == 16);
+      uint64_t out = 0;
+      size_t offset = 0;
+      if (base != 10) {
+        /* skip the headers: 0b, 0o, and 0x */
+        assert (input[0] != '\0' && input[1] != '\0');
+        if (input[0] == '\0') return 0;
+        if (input[1] == '\0') return 0;
+        offset += 2;
+      }
+
+      for (const char* ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
+          uint64_t digit = char_to_digit (*ptr);
+          assert (0 <= digit && digit < base);
+          out = out*base + digit;
+      }
+
+      return out;
+  }
 
   struct TreeNode *init_binop (enum SecrecOperator op, YYLTYPE* loc,
                                struct TreeNode *ret, struct TreeNode *body,
@@ -115,8 +148,10 @@
 
 /* Literals: */
 %token <str> STRING_LITERAL
-%token <str> INT_LITERAL
-%token <str> UINT_LITERAL
+%token <str> BIN_LITERAL
+%token <str> OCT_LITERAL
+%token <str> HEX_LITERAL
+%token <str> DEC_LITERAL
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -185,9 +220,8 @@
 %type <treenode> expression_list
 %type <treenode> primary_expression
 %type <treenode> literal
-%type <treenode> identifier
-%type <treenode> uint_literal
 %type <treenode> int_literal
+%type <treenode> identifier
 %type <treenode> string_literal
 %type <treenode> bool_literal
 %type <treenode> template_declaration
@@ -198,6 +232,7 @@
 %type <treenode> import_declarations
 %type <treenode> program
 
+%type <integer_literal> int_literal_helper
 %type <nothing> module
 
 /* Starting nonterminal: */
@@ -457,10 +492,9 @@ datatype_specifier
  ;
 
 dimtype_specifier
- : '[' '[' INT_LITERAL ']' ']'
+ : '[' '[' int_literal_helper ']' ']'
    {
-      $$ = (struct TreeNode *) treenode_init_dimTypeF(atoi($3), &@$);
-      free ($3);
+      $$ = (struct TreeNode *) treenode_init_dimTypeF ($3, &@$);
    }
  ;
 
@@ -1105,19 +1139,17 @@ primary_expression
  | literal
  ;
 
-uint_literal
- : UINT_LITERAL
-   {
-     $$ = treenode_init_uint(atoi($1), &@$);
-     free($1);
-   }
+int_literal_helper
+ : BIN_LITERAL { $$ = convert_to_base ($1,  2); free ($1); }
+ | OCT_LITERAL { $$ = convert_to_base ($1,  8); free ($1); }
+ | DEC_LITERAL { $$ = convert_to_base ($1, 10); free ($1); }
+ | HEX_LITERAL { $$ = convert_to_base ($1, 16); free ($1); }
  ;
 
 int_literal
- : INT_LITERAL
+ : int_literal_helper
    {
-     $$ = treenode_init_int(atoi($1), &@$);
-     free($1);
+     $$ = treenode_init_int($1, &@$);
    }
  ;
 
@@ -1136,7 +1168,6 @@ bool_literal
 
 literal
  : int_literal
- | uint_literal
  | string_literal
  | bool_literal
  ;

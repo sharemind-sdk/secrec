@@ -2,6 +2,7 @@
 #define SECREC_PARSER_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -182,6 +183,7 @@ union YYSTYPE {
     TYPE_TREENODE treenode;
     char *nothing;
     char *str;
+    uint64_t integer_literal;
 };
 typedef union YYSTYPE YYSTYPE;
 
