@@ -797,17 +797,24 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
-void Compiler::cgError (VMBlock& block, const Imop& imop) {
-    assert (imop.type () == Imop::ERROR);
-    assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
-    /*
+void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
     VMVReg* temp = m_ra->temporaryReg ();
     const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
     VMLabel* offset = m_strLit->getLiteral (str);
     block.push_new () << "mov imm :RODATA" << temp;
     block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
-    emitSyscall (block, "error");
-    */
+    emitSyscall (block, "miner_log_string");
+}
+
+void Compiler::cgError (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::ERROR);
+    assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
+    VMVReg* temp = m_ra->temporaryReg ();
+    const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
+    VMLabel* offset = m_strLit->getLiteral (str);
+    block.push_new () << "mov imm :RODATA" << temp;
+    block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
+    emitSyscall (block, "miner_log_string");
     block.push_new () << "halt imm 0xff";
 }
 
@@ -876,6 +883,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         return;
     case Imop::ERROR:
         cgError (block, imop);
+        return;
+    case Imop::PRINT:
+        cgPrint (block, imop);
         return;
     case Imop::RETCLEAN:
     case Imop::COMMENT:
