@@ -17,6 +17,7 @@ using namespace SecreC;
 inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {
     case DATATYPE_UNDEFINED: return "undefined";
+    case DATATYPE_UNIT:      return "unit";
     case DATATYPE_BOOL:      return "bool";
     case DATATYPE_INT8:      return "int8";
     case DATATYPE_INT16:     return "int16";
@@ -52,31 +53,31 @@ enum CastStyle {
     CAST_EXPLICIT  = 3
 };
 
-#define F CAST_FORBIDDEN
+#define X CAST_FORBIDDEN
 #define S CAST_EQUAL
 #define I CAST_IMPLICIT
 #define E CAST_EXPLICIT
 
 const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
-    //  x   B   S   I8  I16 I32 I64 U8  U16 U32 U64
-       {S,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_INVALID,
-       {F,  S,  F,  I,  I,  I,  I,  I,  I,  I,  I},     //DATATYPE_BOOL,
-       {F,  F,  S,  F,  F,  F,  F,  F,  F,  F,  F},     //DATATYPE_STRING,
-       {F,  E,  F,  S,  I,  I,  I,  E,  E,  E,  E},     //DATATYPE_INT8,
-       {F,  E,  F,  E,  S,  I,  I,  E,  E,  E,  E},     //DATATYPE_INT16,
-       {F,  E,  F,  E,  E,  S,  I,  E,  E,  E,  E},     //DATATYPE_INT32,
-       {F,  E,  F,  E,  E,  E,  S,  E,  E,  E,  E},     //DATATYPE_INT64,
-       {F,  E,  F,  E,  I,  I,  I,  S,  I,  I,  I},     //DATATYPE_UINT8,
-       {F,  E,  F,  E,  E,  I,  I,  E,  S,  I,  I},     //DATATYPE_UINT16,
-       {F,  E,  F,  E,  E,  E,  I,  E,  E,  S,  I},     //DATATYPE_UINT32,
-       {F,  E,  F,  E,  E,  E,  E,  E,  E,  E,  S}      //DATATYPE_UINT64,
+    //  x   U   B   S   I8  I16 I32 I64 U8  U16 U32 U64
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_INVALID,
+       {X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_UNIT,
+       {X,  X,  S,  X,  E,  E,  E,  E,  E,  E,  E,  E},     // DATATYPE_BOOL,
+       {X,  X,  X,  S,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_STRING,
+       {X,  X,  E,  X,  S,  E,  E,  E,  E,  E,  E,  E},     // DATATYPE_INT8,
+       {X,  X,  E,  X,  E,  S,  E,  E,  E,  E,  E,  E},     // DATATYPE_INT16,
+       {X,  X,  E,  X,  E,  E,  S,  E,  E,  E,  E,  E},     // DATATYPE_INT32,
+       {X,  X,  E,  X,  E,  E,  E,  S,  E,  E,  E,  E},     // DATATYPE_INT64,
+       {X,  X,  E,  X,  E,  E,  E,  E,  S,  E,  E,  E},     // DATATYPE_UINT8,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  S,  E,  E},     // DATATYPE_UINT16,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  S,  E},     // DATATYPE_UINT32,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  E,  S}      // DATATYPE_UINT64,
 };
 
-#undef F
+#undef X
 #undef S
 #undef I
 #undef E
-
 
 TypeNonVoid::Kind kindToKind (DataType::Kind k) {
     switch (k) {

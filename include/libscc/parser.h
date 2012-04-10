@@ -131,6 +131,7 @@ enum SecrecTreeNodeType {
 
 enum SecrecDataType {
     DATATYPE_UNDEFINED = 0x00,
+    DATATYPE_UNIT,
     DATATYPE_BOOL,
     DATATYPE_STRING,
     DATATYPE_INT8,
