@@ -53,14 +53,27 @@ void StringLiterals::init (VMSymbolTable& st, VMDataSection* section) {
     m_dataSection = section;
 }
 
-VMLabel* StringLiterals::getLiteral (const SecreC::ConstantString* str) {
+size_t StringLiterals::getSize (const SecreC::ConstantString* str) const {
+    LitMap::const_iterator i = m_literals.find (str);
+    assert (i != m_literals.end ());
+    return i->second.size;
+}
+
+VMLabel* StringLiterals::getLabel (const SecreC::ConstantString* str) const {
+    LitMap::const_iterator i = m_literals.find (str);
+    assert (i != m_literals.end ());
+    return i->second.label;
+}
+
+StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str) {
     LitMap::iterator i = m_literals.find (str);
     if (i == m_literals.end ()) {
         std::stringstream os;
         os << ":STR_" << m_st->uniq ();
         VMLabel* label = m_st->getLabel (os.str ());
-        m_dataSection->addRecord (label, "string", escape (str->value ()));
-        i = m_literals.insert (i, std::make_pair (str, label));
+        const std::string& s = escape (str->value ());
+        m_dataSection->addRecord (label, "string", s);
+        i = m_literals.insert (i, std::make_pair (str, LiteralInfo (label, str->value ().size () + 1)));
     }
 
     return i->second;

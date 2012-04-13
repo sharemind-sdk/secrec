@@ -342,6 +342,23 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     return reg;
 }
 
+void Compiler::pushString (VMBlock& block, const Symbol* str) {
+    assert (str->secrecType ()->secrecDataType () == DATATYPE_STRING);
+    if (str->isConstant ()) {
+        assert (dynamic_cast<const ConstantString*>(str) != 0);
+        const ConstantString* cstr = static_cast<const ConstantString*>(str);
+        StringLiterals::LiteralInfo info = m_strLit->insert (cstr);
+        VMLabel* offset = info.label;
+        VMVReg* temp = m_ra->temporaryReg ();
+        block.push_new () << "mov imm :RODATA" << temp;
+        block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (info.size);
+    }
+    else {
+        block.push_new () << "pushcref mem" << find (str);
+    }
+}
+
+
 void Compiler::cgProcedure (const Procedure& blocks) {
     VMLabel* name = 0;
     if (blocks.name () == 0)
@@ -463,6 +480,14 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ASSIGN);
+
+    if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+        pushString (block, imop.arg1 ());
+        VMLabel* target = m_st.getLabel (":builtin_str_dup__");
+        m_funcs->insert (target, BuiltinStrDup ());
+        block.push_new () << "call" << target << find (imop.dest ());
+        return;
+    }
 
     if (isPrivate (imop)) {
         cgPrivateAssign (block, imop);
@@ -704,8 +729,24 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
     block.push_back (movInstr);
 }
 
+void Compiler::cgStringAppend (VMBlock& block, const Imop& imop) {
+    assert (imop.type () == Imop::ADD);
+    pushString (block, imop.arg1 ());
+    pushString (block, imop.arg2 ());
+    VMLabel* target = m_st.getLabel (":builtin_str_append__");
+    m_funcs->insert (target, BuiltinStrAppend ());
+    block.push_new () << "call" << target << find (imop.dest ());
+}
+
 void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     assert (imop.isExpr ());
+    if (imop.type () == Imop::ADD) {
+        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+            cgStringAppend (block, imop);
+            return;
+        }
+    }
+
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
 
@@ -777,14 +818,7 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     VMInstruction instr;
 
     if (imop.type () == Imop::PUSHCREF && isStr) {
-        const ConstantString* str = static_cast<const ConstantString*>(arg);
-        VMVReg* len = m_ra->temporaryReg ();
-        VMLabel* rodata = m_st.getLabel (":RODATA");
-        VMLabel* strstart = m_strLit->getLiteral (str);
-        block.push_new () << "getsize" << len << rodata;
-        block.push_new () << "bsub" << VM_UINT64 << len << strstart;
-        instr << "pushcrefpart" << "mem" << rodata << strstart << len;
-        block.push_back (instr);
+        pushString (block, arg);
     }
 
     switch (imop.type ()) {
@@ -802,31 +836,13 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
-    VMVReg* temp = m_ra->temporaryReg ();
-    if (imop.arg1 ()->isConstant ()) {
-        assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
-        const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
-        VMLabel* offset = m_strLit->getLiteral (str);
-        block.push_new () << "mov imm :RODATA" << temp;
-        block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
-    }
-    else {
-        const Symbol* str = imop.arg1 ();
-        block.push_new () << "getmemsize" << find (str) << temp;
-        block.push_new () << "pushcref mem" << find (str);
-    }
-
+    pushString (block, imop.arg1 ());
     emitSyscall (block, "miner_log_string");
 }
 
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ERROR);
-    assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
-    VMVReg* temp = m_ra->temporaryReg ();
-    const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
-    VMLabel* offset = m_strLit->getLiteral (str);
-    block.push_new () << "mov imm :RODATA" << temp;
-    block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
+    pushString (block, imop.arg1 ());
     emitSyscall (block, "miner_log_string");
     block.push_new () << "halt imm 0xff";
 }

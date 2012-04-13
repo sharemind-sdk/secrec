@@ -148,6 +148,37 @@ private: /* Fields: */
     const VMDataType m_src;
 };
 
+/*******************************************************************************
+  BuiltinStrAppend
+*******************************************************************************/
+
+class BuiltinStrAppend : public BuiltinFunction {
+public: /* Methods: */
+    BuiltinStrAppend () { }
+    ~BuiltinStrAppend () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinStrAppend ();
+    }
+};
+
+/*******************************************************************************
+  BuiltinStrDup
+*******************************************************************************/
+
+class BuiltinStrDup : public BuiltinFunction  {
+public: /* Methods: */
+    BuiltinStrDup () {}
+    ~BuiltinStrDup () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinStrDup ();
+    }
+};
 
 } // namespace SecreCC
 

@@ -320,4 +320,50 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     return;
 }
 
+/*******************************************************************************
+  BuiltinStrAppend
+*******************************************************************************/
+
+void BuiltinStrAppend::generate (VMFunction& function, VMSymbolTable& st) {
+    VMImm* lhs = st.getImm (0);
+    VMImm* rhs = st.getImm (1);
+    VMStack* lhsSize = st.getStack (0);
+    VMStack* rhsSize = st.getStack (1);
+    VMStack* totalSize = st.getStack (2);
+    VMStack* dest = st.getStack (3);
+
+    VMBlock block (0, 0);
+    block.push_new () << "resizestack 0x4";
+    block.push_new () << "getcrefsize" << lhs << lhsSize;
+    block.push_new () << "getcrefsize" << rhs << rhsSize;
+    block.push_new () << "udec" << VM_UINT64 << lhsSize;
+    block.push_new () << "tadd" << VM_UINT64 << totalSize << lhsSize << rhsSize;
+    block.push_new () << "alloc" << dest << totalSize;
+    block.push_new () << "mov cref 0x0" << st.getImm (0) << "mem" << dest << st.getImm (0) << lhsSize;
+    block.push_new () << "mov cref 0x1" << st.getImm (0) << "mem" << dest << lhsSize << rhsSize;
+    block.push_new () << "return" << dest;
+    function.push_back (block);
+    return;
+}
+
+/*******************************************************************************
+  BuiltinStrDup
+*******************************************************************************/
+
+void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
+    VMImm* src = st.getImm (0);
+    VMStack* size = st.getStack (0);
+    VMStack* dest = st.getStack (1);
+
+    VMBlock block (0, 0);
+    block.push_new () << "resizestack 0x2";
+    block.push_new () << "getcrefsize" << src << size;
+    block.push_new () << "alloc" << dest << size;
+    block.push_new () << "mov cref 0x0" << st.getImm (0) << "mem" << dest << st.getImm (0) << size;
+    block.push_new () << "return" << dest;
+    function.push_back (block);
+    return;
+}
+
+
 } // namespace SecreCC

@@ -29,9 +29,20 @@ private:
     StringLiterals (const StringLiterals&); // DO NOT IMPLEMENT
     void operator = (const StringLiterals&); // DO NOT IMPLEMENT
 
-private: /* Types: */
+public:  /* Types: */
 
-    typedef std::map<const SecreC::ConstantString*, VMLabel*> LitMap;
+    struct LiteralInfo {
+        VMLabel* label;
+        size_t   size;
+
+        LiteralInfo (VMLabel* l, size_t s)
+            : label (l), size (s)
+        { }
+    };
+
+private:
+
+    typedef std::map<const SecreC::ConstantString*, LiteralInfo> LitMap;
 
 public: /* Methods: */
 
@@ -39,7 +50,9 @@ public: /* Methods: */
     ~StringLiterals ();
 
     void init (VMSymbolTable& st, VMDataSection* section);
-    VMLabel* getLiteral (const SecreC::ConstantString* str);
+    size_t getSize (const SecreC::ConstantString* str) const;
+    VMLabel* getLabel (const SecreC::ConstantString* str) const;
+    LiteralInfo insert (const SecreC::ConstantString* str);
 
 private: /* Fields: */
 

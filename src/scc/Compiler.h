@@ -82,7 +82,7 @@ protected:
     /**
      * Operations performed through syscalls:
      */
-    void cgNewPrivate (VMBlock& block, const SecreC::Symbol* dest, const SecreC::Symbol* size = 0);
+    void cgNewPrivate (VMBlock& block, const SecreC::Symbol* dest, const SecreC::Symbol* size);
     void cgNewPrivateScalar (VMBlock& block, const SecreC::Symbol* dest);
     void emitSyscall (VMBlock& block, VMValue* dest, const std::string& name);
     void emitSyscall (VMBlock& block, const std::string& name);
@@ -99,8 +99,11 @@ protected:
      * Convenience operations:
      */
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
+    void pushString (VMBlock& block, const SecreC::Symbol* str);
     void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
     VMValue* find (const SecreC::Symbol* sym) const;
+    void cgStringAppend (VMBlock& block, const SecreC::Imop& imop);
+
 
 private: /* Fields: */
 
