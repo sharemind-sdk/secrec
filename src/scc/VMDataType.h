@@ -34,16 +34,20 @@ inline bool isFloating (VMDataType dty) { return (dty & 0x78) == 0x20; }
 
 inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     switch (dtype) {
-    case DATATYPE_INT8:   return VM_INT8;
-    case DATATYPE_INT16:  return VM_INT16;
-    case DATATYPE_INT32:  return VM_INT32;
-    case DATATYPE_INT64:  return VM_INT64;
-    case DATATYPE_UINT8:  return VM_UINT8;
-    case DATATYPE_UINT16: return VM_UINT16;
-    case DATATYPE_UINT32: return VM_UINT32;
-    case DATATYPE_UINT64: return VM_UINT64;
-    case DATATYPE_BOOL:   return VM_UINT8;
-    default:              return VM_INVALID;
+    case DATATYPE_INT8:       return VM_INT8;
+    case DATATYPE_INT16:      return VM_INT16;
+    case DATATYPE_INT32:      return VM_INT32;
+    case DATATYPE_INT64:      return VM_INT64;
+    case DATATYPE_UINT8:      return VM_UINT8;
+    case DATATYPE_UINT16:     return VM_UINT16;
+    case DATATYPE_UINT32:     return VM_UINT32;
+    case DATATYPE_UINT64:     return VM_UINT64;
+    case DATATYPE_XOR_UINT8:  return VM_UINT8;
+    case DATATYPE_XOR_UINT16: return VM_UINT16;
+    case DATATYPE_XOR_UINT32: return VM_UINT32;
+    case DATATYPE_XOR_UINT64: return VM_UINT64;
+    case DATATYPE_BOOL:       return VM_UINT8;
+    default:                  return VM_INVALID;
     }
 }
 

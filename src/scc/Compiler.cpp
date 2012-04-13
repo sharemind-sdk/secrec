@@ -140,16 +140,20 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
 
 void syscallMangleSecrecDataType (std::ostream& os, SecrecDataType ty) {
     switch (ty) {
-    case DATATYPE_BOOL:    os << "bool";     break;
-    case DATATYPE_UINT8:   os << "uint8";    break;
-    case DATATYPE_UINT16:  os << "uint16";   break;
-    case DATATYPE_UINT32:  os << "uint32";   break;
-    case DATATYPE_UINT64:  os << "uint64";   break;
-    case DATATYPE_INT8:    os << "int8";     break;
-    case DATATYPE_INT16:   os << "int16";    break;
-    case DATATYPE_INT32:   os << "int32";    break;
-    case DATATYPE_INT64:   os << "int64";    break;
-    default:                                 break;
+    case DATATYPE_BOOL:        os << "bool";         break;
+    case DATATYPE_UINT8:       os << "uint8";        break;
+    case DATATYPE_UINT16:      os << "uint16";       break;
+    case DATATYPE_UINT32:      os << "uint32";       break;
+    case DATATYPE_UINT64:      os << "uint64";       break;
+    case DATATYPE_INT8:        os << "int8";         break;
+    case DATATYPE_INT16:       os << "int16";        break;
+    case DATATYPE_INT32:       os << "int32";        break;
+    case DATATYPE_INT64:       os << "int64";        break;
+    case DATATYPE_XOR_UINT8:   os << "xor_uint8";    break;
+    case DATATYPE_XOR_UINT16:  os << "xor_uint16";   break;
+    case DATATYPE_XOR_UINT32:  os << "xor_uint32";   break;
+    case DATATYPE_XOR_UINT64:  os << "xor_uint64";   break;
+    default:                                         break;
     }
 }
 
@@ -799,10 +803,19 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
     VMVReg* temp = m_ra->temporaryReg ();
-    const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
-    VMLabel* offset = m_strLit->getLiteral (str);
-    block.push_new () << "mov imm :RODATA" << temp;
-    block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
+    if (imop.arg1 ()->isConstant ()) {
+        assert (dynamic_cast<const ConstantString*>(imop.arg1 ()) != 0);
+        const ConstantString* str = static_cast<const ConstantString*>(imop.arg1 ());
+        VMLabel* offset = m_strLit->getLiteral (str);
+        block.push_new () << "mov imm :RODATA" << temp;
+        block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (str->value ().size ());
+    }
+    else {
+        const Symbol* str = imop.arg1 ();
+        block.push_new () << "getmemsize" << find (str) << temp;
+        block.push_new () << "pushcref mem" << find (str);
+    }
+
     emitSyscall (block, "miner_log_string");
 }
 

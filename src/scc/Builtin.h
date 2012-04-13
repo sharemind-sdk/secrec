@@ -27,7 +27,7 @@ namespace SecreCC {
 *******************************************************************************/
 
 class BuiltinFunction {
-public:
+public: /* Methods: */
     BuiltinFunction () { }
     virtual ~BuiltinFunction () { }
     virtual void generate (VMFunction& function, VMSymbolTable& st) = 0;
@@ -68,7 +68,7 @@ private: /* Fields: */
 *******************************************************************************/
 
 class BuiltinAlloc : public BuiltinFunction {
-public:
+public: /* Methods: */
     BuiltinAlloc (unsigned size) : m_size (size) { }
     ~BuiltinAlloc () { }
     
@@ -78,7 +78,7 @@ public:
         return new BuiltinAlloc (m_size);
     }
 
-private:
+private: /* Fields: */
     const unsigned m_size;
 };
 
@@ -88,7 +88,7 @@ private:
 
 /// Builtin vectorised arithmetic operations
 class BuiltinVArith : public BuiltinFunction {
-public:
+public: /* Methods: */
     BuiltinVArith (const SecreC::Imop* imop) : m_imop (imop) { }
     ~BuiltinVArith () { }
 
@@ -98,7 +98,7 @@ public:
         return new BuiltinVArith (m_imop);
     }
 
-private:
+private: /* Fields: */
     const SecreC::Imop* const m_imop;
 };
 
@@ -107,7 +107,7 @@ private:
 *******************************************************************************/
 
 class BuiltinVCast : public BuiltinFunction {
-public:
+public: /* Methods: */
     BuiltinVCast (VMDataType dest, VMDataType src)
         : m_dest (dest)
         , m_src (src)
@@ -121,7 +121,7 @@ public:
         return new BuiltinVCast (m_dest, m_src);
     }
 
-private:
+private: /* Fields: */
     const VMDataType m_dest;
     const VMDataType m_src;
 };
@@ -131,7 +131,7 @@ private:
 *******************************************************************************/
 
 class BuiltinVBoolCast : public BuiltinFunction {
-public:
+public: /* Methods: */
     BuiltinVBoolCast (VMDataType src)
         : m_src (src)
     { }
@@ -144,7 +144,7 @@ public:
         return new BuiltinVBoolCast (m_src);
     }
 
-private:
+private: /* Fields: */
     const VMDataType m_src;
 };
 
