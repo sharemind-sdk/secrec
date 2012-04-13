@@ -142,6 +142,7 @@
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
+%token XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
 %token IMPORT MODULE
@@ -477,18 +478,22 @@ sectype_specifier
  ;
 
 datatype_specifier
- : BOOL    { $$ = treenode_init_dataTypeF(DATATYPE_BOOL,   &@$); }
- | INT     { $$ = treenode_init_dataTypeF(DATATYPE_INT64,    &@$); }
- | UINT    { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,   &@$); }
- | INT8    { $$ = treenode_init_dataTypeF(DATATYPE_INT8,   &@$); }
- | UINT8   { $$ = treenode_init_dataTypeF(DATATYPE_UINT8,  &@$); }
- | INT16   { $$ = treenode_init_dataTypeF(DATATYPE_INT16,  &@$); }
- | UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_UINT16, &@$); }
- | INT32   { $$ = treenode_init_dataTypeF(DATATYPE_INT32,  &@$); }
- | UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_UINT32, &@$); }
- | INT64   { $$ = treenode_init_dataTypeF(DATATYPE_INT64,  &@$); }
- | UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_UINT64, &@$); }
- | STRING  { $$ = treenode_init_dataTypeF(DATATYPE_STRING, &@$); }
+ : BOOL        { $$ = treenode_init_dataTypeF(DATATYPE_BOOL,       &@$); }
+ | INT         { $$ = treenode_init_dataTypeF(DATATYPE_INT64,      &@$); }
+ | UINT        { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,     &@$); }
+ | INT8        { $$ = treenode_init_dataTypeF(DATATYPE_INT8,       &@$); }
+ | UINT8       { $$ = treenode_init_dataTypeF(DATATYPE_UINT8,      &@$); }
+ | INT16       { $$ = treenode_init_dataTypeF(DATATYPE_INT16,      &@$); }
+ | UINT16      { $$ = treenode_init_dataTypeF(DATATYPE_UINT16,     &@$); }
+ | INT32       { $$ = treenode_init_dataTypeF(DATATYPE_INT32,      &@$); }
+ | UINT32      { $$ = treenode_init_dataTypeF(DATATYPE_UINT32,     &@$); }
+ | INT64       { $$ = treenode_init_dataTypeF(DATATYPE_INT64,      &@$); }
+ | UINT64      { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,     &@$); }
+ | STRING      { $$ = treenode_init_dataTypeF(DATATYPE_STRING,     &@$); }
+ | XOR_UINT8   { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT8,  &@$); }
+ | XOR_UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT16, &@$); }
+ | XOR_UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT32, &@$); }
+ | XOR_UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
  ;
 
 dimtype_specifier

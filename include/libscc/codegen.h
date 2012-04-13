@@ -410,7 +410,6 @@ public: /* Methods: */
     CGResult cgExprString (TreeNodeExprString* e);
     CGResult cgExprTernary (TreeNodeExprTernary* e);
     CGResult cgExprInt (TreeNodeExprInt* e);
-    CGResult cgExprUInt (TreeNodeExprUInt* e);
     CGResult cgExprClassify (TreeNodeExprClassify* e);
     CGResult cgExprDeclassify (TreeNodeExprDeclassify* e);
     CGResult cgExprUnary (TreeNodeExprUnary* e);

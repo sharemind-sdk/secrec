@@ -20,7 +20,6 @@ SET(QT4_TREENODE_TESTS
     "testInitTreeNode"
     "testInitBool"
     "testInitInt"
-    "testInitUInt"
     "testInitString"
     "testInitType"
     "testChildren")

@@ -399,10 +399,6 @@ TreeNode *treenode_init_int(int value, YYLTYPE *loc) {
     return (TreeNode*) new SecreC::TreeNodeExprInt(value, *loc);
 }
 
-TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc) {
-    return (TreeNode*) new SecreC::TreeNodeExprUInt(value, *loc);
-}
-
 TreeNode *treenode_init_string(const char *value,
                                                  YYLTYPE *loc)
 {
@@ -875,22 +871,6 @@ std::string TreeNodeExprInt::stringHelper() const {
 std::string TreeNodeExprInt::xmlHelper() const {
     std::ostringstream os;
     os << "value=\"int:" << m_value << "\"";
-    return os.str();
-}
-
-/*******************************************************************************
-  TreeNodeExprUInt
-*******************************************************************************/
-
-std::string TreeNodeExprUInt::stringHelper() const {
-    std::ostringstream os;
-    os << m_value;
-    return os.str();
-}
-
-std::string TreeNodeExprUInt::xmlHelper() const {
-    std::ostringstream os;
-    os << "value=\"uint:" << m_value << "\"";
     return os.str();
 }
 

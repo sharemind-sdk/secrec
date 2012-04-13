@@ -19,6 +19,7 @@ bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b);
 bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b);
 
 bool isNumericDataType (SecrecDataType dType);
+bool isXorDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);
 bool isUnsignedNumericDataType (SecrecDataType dType);
 

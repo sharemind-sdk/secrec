@@ -182,6 +182,10 @@ Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
     case DATATYPE_UINT32: return ConstantUInt32::get (cxt, value); break;
     case DATATYPE_INT64:  return ConstantInt64::get (cxt, value); break;
     case DATATYPE_UINT64: return ConstantUInt64::get (cxt, value); break;
+    case DATATYPE_XOR_UINT8: return ConstantUInt8::get (cxt, value); break;
+    case DATATYPE_XOR_UINT16: return ConstantUInt16::get (cxt, value); break;
+    case DATATYPE_XOR_UINT32: return ConstantUInt32::get (cxt, value); break;
+    case DATATYPE_XOR_UINT64: return ConstantUInt64::get (cxt, value); break;
     default:
         assert (false && "Not numeric constant");
         return 0;

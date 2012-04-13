@@ -13,8 +13,6 @@ class TestTreeNode: public QObject {
         void testInitBool_data();
         void testInitInt();
         void testInitInt_data();
-        void testInitUInt();
-        void testInitUInt_data();
         void testInitString();
         void testInitString_data();
         void testInitType();

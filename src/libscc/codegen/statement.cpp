@@ -316,22 +316,8 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
         // scalar_type x = scalar;
         if (ty->isScalar()) {
-            if (isString) {
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-
-                Imop* i = new Imop (varInit, Imop::PUSHCREF, 0, eResult.symbol ());
-                pushImopAfter (result, i);
-
-                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
-                push_imop (i);
-
-                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
-                push_imop (i);
-            }
-            else {
-                Imop* i = new Imop (varInit, Imop::ASSIGN, ns, eResult.symbol ());
-                pushImopAfter (result, i);
-            }
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns, eResult.symbol ());
+            pushImopAfter (result, i);
         }
     } // Regular declaration, right hand side is missing:
     else {
@@ -350,29 +336,14 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
         Symbol* def = defaultConstant (getContext (),  ty->secrecDataType ());
         Imop *i = 0;
         if (isScalar) {
-            if (isString) {
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-
-                i = new Imop (varInit, Imop::PUSHCREF, 0, def);
-                pushImopAfter (result, i);
-
-                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
-                push_imop (i);
-
-                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
-                push_imop (i);
+            if (isPrivate) {
+                i = new Imop (varInit, Imop::CLASSIFY, ns, def);
             }
             else {
-                if (ns->secrecType ()->secrecSecType ()->isPrivate ()) {
-                    i = new Imop (varInit, Imop::CLASSIFY, ns, def);
-                }
-                else {
-                    i = new Imop (varInit, Imop::ASSIGN, ns, def);
-                }
-
-                pushImopAfter (result, i);
-
+                i = new Imop (varInit, Imop::ASSIGN, ns, def);
             }
+
+            pushImopAfter (result, i);
         }
         else {
             i = new Imop (varInit, Imop::ALLOC, ns, def, getSizeOr (ns, 0));

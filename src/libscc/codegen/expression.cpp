@@ -1323,27 +1323,6 @@ CGResult CodeGen::cgExprInt (TreeNodeExprInt *e) {
 }
 
 /*******************************************************************************
-  TreeNodeExprUInt
-*******************************************************************************/
-
-CGResult TreeNodeExprUInt::codeGenWith (CodeGen &cg) {
-    return cg.cgExprUInt (this);
-}
-
-CGResult CodeGen::cgExprUInt (TreeNodeExprUInt *e) {
-    ICode::Status s = m_tyChecker.visit (e);
-    if (s != ICode::OK) {
-        return CGResult (s);
-    }
-
-    CGResult result;
-    result.setResult (
-        numericConstant (getContext (),
-            e->resultType ()->secrecDataType (), e->value ()));
-    return result;
-}
-
-/*******************************************************************************
   TreeNodeExprBool
 *******************************************************************************/
 

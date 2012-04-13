@@ -86,25 +86,6 @@ void TestTreeNode::testInitInt_data() {
     NR2(42,-42);  NR2(42,-1);  NR2(42,0);  NR2(42,1);  NR2(42,42);
 }
 
-void TestTreeNode::testInitUInt() {
-    DEFLOC(loc,1,2,3,4);
-
-    QFETCH(unsigned, value1);
-
-    TreeNodeExprUInt n(value1, loc);
-    QCOMPARE(n.type(), NODE_LITE_UINT);
-    QCOMPARE(n.value(), value1);
-}
-
-void TestTreeNode::testInitUInt_data() {
-    QTest::addColumn<unsigned>("value1");
-    QTest::addColumn<unsigned>("value2");
-
-    NR2(0u,0u); NR2(0u,1u); NR2(0u,42u);
-    NR2(1u,0u); NR2(1u,1u); NR2(1u,42u);
-    NR2(42u,0u); NR2(42u,1u); NR2(42u,42u);
-}
-
 void TestTreeNode::testInitString() {
     DEFLOC(loc,1,2,3,4);
 

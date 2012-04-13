@@ -39,7 +39,6 @@ public: /* Methods: */
     }
 
     ICode::Status visit (TreeNodeExprBool* e);
-    ICode::Status visit (TreeNodeExprUInt* e);
     ICode::Status visit (TreeNodeExprCast* root);
     ICode::Status visit (TreeNodeExprIndex* root);
     ICode::Status visit (TreeNodeExprSize* root);
@@ -154,6 +153,6 @@ private: /* Fields: */
     TemplateInstantiator*   m_instantiator;
 };
 
-}
+} // namespace SecreC
 
 #endif // TYPE_CHECKER_H

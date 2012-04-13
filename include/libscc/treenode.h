@@ -866,34 +866,6 @@ protected:
 };
 
 /******************************************************************
-  TreeNodeExprUInt
-******************************************************************/
-
-/// Unsigned integer constant.
-class TreeNodeExprUInt: public TreeNodeExpr {
-public: /* Methods: */
-    inline TreeNodeExprUInt(unsigned value, const YYLTYPE &loc)
-        : TreeNodeExpr(NODE_LITE_UINT, loc), m_value(value) {}
-
-    inline unsigned value() const { return m_value; }
-
-    virtual std::string stringHelper() const;
-    virtual std::string xmlHelper() const;
-    virtual ICode::Status accept (TypeChecker& tyChecker);
-
-    virtual CGResult codeGenWith (CodeGen& cg);
-
-protected:
-
-    virtual TreeNode* cloneV () const {
-        return new TreeNodeExprUInt (m_value, m_location);
-    }
-
-private: /* Fields: */
-    const unsigned m_value;
-};
-
-/******************************************************************
   TreeNodeExprPrefix
 ******************************************************************/
 
