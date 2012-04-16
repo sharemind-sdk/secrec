@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <boost/range.hpp>
+#include <boost/foreach.hpp>
 
 #include "symboltable.h"
 #include "treenode.h"
@@ -369,34 +370,29 @@ std::string Imop::toString() const {
             break;
         case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
             {
-                std::list<const Symbol* > argList, retList;
-                OperandConstIterator it, itBegin, itEnd;
-                itBegin = m_args.begin ();
-                itEnd = m_args.end ();
-                it = itBegin;
-                const Symbol* callDest = *it;
-                for (++ it; it != itEnd && *it != 0; ++ it)
-                    argList.push_back (*it);
 
-                for (++ it; it != itEnd; ++ it)
-                    retList.push_back (*it);
-
-                // print destination
-                for (std::list<const Symbol*>::const_iterator jt = retList.begin (); jt != retList.end (); ++ jt) {
-                    const Symbol* sym = *jt;
-                    if (jt != retList.begin ())
+                bool isFirst = true;
+                BOOST_FOREACH (const Symbol* sym, defRange ()) {
+                    if (! isFirst) {
                         os << ", ";
+                        isFirst = false;
+                    }
+
                     os << symToString (sym);
+
                 }
 
-                if (!retList.empty ())
+                if (! isFirst)
                     os << " = ";
 
-                os << "CALL " << symToString (callDest) << " (";
-                for (std::list<const Symbol*>::const_iterator jt = argList.begin (); jt != argList.end (); ++ jt) {
-                    const Symbol* sym = *jt;
-                    if (jt != argList.begin ())
+                os << "CALL " << symToString (m_args[0]) << " (";
+                isFirst = true;
+                BOOST_FOREACH (const Symbol* sym, useRange ()) {
+                    if (! isFirst) {
                         os << ", ";
+                        isFirst = false;
+                    }
+
                     os << symToString (sym);
                 }
 
