@@ -42,7 +42,7 @@ public:  /* Types: */
 
 private:
 
-    typedef std::map<const SecreC::ConstantString*, LiteralInfo> LitMap;
+    typedef std::map<std::string, const LiteralInfo> LitMap;
 
 public: /* Methods: */
 
@@ -50,9 +50,8 @@ public: /* Methods: */
     ~StringLiterals ();
 
     void init (VMSymbolTable& st, VMDataSection* section);
-    size_t getSize (const SecreC::ConstantString* str) const;
-    VMLabel* getLabel (const SecreC::ConstantString* str) const;
     LiteralInfo insert (const SecreC::ConstantString* str);
+    LiteralInfo insert (const std::string& str);
 
 private: /* Fields: */
 

@@ -16,6 +16,7 @@
 #include <libscc/symbol.h>
 
 #include "VMDataType.h"
+#include "StringLiterals.h"
 
 
 namespace SecreCC {
@@ -365,5 +366,57 @@ void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
     return;
 }
 
+/*******************************************************************************
+  BuiltinToString
+*******************************************************************************/
+
+void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
+    unsigned const base = 16;
+    VMImm* const charSize = st.getImm (1);
+
+    VMLabel* charTable = m_strLit->insert ("0123456789abcdef").label;
+    VMStack* src = st.getStack (0);
+    VMStack* temp = st.getStack (2);
+    VMStack* length = st.getStack (1);
+    VMStack* dest = st.getStack (3);
+    VMStack* rodata = st.getStack (4);
+
+    VMBlock entryB (0, 0);
+    entryB.push_new () << "resizestack" << 5;
+    entryB.push_new () << "mov" << src << temp;
+    entryB.push_new () << "mov" << st.getImm (3) << length; // room for "0x" and '\0'
+    entryB.push_new () << "mov imm :RODATA" << rodata;
+
+    /*
+     * Compute size of output.
+     */
+    VMLabel* lengthL = st.getUniqLabel ();
+    VMBlock lengthB (lengthL, 0);
+    lengthB.push_new () << "uinc" << VM_UINT64 << length;
+    lengthB.push_new () << "bdiv" << VM_UINT64 << temp << st.getImm (base);
+    lengthB.push_new () << "jnz" << lengthL << VM_UINT64 << temp;
+    lengthB.push_new () << "alloc" << dest << length;
+    lengthB.push_new () << "udec" << VM_UINT64 << length;
+    lengthB.push_new () << "mov" << st.getImm ('0') << "mem" << dest << st.getImm (0) << charSize;
+    lengthB.push_new () << "mov" << st.getImm ('x') << "mem" << dest << st.getImm (1) << charSize;
+    lengthB.push_new () << "mov" << st.getImm ('\0') << "mem" << dest << length << charSize;
+    /*
+     * Copy bytes to output:
+     */
+    VMLabel* copyL = st.getUniqLabel ();
+    VMBlock copyB (copyL, 0);
+    copyB.push_new () << "udec" << VM_UINT64 << length;
+    copyB.push_new () << "tmod" << VM_UINT64 << temp << src << st.getImm (base);
+    copyB.push_new () << "badd" << VM_UINT64 << temp << charTable;
+    copyB.push_new () << "mov mem" << rodata << temp << "mem" << dest << length << charSize;
+    copyB.push_new () << "bdiv" << VM_UINT64 << src << st.getImm (base);
+    copyB.push_new () << "jne" << copyL << VM_UINT64 << st.getImm (2) << length;
+    copyB.push_new () << "return" << dest;
+
+    function.push_back (entryB)
+            .push_back (lengthB)
+            .push_back (copyB);
+    return;
+}
 
 } // namespace SecreCC

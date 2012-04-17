@@ -22,6 +22,8 @@ namespace SecreC {
 
 namespace SecreCC {
 
+class StringLiterals;
+
 /*******************************************************************************
   BuiltinFunction
 *******************************************************************************/
@@ -178,6 +180,28 @@ public: /* Methods: */
     BuiltinFunction* clone () const {
         return new BuiltinStrDup ();
     }
+};
+
+/*******************************************************************************
+  BuiltinToString
+*******************************************************************************/
+
+class BuiltinToString : public BuiltinFunction  {
+public: /* Methods: */
+    BuiltinToString (StringLiterals* strLit)
+        : m_strLit (strLit)
+    { }
+
+    ~BuiltinToString () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinToString (m_strLit);
+    }
+
+private: /* Fields: */
+    StringLiterals* m_strLit;
 };
 
 } // namespace SecreCC

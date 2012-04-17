@@ -77,6 +77,7 @@ protected:
     void cgPush (VMBlock& block, const SecreC::Imop& imop);
     void cgError (VMBlock& block, const SecreC::Imop& imop);
     void cgPrint (VMBlock& block, const SecreC::Imop& imop);
+    void cgToString (VMBlock& block, const SecreC::Imop& imop);
 
 
     /**

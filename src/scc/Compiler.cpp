@@ -259,7 +259,6 @@ std::string SyscallName::cast (TypeNonVoid* from, TypeNonVoid* to) {
     return scname.str ();
 }
 
-
 }
 
 namespace SecreCC {
@@ -466,6 +465,13 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     block.push_back (
         VMInstruction () << "call" << target << find (imop.dest ())
     );
+}
+
+void Compiler::cgToString (VMBlock& block, const Imop& imop) {
+    VMLabel* target = m_st.getLabel (":to_string__");
+    m_funcs->insert (target, BuiltinToString (m_strLit));
+    block.push_new () << "push" << find (imop.arg1 ());
+    block.push_new () << "call" << target << find (imop.dest ());
 }
 
 void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
@@ -857,6 +863,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
     }
 
     switch (imop.type ()) {
+    case Imop::TOSTRING:
+        cgToString (block, imop);
+        return;
     case Imop::CLASSIFY:
         cgClassify (block, imop);
         return;
