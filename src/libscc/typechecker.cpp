@@ -602,7 +602,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprUnary* root) {
         }
         else
         if (root->type() == NODE_EXPR_UMINUS) {
-            if (isSignedNumericDataType (bType->dataType())) {
+            if (isNumericDataType (bType->dataType())) {
                 root->setResultType (et);
                 return ICode::OK;
             }

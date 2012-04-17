@@ -561,17 +561,6 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
     }
     else {
         iType = Imop::ALLOC;
-        // Convert scalar to constant array:
-//        Symbol* tmp = rhs;
-//        rhs = m_st->appendTemporary (TypeNonVoid::get (getContext (),
-//            eArg->resultType ()->secrecSecType (),
-//            eArg->resultType ()->secrecDataType (),
-//            e->resultType ()->secrecDimType ()));
-//        Imop* i = new Imop (e, Imop::ALLOC, resSym, tmp, resSym->getSizeSym ());
-//        pushImopAfter (result, i);
-//        m_allocs.push_back (dest);
-//        result.addTempResource (resSym);
-//        allocs.allocTemporary (rhs, tmp, resSym->getSizeSym ());
     }
 
     // Copy result:
