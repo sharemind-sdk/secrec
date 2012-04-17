@@ -25,11 +25,29 @@ class ReachingDeclassify: public ForwardDataFlowAnalysis {
 public: /* Types: */
     typedef std::set<const Imop*> ImopSet;
     struct Defs {
-        ImopSet sensitive;
-        ImopSet nonsensitive;
+        ImopSet  sensitive;
+        ImopSet  nonsensitive;
+        bool     trivial;
+
+        Defs () : trivial (true) { }
+
+        void setToSensitive (const Imop* imop) {
+            nonsensitive.clear ();
+            sensitive.clear ();
+            sensitive.insert (imop);
+            trivial = false;
+        }
+
+        void setToNonsensitive (const Imop* imop) {
+            sensitive.clear ();
+            nonsensitive.clear ();
+            nonsensitive.insert (imop);
+        }
+
         inline bool operator== (const Defs& o) const {
             return (sensitive == o.sensitive)
-                    && (nonsensitive == o.nonsensitive);
+                    && (nonsensitive == o.nonsensitive)
+                    && (trivial == o.trivial);
         }
     };
 
@@ -54,8 +72,10 @@ public: /* Methods: */
 
     std::string toString (const Program& bs) const;
 
-private: /* Methods: */
+private:
+
     bool makeOuts (const Block& b, const PDefs& in, PDefs& out);
+    void transferImop (const Imop& imop, PDefs& out) const;
 
 private: /* Fields: */
     RD m_ins;
