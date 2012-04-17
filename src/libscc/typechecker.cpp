@@ -1196,22 +1196,35 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
 }
 
 ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
-    TreeNodeExpr* e = stmt->expression ();
-    e->setContextSecType (PublicSecType::get (getContext ()));
-    e->setContextDataType (DATATYPE_STRING);
-    e->setContextDimType (0);
-    ICode::Status s = visitExpr (e);
-    if (s != ICode::OK) {
-        return s;
-    }
+    BOOST_FOREACH (TreeNode* node, stmt->expressions ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
+        e->setContextSecType (PublicSecType::get (getContext ()));
+        e->setContextDimType (0);
 
-    if (e->resultType()->secrecDataType() != DATATYPE_STRING ||
-        e->resultType()->secrecSecType()->isPrivate ()  ||
-        !e->resultType()->isScalar())
-    {
-        m_log.fatal () << "Argument of \"print\" statement has to be public string scalar, got "
-                       << *e->resultType() << " at " << stmt->location() << ".";
-        return ICode::E_TYPE;
+        ICode::Status s = visitExpr (e);
+        if (s != ICode::OK) {
+            return s;
+        }
+
+        if (checkAndLogIfVoid (e)) {
+            return ICode::E_TYPE;
+        }
+
+        bool isLegalType = true;
+        if (  e->resultType()->secrecSecType()->isPrivate ()  ||
+            ! e->resultType()->isScalar ())
+            isLegalType = false;
+
+        if (  e->resultType ()->secrecDataType () != DATATYPE_STRING &&
+            ! isNumericDataType (e->resultType ()->secrecDataType ()))
+            isLegalType = false;
+
+        if (! isLegalType) {
+            m_log.fatal () << "Invalid argument to \"print\" statement."
+                           << "Got " << *e->resultType() << " at " << stmt->location() << ".";
+            return ICode::E_TYPE;
+        }
     }
 
     return ICode::OK;

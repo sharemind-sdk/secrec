@@ -197,7 +197,6 @@ typedef struct YYLTYPE {
     int first_column;
     int last_line;
     int last_column;
-    char *filename;
 } YYLTYPE;
 #define YYLTYPE_IS_TRIVIAL 1
 

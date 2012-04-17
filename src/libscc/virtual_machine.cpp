@@ -392,6 +392,12 @@ MKCALLBACK (PRINT, 1, 0, 0, 0,
     fprintf (stdout, "%s\n", dest.un_str_val->c_str());
 )
 
+MKCALLBACK (TOSTRING, 1, 1, 0, 0,
+    std::stringstream ss;
+    ss << getValue<ty>(arg1);
+    assignValue (dest, ss.str ());
+)
+
 MKCALLBACK(CALL, 0, 0, 0, 0,
     push_frame (ip + 1);
     ip = ip->args[0].un_inst;
@@ -565,6 +571,7 @@ CallbackTy getCallback (const Imop& imop) {
         assert (matchTypes (imop.arg2 ()->secrecType (), imop.arg1 ()->secrecType ()));
     case Imop::UMINUS:
     case Imop::CAST:
+    case Imop::TOSTRING:
         ty = imop.arg1()->secrecType()->secrecDataType();
     default:
         break;
@@ -621,6 +628,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
+    case Imop::TOSTRING:   SET_SPECIALIZE_CALLBACK(TOSTRING,SWITCH_ARITH); break;
     default:
         assert (false && "Reached unsupported instruction.");
         break;

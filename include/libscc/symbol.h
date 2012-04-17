@@ -17,47 +17,48 @@ class TreeNodeTemplate;
 *******************************************************************************/
 
 class Symbol {
-    public: /* Types: */
-        enum Type {
-            PROCEDURE,
-            TEMPLATE,
-            CONSTANT,
-            LABEL,
-            SYMBOL,
-            PKIND,
-            PDOMAIN
-        };
-    public: /* Methods: */
+public: /* Types: */
+    enum Type {
+        PROCEDURE,
+        TEMPLATE,
+        CONSTANT,
+        LABEL,
+        SYMBOL,
+        PKIND,
+        PDOMAIN
+    };
 
-        inline Symbol(Type symbolType, TypeNonVoid* valueType)
-            : m_symbolType (symbolType)
-            , m_type (valueType)
-            , m_previous (0)
-        { }
+public: /* Methods: */
 
-        explicit inline Symbol (Type symbolType)
-            : m_symbolType (symbolType)
-            , m_type (0)
-            , m_previous (0)
-        { }
+    inline Symbol(Type symbolType, TypeNonVoid* valueType)
+        : m_symbolType (symbolType)
+        , m_type (valueType)
+        , m_previous (0)
+    { }
 
-        virtual inline ~Symbol() { }
+    explicit inline Symbol (Type symbolType)
+        : m_symbolType (symbolType)
+        , m_type (0)
+        , m_previous (0)
+    { }
 
-        inline bool isConstant () const { return m_symbolType == CONSTANT; }
-        inline Type symbolType() const { return m_symbolType; }
-        inline const std::string &name() const { return m_name; }
-        inline void setName(const std::string &name) { m_name = name; }
-        inline TypeNonVoid* secrecType() const { return m_type; }
-        Symbol* previos () const { return m_previous; }
-        void setPrevious (Symbol* prev) { m_previous = prev; }
+    virtual inline ~Symbol() { }
 
-        virtual std::string toString() const = 0;
+    inline bool isConstant () const { return m_symbolType == CONSTANT; }
+    inline Type symbolType() const { return m_symbolType; }
+    inline const std::string &name() const { return m_name; }
+    inline void setName(const std::string &name) { m_name = name; }
+    inline TypeNonVoid* secrecType() const { return m_type; }
+    Symbol* previos () const { return m_previous; }
+    void setPrevious (Symbol* prev) { m_previous = prev; }
 
-    private: /* Fields: */
-        const Type          m_symbolType;
-        std::string         m_name;
-        TypeNonVoid* const  m_type; ///< Type of the symbol or NULL.
-        Symbol*             m_previous; ///< Previous symbol with same name.
+    virtual std::string toString() const = 0;
+
+private: /* Fields: */
+    Type          const  m_symbolType;  ///< Type of the symbol.
+    TypeNonVoid*  const  m_type;        ///< Type of the symbol or NULL.
+    std::string          m_name;        ///< Name of the symbol.
+    Symbol*              m_previous;    ///< Previous symbol with same name.
 };
 
 /*******************************************************************************

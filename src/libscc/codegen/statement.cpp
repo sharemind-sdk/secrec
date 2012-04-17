@@ -270,16 +270,11 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                     ++ srcIter;
                 }
 
-                if (!isScalar) {
-                    Imop* i = newAssign (varInit,  ns->getSizeSym (), eResultSymbol->getSizeSym ());
-                    pushImopAfter (result, i);
-                }
-
-                Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym());
+                Imop* i = newAssign (varInit,  ns->getSizeSym (), eResultSymbol->getSizeSym ());
                 pushImopAfter (result, i);
 
-                i = newAssign (varInit, ns, eResultSymbol);
-                push_imop (i);
+                i = new Imop (varInit, Imop::COPY, ns, eResultSymbol, ns->getSizeSym());
+                pushImopAfter (result, i);
             }
         }
 
@@ -719,23 +714,45 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
-    TreeNodeExpr *e = s->expression ();
-    // Type check:
+    ICode::Status status = m_tyChecker.visit (s);
     CGStmtResult result;
     result.setStatus (m_tyChecker.visit (s));
     if (result.isNotOk ()) {
         return result;
     }
 
-    // Generate code:
-    const CGResult& eResult = codeGen (e);
-    append (result, eResult);
-    if (result.isNotOk ()) {
-        return result;
+    TypeNonVoid* strTy = TypeNonVoid::get (getContext (), DATATYPE_STRING);
+
+    Symbol* accum = 0;
+    BOOST_FOREACH (TreeNode* node, s->expressions ()) {
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
+        const CGResult& eResult = codeGen (e);
+        append (result, eResult);
+        if (result.isNotOk ()) {
+            return result;
+        }
+
+        Symbol* str = eResult.symbol ();
+        if (e->resultType ()->secrecDataType () != DATATYPE_STRING) {
+            str = m_st->appendTemporary (strTy);
+            Imop* i = new Imop (s, Imop::TOSTRING, str, eResult.symbol ());
+            pushImopAfter (result, i);
+        }
+
+        if (accum == 0) {
+            accum = str;
+        }
+        else {
+            Symbol* temp = m_st->appendTemporary (strTy);
+            pushImopAfter (result, new Imop (s, Imop::ADD, temp, accum, str));
+            releaseTemporary (result, str);
+            releaseTemporary (result, accum);
+            accum = temp;
+        }
     }
 
-    Imop* i = new Imop (s, Imop::PRINT, (Symbol*) 0, eResult.symbol ());
-    pushImopAfter (result, i);
+    pushImopAfter (result, new Imop (s, Imop::PRINT, (Symbol*) 0, accum));
+    releaseTemporary (result, accum);
     return result;
 }
 

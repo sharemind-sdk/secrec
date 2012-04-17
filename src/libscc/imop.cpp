@@ -28,6 +28,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Unary operators:
       { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
     , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
+    , { Imop::TOSTRING,   1, 0, 0, 1,-1, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
@@ -278,6 +279,14 @@ std::string Imop::toString() const {
             os << dname << " = " << a1name;
             if (nArgs() == 3) os <<  "(" << a2name << ")";
             break;
+        case CAST:         /* d = CAST (arg1 {, arg2})           */
+            os << dname << " = CAST(" << a1name;
+            if (nArgs() == 3) os << ", " << a2name;
+            os << ")";
+            break;
+        case TOSTRING:       /*   d = TOSTRING arg1;             */
+            os << dname << " = TOSTRING " << a1name;
+            break;
         case CLASSIFY:     /*   d = CLASSIFY(arg1);              */
             os << dname << " = CLASSIFY(" << a1name;
             if (nArgs() == 3) os << ", " << a2name;
@@ -285,11 +294,6 @@ std::string Imop::toString() const {
             break;
         case DECLASSIFY:   /*   d = DECLASSIFY(arg1);            */
             os << dname << " = DECLASSIFY(" << a1name;
-            if (nArgs() == 3) os << ", " << a2name;
-            os << ")";
-            break;
-        case CAST:         /* d = CAST (arg1 {, arg2})           */
-            os << dname << " = CAST(" << a1name;
             if (nArgs() == 3) os << ", " << a2name;
             os << ")";
             break;
@@ -438,10 +442,10 @@ std::string Imop::toString() const {
             os << "// " << static_cast<const ConstantString*>(arg1())->value ();
             break;
         case ERROR:        /* // arg1                            */
-            os << "ERROR \"" <<  a1name << "\"";
+            os << "ERROR " <<  a1name;
             break;
         case PRINT:
-            os << "PRINT \"" << a1name << "\";";
+            os << "PRINT " << a1name;
             break;
         case SYSCALL:
             assert (arg1 () != 0);

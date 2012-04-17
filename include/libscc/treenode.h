@@ -1574,7 +1574,7 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    TreeNodeExpr* expression () const;
+    ChildrenList& expressions ();
 
 protected:
 

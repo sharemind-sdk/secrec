@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 
+#include <boost/foreach.hpp>
+
 #include "context.h"
 #include "context_impl.h"
 
@@ -29,6 +31,31 @@ Constant<ty>* getNumeric (Context& cxt,
 
     assert (dynamic_cast<Constant<ty>* >(i->second) != 0);
     return static_cast<Constant<ty>* >(i->second);
+}
+
+std::string escape (const std::string& str) {
+    std::ostringstream os;
+
+    os << '\"';
+    BOOST_FOREACH (char c, str) {
+        switch (c) {
+        case '\'': os << "\\\'"; break;
+        case '\"': os << "\\\""; break;
+        case '\?': os << "\\?";  break;
+        case '\\': os << "\\\\"; break;
+        case '\a': os << "\\a";  break;
+        case '\b': os << "\\b";  break;
+        case '\f': os << "\\f";  break;
+        case '\n': os << "\\n";  break;
+        case '\r': os << "\\r";  break;
+        case '\t': os << "\\t";  break;
+        case '\v': os << "\\v";  break;
+        default:   os << c;      break;
+        }
+    }
+
+    os << "\\0\"";
+    return os.str ();
 }
 
 } // anonymous namesace
@@ -120,7 +147,7 @@ ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
         i = impl.m_stringLiterals.insert (i,
             std::make_pair (value, new ConstantString (value, tnv)));
         std::ostringstream os;
-        os << "{constString}" << value;
+        os << "{constString}" << escape (value);
         i->second->setName (os.str ());
     }
 

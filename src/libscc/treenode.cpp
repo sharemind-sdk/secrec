@@ -1146,9 +1146,9 @@ TreeNodeStmt* TreeNodeStmtWhile::body () const {
   TreeNodeStmtPrint
 *******************************************************************************/
 
-TreeNodeExpr* TreeNodeStmtPrint::expression () const {
+TreeNode::ChildrenList& TreeNodeStmtPrint::expressions () {
     assert (children ().size () == 1);
-    return expressionAt (this, 0);
+    return children ().at (0)->children ();
 }
 
 /*******************************************************************************

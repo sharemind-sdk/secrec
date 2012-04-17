@@ -60,6 +60,17 @@ Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
     return sizeSym;
 }
 
+void CodeGen::releaseTemporary (CGResult& result, Symbol* sym) {
+    assert (sym != 0);
+    if (sym->symbolType () == Symbol::SYMBOL) {
+        assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
+        SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
+        if (ssym->isTemporary ()) {
+            pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, sym));
+        }
+    }
+}
+
 void CodeGen::codeGenSize (CGResult& result) {
     assert (result.symbol () != 0);
     SymbolSymbol* resSym = 0;

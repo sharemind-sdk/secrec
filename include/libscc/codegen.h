@@ -439,6 +439,8 @@ public: /* Methods: */
     CGResult exitLoop (LoopInfo& loopInfo);
     /// \}
 
+protected:
+
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
 
@@ -459,6 +461,8 @@ public: /* Methods: */
                             bool isGlobal, bool isProcParam);
 
     Symbol* getSizeOr (Symbol* sym, int64_t val);
+
+    void releaseTemporary (CGResult& result, Symbol* sym);
 
 private: /* Fields: */
 
