@@ -188,8 +188,9 @@ public: /* Methods: */
 
 class BuiltinToString : public BuiltinFunction  {
 public: /* Methods: */
-    BuiltinToString (StringLiterals* strLit)
+    explicit BuiltinToString (StringLiterals* strLit, unsigned base = 10)
         : m_strLit (strLit)
+        , m_base (base)
     { }
 
     ~BuiltinToString () { }
@@ -197,11 +198,12 @@ public: /* Methods: */
     void generate (VMFunction& function, VMSymbolTable& st);
 
     BuiltinFunction* clone () const {
-        return new BuiltinToString (m_strLit);
+        return new BuiltinToString (m_strLit, m_base);
     }
 
 private: /* Fields: */
-    StringLiterals* m_strLit;
+    StringLiterals*  const m_strLit;
+    unsigned         const m_base;
 };
 
 } // namespace SecreCC

@@ -371,8 +371,18 @@ void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
 *******************************************************************************/
 
 void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
-    unsigned const base = 16;
     VMImm* const charSize = st.getImm (1);
+
+    char prefixChar = '?';
+    switch (m_base) {
+    case 2: prefixChar = 'b'; break;
+    case 8: prefixChar = 'o'; break;
+    case 10: prefixChar = 'd'; break;
+    case 16: prefixChar = 'x'; break;
+    default:
+        assert (false && "Invalid number base!");
+        break;
+    }
 
     VMLabel* charTable = m_strLit->insert ("0123456789abcdef").label;
     VMStack* src = st.getStack (0);
@@ -393,7 +403,7 @@ void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
     VMLabel* lengthL = st.getUniqLabel ();
     VMBlock lengthB (lengthL, 0);
     lengthB.push_new () << "uinc" << VM_UINT64 << length;
-    lengthB.push_new () << "bdiv" << VM_UINT64 << temp << st.getImm (base);
+    lengthB.push_new () << "bdiv" << VM_UINT64 << temp << st.getImm (m_base);
     lengthB.push_new () << "jnz" << lengthL << VM_UINT64 << temp;
     lengthB.push_new () << "alloc" << dest << length;
     lengthB.push_new () << "udec" << VM_UINT64 << length;
@@ -406,10 +416,10 @@ void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
     VMLabel* copyL = st.getUniqLabel ();
     VMBlock copyB (copyL, 0);
     copyB.push_new () << "udec" << VM_UINT64 << length;
-    copyB.push_new () << "tmod" << VM_UINT64 << temp << src << st.getImm (base);
+    copyB.push_new () << "tmod" << VM_UINT64 << temp << src << st.getImm (m_base);
     copyB.push_new () << "badd" << VM_UINT64 << temp << charTable;
     copyB.push_new () << "mov mem" << rodata << temp << "mem" << dest << length << charSize;
-    copyB.push_new () << "bdiv" << VM_UINT64 << src << st.getImm (base);
+    copyB.push_new () << "bdiv" << VM_UINT64 << src << st.getImm (m_base);
     copyB.push_new () << "jne" << copyL << VM_UINT64 << st.getImm (2) << length;
     copyB.push_new () << "return" << dest;
 
