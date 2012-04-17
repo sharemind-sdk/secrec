@@ -214,9 +214,9 @@ std::string ReachingDeclassify::toString (const Program&) const {
             switch (imop->type ()) {
             case Imop::PARAM:
             case Imop::CALL:
-                if (dynamic_cast<TreeNodeStmtDecl*>(imop->creator ()) != 0) {
+                if (dynamic_cast<TreeNodeVarInit*>(imop->creator ()) != 0) {
                     os << "parameter "
-                       << static_cast<TreeNodeStmtDecl*>(imop->creator ())->variableName ()
+                       << static_cast<TreeNodeVarInit*>(imop->creator ())->variableName ()
                        << " declared at " << imop->creator ()->location ();
                 } else {
                     assert (dynamic_cast<TreeNodeExprProcCall*>(imop->creator ()) != 0);
