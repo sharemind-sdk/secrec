@@ -420,7 +420,6 @@ public: /* Methods: */
     virtual ICode::Status accept (TypeChecker& tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
-
 protected:
 
     virtual TreeNode* cloneV () const {

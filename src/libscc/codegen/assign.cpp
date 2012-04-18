@@ -210,6 +210,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
         // 9. loop exit
         append (result, exitLoop (loopInfo));
+        releaseTemporary (result, arg2Result.symbol ());
         if (result.isNotOk ()) {
             return result;
         }
@@ -229,6 +230,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         Imop *i = 0;
         if (e->resultType ()->isScalar()) {
             i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
+            pushImopAfter (result, i);
         } else {
             i = new Imop (e, Imop::RELEASE, 0, destSym);
             pushImopAfter (result, i);
@@ -239,9 +241,12 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             else {
                 i = new Imop (e, Imop::COPY, destSym, arg2Result.symbol (), destSym->getSizeSym ());
             }
+
+            pushImopAfter (result, i);
+            releaseTemporary (result, arg2Result.symbol ());
         }
 
-        pushImopAfter (result, i);
+
     } else {
         // Arithmetic assignments
 
@@ -269,6 +274,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                 rhsSym = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
                 i = new Imop (e, Imop::ALLOC, rhsSym, arg2Result.symbol (), destSym->getSizeSym ());
                 pushImopAfter (result, i);
+                releaseTemporary (result, arg2Result.symbol ());
             }
             else {
                 std::stringstream ss;

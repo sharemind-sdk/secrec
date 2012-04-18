@@ -72,13 +72,19 @@ Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
     return sizeSym;
 }
 
+void CodeGen::releaseResource (CGResult& result, Symbol* sym) {
+    if (isNontrivialResource (sym->secrecType ())) {
+        pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, sym));
+    }
+}
+
 void CodeGen::releaseTemporary (CGResult& result, Symbol* sym) {
     assert (sym != 0);
     if (sym->symbolType () == Symbol::SYMBOL) {
         assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
         SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
-        if (ssym->isTemporary () && isNontrivialResource (ssym->secrecType ())) {
-            pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, ssym));
+        if (ssym->isTemporary ()) {
+            releaseResource (result, ssym);
         }
     }
 }
@@ -258,22 +264,16 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
 }
 
 void CodeGen::releaseLocalAllocs (CGResult& result, Symbol* ex) {
-    BOOST_FOREACH (SymbolSymbol* sym, m_allocs) {
-        if (sym == ex) {
-            continue;
-        }
-
-        if (sym->scopeType () == SymbolSymbol::LOCAL) {
-            Imop* imop = new Imop (m_node, Imop::RELEASE, 0, sym);
-            pushImopAfter (result, imop);
+    BOOST_FOREACH (Symbol* var, m_st->localVariablesUpTo (m_st->globalScope ())) {
+        if (var != ex) {
+            releaseResource (result, var);
         }
     }
 }
 
 void CodeGen::releaseGlobalAllocs (CGResult& result) {
-    BOOST_FOREACH (SymbolSymbol* sym, m_allocs) {
-        Imop* i = new Imop (m_node, Imop::RELEASE, 0, sym);
-        pushImopAfter (result, i);
+    BOOST_FOREACH (Symbol* var, m_st->localVariablesUpTo (0)) {
+        releaseResource (result, var);
     }
 }
 
@@ -372,6 +372,18 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         push_imop(err);
         return result;
     }
+}
+
+void CodeGen::startLoop () {
+    m_loops.push_back (m_st);
+}
+
+void CodeGen::endLoop () {
+    m_loops.pop_back ();
+}
+
+SymbolTable* CodeGen::loopST () const {
+    return m_loops.empty () ? 0 : m_loops.back ();
 }
 
 

@@ -27,9 +27,9 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
 
     newScope ();
 
-    BOOST_FOREACH (TreeNode* _c, s->children ()) {
-        assert(dynamic_cast<TreeNodeStmt*> (_c) != 0);
-        TreeNodeStmt *c = static_cast<TreeNodeStmt*> (_c);
+    BOOST_FOREACH (TreeNode* c_, s->children ()) {
+        assert(dynamic_cast<TreeNodeStmt*> (c_) != 0);
+        TreeNodeStmt *c = static_cast<TreeNodeStmt*> (c_);
         const CGStmtResult& cResult = codeGenStmt (c);
         append (result, cResult);
         if (result.isNotOk ()) {
@@ -73,8 +73,21 @@ CGStmtResult TreeNodeStmtBreak::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtBreak (TreeNodeStmtBreak* s) {
     CGStmtResult result;
+
+    if (loopST () == 0) {
+        m_log.fatal () << "Break statement not embedded in loop!";
+        m_log.fatal () << "Error at " << s->location () << ".";
+        result.setStatus (ICode::E_TYPE);
+        return result;
+    }
+
+    assert (loopST () != 0);
+    BOOST_FOREACH (SymbolSymbol* var, m_st->localVariablesUpTo (loopST ())) {
+        releaseResource (result, var);
+    }
+
     Imop *i = new Imop (s, Imop::JUMP, 0);
-    push_imop (i);
+    pushImopAfter (result, i);
     result.setFirstImop (i);
     result.addToBreakList (i);
     result.setFlags(CGStmtResult::BREAK);
@@ -91,8 +104,20 @@ CGStmtResult TreeNodeStmtContinue::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
     CGStmtResult result;
+
+    if (loopST () == 0) {
+        m_log.fatal () << "Continue statement not embedded in loop!";
+        m_log.fatal () << "Error at " << s->location () << ".";
+        result.setStatus (ICode::E_TYPE);
+        return result;
+    }
+
+    BOOST_FOREACH (SymbolSymbol* var, m_st->localVariablesUpTo (loopST ())) {
+        releaseResource (result, var);
+    }
+
     Imop *i = new Imop (s, Imop::JUMP, 0);
-    push_imop (i);
+    pushImopAfter (result, i);
     result.setFirstImop (i);
     result.addToContinueList (i);
     result.setFlags(CGStmtResult::CONTINUE);
@@ -126,9 +151,6 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
     SecrecDimType n = 0;
     assert ((isScalar || !isString) && "ICE: string arrays should be forbidden by the type checker!");
-    if (! isScalar || isString || isPrivate) {
-        addAlloc (ns);
-    }
 
     // Initialize shape:
     TypeNonVoid* dimType = TypeNonVoid::getIndexType (getContext ());
@@ -255,6 +277,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
             if (ty->secrecDimType () > e->resultType ()->secrecDimType ()) {
                 Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym());
                 pushImopAfter (result, i);
+                releaseTemporary (result, eResult.symbol ());
             }
             else {
                 assert (ty->secrecDimType() == e->resultType()->secrecDimType());
@@ -273,6 +296,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
                 i = new Imop (varInit, Imop::COPY, ns, eResultSymbol, ns->getSizeSym());
                 pushImopAfter (result, i);
+                releaseTemporary (result, eResult.symbol ());
             }
         }
 
@@ -282,6 +306,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 // fill lhs with constant value
                 Imop* i = new Imop (varInit, Imop::ALLOC, ns, eResult.symbol (), ns->getSizeSym ());
                 pushImopAfter (result, i);
+                releaseTemporary (result, eResult.symbol ());
             }
             else {
                 // check that shapes match and assign
@@ -304,6 +329,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 pushImopAfter (result, jmp);
                 push_imop(err);
                 push_imop(i);
+                releaseTemporary (result, eResultSymbol);
             }
         }
 
@@ -430,7 +456,9 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
 
     // Body of for loop:
     TreeNodeStmt *body = s->body ();
+    startLoop ();
     CGStmtResult bodyResult (codeGenStmt (body));
+    endLoop ();
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
         return result;
@@ -668,7 +696,9 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     newScope ();
 
     TreeNodeStmt *body = s->body ();
+    startLoop ();
     CGStmtResult bodyResult (codeGenStmt (body));
+    endLoop ();
     if (bodyResult.isNotOk ()) {
         result.setStatus (bodyResult.status ());
         return result;
@@ -840,7 +870,9 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     newScope ();
 
     TreeNodeStmt* body = s->body ();
+    startLoop ();
     CGStmtResult result (codeGenStmt (body));
+    endLoop ();
     if (result.isNotOk ()) {
         return result;
     }
@@ -951,7 +983,6 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     }
 
     CGStmtResult result;
-    releaseLocalAllocs (result);
     releaseGlobalAllocs (result);
 
     std::ostringstream ss;

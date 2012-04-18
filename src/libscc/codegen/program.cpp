@@ -73,7 +73,6 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
 
     assert (def != 0);
 
-    m_allocs.clear ();
     const TNI *id = def->identifier ();
 
     CGStmtResult result;

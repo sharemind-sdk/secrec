@@ -136,10 +136,6 @@ private: /* Fields: */
 class CodeGenState {
 protected: /* Types: */
 
-    typedef std::vector<SymbolSymbol*> AllocList;
-
-public:
-
     typedef ImopList::const_iterator InsertPoint;
 
 public: /* Methods: */
@@ -182,14 +178,12 @@ private:
         std::swap (m_insertPoint, st.m_insertPoint);
         std::swap (m_st, st.m_st);
         std::swap (m_node, st.m_node);
-        std::swap (m_allocs, st.m_allocs);
     }
 
 private: /* Fields: */
     InsertPoint   m_insertPoint;  ///< Location before which to insert instructions.
     SymbolTable*  m_st;           ///< Pointer to symbol table of current scope.
     TreeNode*     m_node;         ///< Current tree node.
-    AllocList     m_allocs;       ///< Current allocations.
 };
 
 /*******************************************************************************
@@ -216,7 +210,7 @@ private:
 private: /* Types: */
 
     typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
-
+    typedef std::vector<SymbolTable*> STList;
 
 public: /* Methods: */
 
@@ -290,9 +284,7 @@ public: /* Methods: */
         }
 
         result.addToNextList (other.nextList ());
-        if (other.isNotOk ()) {
-            result.setStatus (other.status ());
-        }
+        result.setStatus (other.status ());
     }
 
     CGResult codeGen (TreeNodeExpr* e);
@@ -383,10 +375,8 @@ public: /* Methods: */
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = 0);
-    void addAlloc (SymbolSymbol* sym) { m_allocs.push_back (sym); }
     void releaseLocalAllocs (CGResult& result, Symbol* ex = 0);
     void releaseGlobalAllocs (CGResult& result);
-    void clearAllocs () { m_allocs.clear (); }
     /// \}
 
     /// Looping, and indexing.
@@ -422,6 +412,13 @@ protected:
     Symbol* getSizeOr (Symbol* sym, int64_t val);
 
     void releaseTemporary (CGResult& result, Symbol* sym);
+    void releaseResource (CGResult& result, Symbol* sym);
+
+    void startProc ();
+    void startLoop ();
+    void endLoop ();
+    SymbolTable* loopST () const;
+    SymbolTable* procST () const;
 
 private: /* Fields: */
 
@@ -429,6 +426,7 @@ private: /* Fields: */
     ICodeList&    m_code;         ///< Generated sequence of IR instructions.
     CompileLog&   m_log;          ///< Compiler log.
     ModuleMap&    m_modules;      ///< Mapping from names to modules.
+    STList        m_loops;
 
     // Local components:
     TypeChecker   m_tyChecker;    ///< Instance of type checker.

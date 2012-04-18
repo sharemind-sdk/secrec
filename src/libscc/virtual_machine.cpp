@@ -443,6 +443,12 @@ MKCALLBACK(COPY, 1, 1, 1, 0,
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
+    if (ip->args[0].un_sym->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+        assert (dest.un_str_val != 0);
+        delete dest.un_str_val;
+        dest.un_str_val = 0;
+    }
+    else
     if (ip->args[0].un_sym->secrecType ()->secrecSecType ()->isPublic ()) {
         assert (dest.un_ptr != 0);
         free (dest.un_ptr);

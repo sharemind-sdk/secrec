@@ -162,6 +162,30 @@ Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
     return 0;
 }
 
+std::vector<SymbolSymbol*> SymbolTable::localVariables () const {
+    std::vector<SymbolSymbol*> out;
+    BOOST_REVERSE_FOREACH (Symbol* sym, m_table) {
+        if (sym->symbolType () == Symbol::SYMBOL) {
+            assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
+            SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
+            assert (! ssym->isTemporary());
+            out.push_back (ssym);
+        }
+    }
+
+    return out;
+}
+
+std::vector<SymbolSymbol*> SymbolTable::localVariablesUpTo (const SymbolTable* end) const {
+    std::vector<SymbolSymbol*> out;
+    for (const SymbolTable* st = this; st != end; st = st->parent ()) {
+        const std::vector<SymbolSymbol*>& local = st->localVariables ();
+        out.insert (out.end (), local.begin (), local.end ());
+    }
+
+    return out;
+}
+
 void SymbolTable::appendSymbol (Symbol* symbol) {
     assert (symbol != 0);
     symbol->setPrevious (findFromCurrentScope (symbol->name ()));

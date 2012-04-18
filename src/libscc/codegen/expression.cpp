@@ -40,6 +40,7 @@ CGBranchResult CodeGen::cgBoolSimple (TreeNodeExpr *e) {
 
     Imop *i = new Imop (e, Imop::JT, 0, result.symbol ());
     pushImopAfter (result, i);
+    releaseTemporary (result, result.symbol ());
     result.addToTrueList (i);
 
     i = new Imop (e, Imop::JUMP, 0);
@@ -831,19 +832,23 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
 
             Imop::Type iType;
             switch (e->type()) {
-                case NODE_EXPR_BINARY_EQ: iType = Imop::JE; break;
-                case NODE_EXPR_BINARY_GE: iType = Imop::JGE; break;
-                case NODE_EXPR_BINARY_GT: iType = Imop::JGT; break;
-                case NODE_EXPR_BINARY_LE: iType = Imop::JLE; break;
-                case NODE_EXPR_BINARY_LT: iType = Imop::JLT; break;
-                case NODE_EXPR_BINARY_NE: iType = Imop::JNE; break;
+                case NODE_EXPR_BINARY_EQ: iType = Imop::EQ; break;
+                case NODE_EXPR_BINARY_GE: iType = Imop::GE; break;
+                case NODE_EXPR_BINARY_GT: iType = Imop::GT; break;
+                case NODE_EXPR_BINARY_LE: iType = Imop::LE; break;
+                case NODE_EXPR_BINARY_LT: iType = Imop::LT; break;
+                case NODE_EXPR_BINARY_NE: iType = Imop::NE; break;
                 default:
                     assert (false && "Dont know how to handle the node type.");
                     result.setStatus (ICode::E_OTHER);
                     return result;
             }
 
-            Imop *tj = new Imop (e, iType, (Symbol*) 0, arg1Result.symbol (), arg2Result.symbol ());
+            SymbolTemporary* temp = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
+            pushImopAfter (result, new Imop (e, iType, temp, arg1Result.symbol (), arg2Result.symbol ()));
+            releaseTemporary (result, arg1Result.symbol ());
+            releaseTemporary (result, arg2Result.symbol ());
+            Imop* tj = new Imop (e, Imop::JT, 0, temp);
             pushImopAfter (result, tj);
             result.addToTrueList (tj);
 
