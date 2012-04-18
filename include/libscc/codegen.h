@@ -124,44 +124,6 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
-  ScopedAllocations
-*******************************************************************************/
-
-class ScopedAllocations {
-private:
-    void operator = (const ScopedAllocations&); // DO NOT IMPLEMENT
-    ScopedAllocations (const ScopedAllocations&); // DO NOT IMPLEMENT
-
-private: /* Types: */
-
-    typedef std::vector<Symbol* > Allocations;
-
-public: /* Methods: */
-
-    ScopedAllocations (CodeGen& base, CGResult& result)
-        : m_codeGen (base)
-        , m_result (result)
-    { }
-
-    ~ScopedAllocations () {
-        freeAllocs ();
-    }
-
-    void allocTemporary (Symbol* dest, Symbol* def, Symbol* size);
-    void classifyTemporary (Symbol* dest, Symbol* src);
-
-private:
-
-    void freeAllocs ();
-
-private: /* Fields: */
-
-    CodeGen&     m_codeGen;
-    CGResult&    m_result;
-    Allocations  m_allocs;
-};
-
-/*******************************************************************************
   CodeGenState
 *******************************************************************************/
 
@@ -327,7 +289,6 @@ public: /* Methods: */
             result.patchNextList (m_st->label (other.firstImop ()));
         }
 
-        result.addTempAllocs (other.tempAllocs ());
         result.addToNextList (other.nextList ());
         if (other.isNotOk ()) {
             result.setStatus (other.status ());
@@ -421,9 +382,7 @@ public: /* Methods: */
 
     /// Memory management
     /// \{
-    void registerResource (CGResult& result, Symbol* sym, bool isVariable = false);
-    void allocResult (CGResult& result, Symbol* val = 0, bool isVariable = false);
-    void releaseTempAllocs (CGResult& result, Symbol* ex = 0);
+    void allocTemporaryResult (CGResult& result, Symbol* val = 0);
     void addAlloc (SymbolSymbol* sym) { m_allocs.push_back (sym); }
     void releaseLocalAllocs (CGResult& result, Symbol* ex = 0);
     void releaseGlobalAllocs (CGResult& result);

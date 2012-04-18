@@ -107,33 +107,10 @@ public: /* Methods: */
         m_status = status;
     }
 
-    /// Temporary memory allocation. Will be cleared after evaluation the statement.
-    void addTempResource (Symbol* s) {
-        m_tempAllocs.push_back (s);
-    }
-
-    void setTempAllocs (const std::vector<Symbol*>& allocs) {
-        m_tempAllocs = allocs;
-    }
-
-    void addTempAllocs (const std::vector<Symbol*>& allocs) {
-        m_tempAllocs.insert (m_tempAllocs.end (),
-            allocs.begin (), allocs.end ());
-    }
-
-    const std::vector<Symbol* >& tempAllocs () const {
-        return m_tempAllocs;
-    }
-
-    void clearTempAllocs () {
-        m_tempAllocs.clear ();
-    }
-
 private: /* Fields: */
     std::vector<Imop* >   m_nextList;     ///< unpatched jumps to next imop
     Symbol*               m_result;       ///< symbol the result is stored in
     Imop*                 m_firstImop;    ///< pointer to the first instruction
-    std::vector<Symbol* > m_tempAllocs;   ///< local memory allocations
     ICode::Status         m_status;       ///< status of the code generation
 };
 

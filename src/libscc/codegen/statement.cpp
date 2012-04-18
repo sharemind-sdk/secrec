@@ -36,8 +36,6 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
             break;
         }
 
-        releaseTempAllocs (result);
-
         if (cResult.firstImop () == 0) {
             if (c->type () != NODE_DECL) {
                 m_log.fatal () << "Statement with no effect at " << c->location ();
@@ -611,7 +609,6 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
 
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
-        releaseTempAllocs (result, eResult.symbol ());
         releaseLocalAllocs (result, eResult.symbol ());
         if (result.isNotOk ()) {
             return result;
@@ -916,7 +913,12 @@ CGStmtResult TreeNodeStmtExpr::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtExpr (TreeNodeStmtExpr* s) {
-    return codeGen (s->expression ());
+    CGStmtResult result = codeGen (s->expression ());
+    if (result.symbol () != 0) {
+        releaseTemporary (result, result.symbol ());
+    }
+
+    return result;
 }
 
 /*******************************************************************************
@@ -949,9 +951,8 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     }
 
     CGStmtResult result;
-    result.addTempAllocs (eResult.tempAllocs ());
-    releaseTempAllocs (result);
     releaseLocalAllocs (result);
+    releaseGlobalAllocs (result);
 
     std::ostringstream ss;
     ss << "assert failed at " << s->location ();
@@ -961,7 +962,6 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     eResult.patchFalseList (m_st->label (result.firstImop ()));
     result.addToNextList (eResult.trueList ());
     result.setFirstImop (eResult.firstImop ());
-    result.setTempAllocs (eResult.tempAllocs ());
     return result;
 }
 

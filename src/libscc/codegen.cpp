@@ -4,6 +4,18 @@
 
 #include "constant.h"
 
+namespace /* anonymous */ {
+
+using namespace SecreC;
+
+bool isNontrivialResource (TypeNonVoid* tnv) {
+    return tnv->secrecDimType () != 0
+        || tnv->secrecSecType ()->isPrivate ()
+        || tnv->secrecDataType () == DATATYPE_STRING;
+}
+
+} // namespace anonymous
+
 namespace SecreC {
 
 /*******************************************************************************
@@ -65,8 +77,8 @@ void CodeGen::releaseTemporary (CGResult& result, Symbol* sym) {
     if (sym->symbolType () == Symbol::SYMBOL) {
         assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
         SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
-        if (ssym->isTemporary ()) {
-            pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, sym));
+        if (ssym->isTemporary () && isNontrivialResource (ssym->secrecType ())) {
+            pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, ssym));
         }
     }
 }
@@ -108,34 +120,6 @@ void CodeGen::copyShapeFrom (CGResult& result, Symbol* tmp) {
     }
 }
 
-void CodeGen::registerResource (CGResult& result, Symbol* sym, bool isVariable) {
-    if (! isVariable) {
-        result.addTempResource (sym);
-    }
-    else {
-        assert (sym->symbolType () == Symbol::SYMBOL);
-        assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
-        addAlloc (static_cast<SymbolSymbol*>(sym));
-    }
-}
-
-void CodeGen::allocResult (CGResult& result, Symbol* val, bool isVariable)  {
-    if (result.symbol ()->secrecType ()->isScalar ()) {
-        m_log.warning () << "Allocating result for scala! Ignoring.";
-        return;
-    }
-
-    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(result.symbol ());
-    if (val == 0) {
-        val = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
-    }
-
-    Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
-    pushImopAfter (result, i);
-    registerResource (result, sym, isVariable);
-}
-
-
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty) {
     if (! _ty->isVoid ()) {
         TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
@@ -155,6 +139,21 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty
     }
 
     return 0;
+}
+
+void CodeGen::allocTemporaryResult (CGResult& result, Symbol* val) {
+    if (result.symbol ()->secrecType ()->isScalar ()) {
+        return;
+    }
+
+    assert (dynamic_cast<SymbolSymbol*>(result.symbol ()) != 0);
+    SymbolSymbol* sym = static_cast<SymbolSymbol*>(result.symbol ());
+    if (val == 0) {
+        val = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
+    }
+
+    Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
+    pushImopAfter (result, i);
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
@@ -256,17 +255,6 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     }
 
     return result;
-}
-
-void CodeGen::releaseTempAllocs (CGResult& result, Symbol* ex) {
-    BOOST_FOREACH (Symbol* s, result.tempAllocs ()) {
-        if (s != ex) {
-            Imop* i = new Imop (m_node, Imop::RELEASE, 0, s);
-            pushImopAfter (result, i);
-        }
-    }
-
-    result.clearTempAllocs ();
 }
 
 void CodeGen::releaseLocalAllocs (CGResult& result, Symbol* ex) {
@@ -386,27 +374,5 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
     }
 }
 
-/*******************************************************************************
-  ScopedAllocations
-*******************************************************************************/
-
-void ScopedAllocations::allocTemporary (Symbol* dest, Symbol* def, Symbol* size) {
-    Imop* i = new Imop (m_codeGen.currentNode (), Imop::ALLOC, dest, def, size);
-    m_codeGen.pushImopAfter (m_result, i);
-    m_allocs.push_back (dest);
-}
-
-void ScopedAllocations::classifyTemporary (Symbol* dest, Symbol* src) {
-    Imop* i = new Imop (m_codeGen.currentNode (), Imop::CLASSIFY, dest, src);
-    m_codeGen.pushImopAfter (m_result, i);
-    m_allocs.push_back (dest);
-}
-
-void ScopedAllocations::freeAllocs () {
-    BOOST_FOREACH (Symbol* sym, m_allocs) {
-        Imop* i = new Imop (m_codeGen.currentNode (), Imop::RELEASE, 0, sym);
-        m_codeGen.pushImopAfter (m_result, i);
-    }
-}
 
 } // namespace SecreC

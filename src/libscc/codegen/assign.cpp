@@ -264,11 +264,11 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             pushImopAfter (result, i);
         }
         else {
-            ScopedAllocations allocs (*this, result);
             Symbol* rhsSym = arg2Result.symbol ();
             if (eArg2->resultType ()->isScalar ()) {
                 rhsSym = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
-                allocs.allocTemporary (rhsSym, arg2Result.symbol (), destSym->getSizeSym ());
+                i = new Imop (e, Imop::ALLOC, rhsSym, arg2Result.symbol (), destSym->getSizeSym ());
+                pushImopAfter (result, i);
             }
             else {
                 std::stringstream ss;
@@ -294,6 +294,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
             i = new Imop (e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
             pushImopAfter (result, i);
+            releaseTemporary (result, rhsSym);
         }
     }
 

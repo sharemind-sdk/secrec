@@ -21,20 +21,9 @@
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
 #define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
 
-/**
- * \todo Simple GC to clear allocated strings and vectors.
- */
-
 namespace { // anonymous namespace
 
 using namespace SecreC;
-
-std::vector<std::string*> stringHeap;
-void releaseStringHeap () {
-    BOOST_FOREACH (std::string* str, stringHeap) {
-        delete str;
-    }
-}
 
 /// Primitive values of the VM.
 union Value {
@@ -77,7 +66,6 @@ inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
 inline void assignValue (Value& v, const std::string& r) {
     std::string* copy =  new std::string (r);
     v.un_str_val = copy;
-    stringHeap.push_back (copy);
 }
 
 /// Statically typed value casting.
@@ -887,7 +875,6 @@ int VirtualMachine::run (const Program& pr) {
 
     free (code);
     free_store (m_global);
-    releaseStringHeap ();
 
     return status;
 }
