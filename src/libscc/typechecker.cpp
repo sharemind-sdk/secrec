@@ -1213,12 +1213,14 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
 
         bool isLegalType = true;
         if (  e->resultType()->secrecSecType()->isPrivate ()  ||
-            ! e->resultType()->isScalar ())
+            ! e->resultType()->isScalar ()) {
             isLegalType = false;
+        }
 
-        if (  e->resultType ()->secrecDataType () != DATATYPE_STRING &&
-            ! isNumericDataType (e->resultType ()->secrecDataType ()))
+        SecrecDataType dType = e->resultType ()->secrecDataType ();
+        if (  dType != DATATYPE_STRING && dType != DATATYPE_BOOL && ! isNumericDataType (dType)) {
             isLegalType = false;
+        }
 
         if (! isLegalType) {
             m_log.fatal () << "Invalid argument to \"print\" statement."
