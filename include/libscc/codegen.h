@@ -414,7 +414,6 @@ protected:
     void releaseTemporary (CGResult& result, Symbol* sym);
     void releaseResource (CGResult& result, Symbol* sym);
 
-    void startProc ();
     void startLoop ();
     void endLoop ();
     SymbolTable* loopST () const;
