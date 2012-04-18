@@ -422,15 +422,14 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
         SecrecDataType scTy = imop.arg1 ()->secrecType ()->secrecDataType ();
         VMDataType ty = secrecDTypeToVMDType (scTy);
         assert (ty != VM_INVALID);
-        instr << ty; // secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+        instr << ty;
     }
 
     // arguments
     OCI i = imop.operandsBegin (),
         e = imop.operandsEnd ();
-//    if (i != e)
-        for (++ i; i != e; ++ i)
-            instr << loadToRegister (block, *i);
+    for (++ i; i != e; ++ i)
+        instr << loadToRegister (block, *i);
 
     block.push_back (instr);
 }
@@ -468,8 +467,23 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgToString (VMBlock& block, const Imop& imop) {
-    VMLabel* target = m_st.getLabel (":to_string__");
-    m_funcs->insert (target, BuiltinToString (m_strLit));
+    VMLabel* target = 0;
+
+    SecrecDataType dType = imop.arg1 ()->secrecType ()->secrecDataType ();
+    if (dType == DATATYPE_BOOL) {
+        target = m_st.getLabel (":bool_to_string__");
+        m_funcs->insert (target, BuiltinBoolToString (m_strLit));
+    }
+    else
+    if (isNumericDataType (dType)) {
+        target = m_st.getLabel (":numeric_to_string__");
+        m_funcs->insert (target, BuiltinNumericToString (m_strLit));
+    }
+    else {
+        assert (false && "Unable to convert given data type to string!");
+        return;
+    }
+
     block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "call" << target << find (imop.dest ());
 }

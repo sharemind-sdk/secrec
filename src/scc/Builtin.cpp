@@ -367,10 +367,10 @@ void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
 }
 
 /*******************************************************************************
-  BuiltinToString
+  BuiltinNumericToString
 *******************************************************************************/
 
-void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
+void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) {
     VMImm* const charSize = st.getImm (1);
 
     char prefixChar = '?';
@@ -426,6 +426,40 @@ void BuiltinToString::generate (VMFunction& function, VMSymbolTable& st) {
     function.push_back (entryB)
             .push_back (lengthB)
             .push_back (copyB);
+    return;
+}
+
+/*******************************************************************************
+  BuiltinBoolToString
+*******************************************************************************/
+
+void BuiltinBoolToString::generate (VMFunction& function, VMSymbolTable& st) {
+    VMLabel* trueLit = m_strLit->insert ("true").label;
+    VMLabel* falseLit = m_strLit->insert ("false").label;
+    VMStack* value = st.getStack (0);
+    VMStack* label = st.getStack (1);
+    VMStack* size = st.getStack (3);
+    VMStack* rodata = st.getStack (5);
+    VMStack* dest = st.getStack (4);
+    VMLabel* trueL = st.getUniqLabel ();
+
+    VMBlock entryB (0, 0);
+    entryB.push_new () << "resizestack" << 6;
+    entryB.push_new () << "mov" << trueLit << label;
+    entryB.push_new () << "mov" << st.getImm (5) << size;
+    entryB.push_new () << "mov imm :RODATA" << rodata;
+    entryB.push_new () << "bband" << VM_UINT64 << value << st.getImm (1);
+    entryB.push_new () << "jnz" << trueL << VM_UINT64 << value;
+    entryB.push_new () << "mov" << falseLit << label;
+    entryB.push_new () << "mov" << st.getImm (6) << size;
+
+    VMBlock exitB (trueL, 0);
+    exitB.push_new () << "alloc" << dest << size;
+    exitB.push_new () << "mov" << "mem" << rodata << label << "mem" << dest << st.getImm (0) << size;
+    exitB.push_new () << "return" << dest;
+
+    function.push_back (entryB)
+            .push_back (exitB);
     return;
 }
 
