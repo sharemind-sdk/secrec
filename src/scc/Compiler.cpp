@@ -509,7 +509,7 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    if (isPrivate (imop)) {
+    if (imop.isVectorized () && isPrivate (imop)) {
         cgPrivateAssign (block, imop);
         return;
     }
