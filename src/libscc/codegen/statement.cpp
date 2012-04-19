@@ -412,11 +412,15 @@ CGStmtResult TreeNodeStmtFor::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     CGStmtResult result;
     bool createdScope = false;
+    Symbol* temp = 0;
 
     // Initialization expression:
     if (s->initializer () != 0) {
         if (dynamic_cast<TreeNodeExpr*> (s->initializer ()) != 0) {
-            append (result, codeGen (static_cast<TreeNodeExpr*> (s->initializer ())));
+            TreeNodeExpr* initE = static_cast<TreeNodeExpr*> (s->initializer ());
+            const CGResult& initResult = codeGen (initE);
+            append (result, initResult);
+            temp = initResult.symbol ();
         }
         else
         if (dynamic_cast<TreeNodeStmtDecl*>(s->initializer ()) != 0) {
@@ -494,7 +498,12 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     bodyResult.patchContinueList (nextIterDest); // continue jumps to iteration
 
     if (createdScope) {
+        releaseScopeVariables (result);
         popScope ();
+    }
+    else {
+        if (temp != 0)
+            releaseTemporary (result, temp);
     }
 
     // Static checking:
