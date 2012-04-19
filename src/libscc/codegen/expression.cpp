@@ -844,7 +844,7 @@ CGBranchResult CodeGen::cgBoolExprBinary (TreeNodeExprBinary *e) {
                     return result;
             }
 
-            SymbolTemporary* temp = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
+            SymbolSymbol* temp = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
             pushImopAfter (result, new Imop (e, iType, temp, arg1Result.symbol (), arg2Result.symbol ()));
             releaseTemporary (result, arg1Result.symbol ());
             releaseTemporary (result, arg2Result.symbol ());
