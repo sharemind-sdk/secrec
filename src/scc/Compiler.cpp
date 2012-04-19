@@ -509,9 +509,14 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    if (imop.isVectorized () && isPrivate (imop)) {
-        cgPrivateAssign (block, imop);
-        return;
+    if (isPrivate (imop)) {
+        if (imop.isVectorized ()) {
+            cgPrivateAssign (block, imop);
+            return;
+        }
+        else {
+            m_allocatedScalars.insert (find (imop.dest ()));
+        }
     }
 
     VMInstruction instr;
@@ -950,8 +955,6 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         cgArithm (block, imop);
         return;
     }
-
-    std::cerr << imop.toString () << std::endl;
 
     assert (false && "Unable to handle instruction!");
 }
