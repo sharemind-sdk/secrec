@@ -58,6 +58,7 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
         }
     }
 
+    releaseScopeVariables (result);
     popScope ();
 
     return result;
@@ -82,7 +83,7 @@ CGStmtResult CodeGen::cgStmtBreak (TreeNodeStmtBreak* s) {
     }
 
     assert (loopST () != 0);
-    BOOST_FOREACH (SymbolSymbol* var, m_st->localVariablesUpTo (loopST ())) {
+    BOOST_FOREACH (SymbolSymbol* var, m_st->variablesUpTo (loopST ())) {
         releaseResource (result, var);
     }
 
@@ -112,7 +113,7 @@ CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
         return result;
     }
 
-    BOOST_FOREACH (SymbolSymbol* var, m_st->localVariablesUpTo (loopST ())) {
+    BOOST_FOREACH (SymbolSymbol* var, m_st->variablesUpTo (loopST ())) {
         releaseResource (result, var);
     }
 
@@ -626,7 +627,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     }
 
     if (s->expression () == 0) {
-        releaseLocalAllocs (result);
+        releaseProcVariables (result);
 
         Imop *i = new Imop (s, Imop::RETURNVOID, 0);
         i->setReturnDestFirstImop (m_st->label (s->containingProcedure ()->symbol ()->target ()));
@@ -637,7 +638,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
 
         const CGResult& eResult (codeGen (e));
         append (result, eResult);
-        releaseLocalAllocs (result, eResult.symbol ());
+        releaseProcVariables (result, eResult.symbol ());
         if (result.isNotOk ()) {
             return result;
         }
@@ -983,7 +984,7 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     }
 
     CGStmtResult result;
-    releaseGlobalAllocs (result);
+    releaseAllVariables (result);
 
     std::ostringstream ss;
     ss << "assert failed at " << s->location ();

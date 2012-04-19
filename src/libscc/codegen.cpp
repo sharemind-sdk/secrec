@@ -72,6 +72,41 @@ Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
     return sizeSym;
 }
 
+void CodeGen::allocTemporaryResult (CGResult& result, Symbol* val) {
+    if (result.symbol ()->secrecType ()->isScalar ()) {
+        return;
+    }
+
+    assert (dynamic_cast<SymbolSymbol*>(result.symbol ()) != 0);
+    SymbolSymbol* sym = static_cast<SymbolSymbol*>(result.symbol ());
+    if (val == 0) {
+        val = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
+    }
+
+    Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
+    pushImopAfter (result, i);
+}
+
+void CodeGen::releaseScopeVariables (CGResult& result) {
+    BOOST_FOREACH (Symbol* var, m_st->variables ()) {
+        releaseResource (result, var);
+    }
+}
+
+void CodeGen::releaseProcVariables (CGResult& result, Symbol* ex) {
+    BOOST_FOREACH (Symbol* var, m_st->variablesUpTo (m_st->globalScope ())) {
+        if (var != ex) {
+            releaseResource (result, var);
+        }
+    }
+}
+
+void CodeGen::releaseAllVariables (CGResult& result) {
+    BOOST_FOREACH (Symbol* var, m_st->variablesUpTo (0)) {
+        releaseResource (result, var);
+    }
+}
+
 void CodeGen::releaseResource (CGResult& result, Symbol* sym) {
     if (isNontrivialResource (sym->secrecType ())) {
         pushImopAfter (result, new Imop (m_node, Imop::RELEASE, 0, sym));
@@ -145,21 +180,6 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, SecreC::Type* _ty
     }
 
     return 0;
-}
-
-void CodeGen::allocTemporaryResult (CGResult& result, Symbol* val) {
-    if (result.symbol ()->secrecType ()->isScalar ()) {
-        return;
-    }
-
-    assert (dynamic_cast<SymbolSymbol*>(result.symbol ()) != 0);
-    SymbolSymbol* sym = static_cast<SymbolSymbol*>(result.symbol ());
-    if (val == 0) {
-        val = defaultConstant (getContext (), sym->secrecType ()->secrecDataType ());
-    }
-
-    Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
-    pushImopAfter (result, i);
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
@@ -261,20 +281,6 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     }
 
     return result;
-}
-
-void CodeGen::releaseLocalAllocs (CGResult& result, Symbol* ex) {
-    BOOST_FOREACH (Symbol* var, m_st->localVariablesUpTo (m_st->globalScope ())) {
-        if (var != ex) {
-            releaseResource (result, var);
-        }
-    }
-}
-
-void CodeGen::releaseGlobalAllocs (CGResult& result) {
-    BOOST_FOREACH (Symbol* var, m_st->localVariablesUpTo (0)) {
-        releaseResource (result, var);
-    }
 }
 
 CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNode* node) {

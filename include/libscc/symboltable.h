@@ -61,8 +61,8 @@ public: /* Methods: */
      */
     Symbol* findFromCurrentScope (const std::string& name) const;
 
-    std::vector<SymbolSymbol*> localVariablesUpTo (const SymbolTable* end) const;
-    std::vector<SymbolSymbol*> localVariables () const;
+    std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
+    std::vector<SymbolSymbol*> variables () const;
 
 private: /* Fields: */
     class OtherSymbols;

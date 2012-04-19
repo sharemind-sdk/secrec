@@ -164,7 +164,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
             }
 
             assert (fType->kind() == TNV::PROCEDUREVOID);
-            releaseLocalAllocs (result);
+            releaseProcVariables (result);
 
             Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
             i->setReturnDestFirstImop (m_st->label (result.firstImop ()));
@@ -314,7 +314,7 @@ CGStmtResult CodeGen::cgMain (TreeNodeModule* mainModule) {
     Imop *retClean = new Imop (prog, Imop::RETCLEAN, 0, 0, 0);
     pushImopAfter (result, mainCall);
     push_imop (retClean);
-    releaseGlobalAllocs (result);
+    releaseAllVariables (result);
     push_imop (new Imop (prog, Imop::END));
 
     ScopedStateUse use (*this, cgState); // we need to look in main module

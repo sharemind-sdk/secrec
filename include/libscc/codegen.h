@@ -375,8 +375,11 @@ public: /* Methods: */
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = 0);
-    void releaseLocalAllocs (CGResult& result, Symbol* ex = 0);
-    void releaseGlobalAllocs (CGResult& result);
+    void releaseResource (CGResult& result, Symbol* sym);
+    void releaseTemporary (CGResult& result, Symbol* sym);
+    void releaseScopeVariables (CGResult& result);
+    void releaseProcVariables (CGResult& result, Symbol* ex = 0);
+    void releaseAllVariables (CGResult& result);
     /// \}
 
     /// Looping, and indexing.
@@ -410,9 +413,6 @@ protected:
                             bool isGlobal, bool isProcParam);
 
     Symbol* getSizeOr (Symbol* sym, int64_t val);
-
-    void releaseTemporary (CGResult& result, Symbol* sym);
-    void releaseResource (CGResult& result, Symbol* sym);
 
     void startLoop ();
     void endLoop ();
