@@ -177,6 +177,19 @@ bool isPrivate (const Imop& imop) {
     return false;
 }
 
+bool isStringRelated (const Imop& imop) {
+    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        if (sym == 0)
+            continue;
+
+        Type* ty = sym->secrecType ();
+        if (ty->secrecDataType () == DATATYPE_STRING)
+            return true;
+    }
+
+    return false;
+}
+
 VMLabel* getPD (SyscallManager* scm, const Symbol* sym) {
     assert (scm != 0 && sym != 0);
     SecreC::Type* ty = sym->secrecType ();
@@ -763,13 +776,51 @@ void Compiler::cgStringAppend (VMBlock& block, const Imop& imop) {
     block.push_new () << "call" << target << find (imop.dest ());
 }
 
+void Compiler::cgStringCmp (VMBlock& block, const Imop& imop) {
+    pushString (block, imop.arg1 ());
+    pushString (block, imop.arg2 ());
+    VMLabel* target = m_st.getLabel (":builtin_str_cmp__");
+    m_funcs->insert (target, BuiltinStringCmp ());
+    VMValue* dest = find (imop.dest ());
+    block.push_new () << "call" << target << dest;
+
+    const char* opname = 0;
+    switch (imop.type ()) {
+    case Imop::EQ: opname = "beq"; break;
+    case Imop::NE: opname = "bne"; break;
+    case Imop::LE: opname = "bge"; break;
+    case Imop::LT: opname = "bgt"; break;
+    case Imop::GE: opname = "ble"; break;
+    case Imop::GT: opname = "blt"; break;
+    default: assert (false); break;
+    }
+
+    block.push_new () << opname << VM_INT64 << dest << m_st.getImm (0) ;
+    find (imop.dest ());
+}
+
 void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     assert (imop.isExpr ());
-    if (imop.type () == Imop::ADD) {
-        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+
+    if (isStringRelated (imop)) {
+        switch (imop.type ()) {
+        case Imop::ADD:
             cgStringAppend (block, imop);
-            return;
+            break;
+        case Imop::EQ:
+        case Imop::NE:
+        case Imop::LE:
+        case Imop::LT:
+        case Imop::GE:
+        case Imop::GT:
+            cgStringCmp (block, imop);
+            break;
+        default:
+            assert (false && "Invalid string related arithemtic operation.");
+            break;
         }
+
+        return;
     }
 
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());

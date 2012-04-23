@@ -463,4 +463,53 @@ void BuiltinBoolToString::generate (VMFunction& function, VMSymbolTable& st) {
     return;
 }
 
+
+/*******************************************************************************
+  BuiltinStringCmp
+*******************************************************************************/
+
+void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
+    VMStack* idx = st.getStack (0);
+    VMStack* chrL = st.getStack (2);
+    VMStack* chrR = st.getStack (3);
+    VMStack* sizeL = st.getStack (4);
+    VMStack* sizeR = st.getStack (5);
+    VMStack* temp = st.getStack (6);
+
+    VMBlock entryB (0, 0);
+    entryB.push_new () << "resizestack" << 7;
+    entryB.push_new () << "mov" << st.getImm (0) << idx;
+    entryB.push_new () << "mov" << st.getImm (0) << temp;
+    entryB.push_new () << "mov" << st.getImm (0) << chrL;
+    entryB.push_new () << "mov" << st.getImm (0) << chrR;
+    entryB.push_new () << "getcrefsize" << st.getImm (0) << sizeL;
+    entryB.push_new () << "getcrefsize" << st.getImm (1) << sizeR;
+
+    VMLabel* loopL = st.getUniqLabel ();
+    VMLabel* falseL = st.getUniqLabel ();
+    VMLabel* trueL = st.getUniqLabel ();
+
+    VMBlock loopB (loopL, 0);
+    loopB.push_new () << "mov cref 0x0" << idx << chrL << st.getImm (1);
+    loopB.push_new () << "mov cref 0x1" << idx << chrR << st.getImm (1);
+    loopB.push_new () << "tsub" << VM_INT8 << temp << chrL << chrR;
+    loopB.push_new () << "jnz" << falseL << VM_UINT8 << temp;
+    loopB.push_new () << "uinc" << VM_UINT64 << idx;
+    loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeL;
+    loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeR;
+    loopB.push_new () << "jmp" << loopL;
+
+    VMBlock trueB (trueL, 0);
+    loopB.push_new () << "tsub" << VM_INT64 << temp << sizeL << sizeR;
+
+    VMBlock falseB (falseL, 0);
+    falseB.push_new () << "return" << temp;
+
+    function.push_back (entryB)
+            .push_back (loopB)
+            .push_back (trueB)
+            .push_back (falseB);
+}
+
+
 } // namespace SecreCC

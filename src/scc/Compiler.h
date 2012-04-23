@@ -101,9 +101,9 @@ protected:
      */
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
     void pushString (VMBlock& block, const SecreC::Symbol* str);
-    void emitAny (VMInstruction& instr, const SecreC::Symbol* symbol);
     VMValue* find (const SecreC::Symbol* sym) const;
     void cgStringAppend (VMBlock& block, const SecreC::Imop& imop);
+    void cgStringCmp (VMBlock& block, const SecreC::Imop& imop);
 
 
 private: /* Fields: */

@@ -228,6 +228,24 @@ private: /* Fields: */
     StringLiterals*  const m_strLit;
 };
 
+/*******************************************************************************
+  BuiltinStringCmp
+*******************************************************************************/
+
+class BuiltinStringCmp : public BuiltinFunction  {
+public: /* Methods: */
+
+    BuiltinStringCmp () { }
+
+    ~BuiltinStringCmp () { }
+
+    void generate (VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone () const {
+        return new BuiltinStringCmp ();
+    }
+};
+
 } // namespace SecreCC
 
 #endif
