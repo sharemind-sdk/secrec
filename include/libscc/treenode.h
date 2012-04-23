@@ -597,6 +597,27 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeExprToString
+******************************************************************/
+
+class TreeNodeExprToString: public TreeNodeExpr {
+public:
+    inline TreeNodeExprToString(const YYLTYPE &loc)
+        : TreeNodeExpr(NODE_EXPR_TOSTRING, loc) {}
+
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprToString (m_location);
+    }
+};
+
+/******************************************************************
   OverloadableOperator
 ******************************************************************/
 

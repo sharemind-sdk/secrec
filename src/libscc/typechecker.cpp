@@ -392,6 +392,35 @@ ICode::Status TypeChecker::visit (TreeNodeExprReshape* root) {
     return ICode::OK;
 }
 
+ICode::Status TreeNodeExprToString::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprToString* root) {
+    if (root->haveResultType()) {
+        return ICode::OK;
+    }
+
+    TreeNodeExpr* e = root->expression ();
+    e->setContextSecType (PublicSecType::get (getContext ()));
+    e->setContextDimType (0);
+    ICode::Status s = visitExpr (e);
+    if (s != ICode::OK) return s;
+    if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+    TypeNonVoid* tnv = static_cast<TypeNonVoid*>(e->resultType ());
+    if (tnv->secrecDimType () != 0
+            || tnv->secrecSecType ()->isPrivate ()
+            || tnv->secrecDataType () == DATATYPE_STRING) {
+        m_log.fatal () << "Invalid argument passed to \"tostring\" expression.";
+        m_log.fatal () << "Error at " << root->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    root->setResultType (TypeNonVoid::get (getContext (), DATATYPE_STRING));
+
+    return ICode::OK;
+}
+
 ICode::Status TreeNodeExprBinary::accept (TypeChecker& tyChecker) {
     return tyChecker.visit (this);
 }

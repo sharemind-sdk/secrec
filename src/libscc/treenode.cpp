@@ -135,6 +135,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_EXPR_SHAPE: return "SHAPE";
         case NODE_EXPR_CAT: return "CAT";
         case NODE_EXPR_RESHAPE: return "RESHAPE";
+        case NODE_EXPR_TOSTRING: return "TOSTRING";
         case NODE_STMT_IF: return "STMT_IF";
         case NODE_STMT_FOR: return "STMT_FOR";
         case NODE_STMT_WHILE: return "STMT_WHILE";
@@ -280,6 +281,8 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprCat(*loc));
         case NODE_EXPR_RESHAPE:
             return (TreeNode*) (new SecreC::TreeNodeExprReshape(*loc));
+        case NODE_EXPR_TOSTRING:
+            return (TreeNode*) (new SecreC::TreeNodeExprToString(*loc));
         case NODE_STMT_BREAK:
             return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
         case NODE_STMT_CONTINUE:
@@ -832,6 +835,15 @@ TreeNodeExpr* TreeNodeExprReshape::reshapee () const {
 TreeNode::ChildrenListConstRange TreeNodeExprReshape::dimensions () {
     return std::make_pair (++ m_children.begin (),
                               m_children.end ());
+}
+
+/*******************************************************************************
+  TreeNodeExprToString
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprToString::expression () const {
+    assert (children ().size() >= 1);
+    return expressionAt (this, 0);
 }
 
 /*******************************************************************************

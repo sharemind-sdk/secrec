@@ -147,7 +147,7 @@
 %token XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
-%token IMPORT MODULE
+%token IMPORT MODULE TOSTRING
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -1110,6 +1110,11 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_RESHAPE, &@$);
      treenode_moveChildren ($3, $$);
      treenode_free($3);
+   }
+ | TOSTRING '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_TOSTRING, &@$);
+     treenode_appendChild($$, $3);
    }
  | identifier '(' ')'
    {

@@ -45,6 +45,7 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeExprShape* root);
     ICode::Status visit (TreeNodeExprCat* root);
     ICode::Status visit (TreeNodeExprReshape* root);
+    ICode::Status visit (TreeNodeExprToString* root);
     ICode::Status visit (TreeNodeExprBinary* root);
     ICode::Status visit (TreeNodeExprUnary* root);
     ICode::Status visit (TreeNodeExprClassify* root);

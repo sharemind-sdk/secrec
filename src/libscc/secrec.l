@@ -87,6 +87,7 @@ NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 "public"     { stepLen(yyget_lloc(yyscanner), 6); return PUBLIC; }
 "return"     { stepLen(yyget_lloc(yyscanner), 6); return RETURN; }
 "string"     { stepLen(yyget_lloc(yyscanner), 6); return STRING; }
+"tostring"   { stepLen(yyget_lloc(yyscanner), 8); return TOSTRING; }
 "true"       { stepLen(yyget_lloc(yyscanner), 4); return TRUE_B; }
 "void"       { stepLen(yyget_lloc(yyscanner), 4); return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5); return WHILE; }

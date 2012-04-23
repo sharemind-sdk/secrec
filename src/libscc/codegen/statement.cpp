@@ -838,6 +838,7 @@ CGStmtResult CodeGen::cgStmtPush (TreeNodeStmtPush* s) {
 
     Imop* i = new Imop (s, Imop::PUSH, (Symbol*) 0, eResult.symbol ());
     pushImopAfter (result, i);
+    releaseTemporary (result, eResult.symbol ());
     return result;
 }
 

@@ -354,6 +354,7 @@ public: /* Methods: */
     CGResult cgExprIndex (TreeNodeExprIndex* e);
     CGResult cgExprShape (TreeNodeExprShape* e);
     CGResult cgExprReshape (TreeNodeExprReshape* e);
+    CGResult cgExprToString (TreeNodeExprToString* e);
     CGResult cgExprCat (TreeNodeExprCat* e);
     CGResult cgExprBinary (TreeNodeExprBinary* e);
     CGResult cgExprProcCall (TreeNodeExprProcCall* e);

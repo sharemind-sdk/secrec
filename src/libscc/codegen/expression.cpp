@@ -573,6 +573,37 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprToString
+*******************************************************************************/
+
+CGResult TreeNodeExprToString::codeGenWith (CodeGen &cg) {
+    return cg.cgExprToString (this);
+}
+
+CGResult CodeGen::cgExprToString (TreeNodeExprToString* e) {
+    // Type check:
+    ICode::Status s = m_tyChecker.visit (e);
+    if (s != ICode::OK) {
+        return CGResult (s);
+    }
+
+    // Evaluate subexpression:
+    TreeNodeExpr* eArg = e->expression ();
+    CGResult result = codeGen (eArg);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    TypeNonVoid* tnv = static_cast<TypeNonVoid*>(e->resultType ());
+    SymbolTemporary* temp = m_st->appendTemporary (tnv);
+    Imop* imop = new Imop (e, Imop::TOSTRING, temp, result.symbol ());
+    pushImopAfter (result, imop);
+    releaseTemporary (result, result.symbol ());
+    result.setResult (temp);
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeExprBinary
 *******************************************************************************/
 

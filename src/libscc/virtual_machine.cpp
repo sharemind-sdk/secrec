@@ -333,9 +333,9 @@ void castValueDyn (SecrecDataType toTy, Value& dest, const Value& from) {
  * Unary and binary regular and vectorized ops:
  */
 
-DECLOP1 (ASSIGN, dest = arg1)
-DECLOP1 (CLASSIFY, dest = arg1)
-DECLOP1 (DECLASSIFY, dest = arg1)
+DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
+DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
+DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1))
 DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
 DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
@@ -566,6 +566,9 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::UMINUS:
     case Imop::CAST:
     case Imop::TOSTRING:
+    case Imop::CLASSIFY:
+    case Imop::DECLASSIFY:
+    case Imop::ASSIGN:
         ty = imop.arg1()->secrecType()->secrecDataType();
     default:
         break;
@@ -581,9 +584,9 @@ CallbackTy getCallback (const Imop& imop) {
     }
 
     switch (imop.type ()) {
-    case Imop::ASSIGN:     SET_SIMPLE_CALLBACK_V(ASSIGN); break;
-    case Imop::CLASSIFY:   SET_SIMPLE_CALLBACK_V(CLASSIFY); break;
-    case Imop::DECLASSIFY: SET_SIMPLE_CALLBACK_V(DECLASSIFY); break;
+    case Imop::ASSIGN:     SET_SPECIALIZE_CALLBACK_V(ASSIGN,SWITCH_ANY); break;
+    case Imop::CLASSIFY:   SET_SPECIALIZE_CALLBACK_V(CLASSIFY,SWITCH_ANY); break;
+    case Imop::DECLASSIFY: SET_SPECIALIZE_CALLBACK_V(DECLASSIFY,SWITCH_ANY); break;
     case Imop::CAST:       SET_SPECIALIZE_CALLBACK_V(CAST,SWITCH_NONSTRING); break;
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
@@ -641,6 +644,11 @@ CallbackTy getCallback (const Imop& imop) {
 template <SecrecDataType ty>
 void storeConstantHelper (Value& out, const Symbol* c) {
     assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
+}
+
+template <>
+void storeConstantHelper<DATATYPE_STRING> (Value& out, const Symbol* c) {
+    out.un_str_val = &static_cast<const ConstantString* >(c)->value ();
 }
 
 void storeConstant (VMSym sym, const Symbol* c) {
