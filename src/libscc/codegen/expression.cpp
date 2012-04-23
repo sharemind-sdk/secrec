@@ -248,6 +248,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
     }
 
     append (result, exitLoop (loopInfo));
+    releaseTemporary (result, x);
     return result;
 }
 
@@ -280,6 +281,7 @@ CGResult CodeGen::cgExprSize (TreeNodeExprSize* e) {
         size = static_cast<SymbolSymbol*>(result.symbol())->getSizeSym();
     }
 
+    releaseTemporary (result, result.symbol ());
     result.setResult (size);
     return result;
 }
