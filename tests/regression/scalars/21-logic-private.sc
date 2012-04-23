@@ -1,8 +1,8 @@
-kind a3p;
-domain private a3p;
+kind additive3pp;
+domain sharemind_test_pd additive3pp;
 void main () {
-  private bool t = true;
-  private bool f = false;
+  sharemind_test_pd bool t = true;
+  sharemind_test_pd bool f = false;
 
   assert (declassify ((t && t) == t));
   assert (declassify ((t && f) == f));

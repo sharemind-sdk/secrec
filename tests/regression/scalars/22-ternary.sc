@@ -1,5 +1,5 @@
-kind a3p;
-domain private a3p;
+kind additive3pp;
+domain sharemind_test_pd additive3pp;
 
 int val = 0;
 
@@ -14,8 +14,8 @@ void main () {
   assert ( (t ? 11 : 12) == 11 );
   assert ( (f ? 13 : 14) == 14 );
 
-  private int one = 1;
-  private int two = 2;
+  sharemind_test_pd int one = 1;
+  sharemind_test_pd int two = 2;
   assert ( declassify ((t ? one : two) == one) );
   assert ( declassify ((f ? one : two) == two) );
 

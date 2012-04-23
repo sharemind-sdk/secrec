@@ -1,9 +1,9 @@
-kind a3p;
-domain private a3p;
+kind additive3pp;
+domain sharemind_test_pd additive3pp;
 
 int one () { return 1; }
 
-private bool ft () { return true; }
+sharemind_test_pd bool ft () { return true; }
 
 void ret () {
   if (true) return;
