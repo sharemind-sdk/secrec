@@ -1,11 +1,11 @@
 // set of legal implicit classifications
-kind a3p;
-domain private a3p;
+kind additive3pp;
+domain sharemind_test_pd additive3pp;
 void main () {
-    private int p1;
+    sharemind_test_pd int p1;
     public int x;
 
-    private bool p2;
+    sharemind_test_pd bool p2;
     public bool y;
 
     p1 = x;

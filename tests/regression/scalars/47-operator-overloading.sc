@@ -1,5 +1,5 @@
-kind testing;
-domain private testing;
+kind additive3pp;
+domain private additive3pp;
 
 int operator +  (private int x, private int y)  { return  0; }
 int operator +  (private int x, int y)          { return  1; }

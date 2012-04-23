@@ -1,7 +1,7 @@
 
-kind a3p;
-domain p1 a3p;
-domain p2 a3p;
+kind additive3pp;
+domain p1 additive3pp;
+domain p2 additive3pp;
 
 // by domain type
 public int foo (int n) { assert (n == 1); return 0; }

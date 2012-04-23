@@ -1,6 +1,6 @@
-kind a3p;
-domain d1 a3p;
-domain d2 a3p;
+kind additive3pp;
+domain d1 additive3pp;
+domain d2 additive3pp;
 
 void main () {
     assert (__domainid (d1) != __domainid (d2));
