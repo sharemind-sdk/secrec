@@ -493,7 +493,7 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     loopB.push_new () << "mov cref 0x0" << idx << chrL << st.getImm (1);
     loopB.push_new () << "mov cref 0x1" << idx << chrR << st.getImm (1);
     loopB.push_new () << "tsub" << VM_INT64 << temp << chrL << chrR;
-    loopB.push_new () << "jnz" << falseL << VM_UINT8 << temp;
+    loopB.push_new () << "jnz" << falseL << VM_UINT64 << temp;
     loopB.push_new () << "uinc" << VM_UINT64 << idx;
     loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeL;
     loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeR;
