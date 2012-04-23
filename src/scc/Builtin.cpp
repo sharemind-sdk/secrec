@@ -307,7 +307,7 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     VMBlock middleB (middleL, 0);
     middleB.push_back (VMInstruction () << "mov" << "mem" << src << srcOff << temp << srcSize);
     middleB.push_back (VMInstruction () << "bgt" << m_src << temp << st.getImm (0));
-    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << srcSize);
+    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << destSize);
     middleB.push_back (VMInstruction () << "badd uint64" << srcOff << srcSize);
     middleB.push_back (VMInstruction () << "badd uint64" << destOff << destSize);
     middleB.push_back (VMInstruction () << "jlt" << middleL << "uint64" << srcOff << size);
