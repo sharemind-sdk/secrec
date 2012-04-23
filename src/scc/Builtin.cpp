@@ -479,7 +479,7 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     VMBlock entryB (0, 0);
     entryB.push_new () << "resizestack" << 7;
     entryB.push_new () << "mov" << st.getImm (0) << idx;
-    entryB.push_new () << "mov" << st.getImm (0) << temp;
+    // zero the bytes to use wider subtraction
     entryB.push_new () << "mov" << st.getImm (0) << chrL;
     entryB.push_new () << "mov" << st.getImm (0) << chrR;
     entryB.push_new () << "getcrefsize" << st.getImm (0) << sizeL;
@@ -492,7 +492,7 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     VMBlock loopB (loopL, 0);
     loopB.push_new () << "mov cref 0x0" << idx << chrL << st.getImm (1);
     loopB.push_new () << "mov cref 0x1" << idx << chrR << st.getImm (1);
-    loopB.push_new () << "tsub" << VM_INT8 << temp << chrL << chrR;
+    loopB.push_new () << "tsub" << VM_INT64 << temp << chrL << chrR;
     loopB.push_new () << "jnz" << falseL << VM_UINT8 << temp;
     loopB.push_new () << "uinc" << VM_UINT64 << idx;
     loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeL;
