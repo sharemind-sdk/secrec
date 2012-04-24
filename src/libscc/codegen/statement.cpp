@@ -618,12 +618,18 @@ CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
 
         popScope ();
 
-        eResult.patchFalseList(m_st->label(falseResult.firstImop ()));
-        result.addToNextList (falseResult.nextList ());
-        result.addToBreakList (falseResult.breakList ());
-        result.addToContinueList (falseResult.continueList ());
-        assert (falseResult.flags() != 0x0);
-        result.setFlags (trueResult.flags () | falseResult.flags ());
+        if (falseResult.firstImop () == 0) {
+            result.addToNextList (eResult.falseList ());
+            result.setFlags (trueResult.flags () | CGStmtResult::FALLTHRU);
+        }
+        else {
+            eResult.patchFalseList(m_st->label(falseResult.firstImop ()));
+            result.addToNextList (falseResult.nextList ());
+            result.addToBreakList (falseResult.breakList ());
+            result.addToContinueList (falseResult.continueList ());
+            assert (falseResult.flags() != 0x0);
+            result.setFlags (trueResult.flags () | falseResult.flags ());
+        }
     }
 
     return result;
