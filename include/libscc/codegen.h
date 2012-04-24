@@ -59,6 +59,11 @@ public: /* Types: */
     typedef IndexList::iterator iterator;
     typedef IndexList::const_iterator const_iterator;
 
+    struct LoopCheck {
+        Imop* test;
+        Imop* jump;
+    };
+
 public: /* Methods: */
     LoopInfo () { }
     ~LoopInfo () {
@@ -73,16 +78,21 @@ public: /* Methods: */
     const_iterator end () const { return m_indices.end (); }
 
 protected:
+
     friend class CodeGen;
 
-    void pushJump (Imop* imop) { m_jumpStack.push (imop); }
+    void pushJump (Imop* test, Imop* jump) {
+        LoopCheck temp = { test, jump };
+        m_jumpStack.push_back (temp);
+    }
+
     bool empty () const { return m_jumpStack.empty (); }
-    Imop* top () const { return m_jumpStack.top (); }
-    void pop () { return m_jumpStack.pop (); }
+    LoopCheck top () const { return m_jumpStack.back (); }
+    void pop () { return m_jumpStack.pop_back ();}
 
 private: /* Fields: */
-    IndexList          m_indices;
-    std::stack<Imop* > m_jumpStack;
+    IndexList                m_indices;
+    std::vector<LoopCheck >  m_jumpStack;
 };
 
 /*******************************************************************************

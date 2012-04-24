@@ -434,8 +434,12 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     push_imop(i);
 
     // IF (i_k >= d_k) GOTO T1;
-    i = new Imop(e, Imop::JGE, (Symbol*) 0, loopInfo.at (k), arg1ResultSymbol->getDim(k));
-    push_imop(i);
+    SymbolTemporary* temp_bool = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
+    i = new Imop (e, Imop::GE, temp_bool, loopInfo.at (k), arg1ResultSymbol->getDim(k));
+    push_imop (i);
+
+    i = new Imop(e, Imop::JT, (Symbol*) 0, temp_bool);
+    push_imop (i);
     result.addToNextList (i);
 
     // compute j if i < d (for e1)
@@ -1251,10 +1255,14 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         i = new Imop (e, Imop::ASSIGN, counter, ConstantInt::get (getContext (), 0));
         push_imop (i);
 
+        SymbolTemporary* temp_bool = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
+        Imop* test = new Imop (e, Imop::GE, temp_bool, counter, resSym->getSizeSym ());
+        push_imop (test);
+
         // L0: if (counter >= size) goto next;
-        Imop* jge = new Imop (e, Imop::JGE, (Symbol*) 0, counter, resSym->getSizeSym ());
-        push_imop (jge);
-        result.addToNextList (jge);
+        i = new Imop (e, Imop::JT, (Symbol*) 0, temp_bool);
+        push_imop (i);
+        result.addToNextList (i);
 
         // b = e1[counter]
         i = new Imop (e, Imop::LOAD, b, e1Result.symbol (), counter);
@@ -1280,7 +1288,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
         // goto L0
         i = new Imop (e, Imop::JUMP, (Symbol*) 0);
         push_imop (i);
-        i->setJumpDest (m_st->label (jge));
+        i->setJumpDest (m_st->label (test));
 
         releaseTemporary (result, e1Result.symbol ());
         releaseTemporary (result, e2Result.symbol ());

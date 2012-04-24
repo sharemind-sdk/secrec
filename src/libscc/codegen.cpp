@@ -223,15 +223,22 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, Symbol* tmp) {
     CGResult result;
     assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
     SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
+    ConstantInt* zero = ConstantInt::get (getContext (), 0);
+    TypeNonVoid* boolTy = TypeNonVoid::getPublicBoolType (getContext ());
     unsigned count = 0;
     BOOST_FOREACH (Symbol* idx, loopInfo) {
-        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, ConstantInt::get (getContext (),0));
+        Imop* i = new Imop (m_node, Imop::ASSIGN, idx, zero);
         push_imop (i);
         result.patchFirstImop (i);
 
-        i = new Imop (m_node, Imop::JGE, 0, idx, sym->getDim (count ++));
-        push_imop (i);
-        loopInfo.pushJump (i);
+        SymbolTemporary* temp_bool = m_st->appendTemporary (boolTy);
+        Imop* test = new Imop (m_node, Imop::GE, temp_bool, idx, sym->getDim (count ++));
+        push_imop (test);
+
+        Imop* jump = new Imop (m_node, Imop::JT, 0, temp_bool);
+        push_imop (jump);
+
+        loopInfo.pushJump (test, jump);
     }
 
     return result;
@@ -240,18 +247,24 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, Symbol* tmp) {
 CGResult CodeGen::enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv) {
     typedef SubscriptInfo::SPV SPV;
     assert (loopInfo.empty ());
+    TypeNonVoid* boolTy = TypeNonVoid::getPublicBoolType (getContext ());
     CGResult result;
     LoopInfo::const_iterator idxIt = loopInfo.begin ();
     BOOST_FOREACH (const SPV::value_type& v, spv) {
         Symbol* idx  = *idxIt;
+        SymbolTemporary* temp_bool = m_st->appendTemporary (boolTy);
 
         Imop* i = new Imop (m_node, Imop::ASSIGN, idx, v.first);
         push_imop (i);
         result.patchFirstImop (i);
 
-        i = new Imop (m_node, Imop::JGE, 0, idx, v.second);
-        push_imop (i);
-        loopInfo.pushJump (i);
+        Imop* test = new Imop (m_node, Imop::GE, temp_bool, idx, v.second);
+        push_imop (test);
+
+        Imop* jump = new Imop (m_node, Imop::JT, 0, temp_bool);
+        push_imop (jump);
+
+        loopInfo.pushJump (test, jump);
         ++ idxIt;
     }
 
@@ -261,8 +274,9 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv) 
 CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     CGResult result;
     Imop* prevJump = 0;
+    ConstantInt* one = ConstantInt::get (getContext (), 1);
     BOOST_REVERSE_FOREACH (Symbol* idx, loopInfo) {
-        Imop* i = new Imop (m_node, Imop::ADD, idx, idx, ConstantInt::get (getContext (),1));
+        Imop* i = new Imop (m_node, Imop::ADD, idx, idx, one);
         push_imop (i);
         result.patchFirstImop (i);
         if (prevJump != 0) {
@@ -271,8 +285,9 @@ CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
 
         i = new Imop (m_node, Imop::JUMP, (Symbol*) 0);
         push_imop (i);
-        i->setJumpDest (m_st->label (loopInfo.top ()));
-        prevJump = loopInfo.top ();
+
+        i->setJumpDest (m_st->label (loopInfo.top ().test));
+        prevJump = loopInfo.top ().jump;
         loopInfo.pop ();
     }
 
@@ -354,23 +369,38 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         Imop* err = newError (m_node, ConstantString::get (getContext (), ss.str ()));
         SymbolLabel* errLabel = m_st->label (err);
 
+        TypeNonVoid* boolTy = TypeNonVoid::getPublicBoolType (getContext ());
+        SymbolTemporary* temp_bool = m_st->appendTemporary (boolTy);
+
         dim_iterator dit = dim_begin (x);
         for (SPV::iterator it  (m_spv.begin ()); it != m_spv.end (); ++ it, ++ dit) {
             Symbol* s_lo = it->first;
             Symbol* s_hi = it->second;
             Symbol* d = *dit;
             ConstantInt* zero = ConstantInt::get (getContext (), 0);
-            Imop* i = new Imop(m_node, Imop::JGT, (Symbol*) 0, zero, s_lo);
+
+            Imop* i = 0;
+
+            i = new Imop (m_node, Imop::GT, temp_bool, zero, s_lo);
             pushImopAfter (result, i);
+
+            i = new Imop (m_node, Imop::JT, 0, temp_bool);
+            push_imop (i);
             i->setJumpDest (errLabel);
 
-            i = new Imop(m_node, Imop::JGT, (Symbol*) 0, s_lo, s_hi);
-            push_imop(i);
-            i->setJumpDest(errLabel);
+            i = new Imop (m_node, Imop::GT, temp_bool, s_lo, s_hi);
+            push_imop (i);
 
-            i = new Imop(m_node, Imop::JGT, (Symbol*) 0, s_hi, d);
-            push_imop(i);
-            i->setJumpDest(errLabel);
+            i = new Imop (m_node, Imop::JT, 0, temp_bool);
+            push_imop (i);
+            i->setJumpDest (errLabel);
+
+            i = new Imop (m_node, Imop::GT, temp_bool, s_hi, d);
+            push_imop (i);
+
+            i = new Imop (m_node, Imop::JT, 0, temp_bool);
+            push_imop (i);
+            i->setJumpDest (errLabel);
         }
 
         pushImopAfter (result, jmp);

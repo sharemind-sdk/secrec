@@ -362,10 +362,6 @@ MKCALLBACK(JT,  0, 1, 0, 0, JUMPCOND (arg1.un_bool_val))
 MKCALLBACK(JF,  0, 1, 0, 0, JUMPCOND (!arg1.un_bool_val))
 MKCALLBACK(JE,  0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) == getValue<ty>(arg2)))
 MKCALLBACK(JNE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) != getValue<ty>(arg2)))
-MKCALLBACK(JLE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) <= getValue<ty>(arg2)))
-MKCALLBACK(JLT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) <  getValue<ty>(arg2)))
-MKCALLBACK(JGE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >= getValue<ty>(arg2)))
-MKCALLBACK(JGT, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) >  getValue<ty>(arg2)))
 
 /**
  * Miscellaneous or more complicated instructions:

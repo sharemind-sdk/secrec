@@ -63,10 +63,6 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::JF,         0, 1, 1, 0,-1, 1 }
     , { Imop::JE,         0, 1, 1, 0,-1, 1 }
     , { Imop::JNE,        0, 1, 1, 0,-1, 1 }
-    , { Imop::JLE,        0, 1, 1, 0,-1, 1 }
-    , { Imop::JLT,        0, 1, 1, 0,-1, 1 }
-    , { Imop::JGE,        0, 1, 1, 0,-1, 1 }
-    , { Imop::JGT,        0, 1, 1, 0,-1, 1 }
     // Terminators:
     , { Imop::ERROR,      0, 0, 1, 0,-1,-1 }
     , { Imop::RETURNVOID, 0, 0, 1, 0,-1,-1 }
@@ -423,18 +419,6 @@ std::string Imop::toString() const {
             break;
         case JNE:          /* if (arg1 != arg2) GOTO d;          */
             os << "IF (" << a1name << " != " << a2name << ") GOTO " << tname;
-            break;
-        case JLE:          /* if (arg1 <= arg2) GOTO d;          */
-            os << "IF (" << a1name << " <= " << a2name << ") GOTO " << tname;
-            break;
-        case JLT:          /* if (arg1 <  arg2) GOTO d;          */
-            os << "IF (" << a1name << " < " << a2name << ") GOTO " << tname;
-            break;
-        case JGE:          /* if (arg1 >= arg2) GOTO d;          */
-            os << "IF (" << a1name << " >= " << a2name << ") GOTO " << tname;
-            break;
-        case JGT:          /* if (arg1 >  arg2) GOTO d;          */
-            os << "IF (" << a1name << " > " << a2name << ") GOTO " << tname;
             break;
         case COMMENT:      /* // arg1                            */
             assert (arg1 () != 0);
