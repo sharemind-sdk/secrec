@@ -116,7 +116,9 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
         return result;
     }
 
-    releaseProcVariables (result);
+    if (bodyResult.mayFallThrough ()) {
+        releaseProcVariables (result);
+    }
 
     popScope ();
 

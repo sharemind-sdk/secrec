@@ -58,7 +58,10 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
         }
     }
 
-    releaseScopeVariables (result);
+    if (result.mayFallThrough ()) {
+        releaseScopeVariables (result);
+    }
+
     popScope ();
 
     return result;
