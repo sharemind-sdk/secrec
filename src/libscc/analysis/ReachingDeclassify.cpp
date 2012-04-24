@@ -92,10 +92,11 @@ void ReachingDeclassify::transferImop (const Imop& imop, PDefs& out) const {
     // Skip if private destination is not written to:
     const Symbol* dest = imop.dest ();
     assert (dest != 0);
-    Defs& d = out[dest];
     if (dest->secrecType ()->secrecSecType ()->isPublic ()) {
         return;
     }
+
+    Defs& d = out[dest];
 
     switch (imop.type ()) {
     case Imop::STORE: {
@@ -118,6 +119,7 @@ void ReachingDeclassify::transferImop (const Imop& imop, PDefs& out) const {
     case Imop::COPY:
     case Imop::UMINUS:
     case Imop::UNEG:
+    case Imop::ASSIGN:
             assert (imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ());
             out[imop.dest ()] = out[imop.arg1 ()];
         }
@@ -131,7 +133,7 @@ void ReachingDeclassify::transferImop (const Imop& imop, PDefs& out) const {
                 d = out[imop.arg1 ()];
             }
             else {
-                // some entropy is discarded, don't track that
+                // some entropy is discarded
                 d.setToNonsensitive (&imop);
                 d.trivial = out[imop.arg1 ()].trivial;
             }
@@ -139,23 +141,12 @@ void ReachingDeclassify::transferImop (const Imop& imop, PDefs& out) const {
 
         break;
 
-    case Imop::ASSIGN:
-        if (imop.arg1 ()->symbolType () == Symbol::CONSTANT) {
-            d.setToNonsensitive (&imop);
-        }
-        else {
-            if (dest != imop.arg1 ()) {
-                out[imop.dest ()] = out[imop.arg1 ()];
-            }
-        }
-
-        break;
     case Imop::ADD:
     case Imop::SUB: {
-            Defs& lhs = out[imop.arg1 ()];
-            Defs& rhs = out[imop.arg2 ()];
-            if (lhs.trivial) { d = rhs; } else
-            if (rhs.trivial) { d = lhs; } else {
+            Defs& arg1 = out[imop.arg1 ()];
+            Defs& arg2 = out[imop.arg2 ()];
+            if (arg1.trivial) { d = arg2; } else
+            if (arg2.trivial) { d = arg1; } else {
                 d.setToNonsensitive (&imop);
             }
 
@@ -163,6 +154,7 @@ void ReachingDeclassify::transferImop (const Imop& imop, PDefs& out) const {
         }
     default:
         d.setToNonsensitive (&imop);
+        d.trivial = false;
         break;
     }
 }
