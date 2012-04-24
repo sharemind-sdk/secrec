@@ -61,8 +61,6 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::JUMP,       0, 1, 1, 0,-1, 1 }
     , { Imop::JT,         0, 1, 1, 0,-1, 1 }
     , { Imop::JF,         0, 1, 1, 0,-1, 1 }
-    , { Imop::JE,         0, 1, 1, 0,-1, 1 }
-    , { Imop::JNE,        0, 1, 1, 0,-1, 1 }
     // Terminators:
     , { Imop::ERROR,      0, 0, 1, 0,-1,-1 }
     , { Imop::RETURNVOID, 0, 0, 1, 0,-1,-1 }
@@ -413,12 +411,6 @@ std::string Imop::toString() const {
             break;
         case JF:           /* if (!arg1) GOTO d;                 */
             os << "if (!" << a1name << ") GOTO " << tname;
-            break;
-        case JE:           /* if (arg1 == arg2) GOTO d;          */
-            os << "IF (" << a1name << " == " << a2name << ") GOTO " << tname;
-            break;
-        case JNE:          /* if (arg1 != arg2) GOTO d;          */
-            os << "IF (" << a1name << " != " << a2name << ") GOTO " << tname;
             break;
         case COMMENT:      /* // arg1                            */
             assert (arg1 () != 0);

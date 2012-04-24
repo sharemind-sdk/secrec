@@ -93,8 +93,6 @@ class Imop : public auto_unlink_hook {
             JUMP,      /* GOTO d;                              */
             JT,        /* if (arg1) GOTO d;                    */
             JF,        /* if (!arg1) GOTO d;                   */
-            JE,        /* if (arg1 == arg2) GOTO d;            */
-            JNE,       /* if (arg1 != arg2) GOTO d;            */
 
             //-----------------------
             // Procedure terminating:

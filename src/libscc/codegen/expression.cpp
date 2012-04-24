@@ -362,6 +362,8 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
         return result;
     }
 
+    TypeNonVoid* const pubBoolTy = TypeNonVoid::getPublicBoolType (getContext ());
+
     SecrecDimType k = e->dimensionality ()->value ();
     SecrecDimType n = e->resultType ()->secrecDimType();
     SymbolSymbol* arg1ResultSymbol = static_cast<SymbolSymbol*>(arg1Result.symbol ());
@@ -381,9 +383,13 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
             pushImopAfter (result, i);
         }
         else {
-            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, s1, s2);
+            SymbolTemporary* temp_bool = m_st->appendTemporary (pubBoolTy);
+
+            Imop* i = new Imop (e, Imop::NE, temp_bool, s1, s2);
             pushImopAfter (result, i);
-            i->setJumpDest(errLabel);
+
+            i = new Imop (e, Imop::JT, errLabel, temp_bool);
+            push_imop (i);
 
             i = new Imop (e, Imop::ASSIGN, resSym->getDim(it), s1);
             push_imop(i);
@@ -560,9 +566,15 @@ CGResult CodeGen::cgExprReshape (TreeNodeExprReshape *e) {
         assert (dynamic_cast<SymbolSymbol*>(rhs) != 0);
         // Check that new and old sizes are equal:
         Symbol* sizeSymbol = static_cast<SymbolSymbol*>(rhs)->getSizeSym ();
-        Imop* jmp = new Imop (e, Imop::JE, (Symbol*) 0, sizeSymbol, resSym->getSizeSym ());
-        pushImopAfter (result, jmp);
+        SymbolTemporary* temp_bool = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
+
+        Imop* test = new Imop (e, Imop::EQ, temp_bool, sizeSymbol, resSym->getSizeSym ());
+        pushImopAfter (result, test);
+
+        Imop* jmp = new Imop (e, Imop::JT, 0, temp_bool);
+        push_imop (jmp);
         result.addToNextList (jmp);
+
         std::stringstream ss;
         ss << "ERROR: Mismatching sizes in reshape at " << e->location () << ".";
         Imop* err = newError (e, ConstantString::get (getContext (), ss.str ()));
@@ -624,6 +636,7 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         return CGResult (s);
     }
 
+    TypeNonVoid* const pubBoolTy = TypeNonVoid::getPublicBoolType (getContext ());
     TreeNodeExpr* eArg1 = e->leftExpression ();
     TreeNodeExpr* eArg2 = e->rightExpression ();
 
@@ -715,9 +728,14 @@ CGResult CodeGen::cgExprBinary (TreeNodeExprBinary *e) {
         SymbolLabel* errLabel = m_st->label (err);
         dim_iterator dj = dim_begin (e2result);
         BOOST_FOREACH (Symbol* dim, dim_range (e1result)) {
-            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, dim, *dj);
-            i->setJumpDest (errLabel);
+            SymbolTemporary* temp_bool = m_st->appendTemporary (pubBoolTy);
+
+            Imop* i = new Imop (e, Imop::NE, temp_bool, dim, *dj);
             pushImopAfter (result, i);
+
+            i = new Imop (e, Imop::JT, errLabel, temp_bool);
+            push_imop (i);
+
             ++ dj;
         }
 
@@ -1120,6 +1138,7 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
     TreeNodeExpr *e1 = e->conditional ();
     TreeNodeExpr *e2 = e->trueBranch ();
     TreeNodeExpr *e3 = e->falseBranch ();
+    TypeNonVoid* const pubBoolTy = TypeNonVoid::getPublicBoolType (getContext ());
 
     if (e1->havePublicBoolType()) {
         generateResultSymbol (result, e);
@@ -1223,13 +1242,21 @@ CGResult CodeGen::cgExprTernary (TreeNodeExprTernary *e) {
                 dk = dim_begin (e3Result.symbol ()),
                 de = dim_end (e1Result.symbol ());
         for (; di != de; ++ di, ++ dj, ++ dk) {
-            Imop* i = new Imop (e, Imop::JNE, (Symbol*) 0, *di, *dj);
-            pushImopAfter (result, i);
-            i->setJumpDest(errLabel);
+            SymbolTemporary* temp_bool = m_st->appendTemporary (pubBoolTy);
 
-            i = new Imop (e, Imop::JNE, (Symbol*) 0, *dj, *dk);
+            Imop* i = 0;
+
+            i = new Imop (e, Imop::NE, temp_bool, *di, *dj);
+            pushImopAfter (result, i);
+
+            i = new Imop (e, Imop::JT, errLabel, temp_bool);
             push_imop (i);
-            i->setJumpDest (errLabel);
+
+            i = new Imop (e, Imop::NE, temp_bool, *dj, *dk);
+            push_imop (i);
+
+            i = new Imop (e, Imop::JT, errLabel, temp_bool);
+            push_imop (i);
         }
 
         result.patchNextList (m_st->label (jmp));

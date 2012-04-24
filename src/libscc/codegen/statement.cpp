@@ -148,6 +148,8 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     const bool isString = ty->secrecDataType () == DATATYPE_STRING;
     const bool isPrivate = ty->secrecSecType ()->isPrivate ();
 
+    TypeNonVoid* const pubBoolTy = TypeNonVoid::getPublicBoolType (getContext ());
+
     SymbolSymbol *ns = new SymbolSymbol (ty);
     ns->setScopeType (scopeType);
     ns->setName (varInit->variableName ());
@@ -321,9 +323,14 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 SymbolSymbol* eResultSymbol = static_cast<SymbolSymbol*>(eResult.symbol ());
                 dim_iterator lhsDimIter = dim_begin (ns);
                 BOOST_FOREACH (Symbol* rhsDim, dim_range (eResultSymbol)) {
-                    Imop* i = new Imop (varInit, Imop::JNE, (Symbol*) 0, rhsDim, *lhsDimIter);
-                    i->setJumpDest (errLabel);
+                    SymbolTemporary* temp_bool = m_st->appendTemporary (pubBoolTy);
+
+                    Imop* i = new Imop (varInit, Imop::NE, temp_bool, rhsDim, *lhsDimIter);
                     pushImopAfter (result, i);
+
+                    i = new Imop (varInit, Imop::JT, errLabel, temp_bool);
+                    push_imop (i);
+
                     ++ lhsDimIter;
                 }
 

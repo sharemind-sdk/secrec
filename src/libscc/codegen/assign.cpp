@@ -56,6 +56,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     }
 
     TypeNonVoid* pubIntTy = TypeNonVoid::getIndexType (getContext ());
+    TypeNonVoid* pubBoolTy = TypeNonVoid::getPublicBoolType (getContext ());
 
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {
@@ -83,12 +84,15 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
             for (SecrecDimType k = 0; k < eArg2->resultType ()->secrecDimType(); ++ k) {
                 Symbol* tsym = m_st->appendTemporary (pubIntTy);
+                Symbol* bsym = m_st->appendTemporary (pubBoolTy);
                 Imop* i = new Imop (e, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
                 pushImopAfter (result, i);
 
-                i = new Imop (e, Imop::JNE, (Symbol*) 0, tsym, arg2ResultSymbol->getDim(k));
+                i = new Imop (e, Imop::NE, bsym, tsym, arg2ResultSymbol->getDim(k));
                 push_imop (i);
-                i->setJumpDest (errLabel);
+
+                i = new Imop (e, Imop::JT, errLabel, bsym);
+                push_imop (i);
             }
 
             push_imop (jmp);
@@ -289,7 +293,12 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                         dj = dim_begin (destSym),
                         de = dim_end (arg2ResultSymbol);
                 for (; di != de; ++ di, ++ dj) {
-                    i = new Imop (e, Imop::JNE, errLabel, *di, *dj);
+                    SymbolTemporary* temp_bool = m_st->appendTemporary (pubBoolTy);
+
+                    i = new Imop (e, Imop::NE, temp_bool, *di, *dj);
+                    push_imop (i);
+
+                    i = new Imop (e, Imop::JT, errLabel, temp_bool);
                     push_imop (i);
                 }
 

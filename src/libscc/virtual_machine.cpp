@@ -360,8 +360,6 @@ DECLOP2 (GT,  assignValue (dest, getValue<ty>(arg1) >  getValue<ty>(arg2)))
 
 MKCALLBACK(JT,  0, 1, 0, 0, JUMPCOND (arg1.un_bool_val))
 MKCALLBACK(JF,  0, 1, 0, 0, JUMPCOND (!arg1.un_bool_val))
-MKCALLBACK(JE,  0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) == getValue<ty>(arg2)))
-MKCALLBACK(JNE, 0, 1, 1, 0, JUMPCOND (getValue<ty>(arg1) != getValue<ty>(arg2)))
 
 /**
  * Miscellaneous or more complicated instructions:
@@ -552,12 +550,6 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::LT:
     case Imop::GE:
     case Imop::GT:
-    case Imop::JE:
-    case Imop::JNE:
-    case Imop::JLE:
-    case Imop::JLT:
-    case Imop::JGE:
-    case Imop::JGT:
         assert (matchTypes (imop.arg2 ()->secrecType (), imop.arg1 ()->secrecType ()));
     case Imop::UMINUS:
     case Imop::CAST:
@@ -599,12 +591,6 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::GT:         SET_SPECIALIZE_CALLBACK_V(GT,SWITCH_ANY); break;
     case Imop::EQ:         SET_SPECIALIZE_CALLBACK_V(EQ,SWITCH_ANY); break;
     case Imop::NE:         SET_SPECIALIZE_CALLBACK_V(NE,SWITCH_ANY); break;
-    case Imop::JE:         SET_SPECIALIZE_CALLBACK(JE, SWITCH_ANY); break;
-    case Imop::JNE:        SET_SPECIALIZE_CALLBACK(JNE,SWITCH_ANY); break;
-    case Imop::JLE:        SET_SPECIALIZE_CALLBACK(JLE,SWITCH_ANY); break;
-    case Imop::JLT:        SET_SPECIALIZE_CALLBACK(JLT,SWITCH_ANY); break;
-    case Imop::JGE:        SET_SPECIALIZE_CALLBACK(JGE,SWITCH_ANY); break;
-    case Imop::JGT:        SET_SPECIALIZE_CALLBACK(JGT,SWITCH_ANY); break;
     case Imop::JUMP:       SET_SIMPLE_CALLBACK(JUMP); break;
     case Imop::JT:         SET_SIMPLE_CALLBACK(JT); break;
     case Imop::JF:         SET_SIMPLE_CALLBACK(JF); break;
