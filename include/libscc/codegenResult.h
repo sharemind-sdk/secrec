@@ -247,6 +247,10 @@ public:
         return m_resultFlags;
     }
 
+    inline bool mayFallThrough () const {
+        return (m_resultFlags & FALLTHRU) != 0;
+    }
+
     inline void setFlags (int flags) {
         m_resultFlags = flags;
     }
