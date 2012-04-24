@@ -415,8 +415,6 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
         case Imop::JUMP: name = "jmp"; break;
         case Imop::JT  : name = "jnz"; break;
         case Imop::JF  : name = "jz";  break;
-        case Imop::JE  : name = "jeq"; break;
-        case Imop::JNE : name = "jne"; break;
         default:
             assert (false && "Unknown jump instruction");
             break;
