@@ -455,13 +455,8 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    VMInstruction pushDef;
-    pushDef << "push" << find (imop.arg1 ());
-    block.push_back (pushDef);
-
-    VMInstruction pushSize;
-    pushSize << "push" << find (imop.arg2 ());
-    block.push_back (pushSize);
+    block.push_new () << "push" << find (imop.arg1 ());
+    block.push_new () << "push" << find (imop.arg2 ());
 
     VMLabel* target = 0;
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
@@ -474,9 +469,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
 
     m_funcs->insert (target, BuiltinAlloc (size));
 
-    block.push_back (
-        VMInstruction () << "call" << target << find (imop.dest ())
-    );
+    block.push_new () << "call" << target << find (imop.dest ());
 }
 
 void Compiler::cgToString (VMBlock& block, const Imop& imop) {
@@ -540,11 +533,10 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
         VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
         assert (ty != VM_INVALID);
         const unsigned elemSize = sizeInBytes (ty);
-        block.push_back (
-            VMInstruction ()
-                << "tmul uint64" << rSize << rNum
-                << m_st.getImm (elemSize)
-        );
+
+        block.push_new ()
+            << "tmul" << VM_UINT64 << rSize << rNum
+            << m_st.getImm (elemSize);
 
         instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
         instr << "mem" << find (imop.dest ()) << "imm 0x0";
@@ -565,9 +557,9 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
     if (imop.isVectorized ()) {
         std::stringstream ss;
 
-        block.push_back (VMInstruction () << "push" << find (imop.dest ()));
-        block.push_back (VMInstruction () << "push" << find (imop.arg1 ()));
-        block.push_back (VMInstruction () << "push" << find (imop.arg2 ()));
+        block.push_new () << "push" << find (imop.dest ());
+        block.push_new () << "push" << find (imop.arg1 ());
+        block.push_new () << "push" << find (imop.arg2 ());
 
         VMLabel* target = 0;
         if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
@@ -581,7 +573,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             m_funcs->insert (target, BuiltinVCast (destTy, srcTy));
         }
 
-        block.push_back (VMInstruction () << "call" << target << "imm");
+        block.push_new () << "call" << target << "imm";
     }
     else {
         VMInstruction instr;
@@ -595,6 +587,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             instr << srcTy << loadToRegister (block, imop.arg1 ());
             instr << destTy << find (imop.dest ());
         }
+
         block.push_back (instr);
 
     }
@@ -613,22 +606,16 @@ void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
     const unsigned elemSize = sizeInBytes (ty);
     VMValue* rNum = find (imop.arg2 ());
     VMValue* rSize = m_ra->temporaryReg ();
-    block.push_back (
-        VMInstruction ()
-            << "tmul uint64" << rSize << rNum
-            << m_st.getImm (elemSize));
-    block.push_back (VMInstruction () << "uinc uint64" << rSize); // fehh! no 0 sized memory regions
-
-    VMInstruction alloc_instr;
-    alloc_instr << "alloc" << find (imop.dest ()) << rSize;
-    block.push_back (alloc_instr);
-
-    VMInstruction copy_instr;
-    copy_instr << "mov";
-    copy_instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
-    copy_instr << "mem" << find (imop.dest ()) << "imm 0x0";
-    copy_instr << rSize;
-    block.push_back (copy_instr);
+    block.push_new ()
+        << "tmul" << VM_UINT64 << rSize << rNum
+        << m_st.getImm (elemSize);
+    block.push_new () << "uinc" << VM_UINT64 << rSize; // fehh! no 0 sized memory regions
+    block.push_new () << "alloc" << find (imop.dest ()) << rSize;
+    block.push_new ()
+        << "mov"
+        << "mem" << find (imop.arg1 ()) << "imm 0x0"
+        << "mem" << find (imop.dest ()) << "imm 0x0"
+        << rSize;
 }
 
 
@@ -645,25 +632,18 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 
     // push arguments
     for (++ it; it != itEnd && *it != 0; ++ it) {
-        block.push_back (
-            VMInstruction () << "pushcref" << find (*it)
-        );
+        block.push_new () << "pushcref" << find (*it);
     }
 
     assert (it != itEnd && *it == 0 &&
         "Malformed CALL instruction!");
 
     for (++ it; it != itEnd; ++ it) {
-        block.push_back (
-            VMInstruction () << "pushref" << find (*it)
-        );
+        block.push_new () << "pushref" << find (*it);
     }
 
     // CALL
-    block.push_back (
-        VMInstruction ()
-            << "call" << getProc (st (), dest) << "imm"
-    );
+    block.push_new () << "call" << getProc (st (), dest) << "imm";
 }
 
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
@@ -691,21 +671,18 @@ void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
     OCI itEnd = imop.operandsEnd ();
     unsigned retCount = 0;
     for (++ it; it != itEnd; ++ it) {
-        VMInstruction movI;
         VMDataType ty = representationType ((*it)->secrecType ());
         assert (ty != VM_INVALID);
-        movI << "mov"
-             << find (*it);
-        movI << "ref"
-             << m_st.getImm (retCount ++ )
-             << "0x0"
-             << m_st.getImm (sizeInBytes (ty));
-        block.push_back (movI);
+        block.push_new ()
+            << "mov"
+            << find (*it)
+            << "ref"
+            << m_st.getImm (retCount ++ )
+            << "0x0"
+            << m_st.getImm (sizeInBytes (ty));
     }
 
-    block.push_back (
-        VMInstruction () << "return imm 0x0"
-    );
+    block.push_new () << "return imm 0x0";
 }
 
 void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
@@ -718,24 +695,19 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
 
     VMValue* rOffset = m_ra->temporaryReg ();
 
-    VMInstruction tmpInstr;
-    tmpInstr << "mov" << find (imop.arg2 ()) << rOffset;
-    block.push_back (tmpInstr);
+    block.push_new () << "mov" << find (imop.arg2 ()) << rOffset;
 
     VMDataType ty = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
     const unsigned size = sizeInBytes (ty);
     VMInstruction mulInstr;
-    mulInstr << "bmul uint64" << rOffset << m_st.getImm (size);
-    block.push_back (mulInstr);
-
-    VMInstruction movInstr;
-    movInstr << "mov mem";
-    movInstr << find (imop.arg1 ());
-    movInstr << rOffset;
-    movInstr << find (imop.dest ());
-    movInstr << m_st.getImm (size);
-    block.push_back (movInstr);
+    block.push_new () << "bmul" << VM_UINT64 << rOffset << m_st.getImm (size);
+    block.push_new ()
+        << "mov mem"
+        << find (imop.arg1 ())
+        << rOffset
+        << find (imop.dest ())
+        << m_st.getImm (size);
 }
 
 void Compiler::cgStore (VMBlock& block, const Imop& imop) {
@@ -748,23 +720,16 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
 
     VMValue* rOffset = m_ra->temporaryReg ();
 
-    VMInstruction tmpInstr;
-    tmpInstr << "mov" << find (imop.arg1 ());
-    tmpInstr << rOffset;
-    block.push_back (tmpInstr);
+    block.push_new () << "mov" << find (imop.arg1 ()) << rOffset;
 
     VMDataType ty = secrecDTypeToVMDType (imop.arg2 ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
     const unsigned size = sizeInBytes (ty);
-    VMInstruction mulInstr;
-    mulInstr << "bmul uint64" << rOffset << m_st.getImm (size);
-    block.push_back (mulInstr);
-
-    VMInstruction movInstr;
-    movInstr << "mov" << find (imop.arg2 ());
-    movInstr << "mem" << find (imop.dest ()) << rOffset;
-    movInstr << m_st.getImm (size);
-    block.push_back (movInstr);
+    block.push_new () << "bmul" << VM_UINT64 << rOffset << m_st.getImm (size);
+    block.push_new ()
+        << "mov" << find (imop.arg2 ())
+        << "mem" << find (imop.dest ()) << rOffset
+        << m_st.getImm (size);
 }
 
 void Compiler::cgStringAppend (VMBlock& block, const Imop& imop) {
