@@ -153,6 +153,8 @@ void syscallMangleSecrecDataType (std::ostream& os, SecrecDataType ty) {
     case DATATYPE_XOR_UINT16:  os << "xor_uint16";   break;
     case DATATYPE_XOR_UINT32:  os << "xor_uint32";   break;
     case DATATYPE_XOR_UINT64:  os << "xor_uint64";   break;
+    case DATATYPE_FLOAT32:     os << "float32";      break;
+    case DATATYPE_FLOAT64:     os << "float64";      break;
     default:                                         break;
     }
 }
