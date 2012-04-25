@@ -1120,6 +1120,52 @@ CGResult CodeGen::cgExprString (TreeNodeExprString *e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprFloat
+*******************************************************************************/
+
+CGResult TreeNodeExprFloat::codeGenWith (CodeGen &cg) {
+    return cg.cgExprFloat (this);
+}
+
+CGResult CodeGen::cgExprFloat (TreeNodeExprFloat *e) {
+    CGResult result;
+
+    // Type check:
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    switch (e->resultType ()->secrecDataType ()) {
+    case DATATYPE_FLOAT32: {
+            uint32_t i_val;
+            float f_val;
+            std::istringstream (e->value ()) >> f_val;
+            memcpy (&i_val, &f_val, sizeof (float));
+            result.setResult (ConstantFloat32::get (getContext (), i_val));
+        }
+
+        break;
+    case DATATYPE_FLOAT64: {
+            uint64_t i_val;
+            double f_val;
+            std::istringstream (e->value ()) >> f_val;
+            memcpy (&i_val, &f_val, sizeof (double));
+            result.setResult (ConstantFloat64::get (getContext (), i_val));
+        }
+
+        break;
+    default:
+        assert (false);
+        result.setStatus (ICode::E_OTHER);
+        break;
+    }
+
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeExprTernary
 *******************************************************************************/
 

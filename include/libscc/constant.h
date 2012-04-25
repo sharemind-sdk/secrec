@@ -1,7 +1,6 @@
 #ifndef SECREC_CONSTANT_H
 #define SECREC_CONSTANT_H
 
-// for some reason cstdint fails
 #include <stdint.h>
 #include <sstream>
 
@@ -30,6 +29,8 @@ DECL_TRAIT (uint8_t,     DATATYPE_UINT8)
 DECL_TRAIT (uint16_t,    DATATYPE_UINT16)
 DECL_TRAIT (uint32_t,    DATATYPE_UINT32)
 DECL_TRAIT (uint64_t,    DATATYPE_UINT64)
+DECL_TRAIT (uint32_t,    DATATYPE_FLOAT32)
+DECL_TRAIT (uint64_t,    DATATYPE_FLOAT64)
 #undef DECL_TRAIT
 
 template <SecrecDataType ty >
@@ -80,6 +81,8 @@ typedef Constant<DATATYPE_INT64> ConstantInt64;
 typedef Constant<DATATYPE_INT64> ConstantInt;
 typedef Constant<DATATYPE_UINT64> ConstantUInt64;
 typedef Constant<DATATYPE_UINT64> ConstantUInt;
+typedef Constant<DATATYPE_FLOAT32> ConstantFloat32;
+typedef Constant<DATATYPE_FLOAT64> ConstantFloat64;
 
 Symbol* defaultConstant (Context& cxt, SecrecDataType ty);
 Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);

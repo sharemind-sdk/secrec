@@ -72,6 +72,8 @@ const char* SecrecTypeInfo<DATATYPE_INT32>::CName = "Int32";
 const char* SecrecTypeInfo<DATATYPE_UINT32>::CName = "UInt32";
 const char* SecrecTypeInfo<DATATYPE_INT64>::CName = "Int64";
 const char* SecrecTypeInfo<DATATYPE_UINT64>::CName = "UInt64";
+const char* SecrecTypeInfo<DATATYPE_FLOAT32>::CName = "Float32";
+const char* SecrecTypeInfo<DATATYPE_FLOAT64>::CName = "Float64";
 
 
 /*******************************************************************************
@@ -190,6 +192,23 @@ ConstantUInt64* ConstantUInt64::get (Context &cxt, const CType &value) {
     return getNumeric<DATATYPE_UINT64> (cxt, value);
 }
 
+/*******************************************************************************
+  ConstantFloat32
+*******************************************************************************/
+
+template <>
+ConstantFloat32* ConstantFloat32::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_FLOAT32> (cxt, value);
+}
+
+/*******************************************************************************
+  ConstantFloat64
+*******************************************************************************/
+
+template <>
+ConstantFloat64* ConstantFloat64::get (Context &cxt, const CType &value) {
+    return getNumeric<DATATYPE_FLOAT64> (cxt, value);
+}
 
 Symbol* defaultConstant (Context& cxt, SecrecDataType ty) {
     switch (ty) {
@@ -213,6 +232,18 @@ Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
     case DATATYPE_XOR_UINT16: return ConstantUInt16::get (cxt, value); break;
     case DATATYPE_XOR_UINT32: return ConstantUInt32::get (cxt, value); break;
     case DATATYPE_XOR_UINT64: return ConstantUInt64::get (cxt, value); break;
+    case DATATYPE_FLOAT32: {
+            uint32_t i_val;
+            const float f_val = static_cast<float>(value);
+            memcpy (&i_val, &f_val, sizeof (float));
+            return ConstantFloat32::get (cxt, i_val);
+        }
+    case DATATYPE_FLOAT64: {
+            uint64_t i_val;
+            const double f_val = static_cast<double>(value);
+            memcpy (&i_val, &f_val, sizeof (double));
+            return ConstantFloat64::get (cxt, i_val);
+        }
     default:
         assert (false && "Not numeric constant");
         return 0;

@@ -55,6 +55,7 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeExprDeclassify* e);
     ICode::Status visit (TreeNodeExprRVariable* e);
     ICode::Status visit (TreeNodeExprString* e);
+    ICode::Status visit (TreeNodeExprFloat* e);
     ICode::Status visit (TreeNodeExprTernary* e);
     ICode::Status visit (TreeNodeExprAssign* e);
     ICode::Status visit (TreeNodeExprInt* e);

@@ -47,8 +47,8 @@ enum SecrecTreeNodeType {
     NODE_IDENTIFIER       = 0x1,
     NODE_LITE_BOOL        = 0x2,
     NODE_LITE_INT         = 0x3,
-    NODE_LITE_UINT        = 0x4,
     NODE_LITE_STRING      = 0x5,
+    NODE_LITE_FLOAT       = 0x6,
         NODE_LITE_MASK    = 0xf,
     NODE_EXPR_NONE        = 0x010, /* void expression          */
     NODE_EXPR_CLASSIFY    = 0x020, /* classify(expr)           */
@@ -148,6 +148,8 @@ enum SecrecDataType {
     DATATYPE_XOR_UINT16,
     DATATYPE_XOR_UINT32,
     DATATYPE_XOR_UINT64,
+    DATATYPE_FLOAT32,
+    DATATYPE_FLOAT64,
     NUM_DATATYPES
 };
 

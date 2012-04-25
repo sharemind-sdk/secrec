@@ -808,7 +808,40 @@ ICode::Status TreeNodeExprString::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprString* e) {
     if (!e->haveResultType()) {
+        if (e->haveContextDataType () && e->contextDataType () != DATATYPE_STRING) {
+            m_log.fatal () << "Expecting string, got " << e->contextDataType () << ".";
+            m_log.fatal () << "Error at " << e->location () << ".";
+            return ICode::E_TYPE;
+        }
+
         e->setResultType (TypeNonVoid::get (m_context, DATATYPE_STRING));
+    }
+
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprFloat::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprFloat* e) {
+    if (!e->haveResultType()) {
+        if (e->haveContextDataType ()) {
+            SecrecDataType dType = e->contextDataType ();
+            switch (dType) {
+            case DATATYPE_FLOAT32:
+            case DATATYPE_FLOAT64:
+                e->setResultType (TypeNonVoid::get (m_context, dType));
+                return ICode::OK;
+            default:
+                m_log.fatal () << "Expecting floating point, got " << dType << ".";
+                m_log.fatal () << "Error at " << e->location () << ".";
+                return ICode::E_TYPE;
+            }
+        }
+
+        // TODO: would it be rational to figure the type out based on
+        e->setResultType (TypeNonVoid::get (m_context, DATATYPE_FLOAT32));
     }
 
     return ICode::OK;

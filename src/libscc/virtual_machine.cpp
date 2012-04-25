@@ -27,6 +27,8 @@ using namespace SecreC;
 
 /// Primitive values of the VM.
 union Value {
+    float               un_float32_val;
+    double              un_float64_val;
     uint64_t            un_uint_val;
     uint32_t            un_uint32_val;
     uint16_t            un_uint16_val;

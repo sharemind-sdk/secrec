@@ -95,8 +95,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_IDENTIFIER: return "IDENTIFIER";
         case NODE_LITE_BOOL: return "BOOL";
         case NODE_LITE_INT: return "INT";
-        case NODE_LITE_UINT: return "UINT";
         case NODE_LITE_STRING: return "STRING";
+        case NODE_LITE_FLOAT: return "FLOAT";
         case NODE_EXPR_NONE: return "EXPR_NONE";
         case NODE_EXPR_CLASSIFY: return "EXPR_CLASSIFY";
         case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
@@ -406,6 +406,12 @@ TreeNode *treenode_init_string(const char *value,
                                                  YYLTYPE *loc)
 {
     return (TreeNode*) new SecreC::TreeNodeExprString(value, *loc);
+}
+
+TreeNode *treenode_init_float(const char *value,
+                                                 YYLTYPE *loc)
+{
+    return (TreeNode*) new SecreC::TreeNodeExprFloat(value, *loc);
 }
 
 TreeNode *treenode_init_identifier(const char *value,
@@ -728,6 +734,22 @@ std::string TreeNodeExprString::xmlHelper() const {
     std::ostringstream os;
     os << "value=\"string:" << xmlEncode(m_value) << "\"";
     return os.str();
+}
+
+/*******************************************************************************
+  TreeNodeExprFloat
+*******************************************************************************/
+
+std::string TreeNodeExprFloat::stringHelper() const {
+    std::ostringstream os;
+    os << m_value ;
+    return os.str();
+}
+
+std::string TreeNodeExprFloat::xmlHelper() const {
+    std::ostringstream os;
+    os << "value=\"double:" << m_value << "\"";
+    return os.str ();
 }
 
 /*******************************************************************************

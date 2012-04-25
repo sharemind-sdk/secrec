@@ -46,6 +46,7 @@ TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
 TreeNode *treenode_init_int(int value, YYLTYPE *loc);
 TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
 TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
+TreeNode *treenode_init_float(const char *value, YYLTYPE *loc);
 TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
 TreeNode *treenode_init_publicSecTypeF(YYLTYPE *loc);
 TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc);
@@ -853,6 +854,34 @@ public: /* Methods: */
 protected:
 
     virtual TreeNode* cloneV () const {
+        return new TreeNodeExprString (m_value, m_location);
+    }
+
+private: /* Fields: */
+    const std::string m_value;
+};
+
+/******************************************************************
+  TreeNodeExprFloat
+******************************************************************/
+
+class TreeNodeExprFloat: public TreeNodeExpr {
+public: /* Methods: */
+    TreeNodeExprFloat (const std::string & value,
+                       const YYLTYPE & loc)
+        : TreeNodeExpr (NODE_LITE_FLOAT, loc)
+        , m_value (value)
+    { }
+
+    inline const std::string & value () const { return m_value; }
+    virtual std::string stringHelper() const;
+    virtual std::string xmlHelper () const;
+    virtual ICode::Status accept (TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen & cg);
+
+protected:
+
+    virtual TreeNode * cloneV () const {
         return new TreeNodeExprString (m_value, m_location);
     }
 

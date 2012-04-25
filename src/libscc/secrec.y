@@ -145,6 +145,7 @@
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
 %token XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
+%token FLOAT FLOAT32 FLOAT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
 %token IMPORT MODULE TOSTRING
@@ -155,6 +156,7 @@
 %token <str> OCT_LITERAL
 %token <str> HEX_LITERAL
 %token <str> DEC_LITERAL
+%token <str> FLOAT_LITERAL
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -227,6 +229,7 @@
 %type <treenode> identifier
 %type <treenode> string_literal
 %type <treenode> bool_literal
+%type <treenode> float_literal
 %type <treenode> template_declaration
 %type <treenode> template_quantifiers
 %type <treenode> template_quantifier
@@ -496,6 +499,9 @@ datatype_specifier
  | XOR_UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT16, &@$); }
  | XOR_UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT32, &@$); }
  | XOR_UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
+ | FLOAT       { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
+ | FLOAT32     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
+ | FLOAT64     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT64,    &@$); }
  ;
 
 dimtype_specifier
@@ -1165,6 +1171,14 @@ int_literal
    }
  ;
 
+float_literal
+ : FLOAT_LITERAL
+   {
+     $$ = treenode_init_float ($1, &@$);
+     free ($1);
+   }
+ ;
+
 string_literal
  : STRING_LITERAL
    {
@@ -1182,6 +1196,7 @@ literal
  : int_literal
  | string_literal
  | bool_literal
+ | float_literal
  ;
 
 identifier

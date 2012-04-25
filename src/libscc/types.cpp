@@ -31,6 +31,8 @@ inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     case DATATYPE_XOR_UINT16:    return "xor_uint16";
     case DATATYPE_XOR_UINT32:    return "xor_uint32";
     case DATATYPE_XOR_UINT64:    return "xor_uint64";
+    case DATATYPE_FLOAT32:       return "float32";
+    case DATATYPE_FLOAT64:       return "float64";
     case DATATYPE_STRING:        return "string";
     case NUM_DATATYPES:
         assert (false && "ICE!");
@@ -63,23 +65,25 @@ enum CastStyle {
 #define E CAST_EXPLICIT
 
 const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
-    //  x   U   B   S   I8  I16 I32 I64 U8  U16 U32 U64 X8  X16 X32 X64
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_INVALID,
-       {X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_UNIT,
-       {X,  X,  S,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_BOOL,
-       {X,  X,  X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_STRING,
-       {X,  X,  E,  X,  S,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_INT8,
-       {X,  X,  E,  X,  E,  S,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_INT16,
-       {X,  X,  E,  X,  E,  E,  S,  E,  E,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_INT32,
-       {X,  X,  E,  X,  E,  E,  E,  S,  E,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_INT64,
-       {X,  X,  E,  X,  E,  E,  E,  E,  S,  E,  E,  E,  X,  X,  X,  X},     // DATATYPE_UINT8,
-       {X,  X,  E,  X,  E,  E,  E,  E,  E,  S,  E,  E,  X,  X,  X,  X},     // DATATYPE_UINT16,
-       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  S,  E,  X,  X,  X,  X},     // DATATYPE_UINT32,
-       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  E,  S,  E,  E,  E,  E},     // DATATYPE_UINT64,
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  S,  E,  E,  E},     // DATATYPE_XOR_UINT8
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  S,  E,  E},     // DATATYPE_XOR_UINT16
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  S,  E},     // DATATYPE_XOR_UINT32
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  E,  S}      // DATATYPE_XOR_UINT64
+    //  x   U   B   S   I8  I16 I32 I64 U8  U16 U32 U64 X8  X16 X32 X64 F32 F64
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_INVALID,
+       {X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_UNIT,
+       {X,  X,  S,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_BOOL,
+       {X,  X,  X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_STRING,
+       {X,  X,  E,  X,  S,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT8,
+       {X,  X,  E,  X,  E,  S,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT16,
+       {X,  X,  E,  X,  E,  E,  S,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT32,
+       {X,  X,  E,  X,  E,  E,  E,  S,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT64,
+       {X,  X,  E,  X,  E,  E,  E,  E,  S,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT8,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  S,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT16,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  S,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT32,
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  E,  S,  E,  E,  E,  E,  X,  X},     // DATATYPE_UINT64,
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  S,  E,  E,  E,  X,  X},     // DATATYPE_XOR_UINT8
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  S,  E,  E,  X,  X},     // DATATYPE_XOR_UINT16
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  S,  E,  X,  X},     // DATATYPE_XOR_UINT32
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  E,  S,  X,  X},     // DATATYPE_XOR_UINT64
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  X,  S,  E},     // DATATYPE_FLOAT32
+       {X,  X,  E,  X,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  X,  E,  S}      // DATATYPE_FLOAT64
 };
 
 #undef X
@@ -166,6 +170,8 @@ bool isSignedNumericDataType (SecrecDataType dType) {
     case DATATYPE_INT16:
     case DATATYPE_INT32:
     case DATATYPE_INT64:
+    case DATATYPE_FLOAT32:
+    case DATATYPE_FLOAT64:
         isSigned = true;
     default:
         break;
