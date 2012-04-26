@@ -477,6 +477,12 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
         m_funcs->insert (target, BuiltinBoolToString (m_strLit));
     }
     else
+    if (dType == DATATYPE_FLOAT32) {
+        block.push_new () << "push" << find (imop.arg1 ());
+        emitSyscall (block, find (imop.dest ()), "miner_float32_to_string");
+        return;
+    }
+    else
     if (isNumericDataType (dType)) {
         target = m_st.getLabel (":numeric_to_string__");
         m_funcs->insert (target, BuiltinNumericToString (m_strLit));
