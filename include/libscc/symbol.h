@@ -147,6 +147,7 @@ class SymbolSymbol: public Symbol {
         const bool             m_isTemporary;
 };
 
+typedef SymbolSymbol SymbolTemporary;
 
 template <typename BaseTy, typename ElemTy >
 class DimIterator : public std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
