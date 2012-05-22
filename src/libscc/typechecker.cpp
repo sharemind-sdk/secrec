@@ -782,9 +782,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
         return ICode::OK;
     }
 
-    typedef DataTypeVar DTV;
-    typedef TypeNonVoid TNV;
-
     TreeNodeIdentifier *id = e->identifier ();
     SymbolSymbol *s = getSymbol (id);
     if (s == 0) {
@@ -793,12 +790,12 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
     }
 
     assert(!s->secrecType()->isVoid());
-    assert(dynamic_cast<TNV*>(s->secrecType()) != 0);
-    TNV *type = static_cast<TNV*>(s->secrecType());
+    assert(dynamic_cast<TypeNonVoid*>(s->secrecType()) != 0);
+    TypeNonVoid *type = static_cast<TypeNonVoid*>(s->secrecType());
     assert(type->dataType()->kind() == DataType::VAR);
-    assert(dynamic_cast<DTV*>(type->dataType()) != 0);
+    assert(dynamic_cast<DataTypeVar*>(type->dataType()) != 0);
     e->setResultType(TypeNonVoid::get (m_context,
-        static_cast<DTV*>(type->dataType())->dataType()));
+        static_cast<DataTypeVar*>(type->dataType())->dataType()));
     return ICode::OK;
 }
 
@@ -1361,10 +1358,6 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child) {
         TreeNode* node = child->parent ();
         SecurityType* secTy (child->contextSecType ());
         SecrecDataType destDType = child->resultType()->secrecDataType ();
-        if (child->haveContextDataType ()) {
-            destDType = child->contextDataType ();
-        }
-
         TypeNonVoid* newTy = TypeNonVoid::get (getContext (), secTy, destDType, child->resultType ()->secrecDimType ());
         TreeNodeExprClassify *ec = new TreeNodeExprClassify (secTy, child->location());
         ec->appendChild (child);
