@@ -17,6 +17,10 @@
 #include <libscc/treenode.h>
 #include <libscc/virtual_machine.h>
 #include <libscc/analysis/ReachingDeclassify.h>
+#include <libscc/analysis/ReachingDefinitions.h>
+#include <libscc/analysis/ReachingJumps.h>
+#include <libscc/analysis/LiveVariables.h>
+#include <libscc/analysis/Dominators.h>
 
 
 using namespace std;

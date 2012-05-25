@@ -15,14 +15,9 @@
 #include <sstream>
 
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace /* anonymous */ {
-
-template <class T, class U>
-inline std::set<T>& operator+= (std::set<T>& dest, const std::set<U>& src) {
-    dest.insert (src.begin (), src.end ());
-    return dest;
-}
 
 uint8_t maximumEntropy (SecrecDataType dtype) {
     switch (dtype) {

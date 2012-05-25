@@ -75,6 +75,6 @@ private: /* Fields: */
     bool                    m_isGlobal;
 };
 
-}
+} // namespace SecreCC
 
 #endif

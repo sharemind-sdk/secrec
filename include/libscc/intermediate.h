@@ -1,7 +1,7 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
-#include <ostream>
+#include <iosfwd>
 
 #include "blocks.h"
 #include "imop.h"

@@ -16,6 +16,7 @@
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
 #include <libscc/dataflowanalysis.h>
+#include <libscc/analysis/LiveVariables.h>
 
 #include "VMCode.h"
 #include "VMSymbolTable.h"
@@ -28,8 +29,10 @@ namespace {
 using namespace SecreCC;
 
 bool isGlobalSymbol (const Symbol* symbol) {
+    assert (symbol != 0);
     switch (symbol->symbolType ()) {
     case Symbol::SYMBOL:
+        assert (dynamic_cast<const SymbolSymbol*>(symbol) != 0);
         return static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL;
     default:
         assert (false && "Allocating non-variable!");

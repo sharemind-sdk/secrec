@@ -12,6 +12,9 @@ FLEX_TARGET(SECREC_LEXER "secrec.l"
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
 ADD_FLEX_BISON_DEPENDENCY(SECREC_LEXER SECREC_PARSER)
 
+SET(LIBSCC_INCLUDE_DIR
+    "${CMAKE_SOURCE_DIR}/include/libscc/")
+
 SET(FLEX_BISON_SOURCES
     "secrec.l"
     "secrec.y")
@@ -39,36 +42,49 @@ SET(LIBSCC_SOURCES
     "typechecker/templates.cpp"
     "typechecker/procedures.cpp"
     "analysis/ReachingDeclassify.cpp"
+    "analysis/ReachingDefinitions.cpp"
+    "analysis/ReachingJumps.cpp"
+    "analysis/LiveVariables.cpp"
+    "analysis/Dominators.cpp"
     "context_impl.h"
     "context_impl.cpp"
     "context.cpp"
     "ModuleInfo.h"
     "ModuleInfo.cpp"
     "ModuleMap.cpp"
+    "AST.cpp"
+    "Translator.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c"
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
 
+
 SET(LIBSCC_HEADERS
-    "${CMAKE_SOURCE_DIR}/include/libscc/codegen.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/dataflowanalysis.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/analysis/ReachingDeclassify.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/imop.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/log.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/parser.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/symbol.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/treenode.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/virtual_machine.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/blocks.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/codegenResult.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/constant.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/icodelist.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/intermediate.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/misc.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/symboltable.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/types.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/typechecker.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/context.h"
-    "${CMAKE_SOURCE_DIR}/include/libscc/ModuleMap.h")
+    "${LIBSCC_INCLUDE_DIR}/codegen.h"
+    "${LIBSCC_INCLUDE_DIR}/dataflowanalysis.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDeclassify.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDefinitions.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingJumps.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/LiveVariables.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/Dominators.h"
+    "${LIBSCC_INCLUDE_DIR}/imop.h"
+    "${LIBSCC_INCLUDE_DIR}/log.h"
+    "${LIBSCC_INCLUDE_DIR}/parser.h"
+    "${LIBSCC_INCLUDE_DIR}/symbol.h"
+    "${LIBSCC_INCLUDE_DIR}/treenode.h"
+    "${LIBSCC_INCLUDE_DIR}/virtual_machine.h"
+    "${LIBSCC_INCLUDE_DIR}/blocks.h"
+    "${LIBSCC_INCLUDE_DIR}/codegenResult.h"
+    "${LIBSCC_INCLUDE_DIR}/constant.h"
+    "${LIBSCC_INCLUDE_DIR}/icodelist.h"
+    "${LIBSCC_INCLUDE_DIR}/intermediate.h"
+    "${LIBSCC_INCLUDE_DIR}/misc.h"
+    "${LIBSCC_INCLUDE_DIR}/symboltable.h"
+    "${LIBSCC_INCLUDE_DIR}/types.h"
+    "${LIBSCC_INCLUDE_DIR}/typechecker.h"
+    "${LIBSCC_INCLUDE_DIR}/context.h"
+    "${LIBSCC_INCLUDE_DIR}/ModuleMap.h"
+    "${LIBSCC_INCLUDE_DIR}/AST.h"
+    "${LIBSCC_INCLUDE_DIR}/Translator.h")
 
 SET_SOURCE_FILES_PROPERTIES("libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")

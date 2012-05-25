@@ -14,6 +14,7 @@
 
 #include <libscc/treenode.h>
 #include <libscc/dataflowanalysis.h>
+#include <libscc/analysis/LiveVariables.h>
 #include <libscc/intermediate.h>
 #include <libscc/blocks.h>
 #include <libscc/constant.h>

@@ -10,9 +10,6 @@
 #ifndef SECREC_REACHING_DECLASSIFY_H
 #define SECREC_REACHING_DECLASSIFY_H
 
-#include <map>
-#include <set>
-
 #include "../dataflowanalysis.h"
 
 namespace SecreC {
@@ -57,6 +54,10 @@ public: /* Types: */
 
 public: /* Methods: */
 
+    std::string toString (const Program& bs) const;
+
+protected:
+
     virtual void start (const Program& pr) {
         // Initialize the OUT set of the entry block:
         makeOuts (*pr.entryBlock (), m_ins[pr.entryBlock ()], m_outs[pr.entryBlock ()]);
@@ -69,8 +70,6 @@ public: /* Methods: */
     virtual inline void inFromCallPass (const Block& from, const Block& to) { inFrom (from, to); }
     virtual inline bool finishBlock (const Block& b) { return makeOuts (b, m_ins[&b], m_outs[&b]); }
     virtual void finish ();
-
-    std::string toString (const Program& bs) const;
 
 private:
 
