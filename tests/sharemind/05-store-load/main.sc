@@ -1,12 +1,14 @@
 import common;
 void main () {
     int n = 10;
+    sharemind_test_pd bool [[1]] aub (n);
     sharemind_test_pd uint8 [[1]] au8 (n);
     sharemind_test_pd uint16 [[1]] au16 (n);
     sharemind_test_pd uint32 [[1]] au32 (n);
     sharemind_test_pd uint64 [[1]] au64 (n);
 
     for (int i = 0; i < n; ++ i) {
+        aub[i] = (i % 3 == 0);
         au8[i] = (uint8) i;
         au16[i] = (uint16) i;
         au32[i] = (uint32) i;
@@ -14,6 +16,7 @@ void main () {
     }
 
     for (int i = 0; i < n; ++ i) {
+        assert (declassify (aub[i]) == (i % 3 == 0));
         assert (declassify (au8[i]) == (uint8) i);
         assert (declassify (au16[i]) == (uint16) i);
         assert (declassify (au32[i]) == (uint32) i);
