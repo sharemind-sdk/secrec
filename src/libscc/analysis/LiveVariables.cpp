@@ -14,7 +14,7 @@ namespace SecreC {
 void LiveVariables::start (const Program &pr) {
     FOREACH_BLOCK (bi, pr) {
         typedef Imop::OperandConstIterator OCI;
-        for (Block::const_iterator it (bi->begin ()); it != bi->end (); ++ it) {
+        for (Block::const_iterator it = bi->begin (); it != bi->end (); ++ it) {
             BOOST_FOREACH (const Symbol* sym, it->useRange ()) {
                 useSymbol (*bi, sym);
             }
@@ -101,7 +101,7 @@ std::string LiveVariables::toString (const Program &pr) const {
                     if (!headerPrinted)
                         ss << "[Block " << block->index () << "]\n";
                     ss << '\t' << names[k] << ": ";
-                    for (Symbols::const_iterator it (syms.begin ()); it != syms.end (); ++ it) {
+                    for (Symbols::const_iterator it = syms.begin (); it != syms.end (); ++ it) {
                         if (it != syms.begin ()) ss << ", ";
                         ss << (*it)->name ();
                     }
