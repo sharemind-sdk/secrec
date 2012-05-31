@@ -654,7 +654,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     if (s->expression () == 0) {
         releaseProcVariables (result);
 
-        Imop *i = new Imop (s, Imop::RETURNVOID, 0);
+        Imop *i = newReturn (s);
         i->setReturnDestFirstImop (m_st->label (s->containingProcedure ()->symbol ()->target ()));
         pushImopAfter (result, i);
     } else {
@@ -668,8 +668,7 @@ CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
             return result;
         }
 
-        std::list<Symbol* > rets;
-        rets.insert (rets.end (), dim_begin (eResult.symbol ()), dim_end (eResult.symbol ()));
+        std::vector<Symbol* > rets (dim_begin (eResult.symbol ()), dim_end (eResult.symbol ()));
         rets.push_back (eResult.symbol ());
         Imop* i = newReturn (s, rets.begin (), rets.end ());
         i->setReturnDestFirstImop (m_st->label (s->containingProcedure ()->symbol ()->target ()));

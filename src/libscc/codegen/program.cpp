@@ -170,7 +170,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
             assert (fType->kind() == TNV::PROCEDUREVOID);
             releaseProcVariables (result);
 
-            Imop *i = new Imop (def, Imop::RETURNVOID, (Symbol*) 0);
+            Imop *i = newReturn (def);
             i->setReturnDestFirstImop (m_st->label (result.firstImop ()));
             pushImopAfter (result, i);
         }

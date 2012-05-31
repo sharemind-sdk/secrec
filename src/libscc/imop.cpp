@@ -1,13 +1,14 @@
 #include "imop.h"
 
-#include <sstream>
-#include <iostream>
-#include <boost/range.hpp>
+#include <algorithm>
 #include <boost/foreach.hpp>
+#include <boost/range.hpp>
+#include <iostream>
+#include <sstream>
 
+#include "constant.h"
 #include "symboltable.h"
 #include "treenode.h"
-#include "constant.h"
 
 namespace {
 
@@ -28,7 +29,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Unary operators:
       { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
     , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
-    , { Imop::TOSTRING,   1, 0, 0, 1,-1, 1 }
+    , { Imop::TOSTRING,   1, 0, 0, 0,-1, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
@@ -48,22 +49,21 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::LAND,       1, 0, 0, 1, 4, 1 }
     , { Imop::LOR,        1, 0, 0, 1, 4, 1 }
     // Array expressions:
-    , { Imop::STORE,      0, 0, 0, 0,-1, 0 }
-    , { Imop::LOAD,       1, 0, 0, 1,-1, 1 }
-    , { Imop::ALLOC,      1, 0, 0, 1,-1, 1 }
-    , { Imop::COPY,       1, 0, 0, 1,-1, 1 }
+    , { Imop::STORE,      0, 0, 0, 1,-1, 0 }
+    , { Imop::LOAD,       1, 0, 0, 0,-1, 1 }
+    , { Imop::ALLOC,      1, 0, 0, 0,-1, 1 }
+    , { Imop::COPY,       1, 0, 0, 0,-1, 1 }
     , { Imop::RELEASE,    0, 0, 0, 0,-1, 1 }
     // Other expressions:
-    , { Imop::PARAM,      1, 0, 0, 1,-1, 1 }
-    , { Imop::DOMAINID,   1, 0, 0, 1,-1,-1 }
-    , { Imop::CALL,       1, 0, 1, 1,-1, 1 }
+    , { Imop::PARAM,      1, 0, 0, 0,-1, 1 }
+    , { Imop::DOMAINID,   1, 0, 0, 0,-1,-1 }
+    , { Imop::CALL,       1, 0, 1, 0,-1, 1 }
     // Jumps:
     , { Imop::JUMP,       0, 1, 1, 0,-1, 1 }
     , { Imop::JT,         0, 1, 1, 0,-1, 1 }
     , { Imop::JF,         0, 1, 1, 0,-1, 1 }
     // Terminators:
     , { Imop::ERROR,      0, 0, 1, 0,-1,-1 }
-    , { Imop::RETURNVOID, 0, 0, 1, 0,-1,-1 }
     , { Imop::RETURN,     0, 0, 1, 0,-1, 1 }
     , { Imop::END,        0, 0, 1, 0,-1,-1 }
     // Other:
@@ -199,15 +199,22 @@ bool Imop::isVectorized () const {
     return getImopInfoBits (m_type).vecArgNum == argNum;
 }
 
+bool Imop::writesDest () const {
+    if (! isVectorized ()) {
+        return m_type == Imop::STORE;
+    }
+
+    return getImopInfoBits (m_type).writesDest;
+}
+
 Imop::OperandConstRange Imop::useRange () const {
     size_t off = 0;
     if (! isVectorized ()) {
-        off = getImopInfoBits (m_type).useBegin;
-        if (off > m_args.size ())
-            off = m_args.size ();
+        off = std::min (static_cast<unsigned>(m_args.size ()),
+                        getImopInfoBits (m_type).useBegin);
     }
 
-    OperandConstIterator i = m_args.begin () + off;
+    const OperandConstIterator i = m_args.begin () + off;
     OperandConstIterator e = i;
     for (; e != m_args.end () && *e != 0; ++ e);
     return std::make_pair (i, e);
@@ -218,9 +225,8 @@ Imop::OperandConstRange Imop::defRange () const {
     const OperandConstIterator e = operandsEnd ();
 
     // vectorised operantions don't DEF any operands.
-    if (isVectorized ()) return std::make_pair (i, i);
-    if (! getImopInfoBits (m_type).writesDest) {
-        return std::make_pair (i, i);
+    if (isVectorized () || ! getImopInfoBits (m_type).isExpr) {
+        return std::make_pair (e, e);
     }
 
     if (type () == CALL) {
@@ -440,9 +446,6 @@ std::string Imop::toString() const {
         case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
             os << "RETCLEAN;";
             break;
-        case RETURNVOID:   /* RETURN;                            */
-            os << "RETURN";
-            break;
         case RETURN:       /* RETURN arg1;                       */
             os << "RETURN (";
             {
@@ -474,7 +477,6 @@ std::string Imop::toString() const {
 } // namespace SecreC
 
 std::ostream &operator<<(std::ostream &out, const SecreC::Imop &i) {
-    (void) i;
     out << i.toString();
     return out;
 }

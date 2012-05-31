@@ -30,12 +30,17 @@ inline bool fallsThru(const SecreC::Block &b) {
         }
     }
 
-    if (last->type() == SecreC::Imop::CALL) return false;
-    if (last->type() == SecreC::Imop::JUMP) return false;
-    if (last->type() == SecreC::Imop::END) return false;
-    if (last->type() == SecreC::Imop::RETURN) return false;
-    if (last->type() == SecreC::Imop::RETURNVOID) return false;
-    if (last->type() == SecreC::Imop::ERROR) return false;
+    switch (last->type ()) {
+    case SecreC::Imop::CALL:
+    case SecreC::Imop::JUMP:
+    case SecreC::Imop::END:
+    case SecreC::Imop::RETURN:
+    case SecreC::Imop::ERROR:
+        return false;
+    default:
+        break;
+    }
+
     return true;
 }
 
@@ -254,7 +259,6 @@ void Program::assignToBlocks (ICodeList& imops) {
         switch (imop.type ()) {
         case Imop::END:
         case Imop::RETURN:
-        case Imop::RETURNVOID:
         case Imop::ERROR:
             curProc->addExit (*curBlock);
         default:
@@ -303,7 +307,6 @@ void Program::propagate () {
                 Block* exitBlock = *it;
                 switch (exitBlock->back ().type ()) {
                 case Imop::RETURN:
-                case Imop::RETURNVOID:
                     linkRetBlocks (*exitBlock, *cleanBlock);
                     exitBlock->proc ()->addReturnTo (*cleanBlock);
                 default:

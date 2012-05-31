@@ -98,7 +98,6 @@ class Imop : public auto_unlink_hook {
             // Procedure terminating:
             //-----------------------
             ERROR,      /* ERROR ((ConstantString*) arg1)      */
-            RETURNVOID, /* RETURN;               (Imop *arg2)  */
             RETURN,     /* RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n */
             END,        /* END PROGRAM                         */
 
@@ -191,6 +190,7 @@ class Imop : public auto_unlink_hook {
         bool isExpr () const;
         bool isTerminator () const;
         bool isVectorized () const;
+        bool writesDest () const;
 
         inline bool isComment (void) const {
             return m_type == COMMENT;
@@ -236,6 +236,11 @@ Imop* newReturn (TreeNode* node, Iter begin, Iter end) {
     out->m_args.push_back (0);
     out->m_args.insert(out->m_args.end(), begin, end);
     return out;
+}
+
+inline
+Imop* newReturn (TreeNode* node) {
+    return new Imop (node, Imop::RETURN, 0);
 }
 
 Imop* newCall (TreeNode *node);

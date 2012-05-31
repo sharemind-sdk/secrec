@@ -951,9 +951,6 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
     case Imop::PUSHCREF:
         cgPush (block, imop);
         return;
-    case Imop::RETURNVOID:
-        block.push_new () << "return imm 0x0";
-        return;
     case Imop::END:
         block.push_new () << "halt imm 0x0";
         return;
