@@ -600,7 +600,6 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::ERROR:      SET_SIMPLE_CALLBACK(ERROR); break;
     case Imop::PARAM:      SET_SIMPLE_CALLBACK(PARAM); break;
     case Imop::RETCLEAN:   SET_SIMPLE_CALLBACK(RETCLEAN); break;
-    case Imop::RETURNVOID: SET_SIMPLE_CALLBACK(RETVOID); break;
     case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
     case Imop::COPY:       SET_SIMPLE_CALLBACK(COPY); break;
     case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
