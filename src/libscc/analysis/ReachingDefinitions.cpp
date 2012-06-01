@@ -42,8 +42,7 @@ void ReachingDefinitions::inFrom (const Block &from, const Block &to, bool globa
 bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
     SDefs old = out;
     out = in;
-    for (Block::const_iterator it = b.begin (); it != b.end (); ++ it) {
-        const Imop& imop = *it;
+    BOOST_FOREACH (const Imop& imop, b) {
         BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
             Defs& d = out[symbol].first;
             d.clear ();

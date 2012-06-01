@@ -9,6 +9,8 @@
 
 #include "analysis/Dominators.h"
 
+#include <boost/foreach.hpp>
+
 #include "symbol.h"
 #include "treenode.h"
 
@@ -28,8 +30,8 @@ unsigned Dominators::dfs (const Block& entry, unsigned n) {
         m_num[&entry] = ++ n;
         std::set<Block* > succ;
         entry.getOutgoing (succ);
-        for (std::set<Block*>::iterator i = succ.begin (), e = succ.end (); i != e; ++ i) {
-            n = dfs (**i, n);
+        BOOST_FOREACH (const Block* block, succ) {
+            n = dfs (*block, n);
         }
     }
 
@@ -43,9 +45,10 @@ void Dominators::start (const Program &pr) {
     }
 
     unsigned n = 0;
-    for (Program::const_iterator i = pr.begin (), e = pr.end (); i != e; ++ i) {
-        n = dfs (*i->entry (), n);
-        m_doms[i->entry ()] = i->entry ();
+    BOOST_FOREACH (const Procedure& block, pr) {
+        const Block* entry = block.entry ();
+        n = dfs (*entry, n);
+        m_doms[entry] = entry;
     }
 }
 

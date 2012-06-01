@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <boost/intrusive/list.hpp>
+#include <boost/utility.hpp>
 
 #include "icodelist.h"
 
@@ -28,11 +29,7 @@ typedef boost::intrusive::list_base_hook<
  * is responsible of destroying all instructions.
  * \todo This class requires major refactoring.
  */
-class Block : private ImopList, public auto_unlink_hook {
-
-    Block (const Block&); // do not implement
-    void operator = (const Block&); // do not implement
-
+class Block : private ImopList, public auto_unlink_hook, boost::noncopyable {
 public: /* Types: */
 
     typedef std::set<Block*> Set;
@@ -144,12 +141,7 @@ inline Block::const_iterator blockIterator (const Imop& imop) {
   Procedure
 *******************************************************************************/
 
-class Procedure : private BlockList, public auto_unlink_hook {
-private:
-
-    Procedure (const Procedure&); // DO NOT IMPLEMENT
-    void operator = (const Procedure&); // DO NOT IMPLEMENT
-
+class Procedure : private BlockList, public auto_unlink_hook, boost::noncopyable {
 public: /* Types: */
 
     using BlockList::iterator;
@@ -214,12 +206,7 @@ inline Procedure::const_iterator procIterator (const Block& block) {
   Program
 *******************************************************************************/
 
-class Program : private ProcedureList {
-private:
-
-    Program (const Program&); // DO NOT IMPLEMENT
-    void operator = (const Program&); // DO NOT IMPLEMENT
-
+class Program : private ProcedureList, boost::noncopyable {
 public: /* Types: */
 
     using ProcedureList::iterator;
