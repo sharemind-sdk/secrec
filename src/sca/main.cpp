@@ -20,6 +20,7 @@
 #include <libscc/analysis/ReachingDefinitions.h>
 #include <libscc/analysis/ReachingJumps.h>
 #include <libscc/analysis/LiveVariables.h>
+#include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/Dominators.h>
 
 
@@ -103,6 +104,10 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "lv") {
         return new SecreC::LiveVariables ();
+    }
+
+    if (name == "lm") {
+        return new SecreC::LiveMemory ();
     }
 
     if (name == "dom") {
