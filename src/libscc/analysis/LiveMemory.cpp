@@ -167,6 +167,52 @@ bool LiveMemory::finishBlock (const Block& b) {
     return old != in;
 }
 
+std::string LiveMemory::deadCopies (const Program &pr) const {
+    std::ostringstream ss;
+    ss << "The following copies are redundant:\n";
+
+    size_t num_copies = 0;
+    size_t num_eliminated = 0;
+    FOREACH_BLOCK (bi, pr) {
+        Values after;
+        UpdateValues visitor (after);
+
+        BV::const_iterator i = m_outs.find (&*bi);
+        if (i != m_outs.end ()) {
+            after = i->second;
+        }
+
+        BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+            if (imop.type () == Imop::COPY) {
+                ++ num_copies;
+                if ((after[imop.dest ()] & Read) == 0) {
+                    ss << imop.index () << ": " << imop.toString () << " (dest is never read)\n";
+                    ++ num_eliminated;
+                }
+                else
+                if (after[imop.arg1 ()] == Dead) {
+                    ss << imop.index () << ": " << imop.toString () << '\n';
+                    ++ num_eliminated;
+                }
+                else
+                if (((after[imop.dest ()] & Write) == 0) &&
+                     ((after[imop.arg1 ()] & Write) == 0)) {
+                     ss << imop.index () << ": " << imop.toString () << " (src/dest are read-only)\n";
+                     ++ num_eliminated;
+                }
+
+            }
+
+            visitImop (imop, visitor);
+        }
+    }
+    if (num_copies > 0) {
+        ss << "Can eliminate " << num_eliminated << " out of " << num_copies << " copies." << std::endl;
+    }
+
+    return ss.str ();
+}
+
 std::string LiveMemory::toString (const Program& pr) const {
     std::stringstream ss;
     ss << "Memory liveness:\n";
@@ -190,6 +236,9 @@ std::string LiveMemory::toString (const Program& pr) const {
             ss << ' ' << val.first->toString () << '\n';
         }
     }
+
+    ss << '\n' << deadCopies (pr) << '\n';
+
 
     return ss.str ();
 }

@@ -38,6 +38,8 @@ public: /* Methods: */
 
     std::string toString(const Program &pr) const;
 
+    std::string deadCopies (const Program& pr) const;
+
 protected:
 
     virtual void start (const Program& pr);
