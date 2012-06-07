@@ -22,16 +22,14 @@ class ReachingDefinitions: public ForwardDataFlowAnalysis {
 public: /* Types: */
 
     typedef std::set<const Imop*>           Defs;
-    typedef std::set<const Imop*>           Jumps;
-    typedef std::pair<Defs, Jumps>          SReach;
-    typedef std::map<const Symbol*, SReach> SDefs;
+    typedef std::map<const Symbol*, Defs>   SDefs;
     typedef std::map<const Block*, SDefs>   BDM;
 
 public: /* Methods: */
 
     inline const SDefs &getReaching(const Block &b) const {
         assert(m_ins.find(&b) != m_ins.end());
-        return (*m_ins.find(&b)).second;
+        return m_ins.find(&b)->second;
     }
 
     std::string toString(const Program &program) const;

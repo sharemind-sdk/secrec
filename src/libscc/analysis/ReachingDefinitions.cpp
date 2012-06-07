@@ -27,14 +27,14 @@ void ReachingDefinitions::inFrom (const Block &from, const Block &to, bool globa
             if ((s->symbolType() == Symbol::SYMBOL)
                 && static_cast<const SymbolSymbol*>(s)->scopeType() == SymbolSymbol::GLOBAL)
             {
-                m_ins[&to][s].first += r.second.first;
+                m_ins[&to][s] += r.second;
             }
         }
     }
     else {
         BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
             const Symbol* s = r.first;
-            m_ins[&to][s].first += r.second.first;
+            m_ins[&to][s] += r.second;
         }
     }
 }
@@ -44,7 +44,7 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     out = in;
     BOOST_FOREACH (const Imop& imop, b) {
         BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
-            Defs& d = out[symbol].first;
+            Defs& d = out[symbol];
             d.clear ();
             d.insert (&imop);
         }
@@ -73,7 +73,7 @@ std::string ReachingDefinitions::toString(const Program &pr) const {
             os << std::endl;
             BOOST_FOREACH (SDefs::const_reference sdef, si->second) {
                 os << "      " << *sdef.first << ": ";
-                const Defs &ds = sdef.second.first;
+                const Defs &ds = sdef.second;
                 for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
                     if (jt != ds.begin()) os << ", ";
                     os << (*jt)->index();
