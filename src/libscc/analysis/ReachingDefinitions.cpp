@@ -20,6 +20,14 @@ namespace SecreC {
   ReachingDefinitions
 *******************************************************************************/
 
+void ReachingDefinitions::updateSDefs (const Imop& imop, ReachingDefinitions::SDefs& defs) {
+    BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
+        ReachingDefinitions::Defs& d = defs[symbol];
+        d.clear ();
+        d.insert (&imop);
+    }
+}
+
 void ReachingDefinitions::inFrom (const Block &from, const Block &to, bool globalOnly) {
     if (globalOnly) {
         BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
@@ -43,11 +51,7 @@ bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) 
     SDefs old = out;
     out = in;
     BOOST_FOREACH (const Imop& imop, b) {
-        BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
-            Defs& d = out[symbol];
-            d.clear ();
-            d.insert (&imop);
-        }
+        updateSDefs (imop, out);
     }
 
     return old != out;
@@ -83,6 +87,7 @@ std::string ReachingDefinitions::toString(const Program &pr) const {
             }
         }
     }
+
     return os.str();
 }
 

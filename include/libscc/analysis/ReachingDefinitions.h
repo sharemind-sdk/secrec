@@ -27,9 +27,10 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    inline const SDefs &getReaching(const Block &b) const {
-        assert(m_ins.find(&b) != m_ins.end());
-        return m_ins.find(&b)->second;
+    static void updateSDefs (const Imop& imop, SDefs& defs);
+
+    inline const SDefs &getReaching(const Block &b) {
+        return m_ins[&b];
     }
 
     std::string toString(const Program &program) const;

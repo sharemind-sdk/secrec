@@ -40,6 +40,12 @@ public: /* Methods: */
 
     std::string deadCopies (const Program& pr) const;
 
+    const Values& liveOnExit (const Block& block) {
+        return m_outs[&block];
+    }
+
+    static void update (const Imop& imop, Values& vals);
+
 protected:
 
     virtual void start (const Program& pr);

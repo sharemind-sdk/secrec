@@ -121,6 +121,11 @@ namespace SecreC {
   LiveMemory
 *******************************************************************************/
 
+void LiveMemory::update (const Imop& imop, Values& vals) {
+    UpdateValues visitor (vals);
+    visitImop (imop, visitor);
+}
+
 void LiveMemory::start (const Program& pr) {
     FOREACH_BLOCK (bi, pr) {
         CollectGenKill collector (m_gen[&*bi], m_kill[&*bi]);
@@ -200,7 +205,6 @@ std::string LiveMemory::deadCopies (const Program &pr) const {
                      ss << imop.index () << ": " << imop.toString () << " (src/dest are read-only)\n";
                      ++ num_eliminated;
                 }
-
             }
 
             visitImop (imop, visitor);
