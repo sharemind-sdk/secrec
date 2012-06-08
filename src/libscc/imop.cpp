@@ -171,10 +171,8 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
 }
 
 Imop::~Imop() {
-    typedef std::set<Imop*>::const_iterator ISCI;
-    typedef std::vector<Symbol const* >::iterator SVI;
-    for (SVI it (m_args.begin ()); it != m_args.end (); ++ it) {
-        *it = 0;
+    BOOST_FOREACH (Symbol*& arg, m_args) {
+        arg = 0;
     }
 }
 
@@ -246,10 +244,10 @@ const Imop *Imop::callDest() const {
     return static_cast<const SymbolProcedure*>(dest())->target ();
 }
 
-SymbolLabel const* Imop::jumpDest() const {
-    Symbol const* sym = dest ();
-    assert (dynamic_cast<SymbolLabel const*>(sym) != 0);
-    return static_cast<SymbolLabel const*>(sym);
+SymbolLabel* Imop::jumpDest() const {
+    Symbol* sym = dest ();
+    assert (dynamic_cast<SymbolLabel*>(sym) != 0);
+    return static_cast<SymbolLabel*>(sym);
 }
 
 void Imop::setJumpDest (SymbolLabel *dest) {
@@ -451,7 +449,6 @@ std::string Imop::toString() const {
             {
                 const OperandConstIterator itBegin = m_args.begin () + 1; // !
                 const OperandConstIterator itEnd = m_args.end ();
-                assert (itBegin != itEnd && "Only RETURNVOID can return nothing.");
                 for (OperandConstIterator it = itBegin; it != itEnd; ++ it) {
                     if (it != itBegin) {
                         os << ", ";

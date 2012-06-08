@@ -40,7 +40,7 @@ typedef boost::intrusive::list_base_hook<
  */
 class Imop : public auto_unlink_hook {
     public: /* Types: */
-        typedef std::vector<const Symbol* > OperandList;
+        typedef std::vector<Symbol* > OperandList;
         typedef OperandList::iterator OperandIterator;
         typedef OperandList::const_iterator OperandConstIterator;
         typedef std::pair<OperandIterator, OperandIterator> OperandRange;
@@ -132,10 +132,6 @@ class Imop : public auto_unlink_hook {
             : m_creator(creator), m_type(type), m_args(3)
         { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; }
 
-        template <typename Iter >
-        explicit inline Imop (TreeNode *creator, Type type, Iter begin, Iter end) :
-            m_creator (creator), m_type (type), m_args (begin, end) { }
-
         explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
                              Symbol *arg1, Symbol *arg2, Symbol *arg3)
             : m_creator(creator), m_type(type), m_args(4)
@@ -152,28 +148,28 @@ class Imop : public auto_unlink_hook {
         OperandConstIterator operandsEnd () const { return m_args.end (); }
         const OperandList& operands () const { return m_args; }
 
-        inline const Symbol *dest() const { return arg(0); }
-        inline const Symbol *arg1() const { return arg(1); }
-        inline const Symbol *arg2() const { return arg(2); }
-        inline const Symbol *arg3() const { return arg(3); }
-        inline const Symbol* arg(unsigned i) const {
+        inline Symbol *dest() const { return arg(0); }
+        inline Symbol *arg1() const { return arg(1); }
+        inline Symbol *arg2() const { return arg(2); }
+        inline Symbol *arg3() const { return arg(3); }
+        inline Symbol* arg(unsigned i) const {
             assert (i < m_args.size () &&
                     "Imop::arg(unsigned i): index i out of bounds.");
             return m_args[i];
         }
 
-        inline void setDest(const Symbol *dest) { setArg(0, dest); }
-        inline void setArg1(const Symbol *arg1) { setArg(1, arg1); }
-        inline void setArg2(const Symbol *arg2) { setArg(2, arg2); }
-        inline void setArg3(const Symbol* arg3) { setArg(3, arg3); }
-        inline void setArg(unsigned i, const Symbol* arg) {
+        inline void setDest(Symbol *dest) { setArg(0, dest); }
+        inline void setArg1(Symbol *arg1) { setArg(1, arg1); }
+        inline void setArg2(Symbol *arg2) { setArg(2, arg2); }
+        inline void setArg3(Symbol* arg3) { setArg(3, arg3); }
+        inline void setArg(unsigned i, Symbol* arg) {
             assert (i < m_args.size () &&
                     "Imop::setArg(unsigned i, const Symbol* arg): index i out of bounds.");
             m_args[i] = arg;
         }
 
         // everything to do with jumping to labels and calling functions
-        const SymbolLabel* jumpDest() const;
+        SymbolLabel* jumpDest() const;
         void setJumpDest (SymbolLabel *dest);
         const Imop *callDest() const;
         void setCallDest(SymbolProcedure *proc);
@@ -191,6 +187,14 @@ class Imop : public auto_unlink_hook {
         bool isTerminator () const;
         bool isVectorized () const;
         bool writesDest () const;
+
+        void replace_with (Imop& imop) {
+            assert (!imop.is_linked ());
+            imop.m_index = m_index;
+            imop.m_block = m_block;
+            imop.m_creator = m_creator;
+            swap_nodes (imop);
+        }
 
         inline bool isComment (void) const {
             return m_type == COMMENT;

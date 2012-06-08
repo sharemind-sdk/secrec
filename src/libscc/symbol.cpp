@@ -80,7 +80,23 @@ std::string SymbolProcedure::toString() const {
 SymbolLabel::SymbolLabel (Imop* target)
     : Symbol (Symbol::LABEL)
     , m_target (target)
+    , m_block (0)
 { }
+
+SymbolLabel::SymbolLabel (Block* block)
+    : Symbol (Symbol::LABEL)
+    , m_target (0)
+    , m_block (block)
+{ }
+
+const Imop* SymbolLabel::target () const {
+    if (m_block == 0) {
+        assert (m_target != 0);
+        return m_target;
+    }
+
+    return &m_block->front ();
+}
 
 std::string SymbolLabel::toString() const {
     return "";

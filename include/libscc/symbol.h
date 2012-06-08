@@ -9,6 +9,7 @@
 namespace SecreC {
 
 class Imop;
+class Block;
 class TreeNodeProcDef;
 class TreeNodeTemplate;
 
@@ -248,11 +249,21 @@ class SymbolTemplate: public Symbol {
 
 class SymbolLabel: public Symbol {
     public:
-        SymbolLabel (Imop* target);
-        inline const Imop* target () const { return m_target; }
+        explicit SymbolLabel (Imop* target);
+        explicit SymbolLabel (Block* block);
+
+        const Imop* target () const;
+        inline const Block* block () const { return m_block; }
+
+        void setBlock (Block* block) {
+            m_target = 0;
+            m_block = block;
+        }
+
         virtual std::string toString () const;
     private:
-        Imop* m_target;
+        Imop*   m_target;
+        Block*  m_block;
 };
 
 }

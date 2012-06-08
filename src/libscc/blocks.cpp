@@ -1,6 +1,7 @@
 #include "blocks.h"
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <map>
 
@@ -204,32 +205,34 @@ void Program::assignToBlocks (ICodeList& imops) {
 
     // 1. find leaders
     std::set<const Imop*> leaders;
+    std::map<const Imop*, std::set<SymbolLabel*> > jumps;
     std::map<const Imop*, const SymbolProcedure*> functions;
     functions[&imops.front ()] = 0;
 
     bool nextIsLeader = true;  // first instruction is leader
-    for (ImopList::const_iterator i = imops.begin ();i != imops.end (); ++ i) {
+    BOOST_FOREACH (Imop& imop, imops) {
         if (nextIsLeader) {
-            leaders.insert (&*i);
+            leaders.insert (&imop);
             nextIsLeader = false;
         }
 
         // destination of jump is leader
-        if (i->isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(i->dest ()) != 0);
-            const SymbolLabel* dest = static_cast<const SymbolLabel*>(i->dest ());
+        if (imop.isJump ()) {
+            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != 0);
+            SymbolLabel* dest = static_cast<SymbolLabel*>(imop.dest ());
             leaders.insert (dest->target ());
+            jumps[dest->target ()].insert (dest);
         }
 
         // anything following terminator is leader
-        if (i->isTerminator ()) {
+        if (imop.isTerminator ()) {
             nextIsLeader = true;
         }
 
         // call destinations are leaders (we might have interprocedural analysis)
-        if (i->type () == Imop::CALL) {
-            leaders.insert (i->callDest ());
-            functions[i->callDest ()] = static_cast<const SymbolProcedure*>(i->dest ());
+        if (imop.type () == Imop::CALL) {
+            leaders.insert (imop.callDest ());
+            functions[imop.callDest ()] = static_cast<const SymbolProcedure*>(imop.dest ());
             nextIsLeader = true; // RETCLEAN is leader too
         }
     }
@@ -249,6 +252,9 @@ void Program::assignToBlocks (ICodeList& imops) {
         if (leaders.find (&imop) != leaders.end ()) {
             curBlock = new Block (blockCount ++, curProc);
             curProc->push_back (*curBlock);
+            BOOST_FOREACH (SymbolLabel* incoming, jumps[&imop]) {
+                incoming->setBlock (curBlock);
+            }
         }
 
         imop.setBlock (curBlock);
@@ -301,10 +307,7 @@ void Program::propagate () {
             cleanBlock->setCallPassFrom (&*cur);
             cur->setCallPassTo (&*cleanBlock);
 
-            for (std::set<Block*>::const_iterator it = callTarget->exitBlocks ().begin ();
-                 it != callTarget->exitBlocks ().end (); ++ it)
-            {
-                Block* exitBlock = *it;
+            BOOST_FOREACH (Block* exitBlock, callTarget->exitBlocks ()) {
                 switch (exitBlock->back ().type ()) {
                 case Imop::RETURN:
                     linkRetBlocks (*exitBlock, *cleanBlock);

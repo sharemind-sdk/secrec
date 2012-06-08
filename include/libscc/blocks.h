@@ -58,7 +58,8 @@ public: /* Methods: */
     using ImopList::front;
     using ImopList::back;
     using ImopList::push_back;
-    using ImopList::iterator_to;
+    using ImopList::s_iterator_to;
+    using ImopList::insert;
 
     /// \brief unlink block from CFG
     void unlink ();
@@ -130,11 +131,11 @@ private: /* Fields: */
 typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;
 
 inline Block::iterator blockIterator (Imop& imop) {
-    return imop.block ()->iterator_to (imop);
+    return Block::s_iterator_to (imop);
 }
 
 inline Block::const_iterator blockIterator (const Imop& imop) {
-    return imop.block ()->iterator_to (imop);
+    return Block::s_iterator_to (imop);
 }
 
 /*******************************************************************************
@@ -179,7 +180,7 @@ public: /* Methods: */
     using BlockList::front;
     using BlockList::back;
     using BlockList::empty;
-    using BlockList::iterator_to;
+    using BlockList::s_iterator_to;
     using BlockList::push_back;
 
 private: /* Fields: */
@@ -194,13 +195,12 @@ typedef boost::intrusive::list<Procedure, boost::intrusive::constant_time_size<f
 
 /// Blocks can be converted to procedure iterator
 inline Procedure::iterator procIterator (Block& block) {
-    return block.proc ()->iterator_to (block);
+    return BlockList::s_iterator_to (block);
 }
 
 inline Procedure::const_iterator procIterator (const Block& block) {
-    return block.proc ()->iterator_to (block);
+    return  BlockList::s_iterator_to (block);
 }
-
 
 /*******************************************************************************
   Program
