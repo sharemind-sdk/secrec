@@ -20,6 +20,7 @@
 #include <libscc/constant.h>
 #include <libscc/types.h>
 
+#include "CopyElimination.h"
 #include "SyscallManager.h"
 #include "StringLiterals.h"
 #include "RegisterAllocator.h"
@@ -301,6 +302,8 @@ Compiler::~Compiler () {
 }
 
 void Compiler::run (VMLinkingUnit& vmlu) {
+
+    eliminateRedundantCopies (m_code);
 
     // Create and add the linking unit sections:
     VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);

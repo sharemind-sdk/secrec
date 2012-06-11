@@ -40,6 +40,8 @@ SET(SCC_SOURCES
     "VMCode.cpp"
     "Compiler.h"
     "Compiler.cpp"
+    "CopyElimination.h"
+    "CopyElimination.cpp"
     "Builtin.h"
     "Builtin.cpp"
     "SyscallManager.h"
