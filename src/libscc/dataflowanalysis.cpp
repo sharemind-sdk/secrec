@@ -16,7 +16,7 @@
 
 namespace SecreC {
 
-void DataFlowAnalysisRunner::run(const Program &pr) {
+DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
     assert(!m_as.empty());
 
     AnalysisSet aas;
@@ -130,7 +130,7 @@ void DataFlowAnalysisRunner::run(const Program &pr) {
         if (unchanged.size() == aas.size()) {
             FOREACH_ANALYSIS(a, m_as)
                 (*a)->finish();
-            return;
+            return *this;
         }
 
         // Purge the analyses that have finished from the list of active analyses:
@@ -143,6 +143,8 @@ void DataFlowAnalysisRunner::run(const Program &pr) {
             fas.erase(*a);
         }
     }
+
+    return *this;
 }
 
 std::string DataFlowAnalysisRunner::toString (const Program& program) {

@@ -101,8 +101,8 @@ public: /* Types: */
     typedef std::set<ForwardDataFlowAnalysis*>  ForwardAnalysisSet;
 
 public: /* Methods: */
-    inline void addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); }
-    void run(const Program &program);
+    inline DataFlowAnalysisRunner& addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); return *this; }
+    DataFlowAnalysisRunner& run (const Program &program);
     std::string toString (const Program& program);
 
 private: /* Fields: */
