@@ -19,6 +19,7 @@
 #include <libscc/analysis/ReachingDeclassify.h>
 #include <libscc/analysis/ReachingDefinitions.h>
 #include <libscc/analysis/ReachingJumps.h>
+#include <libscc/analysis/ReachableReleases.h>
 #include <libscc/analysis/LiveVariables.h>
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/Dominators.h>
@@ -100,6 +101,10 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "rdc") {
         return new SecreC::ReachingDeclassify ();
+    }
+
+    if (name == "rr") {
+        return new SecreC::ReachableReleases ();
     }
 
     if (name == "lv") {
