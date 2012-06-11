@@ -53,6 +53,9 @@ public: /* Methods: */
     Symbol* previos () const { return m_previous; }
     void setPrevious (Symbol* prev) { m_previous = prev; }
 
+    bool isGlobal () const;
+    bool isArray () const;
+
     virtual std::string toString() const = 0;
 
 private: /* Fields: */

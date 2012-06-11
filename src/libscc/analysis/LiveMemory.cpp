@@ -9,32 +9,6 @@ namespace /* anonymous */ {
 
 using namespace SecreC;
 
-bool isGlobal (const Symbol* symbol) {
-    assert (symbol != 0);
-    switch (symbol->symbolType ()) {
-    case Symbol::SYMBOL:
-        if (static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL)
-            return true;
-    default:
-        break;
-    }
-
-    return false;
-}
-
-bool isArray (const Symbol* symbol) {
-    assert (symbol != 0);
-    switch (symbol->symbolType ()) {
-    case Symbol::SYMBOL:
-        if (static_cast<const SymbolSymbol*>(symbol)->secrecType ()->secrecDimType () > 0)
-            return true;
-    default:
-        break;
-    }
-
-    return false;
-}
-
 LiveMemory::Domain& operator |= (LiveMemory::Domain& dest, LiveMemory::Domain src) {
     return (dest = static_cast<LiveMemory::Domain>(dest | src));
 }
@@ -45,7 +19,7 @@ struct CollectGenKill {
     { }
 
     inline void gen (const Symbol* sym, LiveMemory::Domain dom) {
-        if (isArray (sym)) {
+        if (sym->isArray ()) {
             m_gen[sym] |= dom;
         }
     }
@@ -65,7 +39,7 @@ struct UpdateValues {
 
 
     inline void gen (const Symbol* sym, LiveMemory::Domain dom) {
-        if (isArray (sym)) {
+        if (sym->isArray ()) {
             m_values[sym] |= dom;
         }
     }
@@ -113,6 +87,13 @@ void visitImop (const Imop& imop, Visitor& visitor) {
     }
 }
 
+inline bool isRedundantCopy (LiveMemory::Domain dest, LiveMemory::Domain src) {
+    if (src == LiveMemory::Dead) return true;
+    if ((dest & LiveMemory::Read) == 0) return true;
+    if (((dest & LiveMemory::Write) == 0) && ((src & LiveMemory::Write) == 0)) return true;
+    return false;
+}
+
 } // namespace anonymous
 
 namespace SecreC {
@@ -151,7 +132,7 @@ void LiveMemory::outToGlobal (const Block& from, const Block& to) {
     Values& dest = m_outs[&to];
     const Values& src = m_ins[&from];
     BOOST_FOREACH (Values::const_reference sv, src) {
-        if (isGlobal (sv.first))
+        if (sv.first->isGlobal ())
             dest[sv.first] |= sv.second;
     }
 }

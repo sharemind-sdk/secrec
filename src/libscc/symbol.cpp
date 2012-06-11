@@ -10,6 +10,35 @@
 namespace SecreC {
 
 /*******************************************************************************
+  Symbol
+*******************************************************************************/
+
+bool Symbol::isGlobal () const {
+    switch (symbolType ()) {
+    case Symbol::SYMBOL:
+        if (static_cast<const SymbolSymbol*>(this)->scopeType () == SymbolSymbol::GLOBAL)
+            return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+bool Symbol::isArray () const {
+    switch (symbolType ()) {
+    case Symbol::SYMBOL:
+        if (static_cast<const SymbolSymbol*>(this)->secrecType ()->secrecDimType () > 0)
+            return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+
+/*******************************************************************************
   SymbolKind
 *******************************************************************************/
 
