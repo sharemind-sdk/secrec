@@ -188,7 +188,7 @@ class Imop : public auto_unlink_hook {
         bool isVectorized () const;
         bool writesDest () const;
 
-        void replace_with (Imop& imop) {
+        void replaceWith (Imop& imop) {
             assert (!imop.is_linked ());
             imop.m_index = m_index;
             imop.m_block = m_block;

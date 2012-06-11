@@ -377,11 +377,10 @@ std::string Imop::toString() const {
                 BOOST_FOREACH (const Symbol* sym, defRange ()) {
                     if (! isFirst) {
                         os << ", ";
-                        isFirst = false;
                     }
 
                     os << symToString (sym);
-
+                    isFirst = false;
                 }
 
                 if (! isFirst)
@@ -392,10 +391,10 @@ std::string Imop::toString() const {
                 BOOST_FOREACH (const Symbol* sym, useRange ()) {
                     if (! isFirst) {
                         os << ", ";
-                        isFirst = false;
                     }
 
                     os << symToString (sym);
+                    isFirst = false;
                 }
 
                 os << ");";

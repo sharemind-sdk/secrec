@@ -766,7 +766,6 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
-    ICode::Status status = m_tyChecker.visit (s);
     CGStmtResult result;
     result.setStatus (m_tyChecker.visit (s));
     if (result.isNotOk ()) {

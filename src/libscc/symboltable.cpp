@@ -214,11 +214,9 @@ Symbol *SymbolTable::find (const std::string& name) const {
 }
 
 std::vector<Symbol* > SymbolTable::findAll (const std::string& name) const {
-    Symbol* s = find (name);
     std::vector<Symbol* > out;
-    while (s != 0) {
+    for (Symbol* s = find (name); s != 0; s = s->previos ()) {
         out.push_back (s);
-        s = s->previos ();
     }
 
     return out;
