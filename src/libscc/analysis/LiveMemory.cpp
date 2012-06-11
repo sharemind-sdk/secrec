@@ -153,7 +153,36 @@ bool LiveMemory::finishBlock (const Block& b) {
     return old != in;
 }
 
-std::string LiveMemory::deadCopies (const Program &pr) const {
+std::set<const Imop*> LiveMemory::deadCopies (const Program& pr) const {
+    std::set<const Imop*> out;
+    Values after; // analysis info after current code point.
+    UpdateValues visitor (after);
+    FOREACH_BLOCK (bi, pr) {
+        if (! bi->reachable ()) {
+            continue;
+        }
+
+        after.clear ();
+        BV::const_iterator i = m_outs.find (&*bi);
+        if (i != m_outs.end ()) {
+            after = i->second;
+        }
+
+        BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+            if (imop.type () == Imop::COPY) {
+                if (isRedundantCopy (after[imop.dest ()], after[imop.arg1 ()])) {
+                    out.insert (&imop);
+                }
+            }
+
+            visitImop (imop, visitor);
+        }
+    }
+
+    return out;
+}
+
+std::string LiveMemory::printDeadCopies (const Program &pr) const {
     std::ostringstream ss;
     ss << "The following copies are redundant:\n";
 
@@ -222,11 +251,10 @@ std::string LiveMemory::toString (const Program& pr) const {
         }
     }
 
-    ss << '\n' << deadCopies (pr) << '\n';
+    ss << '\n' << printDeadCopies (pr) << '\n';
 
 
     return ss.str ();
 }
-
 
 } // namespace SecreC

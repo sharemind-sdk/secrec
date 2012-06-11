@@ -32,18 +32,27 @@ public: /* Types: */
     typedef std::map<const Symbol*, Domain> Values;
     typedef std::map<const Block*, Values> BV;
     typedef std::map<const Block*, Symbols> BS;
-    typedef std::vector<Values> LivenessVector;
 
 public: /* Methods: */
 
     std::string toString(const Program &pr) const;
 
-    std::string deadCopies (const Program& pr) const;
+    std::set<const Imop*> deadCopies (const Program& pr) const;
 
+    /**
+     * @brief liveOnExit returns abstract values after the given basic block
+     * @param block
+     * @return the abstract values
+     */
     const Values& liveOnExit (const Block& block) {
         return m_outs[&block];
     }
 
+    /**
+     * @brief update the value mapping from after the instruction to before
+     * @param imop the instruction to update the values at
+     * @param vals abstract values for every symbol
+     */
     static void update (const Imop& imop, Values& vals);
 
 protected:
@@ -63,6 +72,8 @@ private:
 
     void outToLocal (const Block &from, const Block &to);
     void outToGlobal (const Block &from, const Block &to);
+
+    std::string printDeadCopies (const Program& pr) const;
 
 private: /* Fields: */
     BV m_gen;
