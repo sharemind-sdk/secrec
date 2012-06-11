@@ -25,25 +25,15 @@ void eliminateRedundantCopies (ICode& code) {
 
     BOOST_FOREACH (const Imop* copy, copies) {
         const Block& block = *copy->block ();
-        ReachableReleases::Values vs = reachableReleases.releasedOnExit (block);
+        ReachableReleases::Values after = reachableReleases.releasedOnExit (block);
         BOOST_REVERSE_FOREACH (const Imop& imop, block) {
             if (&imop == copy) {
-                const ReachableReleases::Domain& dom = vs[imop.arg1 ()];
-                if (dom.empty ()) {
-                    BOOST_FOREACH (const Imop* release, vs[imop.dest ()]) {
-                        releases.insert (release);
-                    }
-                }
-                else {
-                    BOOST_FOREACH (const Imop* release, vs[imop.arg1 ()]) {
-                        releases.insert (release);
-                    }
-                }
-
+                const ReachableReleases::Domain& dom = after[imop.arg1 ()];
+                releases += dom.empty () ? after[imop.dest ()] : dom;
                 break;
             }
 
-            ReachableReleases::update (imop, vs);
+            ReachableReleases::update (imop, after);
         }
     }
 
