@@ -90,9 +90,7 @@ VMLabel* getLabel (VMSymbolTable& st, const Symbol* sym) {
     VMValue* label = st.find (sym);
     if (label == 0) {
         const SymbolLabel* symL = static_cast<const SymbolLabel*>(sym);
-        assert (symL->target () != 0);
-        assert (symL->target ()->block () != 0);
-        label = getLabel (st, *symL->target ()->block ());
+        label = getLabel (st, *symL->block ());
         st.store (sym, label);
     }
 
@@ -389,8 +387,7 @@ void Compiler::cgProcedure (const Procedure& blocks) {
         function.setIsStart ();
 
     m_ra->enterFunction (function);
-    for (Procedure::const_iterator i = blocks.begin (), e = blocks.end (); i != e; ++ i) {
-        const Block& block = *i;
+    BOOST_FOREACH (const Block& block, blocks) {
         if (block.reachable ()) {
             cgBlock (function, block);
         }
@@ -405,9 +402,10 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
     VMLabel* name = getLabel (st (), block);
     VMBlock vmBlock (name, &block);
     m_ra->enterBlock (vmBlock);
-    for (BCI i = block.begin (), e = block.end (); i != e; ++ i) {
-        cgImop (vmBlock, *i);
+    BOOST_FOREACH (const Imop& imop, block) {
+        cgImop (vmBlock, imop);
     }
+
     m_ra->exitBlock (vmBlock);
     function.push_back (vmBlock);
 }

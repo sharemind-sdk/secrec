@@ -310,8 +310,8 @@ VMVReg* RegisterAllocator::temporaryReg () {
     VMVReg* reg = m_st->getVReg (m_isGlobal);
     m_temporaries.push (reg);
     m_inferenceGraph->addNode (reg);
-    for (RegSet::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
-        m_inferenceGraph->addEdge (reg, *i);
+    BOOST_FOREACH (VMVReg* other, m_live) {
+        m_inferenceGraph->addEdge (reg, other);
     }
 
     m_live.insert (reg);
@@ -334,13 +334,13 @@ unsigned RegisterAllocator::globalCount () {
 }
 
 void RegisterAllocator::enterBlock (VMBlock& block) {
-    const LiveVariables::Symbols& in (m_lv->ins (*block.secrecBlock ()));
+    const LiveVariables::Symbols& in = m_lv->ins (*block.secrecBlock ());
     m_live.clear ();
-    for (Symbols::iterator i = in.begin (), e = in.end (); i != e; ++ i) {
-        VMValue* reg = m_st->find (*i);
+    BOOST_FOREACH (const Symbol* sym, in) {
+        VMValue* reg = m_st->find (sym);
         if (reg == 0) {
-            reg = m_st->getVReg (isGlobalSymbol (*i));
-            m_st->store (*i, reg);
+            reg = m_st->getVReg (sym->isGlobal ());
+            m_st->store (sym, reg);
         }
 
         assert (dynamic_cast<VMVReg*>(reg) != 0);
@@ -388,8 +388,8 @@ void RegisterAllocator::defSymbol (const Symbol* symbol) {
     assert (dynamic_cast<VMVReg*>(reg) != 0);
     VMVReg* vreg = static_cast<VMVReg*>(reg);
     m_inferenceGraph->addNode (vreg);
-    for (RegSet::const_iterator i = m_live.begin (), e = m_live.end (); i != e; ++ i) {
-        m_inferenceGraph->addEdge (vreg, *i);
+    BOOST_FOREACH (const VMVReg* other, m_live) {
+        m_inferenceGraph->addEdge (vreg, other);
     }
 
     m_live.insert (vreg);
