@@ -398,8 +398,11 @@ void Compiler::cgProcedure (const Procedure& blocks) {
 }
 
 void Compiler::cgBlock (VMFunction& function, const Block& block) {
-    typedef Block::const_iterator BCI;
-    VMLabel* name = getLabel (st (), block);
+    VMLabel* name = 0;
+    if (block.hasIncomingJumps ()) {
+        name = getLabel (st (), block);
+    }
+
     VMBlock vmBlock (name, &block);
     m_ra->enterBlock (vmBlock);
     BOOST_FOREACH (const Imop& imop, block) {
