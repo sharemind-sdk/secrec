@@ -64,6 +64,8 @@ public: /* Methods: */
     /// \brief unlink block from CFG
     void unlink ();
 
+    bool hasIncomingJumps () const;
+
     void addUser (Block* block) { m_users.insert (block); }
 
     // Predecessors:
@@ -229,7 +231,7 @@ public: /* Methods: */
     const Block* entryBlock () const;
     const Block* exitBlock () const;
 
-protected:
+private:
 
     void assignToBlocks (ICodeList& imops);
     void propagate ();

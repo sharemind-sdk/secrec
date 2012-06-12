@@ -324,11 +324,11 @@ void Program::propagate () {
             ++ next;
             assert (next != curProc->end () && "Must not fall out of procedure!");
             todo.insert (next);
-            assert (lastImop.type () != Imop::JUMP);
-            if (!lastImop.isJump ()) {
-                linkBlocks (*cur, *next);
-            } else {
-                linkBlocksCondFalse (*cur, *next);
+            switch (lastImop.type ()) {
+            case Imop::JUMP: assert (false);                     break;
+            case Imop::JT:   linkBlocksCondFalse (*cur, *next);  break;
+            case Imop::JF:   linkBlocksCondTrue (*cur, *next);   break;
+            default:         linkBlocks (*cur, *next);           break;
             }
         }
 
@@ -336,13 +336,13 @@ void Program::propagate () {
         if (lastImop.isJump ()) {
             assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != 0);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
-            Procedure::iterator next = procIterator (*jumpDest->target ()->block ());
+            Procedure::iterator next = procIterator (*jumpDest->block ());
             todo.insert (next);
-            if (lastImop.type () == Imop::JUMP) {
-                linkBlocks (*cur, *next);
-            }
-            else {
-                linkBlocksCondTrue (*cur, *next);
+            switch (lastImop.type ()) {
+            case Imop::JUMP: linkBlocks (*cur, *next);           break;
+            case Imop::JT:   linkBlocksCondTrue (*cur, *next);   break;
+            case Imop::JF:   linkBlocksCondFalse (*cur, *next);  break;
+            default:         assert (false);                     break;
             }
         }
 
@@ -478,6 +478,25 @@ void Block::unlink () {
     }
 
     m_users.clear ();
+}
+
+bool Block::hasIncomingJumps () const {
+    std::set<Block*> incoming;
+    getIncoming (incoming);
+    if (incoming.size () == 1) {
+        Block* pred = *incoming.begin ();
+        Procedure::const_iterator predIt = procIterator (*pred);
+        Procedure::const_iterator thisIt = procIterator (*this);
+        if (predIt.get_container () != thisIt.get_container ())
+            return true;
+
+        ++ predIt;
+        if (predIt == thisIt) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 Block::~Block () {
