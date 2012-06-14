@@ -13,6 +13,7 @@
 #include <set>
 #include <stack>
 #include <memory>
+#include <vector>
 
 namespace SecreC {
     class Imop;
@@ -39,7 +40,7 @@ public: /* Types: */
     typedef std::auto_ptr<SecreC::LiveVariables > LVPtr;
     typedef std::set<const SecreC::Symbol*> Symbols;
     typedef std::set<VMVReg*> RegSet;
-    typedef std::stack<VMVReg*> RegStack;
+    typedef std::vector<VMVReg*> RegStack;
 
 public: /* Methods: */
 

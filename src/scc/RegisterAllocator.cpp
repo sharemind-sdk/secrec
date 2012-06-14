@@ -271,10 +271,10 @@ protected:
     }
 
     void assignColors (VMSymbolTable& st, const std::map<VMVReg*, unsigned>& colors, bool isGlobal) {
-        typedef std::map<VMVReg*, unsigned>::const_iterator VRUMCI;
-        for (VRUMCI i = colors.begin (), e = colors.end (); i != e; ++ i) {
-            VMVReg* reg = i->first;
-            const unsigned color = i->second;
+        typedef std::map<VMVReg*, unsigned>::value_type RC_pair;
+        BOOST_FOREACH (const RC_pair& rc, colors) {
+            VMVReg* reg = rc.first;
+            const unsigned color = rc.second;
             reg->setActualReg (isGlobal ? (VMValue*) st.getReg (color) : (VMValue*) st.getStack (color));
         }
     }
@@ -308,7 +308,7 @@ void RegisterAllocator::init (VMSymbolTable& st, LVPtr lv) {
 
 VMVReg* RegisterAllocator::temporaryReg () {
     VMVReg* reg = m_st->getVReg (m_isGlobal);
-    m_temporaries.push (reg);
+    m_temporaries.push_back (reg);
     m_inferenceGraph->addNode (reg);
     BOOST_FOREACH (VMVReg* other, m_live) {
         m_inferenceGraph->addEdge (reg, other);
@@ -353,12 +353,11 @@ void RegisterAllocator::exitBlock (VMBlock &block) {
 }
 
 void RegisterAllocator::getReg (const SecreC::Imop& imop) {
-    typedef std::vector<const Symbol*> SV;
-
-    while (! m_temporaries.empty ()) {
-        m_live.erase (m_temporaries.top ());
-        m_temporaries.pop ();
+    BOOST_FOREACH (VMVReg* temp, m_temporaries) {
+        m_live.erase (temp);
     }
+
+    m_temporaries.clear ();
 
     BOOST_FOREACH (const Symbol* symbol, imop.useRange ()) {
         switch (symbol->symbolType ()) {
@@ -380,15 +379,14 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
 void RegisterAllocator::defSymbol (const Symbol* symbol) {
     VMValue* reg = m_st->find (symbol);
     if (reg == 0) {
-        const bool isGlobal = isGlobalSymbol (symbol);
-        reg = m_st->getVReg (isGlobal);
+        reg = m_st->getVReg (symbol->isGlobal ());
         m_st->store (symbol, reg);
     }
 
     assert (dynamic_cast<VMVReg*>(reg) != 0);
     VMVReg* vreg = static_cast<VMVReg*>(reg);
     m_inferenceGraph->addNode (vreg);
-    BOOST_FOREACH (const VMVReg* other, m_live) {
+    BOOST_FOREACH (VMVReg* other, m_live) {
         m_inferenceGraph->addEdge (vreg, other);
     }
 
