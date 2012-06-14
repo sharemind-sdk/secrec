@@ -24,12 +24,24 @@ bool Dominators::visited (const Block& block) const {
     return m_num.find (&block)->second != 0;
 }
 
-/// \todo make this non-recursive
 unsigned Dominators::dfs (const Block& entry, unsigned n) {
-    if (!visited (entry)) {
+    std::vector<Block::neighbour_const_range> stack;
+    if (! visited (entry)) {
         m_num[&entry] = ++ n;
-        BOOST_FOREACH (Block::edge_type edge, entry.succ_range ()) {
-            n = dfs (*edge.first, n);
+        stack.push_back (entry.succ_range ());
+    }
+
+    while (!stack.empty ()) {
+        Block::neighbour_const_range& range = stack.back ();
+        if (range.first == range.second) {
+            stack.pop_back ();
+            continue;
+        }
+
+        const Block& block = *(range.first ++)->first;
+        if (! visited (block)) {
+            m_num[&block] = ++ n;
+            stack.push_back (block.succ_range ());
         }
     }
 
@@ -43,8 +55,8 @@ void Dominators::start (const Program &pr) {
     }
 
     unsigned n = 0;
-    BOOST_FOREACH (const Procedure& block, pr) {
-        const Block* entry = block.entry ();
+    BOOST_FOREACH (const Procedure& proc, pr) {
+        const Block* entry = proc.entry ();
         n = dfs (*entry, n);
         m_doms[entry] = entry;
     }
