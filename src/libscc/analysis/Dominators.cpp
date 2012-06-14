@@ -28,10 +28,8 @@ bool Dominators::visited (const Block& block) const {
 unsigned Dominators::dfs (const Block& entry, unsigned n) {
     if (!visited (entry)) {
         m_num[&entry] = ++ n;
-        std::set<Block* > succ;
-        entry.getOutgoing (succ);
-        BOOST_FOREACH (const Block* block, succ) {
-            n = dfs (*block, n);
+        BOOST_FOREACH (Block::edge_type edge, entry.succ_range ()) {
+            n = dfs (*edge.first, n);
         }
     }
 
@@ -65,7 +63,10 @@ const Block* Dominators::intersect (const Block* b1, const Block* b2) {
        return b1;
 }
 
-void Dominators::inFrom (const Block& from, const Block&) {
+void Dominators::inFrom (const Block& from, Edge::Label label, const Block&) {
+    if (Edge::isGlobal (label))
+        return;
+
     if (m_newIdom == 0) {
         m_newIdom = &from;
         return;
@@ -92,7 +93,7 @@ const Block* Dominators::idom (const Block* block) const {
     return m_doms.find (block)->second;
 }
 
-void Dominators::dominators (const Block* block, std::list<const Block*>& doms) const {
+void Dominators::dominators (const Block* block, std::vector<const Block*>& doms) const {
     const Block* prev = block;
     doms.clear ();
     do {

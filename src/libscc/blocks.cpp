@@ -22,15 +22,15 @@ inline bool fallsThru(const SecreC::Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
 
-    SecreC::Block::const_reverse_iterator i, e;
     const SecreC::Imop* last = 0;
-    for (i = b.rbegin (), e = b.rend (); i != e; ++ i) {
-        last = &*i;
-        if (i->type () != SecreC::Imop::COMMENT) {
+    BOOST_REVERSE_FOREACH (const Imop& imop, b) {
+        last = &imop;
+        if (imop.type () != SecreC::Imop::COMMENT) {
             break;
         }
     }
 
+    assert (last != 0);
     switch (last->type ()) {
     case SecreC::Imop::CALL:
     case SecreC::Imop::JUMP:
@@ -43,41 +43,6 @@ inline bool fallsThru(const SecreC::Block &b) {
     }
 
     return true;
-}
-
-inline void addMutualUse (SecreC::Block &from, SecreC::Block &to) {
-    from.addUser (&to);
-    to.addUser (&from);
-}
-
-inline void linkBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.addSucc (&to);
-    to.addPred (&from);
-    addMutualUse (from, to);
-}
-
-inline void linkBlocksCondFalse(SecreC::Block &from, SecreC::Block &to) {
-    from.addSuccCondFalse (&to);
-    to.addPredCondFalse (&from);
-    addMutualUse (from, to);
-}
-
-inline void linkBlocksCondTrue(SecreC::Block &from, SecreC::Block &to) {
-    from.addSuccCondTrue (&to);
-    to.addPredCondTrue (&from);
-    addMutualUse (from, to);
-}
-
-inline void linkCallBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.addSuccCall (&to);
-    to.addPredCall (&from);
-    addMutualUse (from, to);
-}
-
-inline void linkRetBlocks(SecreC::Block &from, SecreC::Block &to) {
-    from.addSuccRet (&to);
-    to.addPredRet (&from);
-    addMutualUse (from, to);
 }
 
 template <typename Iter >
@@ -115,6 +80,37 @@ void printBlockList(std::ostream &os, const char *prefix, const std::set<SecreC:
     printBlocks (os, prefix, bl.begin (), bl.end ());
 }
 
+template <typename Iter>
+std::map<Edge::Label, std::set<Block*> > transpose (Iter begin, Iter end) {
+    std::map<Edge::Label, std::set<Block*> > out;
+    for (Iter i = begin; i != end; ++ i) {
+        for (Edge::Label label = Edge::begin; label != Edge::end; label = Edge::next (label)) {
+            if (i->second & label) {
+                out[label].insert (i->first);
+            }
+        }
+    }
+
+    return out;
+}
+
+void printHeader (std::ostream& os, const Block& block) {
+    std::map<Edge::Label, std::set<Block*> > succ = transpose (block.succ_begin (), block.succ_end ());
+    std::map<Edge::Label, std::set<Block*> > pred = transpose (block.pred_begin (), block.pred_end ());
+    printBlockList(os, "    ..... From: ", pred[Edge::Jump]);
+    printBlockList(os, "    ... From -: ", pred[Edge::False]);
+    printBlockList(os, "    ... From +: ", pred[Edge::True]);
+    printBlockList(os, "    . FromCall: ", pred[Edge::Call]);
+    printBlockList(os, "    .. FromRet: ", pred[Edge::Ret]);
+    printBlockList(os, "    . PassFrom: ", pred[Edge::CallPass]);
+    printBlockList(os, "    ....... To: ", succ[Edge::Jump]);
+    printBlockList(os, "    ..... To -: ", succ[Edge::False]);
+    printBlockList(os, "    ..... To +: ", succ[Edge::True]);
+    printBlockList(os, "    ... ToCall: ", succ[Edge::Call]);
+    printBlockList(os, "    .... ToRet: ", succ[Edge::Ret]);
+    printBlockList(os, "    ... PassTo: ", succ[Edge::CallPass]);
+}
+
 void printLabel (std::ostream& os, const Block& block) {
     os << "      ";
     os << "label = <<TABLE BORDER=\"0\">";
@@ -150,14 +146,21 @@ void printEdge (std::ostream& os, const Block& from, const Block& to, const char
     }
 }
 
-void printEdges (std::ostream& os, const Block& from, const std::set<Block*>& to, const char* style = 0) {
-    typedef std::set<Block*>::const_iterator Iter;
-    if (!to.empty ()) os << "    ";
-    for (Iter i = to.begin (), e = to.end (); i != e; ++ i) {
-        printEdge (os, from, **i, style);
-        os << ' ';
+void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = 0) {
+    bool foundAny = false;
+    BOOST_FOREACH (const Block::edge_type& edge, from.succ_range ()) {
+        if (edge.second & label) {
+            if (! foundAny) {
+                os << "    ";
+            }
+
+            printEdge (os, from, *edge.first, style);
+            foundAny = true;
+        }
     }
-    if (!to.empty ()) os << "\n";
+
+    if (foundAny)
+        os << "\n";
 }
 
 void printProcName (std::ostream& os, const Procedure& pr) {
@@ -297,20 +300,18 @@ void Program::propagate () {
             Procedure* callTarget = lastImop.callDest ()->block ()->proc ();
             Procedure::iterator next = procIterator (*lastImop.callDest ()->block ());
             todo.insert (next);
-            linkCallBlocks (*cur, *next);
-            callTarget->addCallFrom (*cur);
+            Block::addEdge (*cur, Edge::Call, *next);
 
             Procedure::iterator cleanBlock = cur;
             ++ cleanBlock;
             assert (cleanBlock != curProc->end () && "Expecting RETCLEAN!");
             todo.insert (cleanBlock);
-            cleanBlock->setCallPassFrom (&*cur);
-            cur->setCallPassTo (&*cleanBlock);
+            Block::addEdge (*cur, Edge::CallPass, *cleanBlock);
 
             BOOST_FOREACH (Block* exitBlock, callTarget->exitBlocks ()) {
                 switch (exitBlock->back ().type ()) {
                 case Imop::RETURN:
-                    linkRetBlocks (*exitBlock, *cleanBlock);
+                    Block::addEdge (*exitBlock, Edge::Ret, *cleanBlock);
                     exitBlock->proc ()->addReturnTo (*cleanBlock);
                 default:
                     break;
@@ -324,12 +325,15 @@ void Program::propagate () {
             ++ next;
             assert (next != curProc->end () && "Must not fall out of procedure!");
             todo.insert (next);
+            Edge::Label label = Edge::None;
             switch (lastImop.type ()) {
-            case Imop::JUMP: assert (false);                     break;
-            case Imop::JT:   linkBlocksCondFalse (*cur, *next);  break;
-            case Imop::JF:   linkBlocksCondTrue (*cur, *next);   break;
-            default:         linkBlocks (*cur, *next);           break;
+            case Imop::JUMP: assert (false);      break;
+            case Imop::JT:   label = Edge::False; break;
+            case Imop::JF:   label = Edge::True;  break;
+            default:         label = Edge::Jump;  break;
             }
+
+            Block::addEdge (*cur, label, *next);
         }
 
         // if last instruction is jump, link current block with its destination
@@ -338,12 +342,15 @@ void Program::propagate () {
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
             Procedure::iterator next = procIterator (*jumpDest->block ());
             todo.insert (next);
+            Edge::Label label = Edge::None;
             switch (lastImop.type ()) {
-            case Imop::JUMP: linkBlocks (*cur, *next);           break;
-            case Imop::JT:   linkBlocksCondTrue (*cur, *next);   break;
-            case Imop::JF:   linkBlocksCondFalse (*cur, *next);  break;
-            default:         assert (false);                     break;
+            case Imop::JUMP: label = Edge::Jump;  break;
+            case Imop::JT:   label = Edge::True;  break;
+            case Imop::JF:   label = Edge::False; break;
+            default:         assert (false);      break;
             }
+
+            Block::addEdge (*cur, label, *next);
         }
 
         visited.insert (cur);
@@ -356,50 +363,35 @@ std::string Program::toString() const {
     std::ostringstream os;
 
     os << "PROCEDURES:" << std::endl;
-    for (const_iterator pi = begin(); pi != end(); ++ pi) {
-        if (pi->name ())
-            os << "  " << pi->name ()->toString () << std::endl;
-        printBlockList(os, "  .. From: ", pi->callFrom ());
-        printBlockList(os, "  .... To: ", pi->returnTo ());
+    BOOST_FOREACH (const Procedure& proc, *this) {
+        if (proc.name ())
+            os << "  " << proc.name ()->toString () << std::endl;
+        printBlockList(os, "  .. From: ", proc.callFrom ());
+        printBlockList(os, "  .... To: ", proc.returnTo ());
         os << "  BLOCKS:" << std::endl;
-        for (Procedure::const_iterator it = pi->begin (); it != pi->end (); ++ it) {
-            os << "    Block " << it->index ();
-            if (!it->reachable ()) os << " [REMOVED]";
-            if (it->isExit ()) os << " [EXIT]";
+        BOOST_FOREACH (const Block& block, proc) {
+            os << "    Block " << block.index ();
+            if (!block.reachable ()) os << " [REMOVED]";
+            if (block.isExit ()) os << " [EXIT]";
 
             os << std::endl;
-            printBlockList(os, "    ..... From: ", it->pred ());
-            printBlockList(os, "    ... From -: ", it->predCondFalse ());
-            printBlockList(os, "    ... From +: ", it->predCondTrue ());
-            printBlockList(os, "    . FromCall: ", it->predCall ());
-            printBlockList(os, "    .. FromRet: ", it->predRet ());
-            printBlockList(os, "    ....... To: ", it->succ ());
-            printBlockList(os, "    ..... To -: ", it->succCondFalse ());
-            printBlockList(os, "    ..... To +: ", it->succCondTrue ());
-            printBlockList(os, "    ... ToCall: ", it->succCall ());
-            printBlockList(os, "    .... ToRet: ", it->succRet ());
-            if (it->callPassFrom () != 0) {
-                os << "    . PassFrom: " << it->callPassFrom ()->index () << std::endl;
-            }
-            if (it->callPassTo () != 0) {
-                os << "    ... PassTo: " << it->callPassTo ()->index () << std::endl;;
-            }
+            printHeader (os, block);
 
             // Print code:
             os << "    CODE:" << std::endl;
-            for (Block::const_iterator jt(it->begin ()); jt != it->end (); jt++) {
-                os << "      " << jt->index () << "  " << (*jt);
-                if (jt->creator() != 0) {
+            BOOST_FOREACH (const Imop& imop, block) {
+                os << "      " << imop.index () << "  " << imop;
+                if (imop.creator() != 0) {
                     os << " // Created by "
-                       << TreeNode::typeName(jt->creator()->type())
+                       << TreeNode::typeName(imop.creator()->type())
                        << " at "
-                       << jt->creator()->location();
-                    if (jt->creator()->type() == NODE_EXPR_CLASSIFY) {
-                        assert(jt->creator()->parent() != 0);
+                       << imop.creator()->location();
+                    if (imop.creator()->type() == NODE_EXPR_CLASSIFY) {
+                        assert(imop.creator()->parent() != 0);
                         os << " for "
-                           << TreeNode::typeName(jt->creator()->parent()->type())
+                           << TreeNode::typeName(imop.creator()->parent()->type())
                            << " at "
-                           << jt->creator()->parent()->location();
+                           << imop.creator()->parent()->location();
                     }
                 }
                 os << std::endl;
@@ -413,32 +405,30 @@ std::string Program::toString() const {
 }
 
 void Program::toDotty (std::ostream& os) const {
-    unsigned uniq = 0;
+    uint64_t uniq = 0;
 
     os << "digraph CFG {\n";
-    for (const_iterator pi = begin(); pi != end(); ++ pi) {
+    BOOST_FOREACH (const Procedure& proc, *this) {
         os << "  subgraph cluster" << uniq ++ << " {\n";
-        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i)
-            printNode (os, *i);
-        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
-            printEdges (os, *i, i->succ ());
-            printEdges (os, *i, i->succCondFalse (), "[label=\"-\"]");
-            printEdges (os, *i, i->succCondTrue (), "[label=\"+\"]");
-            if (i->callPassTo () != 0) {
-                os << "    ";
-                printEdge (os, *i, *i->callPassTo ());
-                os << '\n';
-            }
+        BOOST_FOREACH (const Block& block, proc) {
+            printNode (os, block);
         }
 
-        printProcName (os, *pi);
+        BOOST_FOREACH (const Block& block, proc) {
+            printEdges (os, block, Edge::Jump);
+            printEdges (os, block, Edge::False, "[label=\"-\"]");
+            printEdges (os, block, Edge::True,  "[label=\"+\"]");
+            printEdges (os, block, Edge::CallPass);
+        }
+
+        printProcName (os, proc);
         os << "  }\n\n";
     }
 
-    for (const_iterator pi = begin(); pi != end(); ++ pi) {
-        for (Procedure::const_iterator i = pi->begin (); i != pi->end (); ++ i) {
-            printEdges (os, *i, i->succCall (), "[style = \"dotted\"]");
-            printEdges (os, *i, i->succRet (), "[style = \"dotted\"]");
+    BOOST_FOREACH (const Procedure& proc, *this) {
+        BOOST_FOREACH (const Block& block, proc) {
+            printEdges (os, block, Edge::Call, "[style = \"dotted\"]");
+            printEdges (os, block, Edge::Ret,  "[style = \"dotted\"]");
         }
     }
 
@@ -458,45 +448,31 @@ Procedure::~Procedure () {
   Block
 *******************************************************************************/
 
-void Block::unlink () {
-    Set::iterator i, e;
-    for (i = m_users.begin (), e = m_users.end (); i != e; ++ i) {
-        Block* that = *i;
-        that->m_users.erase (this);
-        that->m_predecessors.erase (this);
-        that->m_predecessorsCondFalse.erase (this);
-        that->m_predecessorsCondTrue.erase (this);
-        that->m_predecessorsCall.erase (this);
-        that->m_predecessorsRet.erase (this);
-        that->m_successors.erase (this);
-        that->m_successorsCondFalse.erase (this);
-        that->m_successorsCondTrue.erase (this);
-        that->m_successorsCall.erase (this);
-        that->m_successorsRet.erase (this);
-        if (that->m_callPassFrom == this) that->setCallPassFrom (0);
-        if (that->m_callPassTo == this) that->setCallPassTo (0);
-    }
-
-    m_users.clear ();
-}
-
 bool Block::hasIncomingJumps () const {
-    std::set<Block*> incoming;
-    getIncoming (incoming);
-    if (incoming.size () == 1) {
-        Block* pred = *incoming.begin ();
-        Procedure::const_iterator predIt = procIterator (*pred);
-        Procedure::const_iterator thisIt = procIterator (*this);
-        if (predIt.get_container () != thisIt.get_container ())
-            return true;
-
-        ++ predIt;
-        if (predIt == thisIt) {
-            return false;
+    BOOST_FOREACH (edge_type edge, pred_range ()) {
+        const Block& from = *edge.first;
+        if (from.empty ()) {
+            if (from.hasIncomingJumps ())
+                return true;
+            continue;
         }
+
+        const Edge::Label label = edge.second;
+        const Imop::Type type = from.back ().type ();
+        if (label & Edge::Jump)
+            if (type == Imop::JUMP)
+                return true;
+
+        if (label & Edge::True)
+            if (type == Imop::JT)
+                return true;
+
+        if (label & Edge::False)
+            if (type == Imop::JF)
+                return true;
     }
 
-    return true;
+    return false;
 }
 
 Block::~Block () {
@@ -506,25 +482,19 @@ Block::~Block () {
 
 void Block::getOutgoing (std::set<Block*>& inc) const {
     inc.clear ();
-    inc.insert (m_successors.begin (), m_successors.end ());
-    inc.insert (m_successorsCondFalse.begin (), m_successorsCondFalse.end ());
-    inc.insert (m_successorsCondTrue.begin (), m_successorsCondTrue.end ());
-    inc.insert (m_successorsCall.begin (), m_successorsCall.end ());
-    inc.insert (m_successorsRet.begin (), m_successorsRet.end ());
-    if (m_callPassTo != 0) {
-        inc.insert (m_callPassTo);
+    BOOST_FOREACH (const edge_type& edge, succ_range ()) {
+        if (edge.second != Edge::None) {
+            inc.insert (edge.first);
+        }
     }
 }
 
 void Block::getIncoming (std::set<Block*>& out) const {
     out.clear ();
-    out.insert (m_predecessors.begin (), m_predecessors.end ());
-    out.insert (m_predecessorsCondFalse.begin (), m_predecessorsCondFalse.end ());
-    out.insert (m_predecessorsCondTrue.begin (), m_predecessorsCondTrue.end ());
-    out.insert (m_predecessorsCall.begin (), m_predecessorsCall.end ());
-    out.insert (m_predecessorsRet.begin (), m_predecessorsRet.end ());
-    if (m_callPassFrom != 0) {
-        out.insert (m_callPassFrom);
+    BOOST_FOREACH (const edge_type& edge, pred_range ()) {
+        if (edge.second != Edge::None) {
+            out.insert (edge.first);
+        }
     }
 }
 

@@ -19,6 +19,7 @@ public: /* Methods: */
     typedef std::set<const Imop*> Domain;
     typedef std::map<const Symbol*, Domain> Values;
     typedef std::map<const Block*, Values> BV;
+    typedef std::set<const Symbol*> Symbols;
 
 public: /* Types: */
 
@@ -34,12 +35,13 @@ protected:
 
     virtual void start (const Program& pr);
     virtual void startBlock(const Block& b);
-    virtual void outTo(const Block &from, const Block &to) { outToLocal (from, to); }
-    virtual void outToTrue(const Block &from, const Block &to) { outToLocal (from, to); }
-    virtual void outToFalse(const Block &from, const Block &to) { outToLocal (from, to); }
-    virtual void outToCallPass(const Block &from, const Block &to) { outToLocal (from, to); }
-    virtual void outToCall(const Block &from, const Block &to)  { outToGlobal (from, to); }
-    virtual void outToRet(const Block &from, const Block &to) { outToGlobal (from, to); }
+    virtual void outTo(const Block &from, Edge::Label label, const Block &to) {
+        if (Edge::isGlobal (label))
+            outToGlobal (from, to);
+        else
+            outToLocal (from, to);
+    }
+
     virtual bool finishBlock(const Block &b);
     virtual void finish () { }
 
@@ -49,6 +51,9 @@ private:
     void outToGlobal (const Block &from, const Block &to);
 
 private: /* Fields: */
+    BV m_gen;
+    std::map<const Block*, Symbols> m_kill;
+
     BV m_ins, m_outs;
 }; /* class ReachableReleases { */
 

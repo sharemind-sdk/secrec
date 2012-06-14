@@ -38,23 +38,21 @@ public: /* Methods: */
 protected:
 
     virtual void start(const Program &pr) {
-        // Initialize the OUT set of the entry block:
         makeOuts(*pr.entryBlock(), m_ins[pr.entryBlock()], m_outs[pr.entryBlock()]);
     }
+
     virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
-    virtual inline void inFrom(const Block &from, const Block &to) { inFrom(from, to, false); }
-    virtual void inFrom(const Block &from, const Block &to, bool globalOnly);
-    virtual inline void inFromTrue(const Block &from, const Block &to) { inFrom(from, to, false); }
-    virtual inline void inFromFalse(const Block &from, const Block &to) { inFrom(from, to, false); }
-    virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to, false); }
-    virtual inline void inFromCall(const Block &from, const Block &to) { inFrom(from, to, true); }
-    virtual inline void inFromRet(const Block &from, const Block &to) { inFrom(from, to, true); }
+    virtual void inFrom (const Block &from, Edge::Label label, const Block &to) {
+        return inFrom (from, to, Edge::isGlobal (label));
+    }
+
     virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
     virtual inline void finish() { m_outs.clear(); }
 
 private:
 
-    bool makeOuts(const Block &b, const SDefs &in, SDefs &out);
+    void inFrom (const Block &from, const Block &to, bool globalOnly);
+    bool makeOuts (const Block &b, const SDefs &in, SDefs &out);
 
 private: /* Fields: */
     BDM           m_ins;

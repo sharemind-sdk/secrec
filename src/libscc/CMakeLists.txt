@@ -61,6 +61,7 @@ SET(LIBSCC_SOURCES
 
 
 SET(LIBSCC_HEADERS
+    "${LIBSCC_INCLUDE_DIR}/CFG.h"
     "${LIBSCC_INCLUDE_DIR}/codegen.h"
     "${LIBSCC_INCLUDE_DIR}/dataflowanalysis.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDeclassify.h"

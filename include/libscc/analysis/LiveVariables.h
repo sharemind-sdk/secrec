@@ -41,12 +41,15 @@ protected:
 
     virtual void start (const Program &bs);
     virtual void startBlock(const Block& b);
-    virtual void outTo(const Block &from, const Block &to) { transfer (from, to); }
-    virtual void outToTrue(const Block &from, const Block &to) { transfer (from, to);}
-    virtual void outToFalse(const Block &from, const Block &to) { transfer (from, to); }
-    virtual void outToCallPass(const Block &from, const Block &to) { transfer (from, to); }
-    virtual void outToCall(const Block &from, const Block &to) { transferGlobal (from, to); }
-    virtual void outToRet(const Block &from, const Block &to) { transferGlobal (from, to);}
+    virtual void outTo(const Block &from, Edge::Label label, const Block &to) {
+        if (Edge::isGlobal (label)) {
+            transferGlobal (from, to);
+        }
+        else {
+            transfer (from, to);
+        }
+    }
+
     virtual bool finishBlock(const Block &b);
     virtual void finish();
 

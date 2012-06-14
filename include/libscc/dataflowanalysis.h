@@ -14,7 +14,7 @@
 
 template <class T, class U>
 inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
-    dest.insert(src.begin(), src.end());
+    dest.insert (src.begin(), src.end());
     return dest;
 }
 
@@ -58,22 +58,13 @@ public:
     virtual std::string toString (const Program& pr) const = 0;
 
 protected:
+
     virtual void start(const Program&) {}
     virtual void startBlock(const Block &) {}
-    virtual void inFrom(const Block & /* from */, const Block & /* to */) {}
-    virtual void inFromTrue(const Block & /* from */, const Block & /* to */) {}
-    virtual void inFromFalse(const Block & /* from */, const Block & /* to */) {}
-    virtual void inFromCall(const Block & /* from */, const Block & /* to */) {}
-    virtual void inFromCallPass(const Block & /* from */, const Block & /* to */) {}
-    virtual void inFromRet(const Block & /* from */, const Block & /* to */) {}
-    virtual void outTo(const Block & /* from */, const Block & /* to */) {}
-    virtual void outToTrue(const Block & /* from */, const Block & /* to */) {}
-    virtual void outToFalse(const Block & /* from */, const Block & /* to */) {}
-    virtual void outToCall(const Block & /* from */, const Block & /* to */) {}
-    virtual void outToCallPass(const Block & /* from */, const Block & /* to */) {}
-    virtual void outToRet(const Block & /* from */, const Block & /* to */) {}
+    virtual void inFrom (const Block& from, Edge::Label label, const Block& to) = 0;
+    virtual void outTo (const Block& from, Edge::Label label, const Block& to) = 0;
     virtual bool finishBlock(const Block &) { return false; }
-    virtual void finish() {}
+    virtual void finish() { }
 
 private: /* Fields: */
     const bool m_forward;
@@ -83,11 +74,15 @@ private: /* Fields: */
 class ForwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */
     inline ForwardDataFlowAnalysis() : DataFlowAnalysis(true, false) {}
+
+    void outTo (const Block&, Edge::Label, const Block&) { }
 };
 
 class BackwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */
     inline BackwardDataFlowAnalysis() : DataFlowAnalysis(false, true) {}
+
+    void inFrom (const Block&, Edge::Label, const Block&) { }
 };
 
 /*******************************************************************************

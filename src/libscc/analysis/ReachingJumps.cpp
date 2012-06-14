@@ -24,29 +24,31 @@ void ReachingJumps::startBlock(const Block &b) {
     m_inPos[&b].clear();
 }
 
-void ReachingJumps::inFrom(const Block &from, const Block &to) {
-    m_inNeg[&to] += m_outNeg[&from];
-    m_inPos[&to] += m_outPos[&from];
-}
+void ReachingJumps::inFrom(const Block &from, Edge::Label label, const Block &to) {
+    if ((label & (Edge::Jump | Edge::CallPass)) != 0) {
+        m_inNeg[&to] += m_outNeg[&from];
+        m_inPos[&to] += m_outPos[&from];
+    }
 
-void ReachingJumps::inFromFalse(const Block &from, const Block &to) {
-    const Imop& cjump = from.back ();
-    assert(cjump.isCondJump());
-    Jumps inPosT = m_outPos[&from];
-    inPosT.erase(&cjump);
-    m_inPos[&to] += inPosT;
-    m_inNeg[&to] += m_outNeg[&from];
-    m_inNeg[&to].insert(&cjump);
-}
+    if ((label & Edge::False) != 0) {
+        const Imop& cjump = from.back ();
+        assert(cjump.isCondJump());
+        Jumps inPosT = m_outPos[&from];
+        inPosT.erase(&cjump);
+        m_inPos[&to] += inPosT;
+        m_inNeg[&to] += m_outNeg[&from];
+        m_inNeg[&to].insert(&cjump);
+    }
 
-void ReachingJumps::inFromTrue(const Block &from, const Block &to) {
-    const Imop& cjump = from.back ();
-    assert(cjump.isCondJump());
-    Jumps inNegT = m_outNeg[&from];
-    inNegT.erase(&cjump);
-    m_inNeg[&to] += inNegT;
-    m_inPos[&to] += m_outPos[&from];
-    m_inPos[&to].insert(&cjump);
+    if ((label & Edge::True) != 0) {
+        const Imop& cjump = from.back ();
+        assert(cjump.isCondJump());
+        Jumps inNegT = m_outNeg[&from];
+        inNegT.erase(&cjump);
+        m_inNeg[&to] += inNegT;
+        m_inPos[&to] += m_outPos[&from];
+        m_inPos[&to].insert(&cjump);
+    }
 }
 
 bool ReachingJumps::finishBlock(const Block &b) {

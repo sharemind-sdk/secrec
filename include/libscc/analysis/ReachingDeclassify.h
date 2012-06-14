@@ -64,11 +64,8 @@ protected:
     }
 
     virtual void startBlock (const Block& b) { m_ins[&b].clear (); }
-    virtual void inFrom (const Block& from, const Block& to);
-    virtual inline void inFromTrue (const Block& from, const Block& to) { inFrom (from, to); }
-    virtual inline void inFromFalse (const Block& from, const Block& to) { inFrom (from, to); }
-    virtual inline void inFromCallPass (const Block& from, const Block& to) { inFrom (from, to); }
-    virtual inline bool finishBlock (const Block& b) { return makeOuts (b, m_ins[&b], m_outs[&b]); }
+    virtual void inFrom (const Block& from, Edge::Label label, const Block& to);
+    virtual bool finishBlock (const Block& b) { return makeOuts (b, m_ins[&b], m_outs[&b]); }
     virtual void finish ();
 
 private:

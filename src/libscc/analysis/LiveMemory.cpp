@@ -198,6 +198,12 @@ std::string LiveMemory::printDeadCopies (const Program &pr) const {
         }
 
         BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+            BOOST_FOREACH (const Symbol* dest, imop.defRange ()) {
+                if (dest->isArray () && after[dest] == Dead) {
+                    ss << imop.index () << ": " << imop.toString () << " redundant value " << dest->toString () << "\n";
+                }
+            }
+
             if (imop.type () == Imop::COPY) {
                 ++ num_copies;
                 if ((after[imop.dest ()] & Read) == 0) {

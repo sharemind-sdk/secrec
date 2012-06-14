@@ -256,7 +256,7 @@ class SymbolLabel: public Symbol {
         explicit SymbolLabel (Block* block);
 
         const Imop* target () const;
-        inline const Block* block () const { return m_block; }
+        inline Block* block () const { return m_block; }
 
         void setBlock (Block* block) {
             m_target = 0;

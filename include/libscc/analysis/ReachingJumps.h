@@ -34,10 +34,7 @@ protected:
 
     virtual void start(const Program &bs);
     virtual void startBlock(const Block &b);
-    virtual void inFrom(const Block &from, const Block &to);
-    virtual void inFromTrue(const Block &from, const Block &to);
-    virtual void inFromFalse(const Block &from, const Block &to);
-    virtual inline void inFromCallPass(const Block &from, const Block &to) { inFrom(from, to); }
+    virtual void inFrom(const Block &from, Edge::Label label, const Block &to);
     virtual bool finishBlock(const Block &b);
     virtual inline void finish() { m_outPos.clear(); m_outNeg.clear(); }
 

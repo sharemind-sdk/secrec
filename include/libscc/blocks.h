@@ -1,13 +1,12 @@
 #ifndef SECREC_BLOCKS_H
 #define SECREC_BLOCKS_H
 
-#include <list>
-#include <map>
 #include <set>
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
 
 #include "icodelist.h"
+#include "CFG.h"
 
 namespace SecreC {
 
@@ -23,15 +22,45 @@ typedef boost::intrusive::list_base_hook<
   Block
 *******************************************************************************/
 
+struct Edge {
+    enum Label {
+        None     = 0x00,
+        Jump     = 0x01,
+        True     = 0x02,
+        False    = 0x04,
+        Call     = 0x08,
+        Ret      = 0x10,
+        CallPass = 0x20,
+        End      = 0x40
+    };
+
+    static inline bool isLocal (Label label) {
+        return (label & (Jump | True | False | CallPass)) != 0;
+    }
+
+    static inline bool isGlobal (Label label) {
+        return (label & (Call | Ret)) != 0;
+    }
+
+    static const Label begin = Jump;
+    static const Label end = End;
+    static inline Label next (Label label) {
+        return static_cast<Label>(label << 1);
+    }
+};
+
 /**
  * \brief Representation of intermediate code basic block.
- * \a Block doesn't own \a Imop and does not destroy them. \a ICodeList
- * is responsible of destroying all instructions.
  * \todo This class requires major refactoring.
  */
-class Block : private ImopList, public auto_unlink_hook, boost::noncopyable {
+class Block : private ImopList
+            , public auto_unlink_hook
+            , public CFGNode<Block, Edge::Label>
+            , boost::noncopyable
+{
 public: /* Types: */
 
+    typedef CFGNode<Block, Edge::Label> CFGBase;
     typedef std::set<Block*> Set;
     using ImopList::iterator;
     using ImopList::const_iterator;
@@ -41,9 +70,7 @@ public: /* Types: */
 public: /* Methods: */
 
     explicit Block (unsigned long i, Procedure* proc)
-        : m_callPassTo (0)
-        , m_callPassFrom (0)
-        , m_proc (proc)
+        : m_proc (proc)
         , m_index (i)
         , m_reachable (false)
     { }
@@ -61,40 +88,12 @@ public: /* Methods: */
     using ImopList::s_iterator_to;
     using ImopList::insert;
 
-    /// \brief unlink block from CFG
-    void unlink ();
+    void unlink() {
+        CFGBase::unlink ();
+        auto_unlink_hook::unlink();
+    }
 
     bool hasIncomingJumps () const;
-
-    void addUser (Block* block) { m_users.insert (block); }
-
-    // Predecessors:
-    void addPred (Block* block) { m_predecessors.insert (block); }
-    void addPredCondFalse (Block* block) { m_predecessorsCondFalse.insert (block); }
-    void addPredCondTrue (Block* block) { m_predecessorsCondTrue.insert (block); }
-    void addPredCall (Block* block) { m_predecessorsCall.insert (block); }
-    void addPredRet (Block* block) { m_predecessorsRet.insert (block); }
-    void setCallPassTo (Block* block) { m_callPassTo = block; }
-    const std::set<Block*>& pred () const { return m_predecessors; }
-    const std::set<Block*>& predCondFalse () const { return m_predecessorsCondFalse; }
-    const std::set<Block*>& predCondTrue () const { return m_predecessorsCondTrue; }
-    const std::set<Block*>& predCall () const { return m_predecessorsCall; }
-    const std::set<Block*>& predRet () const { return m_predecessorsRet; }
-    Block* callPassFrom () const { return m_callPassFrom; }
-
-    // Successors:
-    void addSucc (Block* block) { m_successors.insert (block); }
-    void addSuccCondFalse (Block* block) { m_successorsCondFalse.insert (block); }
-    void addSuccCondTrue (Block* block) { m_successorsCondTrue.insert (block); }
-    void addSuccCall (Block* block) { m_successorsCall.insert (block); }
-    void addSuccRet (Block* block) { m_successorsRet.insert (block); }
-    void setCallPassFrom (Block* block) { m_callPassFrom = block; }
-    const std::set<Block*>& succ () const { return m_successors; }
-    const std::set<Block*>& succCondFalse () const { return m_successorsCondFalse; }
-    const std::set<Block*>& succCondTrue () const { return m_successorsCondTrue; }
-    const std::set<Block*>& succCall () const { return m_successorsCall; }
-    const std::set<Block*>& succRet () const { return m_successorsRet; }
-    Block* callPassTo () const { return m_callPassTo; }
 
     void setReachable () { m_reachable = true; }
     bool reachable () const { return m_reachable; }
@@ -112,22 +111,9 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    std::set<Block*>        m_predecessors;
-    std::set<Block*>        m_predecessorsCondFalse;
-    std::set<Block*>        m_predecessorsCondTrue;
-    std::set<Block*>        m_predecessorsCall;
-    std::set<Block*>        m_predecessorsRet;
-    std::set<Block*>        m_successors;
-    std::set<Block*>        m_successorsCondFalse;
-    std::set<Block*>        m_successorsCondTrue;
-    std::set<Block*>        m_successorsCall;
-    std::set<Block*>        m_successorsRet;
-    std::set<Block*>        m_users;
-    Block*                  m_callPassTo;
-    Block*                  m_callPassFrom;
-    Procedure* const        m_proc;                      ///< Pointer to containing procedure
-    const unsigned long     m_index;                     ///< Index of block
-    bool                    m_reachable;                 ///< If block is reachable
+    Procedure*     const  m_proc;      ///< Pointer to containing procedure
+    unsigned long  const  m_index;     ///< Index of block
+    bool                  m_reachable; ///< If block is reachable
 };
 
 typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;

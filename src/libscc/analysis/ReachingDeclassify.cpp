@@ -48,7 +48,10 @@ namespace SecreC {
   ReachingDeclassify
 *******************************************************************************/
 
-void ReachingDeclassify::inFrom (const Block& from, const Block& to) {
+void ReachingDeclassify::inFrom (const Block& from, Edge::Label label, const Block& to) {
+    if (Edge::isGlobal (label))
+        return;
+
     BOOST_FOREACH (const PDefs::value_type& pdef, m_outs[&from]) {
         PDefs& in = m_ins[&to];
         in[pdef.first].nonsensitive += pdef.second.nonsensitive;

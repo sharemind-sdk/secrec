@@ -10,6 +10,26 @@ namespace /* anonymous */ {
 
 using namespace SecreC;
 
+struct CollectGenKill {
+
+    CollectGenKill (ReachableReleases::Values& gen, ReachableReleases::Symbols& kill)
+        : m_gen (gen), m_kill (kill)
+    { }
+
+
+
+    inline void gen (const Symbol* sym, const Imop& imop) {
+        m_gen[sym].insert (&imop);
+    }
+
+    inline void kill (const Symbol* sym) {
+        m_kill.insert (sym);
+    }
+
+    ReachableReleases::Values&   m_gen;
+    ReachableReleases::Symbols&  m_kill;
+};
+
 struct UpdateValues {
     UpdateValues (ReachableReleases::Values& vs)
         : m_values (vs)
@@ -51,7 +71,14 @@ void ReachableReleases::update (const Imop& imop, Values& vals) {
     visitImop (imop, visitor);
 }
 
-void ReachableReleases::start (const Program& /* pr */) { }
+void ReachableReleases::start (const Program& pr) {
+    FOREACH_BLOCK (bi, pr) {
+        CollectGenKill collector (m_gen[&*bi], m_kill[&*bi]);
+        BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+            visitImop (imop, collector);
+        }
+    }
+}
 
 void ReachableReleases::outToLocal (const Block& from, const Block& to) {
     Values& dest = m_outs[&to];
@@ -80,8 +107,12 @@ bool ReachableReleases::finishBlock (const Block& b) {
     const Values& out = m_outs[&b];
     in = out;
 
-    BOOST_REVERSE_FOREACH (const Imop& imop, b) {
-        update (imop, in);
+    BOOST_FOREACH (Symbols::const_reference sym, m_kill[&b]) {
+        in.erase (sym);
+    }
+
+    BOOST_FOREACH (Values::const_reference sv, m_gen[&b]) {
+        in[sv.first] += sv.second;
     }
 
     return old != in;
