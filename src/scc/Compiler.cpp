@@ -319,12 +319,12 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     m_ra = new RegisterAllocator ();
     m_scm = new SyscallManager ();
     m_strLit = new StringLiterals ();
+
     RegisterAllocator::LVPtr lv (new LiveVariables ());
-    DataFlowAnalysisRunner runner;
+    DataFlowAnalysisRunner ()
+            .addAnalysis (*lv.get ())
+            .run (m_code.program ());
 
-
-    runner.addAnalysis (lv.get ());
-    runner.run (m_code.program ());
     m_target = codeSec;
     m_ra->init (m_st, lv);
     m_scm->init (m_st, scSec, pdSec);

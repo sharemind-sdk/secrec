@@ -16,8 +16,8 @@ void eliminateRedundantCopies (ICode& code) {
     LiveMemory liveMemory;
 
     DataFlowAnalysisRunner ()
-            .addAnalysis (&reachableReleases)
-            .addAnalysis (&liveMemory)
+            .addAnalysis (reachableReleases)
+            .addAnalysis (liveMemory)
             .run (program);
 
     std::set<const Imop*> releases;
