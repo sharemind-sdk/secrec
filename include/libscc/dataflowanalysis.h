@@ -1,8 +1,6 @@
 #ifndef SECREC_DATAFLOW_ANALYSIS_H
 #define SECREC_DATAFLOW_ANALYSIS_H
 
-#include <cassert>
-#include <map>
 #include <set>
 #include <string>
 
@@ -34,37 +32,40 @@ class Symbol;
 class ICode;
 class Imop;
 
-class DataFlowAnalysisRunner;
+class ForwardAnalysisRunner;
+class BackwardAnalysisRunner;
 
 /*******************************************************************************
   DataFlowAnalysis
 *******************************************************************************/
 
 class DataFlowAnalysis {
-    friend class DataFlowAnalysisRunner;
+    friend class ForwardAnalysisRunner;
+    friend class BackwardAnalysisRunner;
 protected: /* Methods: */
 
-    DataFlowAnalysis(bool forward, bool backward)
-        : m_forward(forward)
-        , m_backward(backward) {}
+    DataFlowAnalysis (bool forward, bool backward)
+        : m_forward (forward)
+        , m_backward (backward)
+    { }
 
 public:
 
     virtual ~DataFlowAnalysis () { }
 
-    inline bool isForward() const { return m_forward; }
-    inline bool isBackward() const { return m_backward; }
+    inline bool isForward () const { return m_forward; }
+    inline bool isBackward () const { return m_backward; }
 
     virtual std::string toString (const Program& pr) const = 0;
 
 protected:
 
-    virtual void start(const Program&) {}
-    virtual void startBlock(const Block &) {}
+    virtual void start (const Program&) {}
+    virtual void startBlock (const Block &) {}
     virtual void inFrom (const Block& from, Edge::Label label, const Block& to) = 0;
     virtual void outTo (const Block& from, Edge::Label label, const Block& to) = 0;
-    virtual bool finishBlock(const Block &) { return false; }
-    virtual void finish() { }
+    virtual bool finishBlock (const Block &) { return false; }
+    virtual void finish () { }
 
 private: /* Fields: */
     const bool m_forward;
@@ -96,7 +97,11 @@ public: /* Types: */
     typedef std::set<ForwardDataFlowAnalysis*>  ForwardAnalysisSet;
 
 public: /* Methods: */
-    inline DataFlowAnalysisRunner& addAnalysis(DataFlowAnalysis *a) { m_as.insert(a); return *this; }
+    inline DataFlowAnalysisRunner& addAnalysis (DataFlowAnalysis& a) {
+        m_as.insert (&a);
+        return *this;
+    }
+
     DataFlowAnalysisRunner& run (const Program &program);
     std::string toString (const Program& program);
 
