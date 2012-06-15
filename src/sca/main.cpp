@@ -219,7 +219,7 @@ int run (const Configuration& cfg) {
                 SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
                 if (a != 0) {
                     analysis.push_back (a);
-                    runner.addAnalysis (a);
+                    runner.addAnalysis (*a);
                 }
             }
 
@@ -259,6 +259,8 @@ int main(int argc, char *argv[]) {
              "\t\"rd\"  -- reaching definitions\n"
              "\t\"rj\"  -- reaching jumps\n"
              "\t\"rdc\" -- reaching declassify\n"
+             "\t\"rr\"  -- reachable releases\n"
+             "\t\"lm\"  -- live memory\n"
              "\t\"lv\"  -- live variables\n"
              "\t\"dom\" -- dominators\n");
     po::positional_options_description p;
