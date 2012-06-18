@@ -20,44 +20,13 @@ namespace SecreC {
   Dominators
 *******************************************************************************/
 
-bool Dominators::visited (const Block& block) const {
-    return m_num.find (&block)->second != 0;
-}
-
-unsigned Dominators::dfs (const Block& entry, unsigned n) {
-    std::vector<Block::neighbour_const_range> stack;
-    if (! visited (entry)) {
-        m_num[&entry] = ++ n;
-        stack.push_back (entry.succ_range ());
-    }
-
-    while (!stack.empty ()) {
-        Block::neighbour_const_range& range = stack.back ();
-        if (range.first == range.second) {
-            stack.pop_back ();
-            continue;
-        }
-
-        const Block& block = *(range.first ++)->first;
-        if (! visited (block)) {
-            m_num[&block] = ++ n;
-            stack.push_back (block.succ_range ());
-        }
-    }
-
-    return n;
-}
-
 void Dominators::start (const Program &pr) {
     FOREACH_BLOCK (i, pr) {
         m_doms[&*i] = 0;
-        m_num[&*i] = 0;
     }
 
-    unsigned n = 0;
     BOOST_FOREACH (const Procedure& proc, pr) {
         const Block* entry = proc.entry ();
-        n = dfs (*entry, n);
         m_doms[entry] = entry;
     }
 }
@@ -67,27 +36,21 @@ void Dominators::startBlock (const Block&) {
 }
 
 const Block* Dominators::intersect (const Block* b1, const Block* b2) {
-       while (b1 != b2) {
-           while (m_num[b1] > m_num[b2]) b1 = m_doms[b1];
-           while (m_num[b2] > m_num[b1]) b2 = m_doms[b2];
-       }
+    assert (b1 != 0 && b2 != 0);
+    while (b1 != b2) {
+        while (b1->dfn () > b2->dfn ()) b1 = m_doms[b1];
+        while (b2->dfn () > b1->dfn ()) b2 = m_doms[b2];
+    }
 
-       return b1;
+    return b1;
 }
 
 void Dominators::inFrom (const Block& from, Edge::Label label, const Block&) {
-    if (Edge::isGlobal (label))
-        return;
-
-    if (m_newIdom == 0) {
-        m_newIdom = &from;
-        return;
-    }
-
     const Block* idom = m_doms[&from];
-    if (idom != 0) {
-        m_newIdom = intersect (m_newIdom, idom);
-    }
+    if (idom == 0)
+        return;
+
+    m_newIdom = (m_newIdom == 0) ? &from : intersect (m_newIdom, idom);
 }
 
 bool Dominators::finishBlock (const Block& b) {

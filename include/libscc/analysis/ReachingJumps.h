@@ -39,10 +39,10 @@ protected:
     virtual inline void finish() { m_outPos.clear(); m_outNeg.clear(); }
 
 private: /* Fields: */
-    BJM           m_inPos;
-    BJM           m_inNeg;
-    BJM           m_outPos;
-    BJM           m_outNeg;
+    BJM m_inPos;
+    BJM m_inNeg;
+    BJM m_outPos;
+    BJM m_outNeg;
 };
 
 } // namespace SecreC

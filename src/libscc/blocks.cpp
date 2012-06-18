@@ -200,10 +200,10 @@ void Program::init (ICodeList &code) {
     code.resetIndexes ();
     assignToBlocks (code);
     propagate ();
+    numberBlocks ();
 }
 
 void Program::assignToBlocks (ICodeList& imops) {
-    unsigned blockCount = 1;
     assert (!imops.empty ());
 
     // 1. find leaders
@@ -253,14 +253,13 @@ void Program::assignToBlocks (ICodeList& imops) {
         }
 
         if (leaders.find (&imop) != leaders.end ()) {
-            curBlock = new Block (blockCount ++, curProc);
+            curBlock = new Block ();
             curProc->push_back (*curBlock);
             BOOST_FOREACH (SymbolLabel* incoming, jumps[&imop]) {
                 incoming->setBlock (curBlock);
             }
         }
 
-        imop.setBlock (curBlock);
         i = imops.erase (i);
         curBlock->push_back (imop);
 
@@ -278,7 +277,7 @@ void Program::assignToBlocks (ICodeList& imops) {
 
 struct BlockCmp {
     bool operator () (const Procedure::iterator& i, const Procedure::iterator& j) const {
-        return i->index () < j->index ();
+        return &*i < &*j;
     }
 };
 
@@ -354,6 +353,34 @@ void Program::propagate () {
         }
 
         visited.insert (cur);
+    }
+}
+
+void Program::numberBlocks () {
+    std::set<Block*> visited;
+    std::vector<Block::neighbour_const_range> stack;
+    size_t number = 0;
+
+    BOOST_FOREACH (Procedure& proc, *this) {
+        Block* entry = proc.entry ();
+        if (visited.insert (entry).second) {
+            entry->setDfn (++ number);
+            stack.push_back (entry->succ_range ());
+        }
+
+        while (!stack.empty ()) {
+            Block::neighbour_const_range& range = stack.back ();
+            if (range.first == range.second) {
+                stack.pop_back ();
+                continue;
+            }
+
+            Block& block = *(range.first ++)->first;
+            if (visited.insert (&block).second) {
+                block.setDfn (++ number);
+                stack.push_back (block.succ_range ());
+            }
+        }
     }
 }
 
@@ -478,24 +505,6 @@ bool Block::hasIncomingJumps () const {
 Block::~Block () {
     unlink ();
     clear_and_dispose (disposer<Imop> ());
-}
-
-void Block::getOutgoing (std::set<Block*>& inc) const {
-    inc.clear ();
-    BOOST_FOREACH (const edge_type& edge, succ_range ()) {
-        if (edge.second != Edge::None) {
-            inc.insert (edge.first);
-        }
-    }
-}
-
-void Block::getIncoming (std::set<Block*>& out) const {
-    out.clear ();
-    BOOST_FOREACH (const edge_type& edge, pred_range ()) {
-        if (edge.second != Edge::None) {
-            out.insert (edge.first);
-        }
-    }
 }
 
 bool Block::isProgramEntry () const {

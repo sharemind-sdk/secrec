@@ -21,7 +21,6 @@ namespace SecreC {
 class Dominators : public ForwardDataFlowAnalysis {
 public: /* Types: */
 
-    typedef std::map<const Block*, unsigned >      IM;
     typedef std::map<const Block*, const Block* >  BM;
 
 public: /* Methods: */
@@ -42,14 +41,11 @@ protected:
 private:
 
     const Block* intersect (const Block* b1, const Block* b2);
-    unsigned dfs (const Block& entry, unsigned n);
-    bool visited (const Block& block) const;
 
 private: /* Fields: */
 
     const Block*   m_newIdom;
     BM             m_doms;
-    IM             m_num;
 };
 
 } // namespace SecreC

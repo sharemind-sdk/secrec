@@ -19,7 +19,7 @@ typedef boost::intrusive::list_base_hook<
                 boost::intrusive::auto_unlink> > auto_unlink_hook;
 
 /*******************************************************************************
-  Block
+  Edge
 *******************************************************************************/
 
 struct Edge {
@@ -49,10 +49,10 @@ struct Edge {
     }
 };
 
-/**
- * \brief Representation of intermediate code basic block.
- * \todo This class requires major refactoring.
- */
+/*******************************************************************************
+  Block
+*******************************************************************************/
+
 class Block : private ImopList
             , public auto_unlink_hook
             , public CFGNode<Block, Edge::Label>
@@ -69,9 +69,9 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit Block (unsigned long i, Procedure* proc)
-        : m_proc (proc)
-        , m_index (i)
+    Block ()
+        : m_proc (0)
+        , m_dfn (0)
         , m_reachable (false)
     { }
 
@@ -84,36 +84,40 @@ public: /* Methods: */
     using ImopList::rend;
     using ImopList::front;
     using ImopList::back;
-    using ImopList::push_back;
     using ImopList::s_iterator_to;
     using ImopList::insert;
 
-    void unlink() {
-        CFGBase::unlink ();
-        auto_unlink_hook::unlink();
+    void push_back (Imop& imop) {
+        ImopList::push_back (imop);
+        imop.setBlock (this);
     }
 
-    bool hasIncomingJumps () const;
+    void unlink () {
+        CFGBase::unlink ();
+        auto_unlink_hook::unlink();
+        m_proc = 0;
+        m_dfn = 0;
+        m_reachable = false;
+    }
 
-    void setReachable () { m_reachable = true; }
     bool reachable () const { return m_reachable; }
-    unsigned long index () const { return m_index; }
-
-    void getIncoming (std::set<Block*>& list) const;
-    void getOutgoing (std::set<Block*>& list) const;
-
+    size_t index () const { return m_dfn; }
+    size_t dfn () const { return m_dfn; }
     Procedure* proc () const { return m_proc; }
-
+    bool hasIncomingJumps () const;
     bool isProgramExit () const;
     bool isProgramEntry () const;
     bool isExit () const;
     bool isEntry () const;
 
-private: /* Fields: */
+    void setReachable () { m_reachable = true; }
+    void setDfn (size_t n) { m_dfn = n; }
+    void setProc (Procedure* proc) { m_proc = proc; }
 
-    Procedure*     const  m_proc;      ///< Pointer to containing procedure
-    unsigned long  const  m_index;     ///< Index of block
-    bool                  m_reachable; ///< If block is reachable
+private: /* Fields: */
+    Procedure* m_proc;      ///< Pointer to containting procedure
+    size_t     m_dfn;       ///< Depth-first number of the block
+    bool       m_reachable; ///< If block is reachable
 };
 
 typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;
@@ -130,7 +134,10 @@ inline Block::const_iterator blockIterator (const Imop& imop) {
   Procedure
 *******************************************************************************/
 
-class Procedure : private BlockList, public auto_unlink_hook, boost::noncopyable {
+class Procedure : private BlockList
+                , public auto_unlink_hook
+                , boost::noncopyable
+{
 public: /* Types: */
 
     using BlockList::iterator;
@@ -169,7 +176,11 @@ public: /* Methods: */
     using BlockList::back;
     using BlockList::empty;
     using BlockList::s_iterator_to;
-    using BlockList::push_back;
+
+    void push_back (Block& block) {
+        BlockList::push_back (block);
+        block.setProc (this);
+    }
 
 private: /* Fields: */
 
@@ -221,6 +232,7 @@ private:
 
     void assignToBlocks (ICodeList& imops);
     void propagate ();
+    void numberBlocks ();
 };
 
 } // namespace SecreC

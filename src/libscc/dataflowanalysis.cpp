@@ -20,9 +20,6 @@ using namespace SecreC;
 
 template <class Analysis>
 class AnalysisRunner {
-public: /* Types: */
-    typedef std::set<const Block*> WorkList;
-
 public: /* Methods: */
     AnalysisRunner (Analysis& a, const Program& p)
         : m_analysis (a)
@@ -45,6 +42,16 @@ namespace SecreC {
 *******************************************************************************/
 
 class ForwardAnalysisRunner : AnalysisRunner<ForwardDataFlowAnalysis> {
+private: /* Types: */
+    struct BlockCmp {
+        inline bool operator () (const Block* b1, const Block* b2) const {
+            assert (b1 != 0 && b2 != 0);
+            return b1->dfn () < b2->dfn ();
+        }
+    };
+
+    typedef std::set<const Block*, BlockCmp> WorkList;
+
 public: /* Methods: */
 
     ForwardAnalysisRunner (ForwardDataFlowAnalysis& a, const Program& p)
@@ -52,16 +59,16 @@ public: /* Methods: */
     { }
 
     inline void operator () () const {
-        WorkList workList;
+        WorkList current, next;
         FOREACH_BLOCK (blockIt, m_program) {
-            workList.insert (&*blockIt);
+            current.insert (&*blockIt);
         }
 
         m_analysis.start (m_program);
-        while (! workList.empty ()) {
-            WorkList::const_iterator i = workList.begin ();
+        while (! current.empty ()) {
+            WorkList::const_iterator i = current.begin ();
             const Block& cur = **i;
-            workList.erase (i);
+            current.erase (i);
             if (! cur.reachable ()) continue;
             if (cur.isProgramEntry ()) continue;
             m_analysis.startBlock (cur);
@@ -71,8 +78,12 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 BOOST_FOREACH (const Block::edge_type& edge, cur.succ_range ()) {
-                    workList.insert (edge.first);
+                    next.insert (edge.first);
                 }
+            }
+
+            if (current.empty ()) {
+                std::swap (current, next);
             }
         }
 
@@ -85,6 +96,17 @@ public: /* Methods: */
 *******************************************************************************/
 
 class BackwardAnalysisRunner : AnalysisRunner<BackwardDataFlowAnalysis> {
+private: /* Types: */
+
+    struct BlockCmp {
+        inline bool operator () (const Block* b1, const Block* b2) const {
+            assert (b1 != 0 && b2 != 0);
+            return b1->dfn () > b2->dfn ();
+        }
+    };
+
+    typedef std::set<const Block*, BlockCmp> WorkList;
+
 public: /* Methods: */
 
     BackwardAnalysisRunner (BackwardDataFlowAnalysis& a, const Program& p)
@@ -92,16 +114,16 @@ public: /* Methods: */
     { }
 
     inline void operator () () const {
-        WorkList workList;
+        WorkList current, next;
         FOREACH_BLOCK (blockIt, m_program) {
-            workList.insert (&*blockIt);
+            current.insert (&*blockIt);
         }
 
         m_analysis.start (m_program);
-        while (! workList.empty ()) {
-            WorkList::const_iterator i = workList.begin ();
+        while (! current.empty ()) {
+            WorkList::const_iterator i = current.begin ();
             const Block& cur = **i;
-            workList.erase (i);
+            current.erase (i);
             if (! cur.reachable ()) continue;
             if (cur.isProgramExit ()) continue;
             m_analysis.startBlock (cur);
@@ -111,8 +133,12 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 BOOST_FOREACH (const Block::edge_type& edge, cur.pred_range ()) {
-                    workList.insert (edge.first);
+                    next.insert (edge.first);
                 }
+            }
+
+            if (current.empty ()) {
+                std::swap (current, next);
             }
         }
 
