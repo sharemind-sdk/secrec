@@ -54,8 +54,6 @@ SET(LIBSCC_SOURCES
     "ModuleInfo.h"
     "ModuleInfo.cpp"
     "ModuleMap.cpp"
-    "AST.cpp"
-    "Translator.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c"
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
 
@@ -87,9 +85,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/types.h"
     "${LIBSCC_INCLUDE_DIR}/typechecker.h"
     "${LIBSCC_INCLUDE_DIR}/context.h"
-    "${LIBSCC_INCLUDE_DIR}/ModuleMap.h"
-    "${LIBSCC_INCLUDE_DIR}/AST.h"
-    "${LIBSCC_INCLUDE_DIR}/Translator.h")
+    "${LIBSCC_INCLUDE_DIR}/ModuleMap.h")
 
 SET_SOURCE_FILES_PROPERTIES("libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
