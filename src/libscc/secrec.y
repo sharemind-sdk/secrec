@@ -408,7 +408,7 @@ procedure_parameter
 dimensions
  : '(' dimension_list ')'
    {
-     $$ = $2
+     $$ = $2;
    }
  ;
 
