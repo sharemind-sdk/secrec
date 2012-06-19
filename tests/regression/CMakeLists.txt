@@ -115,6 +115,7 @@ add_test_secrec_execute("arrays/43-arith-assignment-bug")
 add_test_secrec_execute("arrays/44-casts")
 add_test_secrec_execute("arrays/45-inc-bug-2")
 add_test_secrec_execute("arrays/46-assignment-bug")
+add_test_secrec_execute("arrays/47-out-of-bounds-bug")
 
 # Tests for templates:
 add_test_secrec_execute("templates/00-trivial")
