@@ -301,7 +301,7 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
-    eliminateRedundantCopies (m_code);
+    // eliminateRedundantCopies (m_code);
 
     // Create and add the linking unit sections:
     VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
