@@ -263,9 +263,9 @@ protected:
         std::map<VMVReg*, unsigned> colors;
         unsigned count = 0;
         if (isGlobal)
-            count = m_global.colorGreedy (colors);
+            count = m_global.label (colors);
         else
-            count = m_local.colorGreedy (colors);
+            count = m_local.label (colors);
         assignColors (st, colors, isGlobal);
         return count;
     }
