@@ -66,9 +66,9 @@ void visitImop (const Imop& imop, Visitor& visitor) {
 
     switch (imop.type ()) {
     case Imop::STORE:     visitor.gen (imop.dest (), LiveMemory::Write);  break;
-    case Imop::PUSHCREF:  visitor.gen (imop.dest (), LiveMemory::Write);  break;
-    case Imop::PUSH:      visitor.gen (imop.dest (), LiveMemory::Live);   break;
-    case Imop::PUSHREF:   visitor.gen (imop.dest (), LiveMemory::Live);   break;
+    case Imop::PUSHCREF:  visitor.gen (imop.arg1 (), LiveMemory::Write);  break;
+    case Imop::PUSH:      visitor.gen (imop.arg1 (), LiveMemory::Live);   break;
+    case Imop::PUSHREF:   visitor.gen (imop.arg1 (), LiveMemory::Live);   break;
     case Imop::LOAD:      visitor.gen (imop.arg1 (), LiveMemory::Read);   break;
     case Imop::COPY:      visitor.gen (imop.arg1 (), LiveMemory::Read);   /* FALLTHROUGH */
     case Imop::ALLOC:     /* intentionally empty */
