@@ -301,7 +301,7 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
-    // eliminateRedundantCopies (m_code);
+    eliminateRedundantCopies (m_code);
 
     // Create and add the linking unit sections:
     VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
@@ -656,14 +656,37 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
     VMDataType ty = representationType (imop.dest ()->secrecType ());
-
     assert (ty != VM_INVALID);
-    block.push_new ()
-        << "mov cref"
-        << m_st.getImm (m_param ++)
-        << "0x0" // offset 0
-        << find (imop.dest ())
-        << m_st.getImm (sizeInBytes (ty));
+
+    if (isPrivate (imop) && ! imop.dest ()->isArray ()) {
+        VMValue* temp = m_ra->temporaryReg ();
+        VMValue* d = find (imop.dest ());
+
+        block.push_new ()
+            << "mov cref"
+            << m_st.getImm (m_param ++)
+            << "0x0" // offset 0
+            << temp
+            << m_st.getImm (sizeInBytes (ty));
+
+        TypeNonVoid* ty = imop.dest ()->secrecType ();
+        block.push_new () << "push" << getPD (m_scm, imop.dest ());
+        block.push_new () << "push" << m_st.getImm (1);
+        emitSyscall (block, d, SyscallName::basic (ty, "new"));
+
+        block.push_new () << "push" << getPD (m_scm, imop.dest ());
+        block.push_new () << "push" << temp;
+        block.push_new () << "push" << d;
+        emitSyscall (block, SyscallName::basic (ty, "assign"));
+    }
+    else {
+        block.push_new ()
+            << "mov cref"
+            << m_st.getImm (m_param ++)
+            << "0x0" // offset 0
+            << find (imop.dest ())
+            << m_st.getImm (sizeInBytes (ty));
+    }
 }
 
 void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
