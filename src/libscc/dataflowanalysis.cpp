@@ -46,7 +46,7 @@ private: /* Types: */
     struct BlockCmp {
         inline bool operator () (const Block* b1, const Block* b2) const {
             assert (b1 != 0 && b2 != 0);
-            return b1->dfn () < b2->dfn ();
+            return b1->dfn () > b2->dfn ();
         }
     };
 
@@ -101,7 +101,7 @@ private: /* Types: */
     struct BlockCmp {
         inline bool operator () (const Block* b1, const Block* b2) const {
             assert (b1 != 0 && b2 != 0);
-            return b1->dfn () > b2->dfn ();
+            return b1->dfn () < b2->dfn ();
         }
     };
 
