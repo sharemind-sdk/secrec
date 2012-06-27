@@ -226,24 +226,8 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                     static_cast<TypeNonVoid*>(ns->secrecType ()));
 
         if (isScalar) {
-            if (isString) {
-                i = new Imop (varInit, Imop::PARAM, tns);
-                pushImopAfter (result, i);
-
-                i = new Imop (varInit, Imop::PUSHCREF, 0, tns);
-                push_imop (i);
-
-                i = new Imop (varInit, Imop::PUSHREF, 0, ns);
-                push_imop (i);
-
-                ConstantString* sc_strdup = ConstantString::get (getContext (), "strdup");
-                i = new Imop (varInit, Imop::SYSCALL, 0, sc_strdup);
-                push_imop (i);
-            }
-            else {
-                i = new Imop (varInit, Imop::PARAM, ns);
-                pushImopAfter (result, i);
-            }
+            i = new Imop (varInit, Imop::PARAM, ns);
+            pushImopAfter (result, i);
         }
         else {
             i = new Imop (varInit, Imop::PARAM, tns);

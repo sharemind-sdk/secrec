@@ -136,6 +136,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_EXPR_CAT: return "CAT";
         case NODE_EXPR_RESHAPE: return "RESHAPE";
         case NODE_EXPR_TOSTRING: return "TOSTRING";
+        case NODE_EXPR_TYPE_QUAL: return "TYPE_QUALIFIER";
         case NODE_STMT_IF: return "STMT_IF";
         case NODE_STMT_FOR: return "STMT_FOR";
         case NODE_STMT_WHILE: return "STMT_WHILE";

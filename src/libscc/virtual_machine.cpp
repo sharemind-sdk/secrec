@@ -581,7 +581,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
     case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
-    case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_SIGNED); break;
+    case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_ARITH); break;
     case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
     case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;
     case Imop::DIV:        SET_SPECIALIZE_CALLBACK_V(DIV,SWITCH_ARITH); break;

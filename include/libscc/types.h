@@ -59,8 +59,9 @@ private: /* Fields: */
 class PublicSecType : public SecurityType {
 public: /* Methods: */
 
-    PublicSecType () : SecurityType (true) { }
-    ~PublicSecType () { }
+    PublicSecType ()
+        : SecurityType (true)
+    { }
 
     std::string toString () const;
 
@@ -74,14 +75,12 @@ public: /* Methods: */
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
 
-    explicit PrivateSecType (const std::string& name,
-                             SymbolKind* kind)
+    PrivateSecType (const std::string& name,
+                    SymbolKind* kind)
         : SecurityType (false)
         , m_name (name)
         , m_kind (kind)
     { }
-
-    ~PrivateSecType () { }
 
     inline const std::string& name () const { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
@@ -105,7 +104,6 @@ inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
     if (a->isPublic ()) return b;
     if (b->isPublic ()) return a;
     if (a == b) return a;
-    assert (false);
     return 0;
 }
 

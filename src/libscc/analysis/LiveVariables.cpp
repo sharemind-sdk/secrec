@@ -60,13 +60,8 @@ void LiveVariables::transfer (const Block &from, const Block &to) {
 // transfer only global inputs
 void LiveVariables::transferGlobal (const Block& from, const Block& to) {
     BOOST_FOREACH (const Symbol* symbol, m_ins[&from]) {
-        switch (symbol->symbolType ()) {
-        case Symbol::SYMBOL:
-            if (static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL)
-                m_outs[&to].insert (symbol);
-            break;
-        default:
-            break;
+        if (symbol->isGlobal ()) {
+            m_outs[&to].insert (symbol);
         }
     }
 }
