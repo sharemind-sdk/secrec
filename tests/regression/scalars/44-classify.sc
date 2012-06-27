@@ -2,8 +2,8 @@
 kind additive3pp;
 domain sharemind_test_pd additive3pp;
 void main () {
-    sharemind_test_pd int p1;
-    public int x;
+    sharemind_test_pd uint p1;
+    public uint x;
 
     sharemind_test_pd bool p2;
     public bool y;

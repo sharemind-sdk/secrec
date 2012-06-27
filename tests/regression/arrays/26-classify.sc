@@ -1,8 +1,8 @@
-kind a3p;
-domain private a3p;
+kind additive3pp;
+domain sharemind_test_pd additive3pp;
 void main () {
-  private int [[1]] carr (5) = 1;
-  int [[1]] arr = declassify (carr);
+  sharemind_test_pd uint [[1]] carr (5) = 1;
+  uint [[1]] arr = declassify (carr);
   assert (size(arr) == 5);
-  assert (arr[0] == 1);
+  assert (arr[0] == (1 :: uint));
 }
