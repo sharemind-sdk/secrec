@@ -122,6 +122,7 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::RELEASE:    os << "delete";      break;
     case Imop::COPY:       os << "copy";        break;
     case Imop::ADD:        os << "add";         break;
+    case Imop::SUB:        os << "sub";         break;
     case Imop::MUL:        os << "mul";         break;
     case Imop::MOD:        os << "mod";         break;
     case Imop::DIV:        os << "div";         break;
@@ -134,6 +135,8 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::LE:         os << "lte";         break;
     case Imop::STORE:      os << "store";       break;
     case Imop::LOAD:       os << "load";        break;
+    case Imop::UNEG:       os << "not";         break;
+    case Imop::UMINUS:     os << "neg";         break;
     default:                                    break;
     }
 }
@@ -783,10 +786,10 @@ void Compiler::cgStringCmp (VMBlock& block, const Imop& imop) {
     switch (imop.type ()) {
     case Imop::EQ: opname = "beq"; break;
     case Imop::NE: opname = "bne"; break;
-    case Imop::LE: opname = "bge"; break;
-    case Imop::LT: opname = "bgt"; break;
-    case Imop::GE: opname = "ble"; break;
-    case Imop::GT: opname = "blt"; break;
+    case Imop::LE: opname = "ble"; break;
+    case Imop::LT: opname = "blt"; break;
+    case Imop::GE: opname = "bge"; break;
+    case Imop::GT: opname = "bgt"; break;
     default: assert (false); break;
     }
 
@@ -1087,9 +1090,33 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
     emitSyscall (block, SyscallName::basic (ty, "declassify"));
 }
 
+void Compiler::cgPrivateNE (VMBlock& block, const Imop& imop) {
+    TypeNonVoid* ty = imop.arg1 ()->secrecType ();
+    VMValue* pd = getPD (m_scm, imop.dest ());
+    VMValue* arg1 = find (imop.arg1 ());
+    VMValue* arg2 = find (imop.arg2 ());
+    VMValue* dest = find (imop.dest ());
+
+    block.push_new () << "push" << pd;
+    block.push_new () << "push" << arg1;
+    block.push_new () << "push" << arg2;
+    block.push_new () << "push" << dest;
+    emitSyscall (block, SyscallName::basic (ty, "eq"));
+
+    block.push_new () << "push" << pd;
+    block.push_new () << "push" << dest;
+    block.push_new () << "push" << dest;
+    emitSyscall (block, SyscallName::basic (ty, "not"));
+}
+
 void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
     if (! imop.isVectorized ()) {
         cgNewPrivateScalar (block, imop.dest ());
+    }
+
+    if (imop.type () == Imop::NE) {
+        cgPrivateNE (block, imop);
+        return;
     }
 
     TypeNonVoid* ty = imop.arg1 ()->secrecType ();

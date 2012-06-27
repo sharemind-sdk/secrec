@@ -1,5 +1,6 @@
 #include "CopyElimination.h"
 
+#include <algorithm>
 #include <boost/foreach.hpp>
 #include <libscc/intermediate.h>
 #include <libscc/analysis/LiveMemory.h>
@@ -28,7 +29,8 @@ void eliminateRedundantCopies (ICode& code) {
         ReachableReleases::Values after = reachableReleases.releasedOnExit (block);
         BOOST_REVERSE_FOREACH (const Imop& imop, block) {
             if (&imop == copy) {
-                const ReachableReleases::Domain& dom = after[imop.arg1 ()];
+                ReachableReleases::Domain dom = after[imop.arg1 ()];
+                dom -= releases;
                 releases += dom.empty () ? after[imop.dest ()] : dom;
                 break;
             }
