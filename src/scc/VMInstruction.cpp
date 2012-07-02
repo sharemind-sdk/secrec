@@ -34,7 +34,6 @@ VMInstruction& VMInstruction::arg (VMValue* val) {
 }
 
 VMInstruction& VMInstruction::arg (unsigned n) {
-    assert (n >= 0);
     std::ostringstream ss;
     ss << "0x" << std::hex << n;
     m_operands.push_back (0);

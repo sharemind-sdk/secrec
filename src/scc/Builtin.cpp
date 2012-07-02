@@ -408,7 +408,7 @@ void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) 
     lengthB.push_new () << "alloc" << dest << length;
     lengthB.push_new () << "udec" << VM_UINT64 << length;
     lengthB.push_new () << "mov" << st.getImm ('0') << "mem" << dest << st.getImm (0) << charSize;
-    lengthB.push_new () << "mov" << st.getImm ('x') << "mem" << dest << st.getImm (1) << charSize;
+    lengthB.push_new () << "mov" << st.getImm (prefixChar) << "mem" << dest << st.getImm (1) << charSize;
     lengthB.push_new () << "mov" << st.getImm ('\0') << "mem" << dest << length << charSize;
     /*
      * Copy bytes to output:
