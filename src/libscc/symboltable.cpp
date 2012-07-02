@@ -228,9 +228,7 @@ SymbolTable *SymbolTable::newScope () {
     return scope;
 }
 
-std::string SymbolTable::toString(unsigned level, unsigned indent,
-                                  bool newScope) const
-{
+std::string SymbolTable::toString(unsigned level, unsigned indent) const {
     std::ostringstream os;
 
     if (m_parent == 0) {

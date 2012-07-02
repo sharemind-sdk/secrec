@@ -52,8 +52,7 @@ public: /* Methods: */
 
     void setName (const std::string& name) { m_name = name; }
 
-    std::string toString(unsigned level = 0, unsigned indent = 4,
-                         bool newScope = true) const;
+    std::string toString(unsigned level = 0, unsigned indent = 4) const;
 
     /**
      * Find a symbol in current scope, follow imported modules.

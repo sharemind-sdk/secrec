@@ -35,7 +35,7 @@
 
       for (const char* ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
           uint64_t digit = char_to_digit (*ptr);
-          assert (0 <= digit && digit < base);
+          assert (digit < base);
           uint64_t new_out = out*base + digit;
           assert (new_out >= out);
           out = new_out;
