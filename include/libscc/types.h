@@ -501,6 +501,24 @@ public: /* Methods: */
         , m_contextDimType (-1)
     { }
 
+    TypeContext typeContext () const {
+        return *this;
+    }
+
+    void setContext (const TypeContext& cxt) {
+        m_contextSecType = cxt.m_contextSecType;
+        m_contextDataType = cxt.m_contextDataType;
+        m_contextDimType = cxt.m_contextDimType;
+    }
+
+
+    void setContext (const TypeContext* cxt) {
+        assert (cxt != 0);
+        m_contextSecType = cxt->m_contextSecType;
+        m_contextDataType = cxt->m_contextDataType;
+        m_contextDimType = cxt->m_contextDimType;
+    }
+
     void setContextSecType (SecurityType* secTy) {
         m_contextSecType = secTy;
     }
