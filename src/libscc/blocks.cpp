@@ -129,6 +129,7 @@ void printNode (std::ostream& os, const Block& block) {
     if (block.reachable ()) {
         os << "    \"node" << block.index () << "\" [\n";
         printLabel (os, block);
+        os << '\n';
         os << "      shape = \"rectangle\"\n";
         if (block.isEntry ())
             os << "      style = \"bold\"\n";
@@ -192,9 +193,15 @@ Program::~Program () {
     clear_and_dispose (disposer<Procedure> ());
 }
 
-const Block* Program::entryBlock () const { return &front ().front (); }
+const Block* Program::entryBlock () const {
+    assert (! empty ());
+    return &front ().front ();
+}
 
-const Block* Program::exitBlock () const { return &front ().back (); }
+const Block* Program::exitBlock () const {
+    assert (! empty ());
+    return &front ().back ();
+}
 
 void Program::init (ICodeList &code) {
     code.resetIndexes ();
@@ -375,10 +382,17 @@ void Program::numberBlocks () {
                 continue;
             }
 
-            Block& block = *(range.first ++)->first;
-            if (visited.insert (&block).second) {
+            Block* block = range.first->first;
+            Edge::Label label = range.first->second;
+            ++ range.first;
+
+            if (Edge::isGlobal (label)) {
+                continue;
+            }
+
+            if (visited.insert (block).second) {
                 block.setDfn (++ number);
-                stack.push_back (block.succ_range ());
+                stack.push_back (block->succ_range ());
             }
         }
     }
