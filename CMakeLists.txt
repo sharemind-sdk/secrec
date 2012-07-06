@@ -11,20 +11,34 @@ CMAKE_MINIMUM_REQUIRED(VERSION "2.8")
 CMAKE_POLICY(SET CMP0015 NEW)
 PROJECT("SecreC framework" "CXX" "C")
 
-SET(SHAREMIND_BIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/bin")
-SET(SHAREMIND_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/lib")
-SET(SHAREMIND_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_sources")
-SET(SHAREMIND_INCLUDE_DESTINATION "include/sharemind")
-SET(SHAREMIND_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/ext")
-LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lib/")
-
-SET(COMMON_FLAGS "-DDEBUG -O0 -g3 -Wall -Wextra -Wstrict-aliasing -pedantic -Wno-long-long -pipe")
-SET(CMAKE_C_FLAGS "--std=gnu99 ${COMMON_FLAGS}")
-SET(CMAKE_CXX_FLAGS "${COMMON_FLAGS}")
-
 INCLUDE("config.local" OPTIONAL)
-add_subdirectory (src)
 
-# \todo check for some flag
-ENABLE_TESTING ()
-add_subdirectory (tests)
+MACRO(SHAREMIND_ADD_EXT name pname)
+    IF(NOT SHAREMIND_NO_BUILD_EXTS)
+        SET(ID "${CMAKE_CURRENT_SOURCE_DIR}/ext/${name}/src")
+        IF(NOT EXISTS "${ID}/sharemind/CMakeLists.txt")
+            MESSAGE(FATAL_ERROR "Sharemind extension ${name} not found!")
+        ELSE()
+            ADD_SUBDIRECTORY("${ID}/sharemind")
+            INCLUDE_DIRECTORIES(BEFORE SYSTEM
+                                "${${pname}_SOURCE_DIR}/.."
+                                "${${pname}_BINARY_DIR}/..")
+        ENDIF()
+    ENDIF(NOT SHAREMIND_NO_BUILD_EXTS)
+ENDMACRO(SHAREMIND_ADD_EXT)
+
+INCLUDE_DIRECTORIES(BEFORE SYSTEM
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+
+SHAREMIND_ADD_EXT(vm_globals SHAREMIND_VM_GLOBALS)
+SHAREMIND_ADD_EXT(vm_m4 SHAREMIND_VM_M4)
+SHAREMIND_ADD_EXT(libexecutable SHAREMIND_LIBEXECUTABLE)
+SHAREMIND_ADD_EXT(libvmi SHAREMIND_LIBVMI)
+SHAREMIND_ADD_EXT(libas SHAREMIND_LIBAS)
+
+ADD_SUBDIRECTORY(src/libscc)
+ADD_SUBDIRECTORY(src/sca)
+ADD_SUBDIRECTORY(src/scc)
+ADD_SUBDIRECTORY(tests)
