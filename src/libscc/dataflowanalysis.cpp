@@ -62,7 +62,7 @@ private: /* Types: */
 public: /* Methods: */
 
     ForwardAnalysisRunner (ForwardDataFlowAnalysis& a, const Program& p)
-        : AnalysisRunner (a, p)
+        : AnalysisRunner<ForwardDataFlowAnalysis> (a, p)
     { }
 
     inline void operator () () const {
@@ -114,7 +114,7 @@ private: /* Types: */
 public: /* Methods: */
 
     BackwardAnalysisRunner (BackwardDataFlowAnalysis& a, const Program& p)
-        : AnalysisRunner (a, p)
+        : AnalysisRunner<BackwardDataFlowAnalysis> (a, p)
     { }
 
     inline void operator () () const {
