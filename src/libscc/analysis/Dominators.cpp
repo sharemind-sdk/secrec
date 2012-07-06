@@ -40,7 +40,7 @@ size_t intersect (const std::vector<DomInfo>& info, size_t a, size_t b) {
     return a;
 }
 
-void findIDoms (std::vector<DomInfo>& info, size_t startNode) {
+void calculateIDoms (std::vector<DomInfo>& info, size_t startNode) {
     const size_t undef = info.size ();
     BOOST_FOREACH (DomInfo& node, info) {
         node.idom = undef;
@@ -81,20 +81,16 @@ void printEdge (std::ostream& os, DominanceNode* parent, DominanceNode* child) {
 
 void printTree (std::ostream& os, DominanceNode* node) {
     std::vector<DominanceNode*> todo;
-    std::set<DominanceNode*> visited;
     todo.push_back (node);
 
-    os << "  subgraph cluster" << node << " {\n";
+    os << "  subgraph cluster" << node->block ()->dfn () << " {\n";
     os << "    " << node->block ()->dfn () << " [shape=box];\n";
     while (! todo.empty ()) {
         DominanceNode* parent = todo.back ();
-        visited.insert (parent);
         todo.pop_back ();
         BOOST_FOREACH (DominanceNode* child, parent->children ()) {
             printEdge (os, parent, child);
-            if (visited.find (child) == visited.end ()) {
-                todo.push_back (child);
-            }
+            todo.push_back (child);
         }
     }
 
@@ -138,18 +134,18 @@ void Dominators::calculate (Procedure* proc) {
 
 void Dominators::calculate (Block* root) {
     std::set<Block* > visited;
-    std::vector<std::pair<Block*, Block::neighbour_const_range> > workList;
+    std::vector<std::pair<Block*, Block::neighbour_const_iterator> > workList;
     std::vector<DomInfo> info;
     std::map<Block*, size_t> pon; // post-order number
 
     // Number the nodes in postorder:
     visited.insert (root);
-    workList.push_back (std::make_pair (root, root->succ_range ()));
+    workList.push_back (std::make_pair (root, root->succ_begin ()));
 
     while (! workList.empty ()) {
-        Block::neighbour_const_range& range = workList.back ().second;
-        if (range.first == range.second) {
-            Block* block = workList.back ().first;
+        Block* block = workList.back ().first;
+        Block::neighbour_const_iterator& it = workList.back ().second;
+        if (it == block->succ_end ()) {
             pon[block] = info.size ();
             info.push_back (DomInfo (block));
             workList.pop_back ();
@@ -157,19 +153,19 @@ void Dominators::calculate (Block* root) {
         }
 
         // skip non-local edges
-        if (Edge::isGlobal (range.first->second)) {
-            range.first ++;
+        if (Edge::isGlobal (it->second)) {
+            it ++;
             continue;
         }
 
-        Block* next = (range.first ++)->first;
+        Block* next = (it ++)->first;
         assert (next != 0);
         if (visited.insert (next).second) {
-            workList.push_back (std::make_pair (next, next->succ_range ()));
+            workList.push_back (std::make_pair (next, next->succ_begin ()));
         }
     }
 
-    // Find predcessors:
+    // Cache predcessors:
     typedef std::map<Block*, size_t> MapType;
     BOOST_FOREACH (MapType::value_type v, pon) {
         Block* block = v.first;
@@ -181,7 +177,7 @@ void Dominators::calculate (Block* root) {
     }
 
     // Calculate immediate dominators:
-    findIDoms (info, pon[root]);
+    calculateIDoms (info, pon[root]);
 
     // Build dominator tree, and add it to forest:
     BOOST_FOREACH (const DomInfo& i, info) {

@@ -65,7 +65,7 @@ public: /* Methods: */
 
     void calculate (Program* prog);
     void calculate (Procedure* proc);
-    void calculate (Block *root);
+    void calculate (Block* root);
 
     void dumpToDot (std::ostream& os);
 
