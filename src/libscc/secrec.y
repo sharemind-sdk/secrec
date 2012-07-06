@@ -33,7 +33,8 @@
         offset += 2;
       }
 
-      for (const char* ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
+      const char* ptr = 0;
+      for (ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
           uint64_t digit = char_to_digit (*ptr);
           assert (digit < base);
           uint64_t new_out = out*base + digit;

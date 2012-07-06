@@ -11,12 +11,13 @@
 
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
+#include <boost/ref.hpp>
 
 #include "intermediate.h"
 
-namespace /* anonymous */ {
+namespace SecreC {
 
-using namespace SecreC;
+namespace /* anonymous */ {
 
 template <class Analysis>
 class AnalysisRunner {
@@ -26,7 +27,15 @@ public: /* Methods: */
         , m_program (p)
     { }
 
-    ~AnalysisRunner () { }
+    template <typename WorkList>
+    void populateWorkList (WorkList& list) const {
+        FOREACH_BLOCK (blockIt, m_program) {
+            const Block& block = *blockIt;
+            if (block.reachable ()) {
+                list.insert (boost::cref (block));
+            }
+        }
+    }
 
 protected: /* Fields: */
     Analysis&       m_analysis;
@@ -35,8 +44,6 @@ protected: /* Fields: */
 
 } // namespace anonymous
 
-namespace SecreC {
-
 /*******************************************************************************
   ForwardAnalysisRunner
 *******************************************************************************/
@@ -44,13 +51,13 @@ namespace SecreC {
 class ForwardAnalysisRunner : AnalysisRunner<ForwardDataFlowAnalysis> {
 private: /* Types: */
     struct BlockCmp {
-        inline bool operator () (const Block* b1, const Block* b2) const {
-            assert (b1 != 0 && b2 != 0);
-            return b1->dfn () > b2->dfn ();
+        inline bool operator () (const Block& b1, const Block& b2) const {
+            return b1.dfn () > b2.dfn ();
         }
     };
 
-    typedef std::set<const Block*, BlockCmp> WorkList;
+    typedef std::set<boost::reference_wrapper<const Block>, BlockCmp> WorkList;
+    typedef AnalysisRunner<ForwardDataFlowAnalysis> Base;
 
 public: /* Methods: */
 
@@ -60,14 +67,11 @@ public: /* Methods: */
 
     inline void operator () () const {
         WorkList current, next;
-        FOREACH_BLOCK (blockIt, m_program) {
-            current.insert (&*blockIt);
-        }
-
+        Base::populateWorkList (current);
         m_analysis.start (m_program);
         while (! current.empty ()) {
             WorkList::const_iterator i = current.begin ();
-            const Block& cur = **i;
+            const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
             if (cur.isProgramEntry ()) continue;
@@ -78,7 +82,7 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 BOOST_FOREACH (const Block::edge_type& edge, cur.succ_range ()) {
-                    next.insert (edge.first);
+                    next.insert (boost::cref (*edge.first));
                 }
             }
 
@@ -99,13 +103,13 @@ class BackwardAnalysisRunner : AnalysisRunner<BackwardDataFlowAnalysis> {
 private: /* Types: */
 
     struct BlockCmp {
-        inline bool operator () (const Block* b1, const Block* b2) const {
-            assert (b1 != 0 && b2 != 0);
-            return b1->dfn () < b2->dfn ();
+        inline bool operator () (const Block& b1, const Block& b2) const {
+            return b1.dfn () < b2.dfn ();
         }
     };
 
-    typedef std::set<const Block*, BlockCmp> WorkList;
+    typedef std::set<boost::reference_wrapper<const Block>, BlockCmp> WorkList;
+    typedef AnalysisRunner<BackwardDataFlowAnalysis> Base;
 
 public: /* Methods: */
 
@@ -115,14 +119,11 @@ public: /* Methods: */
 
     inline void operator () () const {
         WorkList current, next;
-        FOREACH_BLOCK (blockIt, m_program) {
-            current.insert (&*blockIt);
-        }
-
+        Base::populateWorkList (current);
         m_analysis.start (m_program);
         while (! current.empty ()) {
             WorkList::const_iterator i = current.begin ();
-            const Block& cur = **i;
+            const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
             if (cur.isProgramExit ()) continue;
@@ -133,7 +134,7 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 BOOST_FOREACH (const Block::edge_type& edge, cur.pred_range ()) {
-                    next.insert (edge.first);
+                    next.insert (boost::cref (*edge.first));
                 }
             }
 

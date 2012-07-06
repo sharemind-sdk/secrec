@@ -35,6 +35,7 @@ struct Configuration {
     bool m_printST;
     bool m_printAST;
     bool m_printCFG;
+    bool m_printDom;
     bool m_printIR;
     bool m_eval;
     bool m_stdin;
@@ -67,6 +68,7 @@ struct Configuration {
         m_printAST = vm.count ("print-ast");
         m_printCFG = vm.count ("print-cfg");
         m_printIR = vm.count ("print-ir");
+        m_printDom = vm.count ("print-dom");
 
         if (vm.count ("output")) {
             m_stdout = false;
@@ -113,10 +115,6 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "lm") {
         return new SecreC::LiveMemory ();
-    }
-
-    if (name == "dom") {
-        return new SecreC::Dominators ();
     }
 
     return 0;
@@ -205,6 +203,13 @@ int run (const Configuration& cfg) {
             return EXIT_SUCCESS;
         }
 
+        if (cfg.m_printDom) {
+            SecreC::Dominators dominators;
+            dominators.calculate (&pr);
+            dominators.dumpToDot (out);
+            return EXIT_SUCCESS;
+        }
+
         if (cfg.m_printCFG) {
             pr.toDotty (out);
             out << flush;
@@ -253,6 +258,7 @@ int main(int argc, char *argv[]) {
             ("print-ast", "Print the abstract syntax tree")
             ("print-st",  "Print the symbol table")
             ("print-cfg", "Print the control flow graph")
+            ("print-dom", "Print the dominators tree")
             ("print-ir",  "Print the intermediate represetnation")
             ("analysis,a", po::value<vector<string > >(),
              "Run specified analysis. Options are:\n"
@@ -262,7 +268,7 @@ int main(int argc, char *argv[]) {
              "\t\"rr\"  -- reachable releases\n"
              "\t\"lm\"  -- live memory\n"
              "\t\"lv\"  -- live variables\n"
-             "\t\"dom\" -- dominators\n");
+             );
     po::positional_options_description p;
     p.add("input", -1);
     po::variables_map vm;

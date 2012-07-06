@@ -10,43 +10,81 @@
 #ifndef SECREC_ANALYSIS_DOMINATORS_H
 #define SECREC_ANALYSIS_DOMINATORS_H
 
-#include "../dataflowanalysis.h"
+#include <iosfwd>
+#include <vector>
+#include <map>
 
 namespace SecreC {
+
+class Block;
+class Dominators;
+class Procedure;
+class Program;
+
+/*******************************************************************************
+  DominanceNode
+*******************************************************************************/
+
+class DominanceNode {
+    friend class Dominators;
+private: /* Types: */
+    typedef std::vector<DominanceNode*> ChildrenList;
+public: /* Methods: */
+
+    explicit
+    DominanceNode (Block* block)
+        : m_block (block)
+        , m_parent (0)
+    { }
+
+    ~DominanceNode ();
+
+    DominanceNode* parent () const { return m_parent; }
+    Block* block () const { return m_block; }
+    const ChildrenList& children () const { return m_children; }
+
+    void addChild (DominanceNode* node) { m_children.push_back (node); }
+    void setParent (DominanceNode* node) { m_parent = node; }
+
+private: /* Fields: */
+    Block* const    m_block;     ///< Basic block
+    DominanceNode*  m_parent;    ///< The immediate dominator
+    ChildrenList    m_children;  ///< Children
+}; /* class DominanceNode { */
 
 /*******************************************************************************
   Dominators
 *******************************************************************************/
 
-class Dominators : public ForwardDataFlowAnalysis {
-public: /* Types: */
-
-    typedef std::map<const Block*, const Block* >  BM;
-
+class Dominators {
+private: /* Types: */
+    typedef std::map<const Block*, DominanceNode*> NodeMap;
 public: /* Methods: */
+    Dominators () { }
+    ~Dominators ();
 
-    std::string toString(const Program &program) const;
+    void calculate (Program* prog);
+    void calculate (Procedure* proc);
+    void calculate (Block *root);
 
-    const Block* idom (const Block*) const;
-    void dominators (const Block* block, std::vector<const Block*>& doms) const;
-
-protected:
-
-    virtual void start (const Program &bs);
-    virtual void startBlock(const Block& b);
-    virtual void inFrom(const Block& from, Edge::Label label, const Block& to);
-    virtual bool finishBlock(const Block &b);
-    virtual inline void finish();
+    void dumpToDot (std::ostream& os);
 
 private:
 
-    const Block* intersect (const Block* b1, const Block* b2);
+    DominanceNode* findNode (Block* block) {
+        DominanceNode*& node = m_nodes[block];
+        if (node == 0) {
+            node = new DominanceNode (block);
+        }
+
+        return node;
+    }
 
 private: /* Fields: */
+    std::vector<DominanceNode*> m_roots;
+    NodeMap m_nodes;
+}; /*class Dominators { */
 
-    const Block*   m_newIdom;
-    BM             m_doms;
-};
 
 } // namespace SecreC
 
