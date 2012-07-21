@@ -391,7 +391,7 @@ void Program::numberBlocks () {
             }
 
             if (visited.insert (block).second) {
-                block.setDfn (++ number);
+                block->setDfn (++ number);
                 stack.push_back (block->succ_range ());
             }
         }
