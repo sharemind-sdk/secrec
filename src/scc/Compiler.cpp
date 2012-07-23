@@ -483,6 +483,10 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     if (dType == DATATYPE_BOOL) {
         target = m_st.getLabel (":bool_to_string__");
         m_funcs->insert (target, BuiltinBoolToString (m_strLit));
+
+        block.push_new () << "push" << find (imop.arg1 ());
+        block.push_new () << "call" << target << find (imop.dest ());
+        return;
     }
     else
     if (dType == DATATYPE_FLOAT32) {
@@ -494,14 +498,19 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     if (isNumericDataType (dType)) {
         target = m_st.getLabel (":numeric_to_string__");
         m_funcs->insert (target, BuiltinNumericToString (m_strLit));
+
+        VMValue* rTmp = m_ra->temporaryReg ();
+        block.push_new () << "convert"
+                          << secrecDTypeToVMDType (dType) << loadToRegister (block, imop.arg1 ())
+                          << VM_UINT64 << rTmp;
+        block.push_new () << "push" << rTmp;
+        block.push_new () << "call" << target << find (imop.dest ());
+        return;
     }
     else {
         assert (false && "Unable to convert given data type to string!");
         return;
     }
-
-    block.push_new () << "push" << find (imop.arg1 ());
-    block.push_new () << "call" << target << find (imop.dest ());
 }
 
 void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
