@@ -496,14 +496,21 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     }
     else
     if (isNumericDataType (dType)) {
+        VMDataType vmDType = secrecDTypeToVMDType (dType);
         target = m_st.getLabel (":numeric_to_string__");
         m_funcs->insert (target, BuiltinNumericToString (m_strLit));
 
-        VMValue* rTmp = m_ra->temporaryReg ();
-        block.push_new () << "convert"
-                          << secrecDTypeToVMDType (dType) << loadToRegister (block, imop.arg1 ())
-                          << VM_UINT64 << rTmp;
-        block.push_new () << "push" << rTmp;
+        if (vmDType != VM_UINT64) {
+            VMValue* rTmp = m_ra->temporaryReg ();
+            block.push_new () << "convert"
+                              << vmDType << loadToRegister (block, imop.arg1 ())
+                              << VM_UINT64 << rTmp;
+            block.push_new () << "push" << rTmp;
+        }
+        else {
+            block.push_new () << "push" << find (imop.arg1 ());
+        }
+
         block.push_new () << "call" << target << find (imop.dest ());
         return;
     }
