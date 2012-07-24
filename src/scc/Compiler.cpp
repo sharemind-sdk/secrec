@@ -589,12 +589,11 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
     if (imop.isVectorized ()) {
         std::stringstream ss;
 
-        block.push_new () << "push" << find (imop.dest ());
-        block.push_new () << "push" << find (imop.arg1 ());
-        block.push_new () << "push" << find (imop.arg2 ());
-
         VMLabel* target = 0;
         if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+            block.push_new () << "push" << find (imop.dest ());
+            block.push_new () << "push" << find (imop.arg1 ());
+            block.push_new () << "push" << find (imop.arg2 ());
             ss << ":vec_cast_bool_" << srcTy;
             target = m_st.getLabel (ss.str ());
             m_funcs->insert (target, BuiltinVBoolCast (srcTy));
@@ -602,6 +601,9 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         }
         else
         if (destTy != srcTy) {
+            block.push_new () << "push" << find (imop.dest ());
+            block.push_new () << "push" << find (imop.arg1 ());
+            block.push_new () << "push" << find (imop.arg2 ());
             ss << ":vec_cast_" << destTy << "_" << srcTy;
             target = m_st.getLabel (ss.str ());
             m_funcs->insert (target, BuiltinVCast (destTy, srcTy));
@@ -610,17 +612,9 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         else {
             VMInstruction instr;
             instr << "mov";
-            VMValue* rSize = m_ra->temporaryReg ();
-            VMValue* rNum = find (imop.arg2 ());
-            const unsigned elemSize = sizeInBytes (srcTy);
-
-            block.push_new ()
-                << "tmul" << VM_UINT64 << rSize << rNum
-                << m_st.getImm (elemSize);
-
             instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
             instr << "mem" << find (imop.dest ()) << "imm 0x0";
-            instr << rSize;
+            instr << find (imop.arg2 ());
             block.push_back (instr);
         }
     }
