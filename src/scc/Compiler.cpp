@@ -577,6 +577,12 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgCast (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::CAST);
+
+    if (isPrivate (imop)) {
+        cgPrivateCast (block, imop);
+        return;
+    }
+
     VMDataType destTy = getVMDataType (imop.dest ());
     VMDataType srcTy = getVMDataType (imop.arg1 ());
 
@@ -592,14 +598,31 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             ss << ":vec_cast_bool_" << srcTy;
             target = m_st.getLabel (ss.str ());
             m_funcs->insert (target, BuiltinVBoolCast (srcTy));
+            block.push_new () << "call" << target << "imm";
         }
-        else {
+        else
+        if (destTy != srcTy) {
             ss << ":vec_cast_" << destTy << "_" << srcTy;
             target = m_st.getLabel (ss.str ());
             m_funcs->insert (target, BuiltinVCast (destTy, srcTy));
+            block.push_new () << "call" << target << "imm";
         }
+        else {
+            VMInstruction instr;
+            instr << "mov";
+            VMValue* rSize = m_ra->temporaryReg ();
+            VMValue* rNum = find (imop.arg2 ());
+            const unsigned elemSize = sizeInBytes (srcTy);
 
-        block.push_new () << "call" << target << "imm";
+            block.push_new ()
+                << "tmul" << VM_UINT64 << rSize << rNum
+                << m_st.getImm (elemSize);
+
+            instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
+            instr << "mem" << find (imop.dest ()) << "imm 0x0";
+            instr << rSize;
+            block.push_back (instr);
+        }
     }
     else {
         VMInstruction instr;
@@ -608,10 +631,14 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
                   << loadToRegister (block, imop.arg1 ())
                   << m_st.getImm (0);
         }
-        else {
+        else
+        if (destTy != srcTy) {
             instr << "convert";
             instr << srcTy << loadToRegister (block, imop.arg1 ());
             instr << destTy << find (imop.dest ());
+        }
+        else {
+            instr << "mov" << find (imop.arg1 ()) << find (imop.dest ());
         }
 
         block.push_back (instr);
@@ -1169,7 +1196,6 @@ void Compiler::cgPrivateRelease (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
-    TypeNonVoid* ty = imop.dest ()->secrecType ();
     if (! imop.isVectorized ()) {
         cgNewPrivateScalar (block, imop.dest ());
     }
@@ -1177,7 +1203,7 @@ void Compiler::cgPrivateCast (VMBlock& block, const Imop& imop) {
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.dest ());
-    emitSyscall (block, SyscallName::cast (ty, imop.dest ()->secrecType ()));
+    emitSyscall (block, SyscallName::cast (imop.arg1 ()->secrecType (), imop.dest ()->secrecType ()));
 }
 
 void Compiler::cgPrivateLoad (VMBlock& block, const Imop& imop) {
