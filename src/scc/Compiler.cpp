@@ -953,25 +953,33 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     assert (imop.arg1 () != 0);
 
     const Symbol* arg = imop.arg1 ();
-    bool isStr = isString (arg);
-    VMInstruction instr;
 
-    if (imop.type () == Imop::PUSHCREF && isStr) {
-        pushString (block, arg);
+    if (imop.type () == Imop::PUSH) {
+        block.push_new () << "push" << find (arg);
+        return;
     }
 
-    switch (imop.type ()) {
-    case Imop::PUSH:     instr << "push";     break;
-    case Imop::PUSHREF:  instr << "pushref";  break;
-    case Imop::PUSHCREF: instr << "pushcref"; break;
-    default:
-        assert (false);
-        break;
+    if (imop.type () == Imop::PUSHREF) {
+        assert (arg->secrecType ()->secrecSecType ()->isPublic ());
+        assert (! arg->isConstant ());
+        block.push_new ()
+            << ((arg->isArray () || isString (arg)) ? "pushref mem" : "pushref")
+            << find (arg);
+        return;
     }
 
-    if (isStr) instr << "mem";
-    instr << find (imop.arg1 ());
-    block.push_back (instr);
+    if (imop.type () == Imop::PUSHCREF) {
+        assert (arg->secrecType ()->secrecSecType ()->isPublic ());
+        if (isString (arg)) {
+            pushString (block, arg);
+            return;
+        }
+
+        block.push_new ()
+            << (arg->isArray () ? "pushcref mem" : "pushcref")
+            << find (arg);
+        return;
+    }
 }
 
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
