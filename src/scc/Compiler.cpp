@@ -377,6 +377,13 @@ void Compiler::pushString (VMBlock& block, const Symbol* str) {
     }
 }
 
+void Compiler::paramString (VMBlock& block, const Symbol* dest) {
+    VMLabel* target = m_st.getLabel (":builtin_str_dup__");
+    block.push_new () << "pushcref cref" << m_param;
+    m_funcs->insert (target, BuiltinStrDup ());
+    block.push_new () << "call" << target << find (dest);
+    ++ m_param;
+}
 
 void Compiler::cgProcedure (const Procedure& blocks) {
     VMLabel* name = 0;
@@ -636,7 +643,6 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         }
 
         block.push_back (instr);
-
     }
 }
 
@@ -679,7 +685,11 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 
     // push arguments
     for (++ it; it != itEnd && *it != 0; ++ it) {
-        block.push_new () << "pushcref" << find (*it);
+        const Symbol* arg = *it;
+        if (arg->secrecType ()->secrecDataType () == DATATYPE_STRING)
+            pushString (block, arg);
+        else
+            block.push_new () << "pushcref" << find (*it);
     }
 
     assert (it != itEnd && *it == 0 &&
@@ -695,6 +705,12 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
+
+    if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+        paramString (block, imop.dest ());
+        return;
+    }
+
     VMDataType ty = representationType (imop.dest ()->secrecType ());
     assert (ty != VM_INVALID);
 
@@ -762,19 +778,31 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
         cgPrivateLoad (block, imop);
         return;
     }
-
-    VMValue* rOffset = m_ra->temporaryReg ();
-
-    block.push_new () << "mov" << find (imop.arg2 ()) << rOffset;
-
     VMDataType ty = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
     assert (ty != VM_INVALID);
     const unsigned size = sizeInBytes (ty);
-    VMInstruction mulInstr;
+
+    VMValue* rOffset = m_ra->temporaryReg ();
+    block.push_new () << "mov" << find (imop.arg2 ()) << rOffset;
     block.push_new () << "bmul" << VM_UINT64 << rOffset << m_st.getImm (size);
+
+    VMValue* rAddr = 0;
+    if (imop.arg1 ()->isConstant ()) {
+        assert (imop.arg1 ()->secrecType ()->secrecDataType () == DATATYPE_STRING);
+        rAddr = m_ra->temporaryReg ();
+        block.push_new () << "mov imm :RODATA" << rAddr;
+
+        const ConstantString* cstr = static_cast<const ConstantString*>(imop.arg1 ());
+        StringLiterals::LiteralInfo info = m_strLit->insert (cstr);
+        block.push_new () << "badd" << VM_UINT64 << rOffset << info.label;
+    }
+    else {
+        rAddr = find (imop.arg1 ());
+    }
+
     block.push_new ()
         << "mov mem"
-        << find (imop.arg1 ())
+        << rAddr
         << rOffset
         << find (imop.dest ())
         << m_st.getImm (size);
