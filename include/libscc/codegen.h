@@ -371,6 +371,8 @@ public: /* Methods: */
     CGResult cgExprRVariable (TreeNodeExprRVariable* e);
     CGResult cgExprDomainID (TreeNodeExprDomainID* e);
     CGResult cgExprQualified (TreeNodeExprQualified* e);
+    CGResult cgExprBytesFromString (TreeNodeExprBytesFromString* e);
+    CGResult cgExprStringFromBytes (TreeNodeExprStringFromBytes* e);
     CGResult cgExprString (TreeNodeExprString* e);
     CGResult cgExprFloat (TreeNodeExprFloat* e);
     CGResult cgExprTernary (TreeNodeExprTernary* e);

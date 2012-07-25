@@ -1040,6 +1040,48 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeExprStringFromBytes
+******************************************************************/
+
+class TreeNodeExprStringFromBytes : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprStringFromBytes(const YYLTYPE &loc)
+        : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
+
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprStringFromBytes (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeExprBytesFromString
+******************************************************************/
+
+class TreeNodeExprBytesFromString : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprBytesFromString(const YYLTYPE &loc)
+        : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
+
+    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprBytesFromString (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeStmtKind
 ******************************************************************/
 

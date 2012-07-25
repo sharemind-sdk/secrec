@@ -61,6 +61,8 @@ public: /* Methods: */
     ICode::Status visit (TreeNodeExprInt* e);
     ICode::Status visit (TreeNodeExprDomainID* e);
     ICode::Status visit (TreeNodeExprQualified* e);
+    ICode::Status visit (TreeNodeExprBytesFromString* e);
+    ICode::Status visit (TreeNodeExprStringFromBytes* e);
 
     ICode::Status visit (TreeNodeSecTypeF* ty);
     ICode::Status visit (TreeNodeType* _ty);

@@ -452,8 +452,20 @@ MKCALLBACK(RELEASE, 1, 0, 0, 0,
     }
 )
 
+template <SecrecDataType ty>
+Value loadArray (Value& arg, uint64_t index) { return arg.un_ptr[index]; }
+
+template <>
+Value loadArray<DATATYPE_STRING>(Value& arg, uint64_t index) {
+    Value out;
+    assert (index <= arg.un_str_val->size ());
+    const char* bytes = arg.un_str_val->c_str ();
+    out.un_uint8_val = bytes[index];
+    return out;
+}
+
 MKCALLBACK(LOAD, 0, 1, 1, 0,
-    storeSym (ip->args[0], arg1.un_ptr [arg2.un_uint_val]);
+    storeSym (ip->args[0], loadArray<ty>(arg1, arg2.un_uint_val));
 )
 
 MKCALLBACK(STORE, 1, 1, 1, 0,
@@ -559,6 +571,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::CLASSIFY:
     case Imop::DECLASSIFY:
     case Imop::ASSIGN:
+    case Imop::LOAD:
         ty = imop.arg1()->secrecType()->secrecDataType();
     default:
         break;
@@ -604,7 +617,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::COPY:       SET_SIMPLE_CALLBACK(COPY); break;
     case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
     case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
-    case Imop::LOAD:       SET_SIMPLE_CALLBACK(LOAD); break;
+    case Imop::LOAD:       SET_SPECIALIZE_CALLBACK(LOAD,SWITCH_ANY); break;
     case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;

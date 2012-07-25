@@ -113,6 +113,8 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "float"    {  stepLen(yyget_lloc(yyscanner), 6); return FLOAT; }
 "float32"    {  stepLen(yyget_lloc(yyscanner), 7); return FLOAT32; }
 "float64"    {  stepLen(yyget_lloc(yyscanner), 7); return FLOAT64; }
+"__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
+"__bytes_from_string" { stepLen(yyget_lloc(yyscanner), 19); return BYTESFROMSTRING; }
 
 {NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
 

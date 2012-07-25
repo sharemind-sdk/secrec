@@ -1044,6 +1044,68 @@ ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
     return ICode::OK;
 }
 
+ICode::Status TreeNodeExprStringFromBytes::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprStringFromBytes* e) {
+    if (e->haveResultType ())
+        return ICode::OK;
+
+    TreeNodeExpr* subExpr = e->expression ();
+    ICode::Status status = visitExpr (subExpr);
+    if (status != ICode::OK) {
+        return status;
+    }
+
+    Type* ty = subExpr->resultType ();
+    if (ty->secrecSecType ()->isPrivate () ||
+        ty->secrecDataType () != DATATYPE_UINT8 ||
+        ty->secrecDimType () != 1)
+    {
+        m_log.fatal () << "Invalid argument. Expected public byte array, got "
+            << ty->toString () << ".";
+        m_log.fatal () << "Type error at " << e->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    TypeNonVoid* resultType = TypeNonVoid::get(getContext (),
+            PublicSecType::get (getContext ()), DATATYPE_STRING);
+    e->setResultType (resultType);
+    return ICode::OK;
+}
+
+ICode::Status TreeNodeExprBytesFromString::accept (TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+ICode::Status TypeChecker::visit (TreeNodeExprBytesFromString* e) {
+    if (e->haveResultType ())
+        return ICode::OK;
+
+    TreeNodeExpr* subExpr = e->expression ();
+    ICode::Status status = visitExpr (subExpr);
+    if (status != ICode::OK) {
+        return status;
+    }
+
+    Type* ty = subExpr->resultType ();
+    if (ty->secrecSecType ()->isPrivate () ||
+        ty->secrecDataType () != DATATYPE_STRING ||
+        ty->secrecDimType () != 0)
+    {
+        m_log.fatal () << "Invalid argument. Expected public string, got "
+            << ty->toString () << ".";
+        m_log.fatal () << "Type error at " << e->location () << ".";
+        return ICode::E_TYPE;
+    }
+
+    TypeNonVoid* resultType = TypeNonVoid::get(getContext (),
+            PublicSecType::get (getContext ()), DATATYPE_UINT8, 1);
+    e->setResultType (resultType);
+    return ICode::OK;
+}
+
 ICode::Status TypeChecker::visit (TreeNodeSecTypeF* ty) {
     if (ty->cachedType () != 0)
         return ICode::OK;

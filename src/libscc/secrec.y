@@ -149,7 +149,7 @@
 %token FLOAT FLOAT32 FLOAT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
-%token IMPORT MODULE TOSTRING
+%token IMPORT MODULE TOSTRING STRINGFROMBYTES BYTESFROMSTRING
 
 /* Literals: */
 %token <str> STRING_LITERAL
@@ -1121,6 +1121,16 @@ postfix_expression
  | TOSTRING '(' expression ')'
    {
      $$ = treenode_init(NODE_EXPR_TOSTRING, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | STRINGFROMBYTES '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_STRING_FROM_BYTES, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | BYTESFROMSTRING '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_BYTES_FROM_STRING, &@$);
      treenode_appendChild($$, $3);
    }
  | identifier '(' ')'

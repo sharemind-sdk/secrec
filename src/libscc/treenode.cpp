@@ -137,6 +137,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_EXPR_RESHAPE: return "RESHAPE";
         case NODE_EXPR_TOSTRING: return "TOSTRING";
         case NODE_EXPR_TYPE_QUAL: return "TYPE_QUALIFIER";
+        case NODE_EXPR_STRING_FROM_BYTES: return "STRING_FROM_BYTES";
+        case NODE_EXPR_BYTES_FROM_STRING: return "BYTES_FROM_STRING";
         case NODE_STMT_IF: return "STMT_IF";
         case NODE_STMT_FOR: return "STMT_FOR";
         case NODE_STMT_WHILE: return "STMT_WHILE";
@@ -284,6 +286,10 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeExprReshape(*loc));
         case NODE_EXPR_TOSTRING:
             return (TreeNode*) (new SecreC::TreeNodeExprToString(*loc));
+        case NODE_EXPR_STRING_FROM_BYTES:
+            return (TreeNode*) (new SecreC::TreeNodeExprStringFromBytes (*loc));
+        case NODE_EXPR_BYTES_FROM_STRING:
+            return (TreeNode*) (new SecreC::TreeNodeExprBytesFromString (*loc));
         case NODE_STMT_BREAK:
             return (TreeNode*) (new SecreC::TreeNodeStmtBreak(*loc));
         case NODE_STMT_CONTINUE:
@@ -999,6 +1005,24 @@ TreeNodeExpr* TreeNodeExprQualified::expression () const {
 TreeNode::ChildrenListConstRange TreeNodeExprQualified::types () const {
     assert (children ().size () >= 2);
     return std::make_pair (++ children ().begin (), children ().end ());
+}
+
+/*******************************************************************************
+  TreeNodeExprStringFromBytes
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprStringFromBytes::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeExprBytesFromString
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprBytesFromString::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (this, 0);
 }
 
 /*******************************************************************************

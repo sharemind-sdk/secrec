@@ -1098,6 +1098,127 @@ CGBranchResult CodeGen::cgBoolExprQualified (TreeNodeExprQualified *e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprStringFromBytes
+*******************************************************************************/
+
+CGResult TreeNodeExprStringFromBytes::codeGenWith (CodeGen& cg) {
+    return cg.cgExprStringFromBytes (this);
+}
+
+CGResult CodeGen::cgExprStringFromBytes (TreeNodeExprStringFromBytes* e) {
+    CGResult result;
+
+    // Type check:
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    assert (false);
+}
+
+/*******************************************************************************
+  TreeNodeExprBytesFromString
+*******************************************************************************/
+
+CGResult TreeNodeExprBytesFromString::codeGenWith (CodeGen& cg) {
+    return cg.cgExprBytesFromString (this);
+}
+
+CGResult CodeGen::cgExprBytesFromString (TreeNodeExprBytesFromString* e) {
+    Context& cxt = getContext ();
+    CGResult result;
+
+    // Type check:
+    ICode::Status status = m_tyChecker.visit (e);
+    if (status != ICode::OK) {
+        result.setStatus (status);
+        return result;
+    }
+
+    SymbolSymbol* resSym = generateResultSymbol (result, e);
+    const CGResult& argResult = codeGen (e->expression ());
+    append (result, argResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    Symbol* sizeSym = resSym->getDim (0);
+    Symbol* strSym = argResult.symbol ();
+    Symbol* charSym = m_st->appendTemporary (TypeNonVoid::get (cxt, DATATYPE_UINT8));
+    Symbol* tempBool = m_st->appendTemporary(TypeNonVoid::getPublicBoolType (cxt));
+
+    /**
+     * Compute length of the array:
+     */
+
+    Imop* i = 0;
+    Imop* loadChar = new Imop (e, Imop::LOAD, charSym, strSym, sizeSym);
+    Imop* inc = new Imop (e, Imop::ADD, sizeSym, sizeSym, ConstantInt::get (cxt, 1));
+
+    // i = 0
+    pushImopAfter (result,
+        new Imop (e, Imop::ASSIGN, sizeSym, ConstantInt::get (cxt, 0)));
+
+    // jump L1
+    push_imop (new Imop (e, Imop::JUMP, m_st->label (loadChar)));
+
+    // L2: i = i + 1
+    push_imop (inc);
+
+    // L1: c = str[i]
+    push_imop (loadChar);
+
+    // b = (c == 0)
+    push_imop (
+        new Imop (e, Imop::EQ, tempBool, charSym, ConstantUInt8::get (cxt, 0)));
+
+    // if !b jump L2
+    push_imop (new Imop (e, Imop::JF, m_st->label (inc), tempBool));
+
+    /**
+     * Allocate the array:
+     */
+
+    // r = ALLOC 0 i
+    push_imop (
+        new Imop (e, Imop::ALLOC, resSym, ConstantUInt8::get (cxt, 0), sizeSym));
+
+    /**
+     * Copy the data:
+     */
+
+    loadChar = new Imop (e, Imop::LOAD, charSym, strSym, sizeSym);
+    inc = new Imop (e, Imop::ADD, sizeSym, sizeSym, ConstantInt::get (cxt, 1));
+
+    // i = 0
+    push_imop (new Imop (e, Imop::ASSIGN, sizeSym, ConstantInt::get (cxt, 0)));
+
+    // jump L1
+    push_imop (new Imop (e, Imop::JUMP, m_st->label (loadChar)));
+
+    // L2: i = i + 1
+    push_imop (inc);
+
+    // L1: c = str[i]
+    push_imop (loadChar);
+
+    // r[i] = c
+    push_imop (new Imop (e, Imop::STORE, resSym, sizeSym, charSym));
+
+    // b = (c == 0)
+    push_imop (new Imop (e, Imop::EQ, tempBool, charSym, ConstantUInt8::get (cxt, 0)));
+
+    // if !b jump L2
+    push_imop (new Imop (e, Imop::JF, m_st->label (inc), tempBool));
+
+    codeGenSize (result);
+    releaseTemporary (result, strSym);
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeExprString
 *******************************************************************************/
 

@@ -91,6 +91,8 @@ enum SecrecTreeNodeType {
     NODE_EXPR_PREFIX_DEC  = 0x280, /* -- expr                  */
     NODE_EXPR_DOMAINID    = 0x290, /* __domainid (expr)        */
     NODE_EXPR_TYPE_QUAL   = 0x2a0, /* expr :: type             */
+    NODE_EXPR_STRING_FROM_BYTES = 0x2b0,
+    NODE_EXPR_BYTES_FROM_STRING = 0x2c0,
         NODE_EXPR_MASK    = 0xfff, /* NB! Including literals.  */
     NODE_STMT_IF        = 0x01000,
     NODE_STMT_FOR       = 0x02000,
