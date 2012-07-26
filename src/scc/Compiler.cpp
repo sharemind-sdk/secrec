@@ -35,7 +35,7 @@ using namespace SecreCC;
 
 VMDataType representationType (TypeNonVoid* tnv) {
     VMDataType ty = secrecDTypeToVMDType (tnv->secrecDataType ());
-    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate ()) {
+    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate () || tnv->secrecDataType () == DATATYPE_STRING) {
         // arrays, and private values are represented by a handle
         ty = VM_UINT64;
     }
@@ -686,7 +686,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     // push arguments
     for (++ it; it != itEnd && *it != 0; ++ it) {
         const Symbol* arg = *it;
-        if (arg->secrecType ()->secrecDataType () == DATATYPE_STRING)
+        if (isString (arg))
             pushString (block, arg);
         else
             block.push_new () << "pushcref" << find (*it);
@@ -696,6 +696,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
         "Malformed CALL instruction!");
 
     for (++ it; it != itEnd; ++ it) {
+        assert (! (*it)->isConstant ());
         block.push_new () << "pushref" << find (*it);
     }
 
@@ -706,7 +707,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
 
-    if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+    if (isString (imop.dest ())) {
         paramString (block, imop.dest ());
         return;
     }
