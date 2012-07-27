@@ -158,12 +158,18 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         codeGenSize (result);
     }
 
-    // r = ALLOC def size
-    if (!isScalar) {
+    // r = ALLOC def size (r = def)
+    {
         Symbol* def = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
-        Imop* i = 0;
-        i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
-        pushImopAfter (result, i);
+        Imop* initImop = 0;
+        if (!isScalar) {
+            initImop = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
+        }
+        else {
+            initImop = new Imop (e, Imop::ASSIGN, resSym, def);
+        }
+
+        pushImopAfter (result, initImop);
     }
 
     // 4. initialze required temporary symbols
