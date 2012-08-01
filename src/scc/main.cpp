@@ -144,7 +144,11 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 
     try {
 
-        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(),
+        po::store(po::command_line_parser(argc, argv)
+                      .options(desc)
+                      .positional(p)
+                      .style(po::command_line_style::default_style ^ po::command_line_style::allow_guessing)
+                      .run(),
                   vm);
         po::notify(vm);
 
