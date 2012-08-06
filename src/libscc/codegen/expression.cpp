@@ -1149,7 +1149,7 @@ CGResult CodeGen::cgExprStringFromBytes (TreeNodeExprStringFromBytes* e) {
      */
 
     LoopInfo loopInfo;
-    loopInfo.push_index (m_st->appendTemporary (TypeNonVoid::getPublicBoolType (cxt)));
+    loopInfo.push_index (m_st->appendTemporary (TypeNonVoid::getIndexType (cxt)));
     append (result, enterLoop (loopInfo, arrSym));
     push_imop (new Imop (e, Imop::LOAD, tempElem, arrSym, loopInfo.at (0)));
     push_imop (new Imop (e, Imop::STORE, resSym, loopInfo.at (0), tempElem));
