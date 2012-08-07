@@ -509,8 +509,9 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
 
         if (vmDType != VM_UINT64) {
             VMValue* rTmp = m_ra->temporaryReg ();
+            VMValue* arg = loadToRegister (block, imop.arg1 ());
             block.push_new () << "convert"
-                              << vmDType << loadToRegister (block, imop.arg1 ())
+                              << vmDType << arg
                               << VM_UINT64 << rTmp;
             block.push_new () << "push" << rTmp;
         }
