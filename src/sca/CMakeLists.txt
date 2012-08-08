@@ -2,6 +2,7 @@
 # sca
 ################################################################################
 
+find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories("${CMAKE_SOURCE_DIR}/include/" ${Boost_INCLUDE_DIRS})
 ADD_EXECUTABLE("sca" "main.cpp")
 SET_TARGET_PROPERTIES("sca" PROPERTIES
