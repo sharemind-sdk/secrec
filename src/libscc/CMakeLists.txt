@@ -2,10 +2,6 @@
 # libscc
 ################################################################################
 
-find_package(Boost COMPONENTS thread program_options filesystem system REQUIRED)
-find_package(BISON REQUIRED)
-find_package(FLEX REQUIRED)
-
 BISON_TARGET(SECREC_PARSER "secrec.y"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 FLEX_TARGET(SECREC_LEXER "secrec.l"

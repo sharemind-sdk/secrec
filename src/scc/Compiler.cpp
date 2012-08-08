@@ -20,6 +20,7 @@
 #include <libscc/constant.h>
 #include <libscc/types.h>
 
+#include "DeadVariableElimination.h"
 #include "CopyElimination.h"
 #include "SyscallManager.h"
 #include "StringLiterals.h"
@@ -35,7 +36,7 @@ using namespace SecreCC;
 
 VMDataType representationType (TypeNonVoid* tnv) {
     VMDataType ty = secrecDTypeToVMDType (tnv->secrecDataType ());
-    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate ()) {
+    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate () || tnv->secrecDataType () == DATATYPE_STRING) {
         // arrays, and private values are represented by a handle
         ty = VM_UINT64;
     }
@@ -304,6 +305,7 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
+    eliminateDeadVariables (m_code);
     eliminateRedundantCopies (m_code);
 
     // Create and add the linking unit sections:
@@ -352,7 +354,7 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     VMValue* reg = 0; // this holds the value of symbol
     if (symbol->symbolType () == SecreC::Symbol::CONSTANT) {
         reg = m_ra->temporaryReg (); // temporary register
-        block.push_new () << "mov " << find (symbol) << reg;
+        block.push_new () << "mov" << find (symbol) << reg;
     }
     else {
         reg = find (symbol);
@@ -509,8 +511,9 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
 
         if (vmDType != VM_UINT64) {
             VMValue* rTmp = m_ra->temporaryReg ();
+            VMValue* arg = loadToRegister (block, imop.arg1 ());
             block.push_new () << "convert"
-                              << vmDType << loadToRegister (block, imop.arg1 ())
+                              << vmDType << arg
                               << VM_UINT64 << rTmp;
             block.push_new () << "push" << rTmp;
         }
@@ -617,26 +620,26 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             block.push_new () << "call" << target << "imm";
         }
         else {
-            VMInstruction instr;
-            instr << "mov";
-            instr << "mem" << find (imop.arg1 ()) << "imm 0x0";
-            instr << "mem" << find (imop.dest ()) << "imm 0x0";
-            instr << find (imop.arg2 ());
-            block.push_back (instr);
+            block.push_new ()
+                  << "mov"
+                  << "mem" << find (imop.arg1 ()) << "imm 0x0"
+                  << "mem" << find (imop.dest ()) << "imm 0x0"
+                  << find (imop.arg2 ());
         }
     }
     else {
         VMInstruction instr;
         if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+            VMValue* arg = loadToRegister (block, imop.arg1 ());
             instr << "tgt" << destTy << find (imop.dest ())
-                  << loadToRegister (block, imop.arg1 ())
-                  << m_st.getImm (0);
+                  << arg << m_st.getImm (0);
         }
         else
         if (destTy != srcTy) {
-            instr << "convert";
-            instr << srcTy << loadToRegister (block, imop.arg1 ());
-            instr << destTy << find (imop.dest ());
+            VMValue* arg = loadToRegister (block, imop.arg1 ());
+            instr << "convert"
+                  << srcTy << arg
+                  << destTy << find (imop.dest ());
         }
         else {
             instr << "mov" << find (imop.arg1 ()) << find (imop.dest ());
@@ -686,7 +689,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     // push arguments
     for (++ it; it != itEnd && *it != 0; ++ it) {
         const Symbol* arg = *it;
-        if (arg->secrecType ()->secrecDataType () == DATATYPE_STRING)
+        if (isString (arg))
             pushString (block, arg);
         else
             block.push_new () << "pushcref" << find (*it);
@@ -696,6 +699,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
         "Malformed CALL instruction!");
 
     for (++ it; it != itEnd; ++ it) {
+        assert (! (*it)->isConstant ());
         block.push_new () << "pushref" << find (*it);
     }
 
@@ -706,7 +710,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
 
-    if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+    if (isString (imop.dest ())) {
         paramString (block, imop.dest ());
         return;
     }

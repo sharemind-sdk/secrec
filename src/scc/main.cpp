@@ -127,64 +127,63 @@ struct ProgramOptions {
 /*
  * Parse program options. Returns false on failure.
  */
-bool readProgramOptions (int argc, char *argv[], ProgramOptions* opts) {
+bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 
-     po::options_description desc ("Available options");
-     desc.add_options ()
-             ("help,h", "Display this help message.")
-             ("verbose,v", "Enable verbose output.")
-             ("include,I", po::value<vector<string> >(), "Directory for module search path.")
-             ("assemble,S", "Output assembly.")
-             ("output,o", po::value<string>(), "Output file.")
-             ("input", po::value<string>(), "Input file.")
-             ;
-     po::positional_options_description p;
-     p.add("input", -1);
-     po::variables_map vm;
+    po::options_description desc ("Available options");
+    desc.add_options ()
+            ("help,h", "Display this help message.")
+            ("verbose,v", "Enable verbose output.")
+            ("include,I", po::value<vector<string> >(), "Directory for module search path.")
+            ("assemble,S", "Output assembly.")
+            ("output,o", po::value<string>(), "Output file.")
+            ("input", po::value<string>(), "Input file.")
+            ;
+    po::positional_options_description p;
+    p.add("input", -1);
+    po::variables_map vm;
 
-     try {
-         po::store (po::command_line_parser (argc, argv).
-            options (desc).positional (p).run (), vm);
-         po::notify (vm);
-     }
-     catch (const std::exception& e) {
-         cerr << e.what () << endl;
-         cerr << desc << endl;
-         return false;
-     }
-     catch (...) {
-         cerr << desc << endl;
-         return false;
-     }
+    try {
 
-     if (vm.count ("help")) {
-        opts->showHelp = true;
-        cout << desc << endl;
-     }
+        po::store(po::command_line_parser(argc, argv)
+                      .options(desc)
+                      .positional(p)
+                      .style(po::command_line_style::default_style ^ po::command_line_style::allow_guessing)
+                      .run(),
+                  vm);
+        po::notify(vm);
 
-     opts->verbose = vm.count ("verbose");
-     opts->assembleOnly = vm.count ("assemble");
+        if (vm.count("help")) {
+           opts.showHelp = true;
+           cout << desc << endl;
+           return true;
+        }
 
-     if (vm.count ("output")) {
-         opts->output = vm["output"].as<string>();
-     }
+        opts.verbose = vm.count("verbose");
+        opts.assembleOnly = vm.count("assemble");
 
-     if (vm.count ("input")) {
-         opts->input = vm["input"].as<string>();
-     }
+        if (vm.count("output"))
+            opts.output = vm["output"].as<string>();
 
-     if (vm.count ("include")) {
-         opts->includes = vm["include"].as<vector<string> >();
-     }
+        if (vm.count("input"))
+            opts.input = vm["input"].as<string>();
 
-    return true;
+        if (vm.count("include"))
+            opts.includes = vm["include"].as<vector<string> >();
+
+        return true;
+    }
+    catch (const std::exception & e) {
+        cerr << e.what() << endl;
+        cerr << desc << endl;
+        return false;
+    }
 }
 
 /*
  * Parse a secrec program, returns 0 on failure.
  */
-auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts, int* errorCode) {
-    SecreC::TreeNodeModule* ast = 0;
+SecreC::TreeNodeModule * parseProgram(const ProgramOptions & opts, int & errorCode) {
+    SecreC::TreeNodeModule * ast = NULL;
 
     if (opts.input) {
         const std::string& fname = opts.input.get ();
@@ -195,18 +194,17 @@ auto_ptr<SecreC::TreeNodeModule> parseProgram (const ProgramOptions& opts, int* 
                 cerr << flush;
             }
 
-            *errorCode = sccparse_file (f, &ast);
+            errorCode = sccparse_file(f, &ast);
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
         }
     }
     else {
-        SecreC::TreeNodeModule* ast = 0;
-        *errorCode = sccparse (&ast);
+        errorCode = sccparse(&ast);
     }
 
-    return auto_ptr<SecreC::TreeNodeModule> (ast);
+    return ast;
 }
 
 /*
@@ -292,13 +290,11 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
 int main (int argc, char *argv[]) {
     ProgramOptions opts;
 
-    if (! readProgramOptions (argc, argv, &opts)) {
+    if (!readProgramOptions(argc, argv, opts))
         return EXIT_FAILURE;
-    }
 
-    if (opts.showHelp) {
+    if (opts.showHelp)
         return EXIT_SUCCESS;
-    }
 
     /* Get output stream: */
     ostream os (cout.rdbuf ());
@@ -320,12 +316,12 @@ int main (int argc, char *argv[]) {
 
     /* Parse the program: */
     int parseErrorCode = 0;
-    std::auto_ptr<SecreC::TreeNodeModule> parseTree = parseProgram (opts, &parseErrorCode);
+    std::auto_ptr<SecreC::TreeNodeModule> parseTree(parseProgram(opts, parseErrorCode));
     if (parseErrorCode != 0) {
         cerr << "Parsing failed! Error code " << parseErrorCode << "." << endl;
         return EXIT_FAILURE;
     }
-    
+
     /* Translate to intermediate code: */
     SecreC::Context context;
     SecreC::ICode icode;

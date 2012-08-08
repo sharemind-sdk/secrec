@@ -193,11 +193,11 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
     Symbol* tmp = strideInfo.symbol ();
     const unsigned n = tmp->secrecType ()->secrecDimType ();
     if (n == 0) { // scalar doesn't have stride
-        m_log.debug () << "Generating stride of scalar!";
         return result;
     }
 
-    SymbolSymbol* sym = dynamic_cast<SymbolSymbol*>(tmp);
+    assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
+    SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
     strideInfo.clear ();
     strideInfo.reserve (n);
 
@@ -205,14 +205,14 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
         strideInfo.push_back (m_st->appendTemporary (ty));
     }
 
-    Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (0), ConstantInt::get (getContext (), 1));
+    Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (n - 1), ConstantInt::get (getContext (), 1));
     pushImopAfter (result, i);
 
-    for (unsigned it = 1; it < n; ++ it) {
-        Symbol* symDim = sym->getDim (it - 1);
+    for (unsigned it = n - 1; it != 0; -- it) {
+        Symbol* symDim = sym->getDim (it);
         i = new Imop (m_node, Imop::MUL,
-            strideInfo.at (it), strideInfo.at (it - 1), symDim);
-        push_imop(i);
+                      strideInfo.at (it - 1), strideInfo.at (it), symDim);
+        push_imop (i);
     }
 
     return result;

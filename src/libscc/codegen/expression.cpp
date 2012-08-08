@@ -158,12 +158,18 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
         codeGenSize (result);
     }
 
-    // r = ALLOC def size
-    if (!isScalar) {
+    // r = ALLOC def size (r = def)
+    {
         Symbol* def = defaultConstant (getContext (), e->resultType ()->secrecDataType ());
-        Imop* i = 0;
-        i = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
-        pushImopAfter (result, i);
+        Imop* initImop = 0;
+        if (!isScalar) {
+            initImop = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
+        }
+        else {
+            initImop = new Imop (e, Imop::ASSIGN, resSym, def);
+        }
+
+        pushImopAfter (result, initImop);
     }
 
     // 4. initialze required temporary symbols
@@ -1115,7 +1121,41 @@ CGResult CodeGen::cgExprStringFromBytes (TreeNodeExprStringFromBytes* e) {
         return result;
     }
 
-    assert (false);
+    SymbolSymbol* resSym = generateResultSymbol (result, e);
+    const CGResult& argResult = codeGen (e->expression ());
+    append (result, argResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    Context& cxt = getContext ();
+    SymbolSymbol* arrSym = static_cast<SymbolSymbol*>(argResult.symbol ());
+    Symbol* sizeSym = m_st->appendTemporary (TypeNonVoid::getIndexType (cxt));
+    Symbol* tempElem = m_st->appendTemporary (TypeNonVoid::get (cxt, DATATYPE_UINT8));
+
+    /**
+     * Allocate memory for the string:
+     */
+
+    Imop* i = new Imop (e, Imop::ASSIGN, sizeSym, arrSym->getDim (0));
+    pushImopAfter (result, i);
+
+    push_imop (new Imop (e, Imop::ADD, sizeSym, sizeSym, ConstantInt::get (cxt, 1)));
+
+    push_imop (new Imop (e, Imop::ALLOC, resSym, ConstantUInt8::get (cxt, 0), sizeSym));
+
+    /**
+     * Copy the data from array to the string:
+     */
+
+    LoopInfo loopInfo;
+    loopInfo.push_index (m_st->appendTemporary (TypeNonVoid::getIndexType (cxt)));
+    append (result, enterLoop (loopInfo, arrSym));
+    push_imop (new Imop (e, Imop::LOAD, tempElem, arrSym, loopInfo.at (0)));
+    push_imop (new Imop (e, Imop::STORE, resSym, loopInfo.at (0), tempElem));
+    append (result, exitLoop (loopInfo));
+    releaseTemporary (result, arrSym);
+    return result;
 }
 
 /*******************************************************************************

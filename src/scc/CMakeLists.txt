@@ -1,10 +1,6 @@
-PROJECT(SHAREMIND_SCC "CXX")
-
 ################################################################################
 # scc
 ################################################################################
-
-find_package(Boost COMPONENTS iostreams REQUIRED)
 
 SET(SCC_SOURCES
     "main.cpp"
@@ -14,6 +10,8 @@ SET(SCC_SOURCES
     "Compiler.cpp"
     "CopyElimination.h"
     "CopyElimination.cpp"
+    "DeadVariableElimination.h"
+    "DeadVariableElimination.cpp"
     "Builtin.h"
     "Builtin.cpp"
     "SyscallManager.h"
@@ -36,10 +34,10 @@ SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
     VERSION "0.0.1.0")
 TARGET_LINK_LIBRARIES("scc" "libscc" "libas"
-    "${Boost_PROGRAM_OPTIONS_LIBRARY}"
-    "${Boost_SYSTEM_LIBRARY}"
-    "${Boost_FILESYSTEM_LIBRARY}"
-    "${Boost_IOSTREAMS_LIBRARY}"
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_IOSTREAMS_LIBRARY}
     )
 INSTALL(TARGETS "scc"
     RUNTIME DESTINATION "bin"

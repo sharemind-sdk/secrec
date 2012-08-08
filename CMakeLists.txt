@@ -38,6 +38,10 @@ SHAREMIND_ADD_EXT(libexecutable SHAREMIND_LIBEXECUTABLE)
 SHAREMIND_ADD_EXT(libvmi SHAREMIND_LIBVMI)
 SHAREMIND_ADD_EXT(libas SHAREMIND_LIBAS)
 
+find_package(Boost COMPONENTS thread system filesystem iostreams program_options REQUIRED)
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
+
 ADD_SUBDIRECTORY(src/libscc)
 ADD_SUBDIRECTORY(src/sca)
 ADD_SUBDIRECTORY(src/scc)

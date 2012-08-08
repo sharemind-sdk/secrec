@@ -25,17 +25,25 @@ namespace SecreC {
 class LiveVariables : public BackwardDataFlowAnalysis {
 public: /* Types: */
 
-    typedef std::set<Symbol const* > Symbols;
+    typedef std::set<const Symbol* > Symbols;
     typedef std::map<const Block*, Symbols> BSM;
 
 public: /* Methods: */
 
-    std::string toString(const Program &pr) const;
+    std::string toString (const Program &pr) const;
 
-    const Symbols& def (const Block& block) const { return m_def.find (&block)->second; }
-    const Symbols& use (const Block& block) const { return m_use.find (&block)->second; }
+    /**
+     * @brief liveOnExit returns abstract values after the given basic block
+     * @param block
+     * @return the abstract values
+     */
+    const Symbols& liveOnExit (const Block& block) const {
+        return m_outs.find (&block)->second;
+    }
+
     const Symbols& ins (const Block& block) const { return m_ins.find (&block)->second; }
-    const Symbols& outs (const Block& block) const { return m_outs.find (&block)->second; }
+
+    static void updateBackwards (const Imop& imop, Symbols& live);
 
 protected:
 
@@ -43,10 +51,10 @@ protected:
     virtual void startBlock(const Block& b);
     virtual void outTo(const Block &from, Edge::Label label, const Block &to) {
         if (Edge::isGlobal (label)) {
-            transferGlobal (from, to);
+            outToGlobal (from, to);
         }
         else {
-            transfer (from, to);
+            outToLocal (from, to);
         }
     }
 
@@ -56,16 +64,13 @@ protected:
 
 private:
 
-    void transfer (const Block &from, const Block &to);
-    void transferGlobal (const Block &from, const Block &to);
-
-    void useSymbol (const Block& block, const Symbol* sym);
-    void defSymbol (const Block& block, const Symbol* sym);
+    void outToLocal (const Block &from, const Block &to);
+    void outToGlobal (const Block &from, const Block &to);
 
 private: /* Fields: */
 
-    BSM m_use;
-    BSM m_def;
+    BSM m_gen;
+    BSM m_kill;
     BSM m_outs;
     BSM m_ins;
 };
