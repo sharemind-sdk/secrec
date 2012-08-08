@@ -62,15 +62,20 @@ struct SimpleInterferenceGraph {
         m_edges.clear();
     }
 
-    void drawEdges (std::ostream& os) {
-        typedef std::pair<const Symbol*, const Symbol*> Edge;
-        BOOST_FOREACH (const Edge& edge, m_edges) {
-            const Symbol* s1 = edge.first;
-            const Symbol* s2 = edge.second;
-            if (s1->isGlobal () || s2->isGlobal ())
-                continue;
+    void drawNodes (std::ostream& os) {
+        typedef std::pair<const Symbol*, unsigned> Node;
+        BOOST_FOREACH (const Node& n, m_numbers) {
+            os << "    node_" << n.second
+               << " [label=\"" << n.first->name () << "\"];\n";
+        }
+    }
 
-            os << "    " << getNumber (s1) << " -- " << getNumber (s2) << ";\n";
+    void drawEdges (std::ostream& os) {
+        typedef std::pair<unsigned, unsigned> Edge;
+        BOOST_FOREACH (const Edge& edge, m_edges) {
+            const unsigned n = edge.first;
+            const unsigned m = edge.second;
+            os << "    node_" << n << " -- node_" << m << ";\n";
         }
     }
 
@@ -98,15 +103,28 @@ struct SimpleInterferenceGraph {
     }
 
     void addEdge (const Symbol* s1, const Symbol* s2) {
-        if (s1 < s2) {
-            m_edges.insert (std::make_pair (s1, s2));
+        if (s1 > s2) {
+            std::swap (s1, s2);
+        }
+
+        if (s1->isGlobal () == s2->isGlobal ()) {
+            m_edges.insert (std::make_pair (num (s1), num (s2)));
         }
     }
 
 private:
 
+    unsigned num (const Symbol* sym) {
+        std::map<const Symbol*, unsigned>::iterator it = m_numbers.find (sym);
+        if (it == m_numbers.end ()) {
+            it = m_numbers.insert (it, std::make_pair (sym, m_count ++));
+        }
+
+        return it->second;
+    }
+
     std::set<const Symbol*> m_live;
-    std::set<std::pair<const Symbol*, const Symbol*> > m_edges;
+    std::set<std::pair<unsigned, unsigned> > m_edges;
     std::map<const Symbol*, unsigned > m_numbers;
     unsigned m_count;
 };
@@ -180,6 +198,7 @@ std::string LiveVariables::toString (const Program &pr) const {
             }
         }
 
+        visitor.drawNodes (ss);
         visitor.drawEdges (ss);
         ss << "  " << "}\n\n";
     }
