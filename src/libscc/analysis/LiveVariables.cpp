@@ -2,49 +2,132 @@
 
 #include <boost/foreach.hpp>
 
+#include "blocks.h"
 #include "symbol.h"
 #include "treenode.h"
 
 namespace SecreC {
 
-/*******************************************************************************
-  LiveVariables
-*******************************************************************************/
+namespace /* anonymous */ {
 
-void LiveVariables::start (const Program &pr) {
-    FOREACH_BLOCK (bi, pr) {
-        typedef Imop::OperandConstIterator OCI;
-        BOOST_FOREACH (const Imop& imop, *bi) {
-            BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
-                useSymbol (*bi, sym);
-            }
+struct CollectGenKill {
+    CollectGenKill (LiveVariables::Symbols& gen, LiveVariables::Symbols& kill)
+        : m_gen (gen), m_kill (kill)
+    { }
 
-            BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
-                defSymbol (*bi, sym);
-            }
+    inline void gen (const Symbol* sym) { m_gen.insert (sym); }
+    inline void kill (const Symbol* sym) { m_kill.insert (sym); m_gen.erase (sym); }
+
+private: /* Fields: */
+    LiveVariables::Symbols& m_gen;
+    LiveVariables::Symbols& m_kill;
+};
+
+struct UpdateBackwards {
+    explicit UpdateBackwards (LiveVariables::Symbols& live)
+        : m_live (live)
+    { }
+
+    inline void gen (const Symbol* sym) { m_live.insert (sym); }
+    inline void kill (const Symbol* sym) { m_live.erase (sym); }
+
+private: /* Fields: */
+    LiveVariables::Symbols& m_live;
+};
+
+template <class Visitor>
+void visitImop (const Imop& imop, Visitor& visitor) {
+
+    BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
+        if (sym->symbolType () == Symbol::SYMBOL) {
+            visitor.kill (sym);
+        }
+    }
+
+    BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
+        if (sym->symbolType () == Symbol::SYMBOL) {
+            visitor.gen (sym);
         }
     }
 }
 
-void LiveVariables::useSymbol (const Block& block, const Symbol *sym) {
-    assert (sym != 0);
-    switch (sym->symbolType ()) {
-    case Symbol::SYMBOL:
-        if (m_def[&block].find (sym) == m_def[&block].end ())
-            m_use[&block].insert (sym);
-    default:
-        break;
+struct SimpleInterferenceGraph {
+
+    SimpleInterferenceGraph ()
+        : m_count (0)
+    { }
+
+    void clear () {
+        m_live.clear ();
+        m_edges.clear();
     }
+
+    void drawEdges (std::ostream& os) {
+        typedef std::pair<const Symbol*, const Symbol*> Edge;
+        BOOST_FOREACH (const Edge& edge, m_edges) {
+            const Symbol* s1 = edge.first;
+            const Symbol* s2 = edge.second;
+            if (s1->isGlobal () || s2->isGlobal ())
+                continue;
+
+            os << "    " << getNumber (s1) << " -- " << getNumber (s2) << ";\n";
+        }
+    }
+
+    unsigned getNumber (const Symbol* sym) {
+        std::map<const Symbol*, unsigned>::iterator i = m_numbers.find (sym);
+        if (i == m_numbers.end ()) {
+            i = m_numbers.insert (i, std::make_pair (sym, m_count ++));
+        }
+
+        return i->second;
+    }
+
+    inline void gen (const Symbol* s1) {
+        m_live.insert (s1);
+    }
+
+    inline void kill (const Symbol* sym) {
+        m_live.erase (sym);
+        BOOST_FOREACH (const Symbol* other, m_live)
+            addEdge (sym, other);
+    }
+
+    void updateLiveness (const LiveVariables::Symbols& live) {
+        m_live = live;
+    }
+
+    void addEdge (const Symbol* s1, const Symbol* s2) {
+        if (s1 < s2) {
+            m_edges.insert (std::make_pair (s1, s2));
+        }
+    }
+
+private:
+
+    std::set<const Symbol*> m_live;
+    std::set<std::pair<const Symbol*, const Symbol*> > m_edges;
+    std::map<const Symbol*, unsigned > m_numbers;
+    unsigned m_count;
+};
+
+} // namespace anonymous
+
+/*******************************************************************************
+  LiveVariables
+*******************************************************************************/
+
+void LiveVariables::updateBackwards (const SecreC::Imop& imop, Symbols& live) {
+    UpdateBackwards visitor (live);
+    visitImop (imop, visitor);
 }
 
-void LiveVariables::defSymbol (const Block& block, const Symbol *sym) {
-    assert (sym != 0);
-    switch (sym->symbolType ()) {
-    case Symbol::SYMBOL:
-        if (m_use[&block].find (sym) == m_use[&block].end ())
-            m_def[&block].insert (sym);
-    default:
-        break;
+void LiveVariables::start (const Program &pr) {
+    FOREACH_BLOCK (bi, pr) {
+        CollectGenKill collector (m_gen[&*bi], m_kill[&*bi]);
+        BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+            visitImop (imop, collector);
+        }
     }
 }
 
@@ -52,13 +135,11 @@ void LiveVariables::startBlock (const Block& b) {
     m_outs[&b].clear ();
 }
 
-// transfer all inputs
-void LiveVariables::transfer (const Block &from, const Block &to) {
+void LiveVariables::outToLocal (const Block &from, const Block &to) {
     m_outs[&to] += m_ins[&from];
 }
 
-// transfer only global inputs
-void LiveVariables::transferGlobal (const Block& from, const Block& to) {
+void LiveVariables::outToGlobal (const Block& from, const Block& to) {
     BOOST_FOREACH (const Symbol* symbol, m_ins[&from]) {
         if (symbol->isGlobal ()) {
             m_outs[&to].insert (symbol);
@@ -67,44 +148,43 @@ void LiveVariables::transferGlobal (const Block& from, const Block& to) {
 }
 
 bool LiveVariables::finishBlock (const Block &b) {
-    Symbols& in = m_ins [&b];
-    const Symbols& out = m_outs [&b];
+    Symbols& in = m_ins[&b];
     const Symbols  old = in;
+    const Symbols& out = m_outs[&b];
     in = out;
-    in -= m_def[&b];
-    in += m_use[&b];
+    in -= m_kill[&b];
+    in += m_gen[&b];
     return old != in;
 }
 
 void LiveVariables::finish () { }
 
 std::string LiveVariables::toString (const Program &pr) const {
-    std::stringstream ss;
-    ss << "Live variables\n";
-    FOREACH_BLOCK (bi, pr) {
-        const Block* block = &*bi;
-        BSM::const_iterator es [4] = { m_use.end (), m_def.end (), m_ins.end (), m_outs.end () };
-        BSM::const_iterator is [4] = { m_use.find (block), m_def.find (block), m_ins.find (block), m_outs.find (block) };
-        const char* names [4] = {"USE", "DEF", " IN", "OUT"};
-        bool headerPrinted = false;
-        for (int k = 0; k < 4; ++ k) {
-            if (is[k] != es[k]) {
-                const Symbols& syms = is[k]->second;
-                if (!syms.empty ()) {
-                    if (!headerPrinted)
-                        ss << "[Block " << block->index () << "]\n";
-                    ss << '\t' << names[k] << ": ";
-                    for (Symbols::const_iterator it = syms.begin (); it != syms.end (); ++ it) {
-                        if (it != syms.begin ()) ss << ", ";
-                        ss << (*it)->name ();
-                    }
+    unsigned index = 0;
+    SimpleInterferenceGraph visitor;
 
-                    ss << '\n';
-                    headerPrinted = true;
-                }
+    std::stringstream ss;
+    ss << "graph InferenceGraph {\n";
+    BOOST_FOREACH (const Procedure& proc, pr) {
+        ss << "  " << "subgraph cluster_" << index ++ << " {\n";
+        ss << "    " << "label=\"" << (proc.name () ? proc.name ()->name() : "GLOBAL") << "\"\n";
+        visitor.clear ();
+        BOOST_FOREACH (const Block& block, proc) {
+            BSM::const_iterator it = m_outs.find (&block);
+            if (it == m_outs.end ())
+                continue;
+
+            visitor.updateLiveness (it->second);
+            BOOST_REVERSE_FOREACH (const Imop& imop, block) {
+                visitImop (imop, visitor);
             }
         }
+
+        visitor.drawEdges (ss);
+        ss << "  " << "}\n\n";
     }
+
+    ss << '}';
 
     return ss.str ();
 }
