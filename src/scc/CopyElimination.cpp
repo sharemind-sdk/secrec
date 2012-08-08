@@ -1,6 +1,5 @@
 #include "CopyElimination.h"
 
-#include <algorithm>
 #include <boost/foreach.hpp>
 #include <libscc/intermediate.h>
 #include <libscc/analysis/LiveMemory.h>
@@ -10,6 +9,53 @@
 namespace SecreCC {
 
 using namespace SecreC;
+
+namespace /* anonymous */ {
+
+ReachableReleases::Values getReleases (const Imop* i, ReachableReleases& rr) {
+    const Block& block = *i->block ();
+    ReachableReleases::Values after = rr.releasedOnExit (block);
+    BOOST_REVERSE_FOREACH (const Imop& imop, block) {
+        if (&imop == i) {
+            break;
+        }
+
+        ReachableReleases::update (imop, after);
+    }
+
+    return after;
+}
+
+void print_graph (std::ostream& os, const std::set<const Imop*>& deadCopies) {
+    unsigned count = 1;
+    std::map<const Symbol*, unsigned> labels;
+
+    os << "digraph DeadCopies {\n";
+    BOOST_FOREACH (const Imop* imop, deadCopies) {
+        unsigned& dest = labels[imop->dest ()];
+        unsigned& src = labels[imop->arg1 ()];
+
+        if (dest == 0) {
+            dest = count ++;
+            os << "  ";
+            os << "node_" << dest << " [label=\"" << imop->dest ()->name () << "\"];\n";
+        }
+
+        if (src == 0) {
+            src = count ++;
+            os << "  ";
+            os << "node_" << src << " [label=\"" << imop->arg1 ()->name () << "\"];\n";
+        }
+
+        os << "  ";
+        os << "node_" << src << " -> "
+           << "node_" << dest << ";\n";
+    }
+
+    os << "}\n";
+}
+
+} // namespace anonymous
 
 void eliminateRedundantCopies (ICode& code) {
     Program& program = code.program ();
@@ -24,19 +70,12 @@ void eliminateRedundantCopies (ICode& code) {
     std::set<const Imop*> releases;
     std::set<const Imop*> copies = liveMemory.deadCopies (program);
 
-    BOOST_FOREACH (const Imop* copy, copies) {
-        const Block& block = *copy->block ();
-        ReachableReleases::Values after = reachableReleases.releasedOnExit (block);
-        BOOST_REVERSE_FOREACH (const Imop& imop, block) {
-            if (&imop == copy) {
-                ReachableReleases::Domain dom = after[imop.arg1 ()];
-                dom -= releases;
-                releases += dom.empty () ? after[imop.dest ()] : dom;
-                break;
-            }
+    // print_graph (std::cerr, copies);
 
-            ReachableReleases::update (imop, after);
-        }
+    BOOST_FOREACH (const Imop* copy, copies) {
+        ReachableReleases::Values after = getReleases (copy, reachableReleases);
+        releases += after[copy->dest ()];
+        releases += after[copy->arg1 ()];
     }
 
     BOOST_FOREACH (const Imop* imop, releases) {
