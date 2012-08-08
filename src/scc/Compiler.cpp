@@ -20,6 +20,7 @@
 #include <libscc/constant.h>
 #include <libscc/types.h>
 
+#include "DeadVariableElimination.h"
 #include "CopyElimination.h"
 #include "SyscallManager.h"
 #include "StringLiterals.h"
@@ -304,6 +305,7 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
+    eliminateDeadVariables (m_code);
     eliminateRedundantCopies (m_code);
 
     // Create and add the linking unit sections:

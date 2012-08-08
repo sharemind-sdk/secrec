@@ -10,6 +10,8 @@ SET(SCC_SOURCES
     "Compiler.cpp"
     "CopyElimination.h"
     "CopyElimination.cpp"
+    "DeadVariableElimination.h"
+    "DeadVariableElimination.cpp"
     "Builtin.h"
     "Builtin.cpp"
     "SyscallManager.h"
