@@ -13,20 +13,6 @@
 
 namespace SecreC {
 
-namespace /* anonymous */ {
-
-SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
-    switch (dtype) {
-    case DATATYPE_XOR_UINT8:  return DATATYPE_UINT8;
-    case DATATYPE_XOR_UINT16: return DATATYPE_UINT16;
-    case DATATYPE_XOR_UINT32: return DATATYPE_UINT32;
-    case DATATYPE_XOR_UINT64: return DATATYPE_UINT64;
-    default:                  return dtype;
-    }
-}
-
-} // anonymous namespace
-
 /*******************************************************************************
   TypeChecker
 *******************************************************************************/
@@ -732,20 +718,16 @@ ICode::Status TreeNodeExprInt::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprInt* e) {
     if (! e->haveResultType()) {
-        SecrecDataType dtype = DATATYPE_UNDEFINED;
-        switch (e->contextDataType ()) {
-        case DATATYPE_UNDEFINED:
-            dtype = DATATYPE_INT64;
-            break;
-        case DATATYPE_UNIT:
-        case DATATYPE_BOOL:
-        case DATATYPE_STRING:
-            m_log.fatal () << "Expected numeric type.";
-            m_log.fatal () << "Error at " << e->location () << ".";
-            return ICode::E_TYPE;
-        default:
-            dtype = dtypeDeclassify (e->contextDataType ());
-            break;
+        SecrecDataType dtype = DATATYPE_INT64; /* default */;
+        if (e->haveContextDataType ()) {
+            if (isNumericDataType (e->contextDataType ())) {
+                dtype = e->contextDataType ();
+            }
+            else {
+                m_log.fatal () << "Expected numeric context.";
+                m_log.fatal () << "Error at " << e->location () << ".";
+                return ICode::E_TYPE;
+            }
         }
 
         e->setResultType (TypeNonVoid::get (getContext (), dtype));
@@ -828,7 +810,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprDeclassify* root) {
     }
 
     TreeNodeExpr* e = root->expression ();
-//    e->setContextDataType (root->contextDataType ());
     e->setContextDimType (root->contextDimType ());
     ICode::Status s = visitExpr (e);
     if (s != ICode::OK) {
@@ -985,10 +966,10 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* root) {
 
     // check the types of results
     if (eType2->isVoid() != eType3->isVoid()) {
-        m_log.fatal() << "Subxpression at " << e2->location() << " is "
-                      << (eType2->isVoid() ? "" : "not")
+        m_log.fatal() << "Subxpression at " << e2->location() << " is"
+                      << (eType2->isVoid() ? "" : "not ")
                       << " void while subexpression at " << e3->location()
-                      << (eType3->isVoid() ? " is" : " isn't");
+                      << (eType3->isVoid() ? " is." : " isn't.");
         return ICode::E_TYPE;
     }
 
@@ -999,8 +980,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* root) {
             m_log.fatal () << "Incompatible security types in ternary expression at "
                            << e2->location () << " and " << e3->location () << ".";
             m_log.fatal () << "Unable to match "
-                           << e2->resultType ()->secrecSecType ()->toString () << " with "
-                           << e3->resultType ()->secrecSecType ()->toString () << ".";
+                           << *e2->resultType ()->secrecSecType () << " with "
+                           << *e3->resultType ()->secrecSecType () << ".";
             return ICode::E_TYPE;
         }
 
@@ -1020,14 +1001,14 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* root) {
         SecrecDimType n3 = eType3->secrecDimType();
 
         if (n2 != n3) {
-            m_log.fatal() << "Brances of ternary expression at "
+            m_log.fatal() << "Branches of ternary expression at "
                           << root->location()
                           << " aren't of equal dimensionalities.";
             return ICode::E_TYPE;
         }
 
         if (n1 != 0 && n1 != n2) {
-            m_log.fatal() << "Conditdional expression at "
+            m_log.fatal() << "Conditional expression at "
                           << e1->location()
                           << " is non-scalar and doesn't match resulting subexpressions.";
             return ICode::E_TYPE;

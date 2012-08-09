@@ -23,6 +23,7 @@ bool isXorDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);
 bool isUnsignedNumericDataType (SecrecDataType dType);
 
+SecrecDataType dtypeDeclassify (SecrecDataType dtype);
 
 /*******************************************************************************
   SecurityType

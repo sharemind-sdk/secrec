@@ -9,10 +9,9 @@
 #include "context.h"
 #include "context_impl.h"
 
+namespace SecreC {
 
-namespace {
-
-using namespace SecreC;
+namespace /* anonymous */ {
 
 inline const char *SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {
@@ -91,6 +90,7 @@ const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
 #undef I
 #undef E
 
+/// \todo refactor TypeNonVoid::Kind and DataType::Kind to one.
 TypeNonVoid::Kind kindToKind (DataType::Kind k) {
     switch (k) {
         case DataType::BASIC:         return TypeNonVoid::BASIC;
@@ -100,10 +100,7 @@ TypeNonVoid::Kind kindToKind (DataType::Kind k) {
     }
 }
 
-}
-
-namespace SecreC {
-
+} // namespace anonymous
 
 CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
     assert (from < NUM_DATATYPES && to < NUM_DATATYPES);
@@ -157,14 +154,12 @@ bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b) {
     }
 }
 
-
 bool isNumericDataType (SecrecDataType dType) {
     return isSignedNumericDataType (dType) ||
            isUnsignedNumericDataType (dType);
 }
 
 bool isSignedNumericDataType (SecrecDataType dType) {
-    bool isSigned = false;
     switch (dType) {
     case DATATYPE_INT8:
     case DATATYPE_INT16:
@@ -172,12 +167,22 @@ bool isSignedNumericDataType (SecrecDataType dType) {
     case DATATYPE_INT64:
     case DATATYPE_FLOAT32:
     case DATATYPE_FLOAT64:
-        isSigned = true;
+        return true;
     default:
-        break;
+        return false;
     }
+}
 
-    return isSigned;
+bool isUnsignedNumericDataType (SecrecDataType dType) {
+    switch (dType) {
+    case DATATYPE_UINT8:
+    case DATATYPE_UINT16:
+    case DATATYPE_UINT32:
+    case DATATYPE_UINT64:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool isXorDataType (SecrecDataType dType) {
@@ -192,19 +197,14 @@ bool isXorDataType (SecrecDataType dType) {
     }
 }
 
-bool isUnsignedNumericDataType (SecrecDataType dType) {
-    bool isUnsigned = false;
-    switch (dType) {
-    case DATATYPE_UINT8:
-    case DATATYPE_UINT16:
-    case DATATYPE_UINT32:
-    case DATATYPE_UINT64:
-        isUnsigned = true;
-    default:
-        break;
+SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
+    switch (dtype) {
+    case DATATYPE_XOR_UINT8:  return DATATYPE_UINT8;
+    case DATATYPE_XOR_UINT16: return DATATYPE_UINT16;
+    case DATATYPE_XOR_UINT32: return DATATYPE_UINT32;
+    case DATATYPE_XOR_UINT64: return DATATYPE_UINT64;
+    default:                  return dtype;
     }
-
-    return isUnsigned;
 }
 
 /*******************************************************************************
@@ -416,6 +416,6 @@ std::string TypeNonVoid::toString() const {
 *******************************************************************************/
 
 std::ostream &operator<<(std::ostream &out, const SecrecDataType &type) {
-    out << SecrecFundDataTypeToString(type);
+    out << SecreC::SecrecFundDataTypeToString(type);
     return out;
 }
