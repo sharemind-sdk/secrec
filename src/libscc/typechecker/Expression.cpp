@@ -745,52 +745,10 @@ ICode::Status TreeNodeExprClassify::accept (TypeChecker& tyChecker) {
 }
 
 ICode::Status TypeChecker::visit (TreeNodeExprClassify* root) {
-    if (!root->haveResultType()) {
-        if (root->contextSecType () == 0) {
-            m_log.fatal () << "Unable to derive security type from context.";
-            m_log.fatal () << "Error at " << root->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        if (root->contextSecType ()->isPublic ()) {
-            m_log.fatal () << "Classify to public security type.";
-            m_log.fatal () << "Error at " << root->location () << ".";
-            return ICode::E_TYPE;
-        }
-
-        TreeNodeExpr *e = root->expression ();
-        e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDimType (root->contextDimType ());
-        if (root->haveContextDataType ()) {
-            e->setContextDataType (dtypeDeclassify (root->contextDataType ()));
-        }
-
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
-        if (checkAndLogIfVoid(e)) return ICode::E_TYPE;
-        assert (e->resultType()->secrecSecType()->isPublic ());
-
-        switch (e->resultType()->secrecDataType ()) {
-        case DATATYPE_XOR_UINT8:
-        case DATATYPE_XOR_UINT16:
-        case DATATYPE_XOR_UINT32:
-        case DATATYPE_XOR_UINT64:
-            m_log.fatal () << "Inferred XOR public type!";
-            m_log.fatal () << "Error at " << e->location () << ".";
-            return ICode::E_TYPE;
-        default:
-            break;
-        }
-
-        SecrecDataType destDType = e->resultType()->secrecDataType ();
-        if (root->haveContextDataType ()) {
-            destDType = root->contextDataType ();
-        }
-
-        root->setResultType(TypeNonVoid::get (getContext (),
-                root->contextSecType (),
-                destDType,
-                e->resultType()->secrecDimType()));
+    if (! root->haveResultType()) {
+        m_log.fatal () << "ICE: type checking classify node!";
+        m_log.fatal () << "Error at " << root->location () << ".";
+        return ICode::E_OTHER;
     }
 
     return ICode::OK;
