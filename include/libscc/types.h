@@ -379,6 +379,7 @@ public: /* Methods: */
         return false;
     }
 
+    inline bool isPublicIntScalar () const;
     inline SecurityType* secrecSecType() const;
     inline SecrecDataType secrecDataType() const;
     inline SecrecDimType secrecDimType() const;
@@ -457,6 +458,13 @@ private: /* Fields: */
     DataType*  const m_dataType;
 };
 
+inline bool Type::isPublicIntScalar () const {
+    return !isVoid () &&
+            secrecDataType () == DATATYPE_INT64 &&
+            secrecSecType ()->isPublic () &&
+            secrecDimType () == 0;
+}
+
 inline SecurityType* Type::secrecSecType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     return static_cast<const TypeNonVoid&>(*this).dataType()->secrecSecType();
@@ -471,125 +479,6 @@ inline SecrecDimType Type::secrecDimType() const {
     assert(dynamic_cast<const TypeNonVoid*>(this) != 0);
     return static_cast<const TypeNonVoid&>(*this).dataType()->secrecDimType();
 }
-
-/*******************************************************************************
-  TypeContext
-*******************************************************************************/
-
-/**
- * Type context may or may not define security, data, or dimensionality types.
- * We use NULL to represent undefined security type, DATATYPE_UNDEFINED to
- * represent undefined data type, and finally any negative value for undefined
- * dimensionality types.
- * The context may be entirely undefined for example in the case of procedure
- * parameters, or partially defined if qualified expression is used.
- */
-class TypeContext {
-public: /* Methods: */
-
-    TypeContext (SecurityType* secType,
-                 SecrecDataType dataType,
-                 SecrecDimType dimType)
-        : m_contextSecType (secType)
-        , m_contextDataType (dataType)
-        , m_contextDimType (dimType)
-    { }
-
-    TypeContext ()
-        : m_contextSecType (0)
-        , m_contextDataType (DATATYPE_UNDEFINED)
-        , m_contextDimType (-1)
-    { }
-
-    TypeContext typeContext () const {
-        return *this;
-    }
-
-    void setContext (const TypeContext& cxt) {
-        m_contextSecType = cxt.m_contextSecType;
-        m_contextDataType = cxt.m_contextDataType;
-        m_contextDimType = cxt.m_contextDimType;
-    }
-
-
-    void setContext (const TypeContext* cxt) {
-        assert (cxt != 0);
-        m_contextSecType = cxt->m_contextSecType;
-        m_contextDataType = cxt->m_contextDataType;
-        m_contextDimType = cxt->m_contextDimType;
-    }
-
-    void setContextSecType (SecurityType* secTy) {
-        m_contextSecType = secTy;
-    }
-
-    void setContextDataType (SecrecDataType dataType) {
-        m_contextDataType = dataType;
-    }
-
-    void setContextDimType (SecrecDimType dimType) {
-        m_contextDimType = dimType;
-    }
-
-    SecurityType* contextSecType () const {
-        return m_contextSecType;
-    }
-
-    SecrecDataType contextDataType () const {
-        return m_contextDataType;
-    }
-
-    SecrecDimType contextDimType () const {
-        return m_contextDimType;
-    }
-
-    bool haveContextSecType () const {
-        return m_contextSecType != 0;
-    }
-
-    bool haveContextDataType () const {
-        return m_contextDataType != DATATYPE_UNDEFINED;
-    }
-
-    bool haveContextDimType () const {
-        return m_contextDimType >= 0;
-    }
-
-    bool matchSecType (SecurityType* secType) const {
-        assert (secType != 0);
-        if (! haveContextSecType ()) {
-            return true;
-        }
-
-        return secType == contextSecType ();
-    }
-
-    bool matchDataType (SecrecDataType dataType) const {
-        assert (dataType != DATATYPE_UNDEFINED);
-        if (! haveContextDataType ()) {
-            return true;
-        }
-
-        return dataType == m_contextDataType;
-    }
-
-    bool matchDimType (SecrecDimType dimType) const {
-        assert (dimType >= 0);
-        if (! haveContextDimType ()) {
-            return true;
-        }
-
-        return dimType == m_contextDimType;
-    }
-
-    std::string toString () const;
-
-protected: /* Fields: */
-    SecurityType*    m_contextSecType;
-    SecrecDataType   m_contextDataType;
-    SecrecDimType    m_contextDimType;
-};
-
 
 } // namespace SecreC
 
@@ -607,11 +496,6 @@ inline std::ostream &operator<<(std::ostream &out, const SecreC::Type &type) {
 
 inline std::ostream &operator<<(std::ostream &out, const SecreC::DataType &type) {
     out << type.toString();
-    return out;
-}
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::TypeContext& cxt) {
-    out << cxt.toString();
     return out;
 }
 

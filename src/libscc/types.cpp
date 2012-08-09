@@ -408,31 +408,6 @@ std::string TypeNonVoid::toString() const {
     return os.str();
 }
 
-/*******************************************************************************
-  TypeContext
-*******************************************************************************/
-
-std::string TypeContext::toString () const {
-    std::ostringstream os;
-    os << '(';
-    if (haveContextSecType ())
-        os << *contextSecType ();
-    else
-        os << '*';
-    os << ',';
-    if (haveContextDataType ())
-        os << contextDataType ();
-    else
-        os << '*';
-    os << ',';
-    if (haveContextDimType ())
-        os << contextDimType ();
-    else
-        os << '*';
-    os << ')';
-    return os.str ();
-}
-
 } // namespace SecreC
 
 
