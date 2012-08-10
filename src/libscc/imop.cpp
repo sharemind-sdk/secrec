@@ -470,10 +470,9 @@ std::string Imop::toString() const {
     return os.str();
 }
 
-} // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::Imop &i) {
+std::ostream &operator<<(std::ostream &out, const Imop &i) {
     out << i.toString();
     return out;
 }
 
+} // namespace SecreC

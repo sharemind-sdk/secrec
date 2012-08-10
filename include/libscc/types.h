@@ -481,24 +481,24 @@ inline SecrecDimType Type::secrecDimType() const {
     return static_cast<const TypeNonVoid&>(*this).dataType()->secrecDimType();
 }
 
-} // namespace SecreC
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::SecurityType& type) {
+inline std::ostream &operator<<(std::ostream &out, const SecurityType& type) {
     out << type.toString ();
     return out;
 }
 
+inline std::ostream &operator<<(std::ostream &out, const Type &type) {
+    out << type.toString();
+    return out;
+}
+
+inline std::ostream &operator<<(std::ostream &out, const DataType &type) {
+    out << type.toString();
+    return out;
+}
+
+} // namespace SecreC
+
 std::ostream &operator<<(std::ostream &out, const SecrecDataType& type);
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::Type &type) {
-    out << type.toString();
-    return out;
-}
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::DataType &type) {
-    out << type.toString();
-    return out;
-}
 
 
 #endif // SECREC_H
