@@ -106,6 +106,7 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "operator"   { stepLen(yyget_lloc(yyscanner), 8); return OPERATOR; }
 "module"     { stepLen(yyget_lloc(yyscanner), 6); return MODULE; }
 "import"     { stepLen(yyget_lloc(yyscanner), 6); return IMPORT; }
+"xor_uint"   { stepLen(yyget_lloc(yyscanner), 8); return XOR_UINT; }
 "xor_uint8"  { stepLen(yyget_lloc(yyscanner), 9); return XOR_UINT8; }
 "xor_uint16" { stepLen(yyget_lloc(yyscanner), 10); return XOR_UINT16; }
 "xor_uint32" { stepLen(yyget_lloc(yyscanner), 10); return XOR_UINT32; }
