@@ -123,7 +123,7 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 0o{OCTALDIGIT}+  { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return OCT_LITERAL; }
 0x{HEXDIGIT}+ { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return HEX_LITERAL; }
 {DECIMAL}{EXPONENT} { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
-{DECIMAL}\.{DECIMAL}{EXPONENT}? { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
+{DECIMAL}\.{DECIMAL}*{EXPONENT}? { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
 {DECIMAL} { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DEC_LITERAL; }
 \"(\\.|[^\\"])*\" {
     stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));
