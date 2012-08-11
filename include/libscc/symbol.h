@@ -269,11 +269,11 @@ class SymbolLabel: public Symbol {
         Block*  m_block;
 };
 
-}
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::Symbol &s) {
+inline std::ostream &operator<<(std::ostream &out, const Symbol &s) {
     out << s.toString();
     return out;
+}
+
 }
 
 #endif

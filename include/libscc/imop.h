@@ -261,9 +261,8 @@ Imop* newCall (TreeNode* node, Iter beginRet, Iter endRet, Iter beginArg, Iter e
     return out;
 }
 
+std::ostream &operator<<(std::ostream &out, const Imop &i);
 
 } // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::Imop &i);
 
 #endif // IMOP_H

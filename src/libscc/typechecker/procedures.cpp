@@ -19,9 +19,9 @@
 #include "ModuleInfo.h"
 #include "templates.h"
 
-namespace {
+namespace SecreC {
 
-using namespace SecreC;
+namespace /* anonymous */ {
 
 void mangleTemplateParameters (std::ostream& os,
                                const TemplateParams& targs)
@@ -82,12 +82,12 @@ findProcedure (SymbolTable* st,
     return procSym;
 }
 
-std::list<SymbolProcedure*>
+std::vector<SymbolProcedure*>
 findProcedures (SymbolTable* st,
                 const std::string& name,
                 DataTypeProcedureVoid* dt)
 {
-    std::list<SymbolProcedure* > out;
+    std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name, dt, TemplateParams ());
     BOOST_FOREACH (Symbol* _procSym, st->findAll (actualName)) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
@@ -98,10 +98,10 @@ findProcedures (SymbolTable* st,
     return out;
 }
 
-std::list<SymbolTemplate*>
+std::vector<SymbolTemplate*>
 findTemplates (SymbolTable* st, const std::string& name)
 {
-    std::list<SymbolTemplate*> out;
+    std::vector<SymbolTemplate*> out;
     BOOST_FOREACH (Symbol* _symTempl, st->findAll ("{templ}" + name)) {
         assert (dynamic_cast<SymbolTemplate*>(_symTempl) != 0);
         SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
@@ -112,8 +112,6 @@ findTemplates (SymbolTable* st, const std::string& name)
 }
 
 } // anonymous namespace
-
-namespace SecreC {
 
 /// Return symbol for the main procedure (if exists).
 SymbolProcedure* TypeChecker::mainProcedure () {

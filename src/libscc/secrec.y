@@ -145,7 +145,7 @@
 /* Keywords: */
 %token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
 %token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
-%token XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
+%token XOR_UINT XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
 %token FLOAT FLOAT32 FLOAT64
 %token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
 %token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
@@ -500,6 +500,7 @@ datatype_specifier
  | XOR_UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT16, &@$); }
  | XOR_UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT32, &@$); }
  | XOR_UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
+ | XOR_UINT    { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
  | FLOAT       { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
  | FLOAT32     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
  | FLOAT64     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT64,    &@$); }

@@ -10,6 +10,7 @@
 
 #include "intermediate.h"
 #include "types.h"
+#include "TypeContext.h"
 #include "codegenResult.h"
 
 namespace SecreC {
