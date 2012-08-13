@@ -92,10 +92,12 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     // Get symbol for l-value:
     TreeNodeIdentifier* id = e->identifier ();
     SymbolSymbol* dest = getSymbol (id);
-    if (dest == 0) return ICode::E_OTHER;
-    SecreC::Type* destType = dest->secrecType();
+    if (dest == 0) return ICode::E_TYPE;
+
+    assert(dest->secrecType()->isVoid() == false);
+    assert(dynamic_cast<TNV*>(dest->secrecType()) != 0);
+    TypeNonVoid* destType = static_cast<TNV*>(dest->secrecType());
     SecrecDimType destDim = destType->secrecDimType();
-    assert(destType->isVoid() == false);
 
     // Check the slice:
     if (e->slice ()) {
@@ -105,26 +107,15 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
         }
     }
 
-
     // Calculate type of r-value:
     TreeNodeExpr* src = e->rightHandSide ();
+    src->setContextSecType (destType->secrecSecType ());
     src->setContextDataType (destType->secrecDataType ());
-    if (destType->secrecSecType ()->isPublic ())
-        src->setContextSecType (destType->secrecSecType ());
-    if (destDim == 0)
-        src->setContextDimType (0);
+    src->setContextDimType (destDim);
+
     ICode::Status s = visitExpr (src);
     if (s != ICode::OK) return s;
     SecreC::Type* srcType = src->resultType();
-    SecrecDimType srcDim = srcType->secrecDimType();
-
-    // Check if destination and expected types match!
-    if (!(srcDim == destDim || srcDim == 0)) {
-        m_log.fatal() << "Incompatible dimensionalities in assignemnt at "
-                      << e->location() << ". "
-                      << "Expected " << destDim << " got " << srcDim << ".";
-        return ICode::E_TYPE;
-    }
 
     // Check types:
     if (checkAndLogIfVoid (src)) {
@@ -132,7 +123,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
     }
 
     if (! latticeDataTypeLEQ (srcType->secrecDataType (), destType->secrecDataType ()) ||
-        ! latticeSecTypeLEQ (srcType->secrecSecType (), destType->secrecSecType ())) {
+        ! latticeSecTypeLEQ (srcType->secrecSecType (), destType->secrecSecType ()) ||
+        ! latticeDimTypeLEQ (srcType->secrecDimType(), destDim)) {
         m_log.fatal() << "Invalid assignment from value of type " << *srcType
                       << " to variable of type " << *destType << " at "
                       << e->location() << ".";
@@ -141,19 +133,11 @@ ICode::Status TypeChecker::visit (TreeNodeExprAssign* e) {
 
     // Add implicit classify node if needed:
     src = classifyIfNeeded (src, destType->secrecSecType ());
-    srcType = src->resultType();
-    if (destType->secrecSecType () != srcType->secrecSecType ()) {
-        m_log.fatal () << "Internal compile error: security types don't match after classification.";
-        m_log.fatal () << "Error at " << e->location () << ".";
-        return ICode::E_TYPE;
-    }
-
-    assert(dynamic_cast<TNV*>(destType) != 0);
-    TNV* destTypeNV = static_cast<TNV*>(destType);
-    assert(destTypeNV->dataType()->kind() == DataType::VAR);
-    assert(dynamic_cast<DTV*>(destTypeNV->dataType()) != 0);
-    DTV* ddtv = static_cast<DTV*>(destTypeNV->dataType());
-    e->setResultType(TypeNonVoid::get (m_context, ddtv->dataType()));
+    destType = static_cast<TypeNonVoid*>(src->resultType ());
+    e->setResultType(TypeNonVoid::get (getContext (),
+        destType->secrecSecType (),
+        destType->secrecDataType (),
+        destDim));
     return ICode::OK;
 }
 
@@ -171,7 +155,9 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
 
     TreeNodeExpr* subExpr = root->expression ();
     SecrecDataType resultingDType = root->dataType ()->dataType ();
+    subExpr->setContextSecType (root->contextSecType ());
     subExpr->setContextDataType (resultingDType);
+    subExpr->setContextDimType (root->contextDimType ());
     ICode::Status status = visitExpr (subExpr);
     if (status != ICode::OK) {
         return status;
@@ -184,7 +170,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprCast* root) {
                        << root->location () << ".";
         return ICode::E_TYPE;
     }
-
 
     root->setResultType (
         TypeNonVoid::get (getContext (),
@@ -232,7 +217,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprIndex* root) {
         return s;
     }
 
-    root->setResultType(TypeNonVoid::get (m_context,
+    root->setResultType(TypeNonVoid::get (getContext (),
         eType->secrecSecType(), eType->secrecDataType(), k));
     return ICode::OK;
 }
@@ -308,12 +293,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
     for (int i = 0; i < 2; ++ i) {
         assert (dynamic_cast<TreeNodeExpr*>(root->children().at(i)) != 0);
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(root->children().at(i));
-        e->setContextSecType (root->contextSecType ());
-        e->setContextDataType (root->contextDataType ());
-        if (root->contextDimType () >= 0) {
-            e->setContextDimType (root->contextDimType () - 1);
-        }
-
+        e->setContext (root->typeContext ());
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
@@ -365,7 +345,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
                       << " got " << *e3Type << ".";
         return ICode::E_TYPE;
     }
-
 
     root->setResultType(TypeNonVoid::get (m_context,
         resSecType,
@@ -490,13 +469,12 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
     case NODE_EXPR_BINARY_LOR:
         e1->setContext (root);
         e2->setContext (root);
+        break;
     default:
-        /* relational and logical operators are polymorphic */
+        e1->setContextSecType (root->contextSecType ());
+        e2->setContextSecType (root->contextSecType ());
         break;
     }
-
-    e1->setContextSecType (root->contextSecType ());
-    e2->setContextSecType (root->contextSecType ());
 
     {
         ICode::Status s = visitExpr (e1);
@@ -548,10 +526,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprBinary* root) {
         SecurityType* s1 = eType1->secrecSecType();
         SecurityType* s2 = eType2->secrecSecType();
         SecurityType* s0 = upperSecType(s1, s2);
-
-        // No really needed, but oh well.
-        e1->setContextSecType (s0);
-        e2->setContextSecType (s0);
 
         // Add implicit classify nodes if needed:
         e1 = classifyIfNeeded (e1, s0);

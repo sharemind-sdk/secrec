@@ -61,7 +61,6 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
             m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << ".";
             return ICode::E_TYPE;
         }
-
     }
 
     return ICode::OK;

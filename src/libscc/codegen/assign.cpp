@@ -232,10 +232,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
 
         Imop *i = 0;
-        if (e->resultType ()->isScalar()) {
-            i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
-            pushImopAfter (result, i);
-        } else {
+        if (destSym->isArray ()) {
             i = new Imop (e, Imop::RELEASE, 0, destSym);
             pushImopAfter (result, i);
 
@@ -248,9 +245,10 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
 
             pushImopAfter (result, i);
             releaseTemporary (result, arg2Result.symbol ());
+        } else {
+            i = new Imop (e, Imop::ASSIGN, destSym, arg2Result.symbol ());
+            pushImopAfter (result, i);
         }
-
-
     } else {
         // Arithmetic assignments
 
@@ -268,14 +266,10 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         }
 
         Imop *i = 0;
-        if (e->resultType ()->isScalar()) {
-            i = new Imop (e, iType, destSym, destSym, arg2Result.symbol ());
-            pushImopAfter (result, i);
-        }
-        else {
+        if (destSym->isArray ()) {
             Symbol* rhsSym = arg2Result.symbol ();
             if (eArg2->resultType ()->isScalar ()) {
-                rhsSym = m_st->appendTemporary (static_cast<TypeNonVoid*> (e->resultType ()));
+                rhsSym = m_st->appendTemporary (destSym->secrecType ());
                 i = new Imop (e, Imop::ALLOC, rhsSym, arg2Result.symbol (), destSym->getSizeSym ());
                 pushImopAfter (result, i);
                 releaseTemporary (result, arg2Result.symbol ());
@@ -310,6 +304,10 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             i = new Imop (e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
             pushImopAfter (result, i);
             releaseTemporary (result, rhsSym);
+        }
+        else {
+            i = new Imop (e, iType, destSym, destSym, arg2Result.symbol ());
+            pushImopAfter (result, i);
         }
     }
 

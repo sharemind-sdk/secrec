@@ -100,7 +100,7 @@ public: /* Methods: */
         , m_dimType(dim)
     { }
 
-    ~DataTypeBasic () { }
+    virtual ~DataTypeBasic () { }
 
     inline SecurityType* secType() const { return m_secType; }
     inline SecrecDataType dataType() const { return m_dataType; }
