@@ -477,8 +477,9 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         }
         else {
             // if the procedure is void, and context expects non-void then skip
-            // non-void context has to at-least have data type specified
+            if (tyCxt.haveContextSecType ())  continue;
             if (tyCxt.haveContextDataType ()) continue;
+            if (tyCxt.haveContextDimType ())  continue;
         }
 
         if (procTempSymbol != 0) {

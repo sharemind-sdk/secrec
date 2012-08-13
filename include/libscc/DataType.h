@@ -110,9 +110,17 @@ public: /* Methods: */
 
     virtual bool latticeLEQ(const DataType* _other) const {
         const DataTypeBasic* other = static_cast<const DataTypeBasic*>(_other);
-        return  DataType::latticeLEQ (other)
-                && latticeSecTypeLEQ(m_secType, other->m_secType)
-                && latticeDataTypeLEQ(m_dataType, other->m_dataType)
+        if (! DataType::latticeLEQ (other)) {
+            return false;
+        }
+
+        SecrecDataType dataType = other->m_dataType;
+        if (other->m_secType->isPrivate () && m_secType->isPublic ()) {
+            dataType = dtypeDeclassify (dataType);
+        }
+
+        return     latticeSecTypeLEQ(m_secType, other->m_secType)
+                && latticeDataTypeLEQ(m_dataType, dataType)
                 && latticeDimTypeLEQ(m_dimType, other->m_dimType);
     }
 

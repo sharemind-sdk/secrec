@@ -126,6 +126,10 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* 
     if (need->isPrivate () && haveSecType->isPublic ()) {
         TreeNode* node = child->parent ();
         SecrecDataType destDType = child->resultType()->secrecDataType ();
+        if (child->haveContextDataType ()) {
+            destDType = child->contextDataType ();
+        }
+
         SecrecDimType dimDType = child->resultType ()->secrecDimType ();
         TypeNonVoid* newTy = TypeNonVoid::get (getContext (), need, destDType, dimDType);
         TreeNodeExprClassify *ec = new TreeNodeExprClassify (need, child->location());
@@ -138,9 +142,11 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* 
                 break;
             }
         }
+
         // patch up context types just in case
-        child->setContextSecType (PublicSecType::get (getContext ()));
         ec->setContext (child);
+        child->setContextSecType (PublicSecType::get (getContext ()));
+        child->setContextDataType (destDType);
         child = ec;
     }
 

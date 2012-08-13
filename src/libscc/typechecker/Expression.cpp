@@ -297,9 +297,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
-
-        e = classifyIfNeeded (e, root->contextSecType ());
-        eTypes[i] = static_cast<TNV*>(e->resultType());
+        eTypes[i] = static_cast<TNV*>(e->resultType ());
         if (eTypes[i]->isScalar()) {
             m_log.fatal() << "Concatenation of scalar values at "
                           << e->location() << ".";
@@ -307,6 +305,14 @@ ICode::Status TypeChecker::visit (TreeNodeExprCat* root) {
         }
     }
 
+    {
+        SecurityType* lSecTy = eTypes[0]->secrecSecType ();
+        SecurityType* rSecTy = eTypes[1]->secrecSecType ();
+        Type* lTy = classifyIfNeeded (root->leftExpression (), rSecTy)->resultType ();
+        Type* rTy = classifyIfNeeded (root->rightExpression (), lSecTy)->resultType ();
+        eTypes[0] = static_cast<TNV*>(lTy);
+        eTypes[1] = static_cast<TNV*>(rTy);
+    }
 
     SecurityType* resSecType = upperSecType (eTypes[0]->secrecSecType(),
                                              eTypes[1]->secrecSecType());
@@ -694,10 +700,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprInt* e) {
     if (! e->haveResultType()) {
         SecrecDataType dtype = DATATYPE_INT64; /* default */;
         if (e->haveContextDataType ()) {
-            if (isNumericDataType (e->contextDataType ())) {
-                dtype = e->contextDataType ();
-            }
-            else {
+            dtype = dtypeDeclassify (e->contextDataType ());
+            if (! isNumericDataType (dtype)) {
                 m_log.fatal () << "Expected numeric context.";
                 m_log.fatal () << "Error at " << e->location () << ".";
                 return ICode::E_TYPE;
@@ -742,6 +746,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprDeclassify* root) {
     }
 
     TreeNodeExpr* e = root->expression ();
+    e->setContextDataType (dtypeDeclassify (root->contextDataType ()));
     e->setContextDimType (root->contextDimType ());
     ICode::Status s = visitExpr (e);
     if (s != ICode::OK) {
@@ -779,7 +784,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprRVariable* e) {
     TreeNodeIdentifier *id = e->identifier ();
     SymbolSymbol *s = getSymbol (id);
     if (s == 0) {
-        m_log.fatal () << "Undefined symbol at " << id->location () << ".";
         return ICode::E_OTHER;
     }
 
@@ -803,12 +807,6 @@ ICode::Status TreeNodeExprString::accept (TypeChecker& tyChecker) {
 
 ICode::Status TypeChecker::visit (TreeNodeExprString* e) {
     if (!e->haveResultType()) {
-        if (e->haveContextDataType () && e->contextDataType () != DATATYPE_STRING) {
-            m_log.fatal () << "Expecting string, got " << e->contextDataType () << ".";
-            m_log.fatal () << "Error at " << e->location () << ".";
-            return ICode::E_TYPE;
-        }
-
         e->setResultType (TypeNonVoid::get (m_context, DATATYPE_STRING));
     }
 
@@ -840,7 +838,6 @@ ICode::Status TypeChecker::visit (TreeNodeExprFloat* e) {
             }
         }
 
-        // TODO: would it be rational to figure the type out based on
         e->setResultType (TypeNonVoid::get (m_context, DATATYPE_FLOAT32));
     }
 
@@ -885,9 +882,7 @@ ICode::Status TypeChecker::visit (TreeNodeExprTernary* root) {
     TypeNonVoid* cType = static_cast<TypeNonVoid*>(eType1);
 
     // check if conditional expression is of public boolean type
-    if (cType->kind() != TypeNonVoid::BASIC
-        || cType->dataType()->kind() != DataType::BASIC
-        || cType->secrecDataType () != DATATYPE_BOOL
+    if (   cType->secrecDataType () != DATATYPE_BOOL
         || cType->secrecSecType ()->isPrivate ())
     {
         m_log.fatal() << "Conditional subexpression at " << e1->location()
@@ -990,6 +985,8 @@ ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
 
     ICode::Status status = ICode::OK;
     TreeNodeExpr* subExpr = e->expression ();
+    subExpr->setContext (e);
+    bool checkSecType = false, checkDataType = false, checkDimType = false;
     BOOST_FOREACH (TreeNode* _node, e->types ()) {
         switch (_node->type ()) {
         case NODE_SECTYPE_F: {
@@ -997,15 +994,18 @@ ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
             status = visit (secTy);
             if (status != ICode::OK) return status;
             subExpr->setContextSecType (secTy->cachedType ());
+            checkSecType = true;
             }
             break;
         case NODE_DATATYPE_F:
             subExpr->setContextDataType (
                 static_cast<TreeNodeDataTypeF*>(_node)->dataType ());
+            checkDataType = true;
             break;
         case NODE_DIMTYPE_F:
             subExpr->setContextDimType (
-                static_cast<TreeNodeDataTypeF*>(_node)->dataType ());
+                static_cast<TreeNodeDimTypeF*>(_node)->dimType ());
+            checkDimType = true;
             break;
         default:
             assert (false && "ICE: expression qualified over non-type!");
@@ -1018,7 +1018,17 @@ ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
 
     /* Check that the actual type matches the qualified type: */
 
-    if (subExpr->haveContextDataType ()) {
+    if (checkSecType) {
+        if (subExpr->contextSecType () !=
+                subExpr->resultType ()->secrecSecType ()) {
+            m_log.fatal () << "Security type of the expression at "
+                           << subExpr->location ()
+                           << " does not match the qualified type.";
+            return ICode::E_TYPE;
+        }
+    }
+
+    if (checkDataType) {
         if (subExpr->contextDataType () !=
                 subExpr->resultType ()->secrecDataType ()) {
             m_log.fatal () << "Data type of the expression at "
@@ -1029,20 +1039,10 @@ ICode::Status TypeChecker::visit (TreeNodeExprQualified* e) {
         }
     }
 
-    if (subExpr->haveContextDimType ()) {
+    if (checkDimType) {
         if (subExpr->contextDimType () !=
                 subExpr->resultType ()->secrecDimType ()) {
             m_log.fatal () << "Dimensionality type of the expression at "
-                           << subExpr->location ()
-                           << " does not match the qualified type.";
-            return ICode::E_TYPE;
-        }
-    }
-
-    if (subExpr->haveContextSecType ()) {
-        if (subExpr->contextSecType () !=
-                subExpr->resultType ()->secrecSecType ()) {
-            m_log.fatal () << "Security type of the expression at "
                            << subExpr->location ()
                            << " does not match the qualified type.";
             return ICode::E_TYPE;
