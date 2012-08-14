@@ -1,7 +1,7 @@
 bool all (bool [[2]] arr) {
-  int i; int n = size(arr);
+  uint n = size(arr);
   bool [[1]] flat = reshape(arr, n);
-  for (i = 0; i < n; i += 1)
+  for (uint i = 0; i < n; ++ i)
     if (!flat[i])
       return false;
   return true;

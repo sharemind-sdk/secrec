@@ -426,7 +426,8 @@ protected:
     CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                             bool isGlobal, bool isProcParam);
 
-    Symbol* getSizeOr (Symbol* sym, int64_t val);
+    Symbol* getSizeOr (Symbol* sym, uint64_t val);
+    Symbol* indexConstant (uint64_t value);
 
     void startLoop ();
     void endLoop ();

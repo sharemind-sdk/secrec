@@ -58,9 +58,9 @@ Imop* CodeGen::pushComment (const std::string& comment) {
     return c;
 }
 
-Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
+Symbol* CodeGen::getSizeOr (Symbol* sym, uint64_t val) {
     assert (sym != 0);
-    Symbol* sizeSym = ConstantInt::get (getContext (), val);
+    Symbol* sizeSym = indexConstant (val);
     if (sym->symbolType () == Symbol::SYMBOL) {
         assert (dynamic_cast<SymbolSymbol*>(sym) != 0);
         SymbolSymbol* symsym = static_cast<SymbolSymbol*>(sym);
@@ -70,6 +70,10 @@ Symbol* CodeGen::getSizeOr (Symbol* sym, int64_t val) {
     }
 
     return sizeSym;
+}
+
+Symbol* CodeGen::indexConstant (uint64_t value) {
+    return ConstantUInt::get (getContext (), value);
 }
 
 void CodeGen::allocTemporaryResult (CGResult& result, Symbol* val) {
@@ -130,7 +134,7 @@ void CodeGen::codeGenSize (CGResult& result) {
     if ((resSym = dynamic_cast<SymbolSymbol*>(result.symbol ())) != 0) {
         Symbol* size = resSym->getSizeSym ();
         if (size == 0) return;
-        ConstantInt* one = ConstantInt::get (getContext (), 1);
+        Symbol* one = indexConstant (1);
         Imop* i = new Imop (m_node, Imop::ASSIGN, size, one);
         pushImopAfter (result, i);
 
@@ -205,7 +209,7 @@ CGResult CodeGen::codeGenStride (ArrayStrideInfo& strideInfo) {
         strideInfo.push_back (m_st->appendTemporary (ty));
     }
 
-    Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (n - 1), ConstantInt::get (getContext (), 1));
+    Imop* i = new Imop (m_node, Imop::ASSIGN, strideInfo.at (n - 1), indexConstant (1));
     pushImopAfter (result, i);
 
     for (unsigned it = n - 1; it != 0; -- it) {
@@ -223,7 +227,7 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, Symbol* tmp) {
     CGResult result;
     assert (dynamic_cast<SymbolSymbol*>(tmp) != 0);
     SymbolSymbol* sym = static_cast<SymbolSymbol*>(tmp);
-    ConstantInt* zero = ConstantInt::get (getContext (), 0);
+    Symbol* zero = indexConstant (0);
     TypeNonVoid* boolTy = TypeNonVoid::getPublicBoolType (getContext ());
     unsigned count = 0;
     BOOST_FOREACH (Symbol* idx, loopInfo) {
@@ -274,7 +278,7 @@ CGResult CodeGen::enterLoop (LoopInfo& loopInfo, const SubscriptInfo::SPV& spv) 
 CGResult CodeGen::exitLoop (LoopInfo& loopInfo) {
     CGResult result;
     Imop* prevJump = 0;
-    ConstantInt* one = ConstantInt::get (getContext (), 1);
+    Symbol* one = indexConstant (1);
     BOOST_REVERSE_FOREACH (Symbol* idx, loopInfo) {
         Imop* i = new Imop (m_node, Imop::ADD, idx, idx, one);
         push_imop (i);
@@ -318,7 +322,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
 
     // 1. evaluate the indices and manage the syntactic suggar
     BOOST_FOREACH (TreeNode* t, node->children ()) {
-        Symbol* r_lo = ConstantInt::get (getContext (), 0);
+        Symbol* r_lo = indexConstant (0);
         Symbol* r_hi = x->getDim (count);
 
         // lower bound
@@ -352,8 +356,7 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         else {
             // if there is no upper bound then make one up
             r_hi = m_st->appendTemporary (TypeNonVoid::getIndexType (getContext ()));
-            ConstantInt* one = ConstantInt::get (getContext (), 1);
-            Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo,one);
+            Imop* i = new Imop (m_node, Imop::ADD, r_hi, r_lo, indexConstant (1));
             pushImopAfter (result, i);
         }
 
@@ -372,12 +375,12 @@ CGResult CodeGen::codeGenSubscript (SubscriptInfo& subInfo, Symbol* tmp, TreeNod
         TypeNonVoid* boolTy = TypeNonVoid::getPublicBoolType (getContext ());
         SymbolTemporary* temp_bool = m_st->appendTemporary (boolTy);
 
+        Symbol* zero = indexConstant (0);
         dim_iterator dit = dim_begin (x);
         for (SPV::iterator it  (m_spv.begin ()); it != m_spv.end (); ++ it, ++ dit) {
             Symbol* s_lo = it->first;
             Symbol* s_hi = it->second;
             Symbol* d = *dit;
-            ConstantInt* zero = ConstantInt::get (getContext (), 0);
 
             Imop* i = 0;
 

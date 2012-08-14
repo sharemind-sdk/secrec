@@ -119,7 +119,7 @@ private: /* Fields: */
 
 inline bool Type::isPublicIntScalar () const {
     return !isVoid () &&
-            secrecDataType () == DATATYPE_INT64 &&
+            secrecDataType () == DATATYPE_UINT64 &&
             secrecSecType ()->isPublic () &&
             secrecDimType () == 0;
 }

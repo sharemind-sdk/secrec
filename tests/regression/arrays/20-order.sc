@@ -1,6 +1,6 @@
 
 bool all (bool [[1]] arr) {
-  for (int i = 0; i < size(arr); ++ i)
+  for (uint i = 0; i < size(arr); ++ i)
     if (!arr[i])
       return false;
   return true;
@@ -14,7 +14,7 @@ void main () {
   mat[1,0] = 3; mat[1,1] = 4; mat[1,2] = 5;
   mat[2,0] = 6; mat[2,1] = 7; mat[2,2] = 8;
 
-  for (int i = 0; i < 9; ++ i) arr[i] = i;
+  for (uint i = 0; i < 9; ++ i) arr[i] = (int) i;
 
   int [[1]] t = reshape(mat, 9);
   assert (all (t == arr));

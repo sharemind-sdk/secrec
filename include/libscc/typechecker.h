@@ -128,7 +128,7 @@ protected:
 
     // Try to unify template with given parameter types. On success this
     // procedure returns true, and gives bindings to quantifiers. No
-    // addition side effect are performed.
+    // additional side effects are performed.
     bool unify (Instantiation& inst,
                 const TypeContext& tyCxt,
                 DataTypeProcedureVoid* argTypes) const;

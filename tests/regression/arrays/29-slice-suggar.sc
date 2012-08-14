@@ -1,16 +1,14 @@
 bool all (bool [[1]] arr) {
-  int i;
-  for (i = 0; i < size(arr); i += 1)
+  for (uint i = 0; i < size(arr); ++ i)
     if (!arr[i])
       return false;
   return true;
 }
 
 int sum (int [[1]] arr) {
-  int s = size(arr);
+  uint s = size(arr);
   int sum = 0;
-  int i;
-  for (i = 0; i < s; i += 1)
+  for (uint i = 0; i < s; ++ i)
     sum += arr[i];
   return sum;
 }

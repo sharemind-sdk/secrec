@@ -30,7 +30,7 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
     BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
         assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
-        e->setContextPublicIntScalar (getContext ());
+        e->setContextIndexType (getContext ());
         ICode::Status s = visitExpr (e);
         if (s != ICode::OK) return s;
         if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
@@ -119,6 +119,7 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
         e->setContextDimType (0);
 
         ICode::Status s = visitExpr (e);
+        e->instantiateDataType (getContext ());
         if (s != ICode::OK) {
             return s;
         }

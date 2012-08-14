@@ -295,6 +295,7 @@ ICode::Status TypeChecker::checkParams (const std::vector<TreeNodeExpr*>& argume
         ICode::Status status = visitExpr (arg);
         if (status != ICode::OK) return status;
         if (checkAndLogIfVoid (arg)) return ICode::E_TYPE;
+        arg->instantiateDataType (getContext ());
         assert(dynamic_cast<TypeNonVoid*>(arg->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(arg->resultType());
         argumentDataTypes.push_back (t->dataType());
@@ -361,6 +362,7 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
         ICode::Status status = visitExpr (arg);
         if (status != ICode::OK) return status;
         if (checkAndLogIfVoid (arg)) return ICode::E_TYPE;
+        arg->instantiateDataType (getContext ());
         assert(dynamic_cast<TypeNonVoid*>(arg->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(arg->resultType());
         argumentDataTypes.push_back (t->dataType());

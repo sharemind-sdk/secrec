@@ -65,8 +65,8 @@ public: /* Methods: */
         setContextDimType (ty->secrecDimType ());
     }
 
-    void setContextPublicIntScalar (Context& cxt) {
-        setContextDataType (DATATYPE_INT64);
+    void setContextIndexType (Context& cxt) {
+        setContextDataType (DATATYPE_UINT64);
         setContextDimType (0);
         setContextSecType (PublicSecType::get (cxt));
     }

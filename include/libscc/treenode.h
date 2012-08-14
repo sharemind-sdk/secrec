@@ -345,7 +345,11 @@ protected:
 /// Representation for expressions, also tracks type of resulting
 /// value (if there is one).
 class TreeNodeExpr: public TreeNode, public TypeContext {
+
+    friend class TypeChecker;
+
 public: /* Methods: */
+
     inline TreeNodeExpr(SecrecTreeNodeType type,
                         const YYLTYPE &loc)
         : TreeNode (type, loc)
@@ -355,6 +359,16 @@ public: /* Methods: */
     virtual ~TreeNodeExpr() { }
 
     virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
+
+    // If possible instantiate abstract data type to given concrete data type
+    void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
+        assert (resultType () != 0);
+        if ( ! resultType ()->isVoid ()
+            && resultType ()->secrecDataType () == DATATYPE_NUMERIC
+            && dType != DATATYPE_NUMERIC) {
+            instantiateDataTypeV (cxt, dType);
+        }
+    }
 
     inline bool haveResultType() const {
         return m_resultType != 0;
@@ -379,9 +393,14 @@ protected: /* Methods: */
 
     virtual TreeNode* cloneV () const = 0;
 
-    friend class TypeChecker;
+    virtual void instantiateDataTypeV (Context& cxt, SecrecDataType dType) {
+        (void) cxt;
+        (void) dType;
+        assert (false && "ICE!");
+    }
 
     void setResultType(SecreC::Type *type);
+    void resetDataType (Context& cxt, SecrecDataType dType);
 
 protected: /* Fields: */
 
@@ -427,6 +446,8 @@ protected:
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprInt (m_value, m_location);
     }
+
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
 private: /* Fields: */
     int m_value;
@@ -501,6 +522,8 @@ public:
 
 protected:
 
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprIndex (m_location);
     }
@@ -566,6 +589,8 @@ public:
 
 protected:
 
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprCat (m_location);
     }
@@ -592,6 +617,8 @@ public:
     TreeNode::ChildrenListConstRange dimensions ();
 
 protected:
+
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprReshape (m_location);
@@ -685,6 +712,8 @@ protected:
         , OverloadableOperator (ov)
     { }
 
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+
     virtual SecrecOperator getOperatorV () const;
 
     virtual TreeNode* cloneV () const {
@@ -766,6 +795,8 @@ public: /* Methods: */
     TreeNodeExpr* expression () const;
 
 protected:
+
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprDeclassify (m_location);
@@ -910,6 +941,8 @@ public: /* Methods: */
 
 protected:
 
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprTernary (m_location);
     }
@@ -928,7 +961,6 @@ public: /* Methods: */
     { }
 
     virtual ICode::Status accept (TypeChecker& tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
@@ -988,6 +1020,8 @@ protected:
         , OverloadableOperator (ov)
     { }
 
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+
     virtual SecrecOperator getOperatorV () const;
 
     virtual TreeNode* cloneV () const {
@@ -1018,7 +1052,7 @@ protected:
 };
 
 /******************************************************************
-  TreeNodeExprDomainID
+  TreeNodeExprQualified
 ******************************************************************/
 
 class TreeNodeExprQualified : public TreeNodeExpr {
@@ -1034,6 +1068,8 @@ public: /* Methods: */
     ChildrenListConstRange types () const;
 
 protected:
+
+    virtual void instantiateDataType (Context &cxt, SecrecDataType dType);
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprQualified (m_location);

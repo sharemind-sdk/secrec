@@ -186,7 +186,7 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim)
 
             assert (dynamic_cast<TreeNodeExpr*>(j) != 0);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
-            e->setContextPublicIntScalar (getContext ());
+            e->setContextIndexType (getContext ());
             ICode::Status s = visitExpr (e);
             if (s != ICode::OK) {
                 return s;

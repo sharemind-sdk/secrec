@@ -176,8 +176,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     // evaluate shape if given, also compute size
     if (! varInit->shape ()->children ().empty ()) {
         if (!isScalar) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 1));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (1));
             pushImopAfter (result, i);
         }
 
@@ -201,14 +200,12 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     }
     else {
         if (!isScalar) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (0));
             pushImopAfter (result, i);
         }
 
         for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
-            Imop* i = new Imop( varInit, Imop::ASSIGN, ns->getDim (it),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it), indexConstant (0));
             push_imop(i);
         }
     }
@@ -231,8 +228,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 push_imop(i);
             }
 
-            i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                          ConstantInt::get (getContext (), 1));
+            i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (1));
             push_imop (i);
 
             for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
@@ -329,13 +325,11 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     } // Regular declaration, right hand side is missing:
     else {
         if (!isScalar && n == 0) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (0));
             pushImopAfter (result, i);
 
             for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
-                Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it),
-                                    ConstantInt::get (getContext (), 0));
+                Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it), indexConstant (0));
                 push_imop (i);
             }
         }
@@ -954,6 +948,7 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     if (e->accept(m_tyChecker) != ICode::OK)
         return CGResult::ERROR_FATAL;
 
+    e->instantiateDataType (getContext ());
     if (!e->havePublicBoolType()) {
         m_log.fatal() << "Conditional expression in assert statement must be of "
                        "type public bool in " << e->location();
