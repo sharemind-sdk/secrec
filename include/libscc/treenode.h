@@ -368,7 +368,7 @@ public: /* Methods: */
     virtual CGResult codeGenWith (CodeGen& cg) = 0;
     virtual CGBranchResult codeGenBoolWith (CodeGen&) {
         assert (false && "Not implemented!");
-        return CGBranchResult (ICode::E_NOT_IMPLEMENTED);
+        return CGBranchResult (CGResult::ERROR_FATAL);
     }
 
     void setContextSecType (SecurityType* ty) {

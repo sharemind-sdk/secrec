@@ -23,12 +23,9 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
 CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
-
     // Type check:
-    ICode::Status s = m_tyChecker.visit (e);
-    if (s != ICode::OK) {
-        return CGStmtResult (s);
-    }
+    if (m_tyChecker.visit(e) != ICode::OK)
+        return CGStmtResult(CGResult::ERROR_FATAL);
 
     CGResult result;
 
@@ -181,7 +178,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                     case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
                     default:
                         assert (false); // shouldn't happen
-                        result.setStatus (ICode::E_OTHER);
+                        result.setStatus (CGResult::ERROR_FATAL);
                         return result;
                 }
 
@@ -261,7 +258,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
             default:
                 assert (false); // shouldn't happen
-                result.setStatus (ICode::E_OTHER);
+                result.setStatus (CGResult::ERROR_FATAL);
                 return result;
         }
 

@@ -10,14 +10,14 @@
 namespace SecreC {
 
 ICode::Status ICode::init(Context& cxt, TreeNodeModule *mod) {
+    assert(m_status == NOT_READY);
     assert (mod != 0);
     ICodeList code;
     CodeGen cg (cxt, code, *this);
-    m_status = cg.cgMain (mod).status ();
-    if (m_status != OK) {
+    if (cg.cgMain(mod).status() != CGResult::OK)
         return m_status;
-    }
 
+    m_status = OK;
     m_program.init (code);
     return OK;
 }

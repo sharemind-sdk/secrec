@@ -39,9 +39,14 @@ class CompileLog;
  * Also serves as base class for other kinds of code gen results.
  */
 class CGResult {
+
+public: /* Types: */
+
+    enum Status { OK, ERROR_FATAL, ERROR_CONTINUE };
+
 public: /* Methods: */
 
-    inline explicit CGResult (ICode::Status s = ICode::OK)
+    inline CGResult(const Status s = OK)
         : m_result (0)
         , m_firstImop (0)
         , m_status (s)
@@ -90,18 +95,18 @@ public: /* Methods: */
     }
 
     inline bool isOk (void) const {
-        return m_status == ICode::OK;
+        return m_status == OK;
     }
 
     inline bool isNotOk (void) const {
-        return m_status != ICode::OK;
+        return m_status != OK;
     }
 
-    ICode::Status status () const {
+    Status status () const {
         return m_status;
     }
 
-    void setStatus (ICode::Status status) {
+    void setStatus (Status status) {
         m_status = status;
     }
 
@@ -109,7 +114,7 @@ private: /* Fields: */
     std::vector<Imop* >   m_nextList;     ///< unpatched jumps to next imop
     Symbol*               m_result;       ///< symbol the result is stored in
     Imop*                 m_firstImop;    ///< pointer to the first instruction
-    ICode::Status         m_status;       ///< status of the code generation
+    Status                m_status;       ///< status of the code generation
 };
 
 /*******************************************************************************
@@ -120,7 +125,7 @@ private: /* Fields: */
 class CGBranchResult : public CGResult {
 public:
 
-    inline explicit CGBranchResult (ICode::Status status = ICode::OK)
+    inline CGBranchResult (Status status = OK)
         : CGResult (status)
     { }
 
@@ -193,7 +198,7 @@ public: /* Types: */
     };
 
 public:
-    inline explicit CGStmtResult (ICode::Status status = ICode::OK)
+    inline CGStmtResult (Status status = OK)
         : CGResult (status)
         , m_resultFlags (FALLTHRU)
     { }
