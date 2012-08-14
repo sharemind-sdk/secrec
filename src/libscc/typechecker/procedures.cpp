@@ -553,6 +553,10 @@ bool TypeChecker::unify (Instantiation& inst,
     // but ill stick to what works for now.
     //
 
+    if (boost::size (t->body ()->paramRange ()) != argTypes->paramTypes ().size ()) {
+        return false;
+    }
+
     unsigned i = 0;
     BOOST_FOREACH (TreeNode* _d, t->body ()->paramRange ()) {
         assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
