@@ -47,8 +47,6 @@ public: /* Methods: */
         , m_status (s)
     { }
 
-    inline ~CGResult () { }
-
     Imop* firstImop (void) const {
         return m_firstImop;
     }
@@ -130,8 +128,6 @@ public:
         : CGResult (result)
     { }
 
-    inline ~CGBranchResult () { }
-
     void swapTrueFalse () {
         std::swap (m_trueList, m_falseList);
     }
@@ -206,8 +202,6 @@ public:
         : CGResult (result)
         , m_resultFlags (FALLTHRU)
     { }
-
-    inline ~CGStmtResult () { }
 
     void addToBreakList (Imop* imop) {
         m_breakList.push_back (imop);
