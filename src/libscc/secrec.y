@@ -650,6 +650,7 @@ statement_list
    {
      $$ = add_stmt($1, $2, &@$);
    }
+ | variable_declaration ';'
  | statement
  ;
 
