@@ -95,8 +95,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
 
     assert(dest->secrecType()->isVoid() == false);
     assert(dynamic_cast<TNV*>(dest->secrecType()) != 0);
-    TypeNonVoid* destType = static_cast<TNV*>(dest->secrecType());
-    SecrecDimType destDim = destType->secrecDimType();
+    TypeNonVoid* varType = static_cast<TNV*>(dest->secrecType());
+    SecrecDimType destDim = varType->secrecDimType();
 
     // Check the slice:
     if (e->slice ()) {
@@ -107,36 +107,29 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
 
     // Calculate type of r-value:
     TreeNodeExpr* src = e->rightHandSide ();
-    src->setContextSecType (destType->secrecSecType ());
-    src->setContextDataType (destType->secrecDataType ());
-    src->setContextDimType (destDim);
+    TypeNonVoid* lhsType = TypeNonVoid::get (getContext (),
+        varType->secrecSecType (), varType->secrecDataType (), destDim);
+    src->setContext (lhsType);
 
     const Status s = visitExpr(src);
     if (s != OK)
         return s;
 
-    SecreC::Type* srcType = src->resultType();
-
-    // Check types:
     if (checkAndLogIfVoid(src))
         return E_TYPE;
 
-    if (! latticeDataTypeLEQ (srcType->secrecDataType (), destType->secrecDataType ()) ||
-        ! latticeSecTypeLEQ (srcType->secrecSecType (), destType->secrecSecType ()) ||
-        ! latticeDimTypeLEQ (srcType->secrecDimType(), destDim)) {
+    TNV* srcType = static_cast<TNV*>(src->resultType());
+    if ( ! srcType->latticeLEQ (lhsType)) {
         m_log.fatal() << "Invalid assignment from value of type " << *srcType
-                      << " to variable of type " << *destType << " at "
+                      << " to variable of type " << *lhsType << " at "
                       << e->location() << ".";
         return E_TYPE;
     }
 
     // Add implicit classify node if needed:
-    src = classifyIfNeeded (src, destType->secrecSecType ());
-    destType = static_cast<TypeNonVoid*>(src->resultType ());
-    e->setResultType(TypeNonVoid::get (getContext (),
-        destType->secrecSecType (),
-        destType->secrecDataType (),
-        destDim));
+    src = classifyIfNeeded (src, varType->secrecSecType ());
+    varType = static_cast<TypeNonVoid*>(src->resultType ());
+    e->setResultType(lhsType);
     return OK;
 }
 

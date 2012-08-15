@@ -103,6 +103,10 @@ public: /* Methods: */
         return m_dataType->canAssign (o->m_dataType);
     }
 
+    inline bool latticeLEQ(const TypeNonVoid* other) const {
+        return m_dataType->latticeLEQ (other->m_dataType);
+    }
+
     static TypeNonVoid* get (Context& cxt, DataType* dtype);
     static TypeNonVoid* get (Context& cxt, SecrecDataType dataType,
                              SecrecDimType dimType = 0);
