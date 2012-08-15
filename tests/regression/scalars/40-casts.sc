@@ -44,7 +44,7 @@ void overflow_tests () {
   i = (int8) u;
   assert (i == - (int8) 1);
 
-  for (uint8 it = 0; it < (255 :: uint8); ++ it) {
+  for (uint8 it = 0; it < 255; ++ it) {
     assert ((uint8) (int8) it == it);
   }
 }

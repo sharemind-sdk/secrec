@@ -1,8 +1,7 @@
 // prefix and postfix increment and decrement checks for arrays
 
 bool all (bool [[1]] arr) {
-  int i;
-  for (i = 0; i < size (arr); ++ i)
+  for (uint i = 0; i < size (arr); ++ i)
     if (!arr[i])
       return false;
   return true;
@@ -27,8 +26,7 @@ void main () {
 
   // with dynamic index
   arr = 0;
-  int i;
-  for (i = 0; i < size (arr); ++ i) {
+  for (uint i = 0; i < size (arr); ++ i) {
     arr [i] ++;
   }
 

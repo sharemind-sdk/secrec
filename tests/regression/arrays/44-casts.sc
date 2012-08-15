@@ -1,5 +1,5 @@
 bool all (bool [[1]] arr) {
-  for (int i = 0; i < size (arr); ++ i)
+  for (uint i = 0; i < size (arr); ++ i)
     if (!arr[i]) return false;
   return true;
 }
@@ -39,7 +39,7 @@ void overflow_tests () {
   i = (int8) u;
   assert (all (i == - (int8) 1));
 
-  for (uint8 it = 0; it < (255 :: uint8); ++ it) {
+  for (uint8 it = 0; it < 255; ++ it) {
     u = it;
     assert (all (((uint8) (int8) u == u)));
   }

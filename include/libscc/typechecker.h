@@ -1,15 +1,73 @@
 #ifndef SECREC_TYPE_CHECKER_H
 #define SECREC_TYPE_CHECKER_H
 
-#include "treenode.h"
+#include <string>
+#include <vector>
+#include "parser.h"
+
 
 namespace SecreC {
 
 struct InstanceInfo;
 class CompileLog;
+class Context;
+class DataType;
+class DataTypeProcedureVoid;
+class SecurityType;
+class Symbol;
+class SymbolProcedure;
+class SymbolSymbol;
 class SymbolTable;
 class Instantiation;
 class TemplateInstantiator;
+class TreeNodeExpr;
+class TreeNodeExprBool;
+class TreeNodeExprCast;
+class TreeNodeExprIndex;
+class TreeNodeExprSize;
+class TreeNodeExprShape;
+class TreeNodeExprCat;
+class TreeNodeExprReshape;
+class TreeNodeExprToString;
+class TreeNodeExprBinary;
+class TreeNodeExprUnary;
+class TreeNodeExprClassify;
+class TreeNodeExprProcCall;
+class TreeNodeExprPrefix;
+class TreeNodeExprPostfix;
+class TreeNodeExprDeclassify;
+class TreeNodeExprRVariable;
+class TreeNodeExprString;
+class TreeNodeExprFloat;
+class TreeNodeExprTernary;
+class TreeNodeExprAssign;
+class TreeNodeExprInt;
+class TreeNodeExprDomainID;
+class TreeNodeExprQualified;
+class TreeNodeExprBytesFromString;
+class TreeNodeExprStringFromBytes;
+class TreeNodeSecTypeF;
+class TreeNodeType;
+class TreeNodeStmtDecl;
+class TreeNodeStmtPrint;
+class TreeNodeStmtReturn;
+class TreeNodeProcDef;
+class TreeNodeTemplate;
+class TreeNodeExpr;
+class TreeNodeIdentifier;
+class TreeNodeVarInit;
+class TreeNodeIdentifier;
+class TreeNodeExpr;
+class TreeNode;
+class TreeNodeExpr;
+class TreeNodeProcDef;
+class TreeNodeExpr;
+class TreeNodeIdentifier;
+class TreeNodeExpr;
+class Type;
+class TypeContext;
+class TypeNonVoid;
+
 
 /*******************************************************************************
   TypeChecker
@@ -20,6 +78,10 @@ private:
 
     TypeChecker (const TypeChecker&); // DO NOT IMPLEMENT
     void operator = (const TypeChecker&); // DO NOT IMPLEMENT
+
+public: /* Types: */
+
+    enum Status { OK, E_TYPE, E_NOT_IMPLEMENTED, E_OTHER };
 
 public: /* Methods: */
 
@@ -34,45 +96,43 @@ public: /* Methods: */
         return m_context;
     }
 
-    ICode::Status visitExpr (TreeNodeExpr* e) {
-        return e->accept (*this);
-    }
+    Status visitExpr(TreeNodeExpr * e);
 
-    ICode::Status visit (TreeNodeExprBool* e);
-    ICode::Status visit (TreeNodeExprCast* root);
-    ICode::Status visit (TreeNodeExprIndex* root);
-    ICode::Status visit (TreeNodeExprSize* root);
-    ICode::Status visit (TreeNodeExprShape* root);
-    ICode::Status visit (TreeNodeExprCat* root);
-    ICode::Status visit (TreeNodeExprReshape* root);
-    ICode::Status visit (TreeNodeExprToString* root);
-    ICode::Status visit (TreeNodeExprBinary* root);
-    ICode::Status visit (TreeNodeExprUnary* root);
-    ICode::Status visit (TreeNodeExprClassify* root);
-    ICode::Status visit (TreeNodeExprProcCall* root);
-    ICode::Status visit (TreeNodeExprPrefix* root);
-    ICode::Status visit (TreeNodeExprPostfix* root);
-    ICode::Status visit (TreeNodeExprDeclassify* e);
-    ICode::Status visit (TreeNodeExprRVariable* e);
-    ICode::Status visit (TreeNodeExprString* e);
-    ICode::Status visit (TreeNodeExprFloat* e);
-    ICode::Status visit (TreeNodeExprTernary* e);
-    ICode::Status visit (TreeNodeExprAssign* e);
-    ICode::Status visit (TreeNodeExprInt* e);
-    ICode::Status visit (TreeNodeExprDomainID* e);
-    ICode::Status visit (TreeNodeExprQualified* e);
-    ICode::Status visit (TreeNodeExprBytesFromString* e);
-    ICode::Status visit (TreeNodeExprStringFromBytes* e);
+    Status visit(TreeNodeExprBool * e);
+    Status visit(TreeNodeExprCast * root);
+    Status visit(TreeNodeExprIndex * root);
+    Status visit(TreeNodeExprSize * root);
+    Status visit(TreeNodeExprShape * root);
+    Status visit(TreeNodeExprCat * root);
+    Status visit(TreeNodeExprReshape * root);
+    Status visit(TreeNodeExprToString * root);
+    Status visit(TreeNodeExprBinary * root);
+    Status visit(TreeNodeExprUnary * root);
+    Status visit(TreeNodeExprClassify * root);
+    Status visit(TreeNodeExprProcCall * root);
+    Status visit(TreeNodeExprPrefix * root);
+    Status visit(TreeNodeExprPostfix * root);
+    Status visit(TreeNodeExprDeclassify * e);
+    Status visit(TreeNodeExprRVariable * e);
+    Status visit(TreeNodeExprString * e);
+    Status visit(TreeNodeExprFloat * e);
+    Status visit(TreeNodeExprTernary * e);
+    Status visit(TreeNodeExprAssign * e);
+    Status visit(TreeNodeExprInt * e);
+    Status visit(TreeNodeExprDomainID * e);
+    Status visit(TreeNodeExprQualified * e);
+    Status visit(TreeNodeExprBytesFromString * e);
+    Status visit(TreeNodeExprStringFromBytes * e);
 
-    ICode::Status visit (TreeNodeSecTypeF* ty);
-    ICode::Status visit (TreeNodeType* _ty);
+    Status visit(TreeNodeSecTypeF * ty);
+    Status visit(TreeNodeType * _ty);
 
-    ICode::Status visit (TreeNodeStmtDecl* decl);
-    ICode::Status visit (TreeNodeStmtPrint* stmt);
-    ICode::Status visit (TreeNodeStmtReturn* stmt);
+    Status visit(TreeNodeStmtDecl * decl);
+    Status visit(TreeNodeStmtPrint * stmt);
+    Status visit(TreeNodeStmtReturn * stmt);
 
-    ICode::Status visit (TreeNodeProcDef* proc, SymbolTable* localScope);
-    ICode::Status visit (TreeNodeTemplate* templ);
+    Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
+    Status visit(TreeNodeTemplate * templ);
 
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
@@ -85,7 +145,7 @@ public: /* Methods: */
     /// Return symbol for the main procedure (if exists).
     SymbolProcedure* mainProcedure ();
 
-    ICode::Status checkVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
 
 protected:
@@ -94,23 +154,23 @@ protected:
     /// Logs error message and returns NULL if not.
     Symbol* findIdentifier (TreeNodeIdentifier* id) const;
 
-    ICode::Status checkPostfixPrefixIncDec (TreeNodeExpr* root,
-                                            bool isPrefix,
-                                            bool isInc);
-    ICode::Status checkIndices (TreeNode* node, SecrecDimType& destDim);
-    bool checkAndLogIfVoid (TreeNodeExpr* e);
-    ICode::Status populateParamTypes (std::vector<DataType*>& params,
-                                      TreeNodeProcDef* proc);
-    ICode::Status getInstance (SymbolProcedure*& proc,
-                               const Instantiation& inst);
+    Status checkPostfixPrefixIncDec(TreeNodeExpr * root,
+                                    bool isPrefix,
+                                    bool isInc);
+    Status checkIndices(TreeNode * node, SecrecDimType & destDim);
+    bool checkAndLogIfVoid (TreeNodeExpr * e);
+    Status populateParamTypes(std::vector<DataType *> & params,
+                              TreeNodeProcDef * proc);
+    Status getInstance(SymbolProcedure *& proc,
+                       const Instantiation & inst);
 
-    ICode::Status checkParams (const std::vector<TreeNodeExpr*>& arguments,
-                               DataTypeProcedureVoid*& argTypes);
+    Status checkParams(const std::vector<TreeNodeExpr *> & arguments,
+                       DataTypeProcedureVoid *& argTypes);
 
 
-    ICode::Status checkProcCall (SymbolProcedure* symProc,
-                                 DataTypeProcedureVoid* argTypes,
-                                 SecreC::Type*& resultType);
+    Status checkProcCall(SymbolProcedure * symProc,
+                         DataTypeProcedureVoid * argTypes,
+                         SecreC::Type *& resultType);
 
     /**
      * \brief Type check a procedure, and classify parameters if needed.
@@ -120,15 +180,15 @@ protected:
      * \param[out] resultType resulting type of the procedure call
      * \param[out] symProc symbol of the procedure which will be called
      */
-    ICode::Status checkProcCall (TreeNodeIdentifier* name,
-                                 const TypeContext& tyCxt,
-                                 const std::vector<TreeNodeExpr*>& arguments,
-                                 SecreC::Type*& resultType,
-                                 SymbolProcedure*& symProc);
+    Status checkProcCall(TreeNodeIdentifier * name,
+                         const TypeContext & tyCxt,
+                         const std::vector<TreeNodeExpr *> & arguments,
+                         SecreC::Type *& resultType,
+                         SymbolProcedure *& symProc);
 
     // Try to unify template with given parameter types. On success this
     // procedure returns true, and gives bindings to quantifiers. No
-    // addition side effect are performed.
+    // additional side effects are performed.
     bool unify (Instantiation& inst,
                 const TypeContext& tyCxt,
                 DataTypeProcedureVoid* argTypes) const;
@@ -144,10 +204,10 @@ protected:
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found
      */
-    ICode::Status findBestMatchingProc (SymbolProcedure*& symProc,
-                                        const std::string& name,
-                                        const TypeContext& tyCxt,
-                                        DataTypeProcedureVoid* argTypes);
+    Status findBestMatchingProc(SymbolProcedure *& symProc,
+                                const std::string & name,
+                                const TypeContext & tyCxt,
+                                DataTypeProcedureVoid * argTypes);
 
 private: /* Fields: */
 

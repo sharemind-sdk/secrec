@@ -1,9 +1,8 @@
 
 void main () {
   int [[1]] arr (5) = 0;
-  int i;
 
-  for (i = 0; i < 5; i += 1) {
+  for (uint i = 0; i < 5; ++ i) {
     arr[i:5] += 1;
   }
 

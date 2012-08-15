@@ -10,7 +10,9 @@
 #ifndef SECREC_TYPECONTEXT_H
 #define SECREC_TYPECONTEXT_H
 
+#include "parser.h"
 #include "types.h"
+
 
 namespace SecreC {
 
@@ -65,8 +67,8 @@ public: /* Methods: */
         setContextDimType (ty->secrecDimType ());
     }
 
-    void setContextPublicIntScalar (Context& cxt) {
-        setContextDataType (DATATYPE_INT64);
+    void setContextIndexType (Context& cxt) {
+        setContextDataType (DATATYPE_UINT64);
         setContextDimType (0);
         setContextSecType (PublicSecType::get (cxt));
     }

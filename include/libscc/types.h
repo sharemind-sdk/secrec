@@ -103,6 +103,10 @@ public: /* Methods: */
         return m_dataType->canAssign (o->m_dataType);
     }
 
+    inline bool latticeLEQ(const TypeNonVoid* other) const {
+        return m_dataType->latticeLEQ (other->m_dataType);
+    }
+
     static TypeNonVoid* get (Context& cxt, DataType* dtype);
     static TypeNonVoid* get (Context& cxt, SecrecDataType dataType,
                              SecrecDimType dimType = 0);
@@ -119,7 +123,7 @@ private: /* Fields: */
 
 inline bool Type::isPublicIntScalar () const {
     return !isVoid () &&
-            secrecDataType () == DATATYPE_INT64 &&
+            secrecDataType () == DATATYPE_UINT64 &&
             secrecSecType ()->isPublic () &&
             secrecDimType () == 0;
 }

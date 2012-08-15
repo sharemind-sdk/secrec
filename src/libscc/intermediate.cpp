@@ -10,30 +10,26 @@
 namespace SecreC {
 
 ICode::Status ICode::init(Context& cxt, TreeNodeModule *mod) {
+    assert(m_status == NOT_READY);
     assert (mod != 0);
     ICodeList code;
     CodeGen cg (cxt, code, *this);
-    m_status = cg.cgMain (mod).status ();
-    if (m_status != OK) {
+    if (cg.cgMain(mod).status() != CGResult::OK)
         return m_status;
-    }
 
+    m_status = OK;
     m_program.init (code);
-    return OK;
+    return m_status;
 }
 
 } // namespace SecreC
 
 std::ostream &operator<<(std::ostream &out, const SecreC::ICode::Status &s) {
     switch (s) {
-        case SecreC::ICode::OK:                out << "OK"; break;
-        case SecreC::ICode::E_NOT_IMPLEMENTED: out << "NOT IMPLEMENTED"; break;
-        case SecreC::ICode::E_EMPTY_PROGRAM:   out << "EMPTY PROGRAM"; break;
-        case SecreC::ICode::E_NO_MAIN:         out << "NO MAIN"; break;
-        case SecreC::ICode::E_TYPE:            out << "TYPE ERROR"; break;
-        case SecreC::ICode::E_OTHER:           out << "OTHER ERROR"; break;
-        case SecreC::ICode::E_NO_MEM:          out << "OUT OF MEMORY"; break;
-        default:                               out << "UNKNOWN"; break;
+        case SecreC::ICode::NOT_READY: out << "NOT_READY"; break;
+        case SecreC::ICode::OK:        out << "OK"; break;
+        case SecreC::ICode::ERROR:     out << "ERROR"; break;
+        default:                       out << "UNKNOWN"; break;
     }
 
     return out;

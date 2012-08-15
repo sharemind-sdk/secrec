@@ -129,8 +129,9 @@ SymbolProcedure* TypeChecker::mainProcedure () {
     return out;
 }
 
-ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params,
-                                               TreeNodeProcDef* proc) {
+TypeChecker::Status TypeChecker::populateParamTypes(std::vector<DataType *> & params,
+                                                    TreeNodeProcDef * proc)
+{
     typedef DataTypeVar DTV;
     params.clear ();
     params.reserve (boost::distance (proc->paramRange ()));
@@ -138,30 +139,33 @@ ICode::Status TypeChecker::populateParamTypes (std::vector<DataType*>& params,
         assert(n->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl*>(n) != 0);
         TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(n);
-        ICode::Status s = visit (d);
-        if (s != ICode::OK) return s;
+        Status s = visit(d);
+        if (s != OK)
+            return s;
         TypeNonVoid* pt = d->resultType();
         assert(pt->dataType()->kind() == DataType::VAR);
         assert(dynamic_cast<DTV*>(pt->dataType()) != 0);
         params.push_back (static_cast<DTV*>(pt->dataType())->dataType());
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 
 /// Procedure definitions.
-ICode::Status TypeChecker::visit (TreeNodeProcDef* proc, SymbolTable* localScope) {
+TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
+                                       SymbolTable * localScope)
+{
     typedef TypeNonVoid TNV;
     if (proc->m_cachedType == 0) {
         std::swap (m_st, localScope);
         TreeNodeType* rt = proc->returnType ();
-        ICode::Status s = visit (rt);
-        if (s != ICode::OK) return s;
-        std::vector<DataType*> params;
-        if ((s = populateParamTypes (params, proc)) != ICode::OK) {
+        Status s = visit(rt);
+        if (s != OK)
             return s;
-        }
+        std::vector<DataType*> params;
+        if ((s = populateParamTypes(params, proc)) != OK)
+            return s;
 
         DataTypeProcedureVoid* voidProcType =
                 DataTypeProcedureVoid::get (getContext (), params);
@@ -190,7 +194,7 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc, SymbolTable* localScope
                                    << proc->location () << "."
                                    << " Conflicting with procedure declared at "
                                    << t->decl ()->location () << ".";
-                    return ICode::E_TYPE;
+                    return E_TYPE;
                 }
             }
         }
@@ -200,11 +204,11 @@ ICode::Status TypeChecker::visit (TreeNodeProcDef* proc, SymbolTable* localScope
         m_st->appendSymbol (procSym);
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 /// Template definitions.
-ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
+TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
@@ -212,7 +216,7 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
         m_log.fatal ()
                 << "Redeclaration of template \"" << id->value () << "\""
                 << " at " << id->location () << ".";
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     // Check that quantifiers are saneley defined
@@ -222,11 +226,12 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
         quantifiedDomains.insert (quant->domain ()->value ());
         if (quant->kind ()) {
             Symbol* kindSym = findIdentifier (quant->kind ());
-            if (kindSym == 0) return ICode::E_TYPE;
+            if (kindSym == 0)
+                return E_TYPE;
             if (kindSym->symbolType () != Symbol::PKIND) {
                 m_log.fatal () << "Identifier at " << quant->location ()
                                << " is not a security domain kind.";
-                return ICode::E_TYPE;
+                return E_TYPE;
             }
         }
     }
@@ -241,9 +246,8 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
             retSecTyIdent = t->secType ()->identifier ();
             templ->setContextDependance (true); // may depend on context!
             if (quantifiedDomains.find (retSecTyIdent->value ()) == quantifiedDomains.end ()) {
-                if (findIdentifier (retSecTyIdent) == 0) {
-                    return ICode::E_TYPE;
-                }
+                if (findIdentifier(retSecTyIdent) == 0)
+                    return E_TYPE;
             }
         }
     }
@@ -262,9 +266,8 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
             }
 
             if (quantifiedDomains.find (id->value ()) == quantifiedDomains.end ()) {
-                if (findIdentifier (id) == 0) {
-                    return ICode::E_TYPE;
-                }
+                if (findIdentifier(id) == 0)
+                    return E_TYPE;
             }
         }
     }
@@ -272,7 +275,7 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
     SymbolTemplate* s = new SymbolTemplate (templ);
     s->setName ("{templ}" + id->value ());
     m_st->appendSymbol (s);
-    return ICode::OK;
+    return OK;
 }
 
 /**
@@ -280,33 +283,36 @@ ICode::Status TypeChecker::visit (TreeNodeTemplate* templ) {
  * regular procedures.
  */
 
-ICode::Status TreeNodeExprProcCall::accept (TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
+TypeChecker::Status TreeNodeExprProcCall::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit(this);
 }
 
-ICode::Status TypeChecker::checkParams (const std::vector<TreeNodeExpr*>& arguments,
-                                        DataTypeProcedureVoid*& argTypes)
+TypeChecker::Status TypeChecker::checkParams(const std::vector<TreeNodeExpr *> & arguments,
+                                             DataTypeProcedureVoid *& argTypes)
 {
     std::vector<DataType*> argumentDataTypes;
 
     BOOST_FOREACH (TreeNode* _arg, arguments) {
         assert(dynamic_cast<TreeNodeExpr*>(_arg) != 0);
         TreeNodeExpr *arg = static_cast<TreeNodeExpr*>(_arg);
-        ICode::Status status = visitExpr (arg);
-        if (status != ICode::OK) return status;
-        if (checkAndLogIfVoid (arg)) return ICode::E_TYPE;
+        Status status = visitExpr(arg);
+        if (status != OK)
+            return status;
+        if (checkAndLogIfVoid(arg))
+            return E_TYPE;
+        arg->instantiateDataType (getContext ());
         assert(dynamic_cast<TypeNonVoid*>(arg->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(arg->resultType());
         argumentDataTypes.push_back (t->dataType());
     }
 
     argTypes = DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
-    return ICode::OK;
+    return OK;
 }
 
-ICode::Status TypeChecker::checkProcCall (SymbolProcedure* symProc,
-                                          DataTypeProcedureVoid* argTypes,
-                                          SecreC::Type*& resultType)
+TypeChecker::Status TypeChecker::checkProcCall(SymbolProcedure * symProc,
+                                               DataTypeProcedureVoid * argTypes,
+                                               SecreC::Type *& resultType)
 {
     typedef DataTypeProcedureVoid DTFV;
     typedef DataTypeProcedure DTF;
@@ -340,14 +346,14 @@ ICode::Status TypeChecker::checkProcCall (SymbolProcedure* symProc,
         resultType = TypeVoid::get (getContext ());
     }
 
-    return ICode::OK;
+    return OK;
 }
 
-ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
-                                          const TypeContext& tyCxt,
-                                          const std::vector<TreeNodeExpr*>& arguments,
-                                          SecreC::Type*& resultType,
-                                          SymbolProcedure*& symProc)
+TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
+                                               const TypeContext & tyCxt,
+                                               const std::vector<TreeNodeExpr *> & arguments,
+                                               SecreC::Type *& resultType,
+                                               SymbolProcedure *& symProc)
 {
     typedef DataTypeProcedureVoid DTFV;
     typedef DataTypeProcedure DTF;
@@ -358,9 +364,12 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
     BOOST_FOREACH (TreeNode* _arg, arguments) {
         assert(dynamic_cast<TreeNodeExpr*>(_arg) != 0);
         TreeNodeExpr *arg = static_cast<TreeNodeExpr*>(_arg);
-        ICode::Status status = visitExpr (arg);
-        if (status != ICode::OK) return status;
-        if (checkAndLogIfVoid (arg)) return ICode::E_TYPE;
+        Status status = visitExpr(arg);
+        if (status != OK)
+            return status;
+        if (checkAndLogIfVoid(arg))
+            return E_TYPE;
+        arg->instantiateDataType (getContext ());
         assert(dynamic_cast<TypeNonVoid*>(arg->resultType()) != 0);
         TypeNonVoid* t = static_cast<TypeNonVoid*>(arg->resultType());
         argumentDataTypes.push_back (t->dataType());
@@ -368,17 +377,15 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
 
     DataTypeProcedureVoid* argTypes =
             DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
-    ICode::Status status = findBestMatchingProc (symProc, name->value (),
-                                                 tyCxt, argTypes);
-    if (status != ICode::OK) {
+    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes);
+    if (status != OK)
         return status;
-    }
 
     if (symProc == 0) {
         m_log.fatal () << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << mangleProcedure (name->value (), argTypes, TemplateParams ());
         m_log.fatal () << "In context " << tyCxt.toString () << ".";
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     TypeNonVoid* ft = symProc->decl()->procedureType();
@@ -403,14 +410,14 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
             m_log.fatal() << "Argument " << (i + 1) << " to function "
                 << name->value() << " at " << arguments[i]->location()
                 << " is expected to be of public type instead of private!";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         if (need->dimType() != have->dimType()) {
             m_log.fatal() << "Argument " << (i + 1) << " to function "
                 << name->value() << " at " << arguments[i]->location()
                 << " has mismatching dimensionality.";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         // Add implicit classify node if needed:
@@ -426,13 +433,12 @@ ICode::Status TypeChecker::checkProcCall (TreeNodeIdentifier* name,
         resultType = TypeVoid::get (getContext ());
     }
 
-    return ICode::OK;
+    return OK;
 }
 
-ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
-    if (root->haveResultType ()) {
-        return ICode::OK;
-    }
+TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
+    if (root->haveResultType())
+        return OK;
 
     Type* resultType = 0;
     SymbolProcedure* symProc = 0;
@@ -445,21 +451,21 @@ ICode::Status TypeChecker::visit (TreeNodeExprProcCall* root) {
         arguments.push_back (arg);
     }
 
-    ICode::Status s = checkProcCall (id, *root, arguments, resultType, symProc);
-    if (s != ICode::OK) {
+    Status s = checkProcCall(id, *root, arguments, resultType, symProc);
+    if (s != OK) {
         m_log.fatal () << "Error at " << root->location () << ".";
         return s;
     }
 
     root->setProcedure (symProc);
     root->setResultType (resultType);
-    return ICode::OK;
+    return OK;
 }
 
-ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
-                                                 const std::string& name,
-                                                 const TypeContext& tyCxt,
-                                                 DataTypeProcedureVoid* argTypes)
+TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
+                                                      const std::string & name,
+                                                      const TypeContext & tyCxt,
+                                                      DataTypeProcedureVoid * argTypes)
 {
     typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
 
@@ -477,13 +483,14 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         }
         else {
             // if the procedure is void, and context expects non-void then skip
-            // non-void context has to at-least have data type specified
+            if (tyCxt.haveContextSecType ())  continue;
             if (tyCxt.haveContextDataType ()) continue;
+            if (tyCxt.haveContextDimType ())  continue;
         }
 
         if (procTempSymbol != 0) {
             m_log.fatal () << "Multiple matching procedures!";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         procTempSymbol = s;
@@ -491,7 +498,7 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
 
     if (procTempSymbol != 0) {
         symProc = procTempSymbol;
-        return ICode::OK;
+        return OK;
     }
 
     // Look for templates:
@@ -514,9 +521,8 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         }
     }
 
-    if (bestMatches.empty ()) {
-        return ICode::OK;
-    }
+    if (bestMatches.empty())
+        return OK;
 
     if (bestMatches.size () > 1) {
         std::ostringstream os;
@@ -526,7 +532,7 @@ ICode::Status TypeChecker::findBestMatchingProc (SymbolProcedure*& symProc,
         }
 
         m_log.fatal () << os.str ();
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     return getInstance (symProc, bestMatches.front ());
@@ -551,6 +557,10 @@ bool TypeChecker::unify (Instantiation& inst,
     // cached type. There probably is much nicer solution to what im doing
     // but ill stick to what works for now.
     //
+
+    if (boost::size (t->body ()->paramRange ()) != argTypes->paramTypes ().size ()) {
+        return false;
+    }
 
     unsigned i = 0;
     BOOST_FOREACH (TreeNode* _d, t->body ()->paramRange ()) {
@@ -636,7 +646,9 @@ bool TypeChecker::unify (Instantiation& inst,
     return true;
 }
 
-ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiation& inst) {
+TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
+                                             const Instantiation & inst)
+{
     ModuleInfo* mod = inst.getTemplate ()->decl ()->containingModule ();
     InstanceInfo info = m_instantiator->add (inst, *mod);
     TreeNodeProcDef* body = info.m_generatedBody;
@@ -644,10 +656,9 @@ ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiat
     SymbolTable* localST = info.m_localScope;
     assert (localST->parent () == moduleST);
     std::swap (m_st, moduleST);
-    ICode::Status status = visit (body, localST);
-    if (status != ICode::OK) {
+    Status status = visit(body, localST);
+    if (status != OK)
         return status;
-    }
 
     const std::vector<SecurityType*> targs (inst.begin (), inst.end ());
     proc = findProcedure (m_st,
@@ -660,7 +671,7 @@ ICode::Status TypeChecker::getInstance (SymbolProcedure*& proc, const Instantiat
 
     body->setSymbol (proc);
     std::swap (m_st, moduleST);
-    return ICode::OK;
+    return OK;
 }
 
 } // namespace SecreC

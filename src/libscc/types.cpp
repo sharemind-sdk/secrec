@@ -64,7 +64,7 @@ TypeNonVoid* TypeNonVoid::get (Context& cxt,
 }
 
 TypeNonVoid* TypeNonVoid::getIndexType (Context& cxt) {
-    return TypeNonVoid::get (cxt, DATATYPE_INT64);
+    return TypeNonVoid::get (cxt, DATATYPE_UINT64);
 }
 
 TypeNonVoid* TypeNonVoid::getPublicBoolType (Context& cxt) {

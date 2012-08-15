@@ -23,12 +23,9 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
 CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
-
     // Type check:
-    ICode::Status s = m_tyChecker.visit (e);
-    if (s != ICode::OK) {
-        return CGStmtResult (s);
-    }
+    if (m_tyChecker.visit(e) != TypeChecker::OK)
+        return CGStmtResult(CGResult::ERROR_FATAL);
 
     CGResult result;
 
@@ -120,7 +117,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         Symbol* tmp_result2 = m_st->appendTemporary(pubIntTy);
 
         // offset = 0
-        Imop* i = new Imop (e, Imop::ASSIGN, offset, ConstantInt::get (getContext (), 0));
+        Imop* i = new Imop (e, Imop::ASSIGN, offset, indexConstant (0));
         pushImopAfter (result, i);
 
         // 7. start
@@ -132,7 +129,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         // 8. compute offset for RHS
         {
             // old_ffset = 0
-            Imop* i = new Imop (e, Imop::ASSIGN, old_offset, ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (e, Imop::ASSIGN, old_offset, indexConstant (0));
             pushImopAfter (result, i);
 
             unsigned count = 0;
@@ -181,7 +178,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
                     case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
                     default:
                         assert (false); // shouldn't happen
-                        result.setStatus (ICode::E_OTHER);
+                        result.setStatus (CGResult::ERROR_FATAL);
                         return result;
                 }
 
@@ -208,7 +205,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             }
 
             // offset = offset + 1
-            Imop* i = new Imop (e, Imop::ADD, offset, offset, ConstantInt::get (getContext (), 1));
+            Imop* i = new Imop (e, Imop::ADD, offset, offset, indexConstant (1));
             push_imop (i);
        }
 
@@ -261,7 +258,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
             case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
             default:
                 assert (false); // shouldn't happen
-                result.setStatus (ICode::E_OTHER);
+                result.setStatus (CGResult::ERROR_FATAL);
                 return result;
         }
 

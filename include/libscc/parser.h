@@ -138,6 +138,7 @@ enum SecrecDataType {
     DATATYPE_UNIT,
     DATATYPE_BOOL,
     DATATYPE_STRING,
+    DATATYPE_NUMERIC,
     DATATYPE_INT8,
     DATATYPE_INT16,
     DATATYPE_INT32,
@@ -156,6 +157,9 @@ enum SecrecDataType {
 };
 
 typedef int SecrecDimType; /**< Dimensionality type is undefined if negative! */
+#ifdef __cplusplus
+namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
+#endif /* #ifdef __cplusplus */
 
 /**
     Parses SecreC from the standard input.

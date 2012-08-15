@@ -1,7 +1,6 @@
 
 bool all (bool [[1]] arr) {
-  int i;
-  for (i = 0; i < size(arr); i = i + 1) {
+  for (uint i = 0; i < size(arr); ++ i) {
     if (!arr[i]) return false;
   }
 

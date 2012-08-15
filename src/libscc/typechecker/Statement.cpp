@@ -7,6 +7,8 @@
  * code is subject to the appropriate license agreement.
  */
 
+#include "symboltable.h"
+#include "treenode.h"
 #include "typechecker.h"
 
 #include <boost/range.hpp>
@@ -17,27 +19,29 @@ namespace SecreC {
   TypeChecker
 *******************************************************************************/
 
-ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
-                                         TreeNodeVarInit* varInit)
+TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
+                                              TreeNodeVarInit * varInit)
 {
     SecrecDimType n = 0;
 
     if (m_st->findFromCurrentScope (varInit->variableName ()) != 0) {
         m_log.fatal () << "Redeclaration of variable at " << varInit->location () << ".";
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
         assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
-        e->setContextPublicIntScalar (getContext ());
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
-        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+        e->setContextIndexType (getContext ());
+        Status s = visitExpr (e);
+        if (s != OK)
+            return s;
+        if (checkAndLogIfVoid(e))
+            return E_TYPE;
         if (! e->resultType ()->isPublicIntScalar ()) {
             m_log.fatal() << "Expecting public unsigned integer scalar at "
                           << e->location() << ".";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         ++ n;
@@ -46,24 +50,26 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
     if (n > 0 && n != ty->secrecDimType()) {
         m_log.fatal() << "Mismatching number of shape components in declaration at "
                       << varInit->location() << ".";
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     if (varInit->rightHandSide () != 0) {
         TreeNodeExpr *e = varInit->rightHandSide ();
         e->setContext (ty);
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
-        if (checkAndLogIfVoid (e)) return ICode::E_TYPE;
+        Status s = visitExpr(e);
+        if (s != OK)
+            return s;
+        if (checkAndLogIfVoid(e))
+            return E_TYPE;
         e = classifyIfNeeded (e, ty->secrecSecType ());
         if (! ty->canAssign (e->resultType ())) {
             m_log.fatal () << "Illegal assignment at " << varInit->location () << ".";
             m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << ".";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 /*******************************************************************************
@@ -73,17 +79,17 @@ ICode::Status TypeChecker::checkVarInit (TypeNonVoid* ty,
 // Note that declarations are type checked very lazility, checks of
 // individual variable initializations will be requested by the code
 // generator (see CodeGen::cgVarInit).
-ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
     typedef DataTypeBasic DTB;
     typedef TypeNonVoid TNV;
 
-    if (decl->m_type != 0) {
-        return ICode::OK;
-    }
+    if (decl->m_type != 0)
+        return OK;
 
     TreeNodeType *type = decl->varType ();
-    ICode::Status s = visit (type);
-    if (s != ICode::OK) return s;
+    Status s = visit(type);
+    if (s != OK)
+        return s;
 
     assert (!type->secrecType()->isVoid());
     assert (dynamic_cast<TNV*>(type->secrecType()) != 0);
@@ -104,28 +110,27 @@ ICode::Status TypeChecker::visit (TreeNodeStmtDecl* decl) {
         assert (decl->initializer ()->rightHandSide () == 0);
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 /*******************************************************************************
   TreeNodeStmtPrint
 *******************************************************************************/
 
-ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
     BOOST_FOREACH (TreeNode* node, stmt->expressions ()) {
         assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
         e->setContextSecType (PublicSecType::get (getContext ()));
         e->setContextDimType (0);
 
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) {
+        Status s = visitExpr(e);
+        e->instantiateDataType (getContext ());
+        if (s != OK)
             return s;
-        }
 
-        if (checkAndLogIfVoid (e)) {
-            return ICode::E_TYPE;
-        }
+        if (checkAndLogIfVoid(e))
+            return E_TYPE;
 
         bool isLegalType = true;
         if (  e->resultType()->secrecSecType()->isPrivate ()  ||
@@ -142,25 +147,25 @@ ICode::Status TypeChecker::visit (TreeNodeStmtPrint* stmt) {
             m_log.fatal () << "Invalid argument to \"print\" statement."
                            << "Got " << *e->resultType() << " at " << stmt->location() << ". "
                            << "Expected public scalar or string.";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 /*******************************************************************************
   TreeNodeStmtReturn
 *******************************************************************************/
 
-ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
     SecreC::TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
             m_log.fatal() << "Cannot return from non-void function without value "
                              "at " << stmt->location() << ".";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
     }
     else {
@@ -168,12 +173,13 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
         if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
             m_log.fatal () << "Cannot return value from void function at"
                            << stmt->location() << ".";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         e->setContext (procType);
-        ICode::Status s = visitExpr (e);
-        if (s != ICode::OK) return s;
+        Status s = visitExpr(e);
+        if (s != OK)
+            return s;
         e = classifyIfNeeded (e, procType->secrecSecType ());
         if (!procType->canAssign (e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
@@ -182,11 +188,11 @@ ICode::Status TypeChecker::visit (TreeNodeStmtReturn* stmt) {
                            << " from function with type "
                            << *procType << " at "
                            << stmt->location () << ".";
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 } // namespace SecreC

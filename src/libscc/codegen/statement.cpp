@@ -39,7 +39,7 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
         if (cResult.firstImop () == 0) {
             if (c->type () != NODE_DECL) {
                 m_log.fatal () << "Statement with no effect at " << c->location ();
-                result.setStatus (ICode::E_OTHER);
+                result.setStatus(CGResult::ERROR_FATAL);
                 break;
             }
         }
@@ -50,7 +50,7 @@ CGStmtResult CodeGen::cgStmtCompound (TreeNodeStmtCompound* s) {
         // Static checking:
         if ((result.flags () & CGStmtResult::FALLTHRU) == 0x0) {
             m_log.fatal () << "Unreachable statement at " << c->location ();
-            result.setStatus (ICode::E_OTHER);
+            result.setStatus(CGResult::ERROR_FATAL);
             break;
         } else {
             result.setFlags((result.flags () & ~CGStmtResult::FALLTHRU)
@@ -76,15 +76,13 @@ CGStmtResult TreeNodeStmtBreak::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtBreak (TreeNodeStmtBreak* s) {
-    CGStmtResult result;
-
     if (loopST () == 0) {
         m_log.fatal () << "Break statement not embedded in loop!";
         m_log.fatal () << "Error at " << s->location () << ".";
-        result.setStatus (ICode::E_TYPE);
-        return result;
+        return CGResult::ERROR_FATAL;
     }
 
+    CGStmtResult result;
     assert (loopST () != 0);
     BOOST_FOREACH (SymbolSymbol* var, m_st->variablesUpTo (loopST ())) {
         releaseResource (result, var);
@@ -107,15 +105,13 @@ CGStmtResult TreeNodeStmtContinue::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
-    CGStmtResult result;
-
     if (loopST () == 0) {
         m_log.fatal () << "Continue statement not embedded in loop!";
         m_log.fatal () << "Error at " << s->location () << ".";
-        result.setStatus (ICode::E_TYPE);
-        return result;
+        return CGResult::ERROR_FATAL;
     }
 
+    CGStmtResult result;
     BOOST_FOREACH (SymbolSymbol* var, m_st->variablesUpTo (loopST ())) {
         releaseResource (result, var);
     }
@@ -133,16 +129,13 @@ CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
-                                 bool isGlobal, bool isProcParam) {
-    CGStmtResult result;
-
-    ICode::Status status = m_tyChecker.checkVarInit (ty, varInit);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
+                                 bool isGlobal, bool isProcParam)
+{
+    if (m_tyChecker.checkVarInit(ty, varInit) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
     // Initialize the new symbol (for initializer target)
+    CGStmtResult result;
     SymbolSymbol::ScopeType scopeType = isGlobal ? SymbolSymbol::GLOBAL : SymbolSymbol::LOCAL;
     const bool isScalar = ty->isScalar ();
     const bool isString = ty->secrecDataType () == DATATYPE_STRING;
@@ -183,8 +176,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     // evaluate shape if given, also compute size
     if (! varInit->shape ()->children ().empty ()) {
         if (!isScalar) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 1));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (1));
             pushImopAfter (result, i);
         }
 
@@ -208,14 +200,12 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     }
     else {
         if (!isScalar) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (0));
             pushImopAfter (result, i);
         }
 
         for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
-            Imop* i = new Imop( varInit, Imop::ASSIGN, ns->getDim (it),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it), indexConstant (0));
             push_imop(i);
         }
     }
@@ -238,8 +228,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 push_imop(i);
             }
 
-            i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                          ConstantInt::get (getContext (), 1));
+            i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (1));
             push_imop (i);
 
             for (dim_iterator di = dim_begin (ns), de = dim_end (ns); di != de; ++ di) {
@@ -336,13 +325,11 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     } // Regular declaration, right hand side is missing:
     else {
         if (!isScalar && n == 0) {
-            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (),
-                                ConstantInt::get (getContext (), 0));
+            Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getSizeSym (), indexConstant (0));
             pushImopAfter (result, i);
 
             for (SecrecDimType it = 0; it < ty->secrecDimType (); ++ it) {
-                Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it),
-                                    ConstantInt::get (getContext (), 0));
+                Imop* i = new Imop (varInit, Imop::ASSIGN, ns->getDim (it), indexConstant (0));
                 push_imop (i);
             }
         }
@@ -373,13 +360,11 @@ CGStmtResult TreeNodeStmtDecl::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
-    CGStmtResult result;
-    ICode::Status status = m_tyChecker.visit (s);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
+    // Type check:
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
+    CGStmtResult result;
     const bool isGlobal = s->global ();
     const bool isProcParam = s->procParam ();
 
@@ -433,16 +418,16 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
         e1->setContextSecType (PublicSecType::get (getContext ()));
-        ICode::Status status = e1->accept (m_tyChecker);
-        if (status != ICode::OK) {
-            result.setStatus (status);
+        TypeChecker::Status status = e1->accept(m_tyChecker);
+        if (status != TypeChecker::OK) {
+            result.setStatus(CGResult::ERROR_FATAL);
             return result;
         }
 
         if (!e1->havePublicBoolType ()) {
             m_log.fatal () << "Conditional expression in if statement must be of "
                             "type public bool at " << e1->location () << ".";
-            result.setStatus (ICode::E_TYPE);
+            result.setStatus(CGResult::ERROR_FATAL);
             return result;
         }
 
@@ -506,14 +491,14 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
         & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatal() << "For loop at " << s->location () << " wont loop!";
-        result.setStatus (ICode::E_OTHER);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
     if (condResult.firstImop () == 0 && ((bodyResult.flags ()
         & (CGStmtResult::BREAK | CGStmtResult::RETURN)) == 0x0))
     {
         m_log.fatal () << "For loop at " << s->location () << " is clearly infinite!";
-        result.setStatus (ICode::E_OTHER);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
@@ -533,21 +518,18 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
-    CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    ICode::Status status = e->accept (m_tyChecker);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
     if (!e->havePublicBoolType ()) {
         m_log.fatal () << "Conditional expression in if statement must be of "
                         "type public bool in " << e->location ();
-        result.setStatus (ICode::E_TYPE);
-        return result;
+        return CGResult::ERROR_FATAL;
     }
+
+    CGStmtResult result;
 
     // Generate code for conditional expression:
     CGBranchResult eResult (codeGenBranch (e));
@@ -628,13 +610,11 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
-    CGStmtResult result;
-    ICode::Status status = m_tyChecker.visit (s);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
+    // Type check:
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
+    CGStmtResult result;
     if (s->expression () == 0) {
         releaseProcVariables (result);
 
@@ -674,22 +654,18 @@ CGStmtResult TreeNodeStmtWhile::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
 
     // Conditional expression:
-    CGStmtResult result;
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    ICode::Status status = e->accept (m_tyChecker);
-    if (status != ICode::OK) {
-        result.setStatus (status);
-        return result;
-    }
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
     if (!e->havePublicBoolType()) {
         m_log.fatal() << "Conditional expression in while statement must be of "
                        "type public bool in " << e->location();
-        result.setStatus (ICode::E_TYPE);
-        return result;
+        return CGResult::ERROR_FATAL;
     }
 
+    CGStmtResult result;
     CGBranchResult eResult (codeGenBranch (e));
     append (result, eResult);
     if (result.isNotOk ()) {
@@ -718,7 +694,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
         & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatal () << "While loop at " << s->location () << " wont loop!";
-        result.setStatus (ICode::E_OTHER);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
@@ -750,14 +726,13 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
-    CGStmtResult result;
-    result.setStatus (m_tyChecker.visit (s));
-    if (result.isNotOk ()) {
-        return result;
-    }
+    // Type check:
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
     TypeNonVoid* strTy = TypeNonVoid::get (getContext (), DATATYPE_STRING);
 
+    CGStmtResult result;
     Symbol* accum = 0;
     BOOST_FOREACH (TreeNode* node, s->expressions ()) {
         TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
@@ -851,14 +826,11 @@ CGStmtResult TreeNodeStmtPushRef::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtPushRef (TreeNodeStmtPushRef* s) {
     TreeNodeIdentifier* id = s->identifier ();
 
-    CGStmtResult result;
-
     SymbolSymbol* sym = m_tyChecker.getSymbol (id);
-    if (sym == 0) {
-        result.setStatus (ICode::E_TYPE);
-        return result;
-    }
+    if (sym == 0)
+        return CGResult::ERROR_FATAL;
 
+    CGStmtResult result;
     Imop::Type iType = s->isConstant () ? Imop::PUSHCREF : Imop::PUSHREF;
     Imop* i = new Imop (s, iType, 0, sym);
     pushImopAfter (result, i);
@@ -889,7 +861,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     // Static checking:
     if (result.firstImop () == 0) {
         m_log.fatal () << "Empty loop body at " << body->location () << ".";
-        result.setStatus (ICode::E_OTHER);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
@@ -899,7 +871,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
          & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatal () << "Do-while loop at " << s->location () << " wont loop!";
-        result.setStatus (ICode::E_OTHER);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
@@ -913,16 +885,15 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    ICode::Status status = e->accept (m_tyChecker);
-    if (status != ICode::OK) {
-        result.setStatus (status);
+    if (e->accept(m_tyChecker) != TypeChecker::OK) {
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
     if (!e->havePublicBoolType()) {
         m_log.fatal () << "Conditional expression in if statement must be of "
                        "type public bool in " << e->location();
-        result.setStatus (ICode::E_TYPE);
+        result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
 
@@ -974,15 +945,14 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     // Type check the expression
     TreeNodeExpr *e = s->expression ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    ICode::Status status = e->accept (m_tyChecker);
-    if (status != ICode::OK) {
-        return CGStmtResult (status);
-    }
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
 
+    e->instantiateDataType (getContext ());
     if (!e->havePublicBoolType()) {
         m_log.fatal() << "Conditional expression in assert statement must be of "
                        "type public bool in " << e->location();
-        return CGStmtResult (ICode::E_TYPE);
+        return CGResult::ERROR_FATAL;
     }
 
     CGBranchResult eResult (codeGenBranch (e));
