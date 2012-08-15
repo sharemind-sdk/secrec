@@ -116,6 +116,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
 
     CGResult result;
     bool isScalar = e->resultType ()->isScalar ();
+    bool isPrivate = e->resultType ()->secrecSecType ()->isPrivate ();
 
     SymbolSymbol* resSym = generateResultSymbol (result, e);
 
@@ -160,7 +161,7 @@ CGResult CodeGen::cgExprIndex (TreeNodeExprIndex *e) {
             initImop = new Imop (e, Imop::ALLOC, resSym, def, resSym->getSizeSym ());
         }
         else {
-            initImop = new Imop (e, Imop::ASSIGN, resSym, def);
+            initImop = new Imop (e, isPrivate ? Imop::CLASSIFY : Imop::ASSIGN, resSym, def);
         }
 
         pushImopAfter (result, initImop);
