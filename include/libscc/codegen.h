@@ -6,7 +6,6 @@
 #include "codegenResult.h"
 #include "imop.h"
 #include "intermediate.h"
-#include "treenode.h"
 #include "typechecker.h"
 
 /**
@@ -224,15 +223,13 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    CodeGen (Context& cxt, ICodeList& code, ICode& icode)
+    CodeGen (ICodeList& code, ICode& icode)
         : CodeGenState (code.end (), &icode.symbols ())
         , m_code (code)
         , m_log (icode.compileLog ())
         , m_modules (icode.modules ())
-        , m_tyChecker (icode.symbols (), icode.compileLog (), cxt)
+        , m_tyChecker (icode.symbols (), icode.compileLog (), icode.context ())
     { }
-
-    ~CodeGen () { }
 
     void push_imop (Imop* imop) {
         m_code.insert (m_insertPoint, imop);
@@ -389,6 +386,7 @@ public: /* Methods: */
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = 0);
+    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = 0);
     void releaseResource (CGResult& result, Symbol* sym);
     void releaseTemporary (CGResult& result, Symbol* sym);
     void releaseScopeVariables (CGResult& result);

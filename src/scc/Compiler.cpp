@@ -679,30 +679,20 @@ void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::CALL);
-    Imop::OperandConstIterator it, itBegin, itEnd;
-
-    itBegin = imop.operandsBegin ();
-    itEnd = imop.operandsEnd ();
-    it = itBegin;
 
     // compute destinations for calls
-    const Symbol* dest = *itBegin;
+    const Symbol* dest = imop.dest ();
 
     // push arguments
-    for (++ it; it != itEnd && *it != 0; ++ it) {
-        const Symbol* arg = *it;
-        if (isString (arg))
-            pushString (block, arg);
+    BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
+        if (isString (sym))
+            pushString (block, sym);
         else
-            block.push_new () << "pushcref" << find (*it);
+            block.push_new () << "pushcref" << find (sym);
     }
 
-    assert (it != itEnd && *it == 0 &&
-        "Malformed CALL instruction!");
-
-    for (++ it; it != itEnd; ++ it) {
-        assert (! (*it)->isConstant ());
-        block.push_new () << "pushref" << find (*it);
+    BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
+        block.push_new () << "pushref" << find (sym);
     }
 
     // CALL

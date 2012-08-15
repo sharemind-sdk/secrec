@@ -4,10 +4,11 @@
 #include <iosfwd>
 
 #include "blocks.h"
+#include "context.h"
 #include "imop.h"
 #include "log.h"
-#include "symboltable.h"
 #include "ModuleMap.h"
+#include "symboltable.h"
 
 namespace SecreC {
 
@@ -27,7 +28,7 @@ public: /* Methods: */
         : m_status (NOT_READY)
     {}
 
-    Status init (Context& cxt, TreeNodeModule* mod);
+    Status init (TreeNodeModule* mod);
 
     SymbolTable& symbols () { return m_symbols; }
     const SymbolTable& symbols () const { return m_symbols; }
@@ -37,9 +38,11 @@ public: /* Methods: */
     CompileLog& compileLog () { return m_log; }
     const CompileLog& compileLog () const { return m_log; }
     ModuleMap& modules () { return m_modules; }
+    Context& context () { return m_context; }
 
 private: /* Fields: */
 
+    Context      m_context;
     SymbolTable  m_symbols;
     ModuleMap    m_modules;
     Program      m_program;

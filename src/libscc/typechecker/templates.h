@@ -11,12 +11,15 @@
 #define SECREC_TEMPLATES_H
 
 #include <vector>
+#include <set>
+#include <list>
 #include <utility>
 #include <map>
 #include <boost/foreach.hpp>
 
+#include "symbol.h"
 #include "types.h"
-#include "treenode.h"
+#include "treenode_fwd.h"
 
 /**
  * This file contains functionality for template instantiation
@@ -26,6 +29,8 @@
 
 namespace SecreC {
 
+class SymbolTable;
+class ModuleInfo;
 typedef SecurityType* TemplateParam;
 typedef std::vector<TemplateParam> TemplateParams;
 

@@ -422,20 +422,22 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
         return result;
     }
 
+    TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
+        e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
+    Symbol* offset = m_st->appendTemporary(pubIntTy);
+    Symbol* tmpInt = m_st->appendTemporary(pubIntTy);
+    Symbol* tmp_elem = m_st->appendTemporary(elemType);
+
     allocTemporaryResult (result);
 
     append (result, enterLoop (loopInfo, resSym));
 
-    Symbol* offset = m_st->appendTemporary(pubIntTy);
-    Symbol* tmpInt = m_st->appendTemporary(pubIntTy);
-
     // j = 0 (right hand side index)
-    Imop* i = new Imop(e, Imop::ASSIGN, offset, indexConstant (0));
-    push_imop(i);
+    initSymbol (result, offset, indexConstant (0));
 
     // IF (i_k >= d_k) GOTO T1;
     SymbolTemporary* temp_bool = m_st->appendTemporary (TypeNonVoid::getPublicBoolType (getContext ()));
-    i = new Imop (e, Imop::GE, temp_bool, loopInfo.at (k), arg1ResultSymbol->getDim(k));
+    Imop* i = new Imop (e, Imop::GE, temp_bool, loopInfo.at (k), arg1ResultSymbol->getDim(k));
     push_imop (i);
 
     i = new Imop(e, Imop::JT, (Symbol*) 0, temp_bool);
@@ -452,9 +454,6 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
     }
 
     // t = x[j]
-    TypeNonVoid* elemType = TypeNonVoid::get (getContext (),
-        e->resultType ()->secrecSecType(), e->resultType ()->secrecDataType());
-    Symbol* tmp_elem = m_st->appendTemporary(elemType);
     i = new Imop (e, Imop::LOAD, tmp_elem, arg1Result.symbol (), offset);
     push_imop(i);
 
@@ -500,6 +499,8 @@ CGResult CodeGen::cgExprCat (TreeNodeExprCat *e) {
 
     i = new Imop (e, Imop::STORE, resSym, offset, tmp_elem);
     push_imop(i);
+
+    releaseTemporary (result, tmp_elem);
 
     append (result, exitLoop (loopInfo));
     releaseTemporary (result, arg1ResultSymbol);

@@ -2,6 +2,7 @@
 
 #include <boost/foreach.hpp>
 
+#include "treenode.h"
 #include "constant.h"
 
 namespace /* anonymous */ {
@@ -88,6 +89,25 @@ void CodeGen::allocTemporaryResult (CGResult& result, Symbol* val) {
     }
 
     Imop* i = new Imop (m_node, Imop::ALLOC, sym, val, sym->getSizeSym ());
+    pushImopAfter (result, i);
+}
+
+void CodeGen::initSymbol (CGResult& result, Symbol* sym, Symbol* def) {
+    TypeNonVoid* tnv = sym->secrecType ();
+    if (def == 0) {
+        def = defaultConstant (getContext (), tnv->secrecDataType ());
+    }
+
+    Imop* i = 0;
+    if (tnv->secrecDimType () > 0)
+        i = new Imop (m_node, Imop::ALLOC, sym, def, indexConstant (0));
+    else
+    if (tnv->secrecSecType ()->isPrivate ()) {
+        i = new Imop (m_node, Imop::CLASSIFY, sym, def);
+    }
+    else
+        i = new Imop (m_node, Imop::ASSIGN, sym, def);
+
     pushImopAfter (result, i);
 }
 

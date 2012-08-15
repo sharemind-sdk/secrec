@@ -3,7 +3,7 @@
 
 #include "intermediate.h"
 
-#include <list>
+#include <vector>
 
 namespace {
 

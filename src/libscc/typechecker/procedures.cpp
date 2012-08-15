@@ -18,6 +18,7 @@
 
 #include "ModuleInfo.h"
 #include "templates.h"
+#include "treenode.h"
 
 namespace SecreC {
 

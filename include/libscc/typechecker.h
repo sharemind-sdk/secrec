@@ -3,8 +3,9 @@
 
 #include <string>
 #include <vector>
-#include "parser.h"
 
+#include "parser.h"
+#include "treenode_fwd.h"
 
 namespace SecreC {
 
@@ -20,50 +21,6 @@ class SymbolSymbol;
 class SymbolTable;
 class Instantiation;
 class TemplateInstantiator;
-class TreeNodeExpr;
-class TreeNodeExprBool;
-class TreeNodeExprCast;
-class TreeNodeExprIndex;
-class TreeNodeExprSize;
-class TreeNodeExprShape;
-class TreeNodeExprCat;
-class TreeNodeExprReshape;
-class TreeNodeExprToString;
-class TreeNodeExprBinary;
-class TreeNodeExprUnary;
-class TreeNodeExprClassify;
-class TreeNodeExprProcCall;
-class TreeNodeExprPrefix;
-class TreeNodeExprPostfix;
-class TreeNodeExprDeclassify;
-class TreeNodeExprRVariable;
-class TreeNodeExprString;
-class TreeNodeExprFloat;
-class TreeNodeExprTernary;
-class TreeNodeExprAssign;
-class TreeNodeExprInt;
-class TreeNodeExprDomainID;
-class TreeNodeExprQualified;
-class TreeNodeExprBytesFromString;
-class TreeNodeExprStringFromBytes;
-class TreeNodeSecTypeF;
-class TreeNodeType;
-class TreeNodeStmtDecl;
-class TreeNodeStmtPrint;
-class TreeNodeStmtReturn;
-class TreeNodeProcDef;
-class TreeNodeTemplate;
-class TreeNodeExpr;
-class TreeNodeIdentifier;
-class TreeNodeVarInit;
-class TreeNodeIdentifier;
-class TreeNodeExpr;
-class TreeNode;
-class TreeNodeExpr;
-class TreeNodeProcDef;
-class TreeNodeExpr;
-class TreeNodeIdentifier;
-class TreeNodeExpr;
 class Type;
 class TypeContext;
 class TypeNonVoid;

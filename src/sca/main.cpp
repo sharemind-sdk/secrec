@@ -176,14 +176,13 @@ int run (const Configuration& cfg) {
         return EXIT_SUCCESS;
     }
 
-    SecreC::Context context;
     SecreC::ICode icode;
 
     BOOST_FOREACH (const std::string& path, cfg.m_includes) {
         icode.modules ().addSearchPath (path);
     }
 
-    icode.init (context, parseTree.get ());
+    icode.init (parseTree.get ());
 
     if (icode.status() == SecreC::ICode::OK) {
         SecreC::Program& pr = icode.program ();
