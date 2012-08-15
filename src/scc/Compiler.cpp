@@ -48,6 +48,7 @@ const char* imopToVMName (const Imop& imop) {
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
     case Imop::UNEG  : return "bnot";
+    case Imop::UINV:   return "binv";
     case Imop::MUL   : return "tmul";
     case Imop::DIV   : return "tdiv";
     case Imop::MOD   : return "tmod";
@@ -136,6 +137,7 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::LE:         os << "lte";         break;
     case Imop::STORE:      os << "store";       break;
     case Imop::LOAD:       os << "load";        break;
+    case Imop::UINV:       os << "inv";         break;
     case Imop::UNEG:       os << "not";         break;
     case Imop::UMINUS:     os << "neg";         break;
     default:                                    break;
@@ -1200,6 +1202,7 @@ void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
     block.push_new () << "push" << getPD (m_scm, imop.dest ());
     block.push_new () << "push" << find (imop.arg1 ());
     switch (imop.type ()) {
+    case Imop::UINV:
     case Imop::UNEG:
     case Imop::UMINUS:
         break;

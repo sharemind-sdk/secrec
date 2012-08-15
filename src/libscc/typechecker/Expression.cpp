@@ -651,7 +651,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
         return OK;
 
     assert(root->type() == NODE_EXPR_UMINUS ||
-           root->type() == NODE_EXPR_UNEG);
+           root->type() == NODE_EXPR_UNEG ||
+           root->type() == NODE_EXPR_UINV);
     TreeNodeExpr *e = root->expression ();
     e->setContext (root);
     Status s = visitExpr(e);
@@ -694,12 +695,21 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
             }
         }
 
-        if (root->type() == NODE_EXPR_UNEG && bType->dataType() == DATATYPE_BOOL) {
-            root->setResultType(et);
-            return OK;
+        if (root->type() == NODE_EXPR_UINV) {
+            if (isNumericDataType(bType->dataType())
+                || bType->dataType() == DATATYPE_NUMERIC
+                || bType->dataType() == DATATYPE_BOOL)
+            {
+                root->setResultType(et);
+                return OK;
+            }
+        } else if (root->type() == NODE_EXPR_UNEG) {
+            if (bType->dataType() == DATATYPE_BOOL) {
+                root->setResultType(et);
+                return OK;
+            }
         }
-        else
-        if (root->type() == NODE_EXPR_UMINUS) {
+        else if (root->type() == NODE_EXPR_UMINUS) {
             if (isNumericDataType (bType->dataType()) || bType->dataType() == DATATYPE_NUMERIC) {
                 root->setResultType (et);
                 return OK;
@@ -709,7 +719,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
 
     m_log.fatal() << "Invalid expression of type (" << *eType
                   << ") given to unary "
-                  << (root->type() == NODE_EXPR_UNEG ? "negation" : "minus")
+                  << (root->type() == NODE_EXPR_UINV
+                      ? "bitwise negation"
+                      : (root->type() == NODE_EXPR_UNEG
+                         ? "negation"
+                         : "minus"))
                   << " operator at " << root->location() << ".";
     return E_TYPE;
 }

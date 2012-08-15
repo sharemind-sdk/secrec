@@ -1679,7 +1679,15 @@ CGResult CodeGen::cgExprUnary (TreeNodeExprUnary *e) {
     allocTemporaryResult (result);
 
     // Generate code for unary expression:
-    Imop::Type iType = (e->type() == NODE_EXPR_UNEG) ? Imop::UNEG : Imop::UMINUS;
+    Imop::Type iType;
+    if (e->type() == NODE_EXPR_UINV) {
+        iType = Imop::UINV;
+    } else if (e->type() == NODE_EXPR_UNEG) {
+        iType = Imop::UNEG;
+    } else {
+        assert(e->type() == NODE_EXPR_UMINUS);
+        iType = Imop::UMINUS;
+    }
     Imop *i = newUnary (e, iType, result.symbol (), eResult);
     pushImopAfter (result, i);
     releaseTemporary (result, eResult);

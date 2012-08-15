@@ -32,6 +32,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::TOSTRING,   1, 0, 0, 0,-1, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
+    , { Imop::UINV,       1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
     , { Imop::UMINUS,     1, 0, 0, 1, 3, 1 }
     // Binary operators:
@@ -309,6 +310,10 @@ std::string Imop::toString() const {
             break;
         case LOAD:
             os << dname << " = " << a1name << "[" << a2name << "]";
+            break;
+        case UINV:         /*   d = ~arg1;                       */
+            os << dname << " = ~" << a1name;
+            if (nArgs() == 3) os << " (" << a2name << ")";
             break;
         case UNEG:         /*   d = !arg1;                       */
             os << dname << " = !" << a1name;

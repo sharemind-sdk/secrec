@@ -155,6 +155,7 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 ")"  { stepChar(yyget_lloc(yyscanner)); return ')'; }
 "["  { stepChar(yyget_lloc(yyscanner)); return '['; }
 "]"  { stepChar(yyget_lloc(yyscanner)); return ']'; }
+"~"  { stepChar(yyget_lloc(yyscanner)); return '~'; }
 "!"  { stepChar(yyget_lloc(yyscanner)); return '!'; }
 "-"  { stepChar(yyget_lloc(yyscanner)); return '-'; }
 "+"  { stepChar(yyget_lloc(yyscanner)); return '+'; }

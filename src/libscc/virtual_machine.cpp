@@ -339,6 +339,7 @@ DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1))
+DECLOP1 (UINV, assignValue (dest, ~getValue<ty>(arg1)))
 DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
 DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
 DECLOP2 (LOR, assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
@@ -565,6 +566,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::GE:
     case Imop::GT:
         assert (matchTypes (imop.arg2 ()->secrecType (), imop.arg1 ()->secrecType ()));
+    case Imop::UINV:
     case Imop::UMINUS:
     case Imop::CAST:
     case Imop::TOSTRING:
@@ -594,6 +596,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
     case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
+    case Imop::UINV:       SET_SPECIALIZE_CALLBACK_V(UINV,SWITCH_ARITH); break;
     case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_ARITH); break;
     case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
     case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;

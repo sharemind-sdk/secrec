@@ -36,8 +36,9 @@ enum SecrecOperator {
     SCOP_BIN_LT   = 0x0b,
     SCOP_BIN_LAND = 0x0c,
     SCOP_BIN_LOR  = 0x0d,
-    SCOP_UN_NEG   = 0x10,
-    SCOP_UN_MINUS = 0x20
+    SCOP_UN_INV  = 0x10,
+    SCOP_UN_NEG  = 0x20,
+    SCOP_UN_MINUS = 0x30
 };
 
 enum SecrecTreeNodeType {
@@ -54,7 +55,8 @@ enum SecrecTreeNodeType {
     NODE_EXPR_CLASSIFY    = 0x020, /* classify(expr)           */
     NODE_EXPR_DECLASSIFY  = 0x030, /* declassify(expr)         */
     NODE_EXPR_PROCCALL    = 0x040, /* expr(), expr(expr, ...)  */
-    NODE_EXPR_INDEX       = 0x060, /* expr[expr,...]           */
+    NODE_EXPR_INDEX       = 0x050, /* expr[expr,...]           */
+    NODE_EXPR_UINV        = 0x060, /* ~expr                    */
     NODE_EXPR_UNEG        = 0x070, /* !expr                    */
     NODE_EXPR_UMINUS      = 0x080, /* -expr                    */
     NODE_EXPR_CAST        = 0x090, /* (type) expr              */

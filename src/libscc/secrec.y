@@ -171,7 +171,7 @@
 %left '*' '/' '%'
 %nonassoc INC_OP
 %nonassoc DEC_OP
-%right UNEG UMINUS
+%right UINV UNEG UMINUS
 
 
 %type <treenode> global_declarations
@@ -1071,6 +1071,11 @@ unary_expression
  | '!' cast_expression %prec UNEG
    {
      $$ = treenode_init(NODE_EXPR_UNEG, &@$);
+     treenode_appendChild($$, ensure_rValue($2));
+   }
+  | '~' cast_expression %prec UINV
+   {
+     $$ = treenode_init(NODE_EXPR_UINV, &@$);
      treenode_appendChild($$, ensure_rValue($2));
    }
  | postfix_expression

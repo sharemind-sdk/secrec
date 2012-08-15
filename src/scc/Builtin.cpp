@@ -176,6 +176,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         switch (imop.type ()) {
         case Imop::UMINUS: name = "bneg"; break;
         case Imop::UNEG  : name = "bnot"; break;
+        case Imop::UINV  : name = "binv"; break;
         case Imop::MUL   : name = "tmul"; break;
         case Imop::DIV   : name = "tdiv"; break;
         case Imop::MOD   : name = "tmod"; break;

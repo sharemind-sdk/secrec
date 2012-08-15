@@ -102,6 +102,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
         case NODE_EXPR_DECLASSIFY: return "EXPR_DECLASSIFY";
         case NODE_EXPR_PROCCALL: return "EXPR_PROCCALL";
         case NODE_EXPR_INDEX: return "EXPR_INDEX";
+        case NODE_EXPR_UINV: return "EXPR_UINV";
         case NODE_EXPR_UNEG: return "EXPR_UNEG";
         case NODE_EXPR_UMINUS: return "EXPR_UMINUS";
         case NODE_EXPR_POSTFIX_INC: return "EXPR_POSTFIX_INC";
@@ -235,6 +236,7 @@ SecreC::TreeNode *treenode_init(enum SecrecTreeNodeType type,
             return (TreeNode*) (new SecreC::TreeNodeProgram(*loc));
         case NODE_PROCDEF:
             return (TreeNode*) (new SecreC::TreeNodeProcDef(*loc));
+        case NODE_EXPR_UINV:     /* Fall through: */
         case NODE_EXPR_UNEG:     /* Fall through: */
         case NODE_EXPR_UMINUS:
             return (TreeNode*) (new SecreC::TreeNodeExprUnary(type, *loc));
@@ -599,6 +601,7 @@ TreeNodeExpr* TreeNodeExprUnary::expression () const {
 
 SecrecOperator TreeNodeExprUnary::getOperatorV () const {
     switch (type ()) {
+        case NODE_EXPR_UINV: return SCOP_UN_INV;
         case NODE_EXPR_UNEG: return SCOP_UN_NEG;
         case NODE_EXPR_UMINUS: return SCOP_UN_MINUS;
         default: return SCOP_NONE;

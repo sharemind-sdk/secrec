@@ -55,6 +55,7 @@ class Imop : public auto_unlink_hook {
             TOSTRING,   /*   d = toString arg1                  */
             CLASSIFY,   /*   d = CLASSIFY(arg1 {, arg2});       */
             DECLASSIFY, /*   d = DECLASSIFY(arg1 {, arg2});     */
+            UINV,       /*   d = ~arg1 {arg2};                  */
             UNEG,       /*   d = !arg1 {arg2};                  */
             UMINUS,     /*   d = -arg1 {arg2};                  */
             MUL,        /*   d = arg1 *  arg2 {arg3};           */
