@@ -7,7 +7,7 @@
 
 #include "dataflowanalysis.h"
 #include "treenode.h"
-
+#include "symbol.h"
 
 typedef std::set<SecreC::Block*>::const_iterator BSCI;
 typedef std::set<SecreC::Imop*> IS;

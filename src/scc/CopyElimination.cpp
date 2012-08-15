@@ -5,6 +5,7 @@
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/ReachableReleases.h>
 #include <libscc/dataflowanalysis.h>
+#include <libscc/symbol.h>
 
 namespace SecreCC {
 

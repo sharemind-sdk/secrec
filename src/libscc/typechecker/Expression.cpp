@@ -8,6 +8,8 @@
  */
 
 #include <boost/range.hpp>
+
+#include "symbol.h"
 #include "treenode.h"
 #include "typechecker.h"
 

@@ -2,18 +2,17 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include <vector>
-
-#include "symbol.h"
-
-/**
- * \todo Rename the m_global field.
- */
+#include <string>
 
 namespace SecreC {
 
 class Imop;
 class TreeNodeStmtDecl;
 class TreeNodeProcDef;
+class Symbol;
+class SymbolSymbol;
+class SymbolLabel;
+class TypeNonVoid;
 
 /*******************************************************************************
   SymbolTable

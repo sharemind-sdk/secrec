@@ -6,12 +6,12 @@
 #include <sstream>
 #include <boost/foreach.hpp>
 
+#include "symbol.h"
 #include "treenode.h"
 
+namespace SecreC {
 
-namespace {
-
-using namespace SecreC;
+namespace /* anonymous */ {
 
 void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
     while (level-- > 0)
@@ -39,8 +39,6 @@ void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) 
 }
 
 } // anonymous namespace
-
-namespace SecreC {
 
 /*******************************************************************************
   SymbolTable::OtherSymbols
