@@ -46,8 +46,6 @@ public: /* Methods: */
         , m_secrecBlock (block)
     { }
 
-    ~VMBlock () { }
-
     const VMLabel* name () const { return m_name; }
     const SecreC::Block* secrecBlock () const { return m_secrecBlock; }
 
