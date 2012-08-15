@@ -10,7 +10,9 @@
 #ifndef SECREC_TYPECONTEXT_H
 #define SECREC_TYPECONTEXT_H
 
+#include "parser.h"
 #include "types.h"
+
 
 namespace SecreC {
 

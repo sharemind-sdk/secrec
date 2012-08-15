@@ -7,11 +7,12 @@
 #include <cassert>
 #include <deque>
 #include <string>
-
-#include "intermediate.h"
-#include "types.h"
-#include "TypeContext.h"
 #include "codegenResult.h"
+#include "intermediate.h"
+#include "typechecker.h"
+#include "TypeContext.h"
+#include "types.h"
+
 
 namespace SecreC {
 
@@ -358,7 +359,7 @@ public: /* Methods: */
 
     virtual ~TreeNodeExpr() { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker) = 0;
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
 
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
@@ -438,7 +439,7 @@ public: /* Methods: */
 
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper() const;
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
 protected:
@@ -462,7 +463,7 @@ public: /* Methods: */
     inline TreeNodeExprAssign(SecrecTreeNodeType type, const YYLTYPE &loc)
         : TreeNodeExpr(type, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -490,7 +491,7 @@ public: /* Methods: */
     inline TreeNodeExprCast (const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -513,7 +514,7 @@ public:
     inline TreeNodeExprIndex(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_INDEX, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -538,7 +539,7 @@ public:
     inline TreeNodeExprSize(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_SIZE, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -559,7 +560,7 @@ public:
     inline TreeNodeExprShape(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_SHAPE, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -580,7 +581,7 @@ public:
     inline TreeNodeExprCat(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_CAT, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* leftExpression () const;
@@ -605,7 +606,7 @@ public:
     inline TreeNodeExprReshape(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     /// \todo yeah, figure a better name out...
@@ -634,7 +635,7 @@ public:
     inline TreeNodeExprToString(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_TOSTRING, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -695,7 +696,7 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -732,7 +733,7 @@ public: /* Methods: */
 
     inline bool value() const { return m_value; }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
     virtual std::string xmlHelper() const;
@@ -768,7 +769,7 @@ public: /* Methods: */
         m_contextSecType = ty;
     }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -787,7 +788,7 @@ public: /* Methods: */
     inline TreeNodeExprDeclassify(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_DECLASSIFY, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -814,7 +815,7 @@ public: /* Methods: */
         , m_procedure (0)
     { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -849,7 +850,7 @@ public: /* Methods: */
     explicit inline TreeNodeExprRVariable(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -879,7 +880,7 @@ public: /* Methods: */
 
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper() const;
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
 
@@ -908,7 +909,7 @@ public: /* Methods: */
     inline const std::string & value () const { return m_value; }
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper () const;
-    virtual ICode::Status accept (TypeChecker & tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen & cg);
 
 protected:
@@ -930,7 +931,7 @@ public: /* Methods: */
     explicit inline TreeNodeExprTernary(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
@@ -960,7 +961,7 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
@@ -982,7 +983,7 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
@@ -1005,7 +1006,7 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -1039,7 +1040,7 @@ public: /* Methods: */
     inline TreeNodeExprDomainID(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_DOMAINID, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeSecTypeF* securityType () const;
@@ -1060,7 +1061,7 @@ public: /* Methods: */
     inline TreeNodeExprQualified(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_TYPE_QUAL, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -1085,7 +1086,7 @@ public: /* Methods: */
     inline TreeNodeExprStringFromBytes(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -1106,7 +1107,7 @@ public: /* Methods: */
     inline TreeNodeExprBytesFromString(const YYLTYPE &loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
-    virtual ICode::Status accept (TypeChecker& tyChecker);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
@@ -1610,7 +1611,7 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    ICode::Status accept (TypeChecker& tyChecker);
+    TypeChecker::Status accept(TypeChecker & tyChecker);
 
     TreeNode* initializer () const;
     TreeNodeExpr* conditional () const;

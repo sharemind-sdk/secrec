@@ -157,6 +157,9 @@ enum SecrecDataType {
 };
 
 typedef int SecrecDimType; /**< Dimensionality type is undefined if negative! */
+#ifdef __cplusplus
+namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
+#endif /* #ifdef __cplusplus */
 
 /**
     Parses SecreC from the standard input.

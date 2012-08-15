@@ -62,7 +62,7 @@ public: /* Methods: */
     CodeGenState& codeGenState () { return m_cgState; }
     TreeNodeModule* body () const { return m_body; }
     void setBody (TreeNodeModule* body) { m_body = body; }
-    ICode::Status read ();
+    bool read();
 
 private: /* Fields: */
     directory_entry   const  m_location;

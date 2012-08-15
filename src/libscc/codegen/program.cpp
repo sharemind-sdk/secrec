@@ -75,7 +75,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
 
     const TNI *id = def->identifier ();
 
-    if (m_tyChecker.visit(def, localScope) != ICode::OK)
+    if (m_tyChecker.visit(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -246,7 +246,7 @@ CGStmtResult CodeGen::cgModule (ModuleInfo* mod) {
             assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
             TreeNodeTemplate* templ = static_cast<TreeNodeTemplate*>(decl);
             templ->setContainingModule (*mod);
-            result.setStatus(m_tyChecker.visit(templ) == ICode::OK
+            result.setStatus(m_tyChecker.visit(templ) == TypeChecker::OK
                              ? CGResult::OK
                              : CGResult::ERROR_FATAL);
             break;
@@ -354,7 +354,7 @@ CGStmtResult CodeGen::cgImport (TreeNodeImport* import, ModuleInfo* modContext) 
         result.setStatus(CGResult::ERROR_FATAL);
         break;
     case ModuleInfo::CGNotStarted: {
-            if (mod->read() != ICode::OK) {
+            if (!mod->read()) {
                 result.setStatus(CGResult::ERROR_FATAL);
                 return result;
             }

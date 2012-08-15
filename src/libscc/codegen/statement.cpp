@@ -131,7 +131,7 @@ CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
 CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                                  bool isGlobal, bool isProcParam)
 {
-    if (m_tyChecker.checkVarInit(ty, varInit) != ICode::OK)
+    if (m_tyChecker.checkVarInit(ty, varInit) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     // Initialize the new symbol (for initializer target)
@@ -361,7 +361,7 @@ CGStmtResult TreeNodeStmtDecl::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != ICode::OK)
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -418,8 +418,8 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
         e1->setContextSecType (PublicSecType::get (getContext ()));
-        ICode::Status status = e1->accept (m_tyChecker);
-        if (status != ICode::OK) {
+        TypeChecker::Status status = e1->accept(m_tyChecker);
+        if (status != TypeChecker::OK) {
             result.setStatus(CGResult::ERROR_FATAL);
             return result;
         }
@@ -520,7 +520,7 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != ICode::OK)
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     if (!e->havePublicBoolType ()) {
@@ -611,7 +611,7 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != ICode::OK)
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -656,7 +656,7 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     // Conditional expression:
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != ICode::OK)
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     if (!e->havePublicBoolType()) {
@@ -727,7 +727,7 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != ICode::OK)
+    if (m_tyChecker.visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     TypeNonVoid* strTy = TypeNonVoid::get (getContext (), DATATYPE_STRING);
@@ -885,7 +885,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != ICode::OK) {
+    if (e->accept(m_tyChecker) != TypeChecker::OK) {
         result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
@@ -945,7 +945,7 @@ CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
     // Type check the expression
     TreeNodeExpr *e = s->expression ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != ICode::OK)
+    if (e->accept(m_tyChecker) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     e->instantiateDataType (getContext ());

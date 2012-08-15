@@ -29,23 +29,21 @@ void ModuleInfo::setCodeGenState (const CodeGenState& state) {
 }
 
 
-ICode::Status ModuleInfo::read () {
+bool ModuleInfo::read() {
     using namespace boost;
     assert (m_body == 0);
     FILE* f = fopen (m_location.path ().c_str (), "r");
-    if (f == 0) {
-        return ICode::E_OTHER;
-    }
+    if (f == 0)
+        return false;
 
     TreeNodeModule* treeNode = 0;
     int parseResult = sccparse_file (f, &treeNode);
     fclose (f);
-    if (parseResult != 0 || treeNode == 0) {
-        return ICode::E_OTHER;
-    }
+    if (parseResult != 0 || treeNode == 0)
+        return false;
 
     m_body = treeNode;
-    return ICode::OK;
+    return true;
 }
 
 } // namespace SecreC

@@ -19,8 +19,8 @@ private:
     ICode (const ICode&); // do not implement
     ICode& operator = (const ICode&); // do not implement
 public: /* Types: */
-    enum Status { NOT_READY, OK, E_NOT_IMPLEMENTED, E_EMPTY_PROGRAM,
-                  E_NO_MAIN, E_TYPE, E_OTHER, E_NO_MEM };
+
+    enum Status { NOT_READY, OK, ERROR };
 
 public: /* Methods: */
     ICode ()

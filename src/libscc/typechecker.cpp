@@ -2,8 +2,9 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
-
+#include "treenode.h"
 #include "typechecker/templates.h"
+
 
 namespace SecreC {
 
@@ -22,49 +23,50 @@ TypeChecker::~TypeChecker () {
     delete m_instantiator;
 }
 
+TypeChecker::Status TypeChecker::visitExpr(TreeNodeExpr * e) {
+    return e->accept(*this);
+}
+
 bool TypeChecker::getForInstantiation (InstanceInfo& info) {
     return m_instantiator->getForInstantiation (info);
 }
 
-ICode::Status TypeChecker::visit (TreeNodeSecTypeF* ty) {
+TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
     if (ty->cachedType () != 0)
-        return ICode::OK;
+        return OK;
 
     if (ty->isPublic ()) {
         ty->setCachedType (PublicSecType::get (getContext ()));
-        return ICode::OK;
+        return OK;
     }
 
     TreeNodeIdentifier* id = ty->identifier ();
     Symbol* s = findIdentifier (id);
-    if (s == 0) {
-        return ICode::E_TYPE;
-    }
+    if (s == 0)
+        return E_TYPE;
 
     if (s->symbolType () != Symbol::PDOMAIN) {
         m_log.fatal () << "Expecting privacy domain at " << ty->location () << ".";
-        return ICode::E_TYPE;
+        return E_TYPE;
     }
 
     assert (dynamic_cast<SymbolDomain*>(s) != 0);
     ty->setCachedType (static_cast<SymbolDomain*>(s)->securityType ());
-    return ICode::OK;
+    return OK;
 }
 
 
-ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
-    if (_ty->m_cachedType != 0) {
-        return ICode::OK;
-    }
+TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
+    if (_ty->m_cachedType != 0)
+        return OK;
 
     if (_ty->type () == NODE_TYPETYPE) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
         TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF* secTyNode = tyNode->secType ();
-        ICode::Status status = visit (secTyNode);
-        if (status != ICode::OK) {
+        Status status = visit(secTyNode);
+        if (status != OK)
             return status;
-        }
 
         SecurityType* secType = secTyNode->cachedType ();
         if (secType->isPublic ()) {
@@ -75,7 +77,7 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
             case DATATYPE_XOR_UINT64:
                 m_log.fatal () << "XOR types do not have public representation!";
                 m_log.fatal () << "Type error at " << _ty->location () << ".";
-                return ICode::E_TYPE;
+                return E_TYPE;
             default:
                 break;
             }
@@ -89,7 +91,7 @@ ICode::Status TypeChecker::visit (TreeNodeType* _ty) {
         _ty->m_cachedType = TypeVoid::get (getContext ());
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 Symbol* TypeChecker::findIdentifier (TreeNodeIdentifier* id) const {
@@ -164,7 +166,9 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     return false;
 }
 
-ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim) {
+TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
+                                              SecrecDimType & destDim)
+{
     typedef TreeNode::ChildrenListConstIterator CLCI;
     assert (node->type() == NODE_SUBSCRIPT);
     destDim = 0;
@@ -176,7 +180,7 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim)
             break;
         default:
             assert (false && "Reached an index that isn't int or a slice.");
-            return ICode::E_TYPE;
+            return E_TYPE;
         }
 
         BOOST_FOREACH (TreeNode* j, tNode->children ()) {
@@ -187,26 +191,24 @@ ICode::Status TypeChecker::checkIndices (TreeNode* node, SecrecDimType& destDim)
             assert (dynamic_cast<TreeNodeExpr*>(j) != 0);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
             e->setContextIndexType (getContext ());
-            ICode::Status s = visitExpr (e);
-            if (s != ICode::OK) {
+            Status s = visitExpr(e);
+            if (s != OK)
                 return s;
-            }
 
-            if (checkAndLogIfVoid (e)) {
-                return ICode::E_TYPE;
-            }
+            if (checkAndLogIfVoid(e))
+                return E_TYPE;
 
             TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
 
             if (! eTy->isPublicIntScalar ()) {
                 m_log.fatal() << "Invalid type for index at " << e->location() << ". "
                               << "Expected public integer scalar, got " << *eTy << ".";
-                return ICode::E_TYPE;
+                return E_TYPE;
             }
         }
     }
 
-    return ICode::OK;
+    return OK;
 }
 
 

@@ -24,7 +24,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
     // Type check:
-    if (m_tyChecker.visit(e) != ICode::OK)
+    if (m_tyChecker.visit(e) != TypeChecker::OK)
         return CGStmtResult(CGResult::ERROR_FATAL);
 
     CGResult result;
