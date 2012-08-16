@@ -159,7 +159,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
-    SecreC::TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
+    TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
@@ -194,5 +194,20 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
 
     return OK;
 }
+
+/*******************************************************************************
+  TreeNodeStmtPush
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtPush * stmt) {
+    TreeNodeExpr* e = stmt->expression ();
+    Status s = visitExpr (e);
+    if (s != OK)
+        return s;
+
+    e->instantiateDataType (getContext ());
+    return OK;
+}
+
 
 } // namespace SecreC

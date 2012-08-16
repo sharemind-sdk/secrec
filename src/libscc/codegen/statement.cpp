@@ -656,7 +656,9 @@ CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
     // Conditional expression:
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != TypeChecker::OK)
+    e->setContextDataType (DATATYPE_BOOL);
+    e->setContextDimType (0);
+    if (m_tyChecker.visitExpr (e) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     if (!e->havePublicBoolType()) {
@@ -799,6 +801,9 @@ CGStmtResult TreeNodeStmtPush::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtPush (TreeNodeStmtPush* s) {
+    if (m_tyChecker.visit (s) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
+
     TreeNodeExpr *e = s->expression ();
 
     // Generate code:

@@ -524,8 +524,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
     }
 
     {
-        e1->instantiateDataType (getContext (), e2->resultType ()->secrecDataType ());
-        e2->instantiateDataType (getContext (), e1->resultType ()->secrecDataType ());
+        const SecrecDataType lDType = e1->resultType ()->secrecDataType ();
+        const SecrecDataType rDType = e2->resultType ()->secrecDataType ();
+        const SecrecDataType uDType = upperDataType (lDType, rDType);
+        e1->instantiateDataType (getContext (), uDType);
+        e2->instantiateDataType (getContext (), uDType);
 
         assert (dynamic_cast<TNV*>(e1->resultType()) != 0);
         eType1 = static_cast<TNV*>(e1->resultType());
@@ -596,7 +599,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
                 case NODE_EXPR_BINARY_MOD:
                 case NODE_EXPR_BINARY_DIV:
                     if (d1 != d2) break;
-                    if (! isNumericDataType (d1)) break;
+                    if (d1 != DATATYPE_NUMERIC && ! isNumericDataType (d1))
+                        break;
                     root->setResultType(TNV::get (m_context, s0, d1, n0));
                     return OK;
                 case NODE_EXPR_BINARY_EQ:

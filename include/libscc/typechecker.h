@@ -87,6 +87,7 @@ public: /* Methods: */
     Status visit(TreeNodeStmtDecl * decl);
     Status visit(TreeNodeStmtPrint * stmt);
     Status visit(TreeNodeStmtReturn * stmt);
+    Status visit(TreeNodeStmtPush * stmt);
 
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
