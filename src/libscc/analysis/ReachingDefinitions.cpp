@@ -22,20 +22,21 @@ namespace SecreC {
   ReachingDefinitions
 *******************************************************************************/
 
-void ReachingDefinitions::updateSDefs (const Imop& imop, ReachingDefinitions::SDefs& defs) {
-    BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
-        ReachingDefinitions::Defs& d = defs[symbol];
-        d.clear ();
-        d.insert (&imop);
+void ReachingDefinitions::updateSDefs(const Imop & imop, ReachingDefinitions::SDefs & defs) {
+    BOOST_FOREACH (const Symbol * symbol, imop.defRange()) {
+        ReachingDefinitions::Defs & d = defs[symbol];
+        d.clear();
+        d.insert(&imop);
     }
 }
 
-void ReachingDefinitions::inFrom (const Block &from, const Block &to, bool globalOnly) {
+void ReachingDefinitions::inFrom(const Block & from, const Block & to, bool globalOnly) {
     if (globalOnly) {
         BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
-            const Symbol* s = r.first;
+            const Symbol * s = r.first;
+
             if ((s->symbolType() == Symbol::SYMBOL)
-                && static_cast<const SymbolSymbol*>(s)->scopeType() == SymbolSymbol::GLOBAL)
+                    && static_cast<const SymbolSymbol *>(s)->scopeType() == SymbolSymbol::GLOBAL)
             {
                 m_ins[&to][s] += r.second;
             }
@@ -43,23 +44,23 @@ void ReachingDefinitions::inFrom (const Block &from, const Block &to, bool globa
     }
     else {
         BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
-            const Symbol* s = r.first;
+            const Symbol * s = r.first;
             m_ins[&to][s] += r.second;
         }
     }
 }
 
-bool ReachingDefinitions::makeOuts(const Block &b, const SDefs &in, SDefs &out) {
+bool ReachingDefinitions::makeOuts(const Block & b, const SDefs & in, SDefs & out) {
     SDefs old = out;
     out = in;
     BOOST_FOREACH (const Imop& imop, b) {
-        updateSDefs (imop, out);
+        updateSDefs(imop, out);
     }
 
     return old != out;
 }
 
-std::string ReachingDefinitions::toString(const Program &pr) const {
+std::string ReachingDefinitions::toString(const Program & pr) const {
     typedef SDefs::const_iterator SDCI;
     typedef Defs::const_iterator DCI;
 
@@ -67,21 +68,28 @@ std::string ReachingDefinitions::toString(const Program &pr) const {
 
     os << "Reaching definitions analysis results:" << std::endl;
     FOREACH_BLOCK (bi, pr) {
-        if (!bi->reachable ())
+        if (!bi->reachable()) {
             continue;
+        }
 
-        os << "  Block " << bi->index () << ": ";
+        os << "  Block " << bi->index() << ": ";
 
         BDM::const_iterator si = m_ins.find(&*bi);
+
         if (si == m_ins.end() || (*si).second.empty()) {
             os << " NONE" << std::endl;
-        } else {
+        }
+        else {
             os << std::endl;
             BOOST_FOREACH (SDefs::const_reference sdef, si->second) {
                 os << "      " << *sdef.first << ": ";
-                const Defs &ds = sdef.second;
+                const Defs & ds = sdef.second;
+
                 for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
-                    if (jt != ds.begin()) os << ", ";
+                    if (jt != ds.begin()) {
+                        os << ", ";
+                    }
+
                     os << (*jt)->index();
                 }
 
