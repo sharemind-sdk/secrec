@@ -235,8 +235,8 @@ private:
     void numberBlocks ();
 };
 
-} // namespace SecreC
+std::ostream &operator<<(std::ostream& out, const Program& proc);
 
-std::ostream &operator<<(std::ostream& out, const SecreC::Program& proc);
+} // namespace SecreC
 
 #endif // BLOCKS_H

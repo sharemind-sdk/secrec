@@ -4,39 +4,40 @@
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <map>
+#include <sstream>
 
 #include "dataflowanalysis.h"
-#include "treenode.h"
+#include "misc.h"
 #include "symbol.h"
+#include "treenode.h"
 
-typedef std::set<SecreC::Block*>::const_iterator BSCI;
-typedef std::set<SecreC::Imop*> IS;
+namespace SecreC {
+
+typedef std::set<Block*>::const_iterator BSCI;
+typedef std::set<Imop*> IS;
 typedef IS::const_iterator ISCI;
 
+namespace /* anonymous */ {
 
-namespace {
-
-using namespace SecreC;
-
-inline bool fallsThru(const SecreC::Block &b) {
+inline bool fallsThru(const Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
 
-    const SecreC::Imop* last = 0;
+    const Imop* last = 0;
     BOOST_REVERSE_FOREACH (const Imop& imop, b) {
         last = &imop;
-        if (imop.type () != SecreC::Imop::COMMENT) {
+        if (imop.type () != Imop::COMMENT) {
             break;
         }
     }
 
     assert (last != 0);
     switch (last->type ()) {
-    case SecreC::Imop::CALL:
-    case SecreC::Imop::JUMP:
-    case SecreC::Imop::END:
-    case SecreC::Imop::RETURN:
-    case SecreC::Imop::ERROR:
+    case Imop::CALL:
+    case Imop::JUMP:
+    case Imop::END:
+    case Imop::RETURN:
+    case Imop::ERROR:
         return false;
     default:
         break;
@@ -179,9 +180,6 @@ struct disposer {
 };
 
 } // anonymous namespace
-
-
-namespace SecreC {
 
 /*******************************************************************************
   Program
@@ -538,9 +536,9 @@ bool Block::isExit () const {
     return exits.find (const_cast<Block*>(this)) != exits.end ();
 }
 
-} // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::Program &proc) {
+std::ostream &operator<<(std::ostream &out, const Program &proc) {
     out << proc.toString();
     return out;
 }
+
+} // namespace SecreC

@@ -1,10 +1,12 @@
 #include <stack>
 #include <vector>
 
-#include "treenode.h"
-#include "symboltable.h"
 #include "codegen.h"
 #include "constant.h"
+#include "misc.h"
+#include "symboltable.h"
+#include "treenode.h"
+
 
 /**
  * Code generation for assignment expression
@@ -24,7 +26,7 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
     // Type check:
-    if (m_tyChecker.visit(e) != TypeChecker::OK)
+    if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGStmtResult(CGResult::ERROR_FATAL);
 
     CGResult result;

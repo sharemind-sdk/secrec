@@ -9,13 +9,14 @@
 
 #include "analysis/ReachingDeclassify.h"
 
+#include <boost/foreach.hpp>
+#include <sstream>
+
+#include "misc.h"
 #include "symbol.h"
 #include "treenode.h"
 
-#include <sstream>
-
-#include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
+namespace SecreC {
 
 namespace /* anonymous */ {
 
@@ -41,8 +42,6 @@ uint8_t maximumEntropy (SecrecDataType dtype) {
 }
 
 } // namespace anonymous
-
-namespace SecreC {
 
 /*******************************************************************************
   ReachingDeclassify

@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 
 #include "codegen.h"
+#include "treenode_fwd.h"
 
 namespace SecreC {
 

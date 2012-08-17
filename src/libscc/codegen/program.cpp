@@ -1,11 +1,13 @@
 #include <boost/foreach.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#include "treenode.h"
-#include "symboltable.h"
-#include "misc.h"
 #include "codegen.h"
+#include "log.h"
+#include "misc.h"
 #include "ModuleInfo.h"
+#include "ModuleMap.h"
+#include "symboltable.h"
+#include "treenode.h"
 #include "typechecker/templates.h"
 
 /**
@@ -75,7 +77,7 @@ CGStmtResult CodeGen::cgProcDef (TreeNodeProcDef *def, SymbolTable* localScope) 
 
     const TNI *id = def->identifier ();
 
-    if (m_tyChecker.visit(def, localScope) != TypeChecker::OK)
+    if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -246,7 +248,7 @@ CGStmtResult CodeGen::cgModule (ModuleInfo* mod) {
             assert (dynamic_cast<TreeNodeTemplate*>(decl) != 0);
             TreeNodeTemplate* templ = static_cast<TreeNodeTemplate*>(decl);
             templ->setContainingModule (*mod);
-            result.setStatus(m_tyChecker.visit(templ) == TypeChecker::OK
+            result.setStatus(m_tyChecker->visit(templ) == TypeChecker::OK
                              ? CGResult::OK
                              : CGResult::ERROR_FATAL);
             break;
@@ -296,7 +298,7 @@ CGStmtResult CodeGen::cgMain (TreeNodeModule* mainModule) {
 
     // Instantiate templates:
     InstanceInfo info;
-    while (m_tyChecker.getForInstantiation (info)) {
+    while (m_tyChecker->getForInstantiation (info)) {
         ScopedStateUse use (*this, info.m_moduleInfo->codeGenState ());
         append (result, cgProcDef (info.m_generatedBody, info.m_localScope));
         if (result.isNotOk ()) {
@@ -319,7 +321,7 @@ CGStmtResult CodeGen::cgMain (TreeNodeModule* mainModule) {
     push_imop (new Imop (prog, Imop::END));
 
     ScopedStateUse use (*this, cgState); // we need to look in main module
-    SymbolProcedure *mainProc = m_tyChecker.mainProcedure ();
+    SymbolProcedure *mainProc = m_tyChecker->mainProcedure ();
     if (mainProc == 0) {
         m_log.fatal () << "No function \"void main()\" found!";
         result.setStatus(CGResult::ERROR_FATAL);

@@ -1,27 +1,30 @@
 #ifndef SECREC_CODE_GEN_H
 #define SECREC_CODE_GEN_H
 
-#include <stack>
+#include <map>
+#include <set>
+#include <vector>
 
+#include "icodelist.h"
+#include "treenode_fwd.h"
 #include "codegenResult.h"
-#include "imop.h"
-#include "intermediate.h"
-#include "typechecker.h"
-
-/**
- * Some ideas:
- * - Represent ICode::Status enum with powers of two, this way
- *   appendWith could just OR the statuses together. In general little
- *   better error reporting facility could be helpful.
- */
 
 namespace SecreC {
 
 class CodeGen;
-class ICodeList;
-class SymbolTable;
 class CompileLog;
 class Context;
+class ICode;
+class ICodeList;
+class Imop;
+class ModuleInfo;
+class ModuleMap;
+class SymbolSymbol;
+class SymbolProcedure;
+class SymbolTable;
+class Type;
+class TypeChecker;
+class TypeNonVoid;
 
 /*******************************************************************************
   SubscriptInfo
@@ -31,9 +34,6 @@ class SubscriptInfo {
 public: /* Types: */
     typedef std::vector<unsigned> SliceIndices;
     typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
-
-    SubscriptInfo () { }
-    ~SubscriptInfo () { }
 
     const SliceIndices& slices () const { return m_slices; }
     const SPV& spv () const { return m_spv; }
@@ -111,8 +111,6 @@ public: /* Methods: */
         : m_symbol (sym)
     { }
 
-    ~ArrayStrideInfo () { }
-
     const_iterator begin () const { return m_stride.begin (); }
     const_iterator end () const { return m_stride.end (); }
     unsigned size () const { return m_stride.size (); }
@@ -165,19 +163,7 @@ public: /* Methods: */
         return *this;
     }
 
-    ~CodeGenState () { }
-
-    TreeNode* currentNode () const {
-        return m_node;
-    }
-
-    void setImopInsertPoint (InsertPoint it) {
-        m_insertPoint = it;
-    }
-
     SymbolTable* st () const { return m_st; }
-
-    void setSymbolTable (SymbolTable* st) { m_st = st; }
 
     friend class CodeGen;
 
@@ -211,6 +197,7 @@ private: /* Fields: */
  * \todo It should be possible to remove the m_node member. Figure that out.
  */
 class CodeGen : public CodeGenState {
+    friend class ScopedStateUse;
 private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT
@@ -223,76 +210,8 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    CodeGen (ICodeList& code, ICode& icode)
-        : CodeGenState (code.end (), &icode.symbols ())
-        , m_code (code)
-        , m_log (icode.compileLog ())
-        , m_modules (icode.modules ())
-        , m_tyChecker (icode.symbols (), icode.compileLog (), icode.context ())
-    { }
-
-    void push_imop (Imop* imop) {
-        m_code.insert (m_insertPoint, imop);
-    }
-
-    Context& getContext () const {
-        return m_tyChecker.getContext ();
-    }
-
-    void updateTypeChecker () {
-        m_tyChecker.setScope (*m_st);
-    }
-
-    void swap (CodeGenState& state) {
-        swapState (state);
-        updateTypeChecker ();
-    }
-
-    void setScope (SymbolTable* st) {
-        m_st = st;
-        updateTypeChecker ();
-    }
-
-    void newScope () {
-        m_st = m_st->newScope ();
-        updateTypeChecker ();
-    }
-
-    void popScope () {
-        m_st = m_st->parent ();
-        updateTypeChecker ();
-    }
-
-    Imop* newComment (const std::string& commnet) const;
-    Imop* pushComment (const std::string& comment);
-
-    /**
-     * \brief Used to push instruction right after code block.
-     * \pre imop is not NULL
-     * \post first imop is set and next list is empty
-     */
-    void pushImopAfter (CGResult& result, Imop* imop) {
-        assert (imop != 0);
-        result.patchFirstImop (imop);
-        if (!result.nextList ().empty ())
-            result.patchNextList (m_st->label (imop));
-        push_imop (imop);
-    }
-
-    /**
-     * Useful to chain many expressions together if the control flow is linear.
-     * Care must be taken when using this to chain branching code together.
-     */
-    void append (CGResult& result, const CGResult& other) {
-        result.patchFirstImop (other.firstImop ());
-        // we check for empty next list to avoid creating label
-        if (other.firstImop () && !result.nextList ().empty ()) {
-            result.patchNextList (m_st->label (other.firstImop ()));
-        }
-
-        result.addToNextList (other.nextList ());
-        result.setStatus (other.status ());
-    }
+    CodeGen (ICodeList& code, ICode& icode);
+    ~CodeGen ();
 
     CGResult codeGen (TreeNodeExpr* e);
     CGBranchResult codeGenBranch (TreeNodeExpr* e);
@@ -401,8 +320,46 @@ public: /* Methods: */
     CGResult exitLoop (LoopInfo& loopInfo);
     /// \}
 
-protected:
+private:
 
+    Context& getContext () const {
+        return m_context;
+    }
+
+    void swap (CodeGenState& state) {
+        swapState (state);
+        updateTypeChecker ();
+    }
+
+    void setScope (SymbolTable* st) {
+        m_st = st;
+        updateTypeChecker ();
+    }
+
+    inline void push_imop (Imop* imop) {
+        m_code.insert (m_insertPoint, imop);
+    }
+
+    void updateTypeChecker ();
+    void newScope ();
+    void popScope ();
+
+    Imop* newComment (const std::string& commnet) const;
+    Imop* pushComment (const std::string& comment);
+
+    /**
+     * \brief Used to push instruction right after code block.
+     * \pre imop is not NULL
+     * \post first imop is set and next list is empty
+     */
+    void pushImopAfter (CGResult& result, Imop* imop);
+
+
+    /**
+     * Useful to chain many expressions together if the control flow is linear.
+     * Care must be taken when using this to chain branching code together.
+     */
+    void append (CGResult& result, const CGResult& other);
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
 
@@ -436,10 +393,11 @@ private: /* Fields: */
     ICodeList&    m_code;         ///< Generated sequence of IR instructions.
     CompileLog&   m_log;          ///< Compiler log.
     ModuleMap&    m_modules;      ///< Mapping from names to modules.
-    STList        m_loops;
+    Context&      m_context;
 
     // Local components:
-    TypeChecker   m_tyChecker;    ///< Instance of type checker.
+    STList        m_loops;
+    TypeChecker*  m_tyChecker;    ///< Instance of the type checker.
     CallMap       m_callsTo;      ///< Unpatched procedure calls.
 };
 

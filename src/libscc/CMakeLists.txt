@@ -25,6 +25,7 @@ SET(LIBSCC_SOURCES
     "analysis/ReachingJumps.cpp"
     "blocks.cpp"
     "codegen.cpp"
+    "CodeGenResult.cpp"
     "codegen/assign.cpp"
     "codegen/expression.cpp"
     "codegen/program.cpp"

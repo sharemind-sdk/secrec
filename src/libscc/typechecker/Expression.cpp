@@ -9,10 +9,11 @@
 
 #include <boost/range.hpp>
 
+#include "imop.h"
+#include "log.h"
 #include "symbol.h"
 #include "treenode.h"
 #include "typechecker.h"
-
 
 namespace SecreC {
 
@@ -587,45 +588,45 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         if (n1 == 0 || n2 == 0 || n1 == n2) {
             SecrecDimType n0 = upperDimType(n1, n2);
             switch (root->type()) {
-                case NODE_EXPR_BINARY_ADD:
-                    if (d1 != d2) break;
-                    if (! isNumericDataType (d1) && d1 != DATATYPE_STRING)
-                        break;
+            case NODE_EXPR_BINARY_ADD:
+                if (d1 != d2) break;
+                if (! isNumericDataType (d1) && d1 != DATATYPE_STRING)
+                    break;
 
-                    root->setResultType(TNV::get (m_context, s0, d1, n0));
-                    return OK;
-                case NODE_EXPR_BINARY_SUB:
-                case NODE_EXPR_BINARY_MUL:
-                case NODE_EXPR_BINARY_MOD:
-                case NODE_EXPR_BINARY_DIV:
-                    if (d1 != d2) break;
-                    if (d1 != DATATYPE_NUMERIC && ! isNumericDataType (d1))
-                        break;
-                    root->setResultType(TNV::get (m_context, s0, d1, n0));
-                    return OK;
-                case NODE_EXPR_BINARY_EQ:
-                case NODE_EXPR_BINARY_GE:
-                case NODE_EXPR_BINARY_GT:
-                case NODE_EXPR_BINARY_LE:
-                case NODE_EXPR_BINARY_LT:
-                case NODE_EXPR_BINARY_NE:
-                    if (d1 != d2) break;
-                    e1->instantiateDataType (getContext ());
-                    e2->instantiateDataType (getContext ());
-                    root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
-                    return OK;
-                case NODE_EXPR_BINARY_LAND:
-                case NODE_EXPR_BINARY_LOR:
-                    if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
-                    root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
-                    return OK;
-                case NODE_EXPR_BINARY_MATRIXMUL:
-                    m_log.fatal() << "Matrix multiplication not yet supported. At "
-                                  << root->location() << ".";
-                    return E_NOT_IMPLEMENTED;
-                default:
-                    assert(false);
-                    return E_OTHER;
+                root->setResultType(TNV::get (m_context, s0, d1, n0));
+                return OK;
+            case NODE_EXPR_BINARY_SUB:
+            case NODE_EXPR_BINARY_MUL:
+            case NODE_EXPR_BINARY_MOD:
+            case NODE_EXPR_BINARY_DIV:
+                if (d1 != d2) break;
+                if (d1 != DATATYPE_NUMERIC && ! isNumericDataType (d1))
+                    break;
+                root->setResultType(TNV::get (m_context, s0, d1, n0));
+                return OK;
+            case NODE_EXPR_BINARY_EQ:
+            case NODE_EXPR_BINARY_GE:
+            case NODE_EXPR_BINARY_GT:
+            case NODE_EXPR_BINARY_LE:
+            case NODE_EXPR_BINARY_LT:
+            case NODE_EXPR_BINARY_NE:
+                if (d1 != d2) break;
+                e1->instantiateDataType (getContext ());
+                e2->instantiateDataType (getContext ());
+                root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
+                return OK;
+            case NODE_EXPR_BINARY_LAND:
+            case NODE_EXPR_BINARY_LOR:
+                if (d1 != DATATYPE_BOOL || d2 != DATATYPE_BOOL) break;
+                root->setResultType(TNV::get (m_context, s0, DATATYPE_BOOL, n0));
+                return OK;
+            case NODE_EXPR_BINARY_MATRIXMUL:
+                m_log.fatal() << "Matrix multiplication not yet supported. At "
+                              << root->location() << ".";
+                return E_NOT_IMPLEMENTED;
+            default:
+                assert(false);
+                return E_OTHER;
             }
         }
     }

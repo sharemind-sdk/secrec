@@ -13,7 +13,6 @@
 namespace SecreC {
 
 class TreeNodeModule;
-class Context;
 
 class ICode {
 private:
@@ -50,11 +49,10 @@ private: /* Fields: */
     CompileLog   m_log;
 };
 
+std::ostream &operator<<(std::ostream &out, const ICode::Status &s);
+std::ostream &operator<<(std::ostream &out, const ICodeList &c);
+std::ostream &operator<<(std::ostream &out, const ICode &icode);
 
 } // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::ICode::Status &s);
-std::ostream &operator<<(std::ostream &out, const SecreC::ICodeList &c);
-std::ostream &operator<<(std::ostream &out, const SecreC::ICode &icode);
 
 #endif // INTERMEDIATE_H

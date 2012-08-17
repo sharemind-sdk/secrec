@@ -1,8 +1,10 @@
 #include "analysis/LiveVariables.h"
 
 #include <boost/foreach.hpp>
+#include <sstream>
 
 #include "blocks.h"
+#include "misc.h"
 #include "symbol.h"
 #include "treenode.h"
 

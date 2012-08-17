@@ -16,7 +16,9 @@
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
+#include "log.h"
 #include "ModuleInfo.h"
+#include "symboltable.h"
 #include "templates.h"
 #include "treenode.h"
 

@@ -1,5 +1,6 @@
 #include "symboltable.h"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <map>
@@ -258,6 +259,12 @@ std::string SymbolTable::toString(unsigned level, unsigned indent) const {
 
     return os.str();
 }
+
+std::ostream & operator<<(std::ostream & out, const SymbolTable & st) {
+    out << st.toString ();
+    return out;
+}
+
 
 } // namespace SecreC
 

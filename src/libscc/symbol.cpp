@@ -3,9 +3,9 @@
 #include <string>
 #include <sstream>
 
+#include "blocks.h"
 #include "imop.h"
 #include "treenode.h"
-
 
 namespace SecreC {
 

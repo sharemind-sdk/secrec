@@ -2,11 +2,12 @@
 
 #include <boost/foreach.hpp>
 
-#include "symboltable.h"
-#include "misc.h"
-#include "typechecker.h"
 #include "codegen.h"
 #include "constant.h"
+#include "log.h"
+#include "misc.h"
+#include "symboltable.h"
+#include "typechecker.h"
 
 /**
  * Code generation for statements.
@@ -131,7 +132,7 @@ CGStmtResult CodeGen::cgStmtContinue (TreeNodeStmtContinue* s) {
 CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                                  bool isGlobal, bool isProcParam)
 {
-    if (m_tyChecker.checkVarInit(ty, varInit) != TypeChecker::OK)
+    if (m_tyChecker->checkVarInit(ty, varInit) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     // Initialize the new symbol (for initializer target)
@@ -361,7 +362,7 @@ CGStmtResult TreeNodeStmtDecl::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDecl (TreeNodeStmtDecl* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -417,7 +418,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     CGBranchResult condResult;
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
-        if (m_tyChecker.checkPublicBooleanScalar (e1) != TypeChecker::OK) {
+        if (m_tyChecker->checkPublicBooleanScalar (e1) != TypeChecker::OK) {
             m_log.fatal () << "Conditional expression in if statement must be of "
                             "type public bool at " << e1->location () << ".";
             result.setStatus(CGResult::ERROR_FATAL);
@@ -512,7 +513,7 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
 
-    if (m_tyChecker.visit (s) != TypeChecker::OK)
+    if (m_tyChecker->visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -598,7 +599,7 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtReturn (TreeNodeStmtReturn* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -640,7 +641,7 @@ CGStmtResult TreeNodeStmtWhile::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
 
-    if (m_tyChecker.visit (s) != TypeChecker::OK)
+    if (m_tyChecker->visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     CGStmtResult result;
@@ -706,7 +707,7 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtPrint (TreeNodeStmtPrint* s) {
     // Type check:
-    if (m_tyChecker.visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visit(s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     TypeNonVoid* strTy = TypeNonVoid::get (getContext (), DATATYPE_STRING);
@@ -754,7 +755,7 @@ CGStmtResult TreeNodeStmtSyscall::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtSyscall (TreeNodeStmtSyscall* s) {
-    if (m_tyChecker.visit (s) != TypeChecker::OK) {
+    if (m_tyChecker->visit (s) != TypeChecker::OK) {
         return CGResult::ERROR_FATAL;
     }
 
@@ -814,7 +815,7 @@ CGStmtResult TreeNodeStmtDoWhile::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
-    if (m_tyChecker.visit (s) != TypeChecker::OK)
+    if (m_tyChecker->visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     // Loop body:
@@ -898,7 +899,7 @@ CGStmtResult TreeNodeStmtAssert::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
-    if (m_tyChecker.visit (s) != TypeChecker::OK)
+    if (m_tyChecker->visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
     TreeNodeExpr * e = s->expression ();

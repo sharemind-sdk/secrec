@@ -2,6 +2,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
+#include "log.h"
+#include "symboltable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"
 

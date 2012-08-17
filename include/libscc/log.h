@@ -71,13 +71,9 @@ inline CompileLogStream::~CompileLogStream() {
     }
 }
 
-} // namespace SecreC
-
-
-inline std::ostream &operator<<(std::ostream &out,
-                                const SecreC::CompileLog &log)
+inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
 {
-    typedef SecreC::CompileLogMessage CLM;
+    typedef CompileLogMessage CLM;
     BOOST_FOREACH (const CLM& msg, log.messages ()) {
         switch (msg.type) {
         case CLM::Fatal:   out << "[FATAL] "; break;
@@ -91,5 +87,7 @@ inline std::ostream &operator<<(std::ostream &out,
     }
     return out;
 }
+
+} // namespace SecreC
 
 #endif // LOG_H

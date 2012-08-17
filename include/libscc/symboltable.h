@@ -74,12 +74,9 @@ private: /* Fields: */
     std::string                 m_name;     ///< Debugging.
 };
 
+std::ostream & operator<<(std::ostream & out, const SymbolTable & st);
+
 } // namespace SecreC
 
-inline std::ostream
-&operator<<(std::ostream &out, const SecreC::SymbolTable &st) {
-    out << st.toString();
-    return out;
-}
 
 #endif // SYMBOLTABLE_H

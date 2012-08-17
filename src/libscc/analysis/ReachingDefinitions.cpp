@@ -10,7 +10,9 @@
 #include "analysis/ReachingDefinitions.h"
 
 #include <boost/foreach.hpp>
+#include <sstream>
 
+#include "misc.h"
 #include "symbol.h"
 #include "treenode.h"
 

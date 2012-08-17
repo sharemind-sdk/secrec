@@ -12,6 +12,7 @@
 #include <boost/foreach.hpp>
 
 #include "ModuleInfo.h"
+#include "symboltable.h"
 #include "treenode.h"
 
 namespace SecreC {

@@ -2,12 +2,16 @@
 
 #include <boost/foreach.hpp>
 
-#include "treenode.h"
+#include "intermediate.h"
+#include "misc.h"
 #include "constant.h"
+#include "symboltable.h"
+#include "treenode.h"
+#include "typechecker.h"
+
+namespace SecreC {
 
 namespace /* anonymous */ {
-
-using namespace SecreC;
 
 bool isNontrivialResource (TypeNonVoid* tnv) {
     return tnv->secrecDimType () != 0
@@ -17,11 +21,57 @@ bool isNontrivialResource (TypeNonVoid* tnv) {
 
 } // namespace anonymous
 
-namespace SecreC {
-
 /*******************************************************************************
   CodeGen
 *******************************************************************************/
+
+CodeGen::CodeGen (ICodeList& code, ICode& icode)
+    : CodeGenState (code.end (), &icode.symbols ())
+    , m_code (code)
+    , m_log (icode.compileLog ())
+    , m_modules (icode.modules ())
+    , m_context (icode.context ())
+    , m_tyChecker (0)
+{
+    m_tyChecker = new TypeChecker (icode.symbols (), m_log, m_context);
+}
+
+CodeGen::~CodeGen () {
+    delete m_tyChecker;
+}
+
+void CodeGen::updateTypeChecker () {
+    m_tyChecker->setScope (*m_st);
+}
+
+void CodeGen::newScope () {
+    m_st = m_st->newScope ();
+    updateTypeChecker ();
+}
+
+void CodeGen::popScope () {
+    m_st = m_st->parent ();
+    updateTypeChecker ();
+}
+
+void CodeGen::pushImopAfter (CGResult& result, Imop* imop) {
+    assert (imop != 0);
+    result.patchFirstImop (imop);
+    if (!result.nextList ().empty ())
+        result.patchNextList (m_st->label (imop));
+    push_imop (imop);
+}
+
+void CodeGen::append (CGResult& result, const CGResult& other) {
+    result.patchFirstImop (other.firstImop ());
+    // we check for empty next list to avoid creating label
+    if (other.firstImop () && !result.nextList ().empty ()) {
+        result.patchNextList (m_st->label (other.firstImop ()));
+    }
+
+    result.addToNextList (other.nextList ());
+    result.setStatus (other.status ());
+}
 
 CGResult CodeGen::codeGen (TreeNodeExpr* e) {
     TreeNode* const oldNode = m_node;
