@@ -196,18 +196,37 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
 }
 
 /*******************************************************************************
-  TreeNodeStmtPush
+  TreeNodeStmtReturn
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtPush * stmt) {
-    TreeNodeExpr* e = stmt->expression ();
-    Status s = visitExpr (e);
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
+    TreeNodeExprString* e = stmt->name ();
+    Status s = visit (e);
     if (s != OK)
         return s;
 
-    e->instantiateDataType (getContext ());
+    BOOST_FOREACH (TreeNode* arg, stmt->paramRange ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(arg->children ().at (0)) != 0);
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(arg->children ().at (0));
+        if (arg->type () != NODE_PUSH) {
+            e->setContextSecType (PublicSecType::get (getContext ()));
+        }
+
+        s = visitExpr (e);
+        e->instantiateDataType (getContext ());
+        if (s != OK)
+            return s;
+
+        if (arg->type () != NODE_PUSH) {
+            if (e->resultType ()->secrecSecType ()->isPrivate ()) {
+                m_log.fatal () << "Passing reference to private value.";
+                m_log.fatal () << "Error at " << arg->location () << ".";
+                return E_TYPE;
+            }
+        }
+    }
+
     return OK;
 }
-
 
 } // namespace SecreC

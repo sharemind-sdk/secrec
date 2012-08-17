@@ -56,6 +56,14 @@ void visitImop (const Imop& imop, Visitor& visitor) {
     if (imop.type () == Imop::RELEASE) {
         visitor.gen (imop.arg1 (), imop);
     }
+
+    if (imop.type () == Imop::RETURN) {
+        BOOST_FOREACH (const Symbol* arg, imop.useRange ()) {
+            if (arg->isArray ()) {
+                visitor.gen (arg, imop);
+            }
+        }
+    }
 }
 
 } // namespace anonymous

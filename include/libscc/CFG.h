@@ -34,10 +34,6 @@ public: /* Types: */
 
 public:
 
-    CFGNode () { }
-
-    ~CFGNode () { }
-
     neighbour_iterator pred_begin () { return m_predecessors.begin (); }
     neighbour_iterator pred_end () { return m_predecessors.end (); }
     neighbour_const_iterator pred_begin () const { return m_predecessors.begin (); }

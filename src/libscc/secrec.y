@@ -1,12 +1,12 @@
 %require "2.4"
 %{
-  struct TreeNode;
   #include <assert.h>
   #include <stdio.h>
   #include <stdint.h>
+
   #include "parser.h"
   #include "lex_secrec.h"
-  #include "treenode.h"
+  #include "treenode_c.h"
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
@@ -143,21 +143,19 @@
 %token <str> IDENTIFIER
 
 /* Keywords: */
-%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
-%token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
-%token XOR_UINT XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
-%token FLOAT FLOAT32 FLOAT64
-%token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
-%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
-%token IMPORT MODULE TOSTRING STRINGFROMBYTES BYTESFROMSTRING
+%token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DO DOMAIN
+%token DOMAINID ELSE FALSE_B FLOAT FLOAT32 FLOAT64 FOR IF IMPORT INT INT16 INT32 INT64
+%token INT8 KIND MODULE OPERATOR PRINT PRIVATE PUBLIC REF RESHAPE RETURN SHAPE SIZE
+%token STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16 UINT32
+%token UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
 
 /* Literals: */
-%token <str> STRING_LITERAL
 %token <str> BIN_LITERAL
-%token <str> OCT_LITERAL
-%token <str> HEX_LITERAL
 %token <str> DEC_LITERAL
 %token <str> FLOAT_LITERAL
+%token <str> HEX_LITERAL
+%token <str> OCT_LITERAL
+%token <str> STRING_LITERAL
 
 /* Operators from higher to lower precedence: */
 %right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -174,70 +172,73 @@
 %right UINV UNEG UMINUS
 
 
-%type <treenode> global_declarations
-%type <treenode> global_declaration
-%type <treenode> variable_initialization
-%type <treenode> variable_initializations
-%type <treenode> variable_declaration
-%type <treenode> domain_declaration
-%type <treenode> kind_declaration
-%type <treenode> procedure_definition
-%type <treenode> operator_definition
-%type <treenode> maybe_dimensions
-%type <treenode> dimensions
-%type <treenode> dimension_list
-%type <treenode> type_specifier
-%type <treenode> return_type_specifier
-%type <treenode> datatype_specifier
-%type <treenode> sectype_specifier
-%type <treenode> dimtype_specifier
-%type <treenode> subscript
-%type <treenode> indices
-%type <treenode> index
-%type <treenode> procedure_parameter_list
-%type <treenode> procedure_parameter
+%type <treenode> additive_expression
+%type <treenode> assert_statement
+%type <treenode> assignment_expression
+%type <treenode> bool_literal
+%type <treenode> cast_expression
+%type <treenode> cat_expression
 %type <treenode> compound_statement
-%type <treenode> statement_list
-%type <treenode> statement
-%type <treenode> if_statement
+%type <treenode> conditional_expression
+%type <treenode> datatype_specifier
+%type <treenode> dimension_list
+%type <treenode> dimensions
+%type <treenode> dimtype_specifier
+%type <treenode> domain_declaration
+%type <treenode> dowhile_statement
+%type <treenode> equality_expression
+%type <treenode> expression
+%type <treenode> expression_list
+%type <treenode> float_literal
 %type <treenode> for_initializer
 %type <treenode> for_statement
-%type <treenode> maybe_expression
-%type <treenode> while_statement
-%type <treenode> print_statement
-%type <treenode> dowhile_statement
-%type <treenode> assert_statement
-%type <treenode> expression
-%type <treenode> assignment_expression
-%type <treenode> lvalue
-%type <treenode> conditional_expression
-%type <treenode> logical_or_expression
+%type <treenode> global_declaration
+%type <treenode> global_declarations
+%type <treenode> identifier
+%type <treenode> if_statement
+%type <treenode> import_declaration
+%type <treenode> import_declarations
+%type <treenode> index
+%type <treenode> indices
+%type <treenode> int_literal
+%type <treenode> kind_declaration
+%type <treenode> literal
 %type <treenode> logical_and_expression
-%type <treenode> equality_expression
-%type <treenode> relational_expression
-%type <treenode> additive_expression
+%type <treenode> logical_or_expression
+%type <treenode> lvalue
+%type <treenode> maybe_dimensions
+%type <treenode> maybe_expression
 %type <treenode> multiplicative_expression
-%type <treenode> cast_expression
-%type <treenode> unary_expression
+%type <treenode> operator_definition
 %type <treenode> postfix_expression
 %type <treenode> postfix_op
 %type <treenode> prefix_op
-%type <treenode> cat_expression
-%type <treenode> expression_list
 %type <treenode> primary_expression
-%type <treenode> literal
-%type <treenode> int_literal
-%type <treenode> identifier
-%type <treenode> string_literal
-%type <treenode> bool_literal
-%type <treenode> float_literal
-%type <treenode> template_declaration
-%type <treenode> template_quantifiers
-%type <treenode> template_quantifier
-%type <treenode> qualified_expression
-%type <treenode> import_declaration
-%type <treenode> import_declarations
+%type <treenode> print_statement
+%type <treenode> procedure_definition
+%type <treenode> procedure_parameter
+%type <treenode> procedure_parameter_list
 %type <treenode> program
+%type <treenode> qualified_expression
+%type <treenode> relational_expression
+%type <treenode> return_type_specifier
+%type <treenode> sectype_specifier
+%type <treenode> statement
+%type <treenode> statement_list
+%type <treenode> string_literal
+%type <treenode> subscript
+%type <treenode> syscall_parameter
+%type <treenode> syscall_parameters
+%type <treenode> syscall_statement
+%type <treenode> template_declaration
+%type <treenode> template_quantifier
+%type <treenode> template_quantifiers
+%type <treenode> type_specifier
+%type <treenode> unary_expression
+%type <treenode> variable_declaration
+%type <treenode> variable_initialization
+%type <treenode> variable_initializations
+%type <treenode> while_statement
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -662,26 +663,7 @@ statement
  | dowhile_statement
  | assert_statement
  | print_statement
- | SYSCALL '(' string_literal ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
-     treenode_appendChild ($$, $3);
-   }
- | PUSH '(' expression ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSH, &@$);
-     treenode_appendChild ($$, ensure_rValue ($3));
-   }
- | PUSHREF '(' identifier ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSHREF, &@$);
-     treenode_appendChild ($$, $3);
-   }
- | PUSHCREF '(' identifier ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSHCREF, &@$);
-     treenode_appendChild ($$, $3);
-   }
+ | syscall_statement
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
@@ -782,6 +764,52 @@ assert_statement
      treenode_appendChild($$, ensure_rValue($3));
    }
  ;
+
+syscall_statement
+  : SYSCALL '(' string_literal ')' ';'
+    {
+     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
+     treenode_appendChild ($$, $3);
+    }
+  | SYSCALL '(' string_literal ',' syscall_parameters ')' ';'
+    {
+     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
+     treenode_appendChild ($$, $3);
+     treenode_moveChildren ($5, $$);
+    }
+  ;
+
+syscall_parameters
+  : syscall_parameters ',' syscall_parameter
+    {
+      $$ = $1;
+      treenode_setLocation($$, &@$);
+      treenode_appendChild($$, $3);
+    }
+  | syscall_parameter
+    {
+      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+    }
+  ;
+
+syscall_parameter
+  : expression
+    {
+      $$ = treenode_init(NODE_PUSH, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+    }
+  | REF identifier
+    {
+      $$ = treenode_init(NODE_PUSHREF, &@$);
+      treenode_appendChild($$, ensure_rValue($2));
+    }
+  | CREF expression
+    {
+      $$ = treenode_init(NODE_PUSHCREF, &@$);
+      treenode_appendChild($$, ensure_rValue($2));
+    }
+  ;
 
 /*******************************************************************************
   Indices: not strictly expressions as they only appear in specific context

@@ -330,8 +330,6 @@ public: /* Methods: */
     CGStmtResult cgStmtWhile (TreeNodeStmtWhile* s);
     CGStmtResult cgStmtPrint (TreeNodeStmtPrint* s);
     CGStmtResult cgStmtSyscall (TreeNodeStmtSyscall* s);
-    CGStmtResult cgStmtPush (TreeNodeStmtPush* s);
-    CGStmtResult cgStmtPushRef (TreeNodeStmtPushRef* s);
     /// \}
 
     /**

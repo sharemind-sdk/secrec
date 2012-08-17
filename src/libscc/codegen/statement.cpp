@@ -777,68 +777,53 @@ CGStmtResult TreeNodeStmtSyscall::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtSyscall (TreeNodeStmtSyscall* s) {
-    TreeNodeExprString *e = s->expression ();
+    if (m_tyChecker.visit (s) != TypeChecker::OK) {
+        return CGResult::ERROR_FATAL;
+    }
 
-    // Generate code:
     CGStmtResult result;
-    const CGResult& eResult = codeGen (e);
-    append (result, eResult);
+    typedef std::pair<TreeNode*, Symbol*> NodeSymbolPair;
+    std::vector<NodeSymbolPair> results;
+    BOOST_FOREACH (TreeNode* arg, s->paramRange ()) {
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(arg->children ().at (0));
+        const CGResult& eResult = codeGen (e);
+        append (result, eResult);
+        if (result.isNotOk ()) {
+            return result;
+        }
+
+        results.push_back (std::make_pair (arg, eResult.symbol ()));
+    }
+
+    const CGResult& nameResult = codeGen (s->name ());
+    append (result, nameResult);
     if (result.isNotOk ()) {
         return result;
     }
 
-    Imop* i = new Imop (s, Imop::SYSCALL, (Symbol*) 0, eResult.symbol ());
-    pushImopAfter (result, i);
-    return result;
-}
+    BOOST_FOREACH (const NodeSymbolPair& ts, results) {
+        Imop::Type iType;
+        switch (ts.first->type ()) {
+        case NODE_PUSH:     iType = Imop::PUSH;     break;
+        case NODE_PUSHREF:  iType = Imop::PUSHREF;  break;
+        case NODE_PUSHCREF: iType = Imop::PUSHCREF; break;
+        default:
+            assert (false && "ICE!");
+            result.setStatus (CGResult::ERROR_FATAL);
+            return result;
+        }
 
-/*******************************************************************************
-  TreeNodeStmtPush
-*******************************************************************************/
-
-CGStmtResult TreeNodeStmtPush::codeGenWith (CodeGen& cg) {
-    return cg.cgStmtPush (this);
-}
-
-CGStmtResult CodeGen::cgStmtPush (TreeNodeStmtPush* s) {
-    if (m_tyChecker.visit (s) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
-
-    TreeNodeExpr *e = s->expression ();
-
-    // Generate code:
-    CGStmtResult result;
-    const CGResult& eResult = codeGen (e);
-    append (result, eResult);
-    if (result.isNotOk ()) {
-        return result;
+        Imop* i = new Imop (ts.first, iType, (Symbol*) 0, ts.second);
+        pushImopAfter (result, i);
     }
 
-    Imop* i = new Imop (s, Imop::PUSH, (Symbol*) 0, eResult.symbol ());
+    Imop* i = new Imop (s, Imop::SYSCALL, 0, nameResult.symbol ());
     pushImopAfter (result, i);
-    releaseTemporary (result, eResult.symbol ());
-    return result;
-}
 
-/*******************************************************************************
-  TreeNodeStmtPushRef
-*******************************************************************************/
+    BOOST_FOREACH (const NodeSymbolPair& ts, results) {
+        releaseTemporary (result, ts.second);
+    }
 
-CGStmtResult TreeNodeStmtPushRef::codeGenWith (CodeGen& cg) {
-    return cg.cgStmtPushRef (this);
-}
-
-CGStmtResult CodeGen::cgStmtPushRef (TreeNodeStmtPushRef* s) {
-    TreeNodeIdentifier* id = s->identifier ();
-
-    SymbolSymbol* sym = m_tyChecker.getSymbol (id);
-    if (sym == 0)
-        return CGResult::ERROR_FATAL;
-
-    CGStmtResult result;
-    Imop::Type iType = s->isConstant () ? Imop::PUSHCREF : Imop::PUSHREF;
-    Imop* i = new Imop (s, iType, 0, sym);
-    pushImopAfter (result, i);
     return result;
 }
 
@@ -890,6 +875,8 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
     TreeNodeExpr *e = s->conditional ();
     e->setContextSecType (PublicSecType::get (getContext ()));
+    e->setContextDimType (0);
+    e->setContextDataType (DATATYPE_BOOL);
     if (e->accept(m_tyChecker) != TypeChecker::OK) {
         result.setStatus(CGResult::ERROR_FATAL);
         return result;

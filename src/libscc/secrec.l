@@ -99,10 +99,9 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "kind"       { stepLen(yyget_lloc(yyscanner), 4); return KIND; }
 "template"   { stepLen(yyget_lloc(yyscanner), 8); return TEMPLATE; }
 "__syscall"  { stepLen(yyget_lloc(yyscanner), 9); return SYSCALL; }
-"__push"     { stepLen(yyget_lloc(yyscanner), 6); return PUSH; }
-"__pushref"  { stepLen(yyget_lloc(yyscanner), 9); return PUSHREF; }
-"__pushcref" { stepLen(yyget_lloc(yyscanner), 10); return PUSHCREF; }
 "__domainid" { stepLen(yyget_lloc(yyscanner), 10); return DOMAINID; }
+"__ref"      { stepLen(yyget_lloc(yyscanner), 5); return REF; }
+"__cref"     { stepLen(yyget_lloc(yyscanner), 6); return CREF; }
 "operator"   { stepLen(yyget_lloc(yyscanner), 8); return OPERATOR; }
 "module"     { stepLen(yyget_lloc(yyscanner), 6); return MODULE; }
 "import"     { stepLen(yyget_lloc(yyscanner), 6); return IMPORT; }
