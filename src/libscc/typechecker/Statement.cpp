@@ -73,6 +73,51 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
 }
 
 /*******************************************************************************
+  TreeNodeStmtIf
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal () << "Conditional expression in if statement must be of "
+                        "type public bool in " << e->location ();
+        return E_TYPE;
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtWhile
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal() << "Conditional expression in while statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtDoWhile
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal () << "Conditional expression in do-while statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
   TreeNodeStmtDecl
 *******************************************************************************/
 
@@ -196,7 +241,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
 }
 
 /*******************************************************************************
-  TreeNodeStmtReturn
+  TreeNodeStmtSyscall
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
@@ -224,6 +269,21 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
                 return E_TYPE;
             }
         }
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtAssert
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
+    TreeNodeExpr* e = stmt->expression ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal() << "Conditional expression in assert statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
     }
 
     return OK;

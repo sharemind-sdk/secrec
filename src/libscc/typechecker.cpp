@@ -166,6 +166,23 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     return false;
 }
 
+TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
+    assert (e != 0);
+    if (! e->haveResultType ()) {
+        e->setContextSecType (PublicSecType::get (getContext ()));
+        e->setContextDataType (DATATYPE_BOOL);
+        e->setContextDimType (0);
+
+        if (visitExpr (e) != OK)
+            return E_TYPE;
+
+        if (!e->havePublicBoolType())
+            return E_TYPE;
+    }
+
+    return OK;
+}
+
 TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
                                               SecrecDimType & destDim)
 {

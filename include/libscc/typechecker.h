@@ -84,10 +84,14 @@ public: /* Methods: */
     Status visit(TreeNodeSecTypeF * ty);
     Status visit(TreeNodeType * _ty);
 
+    Status visit(TreeNodeStmtIf * stmt);
+    Status visit(TreeNodeStmtWhile * stmt);
+    Status visit(TreeNodeStmtDoWhile * stmt);
     Status visit(TreeNodeStmtDecl * decl);
     Status visit(TreeNodeStmtPrint * stmt);
     Status visit(TreeNodeStmtReturn * stmt);
     Status visit(TreeNodeStmtSyscall * stmt);
+    Status visit(TreeNodeStmtAssert * stmt);
 
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
@@ -105,6 +109,7 @@ public: /* Methods: */
 
     Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
+    Status checkPublicBooleanScalar (TreeNodeExpr* e);
 
 protected:
 

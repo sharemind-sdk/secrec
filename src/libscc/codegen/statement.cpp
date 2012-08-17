@@ -417,14 +417,7 @@ CGStmtResult CodeGen::cgStmtFor (TreeNodeStmtFor* s) {
     CGBranchResult condResult;
     if (s->conditional () != 0) {
         TreeNodeExpr *e1 = s->conditional ();
-        e1->setContextSecType (PublicSecType::get (getContext ()));
-        TypeChecker::Status status = e1->accept(m_tyChecker);
-        if (status != TypeChecker::OK) {
-            result.setStatus(CGResult::ERROR_FATAL);
-            return result;
-        }
-
-        if (!e1->havePublicBoolType ()) {
+        if (m_tyChecker.checkPublicBooleanScalar (e1) != TypeChecker::OK) {
             m_log.fatal () << "Conditional expression in if statement must be of "
                             "type public bool at " << e1->location () << ".";
             result.setStatus(CGResult::ERROR_FATAL);
@@ -518,20 +511,14 @@ CGStmtResult TreeNodeStmtIf::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtIf (TreeNodeStmtIf* s) {
-    TreeNodeExpr *e = s->conditional ();
-    e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
 
-    if (!e->havePublicBoolType ()) {
-        m_log.fatal () << "Conditional expression in if statement must be of "
-                        "type public bool in " << e->location ();
+    if (m_tyChecker.visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
-    }
 
     CGStmtResult result;
 
     // Generate code for conditional expression:
+    TreeNodeExpr* e = s->conditional ();
     CGBranchResult eResult (codeGenBranch (e));
     append (result, eResult);
     if (result.isNotOk ()) {
@@ -653,21 +640,11 @@ CGStmtResult TreeNodeStmtWhile::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtWhile (TreeNodeStmtWhile* s) {
 
-    // Conditional expression:
-    TreeNodeExpr *e = s->conditional ();
-    e->setContextSecType (PublicSecType::get (getContext ()));
-    e->setContextDataType (DATATYPE_BOOL);
-    e->setContextDimType (0);
-    if (m_tyChecker.visitExpr (e) != TypeChecker::OK)
+    if (m_tyChecker.visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
-
-    if (!e->havePublicBoolType()) {
-        m_log.fatal() << "Conditional expression in while statement must be of "
-                       "type public bool in " << e->location();
-        return CGResult::ERROR_FATAL;
-    }
 
     CGStmtResult result;
+    TreeNodeExpr* e = s->conditional ();
     CGBranchResult eResult (codeGenBranch (e));
     append (result, eResult);
     if (result.isNotOk ()) {
@@ -837,6 +814,9 @@ CGStmtResult TreeNodeStmtDoWhile::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
 
+    if (m_tyChecker.visit (s) != TypeChecker::OK)
+        return CGResult::ERROR_FATAL;
+
     // Loop body:
     newScope ();
 
@@ -872,23 +852,7 @@ CGStmtResult CodeGen::cgStmtDoWhile (TreeNodeStmtDoWhile* s) {
     popScope (); // end of loop body
 
     // Conditional expression:
-
-    TreeNodeExpr *e = s->conditional ();
-    e->setContextSecType (PublicSecType::get (getContext ()));
-    e->setContextDimType (0);
-    e->setContextDataType (DATATYPE_BOOL);
-    if (e->accept(m_tyChecker) != TypeChecker::OK) {
-        result.setStatus(CGResult::ERROR_FATAL);
-        return result;
-    }
-
-    if (!e->havePublicBoolType()) {
-        m_log.fatal () << "Conditional expression in if statement must be of "
-                       "type public bool in " << e->location();
-        result.setStatus(CGResult::ERROR_FATAL);
-        return result;
-    }
-
+    TreeNodeExpr* e = s->conditional ();
     CGBranchResult eResult (codeGenBranch (e));
     append (result, eResult);
     if (result.isNotOk ()) {
@@ -934,19 +898,10 @@ CGStmtResult TreeNodeStmtAssert::codeGenWith (CodeGen& cg) {
 }
 
 CGStmtResult CodeGen::cgStmtAssert (TreeNodeStmtAssert* s) {
-    // Type check the expression
-    TreeNodeExpr *e = s->expression ();
-    e->setContextSecType (PublicSecType::get (getContext ()));
-    if (e->accept(m_tyChecker) != TypeChecker::OK)
+    if (m_tyChecker.visit (s) != TypeChecker::OK)
         return CGResult::ERROR_FATAL;
 
-    e->instantiateDataType (getContext ());
-    if (!e->havePublicBoolType()) {
-        m_log.fatal() << "Conditional expression in assert statement must be of "
-                       "type public bool in " << e->location();
-        return CGResult::ERROR_FATAL;
-    }
-
+    TreeNodeExpr * e = s->expression ();
     CGBranchResult eResult (codeGenBranch (e));
     assert (eResult.firstImop () != 0);
     if (eResult.isNotOk ()) {
