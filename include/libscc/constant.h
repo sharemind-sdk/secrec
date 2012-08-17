@@ -58,10 +58,9 @@ public: /* Methods: */
         return m_value;
     }
 
-    std::string toString () const {
-        std::ostringstream os;
+    std::ostream& print (std::ostream& os) const {
         os << trait::CName << ' ' << m_value;
-        return os.str ();
+        return os;
     }
 
 private: /* Fields: */

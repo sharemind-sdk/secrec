@@ -58,8 +58,6 @@ struct Configuration {
         , m_stdout (true)
     { }
 
-    ~Configuration () { }
-
     void read (const po::variables_map& vm) {
         m_verbose = vm.count ("verbose");
         m_help = vm.count ("help");
@@ -198,7 +196,7 @@ int run (const Configuration& cfg) {
         }
 
         if (cfg.m_printIR) {
-            out << pr.toString() << endl;
+            out << pr << endl;
             return EXIT_SUCCESS;
         }
 

@@ -143,9 +143,9 @@ std::string ReachableReleases::toString (const Program& pr) const {
                 if (! dest->isArray ())
                     continue;
 
-                ss << imop.index () << ": " << imop.toString () << " // " << imop.creator ()->location () << "\n";
+                ss << imop.index () << ": " << imop << " // " << imop.creator ()->location () << "\n";
                 BOOST_FOREACH (const Imop* release, after[dest]) {
-                    ss << '\t' << release->index () << ": " << release->toString () << '\n';
+                    ss << '\t' << release->index () << ": " << *release << '\n';
                 }
             }
 

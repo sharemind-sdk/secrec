@@ -72,6 +72,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/CFG.h"
     "${LIBSCC_INCLUDE_DIR}/codegen.h"
     "${LIBSCC_INCLUDE_DIR}/codegenResult.h"
+    "${LIBSCC_INCLUDE_DIR}/CodeGenState.h"
     "${LIBSCC_INCLUDE_DIR}/constant.h"
     "${LIBSCC_INCLUDE_DIR}/context.h"
     "${LIBSCC_INCLUDE_DIR}/dataflowanalysis.h"

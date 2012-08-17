@@ -200,25 +200,25 @@ std::string LiveMemory::printDeadCopies (const Program &pr) const {
         BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
             BOOST_FOREACH (const Symbol* dest, imop.defRange ()) {
                 if (dest->isArray () && after[dest] == Dead) {
-                    ss << imop.index () << ": " << imop.toString () << " redundant value " << dest->toString () << "\n";
+                    ss << imop.index () << ": " << imop << " redundant value " << *dest << "\n";
                 }
             }
 
             if (imop.type () == Imop::COPY) {
                 ++ num_copies;
                 if ((after[imop.dest ()] & Read) == 0) {
-                    ss << imop.index () << ": " << imop.toString () << " (dest is never read)\n";
+                    ss << imop.index () << ": " << imop << " (dest is never read)\n";
                     ++ num_eliminated;
                 }
                 else
                 if (after[imop.arg1 ()] == Dead) {
-                    ss << imop.index () << ": " << imop.toString () << '\n';
+                    ss << imop.index () << ": " << imop << '\n';
                     ++ num_eliminated;
                 }
                 else
                 if (((after[imop.dest ()] & Write) == 0) &&
                      ((after[imop.arg1 ()] & Write) == 0)) {
-                     ss << imop.index () << ": " << imop.toString () << " (src/dest are read-only)\n";
+                     ss << imop.index () << ": " << imop << " (src/dest are read-only)\n";
                      ++ num_eliminated;
                 }
             }
@@ -253,7 +253,7 @@ std::string LiveMemory::toString (const Program& pr) const {
             case Dead:  ss << "DEAD";  break;
             }
 
-            ss << ' ' << val.first->toString () << '\n';
+            ss << ' ' << *val.first << '\n';
         }
     }
 

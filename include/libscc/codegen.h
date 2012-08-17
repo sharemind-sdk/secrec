@@ -5,9 +5,10 @@
 #include <set>
 #include <vector>
 
+#include "codegenResult.h"
+#include "CodeGenState.h"
 #include "icodelist.h"
 #include "treenode_fwd.h"
-#include "codegenResult.h"
 
 namespace SecreC {
 
@@ -128,57 +129,6 @@ protected:
 private: /* Fields: */
     Symbol*    m_symbol;
     StrideList m_stride;
-};
-
-/*******************************************************************************
-  CodeGenState
-*******************************************************************************/
-
-/**
- * The part of code generator that needs to be stored and resumed on demand.
- * For example we might pause code generation at some scope to type check and
- * generate code for some imported module. After the code generation previous
- * state needs to be resumed.
- */
-class CodeGenState {
-protected: /* Types: */
-
-    typedef ImopList::const_iterator InsertPoint;
-
-public: /* Methods: */
-
-    CodeGenState ()
-        : m_st (0)
-        , m_node (0)
-    { }
-
-    CodeGenState (InsertPoint it, SymbolTable* st)
-        : m_insertPoint (it)
-        , m_st (st)
-        , m_node (0)
-    { }
-
-    CodeGenState& operator = (CodeGenState state) {
-        swapState (state);
-        return *this;
-    }
-
-    SymbolTable* st () const { return m_st; }
-
-    friend class CodeGen;
-
-private:
-
-    void swapState (CodeGenState& st) {
-        std::swap (m_insertPoint, st.m_insertPoint);
-        std::swap (m_st, st.m_st);
-        std::swap (m_node, st.m_node);
-    }
-
-private: /* Fields: */
-    InsertPoint   m_insertPoint;  ///< Location before which to insert instructions.
-    SymbolTable*  m_st;           ///< Pointer to symbol table of current scope.
-    TreeNode*     m_node;         ///< Current tree node.
 };
 
 /*******************************************************************************

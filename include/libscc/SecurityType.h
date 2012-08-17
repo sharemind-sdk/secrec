@@ -28,7 +28,7 @@ private:
 public: /* Methods: */
 
     virtual ~SecurityType () { }
-    virtual std::string toString () const = 0;
+    virtual std::ostream& print (std::ostream& os) const = 0;
     inline bool isPrivate () const { return !m_isPublic; }
     inline bool isPublic () const { return m_isPublic; }
 
@@ -44,8 +44,7 @@ private: /* Fields: */
 };
 
 inline std::ostream &operator<<(std::ostream &out, const SecurityType& type) {
-    out << type.toString ();
-    return out;
+    return type.print (out);
 }
 
 /*******************************************************************************
@@ -59,7 +58,7 @@ public: /* Methods: */
         : SecurityType (true)
     { }
 
-    std::string toString () const;
+    std::ostream& print (std::ostream & os) const;
 
     static PublicSecType* get (Context& cxt);
 };
@@ -80,7 +79,7 @@ public: /* Methods: */
 
     inline const std::string& name () const { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
-    std::string toString () const;
+    std::ostream& print (std::ostream & os) const;
 
     static PrivateSecType* get (Context& cxt, const std::string& name, SymbolKind* kind);
 

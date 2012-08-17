@@ -581,7 +581,7 @@ CallbackTy getCallback (const Imop& imop) {
 
     if (imop.type () == Imop::ASSIGN) {
         if (! matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ())) {
-            std::cerr << imop.toString () << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
+            std::cerr << imop << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
             std::cerr << imop.dest ()->secrecType ()->toString () << std::endl;
             std::cerr << imop.arg1 ()->secrecType ()->toString () << std::endl;
             assert (false);

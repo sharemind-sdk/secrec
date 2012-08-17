@@ -2,7 +2,6 @@
 #define SECREC_IMOP_H
 
 #include <cassert>
-#include <string>
 #include <vector>
 #include <boost/intrusive/list.hpp>
 
@@ -204,7 +203,7 @@ class Imop : public auto_unlink_hook {
         OperandConstRange useRange () const;
         OperandConstRange defRange () const;
 
-        std::string toString() const;
+        std::ostream& print (std::ostream& os) const;
 
         template <typename Iter >
         friend Imop* newReturn (TreeNode *node, Iter begin, Iter end);
@@ -262,7 +261,9 @@ Imop* newCall (TreeNode* node, Iter beginRet, Iter endRet, Iter beginArg, Iter e
     return out;
 }
 
-std::ostream &operator<<(std::ostream &out, const Imop &i);
+inline std::ostream & operator<<(std::ostream & out, const Imop & i) {
+    return i.print(out);
+}
 
 } // namespace SecreC
 

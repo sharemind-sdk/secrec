@@ -1,17 +1,18 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
+#include "parser.h"
 #include <iterator>
-
-#include "types.h"
-
+#include <vector>
 
 namespace SecreC {
 
-class Imop;
 class Block;
+class Imop;
+class SecurityType;
 class TreeNodeProcDef;
 class TreeNodeTemplate;
+class TypeNonVoid;
 
 /*******************************************************************************
   Symbol
@@ -56,7 +57,7 @@ public: /* Methods: */
     bool isGlobal () const;
     bool isArray () const;
 
-    virtual std::string toString() const = 0;
+    virtual std::ostream & print(std::ostream & os) const = 0;
 
 private: /* Fields: */
     Type          const  m_symbolType;  ///< Type of the symbol.
@@ -76,7 +77,7 @@ public: /* Methods: */
         : Symbol (Symbol::PKIND)
     { }
 
-    virtual std::string toString () const;
+    virtual std::ostream & print(std::ostream & os) const;
 };
 
 /*******************************************************************************
@@ -92,7 +93,7 @@ public: /* Methods: */
     { }
 
     inline SecurityType* securityType () const { return m_secType; }
-    virtual std::string toString () const;
+    virtual std::ostream & print(std::ostream & os) const;
 
 private:
 
@@ -104,51 +105,39 @@ private:
 *******************************************************************************/
 
 class SymbolSymbol: public Symbol {
-    public: /* Types: */
+public: /* Types: */
 
-        enum ScopeType { GLOBAL, LOCAL };
+    enum ScopeType { GLOBAL, LOCAL };
 
-    public: /* Methods: */
+public: /* Methods: */
 
-        explicit SymbolSymbol (SecreC::TypeNonVoid* valueType)
-            : Symbol (Symbol::SYMBOL, valueType)
-            , m_scopeType (LOCAL)
-            , m_dims (valueType->secrecDimType())
-            , m_size (0)
-            , m_isTemporary (false)
-        { }
+    explicit SymbolSymbol (TypeNonVoid* valueType);
 
-        explicit SymbolSymbol (SecreC::TypeNonVoid* valueType, bool)
-            : Symbol (Symbol::SYMBOL, valueType)
-            , m_scopeType (LOCAL)
-            , m_dims (valueType->secrecDimType ())
-            , m_size (0)
-            , m_isTemporary (true)
-        { }
+    explicit SymbolSymbol (TypeNonVoid* valueType, bool);
 
-        inline ScopeType scopeType() const { return m_scopeType; }
-        inline void setScopeType(ScopeType type) { m_scopeType = type; }
-        inline bool isTemporary () const { return m_isTemporary; }
+    inline ScopeType scopeType() const { return m_scopeType; }
+    inline void setScopeType(ScopeType type) { m_scopeType = type; }
+    inline bool isTemporary () const { return m_isTemporary; }
 
-        inline Symbol* getDim (SecrecDimType i) { return m_dims[i]; }
-        inline void setDim (SecrecDimType i, Symbol* sym) { m_dims[i] = sym; }
-        Symbol* getSizeSym () { return m_size; }
-        void setSizeSym (Symbol* sym) { m_size = sym; }
-        void inheritShape (Symbol* from);
+    inline Symbol* getDim (SecrecDimType i) { return m_dims[i]; }
+    inline void setDim (SecrecDimType i, Symbol* sym) { m_dims[i] = sym; }
+    Symbol* getSizeSym () { return m_size; }
+    void setSizeSym (Symbol* sym) { m_size = sym; }
+    void inheritShape (Symbol* from);
 
-        virtual std::string toString() const;
+    virtual std::ostream & print(std::ostream & os) const;
 
-    protected:
+protected:
 
-        template <typename B, typename E>
-        friend class DimIterator;
+    template <typename B, typename E>
+    friend class DimIterator;
 
-    private: /* Fields: */
+private: /* Fields: */
 
-        ScopeType              m_scopeType;
-        std::vector<Symbol* >  m_dims;
-        Symbol*                m_size;
-        const bool             m_isTemporary;
+    ScopeType              m_scopeType;
+    std::vector<Symbol* >  m_dims;
+    Symbol*                m_size;
+    const bool             m_isTemporary;
 };
 
 typedef SymbolSymbol SymbolTemporary;
@@ -221,7 +210,7 @@ public: /* Methods: */
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
 
-    virtual std::string toString() const;
+    virtual std::ostream & print(std::ostream & os) const;
 
 private: /* Fields: */
     const TreeNodeProcDef*  const  m_decl;
@@ -234,15 +223,15 @@ private: /* Fields: */
 *******************************************************************************/
 
 class SymbolTemplate: public Symbol {
-    public: /* Methods: */
-        SymbolTemplate(const TreeNodeTemplate *templ);
+public: /* Methods: */
+    SymbolTemplate(const TreeNodeTemplate *templ);
 
-        inline const TreeNodeTemplate *decl() const { return m_templ; }
+    inline const TreeNodeTemplate *decl() const { return m_templ; }
 
-        virtual std::string toString() const;
+    virtual std::ostream & print(std::ostream & os) const;
 
-    private: /* Fields: */
-        const TreeNodeTemplate* m_templ;
+private: /* Fields: */
+    const TreeNodeTemplate* m_templ;
 };
 
 
@@ -251,29 +240,29 @@ class SymbolTemplate: public Symbol {
 *******************************************************************************/
 
 class SymbolLabel: public Symbol {
-    public:
-        explicit SymbolLabel (Imop* target);
-        explicit SymbolLabel (Block* block);
+public:
+    explicit SymbolLabel (Imop* target);
+    explicit SymbolLabel (Block* block);
 
-        const Imop* target () const;
-        inline Block* block () const { return m_block; }
+    const Imop* target () const;
+    inline Block* block () const { return m_block; }
 
-        void setBlock (Block* block) {
-            m_target = 0;
-            m_block = block;
-        }
+    void setBlock (Block* block) {
+        m_target = 0;
+        m_block = block;
+    }
 
-        virtual std::string toString () const;
-    private:
-        Imop*   m_target;
-        Block*  m_block;
+    virtual std::ostream & print(std::ostream & os) const;
+
+private:
+    Imop*   m_target;
+    Block*  m_block;
 };
 
 inline std::ostream &operator<<(std::ostream &out, const Symbol &s) {
-    out << s.toString();
-    return out;
+    return s.print(out);
 }
 
-}
+} // namespace SecreC
 
 #endif

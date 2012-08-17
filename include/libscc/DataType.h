@@ -14,7 +14,6 @@
 #include "SecurityType.h"
 
 #include <cassert>
-#include <string>
 #include <vector>
 
 namespace SecreC {
@@ -59,7 +58,7 @@ public: /* Methods: */
     inline SecrecDataType secrecDataType() const;
     inline SecrecDimType secrecDimType() const;
 
-    virtual std::string toString() const = 0;
+    virtual std::ostream& print (std::ostream& os) const = 0;
 
     virtual inline bool canAssign(const DataType*) const {
         return false;
@@ -80,8 +79,7 @@ private: /* Fields: */
 };
 
 inline std::ostream &operator<<(std::ostream &out, const DataType &type) {
-    out << type.toString();
-    return out;
+    return type.print (out);
 }
 
 /*******************************************************************************
@@ -106,7 +104,7 @@ public: /* Methods: */
     inline SecrecDataType dataType() const { return m_dataType; }
     inline SecrecDimType dimType() const { return m_dimType; }
 
-    virtual std::string toString() const;
+    virtual std::ostream& print (std::ostream& os) const;
 
     virtual bool latticeLEQ(const DataType* _other) const {
         const DataTypeBasic* other = static_cast<const DataTypeBasic*>(_other);
@@ -153,7 +151,7 @@ public: /* Methods: */
 
     DataType* dataType() const { return m_dataType; }
 
-    virtual std::string toString() const;
+    virtual std::ostream& print (std::ostream& os) const;
     virtual inline bool canAssign(const DataType* other) const {
         return other->latticeLEQ(m_dataType);
     }
@@ -185,7 +183,7 @@ public: /* Methods: */
         : DataType(kind) {}
     virtual ~DataTypeProcedureVoid() { }
 
-    virtual std::string toString() const;
+    virtual std::ostream& print (std::ostream& os) const;
     std::string mangle() const;
 
     inline const std::vector<DataType*> &paramTypes() const { return m_params; }
@@ -221,7 +219,7 @@ public: /* Methods: */
 
     virtual inline ~DataTypeProcedure() { }
 
-    virtual std::string toString() const;
+    virtual std::ostream& print (std::ostream& os) const;
 
     inline DataType* returnType() const { return m_ret; }
 

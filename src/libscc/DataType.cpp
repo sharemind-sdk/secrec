@@ -199,12 +199,11 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
   DataTypeBasic
 *******************************************************************************/
 
-std::string DataTypeBasic::toString() const {
-    std::ostringstream os;
-    os << "(" << m_secType->toString () << ","
-       << SecrecFundDataTypeToString(m_dataType) << ","
+std::ostream& DataTypeBasic::print (std::ostream & os) const {
+    os << "(" << *m_secType << ","
+       << m_dataType << ","
        << m_dimType << ")";
-    return os.str();
+    return os;
 }
 
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
@@ -233,8 +232,9 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
   DataTypeVar
 *******************************************************************************/
 
-std::string DataTypeVar::toString() const {
-    return std::string("VAR ") + m_dataType->toString();
+std::ostream& DataTypeVar::print (std::ostream & os) const {
+    os << "VAR" << m_dataType;
+    return os;
 }
 
 DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
@@ -259,9 +259,9 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
     return impl.voidProcedureType (std::vector<DataType*> ());
 }
 
-// \todo don't use mangle() here
-std::string DataTypeProcedureVoid::toString() const {
-    return mangle() + " -> void";
+std::ostream& DataTypeProcedureVoid::print (std::ostream & os) const {
+    os << mangle () << " -> void";
+    return os;
 }
 
 std::string DataTypeProcedureVoid::mangle() const {
@@ -301,10 +301,9 @@ DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
     return impl.procedureType (params->paramTypes (), returnType);
 }
 
-std::string DataTypeProcedure::toString() const {
-    std::ostringstream os;
+std::ostream& DataTypeProcedure::print (std::ostream& os) const {
     os << mangle() << " -> " << *m_ret;
-    return os.str();
+    return os;
 }
 
 } // namespace SecreC

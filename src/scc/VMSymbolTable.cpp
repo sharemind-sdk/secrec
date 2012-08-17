@@ -9,16 +9,17 @@
 
 #include "VMSymbolTable.h"
 
+#include <cassert>
 #include <libscc/symbol.h>
-
 #include <map>
 #include <set>
 #include <sstream>
 
 #include "VMValue.h"
 
+namespace SecreCC {
 
-namespace {
+namespace /* anonymous */ {
 
 template <typename T, typename V >
 void deleteValues (typename std::map<T, V* >& kvs) {
@@ -30,9 +31,7 @@ void deleteValues (typename std::map<T, V* >& kvs) {
     kvs.clear ();
 }
 
-}
-
-namespace SecreCC {
+} // namespace anonymous
 
 /*******************************************************************************
   VMSTImpl

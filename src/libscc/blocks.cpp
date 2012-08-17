@@ -119,7 +119,9 @@ void printLabel (std::ostream& os, const Block& block) {
     for (Block::const_iterator i = block.begin (), e = block.end (); i != e; ++ i) {
         os << "<TR>";
         os << "<TD ALIGN=\"LEFT\">" << i->index () << "</TD>";
-        os << "<TD ALIGN=\"LEFT\">" << xmlEncode (i->toString ()) << "</TD>";
+        std::stringstream ss;
+        ss << *i;
+        os << "<TD ALIGN=\"LEFT\">" << xmlEncode (ss.str ()) << "</TD>";
         os << "</TR>";
     }
 
@@ -167,7 +169,7 @@ void printEdges (std::ostream& os, const Block& from, Edge::Label label, const c
 
 void printProcName (std::ostream& os, const Procedure& pr) {
     if (pr.name ())
-        os << "    label = \"" << pr.name ()->toString () << "\";\n";
+        os << "    label = \"" << *pr.name () << "\";\n";
     else
         os << "    label = \"START\";\n";
 }
@@ -396,15 +398,13 @@ void Program::numberBlocks () {
     }
 }
 
-std::string Program::toString() const {
+std::ostream & Program::print(std::ostream & os) const {
     typedef DataFlowAnalysis RD;
-
-    std::ostringstream os;
 
     os << "PROCEDURES:" << std::endl;
     BOOST_FOREACH (const Procedure& proc, *this) {
         if (proc.name ())
-            os << "  " << proc.name ()->toString () << std::endl;
+            os << "  " << *proc.name () << std::endl;
         printBlockList(os, "  .. From: ", proc.callFrom ());
         printBlockList(os, "  .... To: ", proc.returnTo ());
         os << "  BLOCKS:" << std::endl;
@@ -440,7 +440,7 @@ std::string Program::toString() const {
         }
     }
 
-    return os.str();
+    return os;
 }
 
 void Program::toDotty (std::ostream& os) const {
@@ -534,11 +534,6 @@ bool Block::isEntry () const {
 bool Block::isExit () const {
     const std::set<Block*>& exits = m_proc->exitBlocks ();
     return exits.find (const_cast<Block*>(this)) != exits.end ();
-}
-
-std::ostream &operator<<(std::ostream &out, const Program &proc) {
-    out << proc.toString();
-    return out;
 }
 
 } // namespace SecreC

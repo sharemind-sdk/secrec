@@ -6,10 +6,6 @@
 
 #include "blocks.h"
 
-#define FOREACH_BLOCK(IT,pr) \
-    for (Program::const_iterator pit = pr.begin (); pit != pr.end (); ++ pit)\
-        for (Procedure::const_iterator IT = pit->begin (); IT != pit->end (); ++ IT)
-
 template <class T, class U>
 inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
     dest.insert (src.begin(), src.end());

@@ -96,7 +96,7 @@ public: /* Methods: */
         std::ostringstream os;
         os << "Temporaries:\n";
         BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
-            os << '\t' << s->toString () << '\n';
+            os << '\t' << *s << '\n';
 
         return os.str ();
     }
@@ -250,7 +250,7 @@ std::string SymbolTable::toString(unsigned level, unsigned indent) const {
 
     BOOST_FOREACH (Symbol* sym, m_table) {
         printIndent(os, level, indent);
-        os << ' ' << sym->toString () << std::endl;
+        os << ' ' << *sym << std::endl;
     }
 
     BOOST_FOREACH (SymbolTable* table, m_scopes) {

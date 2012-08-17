@@ -14,7 +14,7 @@
 #include <map>
 #include <boost/filesystem.hpp>
 
-#include "codegen.h"
+#include "CodeGenState.h"
 #include "treenode_fwd.h"
 
 namespace SecreC {
@@ -52,8 +52,6 @@ public: /* Methods: */
         , m_status (CGNotStarted)
         , m_body (0)
     { }
-
-    ~ModuleInfo () { }
 
     void setCodeGenState (const CodeGenState& state);
     directory_entry location () const { return m_location; }

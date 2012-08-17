@@ -1,7 +1,6 @@
 #ifndef SECREC_LOG_H
 #define SECREC_LOG_H
 
-#include <boost/foreach.hpp>
 #include <cassert>
 #include <deque>
 #include <sstream>
@@ -74,8 +73,9 @@ inline CompileLogStream::~CompileLogStream() {
 inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
 {
     typedef CompileLogMessage CLM;
-    BOOST_FOREACH (const CLM& msg, log.messages ()) {
-        switch (msg.type) {
+    typedef std::deque<CompileLogMessage>::const_iterator const_iter;
+    for (const_iter i = log.messages ().begin (), e = log.messages ().end (); i != e; ++ i) {
+        switch (i->type) {
         case CLM::Fatal:   out << "[FATAL] "; break;
         case CLM::Error:   out << "[ERROR] "; break;
         case CLM::Warning: out << "[WARN ] "; break;
@@ -83,7 +83,7 @@ inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
         case CLM::Debug:   out << "[DEBUG] "; break;
         }
 
-        out << msg.message << std::endl;
+        out << i->message << std::endl;
     }
     return out;
 }

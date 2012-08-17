@@ -1,7 +1,6 @@
 #include "symbol.h"
 
 #include <string>
-#include <sstream>
 
 #include "blocks.h"
 #include "imop.h"
@@ -42,35 +41,48 @@ bool Symbol::isArray () const {
   SymbolKind
 *******************************************************************************/
 
-std::string SymbolKind::toString () const {
-    std::ostringstream os;
+std::ostream & SymbolKind::print(std::ostream & os) const {
     os << "KIND " << name ();
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
   SymbolDomain
 *******************************************************************************/
 
-std::string SymbolDomain::toString () const {
-    std::ostringstream os;
+std::ostream & SymbolDomain::print(std::ostream & os) const {
     os << "DOMAIN (" << name ();
     if (secrecType ())
         os << " : " << secrecType ()->toString ();
     os << ')';
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
   SymbolSymbol
 *******************************************************************************/
 
-std::string SymbolSymbol::toString() const {
-    std::ostringstream os;
+SymbolSymbol::SymbolSymbol (TypeNonVoid* valueType)
+    : Symbol (SYMBOL, valueType)
+    , m_scopeType (LOCAL)
+    , m_dims (valueType->secrecDimType())
+    , m_size (0)
+    , m_isTemporary (false)
+{ }
+
+SymbolSymbol::SymbolSymbol (TypeNonVoid* valueType, bool)
+    : Symbol (SYMBOL, valueType)
+    , m_scopeType (LOCAL)
+    , m_dims (valueType->secrecDimType ())
+    , m_size (0)
+    , m_isTemporary (true)
+{ }
+
+std::ostream & SymbolSymbol::print(std::ostream & os) const {
     if (m_isTemporary) os << "TEMPORARY ";
     os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
        << *secrecType () << ' ' << name () << '{' << this << '}';
-    return os.str();
+    return os;
 }
 
 
@@ -96,10 +108,9 @@ SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
     // Intentionally empty
 }
 
-std::string SymbolProcedure::toString() const {
-    std::ostringstream os;
+std::ostream & SymbolProcedure::print(std::ostream & os) const {
     os << "PROCEDURE " << name () << ": " << *secrecType ();
-    return os.str();
+    return os;
 }
 
 /*******************************************************************************
@@ -127,8 +138,7 @@ const Imop* SymbolLabel::target () const {
     return &m_block->front ();
 }
 
-std::string SymbolLabel::toString() const {
-    std::ostringstream os;
+std::ostream & SymbolLabel::print(std::ostream & os) const {
     os << "Lable to ";
     assert (m_target != 0);
     if (m_target->block () != 0) {
@@ -138,7 +148,7 @@ std::string SymbolLabel::toString() const {
         os << "imop " << m_target->index ();
     }
 
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
@@ -150,10 +160,9 @@ SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
     , m_templ (templ)
 { }
 
-std::string SymbolTemplate::toString() const {
-    std::ostringstream os;
+std::ostream & SymbolTemplate::print(std::ostream & os) const {
     os << "TEMPLATE " << name ();
-    return os.str ();
+    return os;
 }
 
 

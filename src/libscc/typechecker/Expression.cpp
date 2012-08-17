@@ -8,6 +8,7 @@
  */
 
 #include <boost/range.hpp>
+#include <boost/foreach.hpp>
 
 #include "imop.h"
 #include "log.h"
