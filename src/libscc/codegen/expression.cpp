@@ -863,6 +863,9 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
     case NODE_EXPR_BINARY_LE:   // fall through
     case NODE_EXPR_BINARY_LT:   // fall through
     case NODE_EXPR_BINARY_NE:   // fall through
+    case NODE_EXPR_BITWISE_AND: // fall through
+    case NODE_EXPR_BITWISE_OR:  // fall through
+    case NODE_EXPR_BITWISE_XOR: // fall through
         {
             // Generate code for first child expression:
             const CGResult & arg1Result = codeGen(eArg1);
@@ -879,14 +882,7 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
             }
 
             Imop::Type iType;
-            switch (e->type()) {
-            case NODE_EXPR_BINARY_EQ: iType = Imop::EQ; break;
-            case NODE_EXPR_BINARY_GE: iType = Imop::GE; break;
-            case NODE_EXPR_BINARY_GT: iType = Imop::GT; break;
-            case NODE_EXPR_BINARY_LE: iType = Imop::LE; break;
-            case NODE_EXPR_BINARY_LT: iType = Imop::LT; break;
-            case NODE_EXPR_BINARY_NE: iType = Imop::NE; break;
-            default:
+            if (! getBinImopType(e->type(), iType)) {
                 assert(false && "Dont know how to handle the node type.");
                 result.setStatus(CGResult::ERROR_FATAL);
                 return result;
