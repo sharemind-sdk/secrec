@@ -6,3 +6,4 @@
 /CTestTestfile.cmake
 Makefile
 *.pro.user
+.clang_complete
