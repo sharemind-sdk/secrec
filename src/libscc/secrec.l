@@ -137,6 +137,7 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "--" { stepLen(yyget_lloc(yyscanner), 2); return DEC_OP; }
 "/=" { stepLen(yyget_lloc(yyscanner), 2); return DIV_ASSIGN; }
 "==" { stepLen(yyget_lloc(yyscanner), 2); return EQ_OP; }
+">=" { stepLen(yyget_lloc(yyscanner), 2); return GE_OP; }
 "++" { stepLen(yyget_lloc(yyscanner), 2); return INC_OP; }
 "&&" { stepLen(yyget_lloc(yyscanner), 2); return LAND_OP; }
 "<=" { stepLen(yyget_lloc(yyscanner), 2); return LE_OP; }
