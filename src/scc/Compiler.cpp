@@ -55,9 +55,9 @@ const char* imopToVMName (const Imop& imop) {
     case Imop::MOD   : return "tmod";
     case Imop::ADD   : return "tadd";
     case Imop::SUB   : return "tsub";
-    case Imop::BAND  :
+    case Imop::BAND  : return "btand";
     case Imop::LAND  : return "ltand";
-    case Imop::BOR   :
+    case Imop::BOR   : return "btor";
     case Imop::LOR   : return "ltor";
     case Imop::EQ    : return "teq";
     case Imop::NE    : return "tne";
@@ -65,7 +65,7 @@ const char* imopToVMName (const Imop& imop) {
     case Imop::LT    : return "tlt";
     case Imop::GE    : return "tge";
     case Imop::GT    : return "tgt";
-    case Imop::XOR   : return "ltxor";
+    case Imop::XOR   : return "btxor";
     default:
         assert (false && "Not an arithmetic instruction!");
         return 0;
