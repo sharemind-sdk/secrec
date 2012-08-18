@@ -49,13 +49,15 @@ const char* imopToVMName (const Imop& imop) {
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
     case Imop::UNEG  : return "bnot";
-    case Imop::UINV:   return "binv";
+    case Imop::UINV  : return "binv";
     case Imop::MUL   : return "tmul";
     case Imop::DIV   : return "tdiv";
     case Imop::MOD   : return "tmod";
     case Imop::ADD   : return "tadd";
     case Imop::SUB   : return "tsub";
+    case Imop::BAND  :
     case Imop::LAND  : return "ltand";
+    case Imop::BOR   :
     case Imop::LOR   : return "ltor";
     case Imop::EQ    : return "teq";
     case Imop::NE    : return "tne";
@@ -63,6 +65,7 @@ const char* imopToVMName (const Imop& imop) {
     case Imop::LT    : return "tlt";
     case Imop::GE    : return "tge";
     case Imop::GT    : return "tgt";
+    case Imop::XOR   : return "ltxor";
     default:
         assert (false && "Not an arithmetic instruction!");
         return 0;
@@ -129,7 +132,9 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::MUL:        os << "mul";         break;
     case Imop::MOD:        os << "mod";         break;
     case Imop::DIV:        os << "div";         break;
+    case Imop::BAND:
     case Imop::LAND:       os << "and";         break;
+    case Imop::BOR
     case Imop::LOR:        os << "or";          break;
     case Imop::EQ:         os << "eq";          break;
     case Imop::GT:         os << "gt";          break;
@@ -141,6 +146,7 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::UINV:       os << "inv";         break;
     case Imop::UNEG:       os << "not";         break;
     case Imop::UMINUS:     os << "neg";         break;
+    case Imop::XOR:        os << "xor";         break;
     default:                                    break;
     }
 }
