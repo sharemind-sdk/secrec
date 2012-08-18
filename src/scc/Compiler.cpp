@@ -134,7 +134,7 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::DIV:        os << "div";         break;
     case Imop::BAND:
     case Imop::LAND:       os << "and";         break;
-    case Imop::BOR
+    case Imop::BOR:
     case Imop::LOR:        os << "or";          break;
     case Imop::EQ:         os << "eq";          break;
     case Imop::GT:         os << "gt";          break;
