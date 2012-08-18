@@ -196,12 +196,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
     TreeNodeExpr * subExpr = root->expression();
     SecrecDataType resultingDType = root->dataType()->dataType();
     subExpr->setContextSecType(root->contextSecType());
-    subExpr->setContextDataType(resultingDType);
     subExpr->setContextDimType(root->contextDimType());
     const Status status = visitExpr(subExpr);
     if (status != OK)
         return status;
 
+    subExpr->instantiateDataType(getContext());
     SecreC::Type * ty = subExpr->resultType();
     SecrecDataType givenDType = ty->secrecDataType();
     if (! latticeExplicitLEQ(givenDType, resultingDType)) {
