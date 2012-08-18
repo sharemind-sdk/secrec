@@ -14,6 +14,27 @@
 
 namespace SecreC {
 
+namespace /* anonymous */ {
+
+bool getAssignBinImopType(SecrecTreeNodeType type, Imop::Type& iType) {
+    switch (type) {
+    case NODE_EXPR_ASSIGN_MUL: iType = Imop::MUL; break;
+    case NODE_EXPR_ASSIGN_DIV: iType = Imop::DIV; break;
+    case NODE_EXPR_ASSIGN_MOD: iType = Imop::MOD; break;
+    case NODE_EXPR_ASSIGN_ADD: iType = Imop::ADD; break;
+    case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
+    case NODE_EXPR_ASSIGN_AND: iType = Imop::SUB; break;
+    case NODE_EXPR_ASSIGN_OR:  iType = Imop::SUB; break;
+    case NODE_EXPR_ASSIGN_XOR: iType = Imop::SUB; break;
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace anonymous
+
 /*******************************************************************************
   TreeNodeExprAssign
 *******************************************************************************/
@@ -252,16 +273,10 @@ CGResult CodeGen::cgExprAssign (TreeNodeExprAssign *e) {
         // Arithmetic assignments
 
         Imop::Type iType;
-        switch (e->type ()) {
-            case NODE_EXPR_ASSIGN_MUL: iType = Imop::MUL; break;
-            case NODE_EXPR_ASSIGN_DIV: iType = Imop::DIV; break;
-            case NODE_EXPR_ASSIGN_MOD: iType = Imop::MOD; break;
-            case NODE_EXPR_ASSIGN_ADD: iType = Imop::ADD; break;
-            case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB; break;
-            default:
-                assert (false); // shouldn't happen
-                result.setStatus (CGResult::ERROR_FATAL);
-                return result;
+        if (! getAssignBinImopType(e->type(), iType)) {
+            assert (false); // shouldn't happen
+            result.setStatus (CGResult::ERROR_FATAL);
+            return result;
         }
 
         Imop *i = 0;

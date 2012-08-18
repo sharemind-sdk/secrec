@@ -70,6 +70,9 @@ class Imop : public auto_unlink_hook {
             GT,         /*   d = arg1 >  arg2 {arg3};           */
             LAND,       /*   d = arg1 && arg2 {arg3};           */
             LOR,        /*   d = arg1 || arg2 {arg3};           */
+            BAND,       /*   d = arg1 & arg2 {arg3};            */
+            BOR,        /*   d = arg1 | arg2 {arg3};            */
+            XOR,        /*   d = arg1 ^ arg2 {arg3};            */
 
             //-------------------
             // Array expressions:

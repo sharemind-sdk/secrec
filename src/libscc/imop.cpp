@@ -49,6 +49,9 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::GT,         1, 0, 0, 1, 4, 1 }
     , { Imop::LAND,       1, 0, 0, 1, 4, 1 }
     , { Imop::LOR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::BAND,       1, 0, 0, 1, 4, 1 }
+    , { Imop::BOR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::XOR,        1, 0, 0, 1, 4, 1 }
     // Array expressions:
     , { Imop::STORE,      0, 0, 0, 1,-1, 0 }
     , { Imop::LOAD,       1, 0, 0, 0,-1, 1 }
