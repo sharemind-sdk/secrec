@@ -30,32 +30,32 @@ inline void patchList(PatchList & list, SymbolLabel * dest) {
   CGResult
 *******************************************************************************/
 
-void CGResult::patchNextList (SymbolLabel* dest) {
-    patchList (m_nextList, dest);
+void CGResult::patchNextList(SymbolLabel * dest) {
+    patchList(m_nextList, dest);
 }
 
 /*******************************************************************************
   CGBranchResult
 *******************************************************************************/
 
-void CGBranchResult::patchTrueList (SymbolLabel* dest) {
-    patchList (m_trueList, dest);
+void CGBranchResult::patchTrueList(SymbolLabel * dest) {
+    patchList(m_trueList, dest);
 }
 
-void CGBranchResult::patchFalseList (SymbolLabel* dest) {
-    patchList (m_falseList, dest);
+void CGBranchResult::patchFalseList(SymbolLabel * dest) {
+    patchList(m_falseList, dest);
 }
 
 /*******************************************************************************
   CGStmtResult
 *******************************************************************************/
 
-void CGStmtResult::patchBreakList (SymbolLabel* dest) {
-    patchList (m_breakList, dest);
+void CGStmtResult::patchBreakList(SymbolLabel * dest) {
+    patchList(m_breakList, dest);
 }
 
-void CGStmtResult::patchContinueList (SymbolLabel* dest) {
-    patchList (m_continueList, dest);
+void CGStmtResult::patchContinueList(SymbolLabel * dest) {
+    patchList(m_continueList, dest);
 }
 
 } // namespace SecreC
