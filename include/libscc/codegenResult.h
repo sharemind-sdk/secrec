@@ -32,7 +32,14 @@ typedef std::vector<Imop*> PatchList;
 class CGResult {
 public: /* Types: */
 
-    enum Status { OK, ERROR_FATAL, ERROR_CONTINUE };
+    // lower bit denotes if the CG should halt
+    // higher bit denotes if the CG has failed
+    // composition of statuses is bitwise or
+    enum Status {
+        OK             = 0x0,
+        ERROR_CONTINUE = 0x2,
+        ERROR_FATAL    = 0x3
+    };
 
 public: /* Methods: */
 
@@ -100,6 +107,11 @@ public: /* Methods: */
 
     void setStatus (Status status) {
         m_status = status;
+    }
+
+    CGResult& operator |= (Status status) {
+        m_status = static_cast<Status>(m_status | status);
+        return *this;
     }
 
 private: /* Fields: */
