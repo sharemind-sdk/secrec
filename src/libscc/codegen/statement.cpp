@@ -634,40 +634,45 @@ CGStmtResult TreeNodeStmtWhile::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
 
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
-        return CGResult::ERROR_CONTINUE;
-
     CGStmtResult result;
-    TreeNodeExpr * e = s->conditional();
-    CGBranchResult eResult(codeGenBranch(e));
+
+    // Generate the conditional expression:
+    CGBranchResult eResult = CGResult::ERROR_CONTINUE;
+    if (m_tyChecker->visit(s) == TypeChecker::OK) {
+        eResult = codeGenBranch(s->conditional());
+    }
+
+    // Generate the loop body:
+    CGStmtResult bodyResult;
+    {
+        ScopedScope scope(*this);
+        ScopedLoop loop(*this);
+        bodyResult = codeGenStmt(s->body());
+    }
+
+    // Halt if something went wrong:
     append(result, eResult);
     if (result.isNotOk()) {
         return result;
     }
 
+    if (bodyResult.isNotOk()) {
+        result |= bodyResult.status();
+        return result;
+    }
+
+    // Link the conditional and body together:
     assert(result.firstImop() != 0);
     assert(result.nextList().empty());
 
     SymbolLabel * jumpDest = m_st->label(result.firstImop());
-
-    // Loop body:
-    newScope();
-
-    TreeNodeStmt * body = s->body();
-    startLoop();
-    CGStmtResult bodyResult(codeGenStmt(body));
-    endLoop();
-    if (bodyResult.isNotOk()) {
-        result.setStatus(bodyResult.status());
-        return result;
-    }
 
     assert(bodyResult.flags() != 0x0);
     if ((bodyResult.flags()
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatal() << "While loop at " << s->location() << " wont loop!";
-        result.setStatus(CGResult::ERROR_FATAL);
+        result |= CGResult::ERROR_CONTINUE;
         return result;
     }
 
@@ -684,8 +689,6 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
     result.setNextList(eResult.falseList());
     result.addToNextList(bodyResult.breakList());
     bodyResult.patchContinueList(jumpDest);
-
-    popScope();
 
     return result;
 }
@@ -822,6 +825,8 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
         return result;
     }
 
+    popScope();  // end of loop body
+
     // Static checking:
     if (result.firstImop() == 0) {
         m_log.fatal() << "Empty loop body at " << body->location() << ".";
@@ -842,8 +847,6 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
     result.setFlags((result.flags()
                 & ~(CGStmtResult::BREAK | CGStmtResult::CONTINUE))
             | CGStmtResult::FALLTHRU);
-
-    popScope();  // end of loop body
 
     // Conditional expression:
     TreeNodeExpr * e = s->conditional();

@@ -148,6 +148,8 @@ private: /* Fields: */
  */
 class CodeGen : public CodeGenState {
     friend class ScopedStateUse;
+    friend class ScopedScope;
+    friend class ScopedLoop;
 private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT
@@ -377,6 +379,40 @@ public:
 private:
     CodeGen&      m_codeGen;
     CodeGenState  m_state;
+};
+
+class ScopedScope {
+public:
+
+    ScopedScope(CodeGen & codeGen)
+        : m_codeGen(codeGen)
+    {
+        m_codeGen.newScope();
+    }
+
+    ~ScopedScope() {
+        m_codeGen.popScope();
+    }
+
+private:
+    CodeGen & m_codeGen;
+};
+
+class ScopedLoop {
+public:
+
+    ScopedLoop(CodeGen & codeGen)
+        : m_codeGen(codeGen)
+    {
+        m_codeGen.startLoop();
+    }
+
+    ~ScopedLoop() {
+        m_codeGen.endLoop();
+    }
+
+private:
+    CodeGen & m_codeGen;
 };
 
 } // namespace SecreC
