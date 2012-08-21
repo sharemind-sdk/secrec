@@ -1172,7 +1172,7 @@ void Compiler::cgPrivateNE (VMBlock& block, const Imop& imop) {
     block.push_new () << "push" << pd;
     block.push_new () << "push" << dest;
     block.push_new () << "push" << dest;
-    emitSyscall (block, SyscallName::basic (ty, "not"));
+    emitSyscall (block, SyscallName::basic (imop.dest()->secrecType(), "not"));
 }
 
 void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
