@@ -730,6 +730,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
 
         if (root->type() == NODE_EXPR_UINV) {
             if (isNumericDataType(bType->dataType())
+                    || isXorDataType(bType->dataType())
                     || bType->dataType() == DATATYPE_NUMERIC
                     || bType->dataType() == DATATYPE_BOOL)
             {
