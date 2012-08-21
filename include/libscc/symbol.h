@@ -67,6 +67,21 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
+  SymbolConstant
+*******************************************************************************/
+
+class SymbolConstant : public Symbol {
+public: /* Methods: */
+    inline SymbolConstant(TypeNonVoid* valueType)
+        : Symbol(CONSTANT,valueType)
+    { }
+
+    virtual inline ~SymbolConstant() { }
+
+    virtual std::ostream & print(std::ostream & os) const = 0;
+};
+
+/*******************************************************************************
   SymbolKind
 *******************************************************************************/
 

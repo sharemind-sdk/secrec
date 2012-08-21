@@ -34,7 +34,7 @@ DECL_TRAIT (uint64_t,    DATATYPE_FLOAT64)
 #undef DECL_TRAIT
 
 template <SecrecDataType ty >
-class Constant : public Symbol {
+class Constant : public SymbolConstant {
 private:
     typedef Constant<ty> Self;
     Constant (const Self&); // DO NOT IMPLEMENT
@@ -48,7 +48,7 @@ private: /* Types: */
 public: /* Methods: */
 
     explicit Constant (const CType& value, TypeNonVoid* type)
-        : Symbol(Symbol::CONSTANT, type)
+        : SymbolConstant(type)
         , m_value(value)
     { }
 
@@ -83,8 +83,8 @@ typedef Constant<DATATYPE_UINT64> ConstantUInt;
 typedef Constant<DATATYPE_FLOAT32> ConstantFloat32;
 typedef Constant<DATATYPE_FLOAT64> ConstantFloat64;
 
-Symbol* defaultConstant (Context& cxt, SecrecDataType ty);
-Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
+SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty);
+SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
 }
 
 #endif

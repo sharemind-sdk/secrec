@@ -26,6 +26,17 @@ private:
     ContextImpl (const ContextImpl&); // DO NOT IMPLEMENT
     void operator = (const ContextImpl&); // DO NOT IMPLEMENT
 
+public: /* Types: */
+
+    typedef std::map<std::string, PrivateSecType*> PrivateSecTypeMap;
+    typedef std::map<DataType*, DataTypeVar*> DataTypeVarMap;
+    typedef std::map<DataType*, TypeNonVoid*> TypeNonVoidMap;
+    typedef std::map<std::vector<DataType*>, DataTypeProcedureVoid* > DataTypeProcedureVoidMap;
+    typedef std::map<std::pair<DataTypeProcedureVoid*, DataType*>, DataTypeProcedure*> DataTypeProcedureMap;
+    typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType >, DataTypeBasic*> DataTypeBasicMap;
+    typedef std::map<std::string, ConstantString* > ConstantStringMap;
+    typedef std::map<std::pair<SecrecDataType, uint64_t>, SymbolConstant*> NumericConstantMap;
+
 public: /* Methods: */
 
     ContextImpl ()
@@ -58,20 +69,20 @@ public: /* Methods: */
 public: /* Fields: */
 
     /* All types: */
-    TypeVoid m_voidType;
-    PublicSecType m_pubSecType;
-    std::map<std::string, PrivateSecType*> m_privSecTypes;
-    std::map<DataType*, DataTypeVar*> m_varTypes;
-    std::map<DataType*, TypeNonVoid*> m_nonVoidTypes;
-    std::map<std::vector<DataType*>, DataTypeProcedureVoid* > m_voidProcTypes;
-    std::map<std::pair<DataTypeProcedureVoid*, DataType*>, DataTypeProcedure*> m_procTypes;
-    std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType >, DataTypeBasic*> m_basicTypes;
+    TypeVoid                  m_voidType;
+    PublicSecType             m_pubSecType;
+    PrivateSecTypeMap         m_privSecTypes;
+    DataTypeVarMap            m_varTypes;
+    TypeNonVoidMap            m_nonVoidTypes;
+    DataTypeProcedureVoidMap  m_voidProcTypes;
+    DataTypeProcedureMap      m_procTypes;
+    DataTypeBasicMap          m_basicTypes;
 
     /* All constants: */
-    ConstantBool* m_trueConstant;
-    ConstantBool* m_falseConstant;
-    std::map<std::string, ConstantString* > m_stringLiterals;
-    std::map<std::pair<SecrecDataType, uint64_t>, Symbol*>  m_numericConstants;
+    ConstantBool*             m_trueConstant;
+    ConstantBool*             m_falseConstant;
+    ConstantStringMap         m_stringLiterals;
+    NumericConstantMap        m_numericConstants;
 };
 
 } // namespace SecreC

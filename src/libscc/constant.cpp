@@ -18,7 +18,7 @@ Constant<ty>* getNumeric (Context& cxt,
                           const typename SecrecTypeInfo<ty>::CType& value) {
     ContextImpl& impl = *cxt.pImpl ();
     const pair<SecrecDataType, uint64_t> index (ty, value);
-    map<pair<SecrecDataType, uint64_t>, Symbol*>::iterator
+    map<pair<SecrecDataType, uint64_t>, SymbolConstant*>::iterator
         i = impl.m_numericConstants.find (index);
     if (i == impl.m_numericConstants.end ()) {
         TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty);
@@ -210,23 +210,23 @@ ConstantFloat64* ConstantFloat64::get (Context &cxt, const CType &value) {
     return getNumeric<DATATYPE_FLOAT64> (cxt, value);
 }
 
-Symbol* defaultConstant (Context& cxt, SecrecDataType ty) {
+SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
     switch (ty) {
     case DATATYPE_BOOL:   return ConstantBool::get (cxt, false); break;
     case DATATYPE_STRING: return ConstantString::get (cxt, ""); break;
-    default:              return  numericConstant (cxt, ty, 0); break;
+    default:              return numericConstant (cxt, ty, 0); break;
     }
 }
 
-Symbol* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
+SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
     switch (ty) {
-    case DATATYPE_INT8:   return ConstantInt8::get (cxt, value); break;
-    case DATATYPE_UINT8:  return ConstantUInt8::get (cxt, value); break;
-    case DATATYPE_INT16:  return ConstantInt16::get (cxt, value); break;
+    case DATATYPE_INT8: return ConstantInt8::get (cxt, value); break;
+    case DATATYPE_UINT8: return ConstantUInt8::get (cxt, value); break;
+    case DATATYPE_INT16: return ConstantInt16::get (cxt, value); break;
     case DATATYPE_UINT16: return ConstantUInt16::get (cxt, value); break;
-    case DATATYPE_INT32:  return ConstantInt32::get (cxt, value); break;
+    case DATATYPE_INT32: return ConstantInt32::get (cxt, value); break;
     case DATATYPE_UINT32: return ConstantUInt32::get (cxt, value); break;
-    case DATATYPE_INT64:  return ConstantInt64::get (cxt, value); break;
+    case DATATYPE_INT64: return ConstantInt64::get (cxt, value); break;
     case DATATYPE_UINT64: return ConstantUInt64::get (cxt, value); break;
     case DATATYPE_XOR_UINT8: return ConstantUInt8::get (cxt, value); break;
     case DATATYPE_XOR_UINT16: return ConstantUInt16::get (cxt, value); break;
