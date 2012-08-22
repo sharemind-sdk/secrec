@@ -413,6 +413,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
             if (t_hi->type() != NODE_EXPR_NONE) {
                 TreeNodeExpr * e_hi = static_cast<TreeNodeExpr *>(t_hi);
                 const CGResult & eResult = codeGen(e_hi);
+                append(result, eResult);
                 if (result.isNotOk()) {
                     return result;
                 }
