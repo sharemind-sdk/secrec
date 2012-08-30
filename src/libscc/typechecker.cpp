@@ -125,8 +125,7 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* 
     }
 
     SecurityType* haveSecType = child->resultType ()->secrecSecType ();
-    if (need->isPublic () && haveSecType->isPrivate ()) assert (false);
-    if (need->isPrivate () && haveSecType->isPrivate ()) assert (need == haveSecType);
+    assert(!(need->isPrivate () && haveSecType->isPrivate ()) || need == haveSecType);
     if (need->isPrivate () && haveSecType->isPublic ()) {
         TreeNode* node = child->parent ();
         SecrecDataType destDType = child->resultType()->secrecDataType ();
