@@ -223,10 +223,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     // Check that quantifiers are saneley defined
-    std::set<std::string > quantifiedDomains;
+    typedef std::map<std::string, TreeNodeIdentifier*> TypeVariableMap;
+    typedef std::set<std::string> TypeVariableSet;
+    TypeVariableSet quantifiedDomains;
+    TypeVariableMap freeTypeVariables;
     BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
         TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
         quantifiedDomains.insert (quant->domain ()->value ());
+        freeTypeVariables[quant->domain ()->value ()] = quant->domain ();
         if (quant->kind ()) {
             Symbol* kindSym = findIdentifier (quant->kind ());
             if (kindSym == 0)
@@ -251,6 +255,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             if (quantifiedDomains.find (retSecTyIdent->value ()) == quantifiedDomains.end ()) {
                 if (findIdentifier(retSecTyIdent) == 0)
                     return E_TYPE;
+
+                freeTypeVariables.erase(retSecTyIdent->value ());
             }
         }
     }
@@ -272,7 +278,19 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
                 if (findIdentifier(id) == 0)
                     return E_TYPE;
             }
+
+            freeTypeVariables.erase(id->value ());
         }
+    }
+
+    if (!freeTypeVariables.empty()) {
+        std::stringstream ss;
+        BOOST_FOREACH(const TypeVariableMap::value_type& v, freeTypeVariables) {
+            ss << " " << v.second->location();
+        }
+
+        m_log.fatal() << "Template definition has free type variables at" << ss.str () << ".";
+        return E_TYPE;
     }
 
     SymbolTemplate* s = new SymbolTemplate (templ);
