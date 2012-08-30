@@ -233,7 +233,7 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
 *******************************************************************************/
 
 std::ostream& DataTypeVar::print (std::ostream & os) const {
-    os << "VAR" << m_dataType;
+    os << *m_dataType;
     return os;
 }
 
