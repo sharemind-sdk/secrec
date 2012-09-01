@@ -252,11 +252,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         if (! t->secType ()->isPublic ()) {
             retSecTyIdent = t->secType ()->identifier ();
             templ->setContextDependance (true); // may depend on context!
+            freeTypeVariables.erase(retSecTyIdent->value ());
             if (quantifiedDomains.find (retSecTyIdent->value ()) == quantifiedDomains.end ()) {
                 if (findIdentifier(retSecTyIdent) == 0)
                     return E_TYPE;
-
-                freeTypeVariables.erase(retSecTyIdent->value ());
             }
         }
     }
