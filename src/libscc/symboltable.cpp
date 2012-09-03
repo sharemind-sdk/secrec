@@ -161,6 +161,16 @@ Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
     return 0;
 }
 
+std::vector<Symbol *>
+SymbolTable::findPrefixedFromCurrentScope(const std::string & prefix) const {
+    std::vector<Symbol *> r;
+    BOOST_REVERSE_FOREACH(SymbolTable * import, m_imports)
+        BOOST_REVERSE_FOREACH(Symbol * s, import->m_table)
+            if (s->name().compare(0u, prefix.size(), prefix) == 0)
+                r.push_back(s);
+    return r;
+}
+
 std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
     BOOST_REVERSE_FOREACH (Symbol* sym, m_table) {
@@ -210,6 +220,29 @@ Symbol *SymbolTable::find (const std::string& name) const {
     }
 
     return 0;
+}
+
+std::vector<Symbol *>
+SymbolTable::findPrefixed(const std::string & prefix) const {
+    std::vector<Symbol *> r;
+    const SymbolTable * c = this;
+    while (c != 0) {
+        std::vector<Symbol *> r2 = c->findPrefixedFromCurrentScope(prefix);
+        BOOST_FOREACH(Symbol * s2, r2) {
+            bool overridden = false;
+            BOOST_FOREACH(Symbol * s, r)
+                if (s2->name() != s->name()) {
+                    overridden = true;
+                    break;
+                }
+            if (!overridden)
+                r.push_back(s2);
+        }
+
+        c = c->m_parent;
+    }
+
+    return r;
 }
 
 std::vector<Symbol* > SymbolTable::findAll (const std::string& name) const {

@@ -405,6 +405,31 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         m_log.fatal () << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << mangleProcedure (name->value (), argTypes, TemplateParams ());
         m_log.fatal () << "In context " << tyCxt.toString () << ".";
+
+        bool haveCandidatesLabel = false;
+        std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value());
+        if (!cs.empty()) {
+            m_log.info() << "Candidates are:";
+            haveCandidatesLabel = true;
+            BOOST_REVERSE_FOREACH(Symbol * c, cs) {
+                assert(dynamic_cast<SymbolProcedure *>(c) != 0);
+                std::ostringstream oss;
+                c->print(oss);
+                m_log.info() << '\t' << oss.str();
+            }
+        }
+        cs = m_st->findPrefixed("{templ}" + name->value());
+        if (!cs.empty()) {
+            if (!haveCandidatesLabel)
+                m_log.info() << "Candidates are:";
+            BOOST_REVERSE_FOREACH(Symbol * c, cs) {
+                assert(dynamic_cast<SymbolTemplate *>(c) != 0);
+                std::ostringstream oss;
+                c->print(oss);
+                m_log.info() << '\t' << oss.str();
+            }
+        }
+
         return E_TYPE;
     }
 
