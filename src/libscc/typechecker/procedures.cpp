@@ -369,7 +369,7 @@ TypeChecker::Status TypeChecker::checkProcCall(SymbolProcedure * symProc,
 }
 
 TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
-                                               const TypeContext & tyCxt,
+                                               const TreeNodeExprProcCall & tyCxt,
                                                const std::vector<TreeNodeExpr *> & arguments,
                                                SecreC::Type *& resultType,
                                                SymbolProcedure *& symProc)
@@ -403,7 +403,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     if (symProc == 0) {
         m_log.fatal () << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
-        m_log.fatal () << "In context " << tyCxt.toString () << ".";
+        m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
 
         bool haveCandidatesLabel = false;
         std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value());
@@ -513,10 +513,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
     }
 
     Status s = checkProcCall(id, *root, arguments, resultType, symProc);
-    if (s != OK) {
-        m_log.fatal () << "Error at " << root->location () << ".";
+    if (s != OK)
         return s;
-    }
 
     root->setProcedure (symProc);
     root->setResultType (resultType);

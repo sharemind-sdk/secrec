@@ -144,7 +144,7 @@ protected:
      * \param[out] symProc symbol of the procedure which will be called
      */
     Status checkProcCall(TreeNodeIdentifier * name,
-                         const TypeContext & tyCxt,
+                         const TreeNodeExprProcCall & tyCxt,
                          const std::vector<TreeNodeExpr *> & arguments,
                          SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);
