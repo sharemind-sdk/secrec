@@ -143,9 +143,8 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
     TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
 
-    SymbolSymbol * ns = new SymbolSymbol(ty);
+    SymbolSymbol * ns = new SymbolSymbol(varInit->variableName(), ty);
     ns->setScopeType(scopeType);
-    ns->setName(varInit->variableName());
     m_st->appendSymbol(ns);
 
     SecrecDimType n = 0;
@@ -154,21 +153,19 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     // Initialize shape:
     TypeNonVoid * dimType = TypeNonVoid::getIndexType(getContext());
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
-        SymbolSymbol * sym = new SymbolSymbol(dimType);
-        sym->setScopeType(scopeType);
         std::stringstream ss;
         ss << varInit->variableName() << "{d" << i << "}";
-        sym->setName(ss.str());
+        SymbolSymbol * sym = new SymbolSymbol(ss.str(), dimType);
+        sym->setScopeType(scopeType);
         m_st->appendSymbol(sym);
         ns->setDim(i, sym);
     }
 
     if (!isScalar) { // set size symbol
-        SymbolSymbol * sizeSym = new SymbolSymbol(dimType);
-        sizeSym->setScopeType(scopeType);
         std::stringstream ss;
         ss << varInit->variableName() << "{size}";
-        sizeSym->setName(ss.str());
+        SymbolSymbol * sizeSym = new SymbolSymbol(ss.str(), dimType);
+        sizeSym->setScopeType(scopeType);
         m_st->appendSymbol(sizeSym);
         ns->setSizeSym(sizeSym);
     }

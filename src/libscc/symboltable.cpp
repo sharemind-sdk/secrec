@@ -84,10 +84,9 @@ public: /* Methods: */
     }
 
     SymbolSymbol* temporary (TypeNonVoid* type) {
-        SymbolSymbol* tmp = new SymbolSymbol (type, true);
         std::ostringstream os;
         os << "{t}" << m_tempCount ++;
-        tmp->setName (os.str ());
+        SymbolSymbol * tmp = new SymbolSymbol(os.str(), type, true);
         m_temporaries.push_back (tmp);
         return tmp;
     }

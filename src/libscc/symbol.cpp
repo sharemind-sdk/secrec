@@ -62,21 +62,33 @@ std::ostream & SymbolDomain::print(std::ostream & os) const {
   SymbolSymbol
 *******************************************************************************/
 
-SymbolSymbol::SymbolSymbol (TypeNonVoid* valueType)
+SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid* valueType)
     : Symbol (SYMBOL, valueType)
+    , m_decl(NULL)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType())
     , m_size (0)
     , m_isTemporary (false)
-{ }
+{
+    setName(name);
+}
 
-SymbolSymbol::SymbolSymbol (TypeNonVoid* valueType, bool)
+SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bool)
     : Symbol (SYMBOL, valueType)
+    , m_decl(NULL)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType ())
     , m_size (0)
     , m_isTemporary (true)
-{ }
+{
+    setName(name);
+}
+
+const YYLTYPE * SymbolSymbol::location() const {
+    if (m_decl)
+        return &m_decl->location();
+    return NULL;
+}
 
 std::ostream & SymbolSymbol::print(std::ostream & os) const {
     if (m_isTemporary) os << "TEMPORARY ";
@@ -106,6 +118,10 @@ SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
     , m_target(0)
 {
     // Intentionally empty
+}
+
+const YYLTYPE * SymbolProcedure::location() const {
+    return &m_decl->location();
 }
 
 std::ostream & SymbolProcedure::print(std::ostream & os) const {
@@ -159,6 +175,10 @@ SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
     : Symbol (Symbol::TEMPLATE)
     , m_templ (templ)
 { }
+
+const YYLTYPE * SymbolTemplate::location() const {
+    return &m_templ->location();
+}
 
 std::ostream & SymbolTemplate::print(std::ostream & os) const {
     os << "TEMPLATE " << name ();

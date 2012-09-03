@@ -415,7 +415,11 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 assert(dynamic_cast<SymbolProcedure *>(c) != 0);
                 std::ostringstream oss;
                 c->print(oss);
-                m_log.info() << '\t' << oss.str();
+                if (c->location()) {
+                    m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                } else {
+                    m_log.info() << '\t' << oss.str();
+                }
             }
         }
         cs = m_st->findPrefixed("{templ}" + name->value());
@@ -426,7 +430,11 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 assert(dynamic_cast<SymbolTemplate *>(c) != 0);
                 std::ostringstream oss;
                 c->print(oss);
-                m_log.info() << '\t' << oss.str();
+                if (c->location()) {
+                    m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                } else {
+                    m_log.info() << '\t' << oss.str();
+                }
             }
         }
 

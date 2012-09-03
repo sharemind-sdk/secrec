@@ -30,9 +30,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         return CGResult::ERROR_FATAL;
     }
 
-    SymbolKind * pdk = new SymbolKind();
-    pdk->setName(id->value());
-    st->appendSymbol(pdk);
+    st->appendSymbol(new SymbolKind(id->value()));
     return CGStmtResult();
 }
 
@@ -56,10 +54,9 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
         return CGResult::ERROR_FATAL;
     }
 
-    SymbolDomain * symDom = new SymbolDomain(
-            PrivateSecType::get(getContext(), idDomain->value(), kind));
-    symDom->setName(idDomain->value());
-    st->appendSymbol(symDom);
+    st->appendSymbol(new SymbolDomain(
+                         idDomain->value(),
+                         PrivateSecType::get(getContext(), idDomain->value(), kind)));
     return CGStmtResult();
 }
 

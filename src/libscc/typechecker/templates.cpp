@@ -83,9 +83,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
             TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
             const std::string& qname = quant->domain ()->value ();
             SecurityType* argSecTy = *secIt;
-            SymbolDomain* dom = new SymbolDomain (argSecTy);
-            dom->setName (qname);
-            local->appendSymbol (dom);
+            local->appendSymbol(new SymbolDomain(qname, argSecTy));
             ++ secIt;
         }
     }

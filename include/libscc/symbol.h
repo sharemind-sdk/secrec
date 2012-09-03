@@ -12,6 +12,7 @@ class Imop;
 class SecurityType;
 class TreeNodeProcDef;
 class TreeNodeTemplate;
+class TreeNodeVarInit;
 class TypeNonVoid;
 
 /*******************************************************************************
@@ -57,6 +58,7 @@ public: /* Methods: */
     bool isGlobal () const;
     bool isArray () const;
 
+    virtual const YYLTYPE * location() const { return NULL; }
     virtual std::ostream & print(std::ostream & os) const = 0;
 
 private: /* Fields: */
@@ -88,9 +90,11 @@ public: /* Methods: */
 class SymbolKind : public Symbol {
 public: /* Methods: */
 
-    SymbolKind ()
+    SymbolKind(const std::string & name)
         : Symbol (Symbol::PKIND)
-    { }
+    {
+        setName(name);
+    }
 
     virtual std::ostream & print(std::ostream & os) const;
 };
@@ -102,10 +106,12 @@ public: /* Methods: */
 class SymbolDomain : public Symbol {
 public: /* Methods: */
 
-    SymbolDomain (SecurityType* secType)
+    SymbolDomain(const std::string & name, SecurityType * secType)
         : Symbol (Symbol::PDOMAIN)
         , m_secType (secType)
-    { }
+    {
+        setName(name);
+    }
 
     inline SecurityType* securityType () const { return m_secType; }
     virtual std::ostream & print(std::ostream & os) const;
@@ -126,10 +132,12 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit SymbolSymbol (TypeNonVoid* valueType);
+    explicit SymbolSymbol(const std::string & name, TypeNonVoid * valueType);
 
-    explicit SymbolSymbol (TypeNonVoid* valueType, bool);
+    explicit SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bool);
 
+    inline TreeNodeVarInit * decl() const { return m_decl; }
+    inline void setDecl(TreeNodeVarInit * decl) { m_decl = decl; }
     inline ScopeType scopeType() const { return m_scopeType; }
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
     inline bool isTemporary () const { return m_isTemporary; }
@@ -140,6 +148,7 @@ public: /* Methods: */
     void setSizeSym (Symbol* sym) { m_size = sym; }
     void inheritShape (Symbol* from);
 
+    virtual const YYLTYPE * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 protected:
@@ -149,6 +158,7 @@ protected:
 
 private: /* Fields: */
 
+    TreeNodeVarInit *      m_decl;
     ScopeType              m_scopeType;
     std::vector<Symbol* >  m_dims;
     Symbol*                m_size;
@@ -225,6 +235,7 @@ public: /* Methods: */
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
 
+    virtual const YYLTYPE * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 private: /* Fields: */
@@ -243,6 +254,7 @@ public: /* Methods: */
 
     inline const TreeNodeTemplate *decl() const { return m_templ; }
 
+    virtual const YYLTYPE * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 private: /* Fields: */
