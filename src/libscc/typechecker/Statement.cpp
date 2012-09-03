@@ -64,12 +64,13 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
             return s;
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        e = classifyIfNeeded (e, ty->secrecSecType ());
         if (! ty->canAssign (e->resultType ())) {
             m_log.fatal () << "Illegal assignment at " << varInit->location () << ".";
             m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << ".";
             return E_TYPE;
         }
+
+        e = classifyIfNeeded (e, ty->secrecSecType ());
     }
 
     return OK;
