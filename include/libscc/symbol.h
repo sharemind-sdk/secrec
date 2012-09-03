@@ -79,8 +79,6 @@ public: /* Methods: */
     { }
 
     virtual inline ~SymbolConstant() { }
-
-    virtual std::ostream & print(std::ostream & os) const = 0;
 };
 
 /*******************************************************************************
