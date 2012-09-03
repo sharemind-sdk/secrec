@@ -33,6 +33,7 @@ public: /* Methods: */
     inline bool isVoid() const { return m_isVoid; }
 
     virtual std::string toString() const = 0;
+    virtual std::string toNormalString() const = 0;
 
     virtual inline bool canAssign(const Type*) const {
         return false;
@@ -63,6 +64,7 @@ public: /* Methods: */
     static TypeVoid* get (Context& cxt);
 
     virtual inline std::string toString() const { return "void"; }
+    virtual inline std::string toNormalString() const { return "void"; }
 };
 
 /*******************************************************************************
@@ -95,6 +97,9 @@ public: /* Methods: */
     inline DataType* dataType() const { return m_dataType; }
 
     virtual std::string toString() const;
+    virtual inline std::string toNormalString() const {
+        return m_dataType->toNormalString();
+    }
 
     virtual inline bool canAssign(const Type* other) const {
         if (other->isVoid ()) return false;

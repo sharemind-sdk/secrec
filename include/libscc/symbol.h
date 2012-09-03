@@ -227,8 +227,11 @@ inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol
 
 class SymbolProcedure: public Symbol {
 public: /* Methods: */
-    SymbolProcedure(const TreeNodeProcDef *procdef);
+    SymbolProcedure(const std::string & name,
+                    const TreeNodeProcDef * procdef,
+                    SymbolProcedure * shortOf = NULL);
 
+    SymbolProcedure * shortOf() const { return m_shortOf; }
     inline const TreeNodeProcDef *decl() const { return m_decl; }
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
@@ -239,6 +242,7 @@ public: /* Methods: */
 private: /* Fields: */
     const TreeNodeProcDef*  const  m_decl;
     Imop*                          m_target;
+    SymbolProcedure *              m_shortOf;
 };
 
 

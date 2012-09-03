@@ -327,6 +327,22 @@ bool TreeNodeType::isNonVoid() const {
     return ! children().empty();
 }
 
+std::string TreeNodeType::typeString() const {
+    if (m_cachedType)
+        return m_cachedType->toNormalString();
+
+    std::ostringstream oss;
+    TreeNodeSecTypeF * const st = secType();
+    if (!st->isPublic())
+        oss << st->identifier()->value() << ' ';
+
+    oss << dataType()->dataType();
+    if (dimType()->dimType() > 0)
+        oss << "[[" << dimType()->dimType() << "]]";
+
+    return oss.str();
+}
+
 /*******************************************************************************
   OverloadableOperator
 *******************************************************************************/

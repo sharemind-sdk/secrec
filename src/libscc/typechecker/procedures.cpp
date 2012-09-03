@@ -61,9 +61,10 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
            || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
-    const std::string name = mangleProcedure (procdef.procedureName(), dt, targs);
-    SymbolProcedure* ns = new SymbolProcedure(&procdef);
-    ns->setName (name);
+    SymbolProcedure * ns = new SymbolProcedure(mangleProcedure(procdef.procedureName(),
+                                                               dt,
+                                                               targs),
+                                               &procdef);
     st->appendSymbol (ns);
     return ns;
 }
@@ -202,9 +203,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
             }
         }
 
-        procSym = new SymbolProcedure (proc);
-        procSym->setName (shortName);
-        m_st->appendSymbol (procSym);
+        m_st->appendSymbol(new SymbolProcedure(shortName, proc));
     }
 
     return OK;
@@ -403,22 +402,31 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     if (symProc == 0) {
         m_log.fatal () << "No matching procedure definitions for:";
-        m_log.fatal () << '\t' << mangleProcedure (name->value (), argTypes, TemplateParams ());
+        m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
         m_log.fatal () << "In context " << tyCxt.toString () << ".";
 
         bool haveCandidatesLabel = false;
         std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value());
         if (!cs.empty()) {
-            m_log.info() << "Candidates are:";
-            haveCandidatesLabel = true;
-            BOOST_REVERSE_FOREACH(Symbol * c, cs) {
-                assert(dynamic_cast<SymbolProcedure *>(c) != 0);
-                std::ostringstream oss;
-                c->print(oss);
-                if (c->location()) {
-                    m_log.info() << '\t' << oss.str() << " at " << *(c->location());
-                } else {
-                    m_log.info() << '\t' << oss.str();
+            std::vector<SymbolProcedure *> cps;
+            do {
+                assert(dynamic_cast<SymbolProcedure *>(cs.back()) != 0);
+                SymbolProcedure * const p = static_cast<SymbolProcedure *>(cs.back());
+                if (p->shortOf() == NULL)
+                    cps.push_back(p);
+                cs.pop_back();
+            } while (!cs.empty());
+            if (!cps.empty()) {
+                m_log.info() << "Candidates are:";
+                haveCandidatesLabel = true;
+                BOOST_FOREACH(SymbolProcedure * c, cps) {
+                    std::ostringstream oss;
+                    c->print(oss);
+                    if (c->location()) {
+                        m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                    } else {
+                        m_log.info() << '\t' << oss.str();
+                    }
                 }
             }
         }

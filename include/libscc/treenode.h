@@ -241,6 +241,8 @@ public: /* Methods: */
     TreeNodeDimTypeF* dimType () const;
     bool isNonVoid () const;
 
+    std::string typeString() const;
+
 protected:
 
     friend class TypeChecker;

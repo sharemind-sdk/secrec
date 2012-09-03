@@ -59,6 +59,7 @@ public: /* Methods: */
     inline SecrecDimType secrecDimType() const;
 
     virtual std::ostream& print (std::ostream& os) const = 0;
+    virtual std::string toNormalString() const = 0;
 
     virtual inline bool canAssign(const DataType*) const {
         return false;
@@ -105,6 +106,7 @@ public: /* Methods: */
     inline SecrecDimType dimType() const { return m_dimType; }
 
     virtual std::ostream& print (std::ostream& os) const;
+    virtual std::string toNormalString() const;
 
     virtual bool latticeLEQ(const DataType* _other) const {
         const DataTypeBasic* other = static_cast<const DataTypeBasic*>(_other);
@@ -151,7 +153,13 @@ public: /* Methods: */
 
     DataType* dataType() const { return m_dataType; }
 
-    virtual std::ostream& print (std::ostream& os) const;
+    virtual inline std::ostream& print (std::ostream& os) const {
+        os << *m_dataType;
+        return os;
+    }
+    virtual inline std::string toNormalString() const {
+        return m_dataType->toNormalString();
+    }
     virtual inline bool canAssign(const DataType* other) const {
         return other->latticeLEQ(m_dataType);
     }
@@ -184,6 +192,9 @@ public: /* Methods: */
     virtual ~DataTypeProcedureVoid() { }
 
     virtual std::ostream& print (std::ostream& os) const;
+    virtual std::string toNormalString() const;
+    std::string paramsToNormalString() const;
+
     std::string mangle() const;
 
     inline const std::vector<DataType*> &paramTypes() const { return m_params; }
@@ -220,6 +231,7 @@ public: /* Methods: */
     virtual inline ~DataTypeProcedure() { }
 
     virtual std::ostream& print (std::ostream& os) const;
+    virtual std::string toNormalString() const;
 
     inline DataType* returnType() const { return m_ret; }
 

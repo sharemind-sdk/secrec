@@ -206,6 +206,16 @@ std::ostream& DataTypeBasic::print (std::ostream & os) const {
     return os;
 }
 
+std::string DataTypeBasic::toNormalString() const {
+    std::ostringstream oss;
+    if (!m_secType->isPublic())
+        oss << *m_secType << ' ';
+    oss << m_dataType;
+    if (m_dimType > 0)
+        oss << "[[" << m_dimType << "]]";
+    return oss.str();
+}
+
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
                                    SecrecDataType dataType,
                                    SecrecDimType dim)
@@ -232,11 +242,6 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
   DataTypeVar
 *******************************************************************************/
 
-std::ostream& DataTypeVar::print (std::ostream & os) const {
-    os << *m_dataType;
-    return os;
-}
-
 DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.varType (base);
@@ -262,6 +267,25 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
 std::ostream& DataTypeProcedureVoid::print (std::ostream & os) const {
     os << mangle () << " -> void";
     return os;
+}
+
+std::string DataTypeProcedureVoid::toNormalString() const {
+    return "void ()" + paramsToNormalString();
+}
+
+std::string DataTypeProcedureVoid::paramsToNormalString() const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
+
+    std::ostringstream oss;
+    oss << '(';
+    if (m_params.size() > 0) {
+        oss << m_params.at(0)->toNormalString();
+        if (m_params.size() > 1)
+            for (TVCI it(++(m_params.begin())); it != m_params.end(); it++)
+                oss << ", " << (*it)->toNormalString();
+    }
+    oss << ')';
+    return oss.str();
 }
 
 std::string DataTypeProcedureVoid::mangle() const {
@@ -304,6 +328,12 @@ DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
 std::ostream& DataTypeProcedure::print (std::ostream& os) const {
     os << mangle() << " -> " << *m_ret;
     return os;
+}
+
+std::string DataTypeProcedure::toNormalString() const {
+    std::ostringstream oss;
+    oss << *m_ret << " ()" << paramsToNormalString();
+    return oss.str();
 }
 
 } // namespace SecreC

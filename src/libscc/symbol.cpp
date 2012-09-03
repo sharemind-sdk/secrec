@@ -112,21 +112,45 @@ void SymbolSymbol::inheritShape (Symbol* from) {
   SymbolProcedure
 *******************************************************************************/
 
-SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
+SymbolProcedure::SymbolProcedure(const std::string & name,
+                                 const TreeNodeProcDef * procdef,
+                                 SymbolProcedure * shortOf)
     : Symbol(Symbol::PROCEDURE, procdef->procedureType())
     , m_decl(procdef)
     , m_target(0)
+    , m_shortOf(shortOf)
 {
-    // Intentionally empty
+    setName(name);
 }
 
 const YYLTYPE * SymbolProcedure::location() const {
     return &m_decl->location();
 }
 
-std::ostream & SymbolProcedure::print(std::ostream & os) const {
-    os << "PROCEDURE " << name () << ": " << *secrecType ();
+namespace {
+std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
+    os << procDef->returnType()->typeString()
+       << ' ' << procDef->identifier()->value() << '(';
+    TreeNode::ChildrenListConstIterator it = procDef->paramBegin();
+    if (it != procDef->paramEnd()) {
+        assert((*it)->type() == NODE_DECL);
+        assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
+        TreeNodeStmtDecl * decl = static_cast<TreeNodeStmtDecl *>(*it);
+        os << decl->varType()->typeString();
+        while (++it != procDef->paramEnd()) {
+            assert((*it)->type() == NODE_DECL);
+            assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
+            decl = static_cast<TreeNodeStmtDecl *>(*it);
+            os << ", " << decl->varType()->typeString();
+        }
+    }
+    os << ')';
     return os;
+}
+}
+
+std::ostream & SymbolProcedure::print(std::ostream & os) const {
+    return printProcDef(os, m_decl);
 }
 
 /*******************************************************************************
@@ -181,9 +205,26 @@ const YYLTYPE * SymbolTemplate::location() const {
 }
 
 std::ostream & SymbolTemplate::print(std::ostream & os) const {
-    os << "TEMPLATE " << name ();
+    os << "template <domain ";
+    const TreeNode::ChildrenList & qs = m_templ->quantifiers();
+    assert(!qs.empty());
+    TreeNode::ChildrenListConstIterator it = qs.begin();
+    assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
+    TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
+    os << q->domain()->value();
+    if (q->kind())
+        os << " : " << q->kind()->value();
+    while (++it != qs.end()) {
+        os << ", domain ";
+        assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
+        TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
+        os << q->domain()->value();
+        if (q->kind())
+            os << " : " << q->kind()->value();
+    }
+
+    printProcDef(os << "> ", m_templ->body());
     return os;
 }
-
 
 }
