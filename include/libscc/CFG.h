@@ -10,7 +10,6 @@
 #ifndef SECREC_CFG_H
 #define SECREC_CFG_H
 
-#include <boost/foreach.hpp>
 #include <map>
 
 namespace SecreC {
@@ -34,10 +33,6 @@ public: /* Types: */
 
 public:
 
-    CFGNode () { }
-
-    ~CFGNode () { }
-
     neighbour_iterator pred_begin () { return m_predecessors.begin (); }
     neighbour_iterator pred_end () { return m_predecessors.end (); }
     neighbour_const_iterator pred_begin () const { return m_predecessors.begin (); }
@@ -58,11 +53,12 @@ public:
     }
 
     void unlink () {
-        BOOST_FOREACH (typename NeighbourMap::reference pred, m_predecessors)
-            pred.first->removeSucc (self ());
+        typedef typename NeighbourMap::iterator iter;
+        for (iter i = m_predecessors.begin (), e = m_predecessors.end (); i != e; ++ i)
+            i->first->removeSucc (self ());
 
-        BOOST_FOREACH (typename NeighbourMap::reference succ, m_successors)
-            succ.first->removePred (self ());
+        for (iter i = m_successors.begin (), e = m_successors.end (); i != e; ++ i)
+            i->first->removePred (self ());
     }
 
 protected:

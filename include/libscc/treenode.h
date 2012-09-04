@@ -3,16 +3,13 @@
 
 #include "parser.h"
 
-#ifdef __cplusplus
 #include <cassert>
 #include <deque>
 #include <string>
+
 #include "codegenResult.h"
-#include "intermediate.h"
 #include "typechecker.h"
 #include "TypeContext.h"
-#include "types.h"
-
 
 namespace SecreC {
 
@@ -21,46 +18,6 @@ class TypeChecker;
 class ModuleInfo;
 class TreeNodeProcDef;
 class TreeNode;
-#else
-typedef struct TreeNode TreeNode;
-#endif
-
-#ifdef __cplusplus
-// C interface
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
-/* C interface for yacc: */
-
-TreeNode *treenode_init(enum SecrecTreeNodeType type,
-                        const YYLTYPE *loc);
-void treenode_free(TreeNode *node);
-enum SecrecTreeNodeType treenode_type(TreeNode *node);
-const YYLTYPE *treenode_location(const TreeNode *node);
-unsigned treenode_numChildren(const TreeNode *node);
-TreeNode *treenode_childAt(const TreeNode *node, unsigned index);
-void treenode_appendChild(TreeNode *parent, TreeNode *child);
-void treenode_prependChild(TreeNode *parent, TreeNode *child);
-void treenode_setLocation(TreeNode *node, YYLTYPE *loc);
-void treenode_moveChildren (TreeNode* from, TreeNode* to);
-
-TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
-TreeNode *treenode_init_int(int value, YYLTYPE *loc);
-TreeNode *treenode_init_uint(unsigned value, YYLTYPE *loc);
-TreeNode *treenode_init_string(const char *value, YYLTYPE *loc);
-TreeNode *treenode_init_float(const char *value, YYLTYPE *loc);
-TreeNode *treenode_init_identifier(const char *value, YYLTYPE *loc);
-TreeNode *treenode_init_publicSecTypeF(YYLTYPE *loc);
-TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc);
-TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType,
-                                  YYLTYPE *loc);
-TreeNode *treenode_init_dimTypeF(unsigned dimType,
-                                 YYLTYPE *loc);
-TreeNode *treenode_init_opdef(enum SecrecOperator op, YYLTYPE *loc);
-
-#ifdef __cplusplus
-} /* extern "C" */
-
 
 /******************************************************************
   TreeNode
@@ -284,6 +241,8 @@ public: /* Methods: */
     TreeNodeDimTypeF* dimType () const;
     bool isNonVoid () const;
 
+    std::string typeString() const;
+
 protected:
 
     friend class TypeChecker;
@@ -311,7 +270,6 @@ class TreeNodeTypeType: public TreeNodeType {
 public: /* Methods: */
     explicit inline TreeNodeTypeType(const YYLTYPE &loc)
         : TreeNodeType(NODE_TYPETYPE, loc) {}
-    virtual inline ~TreeNodeTypeType() { }
 
     virtual std::string stringHelper() const;
 
@@ -357,7 +315,7 @@ public: /* Methods: */
         , m_resultType (0)
     { }
 
-    virtual ~TreeNodeExpr() { }
+    virtual ~TreeNodeExpr () { }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
 
@@ -417,6 +375,7 @@ class TreeNodeStmt: public TreeNode {
 public: /* Methods: */
     inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
         : TreeNode(type, loc) { }
+    virtual ~TreeNodeStmt() { }
 
     virtual CGStmtResult codeGenWith (CodeGen&) = 0;
 
@@ -658,6 +617,8 @@ public: /* Methods: */
         : m_operator (SCOP_NONE)
         , m_symbolProcedure (0)
     { }
+
+    virtual ~OverloadableOperator() { }
 
     SecrecOperator getOperator () const;
 
@@ -1128,7 +1089,6 @@ class TreeNodeKind : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeKind(const YYLTYPE &loc)
         : TreeNode (NODE_KIND, loc) { }
-    virtual inline ~TreeNodeKind() { }
 
 protected:
 
@@ -1146,7 +1106,6 @@ class TreeNodeDomain : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeDomain(const YYLTYPE &loc)
         : TreeNode (NODE_DOMAIN, loc) { }
-    virtual inline ~TreeNodeDomain() { }
 
 protected:
 
@@ -1182,7 +1141,7 @@ public:
         setContainingProcedureDirectly(this);
     }
 
-    virtual inline ~TreeNodeProcDef() { }
+    virtual ~TreeNodeProcDef() { }
 
     virtual inline void resetParent(TreeNode *parent) {
         setParentDirectly(parent);
@@ -1224,8 +1183,8 @@ protected: /* Methods: */
     }
 
 protected: /* Fields: */
-    SecreC::TypeNonVoid*  m_cachedType;
-    SymbolProcedure*      m_procSymbol;
+    TypeNonVoid*      m_cachedType;
+    SymbolProcedure*  m_procSymbol;
 };
 
 /******************************************************************
@@ -1240,8 +1199,6 @@ public: /* Methods: */
         : TreeNodeProcDef (NODE_OPDEF, loc)
         , m_operator (op)
     { }
-
-    inline ~TreeNodeOpDef() { }
 
     SecrecOperator getOperator () const { return m_operator; }
 
@@ -1350,7 +1307,6 @@ public: /* Methods: */
         : TreeNode (NODE_IMPORT, loc)
     { }
 
-    virtual ~TreeNodeImport () { }
     const std::string& name () const;
 
 protected:
@@ -1369,8 +1325,6 @@ public: /* Methods: */
     inline TreeNodeModule(const YYLTYPE &loc)
         : TreeNode (NODE_MODULE, loc)
     { }
-
-    virtual ~TreeNodeModule () { }
 
     bool hasName () const;
     std::string name () const;
@@ -1412,7 +1366,6 @@ class TreeNodeStmtCompound: public TreeNodeStmt {
 public: /* Methods: */
     explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
         : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
-    virtual inline ~TreeNodeStmtCompound() {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
@@ -1453,8 +1406,6 @@ public: /* Methods: */
         : TreeNode (NODE_VAR_INIT, loc)
     { }
 
-    virtual ~TreeNodeVarInit () { }
-
     const std::string &variableName() const;
 
     /// \retval 0 if shape is not specified
@@ -1483,8 +1434,6 @@ public: /* Methods: */
         , m_type (0)
         , m_global (false)
         , m_procParam (false) { }
-
-    virtual ~TreeNodeStmtDecl() { }
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
@@ -1695,7 +1644,6 @@ protected:
   TreeNodeStmtPrint
 ******************************************************************/
 
-/// String printing statement.
 class TreeNodeStmtPrint: public TreeNodeStmt {
 public: /* Methods: */
     explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
@@ -1723,7 +1671,8 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    TreeNodeExprString* expression () const;
+    TreeNodeExprString* name () const;
+    ChildrenListConstRange paramRange () const;
 
 protected:
 
@@ -1732,56 +1681,6 @@ protected:
     }
 };
 
-/******************************************************************
-  TreeNodeStmtPush
-******************************************************************/
-
-class TreeNodeStmtPush: public TreeNodeStmt {
-public: /* Methods: */
-    explicit inline TreeNodeStmtPush(const YYLTYPE &loc)
-        : TreeNodeStmt(NODE_STMT_PUSH, loc) {}
-
-    virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-    TreeNodeExpr* expression () const;
-
-protected:
-
-    virtual TreeNode* cloneV () const {
-        return new TreeNodeStmtPush (m_location);
-    }
-};
-
-/******************************************************************
-  TreeNodeStmtPushRef
-******************************************************************/
-
-class TreeNodeStmtPushRef: public TreeNodeStmt {
-public: /* Methods: */
-    explicit inline TreeNodeStmtPushRef(const YYLTYPE &loc,
-                                        bool isConstant = false)
-        : TreeNodeStmt(NODE_STMT_PUSH, loc)
-        , m_isConstant (isConstant)
-    {}
-
-    virtual CGStmtResult codeGenWith (CodeGen& cg);
-
-    TreeNodeIdentifier* identifier () const;
-
-    bool isConstant () const { return m_isConstant; }
-
-protected:
-
-    virtual TreeNode* cloneV () const {
-        return new TreeNodeStmtPushRef (m_location, m_isConstant);
-    }
-
-private: /* Fields: */
-    const bool m_isConstant;
-};
-
-} // namespace SecreC
-
-#endif /* #ifdef __cplusplus */
+} /* namespace SecreC */
 
 #endif /* TREENODE_H */

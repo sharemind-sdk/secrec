@@ -199,12 +199,21 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
   DataTypeBasic
 *******************************************************************************/
 
-std::string DataTypeBasic::toString() const {
-    std::ostringstream os;
-    os << "(" << m_secType->toString () << ","
-       << SecrecFundDataTypeToString(m_dataType) << ","
+std::ostream& DataTypeBasic::print (std::ostream & os) const {
+    os << "(" << *m_secType << ","
+       << m_dataType << ","
        << m_dimType << ")";
-    return os.str();
+    return os;
+}
+
+std::string DataTypeBasic::toNormalString() const {
+    std::ostringstream oss;
+    if (!m_secType->isPublic())
+        oss << *m_secType << ' ';
+    oss << m_dataType;
+    if (m_dimType > 0)
+        oss << "[[" << m_dimType << "]]";
+    return oss.str();
 }
 
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
@@ -233,10 +242,6 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
   DataTypeVar
 *******************************************************************************/
 
-std::string DataTypeVar::toString() const {
-    return std::string("VAR ") + m_dataType->toString();
-}
-
 DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.varType (base);
@@ -259,9 +264,28 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
     return impl.voidProcedureType (std::vector<DataType*> ());
 }
 
-// \todo don't use mangle() here
-std::string DataTypeProcedureVoid::toString() const {
-    return mangle() + " -> void";
+std::ostream& DataTypeProcedureVoid::print (std::ostream & os) const {
+    os << mangle () << " -> void";
+    return os;
+}
+
+std::string DataTypeProcedureVoid::toNormalString() const {
+    return "void ()" + paramsToNormalString();
+}
+
+std::string DataTypeProcedureVoid::paramsToNormalString() const {
+    typedef std::vector<DataType*>::const_iterator TVCI;
+
+    std::ostringstream oss;
+    oss << '(';
+    if (m_params.size() > 0) {
+        oss << m_params.at(0)->toNormalString();
+        if (m_params.size() > 1)
+            for (TVCI it(++(m_params.begin())); it != m_params.end(); it++)
+                oss << ", " << (*it)->toNormalString();
+    }
+    oss << ')';
+    return oss.str();
 }
 
 std::string DataTypeProcedureVoid::mangle() const {
@@ -301,10 +325,15 @@ DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
     return impl.procedureType (params->paramTypes (), returnType);
 }
 
-std::string DataTypeProcedure::toString() const {
-    std::ostringstream os;
+std::ostream& DataTypeProcedure::print (std::ostream& os) const {
     os << mangle() << " -> " << *m_ret;
-    return os.str();
+    return os;
+}
+
+std::string DataTypeProcedure::toNormalString() const {
+    std::ostringstream oss;
+    oss << *m_ret << " ()" << paramsToNormalString();
+    return oss.str();
 }
 
 } // namespace SecreC

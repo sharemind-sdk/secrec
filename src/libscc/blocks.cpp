@@ -4,39 +4,40 @@
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <map>
+#include <sstream>
 
 #include "dataflowanalysis.h"
+#include "misc.h"
+#include "symbol.h"
 #include "treenode.h"
 
+namespace SecreC {
 
-typedef std::set<SecreC::Block*>::const_iterator BSCI;
-typedef std::set<SecreC::Imop*> IS;
+typedef std::set<Block*>::const_iterator BSCI;
+typedef std::set<Imop*> IS;
 typedef IS::const_iterator ISCI;
 
+namespace /* anonymous */ {
 
-namespace {
-
-using namespace SecreC;
-
-inline bool fallsThru(const SecreC::Block &b) {
+inline bool fallsThru(const Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
 
-    const SecreC::Imop* last = 0;
+    const Imop* last = 0;
     BOOST_REVERSE_FOREACH (const Imop& imop, b) {
         last = &imop;
-        if (imop.type () != SecreC::Imop::COMMENT) {
+        if (imop.type () != Imop::COMMENT) {
             break;
         }
     }
 
     assert (last != 0);
     switch (last->type ()) {
-    case SecreC::Imop::CALL:
-    case SecreC::Imop::JUMP:
-    case SecreC::Imop::END:
-    case SecreC::Imop::RETURN:
-    case SecreC::Imop::ERROR:
+    case Imop::CALL:
+    case Imop::JUMP:
+    case Imop::END:
+    case Imop::RETURN:
+    case Imop::ERROR:
         return false;
     default:
         break;
@@ -118,7 +119,9 @@ void printLabel (std::ostream& os, const Block& block) {
     for (Block::const_iterator i = block.begin (), e = block.end (); i != e; ++ i) {
         os << "<TR>";
         os << "<TD ALIGN=\"LEFT\">" << i->index () << "</TD>";
-        os << "<TD ALIGN=\"LEFT\">" << xmlEncode (i->toString ()) << "</TD>";
+        std::stringstream ss;
+        ss << *i;
+        os << "<TD ALIGN=\"LEFT\">" << xmlEncode (ss.str ()) << "</TD>";
         os << "</TR>";
     }
 
@@ -166,7 +169,7 @@ void printEdges (std::ostream& os, const Block& from, Edge::Label label, const c
 
 void printProcName (std::ostream& os, const Procedure& pr) {
     if (pr.name ())
-        os << "    label = \"" << pr.name ()->toString () << "\";\n";
+        os << "    label = \"" << *pr.name () << "\";\n";
     else
         os << "    label = \"START\";\n";
 }
@@ -179,9 +182,6 @@ struct disposer {
 };
 
 } // anonymous namespace
-
-
-namespace SecreC {
 
 /*******************************************************************************
   Program
@@ -398,15 +398,13 @@ void Program::numberBlocks () {
     }
 }
 
-std::string Program::toString() const {
+std::ostream & Program::print(std::ostream & os) const {
     typedef DataFlowAnalysis RD;
-
-    std::ostringstream os;
 
     os << "PROCEDURES:" << std::endl;
     BOOST_FOREACH (const Procedure& proc, *this) {
         if (proc.name ())
-            os << "  " << proc.name ()->toString () << std::endl;
+            os << "  " << *proc.name () << std::endl;
         printBlockList(os, "  .. From: ", proc.callFrom ());
         printBlockList(os, "  .... To: ", proc.returnTo ());
         os << "  BLOCKS:" << std::endl;
@@ -442,7 +440,7 @@ std::string Program::toString() const {
         }
     }
 
-    return os.str();
+    return os;
 }
 
 void Program::toDotty (std::ostream& os) const {
@@ -539,8 +537,3 @@ bool Block::isExit () const {
 }
 
 } // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecreC::Program &proc) {
-    out << proc.toString();
-    return out;
-}

@@ -12,8 +12,10 @@
 
 #include "VMCode.h"
 #include "VMSymbolTable.h"
+#include "ScalarAllocPlacement.h"
 
 #include <set>
+#include <map>
 
 namespace SecreC {
 class Procedure;
@@ -49,7 +51,7 @@ public: /* Methods: */
 
     VMSymbolTable& st () { return m_st; }
 
-protected:
+private:
 
     void cgProcedure (const SecreC::Procedure& blocks);
     void cgBlock (VMFunction& func, const SecreC::Block& block);
@@ -118,7 +120,7 @@ private: /* Fields: */
     RegisterAllocator*    m_ra;      ///< Register allocator
     SyscallManager*       m_scm;     ///< The syscall manager
     StringLiterals*       m_strLit;  ///< String literals
-    std::set<VMValue*>    m_allocatedScalars;
+    AllocMap              m_allocs;  ///< Where to allocate scalar private symbols
 };
 
 } // namespace SecreCC

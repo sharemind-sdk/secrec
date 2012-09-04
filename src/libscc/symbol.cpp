@@ -1,11 +1,10 @@
 #include "symbol.h"
 
 #include <string>
-#include <sstream>
 
+#include "blocks.h"
 #include "imop.h"
 #include "treenode.h"
-
 
 namespace SecreC {
 
@@ -42,35 +41,60 @@ bool Symbol::isArray () const {
   SymbolKind
 *******************************************************************************/
 
-std::string SymbolKind::toString () const {
-    std::ostringstream os;
+std::ostream & SymbolKind::print(std::ostream & os) const {
     os << "KIND " << name ();
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
   SymbolDomain
 *******************************************************************************/
 
-std::string SymbolDomain::toString () const {
-    std::ostringstream os;
+std::ostream & SymbolDomain::print(std::ostream & os) const {
     os << "DOMAIN (" << name ();
     if (secrecType ())
         os << " : " << secrecType ()->toString ();
     os << ')';
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
   SymbolSymbol
 *******************************************************************************/
 
-std::string SymbolSymbol::toString() const {
-    std::ostringstream os;
+SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid* valueType)
+    : Symbol (SYMBOL, valueType)
+    , m_decl(NULL)
+    , m_scopeType (LOCAL)
+    , m_dims (valueType->secrecDimType())
+    , m_size (0)
+    , m_isTemporary (false)
+{
+    setName(name);
+}
+
+SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bool)
+    : Symbol (SYMBOL, valueType)
+    , m_decl(NULL)
+    , m_scopeType (LOCAL)
+    , m_dims (valueType->secrecDimType ())
+    , m_size (0)
+    , m_isTemporary (true)
+{
+    setName(name);
+}
+
+const YYLTYPE * SymbolSymbol::location() const {
+    if (m_decl)
+        return &m_decl->location();
+    return NULL;
+}
+
+std::ostream & SymbolSymbol::print(std::ostream & os) const {
     if (m_isTemporary) os << "TEMPORARY ";
     os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
        << *secrecType () << ' ' << name () << '{' << this << '}';
-    return os.str();
+    return os;
 }
 
 
@@ -88,18 +112,45 @@ void SymbolSymbol::inheritShape (Symbol* from) {
   SymbolProcedure
 *******************************************************************************/
 
-SymbolProcedure::SymbolProcedure(const TreeNodeProcDef *procdef)
+SymbolProcedure::SymbolProcedure(const std::string & name,
+                                 const TreeNodeProcDef * procdef,
+                                 SymbolProcedure * shortOf)
     : Symbol(Symbol::PROCEDURE, procdef->procedureType())
     , m_decl(procdef)
     , m_target(0)
+    , m_shortOf(shortOf)
 {
-    // Intentionally empty
+    setName(name);
 }
 
-std::string SymbolProcedure::toString() const {
-    std::ostringstream os;
-    os << "PROCEDURE " << name () << ": " << *secrecType ();
-    return os.str();
+const YYLTYPE * SymbolProcedure::location() const {
+    return &m_decl->location();
+}
+
+namespace {
+std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
+    os << procDef->returnType()->typeString()
+       << ' ' << procDef->identifier()->value() << '(';
+    TreeNode::ChildrenListConstIterator it = procDef->paramBegin();
+    if (it != procDef->paramEnd()) {
+        assert((*it)->type() == NODE_DECL);
+        assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
+        TreeNodeStmtDecl * decl = static_cast<TreeNodeStmtDecl *>(*it);
+        os << decl->varType()->typeString();
+        while (++it != procDef->paramEnd()) {
+            assert((*it)->type() == NODE_DECL);
+            assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
+            decl = static_cast<TreeNodeStmtDecl *>(*it);
+            os << ", " << decl->varType()->typeString();
+        }
+    }
+    os << ')';
+    return os;
+}
+}
+
+std::ostream & SymbolProcedure::print(std::ostream & os) const {
+    return printProcDef(os, m_decl);
 }
 
 /*******************************************************************************
@@ -127,8 +178,7 @@ const Imop* SymbolLabel::target () const {
     return &m_block->front ();
 }
 
-std::string SymbolLabel::toString() const {
-    std::ostringstream os;
+std::ostream & SymbolLabel::print(std::ostream & os) const {
     os << "Lable to ";
     assert (m_target != 0);
     if (m_target->block () != 0) {
@@ -138,7 +188,7 @@ std::string SymbolLabel::toString() const {
         os << "imop " << m_target->index ();
     }
 
-    return os.str ();
+    return os;
 }
 
 /*******************************************************************************
@@ -150,11 +200,31 @@ SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
     , m_templ (templ)
 { }
 
-std::string SymbolTemplate::toString() const {
-    std::ostringstream os;
-    os << "TEMPLATE " << name ();
-    return os.str ();
+const YYLTYPE * SymbolTemplate::location() const {
+    return &m_templ->location();
 }
 
+std::ostream & SymbolTemplate::print(std::ostream & os) const {
+    os << "template <domain ";
+    const TreeNode::ChildrenList & qs = m_templ->quantifiers();
+    assert(!qs.empty());
+    TreeNode::ChildrenListConstIterator it = qs.begin();
+    assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
+    TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
+    os << q->domain()->value();
+    if (q->kind())
+        os << " : " << q->kind()->value();
+    while (++it != qs.end()) {
+        os << ", domain ";
+        assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
+        TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
+        os << q->domain()->value();
+        if (q->kind())
+            os << " : " << q->kind()->value();
+    }
+
+    printProcDef(os << "> ", m_templ->body());
+    return os;
+}
 
 }

@@ -3,8 +3,9 @@
 
 #include <string>
 #include <vector>
-#include "parser.h"
 
+#include "parser.h"
+#include "treenode_fwd.h"
 
 namespace SecreC {
 
@@ -20,50 +21,6 @@ class SymbolSymbol;
 class SymbolTable;
 class Instantiation;
 class TemplateInstantiator;
-class TreeNodeExpr;
-class TreeNodeExprBool;
-class TreeNodeExprCast;
-class TreeNodeExprIndex;
-class TreeNodeExprSize;
-class TreeNodeExprShape;
-class TreeNodeExprCat;
-class TreeNodeExprReshape;
-class TreeNodeExprToString;
-class TreeNodeExprBinary;
-class TreeNodeExprUnary;
-class TreeNodeExprClassify;
-class TreeNodeExprProcCall;
-class TreeNodeExprPrefix;
-class TreeNodeExprPostfix;
-class TreeNodeExprDeclassify;
-class TreeNodeExprRVariable;
-class TreeNodeExprString;
-class TreeNodeExprFloat;
-class TreeNodeExprTernary;
-class TreeNodeExprAssign;
-class TreeNodeExprInt;
-class TreeNodeExprDomainID;
-class TreeNodeExprQualified;
-class TreeNodeExprBytesFromString;
-class TreeNodeExprStringFromBytes;
-class TreeNodeSecTypeF;
-class TreeNodeType;
-class TreeNodeStmtDecl;
-class TreeNodeStmtPrint;
-class TreeNodeStmtReturn;
-class TreeNodeProcDef;
-class TreeNodeTemplate;
-class TreeNodeExpr;
-class TreeNodeIdentifier;
-class TreeNodeVarInit;
-class TreeNodeIdentifier;
-class TreeNodeExpr;
-class TreeNode;
-class TreeNodeExpr;
-class TreeNodeProcDef;
-class TreeNodeExpr;
-class TreeNodeIdentifier;
-class TreeNodeExpr;
 class Type;
 class TypeContext;
 class TypeNonVoid;
@@ -127,9 +84,14 @@ public: /* Methods: */
     Status visit(TreeNodeSecTypeF * ty);
     Status visit(TreeNodeType * _ty);
 
+    Status visit(TreeNodeStmtIf * stmt);
+    Status visit(TreeNodeStmtWhile * stmt);
+    Status visit(TreeNodeStmtDoWhile * stmt);
     Status visit(TreeNodeStmtDecl * decl);
     Status visit(TreeNodeStmtPrint * stmt);
     Status visit(TreeNodeStmtReturn * stmt);
+    Status visit(TreeNodeStmtSyscall * stmt);
+    Status visit(TreeNodeStmtAssert * stmt);
 
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
@@ -147,6 +109,7 @@ public: /* Methods: */
 
     Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
+    Status checkPublicBooleanScalar (TreeNodeExpr* e);
 
 protected:
 
@@ -181,7 +144,7 @@ protected:
      * \param[out] symProc symbol of the procedure which will be called
      */
     Status checkProcCall(TreeNodeIdentifier * name,
-                         const TypeContext & tyCxt,
+                         const TreeNodeExprProcCall & tyCxt,
                          const std::vector<TreeNodeExpr *> & arguments,
                          SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);

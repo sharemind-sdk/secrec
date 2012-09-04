@@ -2,18 +2,17 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include <vector>
-
-#include "symbol.h"
-
-/**
- * \todo Rename the m_global field.
- */
+#include <string>
 
 namespace SecreC {
 
 class Imop;
 class TreeNodeStmtDecl;
 class TreeNodeProcDef;
+class Symbol;
+class SymbolSymbol;
+class SymbolLabel;
+class TypeNonVoid;
 
 /*******************************************************************************
   SymbolTable
@@ -37,6 +36,14 @@ public: /* Methods: */
     SymbolLabel* label (Imop* imop);
 
     Symbol* find(const std::string& name) const;
+
+    /**
+      Finds symbols given a name prefix, following imported modules.
+      \param[in] prefix the name prefix of the symbols to find.
+      \returns a vector of pointers to the matching symbols.
+    */
+    std::vector<Symbol *> findPrefixed(const std::string & prefix) const;
+
     std::vector<Symbol* > findAll (const std::string& name) const;
 
     SymbolTable* newScope ();
@@ -55,10 +62,19 @@ public: /* Methods: */
     std::string toString(unsigned level = 0, unsigned indent = 4) const;
 
     /**
-     * Find a symbol in current scope, follow imported modules.
-     * \retval 0 if name is not found in the current scope.
-     */
+      Find a symbol in current scope given its name, following imported modules.
+      \param[in] name the name of the symbol to find.
+      \returns a pointer to the symbol or NULL no such symbol was found.
+    */
     Symbol* findFromCurrentScope (const std::string& name) const;
+
+    /**
+      Finds symbols in current scope given their name prefix, following imported modules.
+      \param[in] prefix the name prefix of the symbol to find.
+      \returns a vector of pointers to the matching symbols.
+    */
+    std::vector<Symbol *>
+    findPrefixedFromCurrentScope(const std::string & prefix) const;
 
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;
@@ -75,12 +91,9 @@ private: /* Fields: */
     std::string                 m_name;     ///< Debugging.
 };
 
+std::ostream & operator<<(std::ostream & out, const SymbolTable & st);
+
 } // namespace SecreC
 
-inline std::ostream
-&operator<<(std::ostream &out, const SecreC::SymbolTable &st) {
-    out << st.toString();
-    return out;
-}
 
 #endif // SYMBOLTABLE_H

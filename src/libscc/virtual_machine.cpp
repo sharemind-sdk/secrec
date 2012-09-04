@@ -339,9 +339,13 @@ DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1))
+DECLOP1 (UINV, assignValue (dest, ~getValue<ty>(arg1)))
 DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
 DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
-DECLOP2 (LOR, assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
+DECLOP2 (LOR,  assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
+DECLOP2 (BAND, assignValue (dest, getValue<ty>(arg1) & getValue<ty>(arg2)))
+DECLOP2 (BOR,  assignValue (dest, getValue<ty>(arg1) | getValue<ty>(arg2)))
+DECLOP2 (XOR,  assignValue (dest, getValue<ty>(arg1) ^ getValue<ty>(arg2)))
 DECLOP1 (UMINUS, assignValue (dest, -getValue<ty>(arg1)))
 DECLOP2 (EQ,  assignValue (dest, getValue<ty>(arg1) == getValue<ty>(arg2)))
 DECLOP2 (NE,  assignValue (dest, getValue<ty>(arg1) != getValue<ty>(arg2)))
@@ -557,6 +561,9 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::MOD:
     case Imop::ADD:
     case Imop::SUB:
+    case Imop::BAND:
+    case Imop::BOR:
+    case Imop::XOR:
         assert (matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ()));
     case Imop::EQ:
     case Imop::NE:
@@ -564,7 +571,10 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::LT:
     case Imop::GE:
     case Imop::GT:
+    case Imop::LAND:
+    case Imop::LOR:
         assert (matchTypes (imop.arg2 ()->secrecType (), imop.arg1 ()->secrecType ()));
+    case Imop::UINV:
     case Imop::UMINUS:
     case Imop::CAST:
     case Imop::TOSTRING:
@@ -579,7 +589,7 @@ CallbackTy getCallback (const Imop& imop) {
 
     if (imop.type () == Imop::ASSIGN) {
         if (! matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ())) {
-            std::cerr << imop.toString () << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
+            std::cerr << imop << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
             std::cerr << imop.dest ()->secrecType ()->toString () << std::endl;
             std::cerr << imop.arg1 ()->secrecType ()->toString () << std::endl;
             assert (false);
@@ -594,6 +604,10 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
     case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
+    case Imop::BAND:       SET_SPECIALIZE_CALLBACK_V(BAND,SWITCH_NONSTRING); break;
+    case Imop::BOR:        SET_SPECIALIZE_CALLBACK_V(BOR,SWITCH_NONSTRING); break;
+    case Imop::XOR:        SET_SPECIALIZE_CALLBACK_V(XOR,SWITCH_NONSTRING); break;
+    case Imop::UINV:       SET_SPECIALIZE_CALLBACK_V(UINV,SWITCH_ARITH); break;
     case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_ARITH); break;
     case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
     case Imop::MUL:        SET_SPECIALIZE_CALLBACK_V(MUL,SWITCH_ARITH); break;

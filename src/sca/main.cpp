@@ -58,8 +58,6 @@ struct Configuration {
         , m_stdout (true)
     { }
 
-    ~Configuration () { }
-
     void read (const po::variables_map& vm) {
         m_verbose = vm.count ("verbose");
         m_help = vm.count ("help");
@@ -176,14 +174,13 @@ int run (const Configuration& cfg) {
         return EXIT_SUCCESS;
     }
 
-    SecreC::Context context;
     SecreC::ICode icode;
 
     BOOST_FOREACH (const std::string& path, cfg.m_includes) {
         icode.modules ().addSearchPath (path);
     }
 
-    icode.init (context, parseTree.get ());
+    icode.init (parseTree.get ());
 
     if (icode.status() == SecreC::ICode::OK) {
         SecreC::Program& pr = icode.program ();
@@ -199,7 +196,7 @@ int run (const Configuration& cfg) {
         }
 
         if (cfg.m_printIR) {
-            out << pr.toString() << endl;
+            out << pr << endl;
             return EXIT_SUCCESS;
         }
 

@@ -2,6 +2,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
+#include "log.h"
+#include "symboltable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"
 
@@ -123,8 +125,7 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* 
     }
 
     SecurityType* haveSecType = child->resultType ()->secrecSecType ();
-    if (need->isPublic () && haveSecType->isPrivate ()) assert (false);
-    if (need->isPrivate () && haveSecType->isPrivate ()) assert (need == haveSecType);
+    assert(!(need->isPrivate () && haveSecType->isPrivate ()) || need == haveSecType);
     if (need->isPrivate () && haveSecType->isPublic ()) {
         TreeNode* node = child->parent ();
         SecrecDataType destDType = child->resultType()->secrecDataType ();
@@ -164,6 +165,23 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     }
 
     return false;
+}
+
+TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
+    assert (e != 0);
+    if (! e->haveResultType ()) {
+        e->setContextSecType (PublicSecType::get (getContext ()));
+        e->setContextDataType (DATATYPE_BOOL);
+        e->setContextDimType (0);
+
+        if (visitExpr (e) != OK)
+            return E_TYPE;
+
+        if (!e->havePublicBoolType())
+            return E_TYPE;
+    }
+
+    return OK;
 }
 
 TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,

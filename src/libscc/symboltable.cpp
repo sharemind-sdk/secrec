@@ -1,17 +1,18 @@
 #include "symboltable.h"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <boost/foreach.hpp>
 
+#include "symbol.h"
 #include "treenode.h"
 
+namespace SecreC {
 
-namespace {
-
-using namespace SecreC;
+namespace /* anonymous */ {
 
 void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
     while (level-- > 0)
@@ -39,8 +40,6 @@ void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) 
 }
 
 } // anonymous namespace
-
-namespace SecreC {
 
 /*******************************************************************************
   SymbolTable::OtherSymbols
@@ -85,10 +84,9 @@ public: /* Methods: */
     }
 
     SymbolSymbol* temporary (TypeNonVoid* type) {
-        SymbolSymbol* tmp = new SymbolSymbol (type, true);
         std::ostringstream os;
         os << "{t}" << m_tempCount ++;
-        tmp->setName (os.str ());
+        SymbolSymbol * tmp = new SymbolSymbol(os.str(), type, true);
         m_temporaries.push_back (tmp);
         return tmp;
     }
@@ -97,7 +95,7 @@ public: /* Methods: */
         std::ostringstream os;
         os << "Temporaries:\n";
         BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
-            os << '\t' << s->toString () << '\n';
+            os << '\t' << *s << '\n';
 
         return os.str ();
     }
@@ -162,6 +160,16 @@ Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
     return 0;
 }
 
+std::vector<Symbol *>
+SymbolTable::findPrefixedFromCurrentScope(const std::string & prefix) const {
+    std::vector<Symbol *> r;
+    BOOST_REVERSE_FOREACH(SymbolTable * import, m_imports)
+        BOOST_REVERSE_FOREACH(Symbol * s, import->m_table)
+            if (s->name().compare(0u, prefix.size(), prefix) == 0)
+                r.push_back(s);
+    return r;
+}
+
 std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
     BOOST_REVERSE_FOREACH (Symbol* sym, m_table) {
@@ -213,6 +221,29 @@ Symbol *SymbolTable::find (const std::string& name) const {
     return 0;
 }
 
+std::vector<Symbol *>
+SymbolTable::findPrefixed(const std::string & prefix) const {
+    std::vector<Symbol *> r;
+    const SymbolTable * c = this;
+    while (c != 0) {
+        std::vector<Symbol *> r2 = c->findPrefixedFromCurrentScope(prefix);
+        BOOST_FOREACH(Symbol * s2, r2) {
+            bool overridden = false;
+            BOOST_FOREACH(Symbol * s, r)
+                if (s2->name() != s->name()) {
+                    overridden = true;
+                    break;
+                }
+            if (!overridden)
+                r.push_back(s2);
+        }
+
+        c = c->m_parent;
+    }
+
+    return r;
+}
+
 std::vector<Symbol* > SymbolTable::findAll (const std::string& name) const {
     std::vector<Symbol* > out;
     for (Symbol* s = find (name); s != 0; s = s->previos ()) {
@@ -251,7 +282,7 @@ std::string SymbolTable::toString(unsigned level, unsigned indent) const {
 
     BOOST_FOREACH (Symbol* sym, m_table) {
         printIndent(os, level, indent);
-        os << ' ' << sym->toString () << std::endl;
+        os << ' ' << *sym << std::endl;
     }
 
     BOOST_FOREACH (SymbolTable* table, m_scopes) {
@@ -260,6 +291,12 @@ std::string SymbolTable::toString(unsigned level, unsigned indent) const {
 
     return os.str();
 }
+
+std::ostream & operator<<(std::ostream & out, const SymbolTable & st) {
+    out << st.toString ();
+    return out;
+}
+
 
 } // namespace SecreC
 

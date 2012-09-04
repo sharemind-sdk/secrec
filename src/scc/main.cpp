@@ -323,7 +323,6 @@ int main (int argc, char *argv[]) {
     }
 
     /* Translate to intermediate code: */
-    SecreC::Context context;
     SecreC::ICode icode;
 
     /* Collect possible include files: */
@@ -333,7 +332,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    if (icode.init (context, parseTree.get ()) != SecreC::ICode::OK) {
+    if (icode.init (parseTree.get ()) != SecreC::ICode::OK) {
         cerr << "Error generating valid intermediate code." << endl;
         cerr << icode.compileLog () << endl;
         return EXIT_FAILURE;

@@ -32,6 +32,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::TOSTRING,   1, 0, 0, 0,-1, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
+    , { Imop::UINV,       1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
     , { Imop::UMINUS,     1, 0, 0, 1, 3, 1 }
     // Binary operators:
@@ -48,6 +49,9 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::GT,         1, 0, 0, 1, 4, 1 }
     , { Imop::LAND,       1, 0, 0, 1, 4, 1 }
     , { Imop::LOR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::BAND,       1, 0, 0, 1, 4, 1 }
+    , { Imop::BOR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::XOR,        1, 0, 0, 1, 4, 1 }
     // Array expressions:
     , { Imop::STORE,      0, 0, 0, 1,-1, 0 }
     , { Imop::LOAD,       1, 0, 0, 0,-1, 1 }
@@ -270,8 +274,7 @@ void Imop::setReturnDestFirstImop (SymbolLabel *label) {
     setDest (label);
 }
 
-std::string Imop::toString() const {
-    std::ostringstream os;
+std::ostream & Imop::print(std::ostream & os) const {
     switch (m_type) {
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
@@ -309,6 +312,10 @@ std::string Imop::toString() const {
             break;
         case LOAD:
             os << dname << " = " << a1name << "[" << a2name << "]";
+            break;
+        case UINV:         /*   d = ~arg1;                       */
+            os << dname << " = ~" << a1name;
+            if (nArgs() == 3) os << " (" << a2name << ")";
             break;
         case UNEG:         /*   d = !arg1;                       */
             os << dname << " = !" << a1name;
@@ -467,12 +474,7 @@ std::string Imop::toString() const {
             break;
     }
 
-    return os.str();
-}
-
-std::ostream &operator<<(std::ostream &out, const Imop &i) {
-    out << i.toString();
-    return out;
+    return os;
 }
 
 } // namespace SecreC

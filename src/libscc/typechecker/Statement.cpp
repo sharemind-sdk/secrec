@@ -7,11 +7,14 @@
  * code is subject to the appropriate license agreement.
  */
 
+#include "log.h"
+#include "misc.h"
 #include "symboltable.h"
 #include "treenode.h"
 #include "typechecker.h"
 
 #include <boost/range.hpp>
+#include <boost/foreach.hpp>
 
 namespace SecreC {
 
@@ -61,12 +64,58 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
             return s;
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        e = classifyIfNeeded (e, ty->secrecSecType ());
         if (! ty->canAssign (e->resultType ())) {
             m_log.fatal () << "Illegal assignment at " << varInit->location () << ".";
             m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << ".";
             return E_TYPE;
         }
+
+        e = classifyIfNeeded (e, ty->secrecSecType ());
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtIf
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal () << "Conditional expression in if statement must be of "
+                        "type public bool in " << e->location ();
+        return E_TYPE;
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtWhile
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal() << "Conditional expression in while statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtDoWhile
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
+    TreeNodeExpr *e = stmt->conditional ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal () << "Conditional expression in do-while statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
     }
 
     return OK;
@@ -159,7 +208,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
-    SecreC::TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
+    TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
@@ -190,6 +239,55 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
                            << stmt->location () << ".";
             return E_TYPE;
         }
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtSyscall
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
+    TreeNodeExprString* e = stmt->name ();
+    Status s = visit (e);
+    if (s != OK)
+        return s;
+
+    BOOST_FOREACH (TreeNode* arg, stmt->paramRange ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(arg->children ().at (0)) != 0);
+        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(arg->children ().at (0));
+        if (arg->type () != NODE_PUSH) {
+            e->setContextSecType (PublicSecType::get (getContext ()));
+        }
+
+        s = visitExpr (e);
+        e->instantiateDataType (getContext ());
+        if (s != OK)
+            return s;
+
+        if (arg->type () != NODE_PUSH) {
+            if (e->resultType ()->secrecSecType ()->isPrivate ()) {
+                m_log.fatal () << "Passing reference to private value.";
+                m_log.fatal () << "Error at " << arg->location () << ".";
+                return E_TYPE;
+            }
+        }
+    }
+
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeStmtAssert
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
+    TreeNodeExpr* e = stmt->expression ();
+    if (checkPublicBooleanScalar (e) != OK) {
+        m_log.fatal() << "Conditional expression in assert statement must be of "
+                       "type public bool in " << e->location();
+        return E_TYPE;
     }
 
     return OK;

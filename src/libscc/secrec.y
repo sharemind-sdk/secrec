@@ -1,55 +1,68 @@
 %require "2.4"
 %{
-  struct TreeNode;
   #include <assert.h>
   #include <stdio.h>
   #include <stdint.h>
+
   #include "parser.h"
   #include "lex_secrec.h"
-  #include "treenode.h"
+  #include "treenode_c.h"
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
 
-  uint64_t char_to_digit (char c) {
+  uint64_t char_to_digit(char c)
+  {
       if ('0' <= c && c <= '9')
           return c - '0';
       if ('a' <= c && c <= 'f')
           return (c - 'a') + 10;
       if ('A' <= c && c <= 'F')
           return (c - 'A') + 10;
-      assert (0 && "Invalid digit character!");
+      assert(0 && "Invalid digit character!");
       return 0;
   }
 
-  uint64_t convert_to_base (const char* input, uint64_t base) {
-      assert (base == 2 || base == 8 || base == 10 || base == 16);
+  uint64_t convert_to_base(const char * input, uint64_t base)
+  {
+      assert(base == 2 || base == 8 || base == 10 || base == 16);
       uint64_t out = 0;
       size_t offset = 0;
       if (base != 10) {
-        /* skip the headers: 0b, 0o, and 0x */
-        assert (input[0] != '\0' && input[1] != '\0');
-        if (input[0] == '\0') return 0;
-        if (input[1] == '\0') return 0;
-        offset += 2;
+          /* skip the headers: 0b, 0o, and 0x */
+          assert(input[0] != '\0' && input[1] != '\0');
+          if (input[0] == '\0') return 0;
+          if (input[1] == '\0') return 0;
+          offset += 2;
       }
 
-      const char* ptr = 0;
+      const char * ptr = 0;
       for (ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
-          uint64_t digit = char_to_digit (*ptr);
-          assert (digit < base);
+          uint64_t digit = char_to_digit(*ptr);
+          assert(digit < base);
           uint64_t new_out = out*base + digit;
-          assert (new_out >= out);
+          assert(new_out >= out);
           out = new_out;
       }
 
       return out;
   }
 
-  struct TreeNode *init_binop (enum SecrecOperator op, YYLTYPE* loc,
-                               struct TreeNode *ret, struct TreeNode *body,
-                               struct TreeNode *arg1, struct TreeNode *arg2)
+  struct TreeNode * init_op(enum SecrecOperator op, YYLTYPE * loc,
+                            struct TreeNode * ret,
+                            struct TreeNode * params)
   {
-      struct TreeNode* out = treenode_init_opdef (op, loc);
+      struct TreeNode * out = treenode_init_opdef(op, loc);
+      treenode_appendChild(out, ret);
+      treenode_moveChildren(params, out);
+      treenode_free(params);
+      return out;
+  }
+
+  struct TreeNode * init_binop(enum SecrecOperator op, YYLTYPE * loc,
+                               struct TreeNode * ret, struct TreeNode * body,
+                               struct TreeNode * arg1, struct TreeNode * arg2)
+  {
+      struct TreeNode * out = treenode_init_opdef(op, loc);
       /* indentifier is added automatically by treenode_init_opdef! */
       treenode_appendChild(out, ret);
       treenode_appendChild(out, body);
@@ -58,11 +71,11 @@
       return out;
   }
 
-  struct TreeNode *init_unop (enum SecrecOperator op, YYLTYPE* loc,
-                              struct TreeNode *ret, struct TreeNode *body,
-                              struct TreeNode *arg1)
+  struct TreeNode * init_unop(enum SecrecOperator op, YYLTYPE * loc,
+                              struct TreeNode * ret, struct TreeNode * body,
+                              struct TreeNode * arg1)
   {
-      struct TreeNode* out = treenode_init_opdef (op, loc);
+      struct TreeNode * out = treenode_init_opdef(op, loc);
       /* indentifier is added automatically by treenode_init_opdef! */
       treenode_appendChild(out, ret);
       treenode_appendChild(out, body);
@@ -70,61 +83,63 @@
       return out;
   }
 
-  struct TreeNode *ensure_rValue(struct TreeNode *node) {
-     struct TreeNode *t = 0;
-
-     if (treenode_type(node) == NODE_IDENTIFIER) {;
-         t = treenode_init(NODE_EXPR_RVARIABLE, treenode_location(node));
-         treenode_appendChild(t, treenode_childAt(node, 0));
-         return t;
-     } else {
-         return node;
-     }
-  }
-
-  struct TreeNode *add_vardecl(struct TreeNode *node1, struct TreeNode *node2, YYLTYPE *loc)
+  struct TreeNode * ensure_rValue(struct TreeNode * node)
   {
-    struct TreeNode *ret;
-    if (treenode_type(node2) == NODE_STMT_COMPOUND) {
-      if (treenode_numChildren(node2) > 0) {
-        ret = node2;
-        treenode_prependChild(ret, node1);
-        treenode_setLocation(ret, loc);
+      struct TreeNode * t = 0;
+
+      if (treenode_type(node) == NODE_IDENTIFIER) {
+          t = treenode_init(NODE_EXPR_RVARIABLE, treenode_location(node));
+          treenode_appendChild(t, treenode_childAt(node, 0));
+          return t;
       } else {
-        treenode_free(node2);
-        ret = treenode_init(NODE_STMT_COMPOUND, loc);
-        treenode_appendChild(ret, node1);
+          return node;
       }
-    } else {
-      ret = treenode_init(NODE_STMT_COMPOUND, loc);
-      treenode_appendChild(ret, node1);
-      treenode_appendChild(ret, node2);
-    }
-    return ret;
   }
 
-  struct TreeNode *add_stmt(struct TreeNode *node1, struct TreeNode *node2, YYLTYPE *loc) {
-    struct TreeNode *ret;
-    if (treenode_type(node2) == NODE_STMT_COMPOUND) {
-      if (treenode_numChildren(node2) > 0) {
-        ret = node2;
-        treenode_prependChild(ret, node1);
-        treenode_setLocation(ret, loc);
+  struct TreeNode * add_vardecl(struct TreeNode * node1, struct TreeNode * node2, YYLTYPE * loc)
+  {
+      struct TreeNode * ret;
+      if (treenode_type(node2) == NODE_STMT_COMPOUND) {
+          if (treenode_numChildren(node2) > 0) {
+              ret = node2;
+              treenode_prependChild(ret, node1);
+              treenode_setLocation(ret, loc);
+          } else {
+              treenode_free(node2);
+              ret = treenode_init(NODE_STMT_COMPOUND, loc);
+              treenode_appendChild(ret, node1);
+          }
       } else {
-        treenode_free(node2);
-        ret = node1;
+          ret = treenode_init(NODE_STMT_COMPOUND, loc);
+          treenode_appendChild(ret, node1);
+          treenode_appendChild(ret, node2);
       }
-    } else {
-      if (treenode_type(node1) == NODE_STMT_COMPOUND && treenode_numChildren(node1) <= 0) {
-        treenode_free(node1);
-        ret = node2;
+      return ret;
+  }
+
+  struct TreeNode * add_stmt(struct TreeNode * node1, struct TreeNode * node2, YYLTYPE * loc)
+  {
+      struct TreeNode * ret;
+      if (treenode_type(node2) == NODE_STMT_COMPOUND) {
+          if (treenode_numChildren(node2) > 0) {
+              ret = node2;
+              treenode_prependChild(ret, node1);
+              treenode_setLocation(ret, loc);
+          } else {
+              treenode_free(node2);
+              ret = node1;
+          }
       } else {
-        ret = treenode_init(NODE_STMT_COMPOUND, loc);
-        treenode_appendChild(ret, node1);
-        treenode_appendChild(ret, node2);
+          if (treenode_type(node1) == NODE_STMT_COMPOUND && treenode_numChildren(node1) <= 0) {
+              treenode_free(node1);
+              ret = node2;
+          } else {
+              ret = treenode_init(NODE_STMT_COMPOUND, loc);
+              treenode_appendChild(ret, node1);
+              treenode_appendChild(ret, node2);
+          }
       }
-    }
-    return ret;
+      return ret;
   }
 
 %}
@@ -143,101 +158,110 @@
 %token <str> IDENTIFIER
 
 /* Keywords: */
-%token BOOL BREAK CONTINUE DECLASSIFY DO ELSE FOR FALSE_B IF PRIVATE PUBLIC PRINT
-%token INT UINT INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
-%token XOR_UINT XOR_UINT8 XOR_UINT16 XOR_UINT32 XOR_UINT64
-%token FLOAT FLOAT32 FLOAT64
-%token RETURN STRING TRUE_B VOID WHILE ASSERT SIZE SHAPE RESHAPE CAT
-%token DOMAIN KIND TEMPLATE SYSCALL PUSH PUSHREF PUSHCREF DOMAINID OPERATOR
-%token IMPORT MODULE TOSTRING STRINGFROMBYTES BYTESFROMSTRING
+%token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DO DOMAIN
+%token DOMAINID ELSE FALSE_B FLOAT FLOAT32 FLOAT64 FOR IF IMPORT INT INT16 INT32 INT64
+%token INT8 KIND MODULE OPERATOR PRINT PRIVATE PUBLIC REF RESHAPE RETURN SHAPE SIZE
+%token STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16 UINT32
+%token UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
 
 /* Literals: */
-%token <str> STRING_LITERAL
 %token <str> BIN_LITERAL
-%token <str> OCT_LITERAL
-%token <str> HEX_LITERAL
 %token <str> DEC_LITERAL
 %token <str> FLOAT_LITERAL
+%token <str> HEX_LITERAL
+%token <str> OCT_LITERAL
+%token <str> STRING_LITERAL
 
 /* Operators from higher to lower precedence: */
-%right '=' ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
+%right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
 %left TYPE_QUAL
 %left '?' ':'
 %left LOR_OP
 %left LAND_OP
+%left '|'
+%left '^'
+%left '&'
 %nonassoc EQ_OP NE_OP
 %nonassoc '<' '>' LE_OP GE_OP
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc INC_OP
 %nonassoc DEC_OP
-%right UNEG UMINUS
+%right UINV UNEG UMINUS
 
 
-%type <treenode> global_declarations
-%type <treenode> global_declaration
-%type <treenode> variable_initialization
-%type <treenode> variable_initializations
-%type <treenode> variable_declaration
-%type <treenode> domain_declaration
-%type <treenode> kind_declaration
-%type <treenode> procedure_definition
-%type <treenode> operator_definition
-%type <treenode> maybe_dimensions
-%type <treenode> dimensions
-%type <treenode> dimension_list
-%type <treenode> type_specifier
-%type <treenode> return_type_specifier
-%type <treenode> datatype_specifier
-%type <treenode> sectype_specifier
-%type <treenode> dimtype_specifier
-%type <treenode> subscript
-%type <treenode> indices
-%type <treenode> index
-%type <treenode> procedure_parameter_list
-%type <treenode> procedure_parameter
+%type <treenode> additive_expression
+%type <treenode> assert_statement
+%type <treenode> assignment_expression
+%type <treenode> binop_def_helper
+%type <treenode> bitwise_and_expression
+%type <treenode> bitwise_or_expression
+%type <treenode> bitwise_xor_expression
+%type <treenode> bool_literal
+%type <treenode> cast_expression
+%type <treenode> cat_expression
 %type <treenode> compound_statement
-%type <treenode> statement_list
-%type <treenode> statement
-%type <treenode> if_statement
+%type <treenode> conditional_expression
+%type <treenode> datatype_specifier
+%type <treenode> dimension_list
+%type <treenode> dimensions
+%type <treenode> dimtype_specifier
+%type <treenode> domain_declaration
+%type <treenode> dowhile_statement
+%type <treenode> equality_expression
+%type <treenode> expression
+%type <treenode> expression_list
+%type <treenode> float_literal
 %type <treenode> for_initializer
 %type <treenode> for_statement
-%type <treenode> maybe_expression
-%type <treenode> while_statement
-%type <treenode> print_statement
-%type <treenode> dowhile_statement
-%type <treenode> assert_statement
-%type <treenode> expression
-%type <treenode> assignment_expression
-%type <treenode> lvalue
-%type <treenode> conditional_expression
-%type <treenode> logical_or_expression
+%type <treenode> global_declaration
+%type <treenode> global_declarations
+%type <treenode> identifier
+%type <treenode> if_statement
+%type <treenode> import_declaration
+%type <treenode> import_declarations
+%type <treenode> index
+%type <treenode> indices
+%type <treenode> int_literal
+%type <treenode> kind_declaration
+%type <treenode> literal
 %type <treenode> logical_and_expression
-%type <treenode> equality_expression
-%type <treenode> relational_expression
-%type <treenode> additive_expression
+%type <treenode> logical_or_expression
+%type <treenode> lvalue
+%type <treenode> maybe_dimensions
+%type <treenode> maybe_expression
 %type <treenode> multiplicative_expression
-%type <treenode> cast_expression
-%type <treenode> unary_expression
+%type <treenode> operator_definition
 %type <treenode> postfix_expression
 %type <treenode> postfix_op
 %type <treenode> prefix_op
-%type <treenode> cat_expression
-%type <treenode> expression_list
 %type <treenode> primary_expression
-%type <treenode> literal
-%type <treenode> int_literal
-%type <treenode> identifier
-%type <treenode> string_literal
-%type <treenode> bool_literal
-%type <treenode> float_literal
-%type <treenode> template_declaration
-%type <treenode> template_quantifiers
-%type <treenode> template_quantifier
-%type <treenode> qualified_expression
-%type <treenode> import_declaration
-%type <treenode> import_declarations
+%type <treenode> print_statement
+%type <treenode> procedure_definition
+%type <treenode> procedure_parameter
+%type <treenode> procedure_parameter_list
 %type <treenode> program
+%type <treenode> qualified_expression
+%type <treenode> relational_expression
+%type <treenode> return_type_specifier
+%type <treenode> sectype_specifier
+%type <treenode> statement
+%type <treenode> statement_list
+%type <treenode> string_literal
+%type <treenode> subscript
+%type <treenode> syscall_parameter
+%type <treenode> syscall_parameters
+%type <treenode> syscall_statement
+%type <treenode> template_declaration
+%type <treenode> template_quantifier
+%type <treenode> template_quantifiers
+%type <treenode> type_specifier
+%type <treenode> unary_expression
+%type <treenode> unop_def_helper
+%type <treenode> variable_declaration
+%type <treenode> variable_initialization
+%type <treenode> variable_initializations
+%type <treenode> while_statement
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -598,38 +622,44 @@ procedure_parameter_list
    }
  ;
 
-/* uhoh... */
+binop_def_helper
+ : '(' procedure_parameter ',' procedure_parameter ')' compound_statement
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $6);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $4);
+   }
+ ;
+
+unop_def_helper
+ : '(' procedure_parameter ')' compound_statement
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $4);
+     treenode_appendChild($$, $2);
+   }
+ ;
+
 operator_definition
- :  return_type_specifier OPERATOR '*' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_MUL , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '/' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_DIV , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '%' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_MOD , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '+' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_ADD , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '-' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_SUB , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR EQ_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_EQ  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR NE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_NE  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR LE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_LE  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '>' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_GT  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR GE_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_GE  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '<' '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_LT  , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR LAND_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_LAND, &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR LOR_OP '(' procedure_parameter ',' procedure_parameter ')' compound_statement
-    { $$ = init_binop (SCOP_BIN_LOR , &@$, $1, $9, $5, $7); }
- |  return_type_specifier OPERATOR '!' '(' procedure_parameter ')' compound_statement
-    { $$ = init_unop (SCOP_UN_NEG, &@$, $1, $7, $5); }
- |  return_type_specifier OPERATOR '-' '(' procedure_parameter ')' compound_statement
-    { $$ = init_unop (SCOP_UN_MINUS , &@$, $1, $7, $5); }
+ :  return_type_specifier OPERATOR '+' binop_def_helper     { $$ = init_op(SCOP_BIN_ADD, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '&' binop_def_helper     { $$ = init_op(SCOP_BIN_BAND, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '|' binop_def_helper     { $$ = init_op(SCOP_BIN_BOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '/' binop_def_helper     { $$ = init_op(SCOP_BIN_DIV, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '>' binop_def_helper     { $$ = init_op(SCOP_BIN_GT, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '<' binop_def_helper     { $$ = init_op(SCOP_BIN_LT, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '%' binop_def_helper     { $$ = init_op(SCOP_BIN_MOD, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '*' binop_def_helper     { $$ = init_op(SCOP_BIN_MUL, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '-' binop_def_helper     { $$ = init_op(SCOP_BIN_SUB, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '^' binop_def_helper     { $$ = init_op(SCOP_BIN_XOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR EQ_OP binop_def_helper   { $$ = init_op(SCOP_BIN_EQ, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR GE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_GE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LAND_OP binop_def_helper { $$ = init_op(SCOP_BIN_LAND, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_LE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LOR_OP binop_def_helper  { $$ = init_op(SCOP_BIN_LOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR NE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_NE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '-' unop_def_helper      { $$ = init_op(SCOP_UN_MINUS, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(SCOP_UN_NEG, &@$, $1, $4); }
  ;
 
 /*******************************************************************************
@@ -662,26 +692,7 @@ statement
  | dowhile_statement
  | assert_statement
  | print_statement
- | SYSCALL '(' string_literal ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
-     treenode_appendChild ($$, $3);
-   }
- | PUSH '(' expression ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSH, &@$);
-     treenode_appendChild ($$, ensure_rValue ($3));
-   }
- | PUSHREF '(' identifier ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSHREF, &@$);
-     treenode_appendChild ($$, $3);
-   }
- | PUSHCREF '(' identifier ')' ';'
-   {
-     $$ = treenode_init(NODE_STMT_PUSHCREF, &@$);
-     treenode_appendChild ($$, $3);
-   }
+ | syscall_statement
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
@@ -782,6 +793,52 @@ assert_statement
      treenode_appendChild($$, ensure_rValue($3));
    }
  ;
+
+syscall_statement
+  : SYSCALL '(' string_literal ')' ';'
+    {
+     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
+     treenode_appendChild ($$, $3);
+    }
+  | SYSCALL '(' string_literal ',' syscall_parameters ')' ';'
+    {
+     $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
+     treenode_appendChild ($$, $3);
+     treenode_moveChildren ($5, $$);
+    }
+  ;
+
+syscall_parameters
+  : syscall_parameters ',' syscall_parameter
+    {
+      $$ = $1;
+      treenode_setLocation($$, &@$);
+      treenode_appendChild($$, $3);
+    }
+  | syscall_parameter
+    {
+      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+    }
+  ;
+
+syscall_parameter
+  : expression
+    {
+      $$ = treenode_init(NODE_PUSH, &@$);
+      treenode_appendChild($$, ensure_rValue($1));
+    }
+  | REF identifier
+    {
+      $$ = treenode_init(NODE_PUSHREF, &@$);
+      treenode_appendChild($$, ensure_rValue($2));
+    }
+  | CREF expression
+    {
+      $$ = treenode_init(NODE_PUSHCREF, &@$);
+      treenode_appendChild($$, ensure_rValue($2));
+    }
+  ;
 
 /*******************************************************************************
   Indices: not strictly expressions as they only appear in specific context
@@ -886,6 +943,24 @@ assignment_expression /* WARNING: RIGHT RECURSION */
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
+ | lvalue AND_ASSIGN assignment_expression
+   {
+     $$ = treenode_init(NODE_EXPR_ASSIGN_AND, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | lvalue OR_ASSIGN assignment_expression
+   {
+     $$ = treenode_init(NODE_EXPR_ASSIGN_OR, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | lvalue XOR_ASSIGN assignment_expression
+   {
+     $$ = treenode_init(NODE_EXPR_ASSIGN_XOR, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, ensure_rValue($3));
+   }
  | qualified_expression
  ;
 
@@ -935,9 +1010,39 @@ logical_or_expression
  ;
 
 logical_and_expression
- : logical_and_expression LAND_OP equality_expression
+ : logical_and_expression LAND_OP bitwise_or_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LAND, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | bitwise_or_expression
+ ;
+
+bitwise_or_expression
+ : bitwise_or_expression '|' bitwise_xor_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BITWISE_OR, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | bitwise_xor_expression
+ ;
+
+bitwise_xor_expression
+ : bitwise_xor_expression '^' bitwise_and_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BITWISE_XOR, &@$);
+     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, ensure_rValue($3));
+   }
+ | bitwise_and_expression
+ ;
+
+bitwise_and_expression
+ : bitwise_and_expression '&' equality_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BITWISE_AND, &@$);
      treenode_appendChild($$, ensure_rValue($1));
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -1071,6 +1176,11 @@ unary_expression
  | '!' cast_expression %prec UNEG
    {
      $$ = treenode_init(NODE_EXPR_UNEG, &@$);
+     treenode_appendChild($$, ensure_rValue($2));
+   }
+  | '~' cast_expression %prec UINV
+   {
+     $$ = treenode_init(NODE_EXPR_UINV, &@$);
      treenode_appendChild($$, ensure_rValue($2));
    }
  | postfix_expression

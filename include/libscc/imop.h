@@ -2,7 +2,6 @@
 #define SECREC_IMOP_H
 
 #include <cassert>
-#include <string>
 #include <vector>
 #include <boost/intrusive/list.hpp>
 
@@ -55,6 +54,7 @@ class Imop : public auto_unlink_hook {
             TOSTRING,   /*   d = toString arg1                  */
             CLASSIFY,   /*   d = CLASSIFY(arg1 {, arg2});       */
             DECLASSIFY, /*   d = DECLASSIFY(arg1 {, arg2});     */
+            UINV,       /*   d = ~arg1 {arg2};                  */
             UNEG,       /*   d = !arg1 {arg2};                  */
             UMINUS,     /*   d = -arg1 {arg2};                  */
             MUL,        /*   d = arg1 *  arg2 {arg3};           */
@@ -70,6 +70,9 @@ class Imop : public auto_unlink_hook {
             GT,         /*   d = arg1 >  arg2 {arg3};           */
             LAND,       /*   d = arg1 && arg2 {arg3};           */
             LOR,        /*   d = arg1 || arg2 {arg3};           */
+            BAND,       /*   d = arg1 & arg2 {arg3};            */
+            BOR,        /*   d = arg1 | arg2 {arg3};            */
+            XOR,        /*   d = arg1 ^ arg2 {arg3};            */
 
             //-------------------
             // Array expressions:
@@ -203,7 +206,7 @@ class Imop : public auto_unlink_hook {
         OperandConstRange useRange () const;
         OperandConstRange defRange () const;
 
-        std::string toString() const;
+        std::ostream& print (std::ostream& os) const;
 
         template <typename Iter >
         friend Imop* newReturn (TreeNode *node, Iter begin, Iter end);
@@ -261,7 +264,9 @@ Imop* newCall (TreeNode* node, Iter beginRet, Iter endRet, Iter beginArg, Iter e
     return out;
 }
 
-std::ostream &operator<<(std::ostream &out, const Imop &i);
+inline std::ostream & operator<<(std::ostream & out, const Imop & i) {
+    return i.print(out);
+}
 
 } // namespace SecreC
 

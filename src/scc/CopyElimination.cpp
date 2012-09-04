@@ -5,6 +5,7 @@
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/ReachableReleases.h>
 #include <libscc/dataflowanalysis.h>
+#include <libscc/symbol.h>
 
 namespace SecreCC {
 
@@ -79,7 +80,8 @@ void eliminateRedundantCopies (ICode& code) {
     }
 
     BOOST_FOREACH (const Imop* imop, releases) {
-        delete imop;
+        if (imop->type () == Imop::RELEASE)
+            delete imop;
     }
 
     BOOST_FOREACH (const Imop* imop, copies) {

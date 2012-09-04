@@ -8,6 +8,10 @@
 #include "icodelist.h"
 #include "CFG.h"
 
+#define FOREACH_BLOCK(IT,pr) \
+    for (Program::const_iterator pit = pr.begin (); pit != pr.end (); ++ pit)\
+        for (Procedure::const_iterator IT = pit->begin (); IT != pit->end (); ++ IT)
+
 namespace SecreC {
 
 class Program;
@@ -218,7 +222,7 @@ public: /* Methods: */
 
     void init (ICodeList& code);
 
-    std::string toString () const;
+    std::ostream& print (std::ostream& os) const;
     void toDotty (std::ostream& os) const;
 
     using ProcedureList::begin;
@@ -235,8 +239,10 @@ private:
     void numberBlocks ();
 };
 
-} // namespace SecreC
+inline std::ostream &operator<<(std::ostream& out, const Program& proc) {
+    return proc.print(out);
+}
 
-std::ostream &operator<<(std::ostream& out, const SecreC::Program& proc);
+} // namespace SecreC
 
 #endif // BLOCKS_H

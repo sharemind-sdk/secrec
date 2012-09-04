@@ -16,8 +16,11 @@
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
+#include "log.h"
 #include "ModuleInfo.h"
+#include "symboltable.h"
 #include "templates.h"
+#include "treenode.h"
 
 namespace SecreC {
 
@@ -58,9 +61,10 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
            || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
-    const std::string name = mangleProcedure (procdef.procedureName(), dt, targs);
-    SymbolProcedure* ns = new SymbolProcedure(&procdef);
-    ns->setName (name);
+    SymbolProcedure * ns = new SymbolProcedure(mangleProcedure(procdef.procedureName(),
+                                                               dt,
+                                                               targs),
+                                               &procdef);
     st->appendSymbol (ns);
     return ns;
 }
@@ -199,9 +203,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
             }
         }
 
-        procSym = new SymbolProcedure (proc);
-        procSym->setName (shortName);
-        m_st->appendSymbol (procSym);
+        m_st->appendSymbol(new SymbolProcedure(shortName, proc));
     }
 
     return OK;
@@ -220,10 +222,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     // Check that quantifiers are saneley defined
-    std::set<std::string > quantifiedDomains;
+    typedef std::map<std::string, TreeNodeIdentifier*> TypeVariableMap;
+    typedef std::set<std::string> TypeVariableSet;
+    TypeVariableSet quantifiedDomains;
+    TypeVariableMap freeTypeVariables;
     BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
         TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
         quantifiedDomains.insert (quant->domain ()->value ());
+        freeTypeVariables[quant->domain ()->value ()] = quant->domain ();
         if (quant->kind ()) {
             Symbol* kindSym = findIdentifier (quant->kind ());
             if (kindSym == 0)
@@ -245,6 +251,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         if (! t->secType ()->isPublic ()) {
             retSecTyIdent = t->secType ()->identifier ();
             templ->setContextDependance (true); // may depend on context!
+            freeTypeVariables.erase(retSecTyIdent->value ());
             if (quantifiedDomains.find (retSecTyIdent->value ()) == quantifiedDomains.end ()) {
                 if (findIdentifier(retSecTyIdent) == 0)
                     return E_TYPE;
@@ -269,7 +276,19 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
                 if (findIdentifier(id) == 0)
                     return E_TYPE;
             }
+
+            freeTypeVariables.erase(id->value ());
         }
+    }
+
+    if (!freeTypeVariables.empty()) {
+        std::stringstream ss;
+        BOOST_FOREACH(const TypeVariableMap::value_type& v, freeTypeVariables) {
+            ss << " " << v.second->location();
+        }
+
+        m_log.fatal() << "Template definition has free type variables at" << ss.str () << ".";
+        return E_TYPE;
     }
 
     SymbolTemplate* s = new SymbolTemplate (templ);
@@ -350,7 +369,7 @@ TypeChecker::Status TypeChecker::checkProcCall(SymbolProcedure * symProc,
 }
 
 TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
-                                               const TypeContext & tyCxt,
+                                               const TreeNodeExprProcCall & tyCxt,
                                                const std::vector<TreeNodeExpr *> & arguments,
                                                SecreC::Type *& resultType,
                                                SymbolProcedure *& symProc)
@@ -383,8 +402,50 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     if (symProc == 0) {
         m_log.fatal () << "No matching procedure definitions for:";
-        m_log.fatal () << '\t' << mangleProcedure (name->value (), argTypes, TemplateParams ());
-        m_log.fatal () << "In context " << tyCxt.toString () << ".";
+        m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
+        m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
+
+        bool haveCandidatesLabel = false;
+        std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value());
+        if (!cs.empty()) {
+            std::vector<SymbolProcedure *> cps;
+            do {
+                assert(dynamic_cast<SymbolProcedure *>(cs.back()) != 0);
+                SymbolProcedure * const p = static_cast<SymbolProcedure *>(cs.back());
+                if (p->shortOf() == NULL)
+                    cps.push_back(p);
+                cs.pop_back();
+            } while (!cs.empty());
+            if (!cps.empty()) {
+                m_log.info() << "Candidates are:";
+                haveCandidatesLabel = true;
+                BOOST_FOREACH(SymbolProcedure * c, cps) {
+                    std::ostringstream oss;
+                    c->print(oss);
+                    if (c->location()) {
+                        m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                    } else {
+                        m_log.info() << '\t' << oss.str();
+                    }
+                }
+            }
+        }
+        cs = m_st->findPrefixed("{templ}" + name->value());
+        if (!cs.empty()) {
+            if (!haveCandidatesLabel)
+                m_log.info() << "Candidates are:";
+            BOOST_REVERSE_FOREACH(Symbol * c, cs) {
+                assert(dynamic_cast<SymbolTemplate *>(c) != 0);
+                std::ostringstream oss;
+                c->print(oss);
+                if (c->location()) {
+                    m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                } else {
+                    m_log.info() << '\t' << oss.str();
+                }
+            }
+        }
+
         return E_TYPE;
     }
 
@@ -452,10 +513,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
     }
 
     Status s = checkProcCall(id, *root, arguments, resultType, symProc);
-    if (s != OK) {
-        m_log.fatal () << "Error at " << root->location () << ".";
+    if (s != OK)
         return s;
-    }
 
     root->setProcedure (symProc);
     root->setResultType (resultType);

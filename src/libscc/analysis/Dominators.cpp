@@ -17,13 +17,13 @@
 
 namespace SecreC {
 
-namespace /* anonymous */ {
+namespace { /* anonymous */
 
 struct DomInfo {
 
-    explicit DomInfo (Block* block)
-        : block (block)
-        , idom (0)
+    explicit DomInfo(Block * block)
+        : block(block)
+        , idom(0)
     { }
 
     Block*               block;
@@ -31,7 +31,7 @@ struct DomInfo {
     std::vector<size_t>  preds;
 };
 
-size_t intersect (const std::vector<DomInfo>& info, size_t a, size_t b) {
+size_t intersect(const std::vector<DomInfo> & info, size_t a, size_t b) {
     while (a != b) {
         while (a < b) a = info[a].idom;
         while (b < a) b = info[b].idom;
@@ -40,28 +40,32 @@ size_t intersect (const std::vector<DomInfo>& info, size_t a, size_t b) {
     return a;
 }
 
-void calculateIDoms (std::vector<DomInfo>& info, size_t startNode) {
-    const size_t undef = info.size ();
-    BOOST_FOREACH (DomInfo& node, info) {
+void calculateIDoms(std::vector<DomInfo> & info, size_t startNode) {
+    const size_t undef = info.size();
+    BOOST_FOREACH (DomInfo & node, info) {
         node.idom = undef;
     }
 
-    const Block* startNodeBlock = info[startNode].block;
+    const Block * startNodeBlock = info[startNode].block;
     info[startNode].idom = startNode;
     bool changed = true;
+
     while (changed) {
         changed = false;
-        BOOST_REVERSE_FOREACH (DomInfo& node, info) {
-            if (node.block == startNodeBlock)
+        BOOST_REVERSE_FOREACH (DomInfo & node, info) {
+            if (node.block == startNodeBlock) {
                 continue;
+            }
 
             size_t newIDom = undef;
             BOOST_FOREACH (size_t pred, node.preds) {
                 if (info[pred].idom != undef) {
-                    if (newIDom == undef)
+                    if (newIDom == undef) {
                         newIDom = pred;
-                    else
-                        newIDom = intersect (info, pred, newIDom);
+                    }
+                    else {
+                        newIDom = intersect(info, pred, newIDom);
+                    }
                 }
             }
 
@@ -73,24 +77,25 @@ void calculateIDoms (std::vector<DomInfo>& info, size_t startNode) {
     }
 }
 
-void printEdge (std::ostream& os, DominanceNode* parent, DominanceNode* child) {
+void printEdge(std::ostream & os, DominanceNode * parent, DominanceNode * child) {
     os << "    "
-       << parent->block ()->dfn () << " -> "
-       << child->block ()->dfn () << ";\n";
+       << parent->block()->dfn() << " -> "
+       << child->block()->dfn() << ";\n";
 }
 
-void printTree (std::ostream& os, DominanceNode* node) {
-    std::vector<DominanceNode*> todo;
-    todo.push_back (node);
+void printTree(std::ostream & os, DominanceNode * node) {
+    std::vector<DominanceNode *> todo;
+    todo.push_back(node);
 
-    os << "  subgraph cluster" << node->block ()->dfn () << " {\n";
-    os << "    " << node->block ()->dfn () << " [shape=box];\n";
-    while (! todo.empty ()) {
-        DominanceNode* parent = todo.back ();
-        todo.pop_back ();
-        BOOST_FOREACH (DominanceNode* child, parent->children ()) {
-            printEdge (os, parent, child);
-            todo.push_back (child);
+    os << "  subgraph cluster" << node->block()->dfn() << " {\n";
+    os << "    " << node->block()->dfn() << " [shape=box];\n";
+
+    while (! todo.empty()) {
+        DominanceNode * parent = todo.back();
+        todo.pop_back();
+        BOOST_FOREACH (DominanceNode* child, parent->children()) {
+            printEdge(os, parent, child);
+            todo.push_back(child);
         }
     }
 
@@ -103,12 +108,12 @@ void printTree (std::ostream& os, DominanceNode* node) {
   DominanceNode
 *******************************************************************************/
 
-DominanceNode::~DominanceNode () {
-    BOOST_FOREACH (DominanceNode* child, m_children) {
+DominanceNode::~DominanceNode() {
+    BOOST_FOREACH (DominanceNode * child, m_children) {
         delete child;
     }
 
-    m_children.clear ();
+    m_children.clear();
     m_parent = 0;
 }
 
@@ -116,90 +121,94 @@ DominanceNode::~DominanceNode () {
   Dominators
 *******************************************************************************/
 
-Dominators::~Dominators () {
-    BOOST_FOREACH (DominanceNode* root, m_roots) {
+Dominators::~Dominators() {
+    BOOST_FOREACH (DominanceNode * root, m_roots) {
         delete root;
     }
 }
 
-void Dominators::calculate (Program* prog) {
-    BOOST_FOREACH (Procedure& proc, *prog) {
-        calculate (&proc);
+void Dominators::calculate(Program * prog) {
+    BOOST_FOREACH (Procedure & proc, *prog) {
+        calculate(&proc);
     }
 }
 
-void Dominators::calculate (Procedure* proc) {
-    calculate (proc->entry ());
+void Dominators::calculate(Procedure * proc) {
+    calculate(proc->entry());
 }
 
-void Dominators::calculate (Block* root) {
-    std::set<Block* > visited;
-    std::vector<std::pair<Block*, Block::neighbour_const_iterator> > workList;
+void Dominators::calculate(Block * root) {
+    std::set<Block *> visited;
+    std::vector<std::pair<Block *, Block::neighbour_const_iterator> > workList;
     std::vector<DomInfo> info;
-    std::map<Block*, size_t> pon; // post-order number
+    std::map<Block *, size_t> pon; // post-order number
 
     // Number the nodes in postorder:
-    visited.insert (root);
-    workList.push_back (std::make_pair (root, root->succ_begin ()));
+    visited.insert(root);
+    workList.push_back(std::make_pair(root, root->succ_begin()));
 
-    while (! workList.empty ()) {
-        Block* block = workList.back ().first;
-        Block::neighbour_const_iterator& it = workList.back ().second;
-        if (it == block->succ_end ()) {
-            pon[block] = info.size ();
-            info.push_back (DomInfo (block));
-            workList.pop_back ();
+    while (! workList.empty()) {
+        Block * block = workList.back().first;
+        Block::neighbour_const_iterator & it = workList.back().second;
+
+        if (it == block->succ_end()) {
+            pon[block] = info.size();
+            info.push_back(DomInfo(block));
+            workList.pop_back();
             continue;
         }
 
         // skip non-local edges
-        if (Edge::isGlobal (it->second)) {
+        if (Edge::isGlobal(it->second)) {
             it ++;
             continue;
         }
 
-        Block* next = (it ++)->first;
-        assert (next != 0);
-        if (visited.insert (next).second) {
-            workList.push_back (std::make_pair (next, next->succ_begin ()));
+        Block * next = (it ++)->first;
+        assert(next != 0);
+
+        if (visited.insert(next).second) {
+            workList.push_back(std::make_pair(next, next->succ_begin()));
         }
     }
 
     // Cache predcessors:
-    typedef std::map<Block*, size_t> MapType;
+    typedef std::map<Block *, size_t> MapType;
     BOOST_FOREACH (MapType::value_type v, pon) {
-        Block* block = v.first;
-        BOOST_FOREACH (Block::edge_type e, block->pred_range ()) {
-            if (Edge::isLocal (e.second)) {
-                info[v.second].preds.push_back (pon[e.first]);
+        Block * block = v.first;
+        BOOST_FOREACH (Block::edge_type e, block->pred_range()) {
+            if (Edge::isLocal(e.second)) {
+                info[v.second].preds.push_back(pon[e.first]);
             }
         }
     }
 
     // Calculate immediate dominators:
-    calculateIDoms (info, pon[root]);
+    calculateIDoms(info, pon[root]);
 
     // Build dominator tree, and add it to forest:
-    BOOST_FOREACH (const DomInfo& i, info) {
-        DominanceNode* child = findNode (i.block);
-        assert (i.idom < info.size ());
-        if (i.idom < info.size ()) {
-            DominanceNode* parent = findNode (info[i.idom].block);
-            child->setParent (parent);
+    BOOST_FOREACH (const DomInfo & i, info) {
+        DominanceNode * child = findNode(i.block);
+        assert(i.idom < info.size());
+
+        if (i.idom < info.size()) {
+            DominanceNode * parent = findNode(info[i.idom].block);
+            child->setParent(parent);
 
             if (&i == &info[i.idom]) {
-                m_roots.push_back (parent);
-            } else {
-                parent->addChild (child);
+                m_roots.push_back(parent);
+            }
+            else {
+                parent->addChild(child);
             }
         }
     }
 }
 
-void Dominators::dumpToDot (std::ostream& os) {
+void Dominators::dumpToDot(std::ostream & os) {
     os << "digraph IDOM {\n";
     BOOST_FOREACH (DominanceNode* root, m_roots) {
-        printTree (os, root);
+        printTree(os, root);
     }
 
     os << "}\n";
