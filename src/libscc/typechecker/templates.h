@@ -129,9 +129,14 @@ struct InstanceInfo {
 };
 
 class TemplateInstantiator {
+
+private: /* Types: */
+
+    typedef std::map<Instantiation, InstanceInfo> InstanceInfoMap;
+
 public: /* Methods: */
-    TemplateInstantiator () { }
-    ~TemplateInstantiator () { }
+
+    ~TemplateInstantiator();
 
     /**
      * Marks instantiation for future code generation. Sets local symbol table
@@ -166,9 +171,9 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    std::set<Instantiation>                 m_generated;    // set of generated instances
-    std::map<Instantiation, InstanceInfo >  m_instanceInfo;
-    std::list<Instantiation >               m_workList;
+    std::set<Instantiation>   m_generated;    // set of generated instances
+    InstanceInfoMap           m_instanceInfo;
+    std::list<Instantiation > m_workList;
 };
 
 
