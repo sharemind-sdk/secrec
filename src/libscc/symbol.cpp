@@ -84,7 +84,7 @@ SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bo
     setName(name);
 }
 
-const YYLTYPE * SymbolSymbol::location() const {
+const TreeNode::Location * SymbolSymbol::location() const {
     if (m_decl)
         return &m_decl->location();
     return NULL;
@@ -123,7 +123,7 @@ SymbolProcedure::SymbolProcedure(const std::string & name,
     setName(name);
 }
 
-const YYLTYPE * SymbolProcedure::location() const {
+const TreeNode::Location * SymbolProcedure::location() const {
     return &m_decl->location();
 }
 
@@ -200,7 +200,7 @@ SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
     , m_templ (templ)
 { }
 
-const YYLTYPE * SymbolTemplate::location() const {
+const TreeNode::Location * SymbolTemplate::location() const {
     return &m_templ->location();
 }
 

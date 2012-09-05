@@ -337,12 +337,3 @@ std::string DataTypeProcedure::toNormalString() const {
 }
 
 } // namespace SecreC
-
-/*******************************************************************************
-  Global functions
-*******************************************************************************/
-
-std::ostream &operator<<(std::ostream &out, const SecrecDataType &type) {
-    out << SecreC::SecrecFundDataTypeToString(type);
-    return out;
-}

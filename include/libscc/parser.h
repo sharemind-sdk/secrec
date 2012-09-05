@@ -179,7 +179,7 @@ namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse(TYPE_TREENODEMODULE * result);
+extern int sccparse(const char * filename, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given input.
@@ -189,7 +189,7 @@ extern int sccparse(TYPE_TREENODEMODULE * result);
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse_file(FILE * input, TYPE_TREENODEMODULE * result);
+extern int sccparse_file(const char * filename, FILE * input, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given memory region.
@@ -201,7 +201,7 @@ extern int sccparse_file(FILE * input, TYPE_TREENODEMODULE * result);
     \retval 2 Parsing failed due to memory exhaustion.
     \retval 3 Parsing failed because the input could not be read.
 */
-extern int sccparse_mem(const void * buf, size_t size, TYPE_TREENODEMODULE * result);
+extern int sccparse_mem(const char * filename, const void * buf, size_t size, TYPE_TREENODEMODULE * result);
 
 union YYSTYPE {
     TYPE_TREENODE treenode;
@@ -217,8 +217,23 @@ typedef struct YYLTYPE {
     int first_column;
     int last_line;
     int last_column;
+    const char * filename;
 } YYLTYPE;
-#define YYLTYPE_IS_TRIVIAL 1
+#define YYLTYPE_IS_DECLARED 1
+
+#define YYLLOC_DEFAULT(Current, Rhs, N) \
+    do { \
+        if ((N)) { \
+            (Current).first_line   = YYRHSLOC(Rhs, 1).first_line; \
+            (Current).first_column = YYRHSLOC(Rhs, 1).first_column; \
+            (Current).last_line    = YYRHSLOC(Rhs, N).last_line; \
+            (Current).last_column  = YYRHSLOC(Rhs, N).last_column; \
+        } else { \
+            (Current).first_line = (Current).last_line = YYRHSLOC (Rhs, 0).last_line; \
+            (Current).first_column = (Current).last_column = YYRHSLOC (Rhs, 0).last_column; \
+        } \
+        (Current).filename = fileName; \
+    } while (0)
 
 #ifdef __cplusplus
 } /* extern "C" */

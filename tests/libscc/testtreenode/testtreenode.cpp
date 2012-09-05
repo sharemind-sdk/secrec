@@ -6,33 +6,16 @@
 
 using namespace SecreC;
 
-bool operator==(const YYLTYPE &a, const YYLTYPE &b) {
-    if (a.first_line   != b.first_line)   return false;
-    if (a.first_column != b.first_column) return false;
-    if (a.last_line    != b.last_line)    return false;
-    if (a.last_column  != b.last_column)  return false;
-    return true;
-}
-
-
-#define DEFLOC(n,fl,fc,ll,lc) YYLTYPE n;\
-    (n).first_line=(fl);\
-    (n).first_column=(fc);\
-    (n).last_line=(ll);\
-    (n).last_column=(lc);
-
-#define DEFLOCCOPY(n,o) YYLTYPE n = o;
-
 #define NR2(a,b) QTest::newRow(#a","#b)<<(a)<<(b)
 #define NR3(a,b,c) QTest::newRow(#a","#b","#c)<<(a)<<(b)<<(c)
 #define NR4(a,b,c,d) QTest::newRow(#a","#b","#c","#d)<<(a)<<(b)<<(c)<<(d)
 
 void TestTreeNode::testInitTreeNode() {
-    DEFLOC(loc,1,2,3,4);
-    DEFLOCCOPY(loc2,loc);
+    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitTreeNode");
+    SecreC::TreeNode::Location loc2(loc);
 
-    DEFLOC(nloc,4,3,2,1);
-    DEFLOCCOPY(nloc2,nloc);
+    SecreC::TreeNode::Location nloc(4, 3, 2, 1, "testInitTreeNode");
+    SecreC::TreeNode::Location nloc2(nloc);
 
     TreeNode *n = new TreeNode(NODE_INTERNAL_USE, loc);
     QCOMPARE(n->type(), NODE_INTERNAL_USE);
@@ -50,7 +33,7 @@ void TestTreeNode::testInitTreeNode() {
 }
 
 void TestTreeNode::testInitBool() {
-    DEFLOC(loc,1,2,3,4);
+    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitBool");
 
     QFETCH(bool, value);
 
@@ -66,7 +49,7 @@ void TestTreeNode::testInitBool_data() {
 }
 
 void TestTreeNode::testInitInt() {
-    DEFLOC(loc,1,2,3,4);
+    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitInt");
 
     QFETCH(int, value1);
 
@@ -87,7 +70,7 @@ void TestTreeNode::testInitInt_data() {
 }
 
 void TestTreeNode::testInitString() {
-    DEFLOC(loc,1,2,3,4);
+    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitString");
 
     QFETCH(QString, value1);
     QFETCH(QString, value2);
@@ -117,7 +100,7 @@ void TestTreeNode::testInitType_data() {
 
 void TestTreeNode::testChildren() {
     typedef std::deque<TreeNode*>::size_type ST;
-    DEFLOC(loc,1,2,3,4);
+    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testChildren");
 
     TreeNodeExprString *n  = new TreeNodeExprString("n", loc);
     TreeNodeExprString *c1 = new TreeNodeExprString("c1", loc);

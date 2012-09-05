@@ -194,14 +194,14 @@ SecreC::TreeNodeModule * parseProgram(const ProgramOptions & opts, int & errorCo
                 cerr << flush;
             }
 
-            errorCode = sccparse_file(f, &ast);
+            errorCode = sccparse_file(fname.c_str(), f, &ast);
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
         }
     }
     else {
-        errorCode = sccparse(&ast);
+        errorCode = sccparse("-", &ast);
     }
 
     return ast;

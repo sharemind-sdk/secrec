@@ -8,7 +8,7 @@
   #include "lex_secrec.h"
   #include "treenode_c.h"
 
-  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
+  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, const char *s);
 
   uint64_t char_to_digit(char c)
   {
@@ -88,7 +88,8 @@
       struct TreeNode * t = 0;
 
       if (treenode_type(node) == NODE_IDENTIFIER) {
-          t = treenode_init(NODE_EXPR_RVARIABLE, treenode_location(node));
+          const YYLTYPE loc = treenode_location(node);
+          t = treenode_init(NODE_EXPR_RVARIABLE, &loc);
           treenode_appendChild(t, treenode_childAt(node, 0));
           return t;
       } else {
@@ -151,6 +152,7 @@
 %lex-param {yyscan_t yyscanner}
 %parse-param {yyscan_t yyscanner}
 %parse-param {TYPE_TREENODE *parseTree}
+%parse-param {char const * fileName};
 
 %destructor { treenode_free($$); } <treenode>
 
@@ -1333,36 +1335,40 @@ identifier
 %%
 
 void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
-             const char *s)
+             const char * fileName, const char *s)
 {
     (void) yyscanner;
     (void) parseTree;
-    fprintf(stderr, "(%d,%d)-(%d,%d): %s\n",
+    fprintf(stderr, "%s:(%d,%d)-(%d,%d): %s\n",
+            fileName,
             loc->first_line, loc->first_column,
             loc->last_line, loc->last_column,
             s);
 }
 
-int sccparse(TYPE_TREENODEMODULE *result) {
+int sccparse(const char * filename, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_file(FILE *input, TYPE_TREENODEMODULE *result) {
+int sccparse_file(const char * filename, FILE *input, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
     yyset_in(input, scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
+int sccparse_mem(const char * filename, const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     FILE *memoryFile;
     yyscan_t scanner;
     int r;
@@ -1381,7 +1387,7 @@ int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
 
     yylex_init(&scanner);
     yyset_in(memoryFile, scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     fclose(memoryFile);
     return r;

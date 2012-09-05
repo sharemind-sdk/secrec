@@ -136,7 +136,7 @@ int run (const Configuration& cfg) {
     int exitCode = 0;
     if (cfg.m_stdin) {
         SecreC::TreeNodeModule* tmpTree = 0;
-        exitCode = sccparse(&tmpTree);
+        exitCode = sccparse("-", &tmpTree);
         parseTree.reset (tmpTree);
     } else {
         FILE *f = fopen (cfg.m_input.c_str (), "r");
@@ -147,7 +147,7 @@ int run (const Configuration& cfg) {
             }
 
             SecreC::TreeNodeModule* tmpTree = 0;
-            exitCode = sccparse_file(f, &tmpTree);
+            exitCode = sccparse_file(cfg.m_input.c_str(), f, &tmpTree);
             parseTree.reset (tmpTree);
             fclose(f);
 

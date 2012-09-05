@@ -35,7 +35,10 @@ TreeNodeExpr * expressionAt(const TreeNode * node, unsigned i) {
   TreeNode
 *******************************************************************************/
 
-TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE & loc)
+TreeNode::Location::FilenameCache TreeNode::Location::m_filenameCache;
+
+
+TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
     : m_parent(0)
     , m_procedure(0)
     , m_type(type)
@@ -87,7 +90,7 @@ void TreeNode::prependChild(TreeNode * child) {
     child->resetParent(this);
 }
 
-void TreeNode::setLocation(const YYLTYPE & location) {
+void TreeNode::setLocation(const TreeNode::Location & location) {
     m_location = location;
 }
 
@@ -1214,8 +1217,8 @@ enum SecrecTreeNodeType treenode_type(TreeNode * node) {
     return ((const SecreC::TreeNode *) node)->type();
 }
 
-const YYLTYPE * treenode_location(const TreeNode * node) {
-    return &((const SecreC::TreeNode *) node)->location();
+const YYLTYPE treenode_location(const TreeNode * node) {
+    return ((const SecreC::TreeNode *) node)->location().toYYLTYPE();
 }
 
 unsigned treenode_numChildren(const TreeNode * node) {

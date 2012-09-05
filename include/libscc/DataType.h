@@ -14,6 +14,7 @@
 #include "SecurityType.h"
 
 #include <cassert>
+#include <ostream>
 #include <vector>
 
 namespace SecreC {
@@ -305,7 +306,5 @@ inline SecrecDimType DataType::secrecDimType() const {
 }
 
 } // namespace SecreC
-
-std::ostream &operator<<(std::ostream &out, const SecrecDataType& type);
 
 #endif // SECREC_DATATYPE_H

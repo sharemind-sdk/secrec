@@ -5,6 +5,8 @@
 
 #include <cassert>
 #include <deque>
+#include <limits>
+#include <map>
 #include <string>
 
 #include "codegenResult.h"
@@ -40,8 +42,152 @@ public: /* Types: */
                      , ChildrenListConstIterator>
         ChildrenListConstRange;
 
+    class Location {
+
+    private: /* Types: */
+
+        struct FilenameItem {
+            inline FilenameItem(const char * f) : filename(f), refCount(0u) {}
+            const std::string filename;
+            size_t refCount;
+        };
+
+        typedef std::map<std::string, FilenameItem> FilenameCache;
+
+    public: /* Methods: */
+
+        inline Location(int firstLine, int firstColumn, int lastColumn, int lastLine, const char * filename)
+            : m_firstLine(firstLine)
+            , m_firstColumn(firstColumn)
+            , m_lastLine(lastLine)
+            , m_lastColumn(lastColumn)
+        {
+            init(filename);
+        }
+
+        inline Location(const YYLTYPE & loc)
+            : m_firstLine(loc.first_line)
+            , m_firstColumn(loc.first_column)
+            , m_lastLine(loc.last_line)
+            , m_lastColumn(loc.last_column)
+        {
+            assert(loc.filename);
+            init(loc.filename);
+        }
+
+        inline Location(const Location & loc)
+            : m_firstLine(loc.m_firstLine)
+            , m_firstColumn(loc.m_firstColumn)
+            , m_lastLine(loc.m_lastLine)
+            , m_lastColumn(loc.m_lastColumn)
+            , m_filenameItem(loc.m_filenameItem)
+        {
+            if (loc.m_filenameItem->refCount == std::numeric_limits<size_t>::max())
+                throw std::bad_alloc();
+            loc.m_filenameItem->refCount++;
+        }
+
+        inline ~Location() {
+            deinit();
+        }
+
+        Location & operator=(const YYLTYPE & loc) {
+            assert(loc.filename);
+            deinit();
+            m_firstLine = loc.first_line;
+            m_firstColumn = loc.first_column;
+            m_lastLine = loc.last_line;
+            m_lastColumn = loc.last_column;
+            init(loc.filename);
+            return *this;
+        }
+
+        Location & operator=(const Location & loc) {
+            if (m_filenameItem != loc.m_filenameItem)
+                deinit();
+            m_firstLine = loc.m_firstLine;
+            m_firstColumn = loc.m_firstColumn;
+            m_lastLine = loc.m_lastLine;
+            m_lastColumn = loc.m_lastColumn;
+            if (m_filenameItem != loc.m_filenameItem) {
+                m_filenameItem = loc.m_filenameItem;
+                if (loc.m_filenameItem->refCount == std::numeric_limits<size_t>::max())
+                    throw std::bad_alloc();
+                loc.m_filenameItem->refCount++;
+            }
+            return *this;
+        }
+
+        bool operator==(const Location & rhs) const {
+            return m_firstLine == rhs.m_firstLine
+                   && m_firstColumn == rhs.m_firstColumn
+                   && m_lastLine == rhs.m_lastLine
+                   && m_lastColumn == rhs.m_lastColumn
+                   && m_filenameItem == rhs.m_filenameItem;
+        }
+
+        bool operator!=(const Location & rhs) const {
+            return m_firstLine != rhs.m_firstLine
+                   || m_firstColumn != rhs.m_firstColumn
+                   || m_lastLine != rhs.m_lastLine
+                   || m_lastColumn != rhs.m_lastColumn
+                   || m_filenameItem != rhs.m_filenameItem;
+        }
+
+        inline int firstLine() const { return m_firstLine; }
+        inline int firstColumn() const { return m_firstColumn; }
+        inline int lastLine() const { return m_lastLine; }
+        inline int lastColumn() const { return m_lastColumn; }
+        inline const std::string & filename() const {
+            return m_filenameItem->filename;
+        }
+
+        inline YYLTYPE toYYLTYPE() const {
+            YYLTYPE r;
+            r.first_line = m_firstLine;
+            r.first_column = m_firstColumn;
+            r.last_line = m_lastLine;
+            r.last_column = m_lastColumn;
+            r.filename = filename().c_str();
+            return r;
+        }
+
+    private: /* Methods: */
+
+        inline void init(const char * const filename) {
+            const FilenameItem i(filename);
+            std::pair<FilenameCache::iterator, bool> r = m_filenameCache.insert(std::make_pair(i.filename, i));
+
+            if (!r.second) {
+                if ((*(r.first)).second.refCount == std::numeric_limits<size_t>::max())
+                    throw std::bad_alloc();
+                (*(r.first)).second.refCount++;
+            }
+            m_filenameItem = &((*(r.first)).second);
+        }
+
+        inline void deinit() {
+            if (m_filenameItem->refCount <= 0u) {
+                m_filenameCache.erase(m_filenameItem->filename);
+            } else {
+                m_filenameItem->refCount--;
+            }
+        }
+
+    private: /* Fields: */
+
+        int m_firstLine;
+        int m_firstColumn;
+        int m_lastLine;
+        int m_lastColumn;
+        FilenameItem * m_filenameItem;
+
+        static FilenameCache m_filenameCache;
+
+    }; /* class Location { */
+
 public: /* Methods: */
-    TreeNode(SecrecTreeNodeType type, const YYLTYPE &loc);
+    TreeNode(SecrecTreeNodeType type, const Location & loc);
     virtual ~TreeNode();
 
     TreeNodeProcDef* containingProcedure();
@@ -52,11 +198,11 @@ public: /* Methods: */
     inline const ChildrenList &children() const {
         return m_children;
     }
-    inline const YYLTYPE &location() const { return m_location; }
+    inline const Location & location() const { return m_location; }
 
     void appendChild(TreeNode *child);
     void prependChild(TreeNode *child);
-    void setLocation(const YYLTYPE &location);
+    void setLocation(const Location & location);
 
     ChildrenListIterator begin () {
         return children ().begin ();
@@ -108,8 +254,19 @@ protected: /* Fields: */
     TreeNodeProcDef*          m_procedure;
     const SecrecTreeNodeType  m_type;
     ChildrenList              m_children;
-    YYLTYPE                   m_location;
+    Location                  m_location;
 };
+
+inline std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc) {
+    os << loc.filename()
+       << ":(" << loc.firstLine()
+       << ',' << loc.firstColumn()
+       << "),(" << loc.lastLine()
+       << ',' << loc.lastColumn() << ')';
+    return os;
+}
+
+
 
 /******************************************************************
   TreeNodeIdentifier
@@ -118,7 +275,7 @@ protected: /* Fields: */
 class TreeNodeIdentifier: public TreeNode {
 public: /* Methods: */
     inline TreeNodeIdentifier(const std::string &value,
-                              const YYLTYPE &loc)
+                              const Location & loc)
         : TreeNode(NODE_IDENTIFIER, loc)
         , m_value(value)
     { }
@@ -143,7 +300,7 @@ private: /* Fields: */
 
 class TreeNodeSecTypeF: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeSecTypeF(bool isPublic, const YYLTYPE &loc)
+    inline TreeNodeSecTypeF(bool isPublic, const Location & loc)
         : TreeNode (NODE_SECTYPE_F, loc)
         , m_isPublic (isPublic)
         , m_cachedType (0)
@@ -175,7 +332,7 @@ private: /* Fields: */
 class TreeNodeDataTypeF: public TreeNode {
 public: /* Methods: */
     inline TreeNodeDataTypeF(SecrecDataType dataType,
-                             const YYLTYPE &loc)
+                             const Location & loc)
         : TreeNode(NODE_DATATYPE_F, loc)
         , m_dataType(dataType) {}
 
@@ -203,7 +360,7 @@ private: /* Fields: */
 class TreeNodeDimTypeF: public TreeNode {
 public: /* Methods: */
     inline TreeNodeDimTypeF(SecrecDimType dimType,
-                            const YYLTYPE &loc)
+                            const Location & loc)
         : TreeNode(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
 
     SecrecDimType dimType() const {
@@ -230,7 +387,7 @@ private: /* Fields: */
 class TreeNodeType : public TreeNode {
 public: /* Methods: */
     inline TreeNodeType(SecrecTreeNodeType type,
-                        const YYLTYPE &loc)
+                        const Location & loc)
         : TreeNode(type, loc)
         , m_cachedType (0)
     { }
@@ -248,7 +405,7 @@ protected:
     friend class TypeChecker;
 
     inline TreeNodeType(SecrecTreeNodeType type,
-                        const YYLTYPE &loc,
+                        const Location & loc,
                         SecreC::Type* ty)
         : TreeNode(type, loc)
         , m_cachedType (ty)
@@ -268,7 +425,7 @@ protected: /* Fields: */
 /// Non-void types.
 class TreeNodeTypeType: public TreeNodeType {
 public: /* Methods: */
-    explicit inline TreeNodeTypeType(const YYLTYPE &loc)
+    explicit inline TreeNodeTypeType(const Location & loc)
         : TreeNodeType(NODE_TYPETYPE, loc) {}
 
     virtual std::string stringHelper() const;
@@ -286,7 +443,7 @@ protected:
 
 class TreeNodeTypeVoid: public TreeNodeType {
 public: /* Methods: */
-    explicit inline TreeNodeTypeVoid(const YYLTYPE &loc)
+    explicit inline TreeNodeTypeVoid(const Location & loc)
         : TreeNodeType(NODE_TYPEVOID, loc)
     { }
 
@@ -310,7 +467,7 @@ class TreeNodeExpr: public TreeNode, public TypeContext {
 public: /* Methods: */
 
     inline TreeNodeExpr(SecrecTreeNodeType type,
-                        const YYLTYPE &loc)
+                        const Location & loc)
         : TreeNode (type, loc)
         , m_resultType (0)
     { }
@@ -373,7 +530,7 @@ protected: /* Fields: */
 /// Statements.
 class TreeNodeStmt: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeStmt(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeStmt(SecrecTreeNodeType type, const Location & loc)
         : TreeNode(type, loc) { }
     virtual ~TreeNodeStmt() { }
 
@@ -390,7 +547,7 @@ protected:
 
 class TreeNodeExprInt: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprInt(int value, const YYLTYPE &loc)
+    inline TreeNodeExprInt(int value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
     inline void setValue(int value) { m_value = value; }
@@ -419,7 +576,7 @@ private: /* Fields: */
 
 class TreeNodeExprAssign: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprAssign(SecrecTreeNodeType type, const YYLTYPE &loc)
+    inline TreeNodeExprAssign(SecrecTreeNodeType type, const Location & loc)
         : TreeNodeExpr(type, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -447,7 +604,7 @@ protected:
  */
 class TreeNodeExprCast: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprCast (const YYLTYPE &loc)
+    inline TreeNodeExprCast (const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -470,7 +627,7 @@ protected:
 
 class TreeNodeExprIndex: public TreeNodeExpr {
 public:
-    inline TreeNodeExprIndex(const YYLTYPE &loc)
+    inline TreeNodeExprIndex(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_INDEX, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -495,7 +652,7 @@ protected:
 
 class TreeNodeExprSize: public TreeNodeExpr {
 public:
-    inline TreeNodeExprSize(const YYLTYPE &loc)
+    inline TreeNodeExprSize(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_SIZE, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -516,7 +673,7 @@ protected:
 
 class TreeNodeExprShape: public TreeNodeExpr {
 public:
-    inline TreeNodeExprShape(const YYLTYPE &loc)
+    inline TreeNodeExprShape(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_SHAPE, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -537,7 +694,7 @@ protected:
 
 class TreeNodeExprCat: public TreeNodeExpr {
 public:
-    inline TreeNodeExprCat(const YYLTYPE &loc)
+    inline TreeNodeExprCat(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CAT, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -562,7 +719,7 @@ protected:
 
 class TreeNodeExprReshape: public TreeNodeExpr {
 public:
-    inline TreeNodeExprReshape(const YYLTYPE &loc)
+    inline TreeNodeExprReshape(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -591,7 +748,7 @@ protected:
 
 class TreeNodeExprToString: public TreeNodeExpr {
 public:
-    inline TreeNodeExprToString(const YYLTYPE &loc)
+    inline TreeNodeExprToString(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TOSTRING, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -653,7 +810,7 @@ class TreeNodeExprBinary: public TreeNodeExpr,
                           public OverloadableOperator {
 public: /* Methods: */
     inline TreeNodeExprBinary(SecrecTreeNodeType type,
-                              const YYLTYPE &loc)
+                              const Location & loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -668,7 +825,7 @@ public: /* Methods: */
 protected:
 
     TreeNodeExprBinary (SecrecTreeNodeType type,
-                        const YYLTYPE &loc,
+                        const Location & loc,
                         const OverloadableOperator& ov)
         : TreeNodeExpr(type, loc)
         , OverloadableOperator (ov)
@@ -689,7 +846,7 @@ protected:
 
 class TreeNodeExprBool: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprBool(bool value, const YYLTYPE &loc)
+    inline TreeNodeExprBool(bool value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_BOOL, loc), m_value(value) {}
 
     inline bool value() const { return m_value; }
@@ -724,7 +881,7 @@ private: /* Fields: */
 class TreeNodeExprClassify: public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprClassify(SecurityType* ty,
-                                const YYLTYPE &loc)
+                                const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
     {
         m_contextSecType = ty;
@@ -746,7 +903,7 @@ protected:
 
 class TreeNodeExprDeclassify: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprDeclassify(const YYLTYPE &loc)
+    inline TreeNodeExprDeclassify(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_DECLASSIFY, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -771,7 +928,7 @@ protected:
 
 class TreeNodeExprProcCall: public TreeNodeExpr {
 public: /* Methods: */
-    explicit inline TreeNodeExprProcCall(const YYLTYPE &loc)
+    explicit inline TreeNodeExprProcCall(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_PROCCALL, loc)
         , m_procedure (0)
     { }
@@ -808,7 +965,7 @@ protected: /* Fields: */
 /// Variable in right hand side.
 class TreeNodeExprRVariable: public TreeNodeExpr {
 public: /* Methods: */
-    explicit inline TreeNodeExprRVariable(const YYLTYPE &loc)
+    explicit inline TreeNodeExprRVariable(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -832,7 +989,7 @@ protected:
 class TreeNodeExprString: public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprString(const std::string &value,
-                              const YYLTYPE &loc)
+                              const Location & loc)
         : TreeNodeExpr(NODE_LITE_STRING, loc)
         , m_value(value)
     { }
@@ -862,7 +1019,7 @@ private: /* Fields: */
 class TreeNodeExprFloat: public TreeNodeExpr {
 public: /* Methods: */
     TreeNodeExprFloat (const std::string & value,
-                       const YYLTYPE & loc)
+                       const Location & loc)
         : TreeNodeExpr (NODE_LITE_FLOAT, loc)
         , m_value (value)
     { }
@@ -889,7 +1046,7 @@ private: /* Fields: */
 
 class TreeNodeExprTernary: public TreeNodeExpr {
 public: /* Methods: */
-    explicit inline TreeNodeExprTernary(const YYLTYPE &loc)
+    explicit inline TreeNodeExprTernary(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -918,7 +1075,7 @@ protected:
 class TreeNodeExprPrefix: public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprPrefix(SecrecTreeNodeType type,
-                              const YYLTYPE &loc)
+                              const Location & loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -940,7 +1097,7 @@ protected:
 class TreeNodeExprPostfix: public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprPostfix(SecrecTreeNodeType type,
-                               const YYLTYPE &loc)
+                               const Location & loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -963,7 +1120,7 @@ class TreeNodeExprUnary: public TreeNodeExpr,
                          public OverloadableOperator {
 public: /* Methods: */
     inline TreeNodeExprUnary(SecrecTreeNodeType type,
-                             const YYLTYPE &loc)
+                             const Location & loc)
         : TreeNodeExpr(type, loc)
     { }
 
@@ -976,7 +1133,7 @@ public: /* Methods: */
 protected:
 
     TreeNodeExprUnary (SecrecTreeNodeType type,
-                       const YYLTYPE &loc,
+                       const Location & loc,
                        const OverloadableOperator& ov)
         : TreeNodeExpr(type, loc)
         , OverloadableOperator (ov)
@@ -998,7 +1155,7 @@ protected:
 /// Unary expressions such as regular (logical) negation.
 class TreeNodeExprDomainID: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprDomainID(const YYLTYPE &loc)
+    inline TreeNodeExprDomainID(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_DOMAINID, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -1019,7 +1176,7 @@ protected:
 
 class TreeNodeExprQualified : public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprQualified(const YYLTYPE &loc)
+    inline TreeNodeExprQualified(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TYPE_QUAL, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -1044,7 +1201,7 @@ protected:
 
 class TreeNodeExprStringFromBytes : public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprStringFromBytes(const YYLTYPE &loc)
+    inline TreeNodeExprStringFromBytes(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -1065,7 +1222,7 @@ protected:
 
 class TreeNodeExprBytesFromString : public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprBytesFromString(const YYLTYPE &loc)
+    inline TreeNodeExprBytesFromString(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -1087,7 +1244,7 @@ protected:
 /// Declaration statement. Also tracks if the scope is global.
 class TreeNodeKind : public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeKind(const YYLTYPE &loc)
+    explicit inline TreeNodeKind(const Location & loc)
         : TreeNode (NODE_KIND, loc) { }
 
 protected:
@@ -1104,7 +1261,7 @@ protected:
 /// Declaration statement. Also tracks if the scope is global.
 class TreeNodeDomain : public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeDomain(const YYLTYPE &loc)
+    explicit inline TreeNodeDomain(const Location & loc)
         : TreeNode (NODE_DOMAIN, loc) { }
 
 protected:
@@ -1123,7 +1280,7 @@ class TreeNodeProcDef: public TreeNode {
 protected: /* Methods: */
 
     explicit inline TreeNodeProcDef(SecrecTreeNodeType type,
-                                    const YYLTYPE &loc)
+                                    const Location & loc)
         : TreeNode (type, loc)
         , m_cachedType(0)
         , m_procSymbol (0)
@@ -1133,7 +1290,7 @@ protected: /* Methods: */
 
 public:
 
-    explicit inline TreeNodeProcDef(const YYLTYPE &loc)
+    explicit inline TreeNodeProcDef(const Location & loc)
         : TreeNode(NODE_PROCDEF, loc)
         , m_cachedType(0)
         , m_procSymbol (0)
@@ -1195,7 +1352,7 @@ class TreeNodeOpDef: public TreeNodeProcDef {
 public: /* Methods: */
 
     explicit inline TreeNodeOpDef(SecrecOperator op,
-                                  const YYLTYPE &loc)
+                                  const Location & loc)
         : TreeNodeProcDef (NODE_OPDEF, loc)
         , m_operator (op)
     { }
@@ -1222,7 +1379,7 @@ protected: /* Fields: */
 
 class TreeNodeQuantifier : public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeQuantifier(const YYLTYPE &loc)
+    explicit inline TreeNodeQuantifier(const Location & loc)
         : TreeNode(NODE_TEMPLATE_QUANT, loc) {}
 
     TreeNodeIdentifier* domain ();
@@ -1243,7 +1400,7 @@ protected:
 
 class TreeNodeTemplate : public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeTemplate(const YYLTYPE &loc)
+    explicit inline TreeNodeTemplate(const Location & loc)
         : TreeNode(NODE_TEMPLATE_DECL, loc)
         , m_contextDependance (false)
         , m_containingModule (0)
@@ -1287,7 +1444,7 @@ private: /* Fields: */
 /// Representation of program.
 class TreeNodeProgram: public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeProgram(const YYLTYPE &loc)
+    explicit inline TreeNodeProgram(const Location & loc)
         : TreeNode(NODE_PROGRAM, loc) {}
 
 protected:
@@ -1303,7 +1460,7 @@ protected:
 
 class TreeNodeImport : public TreeNode {
 public: /* Methods: */
-    inline TreeNodeImport(const YYLTYPE &loc)
+    inline TreeNodeImport(const Location & loc)
         : TreeNode (NODE_IMPORT, loc)
     { }
 
@@ -1322,7 +1479,7 @@ protected:
 
 class TreeNodeModule : public TreeNode {
 public: /* Methods: */
-    inline TreeNodeModule(const YYLTYPE &loc)
+    inline TreeNodeModule(const Location & loc)
         : TreeNode (NODE_MODULE, loc)
     { }
 
@@ -1344,7 +1501,7 @@ protected:
 /// Break statement.
 class TreeNodeStmtBreak: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtBreak(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtBreak(const Location & loc)
         : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
 
@@ -1364,7 +1521,7 @@ protected:
 /// Compund statement. Anything between curly bracers.
 class TreeNodeStmtCompound: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtCompound(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtCompound(const Location & loc)
         : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1383,7 +1540,7 @@ protected:
 /// Continue statement.
 class TreeNodeStmtContinue: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtContinue(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtContinue(const Location & loc)
         : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
 
@@ -1402,7 +1559,7 @@ protected:
 
 class TreeNodeVarInit : public TreeNode {
 public: /* Methods: */
-    TreeNodeVarInit (const YYLTYPE &loc)
+    TreeNodeVarInit (const Location & loc)
         : TreeNode (NODE_VAR_INIT, loc)
     { }
 
@@ -1429,7 +1586,7 @@ protected:
 class TreeNodeStmtDecl: public TreeNodeStmt {
 public: /* Methods: */
 
-    explicit TreeNodeStmtDecl (const YYLTYPE &loc)
+    explicit TreeNodeStmtDecl (const Location & loc)
         : TreeNodeStmt (NODE_DECL, loc)
         , m_type (0)
         , m_global (false)
@@ -1491,7 +1648,7 @@ protected: /* Fields: */
 /// Do-while statement.
 class TreeNodeStmtDoWhile: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtDoWhile(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtDoWhile(const Location & loc)
         : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1513,7 +1670,7 @@ protected:
 /// Expression statements. Any expression can occur as a statement.
 class TreeNodeStmtExpr: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtExpr(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtExpr(const Location & loc)
         : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1534,7 +1691,7 @@ protected:
 /// Assert statement.
 class TreeNodeStmtAssert: public TreeNodeStmt {
 public: /* Methods: */
-    explicit TreeNodeStmtAssert(const YYLTYPE &loc)
+    explicit TreeNodeStmtAssert(const Location & loc)
         : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1555,7 +1712,7 @@ protected:
 /// For statement.
 class TreeNodeStmtFor: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtFor(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtFor(const Location & loc)
         : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1581,7 +1738,7 @@ protected:
 /// If and if-then-else statement.
 class TreeNodeStmtIf: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtIf(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtIf(const Location & loc)
         : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1604,7 +1761,7 @@ protected:
 /// Regular return and value returning statement.
 class TreeNodeStmtReturn: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtReturn(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtReturn(const Location & loc)
         : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1625,7 +1782,7 @@ protected:
 /// While statement.
 class TreeNodeStmtWhile: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtWhile(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtWhile(const Location & loc)
         : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1646,7 +1803,7 @@ protected:
 
 class TreeNodeStmtPrint: public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtPrint(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtPrint(const Location & loc)
         : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
@@ -1666,7 +1823,7 @@ protected:
 
 class TreeNodeStmtSyscall : public TreeNodeStmt {
 public: /* Methods: */
-    explicit inline TreeNodeStmtSyscall(const YYLTYPE &loc)
+    explicit inline TreeNodeStmtSyscall(const Location & loc)
         : TreeNodeStmt(NODE_STMT_SYSCALL, loc) {}
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
