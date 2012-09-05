@@ -63,7 +63,7 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
         out->resetParent(parent);
     }
 
-    BOOST_FOREACH(TreeNode * n, m_children) {
+    BOOST_FOREACH(const TreeNode * n, m_children) {
         out->m_children.push_back(n->clone(out));
     }
 
@@ -1049,6 +1049,12 @@ std::string TreeNodeTypeType::stringHelper() const {
 /*******************************************************************************
   TreeNodeModule
 *******************************************************************************/
+
+TreeNodeModule::~TreeNodeModule() {
+    BOOST_FOREACH (TreeNodeProcDef* instance, m_generatedInstances) {
+        delete instance;
+    }
+}
 
 bool TreeNodeModule::hasName() const {
    return children().size() == 2;

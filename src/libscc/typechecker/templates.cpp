@@ -63,23 +63,18 @@ unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
   TemplateInstantiator
 *******************************************************************************/
 
-TemplateInstantiator::~TemplateInstantiator() {
-    // Free the cloned code:
-    BOOST_FOREACH(InstanceInfoMap::value_type & i, m_instanceInfo)
-        delete i.second.m_generatedBody;
-}
-
 /// \todo figure out how to delay copying of procedures even more (or completeley avoid
 /// if possible).
 const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInfo& mod) {
     InstanceInfoMap::iterator it = m_instanceInfo.find (i);
     if (it == m_instanceInfo.end ()) {
-        TreeNode* cloned = i.getTemplate ()->decl ()->body ()->clone (0);
+        TreeNodeProcDef* cloned = static_cast<TreeNodeProcDef*>(i.getTemplate ()->decl ()->body ()->clone (0));
+        mod.body()->addGeneratedInstance(cloned);
         InstanceInfo info;
         SymbolTable* local = mod.codeGenState ().st ()->newScope ();
         local->setName ("Template " + i.getTemplate ()->name ());
         m_workList.push_back (i);
-        info.m_generatedBody = static_cast<TreeNodeProcDef*>(cloned);
+        info.m_generatedBody = cloned;
         info.m_moduleInfo = &mod;
         info.m_localScope = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));

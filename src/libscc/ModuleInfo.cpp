@@ -8,6 +8,7 @@
  */
 
 #include "ModuleInfo.h"
+#include "treenode.h"
 
 #include <boost/filesystem.hpp>
 
@@ -19,15 +20,17 @@ namespace SecreC {
   ModuleInfo
 *******************************************************************************/
 
+ModuleInfo::~ModuleInfo() {
+    delete m_body;
+}
+
 std::string ModuleInfo::fileNameStem () const {
     return m_location.path ().stem ().string ();
 }
 
-
 void ModuleInfo::setCodeGenState (const CodeGenState& state) {
     m_cgState = state;
 }
-
 
 bool ModuleInfo::read() {
     using namespace boost;

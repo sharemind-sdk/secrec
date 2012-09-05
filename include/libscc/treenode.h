@@ -825,19 +825,12 @@ public: /* Methods: */
 
 protected:
 
-    TreeNodeExprBinary (SecrecTreeNodeType type,
-                        const Location & loc,
-                        const OverloadableOperator& ov)
-        : TreeNodeExpr(type, loc)
-        , OverloadableOperator (ov)
-    { }
-
     virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual SecrecOperator getOperatorV () const;
 
     virtual TreeNode* cloneV () const {
-        return new TreeNodeExprBinary (m_type, m_location, *this);
+        return new TreeNodeExprBinary (m_type, m_location);
     }
 };
 
@@ -1133,19 +1126,12 @@ public: /* Methods: */
 
 protected:
 
-    TreeNodeExprUnary (SecrecTreeNodeType type,
-                       const Location & loc,
-                       const OverloadableOperator& ov)
-        : TreeNodeExpr(type, loc)
-        , OverloadableOperator (ov)
-    { }
-
     virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual SecrecOperator getOperatorV () const;
 
     virtual TreeNode* cloneV () const {
-        return new TreeNodeExprUnary (m_type, m_location, *this);
+        return new TreeNodeExprUnary (m_type, m_location);
     }
 };
 
@@ -1298,8 +1284,6 @@ public:
     {
         setContainingProcedureDirectly(this);
     }
-
-    virtual ~TreeNodeProcDef() { }
 
     virtual inline void resetParent(TreeNode *parent) {
         setParentDirectly(parent);
@@ -1484,15 +1468,24 @@ public: /* Methods: */
         : TreeNode (NODE_MODULE, loc)
     { }
 
+    ~TreeNodeModule();
+
     bool hasName () const;
     std::string name () const;
     TreeNodeProgram* program () const;
 
+    void addGeneratedInstance (TreeNodeProcDef * instance) {
+        m_generatedInstances.push_back(instance);
+    }
+
 protected:
 
     virtual TreeNode* cloneV () const {
+        assert (false && "ICE: cloning TreeNodeModule!");
         return new TreeNodeModule (m_location);
     }
+
+    std::vector<TreeNodeProcDef*> m_generatedInstances;
 };
 
 /******************************************************************
@@ -1587,11 +1580,11 @@ protected:
 class TreeNodeStmtDecl: public TreeNodeStmt {
 public: /* Methods: */
 
-    explicit TreeNodeStmtDecl (const Location & loc)
+    explicit TreeNodeStmtDecl (const Location & loc, bool global = false, bool procParam = false)
         : TreeNodeStmt (NODE_DECL, loc)
         , m_type (0)
-        , m_global (false)
-        , m_procParam (false) { }
+        , m_global (global)
+        , m_procParam (procParam) { }
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
@@ -1633,7 +1626,7 @@ protected:
     friend class TypeChecker;
 
     virtual TreeNode* cloneV () const {
-        return new TreeNodeStmtDecl (m_location);
+        return new TreeNodeStmtDecl (m_location, m_global, m_procParam);
     }
 
 protected: /* Fields: */

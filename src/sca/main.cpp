@@ -119,7 +119,7 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 }
 
 int run (const Configuration& cfg) {
-    std::auto_ptr<SecreC::TreeNodeModule> parseTree;
+    SecreC::TreeNodeModule* parseTree = 0;
     std::ostream out (cout.rdbuf ());
     io::stream_buffer<io::file_sink > fileBuf;
 
@@ -135,9 +135,7 @@ int run (const Configuration& cfg) {
 
     int exitCode = 0;
     if (cfg.m_stdin) {
-        SecreC::TreeNodeModule* tmpTree = 0;
-        exitCode = sccparse("-", &tmpTree);
-        parseTree.reset (tmpTree);
+        exitCode = sccparse("-", &parseTree);
     } else {
         FILE *f = fopen (cfg.m_input.c_str (), "r");
         if (f != NULL) {
@@ -146,9 +144,7 @@ int run (const Configuration& cfg) {
                 cerr << flush;
             }
 
-            SecreC::TreeNodeModule* tmpTree = 0;
-            exitCode = sccparse_file(cfg.m_input.c_str(), f, &tmpTree);
-            parseTree.reset (tmpTree);
+            exitCode = sccparse_file(cfg.m_input.c_str(), f, &parseTree);
             fclose(f);
 
             if (cfg.m_verbose) {
@@ -168,7 +164,7 @@ int run (const Configuration& cfg) {
     out << flush;
     cerr << flush;
 
-    assert (parseTree.get () != 0);
+    assert (parseTree != 0);
     if (cfg.m_printAST) {
         out << parseTree->toString() << endl;
         return EXIT_SUCCESS;
@@ -180,7 +176,7 @@ int run (const Configuration& cfg) {
         icode.modules ().addSearchPath (path);
     }
 
-    icode.init (parseTree.get ());
+    icode.init (parseTree);
 
     if (icode.status() == SecreC::ICode::OK) {
         SecreC::Program& pr = icode.program ();

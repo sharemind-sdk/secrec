@@ -136,8 +136,6 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    ~TemplateInstantiator();
-
     /**
      * Marks instantiation for future code generation. Sets local symbol table
      * and binds template parameters in local symbol table to proper security types.

@@ -813,6 +813,7 @@ syscall_statement
      $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
      treenode_appendChild ($$, $3);
      treenode_moveChildren ($5, $$);
+     treenode_free ($5);
     }
   ;
 
