@@ -153,7 +153,13 @@
 %parse-param {yyscan_t yyscanner}
 %parse-param {TYPE_TREENODE *parseTree}
 %parse-param {char const * fileName};
-
+%initial-action {
+  @$.first_line = 0;
+  @$.first_column = 0;
+  @$.last_line = 0;
+  @$.last_column = 0;
+  @$.filename = fileName;
+}
 %destructor { treenode_free($$); } <treenode>
 
 /* Identifiers: */
