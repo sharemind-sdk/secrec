@@ -62,6 +62,7 @@ public: /* Types: */
             , m_lastLine(lastLine)
             , m_lastColumn(lastColumn)
         {
+            assert(filename);
             init(filename);
         }
 
