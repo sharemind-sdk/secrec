@@ -201,7 +201,7 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
 
 std::ostream& DataTypeBasic::print (std::ostream & os) const {
     os << "(" << *m_secType << ","
-       << m_dataType << ","
+       << SecrecFundDataTypeToString(m_dataType) << ","
        << m_dimType << ")";
     return os;
 }
@@ -210,7 +210,7 @@ std::string DataTypeBasic::toNormalString() const {
     std::ostringstream oss;
     if (!m_secType->isPublic())
         oss << *m_secType << ' ';
-    oss << m_dataType;
+    oss << SecrecFundDataTypeToString(m_dataType);
     if (m_dimType > 0)
         oss << "[[" << m_dimType << "]]";
     return oss.str();
