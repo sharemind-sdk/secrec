@@ -825,7 +825,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
 
     // Static checking:
     if (result.firstImop() == 0) {
-        m_log.fatalInProc(s) << "Empty loop body at " << body->location() << ".";
+        m_log.fatalInProc(s) << "Empty loop body at " << body->location() << '.';
         result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }

@@ -387,7 +387,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
-    ss << "Different sized dimensions in concat at " << e->location() << ".";
+    ss << "Different sized dimensions in concat at " << e->location() << '.';
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
     for (SecrecDimType it = 0; it < e->resultType()->secrecDimType(); ++ it) {
@@ -590,7 +590,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         result.addToNextList(jmp);
 
         std::stringstream ss;
-        ss << "ERROR: Mismatching sizes in reshape at " << e->location() << ".";
+        ss << "ERROR: Mismatching sizes in reshape at " << e->location() << '.';
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         push_imop(err);
     }

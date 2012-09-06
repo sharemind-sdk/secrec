@@ -96,7 +96,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             assert(static_cast<size_t>(eArg2->resultType()->secrecDimType()) == slices.size());
 
             std::stringstream ss;
-            ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << ".";
+            ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << '.';
             Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
             Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * errLabel = m_st->label(err);
@@ -283,7 +283,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
             else {
                 std::stringstream ss;
-                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << ".";
+                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
                 Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
                 Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
                 SymbolLabel * errLabel = m_st->label(err);

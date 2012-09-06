@@ -318,7 +318,7 @@ int main (int argc, char *argv[]) {
     int parseErrorCode = 0;
     SecreC::TreeNodeModule * parseTree = parseProgram(opts, parseErrorCode);
     if (parseErrorCode != 0) {
-        cerr << "Parsing failed! Error code " << parseErrorCode << "." << endl;
+        cerr << "Parsing failed! Error code " << parseErrorCode << '.' << endl;
         return EXIT_FAILURE;
     }
 

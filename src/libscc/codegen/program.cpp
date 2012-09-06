@@ -283,7 +283,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
         std::auto_ptr<ModuleInfo> newMod(modInfo);
         if (! m_modules.addModule("__main", newMod)) {
             m_log.fatal() << "Error creating main module at "
-                << mainModule->location() << ".";
+                << mainModule->location() << '.';
             return CGResult::ERROR_FATAL;
         }
 
@@ -349,7 +349,7 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
     ModuleInfo * mod = m_modules.findModule(import->name());
     if (mod == 0) {
         m_log.fatal() << "Module \"" << import->name() << "\" not found within search path.";
-        m_log.fatal() << "Error at " << import->location() << ".";
+        m_log.fatal() << "Error at " << import->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -360,7 +360,7 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
     case ModuleInfo::CGStarted:
         /// \todo better error here
         m_log.fatal() << "Recursive modules.";
-        m_log.fatal() << "Error at " << import->location() << ".";
+        m_log.fatal() << "Error at " << import->location() << '.';
         result |= CGResult::ERROR_CONTINUE;
         break;
     case ModuleInfo::CGNotStarted: {

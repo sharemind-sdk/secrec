@@ -437,7 +437,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
     // 2. check that indices are legal
     {
         std::stringstream ss;
-        ss << "Index out of bounds at " << m_node->location() << ".";
+        ss << "Index out of bounds at " << m_node->location() << '.';
         Imop * jmp = new Imop(m_node, Imop::JUMP, (Symbol *) 0);
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);

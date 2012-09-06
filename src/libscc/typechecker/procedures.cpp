@@ -205,18 +205,18 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
                     m_log.fatal () << "Redefinition of procedure '"
                                    << proc->identifier()->value()
                                    << "' at "
-                                   << proc->location () << "."
+                                   << proc->location () << '.'
                                    << " Conflicting with procedure '"
                                    << t->decl()->printableSignature()
                                    << "' declared at "
-                                   << t->decl ()->location () << ".";
+                                   << t->decl ()->location () << '.';
                     return E_TYPE;
                 }
                 if (proc->identifier()->value() == "main" && t->decl()->identifier()->value() == "main") {
                     m_log.fatal() << "Redefinition of procedure 'main' at "
                                   << proc->location () << " not allowed!";
                     m_log.fatal() << "Procedure 'main' already defined at "
-                                   << t->decl ()->location () << ".";
+                                   << t->decl ()->location () << '.';
                     return E_TYPE;
                 }
             }
@@ -236,7 +236,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     if (m_st->find (id->value ()) != 0) {
         m_log.fatal ()
                 << "Redeclaration of template \"" << id->value () << "\""
-                << " at " << id->location () << ".";
+                << " at " << id->location () << '.';
         return E_TYPE;
     }
 
@@ -306,7 +306,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             ss << " " << v.second->location();
         }
 
-        m_log.fatal() << "Template definition has free type variables at" << ss.str () << ".";
+        m_log.fatal() << "Template definition has free type variables at" << ss.str () << '.';
         return E_TYPE;
     }
 
