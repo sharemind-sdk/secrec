@@ -27,7 +27,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
 
     if (st->find(id->value()) != 0) {
         m_log.error() << "Redefinition of global symbol at " << kind->location() << ".";
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
     }
 
     st->appendSymbol(new SymbolKind(id->value()));
@@ -46,12 +46,12 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
     SymbolKind * kind = dynamic_cast<SymbolKind *>(st->find(idKind->value()));
     if (kind == 0) {
         m_log.error() << "Undefined domain kind at " << dom->location() << ".";
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
     }
 
     if (st->find(idDomain->value()) != 0) {
         m_log.error() << "Redeclaration of global symbol at " << dom->location() << ".";
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
     }
 
     st->appendSymbol(new SymbolDomain(
@@ -360,11 +360,11 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
         /// \todo better error here
         m_log.fatal() << "Recursive modules.";
         m_log.fatal() << "Error at " << import->location() << ".";
-        result |= CGResult::ERROR_FATAL;
+        result |= CGResult::ERROR_CONTINUE;
         break;
     case ModuleInfo::CGNotStarted: {
         if (!mod->read()) {
-            result |= CGResult::ERROR_FATAL;
+            result |= CGResult::ERROR_CONTINUE;
             return result;
         }
 

@@ -410,7 +410,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
             m_log.fatalInProc(s) << "Conditional expression in if statement "
                                     "must be of type public bool at "
                                  << e1->location() << '.';
-            result.setStatus(CGResult::ERROR_FATAL);
+            result.setStatus(CGResult::ERROR_CONTINUE);
             return result;
         }
 
@@ -474,14 +474,14 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatalInProc(s) << "For loop at " << s->location() << " wont loop!";
-        result.setStatus(CGResult::ERROR_FATAL);
+        result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
     if (condResult.firstImop() == 0 && ((bodyResult.flags()
                     & (CGStmtResult::BREAK | CGStmtResult::RETURN)) == 0x0))
     {
         m_log.fatalInProc(s) << "For loop at " << s->location() << " is clearly infinite!";
-        result.setStatus(CGResult::ERROR_FATAL);
+        result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
 
@@ -826,7 +826,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
     // Static checking:
     if (result.firstImop() == 0) {
         m_log.fatalInProc(s) << "Empty loop body at " << body->location() << ".";
-        result.setStatus(CGResult::ERROR_FATAL);
+        result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
 
@@ -836,7 +836,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
         m_log.fatalInProc(s) << "Do-while loop at " << s->location() << " wont loop!";
-        result.setStatus(CGResult::ERROR_FATAL);
+        result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
 
