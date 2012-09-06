@@ -104,15 +104,15 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(DIMENSIONS);
     CASE_NODE_NAME(DIMTYPE_F);
     CASE_NODE_NAME(DOMAIN);
-    CASE_NODE_NAME(EXPR_ASSIGN);
-    CASE_NODE_NAME(EXPR_ASSIGN_ADD);
-    CASE_NODE_NAME(EXPR_ASSIGN_AND);
-    CASE_NODE_NAME(EXPR_ASSIGN_DIV);
-    CASE_NODE_NAME(EXPR_ASSIGN_MOD);
-    CASE_NODE_NAME(EXPR_ASSIGN_MUL);
-    CASE_NODE_NAME(EXPR_ASSIGN_OR);
-    CASE_NODE_NAME(EXPR_ASSIGN_SUB);
-    CASE_NODE_NAME(EXPR_ASSIGN_XOR);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_ADD);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_AND);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_DIV);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_MOD);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_MUL);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_OR);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_SUB);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_XOR);
     CASE_NODE_NAME(EXPR_BINARY_ADD);
     CASE_NODE_NAME(EXPR_BINARY_DIV);
     CASE_NODE_NAME(EXPR_BINARY_EQ);
@@ -1149,15 +1149,15 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
         return (TreeNode *)(new SecreC::TreeNodeExprBinary(type, *loc));
     case NODE_EXPR_TERNIF:
         return (TreeNode *)(new SecreC::TreeNodeExprTernary(*loc));
-    case NODE_EXPR_ASSIGN_ADD: /* Fall through: */
-    case NODE_EXPR_ASSIGN_AND: /* Fall through: */
-    case NODE_EXPR_ASSIGN_DIV: /* Fall through: */
-    case NODE_EXPR_ASSIGN_MOD: /* Fall through: */
-    case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
-    case NODE_EXPR_ASSIGN_OR:  /* Fall through: */
-    case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
-    case NODE_EXPR_ASSIGN_XOR: /* Fall through: */
-    case NODE_EXPR_ASSIGN:
+    case NODE_EXPR_BINARY_ASSIGN_ADD: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_AND: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_DIV: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_MOD: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_MUL: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_OR:  /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_SUB: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_XOR: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN:
         return (TreeNode *)(new SecreC::TreeNodeExprAssign(type, *loc));
     case NODE_EXPR_DECLASSIFY:
         return (TreeNode *)(new SecreC::TreeNodeExprDeclassify(*loc));

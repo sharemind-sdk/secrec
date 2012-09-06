@@ -54,15 +54,15 @@ enum SecrecTreeNodeType {
     NODE_LITE_STRING            = 0x005,
         NODE_LITE_MASK          = 0x00f,
     NODE_EXPR_NONE              = 0x010, /* void expression          */
-    NODE_EXPR_ASSIGN            = 0x020, /* expr = expr              */
-    NODE_EXPR_ASSIGN_ADD        = 0x030, /* expr += expr             */
-    NODE_EXPR_ASSIGN_AND        = 0x040, /* expr &= expr             */
-    NODE_EXPR_ASSIGN_DIV        = 0x050, /* expr /= expr             */
-    NODE_EXPR_ASSIGN_MOD        = 0x060, /* expr %= expr             */
-    NODE_EXPR_ASSIGN_MUL        = 0x070, /* expr *= expr             */
-    NODE_EXPR_ASSIGN_OR         = 0x080, /* expr |= expr             */
-    NODE_EXPR_ASSIGN_SUB        = 0x090, /* expr -= expr             */
-    NODE_EXPR_ASSIGN_XOR        = 0x0a0, /* expr ^= expr             */
+    NODE_EXPR_BINARY_ASSIGN     = 0x020, /* expr = expr              */
+    NODE_EXPR_BINARY_ASSIGN_ADD = 0x030, /* expr += expr             */
+    NODE_EXPR_BINARY_ASSIGN_AND = 0x040, /* expr &= expr             */
+    NODE_EXPR_BINARY_ASSIGN_DIV = 0x050, /* expr /= expr             */
+    NODE_EXPR_BINARY_ASSIGN_MOD = 0x060, /* expr %= expr             */
+    NODE_EXPR_BINARY_ASSIGN_MUL = 0x070, /* expr *= expr             */
+    NODE_EXPR_BINARY_ASSIGN_OR  = 0x080, /* expr |= expr             */
+    NODE_EXPR_BINARY_ASSIGN_SUB = 0x090, /* expr -= expr             */
+    NODE_EXPR_BINARY_ASSIGN_XOR = 0x0a0, /* expr ^= expr             */
     NODE_EXPR_BINARY_ADD        = 0x0b0, /* expr + expr              */
     NODE_EXPR_BINARY_DIV        = 0x0c0, /* expr / expr              */
     NODE_EXPR_BINARY_EQ         = 0x0d0, /* expr == expr             */

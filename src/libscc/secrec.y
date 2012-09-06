@@ -918,55 +918,55 @@ expression
 assignment_expression /* WARNING: RIGHT RECURSION */
  : lvalue '=' assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue MUL_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_MUL, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MUL, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue DIV_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_DIV, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_DIV, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue MOD_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_MOD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MOD, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue ADD_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_ADD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_ADD, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue SUB_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_SUB, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_SUB, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue AND_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_AND, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_AND, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue OR_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_OR, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_OR, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue XOR_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_XOR, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_XOR, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
