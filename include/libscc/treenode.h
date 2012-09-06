@@ -308,7 +308,6 @@ public: /* Methods: */
     { }
 
     virtual std::string stringHelper() const;
-    virtual std::string xmlHelper() const;
 
     inline bool isPublic () const { return m_isPublic; }
     SecurityType* cachedType () const { return m_cachedType; }

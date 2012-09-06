@@ -264,12 +264,6 @@ std::string TreeNodeSecTypeF::stringHelper() const {
     return os.str();
 }
 
-std::string TreeNodeSecTypeF::xmlHelper() const {
-    std::ostringstream os;
-    os << "type=\"" << stringHelper() << "\"";
-    return os.str();
-}
-
 /*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
@@ -282,7 +276,7 @@ std::string TreeNodeDataTypeF::stringHelper() const {
 
 std::string TreeNodeDataTypeF::xmlHelper() const {
     std::ostringstream os;
-    os << "type=\"" << m_dataType << "\"";
+    os << "type=\"" << SecrecFundDataTypeToString(m_dataType) << "\"";
     return os.str();
 }
 
