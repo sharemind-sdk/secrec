@@ -212,16 +212,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
-            m_log.fatalInProc(stmt) << "Cannot return from non-void function without value "
-                             "at " << stmt->location() << '.';
+            m_log.fatalInProc(stmt) << "Cannot return from non-void procedure "
+                                       "without value at " << stmt->location() << '.';
             return E_TYPE;
         }
     }
     else {
 
         if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
-            m_log.fatalInProc(stmt) << "Cannot return value from void function at"
-                           << stmt->location() << '.';
+            m_log.fatalInProc(stmt) << "Cannot return value from void procedure at"
+                                    << stmt->location() << '.';
             return E_TYPE;
         }
 
@@ -233,10 +233,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
         if (!procType->canAssign (e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
-            m_log.fatalInProc(stmt) << "Cannot return value of type " << *e->resultType ()
-                           << " from function with type "
-                           << *procType << " at "
-                           << stmt->location () << '.';
+            m_log.fatalInProc(stmt) << "Cannot return value of type "
+                                    << *e->resultType ()
+                                    << " from procedure with type "
+                                    << *procType << " at "
+                                    << stmt->location () << '.';
             return E_TYPE;
         }
     }

@@ -96,7 +96,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     CGStmtResult result;
     std::ostringstream os;
-    os << "Start of function: " << id->value();
+    os << "Start of procedure: " << id->value();
     result.setFirstImop(pushComment(os.str()));
     os.str("");
 
@@ -118,7 +118,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     if (result.isNotOk())
         return result;
 
-    // Generate code for function body:
+    // Generate code for procedure body:
     const CGStmtResult & bodyResult(codeGenStmt(def->body()));
     append(result, bodyResult);
     if (result.isNotOk())
@@ -142,18 +142,18 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     if (fType->kind() == TNV::PROCEDURE) {
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a break statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else if ((bodyResult.flags() & CGStmtResult::CONTINUE) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a continue statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else {
                 assert((bodyResult.flags() & CGStmtResult::FALLTHRU) != 0x0);
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " does not always return a value!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
@@ -164,12 +164,12 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
         assert(fType->kind() == TNV::PROCEDUREVOID);
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a break statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else if ((bodyResult.flags() & CGStmtResult::CONTINUE) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a continue statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
@@ -186,7 +186,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     assert(result.nextList().empty());
 
-    os << "End of function: " << id->value();
+    os << "End of procedure: " << id->value();
     pushComment(os.str());
     return result;
 }

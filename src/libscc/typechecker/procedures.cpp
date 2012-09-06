@@ -125,7 +125,7 @@ SymbolProcedure* TypeChecker::mainProcedure () {
         m_log.fatal() << "Multiple definitions of main found!";
         return NULL;
     } else if (ms.empty()) {
-        m_log.fatal() << "No function \"void main()\" found!";
+        m_log.fatal() << "No procedure \"void main()\" found!";
         return NULL;
     }
     return ms.at(0u);
@@ -487,14 +487,14 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
         if (need->secType()->isPublic () && have->secType()->isPrivate ())
         {
-            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to procedure "
                 << name->value() << " at " << arguments[i]->location()
                 << " is expected to be of public type instead of private!";
             return E_TYPE;
         }
 
         if (need->dimType() != have->dimType()) {
-            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to procedure "
                 << name->value() << " at " << arguments[i]->location()
                 << " has mismatching dimensionality.";
             return E_TYPE;
