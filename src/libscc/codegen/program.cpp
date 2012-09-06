@@ -277,8 +277,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     }
 
     pushComment("Start of globals:");
-    Imop * i = newComment("Start of procedures:");
-    push_imop(i);
+    Imop * i = pushComment("Start of procedures:");
 
     // insert instructions for globals before this point
     m_insertPoint = m_code.iterator_to(*i);
