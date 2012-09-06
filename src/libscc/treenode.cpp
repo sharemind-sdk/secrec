@@ -329,6 +329,9 @@ std::string TreeNodeType::typeString() const {
     if (m_cachedType)
         return m_cachedType->toNormalString();
 
+    if (!isNonVoid())
+        return "void";
+
     std::ostringstream oss;
     TreeNodeSecTypeF * const st = secType();
     if (!st->isPublic())
