@@ -773,7 +773,7 @@ const std::string TreeNodeProcDef::printableSignature() const {
             << procedureName() << '(';
         size_t i = 0u;
         BOOST_FOREACH (const TreeNode * n, paramRange()) {
-            if (i >= 0u)
+            if (i > 0u)
                 oss << ", ";
             i++;
 
