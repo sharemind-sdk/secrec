@@ -120,17 +120,15 @@ findTemplates (SymbolTable* st, const std::string& name)
 /// Return symbol for the main procedure (if exists).
 SymbolProcedure* TypeChecker::mainProcedure () {
     DataTypeProcedureVoid* ty = DataTypeProcedureVoid::get (getContext ());
-    SymbolProcedure* out = 0;
-    BOOST_FOREACH (SymbolProcedure* p, findProcedures (m_st, "main", ty)) {
-        if (out != 0) {
-            assert (false && "ICE: multiple definitions of main should not be possible.");
-            return 0;
-        }
-
-        out = p;
+    std::vector<SymbolProcedure *> ms = findProcedures (m_st, "main", ty);
+    if (ms.size() > 1u) {
+        m_log.fatal() << "Multiple definitions of main found!";
+        return NULL;
+    } else if (ms.empty()) {
+        m_log.fatal() << "No function \"void main()\" found!";
+        return NULL;
     }
-
-    return out;
+    return ms.at(0u);
 }
 
 TypeChecker::Status TypeChecker::populateParamTypes(std::vector<DataType *> & params,
@@ -167,6 +165,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
         Status s = visit(rt);
         if (s != OK)
             return s;
+
+        if (proc->procedureName() == "main" && rt->isNonVoid()) {
+            m_log.fatal() << "Invalid return type procedure 'main' at " << proc->location() << '.';
+            return E_TYPE;
+        }
+
+        if (proc->procedureName() == "main" && proc->paramBegin() != proc->paramEnd()) {
+            m_log.fatal() << "Invalid parameters for procedure 'main' at " << proc->location() << '.';
+            return E_TYPE;
+        }
         std::vector<DataType*> params;
         if ((s = populateParamTypes(params, proc)) != OK)
             return s;
@@ -194,9 +202,20 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
             if (sym->symbolType () == Symbol::PROCEDURE) {
                 SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
                 if (t->decl ()->m_cachedType == proc->m_cachedType) {
-                    m_log.fatal () << "Redefinition of procedure at "
+                    m_log.fatal () << "Redefinition of procedure '"
+                                   << proc->identifier()->value()
+                                   << "' at "
                                    << proc->location () << "."
-                                   << " Conflicting with procedure declared at "
+                                   << " Conflicting with procedure '"
+                                   << t->decl()->printableSignature()
+                                   << "' declared at "
+                                   << t->decl ()->location () << ".";
+                    return E_TYPE;
+                }
+                if (proc->identifier()->value() == "main" && t->decl()->identifier()->value() == "main") {
+                    m_log.fatal() << "Redefinition of procedure 'main' at "
+                                  << proc->location () << " not allowed!";
+                    m_log.fatal() << "Procedure 'main' already defined at "
                                    << t->decl ()->location () << ".";
                     return E_TYPE;
                 }

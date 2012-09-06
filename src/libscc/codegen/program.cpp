@@ -26,7 +26,8 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
     SymbolTable * st = m_st->globalScope(); // kinds live in global scope
 
     if (st->find(id->value()) != 0) {
-        m_log.error() << "Redefinition of global symbol at " << kind->location() << ".";
+        m_log.error() << "Redefinition of global symbol '" << id->value()
+                      << "'' at " << kind->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -45,12 +46,13 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
     SymbolTable * st = m_st->globalScope();
     SymbolKind * kind = dynamic_cast<SymbolKind *>(st->find(idKind->value()));
     if (kind == 0) {
-        m_log.error() << "Undefined domain kind at " << dom->location() << ".";
+        m_log.error() << "Undefined domain kind at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
     if (st->find(idDomain->value()) != 0) {
-        m_log.error() << "Redeclaration of global symbol at " << dom->location() << ".";
+        m_log.error() << "Redeclaration of global symbol '" << idDomain->value()
+                      << "'' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -329,7 +331,6 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     ScopedStateUse use(*this, cgState);  // we need to look in main module
     SymbolProcedure * mainProc = m_tyChecker->mainProcedure();
     if (mainProc == 0) {
-        m_log.fatal() << "No function \"void main()\" found!";
         result |= CGResult::ERROR_CONTINUE;
         return result;
     }
