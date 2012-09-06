@@ -339,7 +339,7 @@ std::string TreeNodeType::typeString() const {
     if (!st->isPublic())
         oss << st->identifier()->value() << ' ';
 
-    oss << dataType()->dataType();
+    oss << SecrecFundDataTypeToString(dataType()->dataType());
     if (dimType()->dimType() > 0)
         oss << "[[" << dimType()->dimType() << "]]";
 
