@@ -6,6 +6,7 @@
 
 #include "context.h"
 #include "misc.h"
+#include "symbol.h"
 #include "symboltable.h"
 #include "treenode_c.h"
 #include "typechecker.h"
@@ -761,6 +762,28 @@ TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramBegin () const {
 
 TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramEnd () const {
     return children ().end ();
+}
+
+const std::string TreeNodeProcDef::printableSignature() const {
+    std::ostringstream oss;
+    if (m_procSymbol) {
+        m_procSymbol->print(oss);
+    } else {
+        oss << returnType()->typeString() << ' '
+            << procedureName() << '(';
+        size_t i = 0u;
+        BOOST_FOREACH (const TreeNode * n, paramRange()) {
+            if (i >= 0u)
+                oss << ", ";
+            i++;
+
+            assert (dynamic_cast<const TreeNodeStmtDecl*>(n) != 0);
+            const TreeNodeStmtDecl * const d = static_cast<const TreeNodeStmtDecl*>(n);
+            oss << d->varType()->typeString() << ' ' << d->variableName();
+        }
+        oss << ')';
+    }
+    return oss.str();
 }
 
 /*******************************************************************************

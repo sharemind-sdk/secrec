@@ -38,7 +38,7 @@ CGStmtResult CodeGen::cgStmtCompound(TreeNodeStmtCompound * s) {
 
         if (cResult.firstImop() == 0) {
             if (c->type() != NODE_DECL) {
-                m_log.fatal() << "Statement with no effect at " << c->location() << ".";
+                m_log.fatalInProc(s) << "Statement with no effect at " << c->location() << '.';
                 result |= CGResult::ERROR_CONTINUE;
                 continue;
             }
@@ -49,7 +49,7 @@ CGStmtResult CodeGen::cgStmtCompound(TreeNodeStmtCompound * s) {
 
         // Static checking:
         if ((result.flags() & CGStmtResult::FALLTHRU) == 0x0) {
-            m_log.fatal() << "Unreachable statement at " << c->location() << ".";
+            m_log.fatalInProc(s) << "Unreachable statement at " << c->location() << '.';
             result |= CGResult::ERROR_CONTINUE;
             continue;
         } else {
@@ -77,8 +77,7 @@ CGStmtResult TreeNodeStmtBreak::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtBreak(TreeNodeStmtBreak * s) {
     if (loopST() == 0) {
-        m_log.fatal() << "Break statement not embedded in loop!";
-        m_log.fatal() << "Error at " << s->location() << ".";
+        m_log.fatalInProc(s) << "Break statement not embedded in loop at " << s->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -106,8 +105,7 @@ CGStmtResult TreeNodeStmtContinue::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
     if (loopST() == 0) {
-        m_log.fatal() << "Continue statement not embedded in loop!";
-        m_log.fatal() << "Error at " << s->location() << ".";
+        m_log.fatalInProc(s) << "Continue statement not embedded in loop at " << s->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -409,8 +407,9 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     if (s->conditional() != 0) {
         TreeNodeExpr * e1 = s->conditional();
         if (m_tyChecker->checkPublicBooleanScalar(e1) != TypeChecker::OK) {
-            m_log.fatal() << "Conditional expression in if statement must be of "
-                "type public bool at " << e1->location() << ".";
+            m_log.fatalInProc(s) << "Conditional expression in if statement "
+                                    "must be of type public bool at "
+                                 << e1->location() << '.';
             result.setStatus(CGResult::ERROR_FATAL);
             return result;
         }
@@ -474,14 +473,14 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     if ((bodyResult.flags()
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
-        m_log.fatal() << "For loop at " << s->location() << " wont loop!";
+        m_log.fatalInProc(s) << "For loop at " << s->location() << " wont loop!";
         result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
     if (condResult.firstImop() == 0 && ((bodyResult.flags()
                     & (CGStmtResult::BREAK | CGStmtResult::RETURN)) == 0x0))
     {
-        m_log.fatal() << "For loop at " << s->location() << " is clearly infinite!";
+        m_log.fatalInProc(s) << "For loop at " << s->location() << " is clearly infinite!";
         result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
@@ -668,7 +667,7 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
     if ((bodyResult.flags()
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
-        m_log.fatal() << "While loop at " << s->location() << " wont loop!";
+        m_log.fatalInProc(s) << "While loop at " << s->location() << " wont loop!";
         result |= CGResult::ERROR_CONTINUE;
         return result;
     }
@@ -826,7 +825,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
 
     // Static checking:
     if (result.firstImop() == 0) {
-        m_log.fatal() << "Empty loop body at " << body->location() << ".";
+        m_log.fatalInProc(s) << "Empty loop body at " << body->location() << ".";
         result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }
@@ -836,7 +835,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
     if ((result.flags()
                 & (CGStmtResult::FALLTHRU | CGStmtResult::CONTINUE)) == 0x0)
     {
-        m_log.fatal() << "Do-while loop at " << s->location() << " wont loop!";
+        m_log.fatalInProc(s) << "Do-while loop at " << s->location() << " wont loop!";
         result.setStatus(CGResult::ERROR_FATAL);
         return result;
     }

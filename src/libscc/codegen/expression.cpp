@@ -760,7 +760,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     // Generate code for binary expression:
     Imop::Type iType;
     if (! getBinImopType(e->type(), iType)) {
-        m_log.fatal() << "Binary " << e->operatorString()
+        m_log.fatalInProc(e) << "Binary " << e->operatorString()
             << " not yet implemented. At " << e->location();
         result.setStatus(CGResult::ERROR_FATAL);
         return result;

@@ -28,7 +28,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
     SecrecDimType n = 0;
 
     if (m_st->findFromCurrentScope (varInit->variableName ()) != 0) {
-        m_log.fatal () << "Redeclaration of variable at " << varInit->location () << ".";
+        m_log.fatalInProc(varInit) << "Redeclaration of variable at " << varInit->location () << '.';
         return E_TYPE;
     }
 
@@ -42,8 +42,8 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         if (checkAndLogIfVoid(e))
             return E_TYPE;
         if (! e->resultType ()->isPublicIntScalar ()) {
-            m_log.fatal() << "Expecting public unsigned integer scalar at "
-                          << e->location() << ".";
+            m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
+                          << e->location() << '.';
             return E_TYPE;
         }
 
@@ -51,8 +51,8 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
     }
 
     if (n > 0 && n != ty->secrecDimType()) {
-        m_log.fatal() << "Mismatching number of shape components in declaration at "
-                      << varInit->location() << ".";
+        m_log.fatalInProc(varInit) << "Mismatching number of shape components in declaration at "
+                      << varInit->location() << '.';
         return E_TYPE;
     }
 
@@ -65,8 +65,8 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         if (checkAndLogIfVoid(e))
             return E_TYPE;
         if (! ty->canAssign (e->resultType ())) {
-            m_log.fatal () << "Illegal assignment at " << varInit->location () << ".";
-            m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << ".";
+            m_log.fatalInProc(varInit) << "Illegal assignment at " << varInit->location () << '.';
+            m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << '.';
             return E_TYPE;
         }
 
@@ -83,7 +83,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatal () << "Conditional expression in if statement must be of "
+        m_log.fatalInProc(stmt) << "Conditional expression in if statement must be of "
                         "type public bool in " << e->location ();
         return E_TYPE;
     }
@@ -98,7 +98,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatal() << "Conditional expression in while statement must be of "
+        m_log.fatalInProc(stmt) << "Conditional expression in while statement must be of "
                        "type public bool in " << e->location();
         return E_TYPE;
     }
@@ -113,7 +113,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatal () << "Conditional expression in do-while statement must be of "
+        m_log.fatalInProc(stmt) << "Conditional expression in do-while statement must be of "
                        "type public bool in " << e->location();
         return E_TYPE;
     }
@@ -193,7 +193,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
         }
 
         if (! isLegalType) {
-            m_log.fatal () << "Invalid argument to \"print\" statement."
+            m_log.fatalInProc(stmt) << "Invalid argument to \"print\" statement."
                            << "Got " << *e->resultType() << " at " << stmt->location() << ". "
                            << "Expected public scalar or string.";
             return E_TYPE;
@@ -212,16 +212,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
     TreeNodeExpr *e = stmt->expression ();
     if (e == 0) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
-            m_log.fatal() << "Cannot return from non-void function without value "
-                             "at " << stmt->location() << ".";
+            m_log.fatalInProc(stmt) << "Cannot return from non-void function without value "
+                             "at " << stmt->location() << '.';
             return E_TYPE;
         }
     }
     else {
 
         if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
-            m_log.fatal () << "Cannot return value from void function at"
-                           << stmt->location() << ".";
+            m_log.fatalInProc(stmt) << "Cannot return value from void function at"
+                           << stmt->location() << '.';
             return E_TYPE;
         }
 
@@ -233,10 +233,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
         if (!procType->canAssign (e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
-            m_log.fatal () << "Cannot return value of type " << *e->resultType ()
+            m_log.fatalInProc(stmt) << "Cannot return value of type " << *e->resultType ()
                            << " from function with type "
                            << *procType << " at "
-                           << stmt->location () << ".";
+                           << stmt->location () << '.';
             return E_TYPE;
         }
     }
@@ -268,8 +268,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
         if (arg->type () != NODE_PUSH) {
             if (e->resultType ()->secrecSecType ()->isPrivate ()) {
-                m_log.fatal () << "Passing reference to private value.";
-                m_log.fatal () << "Error at " << arg->location () << ".";
+                m_log.fatalInProc(stmt) << "Passing reference to private value at "
+                                        << arg->location () << '.';
                 return E_TYPE;
             }
         }
@@ -285,8 +285,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatal() << "Conditional expression in assert statement must be of "
-                       "type public bool in " << e->location();
+        m_log.fatalInProc(stmt) << "Conditional expression in assert statement "
+                                   "must be of type public bool at " << e->location() << '.';
         return E_TYPE;
     }
 

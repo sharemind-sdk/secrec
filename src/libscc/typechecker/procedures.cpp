@@ -396,12 +396,12 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     DataTypeProcedureVoid* argTypes =
             DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
-    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes);
+    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt);
     if (status != OK)
         return status;
 
     if (symProc == 0) {
-        m_log.fatal () << "No matching procedure definitions for:";
+        m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
         m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
 
@@ -468,14 +468,14 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
         if (need->secType()->isPublic () && have->secType()->isPrivate ())
         {
-            m_log.fatal() << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to function "
                 << name->value() << " at " << arguments[i]->location()
                 << " is expected to be of public type instead of private!";
             return E_TYPE;
         }
 
         if (need->dimType() != have->dimType()) {
-            m_log.fatal() << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to function "
                 << name->value() << " at " << arguments[i]->location()
                 << " has mismatching dimensionality.";
             return E_TYPE;
@@ -524,8 +524,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
 TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
                                                       const std::string & name,
                                                       const TypeContext & tyCxt,
-                                                      DataTypeProcedureVoid * argTypes)
+                                                      DataTypeProcedureVoid * argTypes,
+                                                      const TreeNode * errorCxt)
 {
+    assert(errorCxt);
     typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
 
     // Look for regular procedures:
@@ -548,7 +550,8 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
         }
 
         if (procTempSymbol != 0) {
-            m_log.fatal () << "Multiple matching procedures!";
+            m_log.fatalInProc(errorCxt) << "Multiple matching procedures at "
+                                        << errorCxt->location() << '.';
             return E_TYPE;
         }
 
@@ -590,7 +593,8 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
             os << i.getTemplate ()->decl ()->location () << ' ';
         }
 
-        m_log.fatal () << os.str ();
+        m_log.fatalInProc(errorCxt) << os.str() << "at "
+                                    << errorCxt->location() << '.';
         return E_TYPE;
     }
 

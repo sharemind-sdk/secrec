@@ -1299,6 +1299,7 @@ public:
     }
 
     const std::string &procedureName() const;
+    const std::string printableSignature() const;
 
     inline bool haveProcedureType() const {
         return m_cachedType != 0;
