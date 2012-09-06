@@ -154,10 +154,10 @@
 %parse-param {TYPE_TREENODE *parseTree}
 %parse-param {char const * fileName};
 %initial-action {
-  @$.first_line = 0;
-  @$.first_column = 0;
-  @$.last_line = 0;
-  @$.last_column = 0;
+  @$.first_line = 0u;
+  @$.first_column = 0u;
+  @$.last_line = 0u;
+  @$.last_column = 0u;
   @$.filename = fileName;
 }
 %destructor { treenode_free($$); } <treenode>
@@ -1346,7 +1346,7 @@ void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
 {
     (void) yyscanner;
     (void) parseTree;
-    fprintf(stderr, "%s:(%d,%d)-(%d,%d): %s\n",
+    fprintf(stderr, "%s:(%zu,%zu)-(%zu,%zu): %s\n",
             fileName,
             loc->first_line, loc->first_column,
             loc->last_line, loc->last_column,
