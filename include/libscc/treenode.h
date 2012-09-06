@@ -262,7 +262,7 @@ inline std::ostream & operator<<(std::ostream & os, const TreeNode::Location & l
     os << loc.filename()
        << ":(" << loc.firstLine()
        << ',' << loc.firstColumn()
-       << "),(" << loc.lastLine()
+       << ")(" << loc.lastLine()
        << ',' << loc.lastColumn() << ')';
     return os;
 }
