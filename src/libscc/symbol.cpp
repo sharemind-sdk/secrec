@@ -136,12 +136,12 @@ std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) 
         assert((*it)->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
         TreeNodeStmtDecl * decl = static_cast<TreeNodeStmtDecl *>(*it);
-        os << decl->varType()->typeString();
+        os << decl->varType()->typeString() << ' ' << decl->variableName();
         while (++it != procDef->paramEnd()) {
             assert((*it)->type() == NODE_DECL);
             assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
             decl = static_cast<TreeNodeStmtDecl *>(*it);
-            os << ", " << decl->varType()->typeString();
+            os << ", " << decl->varType()->typeString() << ' ' << decl->variableName();
         }
     }
     os << ')';
