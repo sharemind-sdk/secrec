@@ -70,7 +70,7 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
     return out;
 }
 
-TreeNodeProcDef * TreeNode::containingProcedure() {
+TreeNodeProcDef * TreeNode::containingProcedure() const {
     if (m_procedure != 0) return m_procedure;
     if (m_parent != 0) {
         return (m_procedure = m_parent->containingProcedure());

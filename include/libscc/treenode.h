@@ -191,7 +191,7 @@ public: /* Methods: */
     TreeNode(SecrecTreeNodeType type, const Location & loc);
     virtual ~TreeNode();
 
-    TreeNodeProcDef* containingProcedure();
+    TreeNodeProcDef* containingProcedure() const;
     inline TreeNode* parent() const { return m_parent; }
     inline bool hasParent() const { return m_parent != 0; }
     inline SecrecTreeNodeType type() const { return m_type; }
@@ -252,7 +252,7 @@ protected: /* Methods: */
 
 protected: /* Fields: */
     TreeNode*                 m_parent;
-    TreeNodeProcDef*          m_procedure;
+    mutable TreeNodeProcDef * m_procedure;
     const SecrecTreeNodeType  m_type;
     ChildrenList              m_children;
     Location                  m_location;
