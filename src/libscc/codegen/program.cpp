@@ -64,6 +64,21 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
   TreeNodeProcDef
 *******************************************************************************/
 
+struct ScopePusher {
+    ScopePusher(CodeGen & cg, SymbolTable * newScope)
+        : m_cg(cg), m_oldScope(cg.m_st)
+    {
+        cg.setScope(newScope);
+    }
+
+    ~ScopePusher() {
+        m_cg.setScope(m_oldScope);
+    }
+
+    SymbolTable * m_oldScope;
+    CodeGen & m_cg;
+};
+
 CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
     typedef TreeNodeIdentifier TNI;
@@ -87,8 +102,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     ns->setTarget(result.firstImop());
 
     // Generate local scope:
-
-    setScope(localScope);
+    ScopePusher s(*this, localScope);
 
     if (def->children().size() > 3) {
         BOOST_FOREACH (TreeNode * node, def->paramRange()) {
@@ -96,20 +110,17 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
             assert(dynamic_cast<TreeNodeStmtDecl *>(node) != 0);
             TreeNodeStmtDecl * paramDecl = static_cast<TreeNodeStmtDecl *>(node);
             paramDecl->setProcParam(true);
-            const CGStmtResult & paramResult(codeGenStmt(paramDecl));
-            append(result, paramResult);
-            if (result.isNotOk()) {
-                return result;
-            }
+            append(result, codeGenStmt(paramDecl));
         }
     }
+    if (result.isNotOk())
+        return result;
 
     // Generate code for function body:
     const CGStmtResult & bodyResult(codeGenStmt(def->body()));
     append(result, bodyResult);
-    if (result.isNotOk()) {
+    if (result.isNotOk())
         return result;
-    }
 
     if (bodyResult.mayFallThrough()) {
         releaseProcVariables(result);
@@ -237,6 +248,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             SymbolTable * localScope = m_st->newScope();
             localScope->setName("Procedure");
             append(result, cgProcDef(procDef, localScope));
+            assert(localScope->parent() == m_st);
             break;
         }
         case NODE_TEMPLATE_DECL: {
