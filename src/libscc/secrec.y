@@ -154,10 +154,10 @@
 %parse-param {TYPE_TREENODE *parseTree}
 %parse-param {char const * fileName};
 %initial-action {
-  @$.first_line = 0u;
-  @$.first_column = 0u;
-  @$.last_line = 0u;
-  @$.last_column = 0u;
+  @$.first_line = 1u;
+  @$.first_column = 1u;
+  @$.last_line = 1u;
+  @$.last_column = 1u;
   @$.filename = fileName;
 }
 %destructor { treenode_free($$); } <treenode>
