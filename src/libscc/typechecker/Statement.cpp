@@ -174,9 +174,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
         e->setContextDimType (0);
 
         Status s = visitExpr(e);
-        e->instantiateDataType (getContext ());
         if (s != OK)
             return s;
+
+        e->instantiateDataType (getContext ());
 
         if (checkAndLogIfVoid(e))
             return E_TYPE;
