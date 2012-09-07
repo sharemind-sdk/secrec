@@ -53,6 +53,8 @@ public: /* Methods: */
         , m_body (0)
     { }
 
+    ~ModuleInfo ();
+
     void setCodeGenState (const CodeGenState& state);
     directory_entry location () const { return m_location; }
     std::string fileNameStem () const;

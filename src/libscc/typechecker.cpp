@@ -48,7 +48,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
         return E_TYPE;
 
     if (s->symbolType () != Symbol::PDOMAIN) {
-        m_log.fatal () << "Expecting privacy domain at " << ty->location () << ".";
+        m_log.fatalInProc(ty) << "Expecting privacy domain at " << ty->location () << '.';
         return E_TYPE;
     }
 
@@ -77,8 +77,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
             case DATATYPE_XOR_UINT16:
             case DATATYPE_XOR_UINT32:
             case DATATYPE_XOR_UINT64:
-                m_log.fatal () << "XOR types do not have public representation!";
-                m_log.fatal () << "Type error at " << _ty->location () << ".";
+                m_log.fatalInProc(_ty) << "XOR types do not have public representation at "
+                                       << _ty->location () << '.';
                 return E_TYPE;
             default:
                 break;
@@ -99,8 +99,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
 Symbol* TypeChecker::findIdentifier (TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (id->value ());
     if (s == 0) {
-        m_log.fatal () << "Idenfier \"" << id->value () << "\" at " << id->location ()
-                       << " not in scope.";
+        m_log.fatalInProc(id) << "Idenfier '" << id->value()
+                              << "'' at " << id->location()
+                              << " not in scope.";
     }
 
     return s;
@@ -109,8 +110,8 @@ Symbol* TypeChecker::findIdentifier (TreeNodeIdentifier* id) const {
 SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     Symbol *s = m_st->find (id->value ());
     if (s == 0) {
-        m_log.fatal() << "Undeclared identifier \"" << id->value () << "\" at "
-                      << id->location() << ".";
+        m_log.fatalInProc(id) << "Undeclared identifier '" << id->value ()
+                              << "'' at " << id->location() << '.';
         return 0;
     }
 
@@ -159,8 +160,8 @@ TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* 
 bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
     assert (e->haveResultType());
     if (e->resultType()->isVoid()) {
-        m_log.fatal() << "Subexpression has type void at "
-                      << e->location() << ".";
+        m_log.fatalInProc(e) << "Subexpression has type void at "
+                             << e->location() << '.';
         return true;
     }
 
@@ -219,8 +220,10 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
             TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
 
             if (! eTy->isPublicIntScalar ()) {
-                m_log.fatal() << "Invalid type for index at " << e->location() << ". "
-                              << "Expected public integer scalar, got " << *eTy << ".";
+                m_log.fatalInProc(node) << "Invalid type for index at "
+                                        << e->location()
+                                        << ". Expected public integer scalar, got "
+                                        << *eTy << '.';
                 return E_TYPE;
             }
         }

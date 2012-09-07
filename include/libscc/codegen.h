@@ -150,6 +150,7 @@ class CodeGen : public CodeGenState {
     friend class ScopedStateUse;
     friend class ScopedScope;
     friend class ScopedLoop;
+    friend struct ScopePusher;
 private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT

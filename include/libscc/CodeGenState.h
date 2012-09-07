@@ -21,6 +21,8 @@ class TreeNode;
   CodeGenState
 *******************************************************************************/
 
+struct ScopePusher;
+
 /**
  * The part of code generator that needs to be stored and resumed on demand.
  * For example, we might pause code generation at some scope to type check and
@@ -29,6 +31,7 @@ class TreeNode;
  */
 class CodeGenState {
     friend class CodeGen;
+    friend struct ScopePusher;
 protected: /* Types: */
 
     typedef ImopList::const_iterator InsertPoint;

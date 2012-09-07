@@ -56,6 +56,11 @@ public: /* Methods: */
     inline CompileLogStream warning() { return CompileLogStream(*this, CompileLogMessage::Warning); }
     inline CompileLogStream info() { return CompileLogStream(*this, CompileLogMessage::Info); }
     inline CompileLogStream debug() { return CompileLogStream(*this, CompileLogMessage::Debug); }
+    CompileLogStream fatalInProc(const TreeNode * n);
+    CompileLogStream errorInProc(const TreeNode * n);
+    CompileLogStream warningInProc(const TreeNode * n);
+    CompileLogStream infoInProc(const TreeNode * n);
+    CompileLogStream debugInProc(const TreeNode * n);
 
     inline void addMessage(const CompileLogMessage &msg) { m_messages.push_back(msg); }
     inline const std::deque<CompileLogMessage> &messages() const { return m_messages; }

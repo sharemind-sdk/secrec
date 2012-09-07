@@ -2,6 +2,7 @@
 #define SECREC_SYMBOL_H
 
 #include "parser.h"
+#include "treenode.h"
 #include <iterator>
 #include <vector>
 
@@ -10,10 +11,6 @@ namespace SecreC {
 class Block;
 class Imop;
 class SecurityType;
-class TreeNodeProcDef;
-class TreeNodeTemplate;
-class TreeNodeVarInit;
-class TypeNonVoid;
 
 /*******************************************************************************
   Symbol
@@ -58,7 +55,7 @@ public: /* Methods: */
     bool isGlobal () const;
     bool isArray () const;
 
-    virtual const YYLTYPE * location() const { return NULL; }
+    virtual const TreeNode::Location * location() const { return NULL; }
     virtual std::ostream & print(std::ostream & os) const = 0;
 
 private: /* Fields: */
@@ -146,7 +143,7 @@ public: /* Methods: */
     void setSizeSym (Symbol* sym) { m_size = sym; }
     void inheritShape (Symbol* from);
 
-    virtual const YYLTYPE * location() const;
+    virtual const TreeNode::Location * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 protected:
@@ -236,7 +233,7 @@ public: /* Methods: */
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
 
-    virtual const YYLTYPE * location() const;
+    virtual const TreeNode::Location * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 private: /* Fields: */
@@ -256,7 +253,7 @@ public: /* Methods: */
 
     inline const TreeNodeTemplate *decl() const { return m_templ; }
 
-    virtual const YYLTYPE * location() const;
+    virtual const TreeNode::Location * location() const;
     virtual std::ostream & print(std::ostream & os) const;
 
 private: /* Fields: */

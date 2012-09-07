@@ -18,14 +18,14 @@ namespace /* anonymous */ {
 
 bool getAssignBinImopType(SecrecTreeNodeType type, Imop::Type& iType) {
     switch (type) {
-    case NODE_EXPR_ASSIGN_MUL: iType = Imop::MUL;  break;
-    case NODE_EXPR_ASSIGN_DIV: iType = Imop::DIV;  break;
-    case NODE_EXPR_ASSIGN_MOD: iType = Imop::MOD;  break;
-    case NODE_EXPR_ASSIGN_ADD: iType = Imop::ADD;  break;
-    case NODE_EXPR_ASSIGN_SUB: iType = Imop::SUB;  break;
-    case NODE_EXPR_ASSIGN_AND: iType = Imop::BAND; break;
-    case NODE_EXPR_ASSIGN_OR:  iType = Imop::BOR;  break;
-    case NODE_EXPR_ASSIGN_XOR: iType = Imop::XOR;  break;
+    case NODE_EXPR_BINARY_ASSIGN_MUL: iType = Imop::MUL;  break;
+    case NODE_EXPR_BINARY_ASSIGN_DIV: iType = Imop::DIV;  break;
+    case NODE_EXPR_BINARY_ASSIGN_MOD: iType = Imop::MOD;  break;
+    case NODE_EXPR_BINARY_ASSIGN_ADD: iType = Imop::ADD;  break;
+    case NODE_EXPR_BINARY_ASSIGN_SUB: iType = Imop::SUB;  break;
+    case NODE_EXPR_BINARY_ASSIGN_AND: iType = Imop::BAND; break;
+    case NODE_EXPR_BINARY_ASSIGN_OR:  iType = Imop::BOR;  break;
+    case NODE_EXPR_BINARY_ASSIGN_XOR: iType = Imop::XOR;  break;
     default:
         return false;
     }
@@ -96,7 +96,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             assert(static_cast<size_t>(eArg2->resultType()->secrecDimType()) == slices.size());
 
             std::stringstream ss;
-            ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << ".";
+            ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << '.';
             Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
             Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * errLabel = m_st->label(err);
@@ -173,7 +173,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         {
             TypeNonVoid * ty = TypeNonVoid::get(getContext(),
                     e->resultType()->secrecSecType(), e->resultType()->secrecDataType());
-            if (e->type() == NODE_EXPR_ASSIGN) {
+            if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
                 if (!eArg2->resultType()->isScalar()) {
                     Symbol * t1 = m_st->appendTemporary(ty);
 
@@ -236,7 +236,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     }
 
     // Generate code for regular x = e assignment
-    if (e->type() == NODE_EXPR_ASSIGN) {
+    if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
         if (!eArg2->resultType()->isScalar()) {
             copyShapeFrom(result, arg2Result.symbol());
             if (result.isNotOk()) {
@@ -283,7 +283,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
             else {
                 std::stringstream ss;
-                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << ".";
+                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
                 Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
                 Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
                 SymbolLabel * errLabel = m_st->label(err);

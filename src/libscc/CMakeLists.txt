@@ -39,6 +39,7 @@ SET(LIBSCC_SOURCES
     "icodelist.cpp"
     "imop.cpp"
     "intermediate.cpp"
+    "log.cpp"
     "misc.cpp"
     "ModuleInfo.cpp"
     "ModuleInfo.h"

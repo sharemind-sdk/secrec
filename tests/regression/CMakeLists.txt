@@ -15,7 +15,7 @@ add_test_secrec_execute("scalars/03-scope")
 add_test_secrec_execute("scalars/04-function")
 add_test_secrec_execute("scalars/05-assert-fail")
 SET_TESTS_PROPERTIES("scalars/05-assert-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at \\(2,13\\)\\(4,2\\)")
+    PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(2,13\\)\\(4,2\\)")
 add_test_secrec_execute("scalars/05-declassify")
 add_test_secrec_execute("scalars/06-rec")
 add_test_secrec_execute("scalars/07-while")

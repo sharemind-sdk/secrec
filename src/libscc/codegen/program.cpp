@@ -26,8 +26,9 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
     SymbolTable * st = m_st->globalScope(); // kinds live in global scope
 
     if (st->find(id->value()) != 0) {
-        m_log.error() << "Redefinition of global symbol at " << kind->location() << ".";
-        return CGResult::ERROR_FATAL;
+        m_log.error() << "Redefinition of global symbol '" << id->value()
+                      << "'' at " << kind->location() << '.';
+        return CGResult::ERROR_CONTINUE;
     }
 
     st->appendSymbol(new SymbolKind(id->value()));
@@ -45,13 +46,14 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
     SymbolTable * st = m_st->globalScope();
     SymbolKind * kind = dynamic_cast<SymbolKind *>(st->find(idKind->value()));
     if (kind == 0) {
-        m_log.error() << "Undefined domain kind at " << dom->location() << ".";
-        return CGResult::ERROR_FATAL;
+        m_log.error() << "Undefined domain kind at " << dom->location() << '.';
+        return CGResult::ERROR_CONTINUE;
     }
 
     if (st->find(idDomain->value()) != 0) {
-        m_log.error() << "Redeclaration of global symbol at " << dom->location() << ".";
-        return CGResult::ERROR_FATAL;
+        m_log.error() << "Redeclaration of global symbol '" << idDomain->value()
+                      << "'' at " << dom->location() << '.';
+        return CGResult::ERROR_CONTINUE;
     }
 
     st->appendSymbol(new SymbolDomain(
@@ -63,6 +65,21 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 /*******************************************************************************
   TreeNodeProcDef
 *******************************************************************************/
+
+struct ScopePusher {
+    ScopePusher(CodeGen & cg, SymbolTable * newScope)
+        : m_cg(cg), m_oldScope(cg.m_st)
+    {
+        cg.setScope(newScope);
+    }
+
+    ~ScopePusher() {
+        m_cg.setScope(m_oldScope);
+    }
+
+    SymbolTable * m_oldScope;
+    CodeGen & m_cg;
+};
 
 CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
@@ -79,7 +96,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     CGStmtResult result;
     std::ostringstream os;
-    os << "Start of function: " << id->value();
+    os << "Start of procedure: " << id->value();
     result.setFirstImop(pushComment(os.str()));
     os.str("");
 
@@ -87,8 +104,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     ns->setTarget(result.firstImop());
 
     // Generate local scope:
-
-    setScope(localScope);
+    ScopePusher s(*this, localScope);
 
     if (def->children().size() > 3) {
         BOOST_FOREACH (TreeNode * node, def->paramRange()) {
@@ -96,20 +112,17 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
             assert(dynamic_cast<TreeNodeStmtDecl *>(node) != 0);
             TreeNodeStmtDecl * paramDecl = static_cast<TreeNodeStmtDecl *>(node);
             paramDecl->setProcParam(true);
-            const CGStmtResult & paramResult(codeGenStmt(paramDecl));
-            append(result, paramResult);
-            if (result.isNotOk()) {
-                return result;
-            }
+            append(result, codeGenStmt(paramDecl));
         }
     }
+    if (result.isNotOk())
+        return result;
 
-    // Generate code for function body:
+    // Generate code for procedure body:
     const CGStmtResult & bodyResult(codeGenStmt(def->body()));
     append(result, bodyResult);
-    if (result.isNotOk()) {
+    if (result.isNotOk())
         return result;
-    }
 
     if (bodyResult.mayFallThrough()) {
         releaseProcVariables(result);
@@ -129,18 +142,18 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     if (fType->kind() == TNV::PROCEDURE) {
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a break statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else if ((bodyResult.flags() & CGStmtResult::CONTINUE) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a continue statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else {
                 assert((bodyResult.flags() & CGStmtResult::FALLTHRU) != 0x0);
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " does not always return a value!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
@@ -151,12 +164,12 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
         assert(fType->kind() == TNV::PROCEDUREVOID);
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a break statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
             } else if ((bodyResult.flags() & CGStmtResult::CONTINUE) != 0x0) {
-                m_log.fatal() << "Function at " << def->location()
+                m_log.fatal() << "Procedure at " << def->location()
                     << " contains a continue statement outside of any loop!";
                 result |= CGResult::ERROR_CONTINUE;
                 return result;
@@ -173,7 +186,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     assert(result.nextList().empty());
 
-    os << "End of function: " << id->value();
+    os << "End of procedure: " << id->value();
     pushComment(os.str());
     return result;
 }
@@ -237,6 +250,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             SymbolTable * localScope = m_st->newScope();
             localScope->setName("Procedure");
             append(result, cgProcDef(procDef, localScope));
+            assert(localScope->parent() == m_st);
             break;
         }
         case NODE_TEMPLATE_DECL: {
@@ -269,7 +283,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
         std::auto_ptr<ModuleInfo> newMod(modInfo);
         if (! m_modules.addModule("__main", newMod)) {
             m_log.fatal() << "Error creating main module at "
-                << mainModule->location() << ".";
+                << mainModule->location() << '.';
             return CGResult::ERROR_FATAL;
         }
 
@@ -277,8 +291,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     }
 
     pushComment("Start of globals:");
-    Imop * i = newComment("Start of procedures:");
-    push_imop(i);
+    Imop * i = pushComment("Start of procedures:");
 
     // insert instructions for globals before this point
     m_insertPoint = m_code.iterator_to(*i);
@@ -318,7 +331,6 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     ScopedStateUse use(*this, cgState);  // we need to look in main module
     SymbolProcedure * mainProc = m_tyChecker->mainProcedure();
     if (mainProc == 0) {
-        m_log.fatal() << "No function \"void main()\" found!";
         result |= CGResult::ERROR_CONTINUE;
         return result;
     }
@@ -337,7 +349,7 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
     ModuleInfo * mod = m_modules.findModule(import->name());
     if (mod == 0) {
         m_log.fatal() << "Module \"" << import->name() << "\" not found within search path.";
-        m_log.fatal() << "Error at " << import->location() << ".";
+        m_log.fatal() << "Error at " << import->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -348,12 +360,12 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
     case ModuleInfo::CGStarted:
         /// \todo better error here
         m_log.fatal() << "Recursive modules.";
-        m_log.fatal() << "Error at " << import->location() << ".";
-        result |= CGResult::ERROR_FATAL;
+        m_log.fatal() << "Error at " << import->location() << '.';
+        result |= CGResult::ERROR_CONTINUE;
         break;
     case ModuleInfo::CGNotStarted: {
         if (!mod->read()) {
-            result |= CGResult::ERROR_FATAL;
+            result |= CGResult::ERROR_CONTINUE;
             return result;
         }
 

@@ -84,7 +84,7 @@ SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bo
     setName(name);
 }
 
-const YYLTYPE * SymbolSymbol::location() const {
+const TreeNode::Location * SymbolSymbol::location() const {
     if (m_decl)
         return &m_decl->location();
     return NULL;
@@ -123,7 +123,7 @@ SymbolProcedure::SymbolProcedure(const std::string & name,
     setName(name);
 }
 
-const YYLTYPE * SymbolProcedure::location() const {
+const TreeNode::Location * SymbolProcedure::location() const {
     return &m_decl->location();
 }
 
@@ -136,12 +136,12 @@ std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) 
         assert((*it)->type() == NODE_DECL);
         assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
         TreeNodeStmtDecl * decl = static_cast<TreeNodeStmtDecl *>(*it);
-        os << decl->varType()->typeString();
+        os << decl->varType()->typeString() << ' ' << decl->variableName();
         while (++it != procDef->paramEnd()) {
             assert((*it)->type() == NODE_DECL);
             assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
             decl = static_cast<TreeNodeStmtDecl *>(*it);
-            os << ", " << decl->varType()->typeString();
+            os << ", " << decl->varType()->typeString() << ' ' << decl->variableName();
         }
     }
     os << ')';
@@ -200,7 +200,7 @@ SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
     , m_templ (templ)
 { }
 
-const YYLTYPE * SymbolTemplate::location() const {
+const TreeNode::Location * SymbolTemplate::location() const {
     return &m_templ->location();
 }
 

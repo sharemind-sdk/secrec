@@ -27,6 +27,7 @@
 
 %}
 
+%option extra-type="const char *"
 %option bison-bridge bison-locations reentrant noyywrap nounput noinput
 
 /* =============================================================================

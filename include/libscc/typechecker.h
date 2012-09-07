@@ -166,11 +166,13 @@ protected:
      * \param[in] name name of the procedure/template
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found
+     * \param[in] errorCtx the location about which to print errors.
      */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 const std::string & name,
                                 const TypeContext & tyCxt,
-                                DataTypeProcedureVoid * argTypes);
+                                DataTypeProcedureVoid * argTypes,
+                                const TreeNode * errorCxt);
 
 private: /* Fields: */
 

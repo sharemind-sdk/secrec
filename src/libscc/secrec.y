@@ -8,7 +8,7 @@
   #include "lex_secrec.h"
   #include "treenode_c.h"
 
-  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char *s);
+  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, const char *s);
 
   uint64_t char_to_digit(char c)
   {
@@ -88,7 +88,8 @@
       struct TreeNode * t = 0;
 
       if (treenode_type(node) == NODE_IDENTIFIER) {
-          t = treenode_init(NODE_EXPR_RVARIABLE, treenode_location(node));
+          const YYLTYPE loc = treenode_location(node);
+          t = treenode_init(NODE_EXPR_RVARIABLE, &loc);
           treenode_appendChild(t, treenode_childAt(node, 0));
           return t;
       } else {
@@ -151,7 +152,14 @@
 %lex-param {yyscan_t yyscanner}
 %parse-param {yyscan_t yyscanner}
 %parse-param {TYPE_TREENODE *parseTree}
-
+%parse-param {char const * fileName};
+%initial-action {
+  @$.first_line = 1u;
+  @$.first_column = 1u;
+  @$.last_line = 1u;
+  @$.last_column = 1u;
+  @$.filename = fileName;
+}
 %destructor { treenode_free($$); } <treenode>
 
 /* Identifiers: */
@@ -805,6 +813,7 @@ syscall_statement
      $$ = treenode_init(NODE_STMT_SYSCALL, &@$);
      treenode_appendChild ($$, $3);
      treenode_moveChildren ($5, $$);
+     treenode_free ($5);
     }
   ;
 
@@ -909,55 +918,55 @@ expression
 assignment_expression /* WARNING: RIGHT RECURSION */
  : lvalue '=' assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue MUL_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_MUL, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MUL, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue DIV_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_DIV, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_DIV, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue MOD_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_MOD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MOD, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue ADD_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_ADD, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_ADD, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue SUB_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_SUB, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_SUB, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue AND_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_AND, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_AND, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue OR_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_OR, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_OR, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
  | lvalue XOR_ASSIGN assignment_expression
    {
-     $$ = treenode_init(NODE_EXPR_ASSIGN_XOR, &@$);
+     $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_XOR, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, ensure_rValue($3));
    }
@@ -1333,36 +1342,40 @@ identifier
 %%
 
 void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
-             const char *s)
+             const char * fileName, const char *s)
 {
     (void) yyscanner;
     (void) parseTree;
-    fprintf(stderr, "(%d,%d)-(%d,%d): %s\n",
+    fprintf(stderr, "%s:(%zu,%zu)-(%zu,%zu): %s\n",
+            fileName,
             loc->first_line, loc->first_column,
             loc->last_line, loc->last_column,
             s);
 }
 
-int sccparse(TYPE_TREENODEMODULE *result) {
+int sccparse(const char * filename, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_file(FILE *input, TYPE_TREENODEMODULE *result) {
+int sccparse_file(const char * filename, FILE *input, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     yyscan_t scanner;
     int r;
     yylex_init(&scanner);
     yyset_in(input, scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
+int sccparse_mem(const char * filename, const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
+    assert(filename);
     FILE *memoryFile;
     yyscan_t scanner;
     int r;
@@ -1381,7 +1394,7 @@ int sccparse_mem(const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
 
     yylex_init(&scanner);
     yyset_in(memoryFile, scanner);
-    r = yyparse(scanner, result);
+    r = yyparse(scanner, result, filename);
     yylex_destroy(scanner);
     fclose(memoryFile);
     return r;

@@ -54,15 +54,15 @@ enum SecrecTreeNodeType {
     NODE_LITE_STRING            = 0x005,
         NODE_LITE_MASK          = 0x00f,
     NODE_EXPR_NONE              = 0x010, /* void expression          */
-    NODE_EXPR_ASSIGN            = 0x020, /* expr = expr              */
-    NODE_EXPR_ASSIGN_ADD        = 0x030, /* expr += expr             */
-    NODE_EXPR_ASSIGN_AND        = 0x040, /* expr &= expr             */
-    NODE_EXPR_ASSIGN_DIV        = 0x050, /* expr /= expr             */
-    NODE_EXPR_ASSIGN_MOD        = 0x060, /* expr %= expr             */
-    NODE_EXPR_ASSIGN_MUL        = 0x070, /* expr *= expr             */
-    NODE_EXPR_ASSIGN_OR         = 0x080, /* expr |= expr             */
-    NODE_EXPR_ASSIGN_SUB        = 0x090, /* expr -= expr             */
-    NODE_EXPR_ASSIGN_XOR        = 0x0a0, /* expr ^= expr             */
+    NODE_EXPR_BINARY_ASSIGN     = 0x020, /* expr = expr              */
+    NODE_EXPR_BINARY_ASSIGN_ADD = 0x030, /* expr += expr             */
+    NODE_EXPR_BINARY_ASSIGN_AND = 0x040, /* expr &= expr             */
+    NODE_EXPR_BINARY_ASSIGN_DIV = 0x050, /* expr /= expr             */
+    NODE_EXPR_BINARY_ASSIGN_MOD = 0x060, /* expr %= expr             */
+    NODE_EXPR_BINARY_ASSIGN_MUL = 0x070, /* expr *= expr             */
+    NODE_EXPR_BINARY_ASSIGN_OR  = 0x080, /* expr |= expr             */
+    NODE_EXPR_BINARY_ASSIGN_SUB = 0x090, /* expr -= expr             */
+    NODE_EXPR_BINARY_ASSIGN_XOR = 0x0a0, /* expr ^= expr             */
     NODE_EXPR_BINARY_ADD        = 0x0b0, /* expr + expr              */
     NODE_EXPR_BINARY_DIV        = 0x0c0, /* expr / expr              */
     NODE_EXPR_BINARY_EQ         = 0x0d0, /* expr == expr             */
@@ -179,7 +179,7 @@ namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse(TYPE_TREENODEMODULE * result);
+extern int sccparse(const char * filename, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given input.
@@ -189,7 +189,7 @@ extern int sccparse(TYPE_TREENODEMODULE * result);
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse_file(FILE * input, TYPE_TREENODEMODULE * result);
+extern int sccparse_file(const char * filename, FILE * input, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given memory region.
@@ -201,7 +201,7 @@ extern int sccparse_file(FILE * input, TYPE_TREENODEMODULE * result);
     \retval 2 Parsing failed due to memory exhaustion.
     \retval 3 Parsing failed because the input could not be read.
 */
-extern int sccparse_mem(const void * buf, size_t size, TYPE_TREENODEMODULE * result);
+extern int sccparse_mem(const char * filename, const void * buf, size_t size, TYPE_TREENODEMODULE * result);
 
 union YYSTYPE {
     TYPE_TREENODE treenode;
@@ -213,12 +213,27 @@ typedef union YYSTYPE YYSTYPE;
 
 #define YYLTYPE YYLTYPE
 typedef struct YYLTYPE {
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
+    size_t first_line;
+    size_t first_column;
+    size_t last_line;
+    size_t last_column;
+    const char * filename;
 } YYLTYPE;
-#define YYLTYPE_IS_TRIVIAL 1
+#define YYLTYPE_IS_DECLARED 1
+
+#define YYLLOC_DEFAULT(Current, Rhs, N) \
+    do { \
+        if ((N)) { \
+            (Current).first_line   = YYRHSLOC(Rhs, 1).first_line; \
+            (Current).first_column = YYRHSLOC(Rhs, 1).first_column; \
+            (Current).last_line    = YYRHSLOC(Rhs, N).last_line; \
+            (Current).last_column  = YYRHSLOC(Rhs, N).last_column; \
+        } else { \
+            (Current).first_line = (Current).last_line = YYRHSLOC (Rhs, 0).last_line; \
+            (Current).first_column = (Current).last_column = YYRHSLOC (Rhs, 0).last_column; \
+        } \
+        (Current).filename = fileName; \
+    } while (0)
 
 #ifdef __cplusplus
 } /* extern "C" */

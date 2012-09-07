@@ -194,14 +194,14 @@ SecreC::TreeNodeModule * parseProgram(const ProgramOptions & opts, int & errorCo
                 cerr << flush;
             }
 
-            errorCode = sccparse_file(f, &ast);
+            errorCode = sccparse_file(fname.c_str(), f, &ast);
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
         }
     }
     else {
-        errorCode = sccparse(&ast);
+        errorCode = sccparse("-", &ast);
     }
 
     return ast;
@@ -316,9 +316,9 @@ int main (int argc, char *argv[]) {
 
     /* Parse the program: */
     int parseErrorCode = 0;
-    std::auto_ptr<SecreC::TreeNodeModule> parseTree(parseProgram(opts, parseErrorCode));
+    SecreC::TreeNodeModule * parseTree = parseProgram(opts, parseErrorCode);
     if (parseErrorCode != 0) {
-        cerr << "Parsing failed! Error code " << parseErrorCode << "." << endl;
+        cerr << "Parsing failed! Error code " << parseErrorCode << '.' << endl;
         return EXIT_FAILURE;
     }
 
@@ -332,7 +332,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    if (icode.init (parseTree.get ()) != SecreC::ICode::OK) {
+    if (icode.init (parseTree) != SecreC::ICode::OK) {
         cerr << "Error generating valid intermediate code." << endl;
         cerr << icode.compileLog () << endl;
         return EXIT_FAILURE;

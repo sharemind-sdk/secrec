@@ -34,8 +34,6 @@ class TestParse: public QObject {
         void testExprUnary_data();
         inline void testExprCast() { simpleParseTest(); }
         void testExprCast_data();
-        inline void testExprMatrix() { simpleParseTest(); }
-        void testExprMatrix_data();
         inline void testExprMult() { simpleParseTest(); }
         void testExprMult_data();
         inline void testExprAddi() { simpleParseTest(); }

@@ -25,7 +25,7 @@ typedef struct TreeNode TreeNode;
 TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
 void treenode_free(TreeNode *node);
 enum SecrecTreeNodeType treenode_type(TreeNode *node);
-const YYLTYPE *treenode_location(const TreeNode *node);
+const YYLTYPE treenode_location(const TreeNode *node);
 unsigned treenode_numChildren(const TreeNode *node);
 TreeNode *treenode_childAt(const TreeNode *node, unsigned index);
 void treenode_appendChild(TreeNode *parent, TreeNode *child);

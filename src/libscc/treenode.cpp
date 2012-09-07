@@ -6,6 +6,7 @@
 
 #include "context.h"
 #include "misc.h"
+#include "symbol.h"
 #include "symboltable.h"
 #include "treenode_c.h"
 #include "typechecker.h"
@@ -35,7 +36,10 @@ TreeNodeExpr * expressionAt(const TreeNode * node, unsigned i) {
   TreeNode
 *******************************************************************************/
 
-TreeNode::TreeNode(SecrecTreeNodeType type, const struct YYLTYPE & loc)
+TreeNode::Location::FilenameCache TreeNode::Location::m_filenameCache;
+
+
+TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
     : m_parent(0)
     , m_procedure(0)
     , m_type(type)
@@ -60,14 +64,14 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
         out->resetParent(parent);
     }
 
-    BOOST_FOREACH(TreeNode * n, m_children) {
+    BOOST_FOREACH(const TreeNode * n, m_children) {
         out->m_children.push_back(n->clone(out));
     }
 
     return out;
 }
 
-TreeNodeProcDef * TreeNode::containingProcedure() {
+TreeNodeProcDef * TreeNode::containingProcedure() const {
     if (m_procedure != 0) return m_procedure;
     if (m_parent != 0) {
         return (m_procedure = m_parent->containingProcedure());
@@ -87,7 +91,7 @@ void TreeNode::prependChild(TreeNode * child) {
     child->resetParent(this);
 }
 
-void TreeNode::setLocation(const YYLTYPE & location) {
+void TreeNode::setLocation(const TreeNode::Location & location) {
     m_location = location;
 }
 
@@ -100,15 +104,15 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(DIMENSIONS);
     CASE_NODE_NAME(DIMTYPE_F);
     CASE_NODE_NAME(DOMAIN);
-    CASE_NODE_NAME(EXPR_ASSIGN);
-    CASE_NODE_NAME(EXPR_ASSIGN_ADD);
-    CASE_NODE_NAME(EXPR_ASSIGN_AND);
-    CASE_NODE_NAME(EXPR_ASSIGN_DIV);
-    CASE_NODE_NAME(EXPR_ASSIGN_MOD);
-    CASE_NODE_NAME(EXPR_ASSIGN_MUL);
-    CASE_NODE_NAME(EXPR_ASSIGN_OR);
-    CASE_NODE_NAME(EXPR_ASSIGN_SUB);
-    CASE_NODE_NAME(EXPR_ASSIGN_XOR);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_ADD);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_AND);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_DIV);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_MOD);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_MUL);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_OR);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_SUB);
+    CASE_NODE_NAME(EXPR_BINARY_ASSIGN_XOR);
     CASE_NODE_NAME(EXPR_BINARY_ADD);
     CASE_NODE_NAME(EXPR_BINARY_DIV);
     CASE_NODE_NAME(EXPR_BINARY_EQ);
@@ -260,12 +264,6 @@ std::string TreeNodeSecTypeF::stringHelper() const {
     return os.str();
 }
 
-std::string TreeNodeSecTypeF::xmlHelper() const {
-    std::ostringstream os;
-    os << "type=\"" << stringHelper() << "\"";
-    return os.str();
-}
-
 /*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
@@ -278,7 +276,7 @@ std::string TreeNodeDataTypeF::stringHelper() const {
 
 std::string TreeNodeDataTypeF::xmlHelper() const {
     std::ostringstream os;
-    os << "type=\"" << m_dataType << "\"";
+    os << "type=\"" << SecrecFundDataTypeToString(m_dataType) << "\"";
     return os.str();
 }
 
@@ -331,12 +329,15 @@ std::string TreeNodeType::typeString() const {
     if (m_cachedType)
         return m_cachedType->toNormalString();
 
+    if (!isNonVoid())
+        return "void";
+
     std::ostringstream oss;
     TreeNodeSecTypeF * const st = secType();
     if (!st->isPublic())
         oss << st->identifier()->value() << ' ';
 
-    oss << dataType()->dataType();
+    oss << SecrecFundDataTypeToString(dataType()->dataType());
     if (dimType()->dimType() > 0)
         oss << "[[" << dimType()->dimType() << "]]";
 
@@ -760,6 +761,28 @@ TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramEnd () const {
     return children ().end ();
 }
 
+const std::string TreeNodeProcDef::printableSignature() const {
+    std::ostringstream oss;
+    if (m_procSymbol) {
+        m_procSymbol->print(oss);
+    } else {
+        oss << returnType()->typeString() << ' '
+            << procedureName() << '(';
+        size_t i = 0u;
+        BOOST_FOREACH (const TreeNode * n, paramRange()) {
+            if (i > 0u)
+                oss << ", ";
+            i++;
+
+            assert (dynamic_cast<const TreeNodeStmtDecl*>(n) != 0);
+            const TreeNodeStmtDecl * const d = static_cast<const TreeNodeStmtDecl*>(n);
+            oss << d->varType()->typeString() << ' ' << d->variableName();
+        }
+        oss << ')';
+    }
+    return oss.str();
+}
+
 /*******************************************************************************
   TreeNodeQuantifier
 *******************************************************************************/
@@ -1047,6 +1070,12 @@ std::string TreeNodeTypeType::stringHelper() const {
   TreeNodeModule
 *******************************************************************************/
 
+TreeNodeModule::~TreeNodeModule() {
+    BOOST_FOREACH (TreeNodeProcDef* instance, m_generatedInstances) {
+        delete instance;
+    }
+}
+
 bool TreeNodeModule::hasName() const {
    return children().size() == 2;
 }
@@ -1117,15 +1146,15 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
         return (TreeNode *)(new SecreC::TreeNodeExprBinary(type, *loc));
     case NODE_EXPR_TERNIF:
         return (TreeNode *)(new SecreC::TreeNodeExprTernary(*loc));
-    case NODE_EXPR_ASSIGN_ADD: /* Fall through: */
-    case NODE_EXPR_ASSIGN_AND: /* Fall through: */
-    case NODE_EXPR_ASSIGN_DIV: /* Fall through: */
-    case NODE_EXPR_ASSIGN_MOD: /* Fall through: */
-    case NODE_EXPR_ASSIGN_MUL: /* Fall through: */
-    case NODE_EXPR_ASSIGN_OR:  /* Fall through: */
-    case NODE_EXPR_ASSIGN_SUB: /* Fall through: */
-    case NODE_EXPR_ASSIGN_XOR: /* Fall through: */
-    case NODE_EXPR_ASSIGN:
+    case NODE_EXPR_BINARY_ASSIGN_ADD: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_AND: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_DIV: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_MOD: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_MUL: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_OR:  /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_SUB: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN_XOR: /* Fall through: */
+    case NODE_EXPR_BINARY_ASSIGN:
         return (TreeNode *)(new SecreC::TreeNodeExprAssign(type, *loc));
     case NODE_EXPR_DECLASSIFY:
         return (TreeNode *)(new SecreC::TreeNodeExprDeclassify(*loc));
@@ -1214,8 +1243,8 @@ enum SecrecTreeNodeType treenode_type(TreeNode * node) {
     return ((const SecreC::TreeNode *) node)->type();
 }
 
-const YYLTYPE * treenode_location(const TreeNode * node) {
-    return &((const SecreC::TreeNode *) node)->location();
+const YYLTYPE treenode_location(const TreeNode * node) {
+    return ((const SecreC::TreeNode *) node)->location().toYYLTYPE();
 }
 
 unsigned treenode_numChildren(const TreeNode * node) {

@@ -94,22 +94,22 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
 
     // check that argument is a variable
     if (e->type() == NODE_EXPR_RVARIABLE) {
-        m_log.fatal() << m1 << m2
-            << " expects variable at " << root->location() << ".";
+        m_log.fatalInProc(root) << m1 << m2
+            << " expects variable at " << root->location() << '.';
         return E_TYPE;
     }
     // increment or decrement of void
     if (eType->isVoid()) {
-        m_log.fatal() << m1 << m2 << " of void type expression at "
-            << root->location() << ".";
+        m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
+            << root->location() << '.';
         return E_TYPE;
     }
 
     // check that we are operating on numeric types
     if (!isNumericDataType(eType->secrecDataType())) {
-        m_log.fatal() << m1 << m2
+        m_log.fatalInProc(root) << m1 << m2
             << " operator expects numeric type, given "
-            << *eType << " at " << root->location() << ".";
+            << *eType << " at " << root->location() << '.';
         return E_TYPE;
     }
 
@@ -168,9 +168,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
 
     TNV * srcType = static_cast<TNV *>(src->resultType());
     if (! srcType->latticeLEQ(lhsType)) {
-        m_log.fatal() << "Invalid assignment from value of type " << *srcType
+        m_log.fatalInProc(e) << "Invalid assignment from value of type " << *srcType
             << " to variable of type " << *lhsType << " at "
-            << e->location() << ".";
+            << e->location() << '.';
         return E_TYPE;
     }
 
@@ -205,8 +205,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
     SecreC::Type * ty = subExpr->resultType();
     SecrecDataType givenDType = ty->secrecDataType();
     if (! latticeExplicitLEQ(givenDType, resultingDType)) {
-        m_log.fatal() << "Unable to perform cast at "
-            << root->location() << ".";
+        m_log.fatalInProc(root) << "Unable to perform cast at "
+            << root->location() << '.';
         return E_TYPE;
     }
 
@@ -247,8 +247,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprIndex * root) {
     SecrecDimType n = eType->secrecDimType();
 
     if (root->indices()->children().size() != static_cast<size_t>(n)) {
-        m_log.fatal() << "Incorrent number of indices at"
-            << e->location() << ".";
+        m_log.fatalInProc(root) << "Incorrent number of indices at"
+            << e->location() << '.';
         return E_TYPE;
     }
 
@@ -352,8 +352,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
             return E_TYPE;
         eTypes[i] = static_cast<TNV *>(e->resultType());
         if (eTypes[i]->isScalar()) {
-            m_log.fatal() << "Concatenation of scalar values at "
-                << e->location() << ".";
+            m_log.fatalInProc(root) << "Concatenation of scalar values at "
+                << e->location() << '.';
             return E_TYPE;
         }
     }
@@ -374,22 +374,22 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
     SecurityType * resSecType = upperSecType(eTypes[0]->secrecSecType(),
             eTypes[1]->secrecSecType());
     if (resSecType == 0) {
-        m_log.fatal() << "Concatenating arrays of incompatable security types.";
-        m_log.fatal() << "Error at " << root->location() << ".";
+        m_log.fatalInProc(root) << "Concatenating arrays of incompatable security types at "
+                                << root->location() << '.';
         return E_TYPE;
     }
 
     if (eTypes[0]->secrecDataType() != eTypes[1]->secrecDataType()) {
-        m_log.fatal() << "Data type mismatch at "
+        m_log.fatalInProc(root) << "Data type mismatch at "
             << root->leftExpression()->location() << " and "
-            << root->rightExpression()->location() << ".";
+            << root->rightExpression()->location() << '.';
         return E_TYPE;
     }
 
     if (eTypes[0]->secrecDimType() != eTypes[1]->secrecDimType()) {
-        m_log.fatal() << "Dimensionalities mismatch at "
+        m_log.fatalInProc(root) << "Dimensionalities mismatch at "
             << root->leftExpression()->location() << " and "
-            << root->rightExpression()->location() << ".";
+            << root->rightExpression()->location() << '.';
         return E_TYPE;
     }
 
@@ -405,9 +405,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
 
     TNV * e3Type = static_cast<TNV *>(e3->resultType());
     if (! e3Type->isPublicIntScalar()) {
-        m_log.fatal() << "Expected public scalar integer at "
+        m_log.fatalInProc(root) << "Expected public scalar integer at "
             << root->dimensionality()->location()
-            << " got " << *e3Type << ".";
+            << " got " << *e3Type << '.';
         return E_TYPE;
     }
 
@@ -462,16 +462,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
             return E_TYPE;
         TNV * dimType = static_cast<TNV *>(dim->resultType());
         if (! dimType->isPublicIntScalar()) {
-            m_log.fatal() << "Expected public integer scalar at "
+            m_log.fatalInProc(root) << "Expected public integer scalar at "
                 << dim->location()
-                << " got " << dimType->toString() << ".";
+                << " got " << dimType->toString() << '.';
             return E_TYPE;
         }
     }
 
     if (resDim == 0) {
-        m_log.fatal() << "Conversion from non-scalar to scalar at "
-            << root->location() << ".";
+        m_log.fatalInProc(root) << "Conversion from non-scalar to scalar at "
+            << root->location() << '.';
         return E_TYPE;
     }
 
@@ -510,8 +510,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprToString * root) {
     if (tnv->secrecDimType() != 0
             || tnv->secrecSecType()->isPrivate()
             || tnv->secrecDataType() == DATATYPE_STRING) {
-        m_log.fatal() << "Invalid argument passed to \"tostring\" expression.";
-        m_log.fatal() << "Error at " << root->location() << ".";
+        m_log.fatalInProc(root) << "Invalid argument passed to \"tostring\" expression at "
+                                << root->location() << '.';
         return E_TYPE;
     }
 
@@ -599,11 +599,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
             argTypes = DataTypeProcedureVoid::get(getContext(),
                     argumentDataTypes);
             Status s = findBestMatchingProc(match, root->operatorName(),
-                    *root, argTypes);
-            if (s != OK) {
-                m_log.fatal() << "Error at " << root->location() << ".";
+                                            *root, argTypes, root);
+            if (s != OK)
                 return s;
-            }
 
             if (match != 0) { // overloaded operator
                 SecreC::Type * resultType = 0;
@@ -657,9 +655,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         }
     }
 
-    m_log.fatal() << "Invalid binary operation " << root->operatorString()
+    m_log.fatalInProc(root) << "Invalid binary operation " << root->operatorString()
         << " between operands of type " << *eType1 << " and " << *eType2
-        << " at " << root->location() << ".";
+        << " at " << root->location() << '.';
     return E_TYPE;
 }
 
@@ -709,11 +707,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
             argTypes = DataTypeProcedureVoid::get(getContext(),
                     argumentDataTypes);
             s = findBestMatchingProc(match, root->operatorName(),
-                    *root, argTypes);
-            if (s != OK) {
-                m_log.fatal() << "Error at " << root->location() << ".";
+                                     *root, argTypes, root);
+            if (s != OK)
                 return s;
-            }
 
             if (match != 0) { // overloaded operator
                 SecreC::Type * resultType = 0;
@@ -751,14 +747,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
         }
     }
 
-    m_log.fatal() << "Invalid expression of type (" << *eType
+    m_log.fatalInProc(root) << "Invalid expression of type (" << *eType
         << ") given to unary "
         << (root->type() == NODE_EXPR_UINV
                 ? "bitwise negation"
                 : (root->type() == NODE_EXPR_UNEG
                     ? "negation"
                     : "minus"))
-        << " operator at " << root->location() << ".";
+        << " operator at " << root->location() << '.';
     return E_TYPE;
 }
 
@@ -797,8 +793,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprInt * e) {
         if (e->haveContextDataType()) {
             dtype = dtypeDeclassify(e->contextDataType());
             if (! isNumericDataType(dtype)) {
-                m_log.fatal() << "Expected numeric context.";
-                m_log.fatal() << "Error at " << e->location() << ".";
+                m_log.fatalInProc(e) << "Expected numeric context at " << e->location() << '.';
                 return E_TYPE;
             }
         }
@@ -823,8 +818,7 @@ TypeChecker::Status TreeNodeExprClassify::accept(TypeChecker & tyChecker) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeExprClassify * root) {
     if (! root->haveResultType()) {
-        m_log.fatal() << "ICE: type checking classify node!";
-        m_log.fatal() << "Error at " << root->location() << ".";
+        m_log.fatalInProc(root) << "ICE: type checking classify node at " << root->location() << '.';
         return E_OTHER;
     }
 
@@ -854,9 +848,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprDeclassify * root) {
     if (checkAndLogIfVoid(e))
         return E_TYPE;
     if (childType->secrecSecType()->isPublic()) {
-        m_log.fatal() << "Argument of type " << *childType
+        m_log.fatalInProc(root) << "Argument of type " << *childType
             << " passed to declassify operator at "
-            << root->location() << ".";
+            << root->location() << '.';
         return E_TYPE;
     }
 
@@ -934,9 +928,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprFloat * e) {
                 e->setResultType(TypeNonVoid::get(m_context, dType));
                 return OK;
             default:
-                m_log.fatal() << "Expecting floating point, got "
-                    << dType << ".";
-                m_log.fatal() << "Error at " << e->location() << ".";
+                m_log.fatalInProc(e) << "Expecting floating point, got "
+                    << dType << " at " << e->location() << '.';
                 return E_TYPE;
             }
         }
@@ -991,15 +984,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
     if (cType->secrecDataType() != DATATYPE_BOOL
             || cType->secrecSecType()->isPrivate())
     {
-        m_log.fatal() << "Conditional subexpression at " << e1->location()
+        m_log.fatalInProc(root) << "Conditional subexpression at " << e1->location()
             << " of ternary expression has to be public boolean, got "
-            << *cType << ".";
+            << *cType << '.';
         return E_TYPE;
     }
 
     // check the types of results
     if (eType2->isVoid() != eType3->isVoid()) {
-        m_log.fatal() << "Subxpression at " << e2->location() << " is"
+        m_log.fatalInProc(root) << "Subxpression at " << e2->location() << " is"
             << (eType2->isVoid() ? "" : "not ")
             << " void while subexpression at " << e3->location()
             << (eType3->isVoid() ? " is." : " isn't.");
@@ -1015,11 +1008,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
         SecurityType * s0 = upperSecType(e2->resultType()->secrecSecType(),
                 e3->resultType()->secrecSecType());
         if (s0 == 0) {
-            m_log.fatal() << "Incompatible security types in ternary expression at "
-                << e2->location() << " and " << e3->location() << ".";
+            m_log.fatalInProc(root) << "Incompatible security types in ternary expression at "
+                << e2->location() << " and " << e3->location() << '.';
             m_log.fatal() << "Unable to match "
                 << *e2->resultType()->secrecSecType() << " with "
-                << *e3->resultType()->secrecSecType() << ".";
+                << *e3->resultType()->secrecSecType() << '.';
             return E_TYPE;
         }
 
@@ -1027,10 +1020,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
         e3 = classifyIfNeeded(e3, s0);
 
         if (eType2->secrecDataType() != eType3->secrecDataType()) {
-            m_log.fatal() << "Results of ternary expression  at "
+            m_log.fatalInProc(root) << "Results of ternary expression  at "
                 << root->location()
                 << " have to be of same data types, got "
-                << *eType2 << " and " << *eType3 << ".";
+                << *eType2 << " and " << *eType3 << '.';
             return E_TYPE;
         }
 
@@ -1039,14 +1032,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
         SecrecDimType n3 = eType3->secrecDimType();
 
         if (n2 != n3) {
-            m_log.fatal() << "Branches of ternary expression at "
+            m_log.fatalInProc(root) << "Branches of ternary expression at "
                 << root->location()
                 << " aren't of equal dimensionalities.";
             return E_TYPE;
         }
 
         if (n1 != 0 && n1 != n2) {
-            m_log.fatal() << "Conditional expression at "
+            m_log.fatalInProc(root) << "Conditional expression at "
                 << e1->location()
                 << " is non-scalar and doesn't match resulting subexpressions.";
             return E_TYPE;
@@ -1077,8 +1070,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprDomainID * e) {
         return OK;
 
     if (e->securityType()->isPublic()) {
-        m_log.fatal() << "Public security type does not have a domain ID.";
-        m_log.fatal() << "Error at " << e->location() << ".";
+        m_log.fatalInProc(e) << "Public security type does not have a domain ID at "
+                             << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1141,7 +1134,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     if (checkSecType) {
         if (subExpr->contextSecType() !=
                 subExpr->resultType()->secrecSecType()) {
-            m_log.fatal() << "Security type of the expression at "
+            m_log.fatalInProc(e) << "Security type of the expression at "
                 << subExpr->location()
                 << " does not match the qualified type.";
             return E_TYPE;
@@ -1151,7 +1144,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     if (checkDataType) {
         if (subExpr->contextDataType() !=
                 subExpr->resultType()->secrecDataType()) {
-            m_log.fatal() << "Data type of the expression at "
+            m_log.fatalInProc(e) << "Data type of the expression at "
                 << subExpr->location()
                 << " does not match the qualified type.";
 
@@ -1162,7 +1155,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     if (checkDimType) {
         if (subExpr->contextDimType() !=
                 subExpr->resultType()->secrecDimType()) {
-            m_log.fatal() << "Dimensionality type of the expression at "
+            m_log.fatalInProc(e) << "Dimensionality type of the expression at "
                 << subExpr->location()
                 << " does not match the qualified type.";
             return E_TYPE;
@@ -1203,9 +1196,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
             ty->secrecDataType() != DATATYPE_UINT8 ||
             ty->secrecDimType() != 1)
     {
-        m_log.fatal() << "Invalid argument. Expected public byte array, got "
-            << ty->toString() << ".";
-        m_log.fatal() << "Type error at " << e->location() << ".";
+        m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "
+                             << ty->toString() << " at " << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1238,9 +1230,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBytesFromString * e) {
             ty->secrecDataType() != DATATYPE_STRING ||
             ty->secrecDimType() != 0)
     {
-        m_log.fatal() << "Invalid argument. Expected public string, got "
-            << ty->toString() << ".";
-        m_log.fatal() << "Type error at " << e->location() << ".";
+        m_log.fatalInProc(e) << "Invalid argument. Expected public string, got "
+                             << ty->toString() << " at " << e->location() << '.';
         return E_TYPE;
     }
 

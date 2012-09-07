@@ -8,6 +8,7 @@
  */
 
 #include "ModuleInfo.h"
+#include "treenode.h"
 
 #include <boost/filesystem.hpp>
 
@@ -19,15 +20,17 @@ namespace SecreC {
   ModuleInfo
 *******************************************************************************/
 
+ModuleInfo::~ModuleInfo() {
+    delete m_body;
+}
+
 std::string ModuleInfo::fileNameStem () const {
     return m_location.path ().stem ().string ();
 }
 
-
 void ModuleInfo::setCodeGenState (const CodeGenState& state) {
     m_cgState = state;
 }
-
 
 bool ModuleInfo::read() {
     using namespace boost;
@@ -37,7 +40,7 @@ bool ModuleInfo::read() {
         return false;
 
     TreeNodeModule* treeNode = 0;
-    int parseResult = sccparse_file (f, &treeNode);
+    int parseResult = sccparse_file(m_location.path().c_str (), f, &treeNode);
     fclose (f);
     if (parseResult != 0 || treeNode == 0)
         return false;

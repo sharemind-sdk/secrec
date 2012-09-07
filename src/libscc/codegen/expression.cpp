@@ -82,7 +82,7 @@ CGResult TreeNodeExprCast::codeGenWith(CodeGen & cg) {
 
 CGResult CodeGen::cgExprCast(TreeNodeExprCast * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     TreeNodeExpr * subExpr = e->expression();
@@ -133,7 +133,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     bool isScalar = e->resultType()->isScalar();
@@ -289,7 +289,7 @@ CGResult TreeNodeExprSize::codeGenWith(CodeGen & cg) {
 
 CGResult CodeGen::cgExprSize(TreeNodeExprSize * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result(codeGen(e->expression()));
     if (!result.isOk()) {
@@ -317,7 +317,7 @@ CGResult TreeNodeExprShape::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprShape(TreeNodeExprShape * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     SymbolSymbol * resSym = generateResultSymbol(result, e);
@@ -359,7 +359,7 @@ CGResult TreeNodeExprCat::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     generateResultSymbol(result, e);
@@ -387,7 +387,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
-    ss << "Different sized dimensions in concat at " << e->location() << ".";
+    ss << "Different sized dimensions in concat at " << e->location() << '.';
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
     for (SecrecDimType it = 0; it < e->resultType()->secrecDimType(); ++ it) {
@@ -541,7 +541,7 @@ CGResult TreeNodeExprReshape::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     // Evaluate subexpression:
     TreeNodeExpr * eArg = e->reshapee();
@@ -590,7 +590,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         result.addToNextList(jmp);
 
         std::stringstream ss;
-        ss << "ERROR: Mismatching sizes in reshape at " << e->location() << ".";
+        ss << "ERROR: Mismatching sizes in reshape at " << e->location() << '.';
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         push_imop(err);
     }
@@ -615,7 +615,7 @@ CGResult TreeNodeExprToString::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprToString(TreeNodeExprToString * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     // Evaluate subexpression:
     TreeNodeExpr * eArg = e->expression();
@@ -644,7 +644,7 @@ CGResult TreeNodeExprBinary::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
     TreeNodeExpr * eArg1 = e->leftExpression();
@@ -760,9 +760,9 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     // Generate code for binary expression:
     Imop::Type iType;
     if (! getBinImopType(e->type(), iType)) {
-        m_log.fatal() << "Binary " << e->operatorString()
+        m_log.fatalInProc(e) << "Binary " << e->operatorString()
             << " not yet implemented. At " << e->location();
-        result.setStatus(CGResult::ERROR_FATAL);
+        result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
 
@@ -968,7 +968,7 @@ CGResult CodeGen::cgExprProcCall(TreeNodeExprProcCall * e) {
 
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     std::vector<TreeNodeExpr * > args;
     BOOST_FOREACH(TreeNode* _arg, e->paramRange()) {
@@ -996,7 +996,7 @@ CGResult TreeNodeExprRVariable::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprRVariable(TreeNodeExprRVariable * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     SymbolSymbol * sym = m_tyChecker->getSymbol(e->identifier());
     CGResult result;
@@ -1032,7 +1032,7 @@ CGResult TreeNodeExprDomainID::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprDomainID(TreeNodeExprDomainID * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     assert(dynamic_cast<TypeNonVoid *>(e->resultType()) != 0);
     TypeNonVoid * resultType = static_cast<TypeNonVoid *>(e->resultType());
@@ -1061,7 +1061,7 @@ CGResult TreeNodeExprQualified::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprQualified(TreeNodeExprQualified * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     return codeGen(e->expression());
 }
@@ -1086,7 +1086,7 @@ CGResult TreeNodeExprStringFromBytes::codeGenWith (CodeGen& cg) {
 CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     SymbolSymbol * resSym = generateResultSymbol(result, e);
@@ -1137,7 +1137,7 @@ CGResult TreeNodeExprBytesFromString::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     Context & cxt = getContext();
     CGResult result;
@@ -1233,7 +1233,7 @@ CGResult TreeNodeExprString::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     result.setResult(ConstantString::get(getContext(), e->value()));
@@ -1251,7 +1251,7 @@ CGResult TreeNodeExprFloat::codeGenWith (CodeGen &cg) {
 CGResult CodeGen::cgExprFloat(TreeNodeExprFloat * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     switch (e->resultType()->secrecDataType()) {
@@ -1293,7 +1293,7 @@ CGResult TreeNodeExprTernary::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     TreeNodeExpr * e1 = e->conditional();
@@ -1538,7 +1538,7 @@ CGResult TreeNodeExprInt::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprInt(TreeNodeExprInt * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     result.setResult(
@@ -1558,7 +1558,7 @@ CGResult TreeNodeExprBool::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprBool(TreeNodeExprBool * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     Context & cxt = getContext();
@@ -1597,7 +1597,7 @@ CGResult TreeNodeExprClassify::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprClassify(TreeNodeExprClassify * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     // Generate code for child expression
     TreeNodeExpr * eArg = e->expression();
@@ -1629,7 +1629,7 @@ CGResult TreeNodeExprDeclassify::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprDeclassify(TreeNodeExprDeclassify * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     // Generate code for child expression
     CGResult result(codeGen(e->expression()));
@@ -1664,7 +1664,7 @@ CGResult TreeNodeExprUnary::codeGenWith(CodeGen & cg) {
 CGResult CodeGen::cgExprUnary(TreeNodeExprUnary * e) {
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     if (e->isOverloaded()) {
         std::vector<TreeNodeExpr * > params;
@@ -1741,7 +1741,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());
@@ -1879,7 +1879,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
-        return CGResult::ERROR_FATAL;
+        return CGResult::ERROR_CONTINUE;
 
     CGResult result;
     TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());

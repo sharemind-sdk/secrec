@@ -29,7 +29,6 @@ SET(QT4_PARSER_TESTS
     "testExprPostfix"
     "testExprUnary"
     "testExprCast"
-    "testExprMatrix"
     "testExprMult"
     "testExprAddi"
     "testExprRela"

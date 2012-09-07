@@ -120,17 +120,15 @@ findTemplates (SymbolTable* st, const std::string& name)
 /// Return symbol for the main procedure (if exists).
 SymbolProcedure* TypeChecker::mainProcedure () {
     DataTypeProcedureVoid* ty = DataTypeProcedureVoid::get (getContext ());
-    SymbolProcedure* out = 0;
-    BOOST_FOREACH (SymbolProcedure* p, findProcedures (m_st, "main", ty)) {
-        if (out != 0) {
-            assert (false && "ICE: multiple definitions of main should not be possible.");
-            return 0;
-        }
-
-        out = p;
+    std::vector<SymbolProcedure *> ms = findProcedures (m_st, "main", ty);
+    if (ms.size() > 1u) {
+        m_log.fatal() << "Multiple definitions of main found!";
+        return NULL;
+    } else if (ms.empty()) {
+        m_log.fatal() << "No procedure \"void main()\" found!";
+        return NULL;
     }
-
-    return out;
+    return ms.at(0u);
 }
 
 TypeChecker::Status TypeChecker::populateParamTypes(std::vector<DataType *> & params,
@@ -167,6 +165,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
         Status s = visit(rt);
         if (s != OK)
             return s;
+
+        if (proc->procedureName() == "main" && rt->isNonVoid()) {
+            m_log.fatal() << "Invalid return type procedure 'main' at " << proc->location() << '.';
+            return E_TYPE;
+        }
+
+        if (proc->procedureName() == "main" && proc->paramBegin() != proc->paramEnd()) {
+            m_log.fatal() << "Invalid parameters for procedure 'main' at " << proc->location() << '.';
+            return E_TYPE;
+        }
         std::vector<DataType*> params;
         if ((s = populateParamTypes(params, proc)) != OK)
             return s;
@@ -194,10 +202,21 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
             if (sym->symbolType () == Symbol::PROCEDURE) {
                 SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
                 if (t->decl ()->m_cachedType == proc->m_cachedType) {
-                    m_log.fatal () << "Redefinition of procedure at "
-                                   << proc->location () << "."
-                                   << " Conflicting with procedure declared at "
-                                   << t->decl ()->location () << ".";
+                    m_log.fatal () << "Redefinition of procedure '"
+                                   << proc->identifier()->value()
+                                   << "' at "
+                                   << proc->location () << '.'
+                                   << " Conflicting with procedure '"
+                                   << t->decl()->printableSignature()
+                                   << "' declared at "
+                                   << t->decl ()->location () << '.';
+                    return E_TYPE;
+                }
+                if (proc->identifier()->value() == "main" && t->decl()->identifier()->value() == "main") {
+                    m_log.fatal() << "Redefinition of procedure 'main' at "
+                                  << proc->location () << " not allowed!";
+                    m_log.fatal() << "Procedure 'main' already defined at "
+                                   << t->decl ()->location () << '.';
                     return E_TYPE;
                 }
             }
@@ -217,7 +236,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     if (m_st->find (id->value ()) != 0) {
         m_log.fatal ()
                 << "Redeclaration of template \"" << id->value () << "\""
-                << " at " << id->location () << ".";
+                << " at " << id->location () << '.';
         return E_TYPE;
     }
 
@@ -287,7 +306,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             ss << " " << v.second->location();
         }
 
-        m_log.fatal() << "Template definition has free type variables at" << ss.str () << ".";
+        m_log.fatal() << "Template definition has free type variables at" << ss.str () << '.';
         return E_TYPE;
     }
 
@@ -396,12 +415,12 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     DataTypeProcedureVoid* argTypes =
             DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
-    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes);
+    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt);
     if (status != OK)
         return status;
 
     if (symProc == 0) {
-        m_log.fatal () << "No matching procedure definitions for:";
+        m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
         m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
 
@@ -468,14 +487,14 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
         if (need->secType()->isPublic () && have->secType()->isPrivate ())
         {
-            m_log.fatal() << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to procedure "
                 << name->value() << " at " << arguments[i]->location()
                 << " is expected to be of public type instead of private!";
             return E_TYPE;
         }
 
         if (need->dimType() != have->dimType()) {
-            m_log.fatal() << "Argument " << (i + 1) << " to function "
+            m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to procedure "
                 << name->value() << " at " << arguments[i]->location()
                 << " has mismatching dimensionality.";
             return E_TYPE;
@@ -524,8 +543,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
 TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
                                                       const std::string & name,
                                                       const TypeContext & tyCxt,
-                                                      DataTypeProcedureVoid * argTypes)
+                                                      DataTypeProcedureVoid * argTypes,
+                                                      const TreeNode * errorCxt)
 {
+    assert(errorCxt);
     typedef boost::tuple<unsigned, unsigned, unsigned > Weight;
 
     // Look for regular procedures:
@@ -548,7 +569,8 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
         }
 
         if (procTempSymbol != 0) {
-            m_log.fatal () << "Multiple matching procedures!";
+            m_log.fatalInProc(errorCxt) << "Multiple matching procedures at "
+                                        << errorCxt->location() << '.';
             return E_TYPE;
         }
 
@@ -590,7 +612,8 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
             os << i.getTemplate ()->decl ()->location () << ' ';
         }
 
-        m_log.fatal () << os.str ();
+        m_log.fatalInProc(errorCxt) << os.str() << "at "
+                                    << errorCxt->location() << '.';
         return E_TYPE;
     }
 
