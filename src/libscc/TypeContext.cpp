@@ -10,6 +10,8 @@
 #include "TypeContext.h"
 
 #include <sstream>
+#include "misc.h"
+
 
 namespace SecreC {
 
@@ -26,7 +28,7 @@ std::string TypeContext::toString () const {
         os << '*';
     os << ',';
     if (haveContextDataType ())
-        os << contextDataType ();
+        os << SecrecFundDataTypeToString(contextDataType());
     else
         os << '*';
     os << ',';
