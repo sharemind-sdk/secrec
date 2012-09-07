@@ -838,7 +838,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprDeclassify * root) {
         return OK;
 
     TreeNodeExpr * e = root->expression();
-    e->setContextDataType(root->contextDataType());
     e->setContextDimType(root->contextDimType());
     const Status s = visitExpr(e);
     if (s != OK)
