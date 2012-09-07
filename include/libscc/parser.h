@@ -221,6 +221,9 @@ typedef struct YYLTYPE {
 } YYLTYPE;
 #define YYLTYPE_IS_DECLARED 1
 
+/* Define YYRHSLOC as a workaround for >=bison-2.6: */
+#define YYRHSLOC(Rhs, K) ((Rhs)[K].yystate.yyloc)
+
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
     do { \
         if ((N)) { \
