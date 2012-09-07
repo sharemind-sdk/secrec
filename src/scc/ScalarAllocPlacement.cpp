@@ -19,10 +19,10 @@ bool isCandidate (const Symbol* sym) {
 
 void releaseAfter (const Imop* imop, Symbol* sym) {
     Block* block = imop->block ();
-    ImopList::const_iterator it = ++ ImopList::s_iterator_to (*imop);
+    ImopList::const_iterator it = ImopList::s_iterator_to (*imop);
     assert (it != block->end ());
     Imop* newImop = new Imop (imop->creator (), Imop::RELEASE, 0, sym);
-    block->insert (it, *newImop);
+    block->insert (++ it, *newImop);
 }
 
 bool isDead (const LiveVariables::Symbols& liveness, const Symbol* sym) {
