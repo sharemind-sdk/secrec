@@ -263,9 +263,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
         }
 
         s = visitExpr (e);
-        e->instantiateDataType (getContext ());
         if (s != OK)
             return s;
+
+        e->instantiateDataType (getContext ());
 
         if (arg->type () != NODE_PUSH) {
             if (e->resultType ()->secrecSecType ()->isPrivate ()) {
