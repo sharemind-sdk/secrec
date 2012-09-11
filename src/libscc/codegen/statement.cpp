@@ -788,6 +788,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     }
 
     Imop * i = new Imop(s, Imop::SYSCALL, 0, nameResult.symbol());
+    pushImopAfter(result, newComment(s->name()->value()));
     pushImopAfter(result, i);
 
     BOOST_FOREACH (const NodeSymbolPair & ts, results) {

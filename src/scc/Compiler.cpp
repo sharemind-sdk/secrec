@@ -979,6 +979,11 @@ void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
     emitSyscall (block, "miner_log_string");
 }
 
+void Compiler::cgComment(VMBlock & block, const Imop & imop) {
+    assert(dynamic_cast<const ConstantString*>(imop.arg1()) != 0);
+    block.push_new() << "#" << static_cast<const ConstantString*>(imop.arg1())->value().c_str();
+}
+
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ERROR);
     pushString (block, imop.arg1 ());
@@ -1065,7 +1070,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         cgPrint (block, imop);
         return;
     case Imop::RETCLEAN:
+        return;
     case Imop::COMMENT:
+        cgComment(block, imop);
         return;
     default:
         break;

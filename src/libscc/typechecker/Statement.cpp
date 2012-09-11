@@ -288,8 +288,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatalInProc(stmt) << "Conditional expression in assert statement "
-                                   "must be of type public bool at " << e->location() << '.';
+        assert(e->haveResultType());
+        m_log.fatalInProc(stmt) << "Invalid expression of type "
+                                << e->resultType()->toNormalString()
+                                << " given for assert statement at " << e->location() << '.';
         return E_TYPE;
     }
 
