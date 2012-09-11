@@ -313,7 +313,7 @@ Compiler::~Compiler () {
 void Compiler::run (VMLinkingUnit& vmlu) {
 
     eliminateDeadVariables (m_code);
-    eliminateRedundantCopies (m_code);
+    // eliminateRedundantCopies (m_code);
     m_allocs = placePrivateScalarAllocs (m_code);
 
     // Create and add the linking unit sections:
