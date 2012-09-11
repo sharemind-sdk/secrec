@@ -7,8 +7,8 @@ namespace SecreC {
 
 #define DEFINE_LOG_IN_PROC(small,Caps) \
     CompileLogStream CompileLog::small ## InProc(const TreeNode * n) { \
-        assert(n->containingProcedure()); \
-        small() << "In procedure '" << n->containingProcedure()->printableSignature() << "':"; \
+        if (n->containingProcedure()) \
+            small() << "In procedure '" << n->containingProcedure()->printableSignature() << "':"; \
         return CompileLogStream(*this, CompileLogMessage::Caps); \
     }
 
