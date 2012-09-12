@@ -146,8 +146,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     TypeNonVoid * varType = static_cast<TNV *>(dest->secrecType());
     SecrecDimType destDim = varType->secrecDimType();
 
+
     // Check the slice:
     if (e->slice()) {
+        if (e->slice()->children().size() != destDim) {
+            m_log.fatalInProc(e) << "Incorrect number of indices at "
+                                 << e->location()
+                                 << ".";
+            return E_TYPE;
+        }
+
         const Status s = checkIndices(e->slice(), destDim);
         if (s != OK)
             return s;
