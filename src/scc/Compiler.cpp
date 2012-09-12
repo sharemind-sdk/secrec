@@ -560,10 +560,8 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     }
 
     if (isPrivate (imop)) {
-        if (imop.isVectorized ()) {
-            cgPrivateAssign (block, imop);
-            return;
-        }
+        cgPrivateAssign (block, imop);
+        return;
     }
 
     VMInstruction instr;
