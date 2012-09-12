@@ -290,6 +290,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
+    Status s = visitExpr(e);
+    if (s != OK)
+        return s;
+
     if (checkPublicBooleanScalar (e) != OK) {
         assert(e->haveResultType());
         m_log.fatalInProc(stmt) << "Invalid expression of type "
