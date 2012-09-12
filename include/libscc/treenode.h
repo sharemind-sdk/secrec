@@ -586,6 +586,7 @@ public: /* Methods: */
     TreeNode* slice () const;
     TreeNodeIdentifier* identifier () const;
     TreeNodeExpr* rightHandSide () const;
+    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 
@@ -702,6 +703,8 @@ public:
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
+    TreeNodeExpr *& leftExpressionPtrRef();
+    TreeNodeExpr *& rightExpressionPtrRef();
     TreeNodeExprInt* dimensionality () const;
 
 protected:
@@ -820,6 +823,8 @@ public: /* Methods: */
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
+    TreeNodeExpr *& leftExpressionPtrRef();
+    TreeNodeExpr *& rightExpressionPtrRef();
     const char *operatorString() const;
 
 protected:
@@ -1050,6 +1055,8 @@ public: /* Methods: */
     TreeNodeExpr* conditional () const;
     TreeNodeExpr* trueBranch () const;
     TreeNodeExpr* falseBranch () const;
+    TreeNodeExpr *& trueBranchPtrRef();
+    TreeNodeExpr *& falseBranchPtrRef();
 
 protected:
 
@@ -1562,8 +1569,14 @@ public: /* Methods: */
     /// \retval 0 if shape is not specified
     TreeNode* shape () const;
 
+    inline bool hasRightHandSide() const {
+        return children().size() > 2;
+    }
+
     /// \retval 0 if right hand side is not defined
     TreeNodeExpr* rightHandSide () const;
+
+    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 
@@ -1760,7 +1773,12 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
+    inline bool hasExpression() const {
+        return !children().empty();
+    }
+
     TreeNodeExpr* expression () const;
+    TreeNodeExpr *& expressionPtrRef();
 
 protected:
 

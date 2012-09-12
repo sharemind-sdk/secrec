@@ -154,7 +154,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     // Calculate type of r-value:
-    TreeNodeExpr * src = e->rightHandSide();
+    TreeNodeExpr *& src = e->rightHandSidePtrRef();
     TypeNonVoid * lhsType = TypeNonVoid::get(getContext(),
             varType->secrecSecType(), varType->secrecDataType(), destDim);
     src->setContext(lhsType);
@@ -175,7 +175,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     // Add implicit classify node if needed:
-    src = classifyIfNeeded(src, varType->secrecSecType());
+    classifyIfNeeded(src, varType->secrecSecType());
     varType = static_cast<TypeNonVoid *>(src->resultType());
     e->setResultType(lhsType);
     return OK;
@@ -365,10 +365,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
     {
         SecurityType * lSecTy = eTypes[0]->secrecSecType();
         SecurityType * rSecTy = eTypes[1]->secrecSecType();
-        Type * lTy = classifyIfNeeded(root->leftExpression(), rSecTy)->resultType();
-        Type * rTy = classifyIfNeeded(root->rightExpression(), lSecTy)->resultType();
-        eTypes[0] = static_cast<TNV *>(lTy);
-        eTypes[1] = static_cast<TNV *>(rTy);
+        TreeNodeExpr *& left = root->leftExpressionPtrRef();
+        TreeNodeExpr *& right = root->rightExpressionPtrRef();
+        classifyIfNeeded(left, rSecTy);
+        classifyIfNeeded(right, lSecTy);
+        eTypes[0] = static_cast<TNV *>(left->resultType());
+        eTypes[1] = static_cast<TNV *>(right->resultType());
     }
 
     SecurityType * resSecType = upperSecType(eTypes[0]->secrecSecType(),
@@ -534,8 +536,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
     if (root->haveResultType())
         return OK;
 
-    TreeNodeExpr * e1 = root->leftExpression();
-    TreeNodeExpr * e2 = root->rightExpression();
+    TreeNodeExpr *& e1 = root->leftExpressionPtrRef();
+    TreeNodeExpr *& e2 = root->rightExpressionPtrRef();
     TypeNonVoid * eType1 = 0, *eType2 = 0;
 
     //set context data type
@@ -622,9 +624,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         SecurityType * s0 = upperSecType(s1, s2);
 
         // Add implicit classify nodes if needed:
-        e1 = classifyIfNeeded(e1, s0);
+        classifyIfNeeded(e1, s0);
         eType1 = static_cast<TNV *>(e1->resultType());
-        e2 = classifyIfNeeded(e2, s0);
+        classifyIfNeeded(e2, s0);
         eType2 = static_cast<TNV *>(e2->resultType());
 
         SecrecDataType d1 = eType1->secrecDataType();
@@ -1015,8 +1017,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
             return E_TYPE;
         }
 
-        e2 = classifyIfNeeded(e2, s0);
-        e3 = classifyIfNeeded(e3, s0);
+        classifyIfNeeded(e2, s0);
+        classifyIfNeeded(e3, s0);
 
         if (eType2->secrecDataType() != eType3->secrecDataType()) {
             m_log.fatalInProc(root) << "Results of ternary expression  at "

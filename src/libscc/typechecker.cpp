@@ -120,41 +120,42 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     return static_cast<SymbolSymbol*>(s);
 }
 
-TreeNodeExpr* TypeChecker::classifyIfNeeded (TreeNodeExpr* child, SecurityType* need) {
-    if (need == 0) {
-        return child;
+bool TypeChecker::classifyIfNeeded(TreeNodeExpr *& child,
+                                   SecurityType * need)
+{
+    if (need == 0)
+        return false;
+
+    SecurityType * const haveSecType = child->resultType()->secrecSecType();
+    assert(!(need->isPrivate() && haveSecType->isPrivate()) || need == haveSecType);
+
+    if (need->isPublic() || haveSecType->isPrivate())
+        return false;
+
+    TreeNode * const parent = child->parent();
+    const SecrecDataType destDType = child->haveContextDataType()
+                                   ? child->contextDataType()
+                                   : child->resultType()->secrecDataType();
+
+    const SecrecDimType dimDType = child->resultType()->secrecDimType();
+    TypeNonVoid * const newTy = TypeNonVoid::get(getContext(), need, destDType, dimDType);
+    TreeNodeExprClassify * const ec = new TreeNodeExprClassify(need, child->location());
+    ec->appendChild(child);
+    ec->resetParent(parent);
+    ec->setResultType(newTy);
+    BOOST_FOREACH (TreeNode *& n, parent->children()) {
+        if (n == child) {
+            n = ec;
+            break;
+        }
     }
 
-    SecurityType* haveSecType = child->resultType ()->secrecSecType ();
-    assert(!(need->isPrivate () && haveSecType->isPrivate ()) || need == haveSecType);
-    if (need->isPrivate () && haveSecType->isPublic ()) {
-        TreeNode* node = child->parent ();
-        SecrecDataType destDType = child->resultType()->secrecDataType ();
-        if (child->haveContextDataType ()) {
-            destDType = child->contextDataType ();
-        }
-
-        SecrecDimType dimDType = child->resultType ()->secrecDimType ();
-        TypeNonVoid* newTy = TypeNonVoid::get (getContext (), need, destDType, dimDType);
-        TreeNodeExprClassify *ec = new TreeNodeExprClassify (need, child->location());
-        ec->appendChild (child);
-        ec->resetParent (node);
-        ec->setResultType (newTy);
-        BOOST_FOREACH (TreeNode*& n, node->children ()) {
-            if (n == child) {
-                n = ec;
-                break;
-            }
-        }
-
-        // patch up context types just in case
-        ec->setContext (child);
-        child->setContextSecType (PublicSecType::get (getContext ()));
-        child->setContextDataType (destDType);
-        child = ec;
-    }
-
-    return child;
+    // patch up context types just in case
+    ec->setContext(child);
+    child->setContextSecType(PublicSecType::get(getContext()));
+    child->setContextDataType(destDType);
+    child = ec;
+    return true;
 }
 
 bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {

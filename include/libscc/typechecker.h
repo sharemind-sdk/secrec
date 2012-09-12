@@ -98,7 +98,8 @@ public: /* Methods: */
 
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
-    TreeNodeExpr* classifyIfNeeded (TreeNodeExpr* child, SecurityType* need = 0);
+
+    bool classifyIfNeeded(TreeNodeExpr *& child, SecurityType * need);
 
     /// Check if given idenfier is in scope. Logs error message
     /// and returns NULL if not.

@@ -500,8 +500,8 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             return E_TYPE;
         }
 
-        // Add implicit classify node if needed:
-        classifyIfNeeded (arguments[i]);
+        // Add implicit classify node if needed (NOT NEEDED):
+        // classifyIfNeeded (arguments[i]);
     }
 
     // Set result type:
