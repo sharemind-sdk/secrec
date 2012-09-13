@@ -51,7 +51,7 @@ void TestTreeNode::testInitBool_data() {
 void TestTreeNode::testInitInt() {
     SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitInt");
 
-    QFETCH(int, value1);
+    QFETCH(uint64_t, value1);
 
     TreeNodeExprInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_INT);

@@ -1337,7 +1337,7 @@ TreeNode * treenode_init_bool(unsigned value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprBool(value, *loc);
 }
 
-TreeNode * treenode_init_int(int value, YYLTYPE * loc) {
+TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprInt(value, *loc);
 }
 

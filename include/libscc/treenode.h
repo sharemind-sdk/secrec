@@ -547,11 +547,11 @@ protected:
 
 class TreeNodeExprInt: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprInt(int value, const Location & loc)
+    inline TreeNodeExprInt(uint64_t value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
-    inline void setValue(int value) { m_value = value; }
-    inline int value() const { return m_value; }
+    inline void setValue(uint64_t value) { m_value = value; }
+    inline uint64_t value() const { return m_value; }
 
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper() const;
@@ -567,7 +567,7 @@ protected:
     virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
 private: /* Fields: */
-    int m_value;
+    uint64_t m_value;
 };
 
 /******************************************************************
