@@ -24,26 +24,27 @@ inline bool mayEliminate (const Imop& imop) {
 void eliminateDeadVariables (ICode& code) {
     Program& program = code.program ();
 
-    std::cerr << "Eliminating dead variables...\n";
+    LiveVariables lva;
+    DataFlowAnalysisRunner runner;
+    std::vector<const Imop*> deadInstructions;
+
+    runner.addAnalysis(lva);
+
     bool changed = true;
     while (changed) {
         changed = false;
-
-        LiveVariables lva;
-        DataFlowAnalysisRunner ()
-                .addAnalysis (lva)
-                .run (program);
-
-        std::set<const Imop*> deadInstructions;
+        runner.run(program);
+        deadInstructions.clear();
         FOREACH_BLOCK (bi, code.program ()) {
             const Block& block = *bi;
             LiveVariables::Symbols live = lva.liveOnExit (block);
             BOOST_REVERSE_FOREACH (const Imop& imop, block) {
                 if (mayEliminate (imop) && live.count (imop.dest ()) == 0) {
-                    deadInstructions.insert (&imop);
+                    deadInstructions.push_back (&imop);
                 }
-
-                LiveVariables::updateBackwards (imop, live);
+                else {
+                    LiveVariables::updateBackwards (imop, live);
+                }
             }
         }
 
