@@ -18,6 +18,8 @@ SET(SCC_SOURCES
     "SyscallManager.cpp"
     "RegisterAllocator.h"
     "RegisterAllocator.cpp"
+    "RemoveUnreachableBlocks.h"
+    "RemoveUnreachableBlocks.cpp"
     "ScalarAllocPlacement.h"
     "ScalarAllocPlacement.cpp"
     "StringLiterals.h"

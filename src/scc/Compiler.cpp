@@ -26,6 +26,7 @@
 #include "SyscallManager.h"
 #include "StringLiterals.h"
 #include "RegisterAllocator.h"
+#include "RemoveUnreachableBlocks.h"
 #include "Builtin.h"
 #include "VMDataType.h"
 
@@ -312,6 +313,7 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
+    removeUnreachableBlocks (m_code);
     eliminateDeadVariables (m_code);
     // eliminateRedundantCopies (m_code);
     m_allocs = placePrivateScalarAllocs (m_code);
