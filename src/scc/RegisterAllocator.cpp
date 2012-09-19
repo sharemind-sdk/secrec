@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/container/flat_set.hpp>
 
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
@@ -89,7 +90,7 @@ class IGraphImpl {
 public: /* Types: */
 
     typedef boost::container::flat_set<VMVReg*> Neighbours;
-    typedef boost::unordered::unordered_map<VMVReg*, Neighbours> Type;
+    typedef std::map<VMVReg*, Neighbours> Type;
     typedef Type::value_type value_type;
     typedef Type::iterator Iterator;
     typedef Type::const_iterator ConstIterator;
@@ -99,7 +100,7 @@ public: /* Types: */
     typedef std::pair<NConstIterator, NConstIterator> NConstRange;
 
     typedef std::map<VMVReg*, unsigned> ColorMap;
-    typedef std::set<unsigned> ColorSet;
+    typedef boost::container::flat_set<unsigned> ColorSet;
     typedef std::map<VMVReg*, ColorSet> ColorGraph;
 
 private:
