@@ -11,6 +11,7 @@
 #define SECREC_LIVE_VARIABLES_H
 
 #include "../dataflowanalysis.h"
+#include <boost/container/flat_set.hpp>
 
 namespace SecreC {
 
@@ -25,7 +26,7 @@ namespace SecreC {
 class LiveVariables : public BackwardDataFlowAnalysis {
 public: /* Types: */
 
-    typedef std::set<const Symbol* > Symbols;
+    typedef boost::container::flat_set<const Symbol* > Symbols;
     typedef std::map<const Block*, Symbols> BSM;
 
 public: /* Methods: */

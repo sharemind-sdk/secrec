@@ -143,6 +143,16 @@ private:
     unsigned m_count;
 };
 
+inline void operator += (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
+    out.insert(arg.begin(),arg.end());
+}
+
+inline void operator -= (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
+    BOOST_FOREACH (const Symbol* sym, arg) {
+        out.erase(sym);
+    }
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
