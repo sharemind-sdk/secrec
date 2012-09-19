@@ -26,7 +26,7 @@ void releaseAfter (const Imop* imop, Symbol* sym) {
 }
 
 bool isDead (const LiveVariables::Symbols& liveness, const Symbol* sym) {
-    return liveness.find (sym) == liveness.end ();
+    return liveness.count (sym) == 0;
 }
 
 }  // namespace anonymous

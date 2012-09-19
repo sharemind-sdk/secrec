@@ -35,7 +35,7 @@ void eliminateDeadVariables (ICode& code) {
         changed = false;
         runner.run(program);
         deadInstructions.clear();
-        FOREACH_BLOCK (bi, code.program ()) {
+        FOREACH_BLOCK (bi, program) {
             const Block& block = *bi;
             LiveVariables::Symbols live = lva.liveOnExit (block);
             BOOST_REVERSE_FOREACH (const Imop& imop, block) {
