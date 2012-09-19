@@ -137,7 +137,7 @@ private:
         return it->second;
     }
 
-    std::set<const Symbol *> m_live;
+    LiveVariables::Symbols m_live;
     std::set<std::pair<unsigned, unsigned> > m_edges;
     std::map<const Symbol *, unsigned > m_numbers;
     unsigned m_count;
@@ -155,8 +155,12 @@ void LiveVariables::updateBackwards(const SecreC::Imop & imop, Symbols & live) {
 }
 
 void LiveVariables::start(const Program & pr) {
+    // we need to make sure to allocate all ins and outs
     FOREACH_BLOCK (bi, pr) {
-        CollectGenKill collector(m_gen[&*bi], m_kill[&*bi]);
+        const Block& block = *bi;
+        m_ins[&block];
+        m_outs[&block];
+        CollectGenKill collector (m_gen[&block], m_kill[&block]);
         BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
             visitImop(imop, collector);
         }

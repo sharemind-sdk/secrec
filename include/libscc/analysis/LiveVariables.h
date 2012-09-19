@@ -38,6 +38,7 @@ public: /* Methods: */
      * @return the abstract values
      */
     const Symbols& liveOnExit (const Block& block) const {
+        assert (m_outs.find(&block) != m_outs.end());
         return m_outs.find (&block)->second;
     }
 
