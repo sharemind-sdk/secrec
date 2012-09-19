@@ -1175,7 +1175,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     return OK;
 }
 
-void TreeNodeExprQualified::instantiateDataType(Context & cxt, SecrecDataType dType) {
+void TreeNodeExprQualified::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
     resetDataType(cxt, dType);
     expression()->instantiateDataType(cxt, dType);
 }

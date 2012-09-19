@@ -196,27 +196,17 @@ public: /* Methods: */
     inline bool hasParent() const { return m_parent != 0; }
     inline SecrecTreeNodeType type() const { return m_type; }
     inline ChildrenList &children() { return m_children; }
-    inline const ChildrenList &children() const {
-        return m_children;
-    }
+    inline const ChildrenList &children() const { return m_children; }
     inline const Location & location() const { return m_location; }
 
     void appendChild(TreeNode *child);
     void prependChild(TreeNode *child);
     void setLocation(const Location & location);
 
-    ChildrenListIterator begin () {
-        return children ().begin ();
-    }
-    ChildrenListIterator end () {
-        return children ().end ();
-    }
-    ChildrenListConstIterator begin () const {
-        return children ().begin ();
-    }
-    ChildrenListConstIterator end () const {
-        return children ().end ();
-    }
+    ChildrenListIterator begin () { return children ().begin (); }
+    ChildrenListIterator end () { return children ().end (); }
+    ChildrenListConstIterator begin () const { return children ().begin (); }
+    ChildrenListConstIterator end () const { return children ().end (); }
 
     std::string toString(unsigned indentation = 2,
                          unsigned startIndent = 0) const;
@@ -509,10 +499,8 @@ protected: /* Methods: */
 
     virtual TreeNode* cloneV () const = 0;
 
-    virtual void instantiateDataTypeV (Context& cxt, SecrecDataType dType) {
-        (void) cxt;
-        (void) dType;
-        assert (false && "ICE!");
+    virtual void instantiateDataTypeV (Context&, SecrecDataType) {
+        assert ("ICE! data types should not be instantiated on given tree node type");
     }
 
     void setResultType(SecreC::Type *type);
@@ -1181,7 +1169,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual void instantiateDataType (Context &cxt, SecrecDataType dType);
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprQualified (m_location);
