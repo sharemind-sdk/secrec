@@ -190,6 +190,9 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         case Imop::LT    : name = "tlt"; break;
         case Imop::GE    : name = "tge"; break;
         case Imop::GT    : name = "tgt"; break;
+        case Imop::BOR   : name = "btor"; break;
+        case Imop::XOR   : name = "btxor"; break;
+        case Imop::BAND  : name = "btand"; break;
         default:
             assert (false && "Not an arithmetic instruction!");
         }
