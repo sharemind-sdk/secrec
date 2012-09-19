@@ -174,11 +174,7 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
     return i;
 }
 
-Imop::~Imop() {
-    BOOST_FOREACH (Symbol*& arg, m_args) {
-        arg = 0;
-    }
-}
+Imop::~Imop() { }
 
 bool Imop::isJump () const {
     return getImopInfoBits (m_type).isJump;
