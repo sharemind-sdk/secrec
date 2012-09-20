@@ -49,7 +49,7 @@ std::ostream& operator << (std::ostream& os, const VMInstruction& instr) {
             os << instr.m_strings[i];
         }
         else {
-            os << instr.m_operands[i]->toString ();
+            os << *instr.m_operands[i];
         }
     }
 
