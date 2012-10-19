@@ -954,9 +954,17 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     if (imop.type () == Imop::PUSHREF) {
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
         assert (! arg->isConstant ());
+
+        if (arg->isArray() || isString(arg)) {
+            block.push_new ()  << "pushcref mem" << find (arg);
+            return;
+        }
+
         block.push_new ()
-            << ((arg->isArray () || isString (arg)) ? "pushref mem" : "pushref")
-            << find (arg);
+            << "pushrefpart"
+            << find (arg)
+            << "imm" << m_st.getImm(0)
+            << sizeInBytes(representationType(arg->secrecType()));
         return;
     }
 
@@ -967,9 +975,17 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
             return;
         }
 
+        if (arg->isArray()) {
+            block.push_new ()  << "pushcref mem" << find (arg);
+            return;
+        }
+
+        // scalars
         block.push_new ()
-            << (arg->isArray () ? "pushcref mem" : "pushcref")
-            << find (arg);
+            << "pushcrefpart"
+            << find (arg)
+            << "imm" << m_st.getImm(0)
+            << sizeInBytes(representationType(arg->secrecType()));
         return;
     }
 }
@@ -981,7 +997,8 @@ void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgComment(VMBlock & block, const Imop & imop) {
     assert(dynamic_cast<const ConstantString*>(imop.arg1()) != 0);
-    block.push_new() << "#" << static_cast<const ConstantString*>(imop.arg1())->value().c_str();
+    block.push_new() << "#" <<
+        VMInstruction::str (static_cast<const ConstantString*>(imop.arg1())->value());
 }
 
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
