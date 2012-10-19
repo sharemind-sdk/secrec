@@ -11,7 +11,7 @@
 #define SECREC_LIVE_VARIABLES_H
 
 #include "../dataflowanalysis.h"
-#include <boost/container/flat_set.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 
 namespace SecreC {
 

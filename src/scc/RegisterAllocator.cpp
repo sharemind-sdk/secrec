@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <boost/container/flat_set.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
