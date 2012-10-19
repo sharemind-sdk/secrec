@@ -83,20 +83,6 @@
       return out;
   }
 
-  struct TreeNode * ensure_rValue(struct TreeNode * node)
-  {
-      struct TreeNode * t = 0;
-
-      if (treenode_type(node) == NODE_IDENTIFIER) {
-          const YYLTYPE loc = treenode_location(node);
-          t = treenode_init(NODE_EXPR_RVARIABLE, &loc);
-          treenode_appendChild(t, treenode_childAt(node, 0));
-          return t;
-      } else {
-          return node;
-      }
-  }
-
   struct TreeNode * treenode_init_compound (struct TreeNode * stmts, YYLTYPE * loc)
   {
         struct TreeNode * out = treenode_init (NODE_STMT_COMPOUND, loc);
@@ -372,7 +358,7 @@ variable_initialization
      $$ = treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
-     treenode_appendChild($$, ensure_rValue ($4));
+     treenode_appendChild($$, $4);
    }
  ;
 
@@ -673,7 +659,7 @@ statement
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
  | RETURN ';'
    {
@@ -702,14 +688,14 @@ if_statement
  : IF '(' expression ')' statement ELSE statement
    {
      $$ = treenode_init(NODE_STMT_IF, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
      treenode_appendChild($$, $7);
    }
  | IF '(' expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_IF, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
  ;
@@ -725,9 +711,9 @@ for_statement
            maybe_expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_FOR, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
-     treenode_appendChild($$, ensure_rValue($5));
-     treenode_appendChild($$, ensure_rValue($7));
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+     treenode_appendChild($$, $7);
      treenode_appendChild($$, $9);
    }
  ;
@@ -741,7 +727,7 @@ while_statement
  : WHILE '(' expression ')' statement
    {
      $$ = treenode_init(NODE_STMT_WHILE, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
  ;
@@ -759,7 +745,7 @@ dowhile_statement
    {
      $$ = treenode_init(NODE_STMT_DOWHILE, &@$);
      treenode_appendChild($$, $2);
-     treenode_appendChild($$, ensure_rValue($5));
+     treenode_appendChild($$, $5);
    }
  ;
 
@@ -767,7 +753,7 @@ assert_statement
  : ASSERT '(' expression ')' ';'
    {
      $$ = treenode_init(NODE_STMT_ASSERT, &@$);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  ;
 
@@ -796,7 +782,7 @@ syscall_parameters
   | syscall_parameter
     {
       $$ = treenode_init(NODE_INTERNAL_USE, &@$);
-      treenode_appendChild($$, ensure_rValue($1));
+      treenode_appendChild($$, $1);
     }
   ;
 
@@ -804,17 +790,21 @@ syscall_parameter
   : expression
     {
       $$ = treenode_init(NODE_PUSH, &@$);
-      treenode_appendChild($$, ensure_rValue($1));
+      treenode_appendChild($$, $1);
     }
   | REF identifier
     {
+      const struct YYLTYPE loc = treenode_location ($2);
+      TreeNode * var = treenode_init(NODE_EXPR_RVARIABLE, &loc);
+      treenode_appendChild(var, $2);
       $$ = treenode_init(NODE_PUSHREF, &@$);
-      treenode_appendChild($$, ensure_rValue($2));
+      treenode_appendChild($$, var);
+
     }
   | CREF expression
     {
       $$ = treenode_init(NODE_PUSHCREF, &@$);
-      treenode_appendChild($$, ensure_rValue($2));
+      treenode_appendChild($$, $2);
     }
   ;
 
@@ -852,13 +842,13 @@ index
  : maybe_expression ':' maybe_expression
    {
      $$ = treenode_init(NODE_INDEX_SLICE, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | expression
    {
      $$ = treenode_init(NODE_INDEX_INT, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, $1);
    }
  ;
 
@@ -889,55 +879,55 @@ assignment_expression /* WARNING: RIGHT RECURSION */
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue MUL_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MUL, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue DIV_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_DIV, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue MOD_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_MOD, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue ADD_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_ADD, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue SUB_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_SUB, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue AND_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_AND, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue OR_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_OR, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | lvalue XOR_ASSIGN assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ASSIGN_XOR, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $3);
    }
  | qualified_expression
  ;
@@ -970,7 +960,7 @@ conditional_expression
  : logical_or_expression '?' expression ':' expression
    {
      $$ = treenode_init(NODE_EXPR_TERNIF, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
@@ -981,8 +971,8 @@ logical_or_expression
  : logical_or_expression LOR_OP logical_and_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LOR, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | logical_and_expression
  ;
@@ -991,8 +981,8 @@ logical_and_expression
  : logical_and_expression LAND_OP bitwise_or_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LAND, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | bitwise_or_expression
  ;
@@ -1001,8 +991,8 @@ bitwise_or_expression
  : bitwise_or_expression '|' bitwise_xor_expression
    {
      $$ = treenode_init(NODE_EXPR_BITWISE_OR, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | bitwise_xor_expression
  ;
@@ -1011,8 +1001,8 @@ bitwise_xor_expression
  : bitwise_xor_expression '^' bitwise_and_expression
    {
      $$ = treenode_init(NODE_EXPR_BITWISE_XOR, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | bitwise_and_expression
  ;
@@ -1021,8 +1011,8 @@ bitwise_and_expression
  : bitwise_and_expression '&' equality_expression
    {
      $$ = treenode_init(NODE_EXPR_BITWISE_AND, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | equality_expression
  ;
@@ -1031,14 +1021,14 @@ equality_expression
  : equality_expression EQ_OP relational_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_EQ, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | equality_expression NE_OP relational_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_NE, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | relational_expression
  ;
@@ -1047,26 +1037,26 @@ relational_expression
  : relational_expression LE_OP additive_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LE, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | relational_expression GE_OP additive_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_GE, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | relational_expression '<' additive_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LT, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | relational_expression '>' additive_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_GT, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | additive_expression
  ;
@@ -1075,14 +1065,14 @@ additive_expression
  : additive_expression '+' multiplicative_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_ADD, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | additive_expression '-' multiplicative_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_SUB, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | multiplicative_expression
  ;
@@ -1091,20 +1081,20 @@ multiplicative_expression
  : multiplicative_expression '*' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_MUL, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | multiplicative_expression '/' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_DIV, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | multiplicative_expression '%' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_MOD, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
-     treenode_appendChild($$, ensure_rValue($3));
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | cast_expression
  ;
@@ -1123,12 +1113,12 @@ prefix_op
  : INC_OP lvalue
    {
      $$ = treenode_init(NODE_EXPR_PREFIX_INC, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
  | DEC_OP lvalue
    {
      $$ = treenode_init(NODE_EXPR_PREFIX_DEC, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
  | postfix_op
 
@@ -1136,12 +1126,12 @@ postfix_op
  : lvalue INC_OP
    {
      $$ = treenode_init(NODE_EXPR_POSTFIX_INC, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, $1);
    }
  | lvalue DEC_OP
    {
      $$ = treenode_init(NODE_EXPR_POSTFIX_DEC, &@$);
-     treenode_appendChild($$, ensure_rValue($1));
+     treenode_appendChild($$, $1);
    }
  | unary_expression
 
@@ -1149,17 +1139,17 @@ unary_expression
  : '-' cast_expression %prec UMINUS
    {
      $$ = treenode_init(NODE_EXPR_UMINUS, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
  | '!' cast_expression %prec UNEG
    {
      $$ = treenode_init(NODE_EXPR_UNEG, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
   | '~' cast_expression %prec UINV
    {
      $$ = treenode_init(NODE_EXPR_UINV, &@$);
-     treenode_appendChild($$, ensure_rValue($2));
+     treenode_appendChild($$, $2);
    }
  | postfix_expression
  ;
