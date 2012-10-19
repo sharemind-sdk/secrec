@@ -97,50 +97,31 @@
       }
   }
 
-  struct TreeNode * add_vardecl(struct TreeNode * node1, struct TreeNode * node2, YYLTYPE * loc)
+  struct TreeNode * treenode_init_compound (struct TreeNode * stmts, YYLTYPE * loc)
   {
-      struct TreeNode * ret;
-      if (treenode_type(node2) == NODE_STMT_COMPOUND) {
-          if (treenode_numChildren(node2) > 0) {
-              ret = node2;
-              treenode_prependChild(ret, node1);
-              treenode_setLocation(ret, loc);
-          } else {
-              treenode_free(node2);
-              ret = treenode_init(NODE_STMT_COMPOUND, loc);
-              treenode_appendChild(ret, node1);
-          }
-      } else {
-          ret = treenode_init(NODE_STMT_COMPOUND, loc);
-          treenode_appendChild(ret, node1);
-          treenode_appendChild(ret, node2);
-      }
-      return ret;
+        struct TreeNode * out = treenode_init (NODE_STMT_COMPOUND, loc);
+        struct TreeNode * cur = stmts;
+
+        while (treenode_numChildren (cur) == 1) {
+            struct TreeNode * next = treenode_childAt (cur, 0);
+            if (treenode_type (next) != NODE_STMT_COMPOUND && treenode_type (next) != NODE_INTERNAL_USE) {
+                break;
+            }
+
+            cur = next;
+        }
+
+        treenode_moveChildren (cur, out);
+        treenode_free (cur);
+        return out;
   }
 
-  struct TreeNode * add_stmt(struct TreeNode * node1, struct TreeNode * node2, YYLTYPE * loc)
+  void treenode_add_stmt (struct TreeNode * stmts, struct TreeNode * node)
   {
-      struct TreeNode * ret;
-      if (treenode_type(node2) == NODE_STMT_COMPOUND) {
-          if (treenode_numChildren(node2) > 0) {
-              ret = node2;
-              treenode_prependChild(ret, node1);
-              treenode_setLocation(ret, loc);
-          } else {
-              treenode_free(node2);
-              ret = node1;
-          }
-      } else {
-          if (treenode_type(node1) == NODE_STMT_COMPOUND && treenode_numChildren(node1) <= 0) {
-              treenode_free(node1);
-              ret = node2;
-          } else {
-              ret = treenode_init(NODE_STMT_COMPOUND, loc);
-              treenode_appendChild(ret, node1);
-              treenode_appendChild(ret, node2);
-          }
-      }
-      return ret;
+      if (treenode_type(node) == NODE_STMT_COMPOUND && treenode_numChildren(node) <= 0)
+          treenode_free(node);
+      else
+          treenode_appendChild(stmts, node);
   }
 
 %}
@@ -375,26 +356,20 @@ domain_declaration
  ;
 
 maybe_dimensions
- : /* nothing */
-   {
-     $$ = (struct TreeNode *) treenode_init(NODE_DIMENSIONS, &@$);
-   }
+ : /* nothing */ { $$ = treenode_init(NODE_DIMENSIONS, &@$); }
  | dimensions
-   {
-     $$ = $1;
-   }
  ;
 
 variable_initialization
  : identifier maybe_dimensions
    {
-     $$ = (struct TreeNode *) treenode_init (NODE_VAR_INIT, &@$);
+     $$ = treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
  | identifier maybe_dimensions '=' expression
    {
-     $$ = (struct TreeNode *) treenode_init (NODE_VAR_INIT, &@$);
+     $$ = treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, ensure_rValue ($4));
@@ -475,43 +450,43 @@ dimension_list
 type_specifier
  : sectype_specifier datatype_specifier dimtype_specifier
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     $$ = treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $3);
    }
  | sectype_specifier datatype_specifier
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
+     $$ = treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_dimTypeF(0, &@$));
+     treenode_appendChild($$, treenode_init_dimTypeF(0, &@$));
    }
  | datatype_specifier dimtype_specifier
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_publicSecTypeF (&@$));
+     $$ = treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, treenode_init_publicSecTypeF (&@$));
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
  | datatype_specifier
    {
-     $$ = (struct TreeNode *) treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_publicSecTypeF (&@$));
+     $$ = treenode_init(NODE_TYPETYPE, &@$);
+     treenode_appendChild($$, treenode_init_publicSecTypeF (&@$));
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, (struct TreeNode *) treenode_init_dimTypeF(0, &@$));
+     treenode_appendChild($$, treenode_init_dimTypeF(0, &@$));
    }
  ;
 
 sectype_specifier
  : PUBLIC
    {
-     $$ = (struct TreeNode *) treenode_init_publicSecTypeF (&@$);
+     $$ = treenode_init_publicSecTypeF (&@$);
    }
  | identifier
    {
-     $$ = (struct TreeNode *) treenode_init_privateSecTypeF(&@$);
-     treenode_appendChild($$, (struct TreeNode *) $1);
+     $$ = treenode_init_privateSecTypeF(&@$);
+     treenode_appendChild($$, $1);
    }
  ;
 
@@ -541,7 +516,7 @@ datatype_specifier
 dimtype_specifier
  : '[' '[' int_literal_helper ']' ']'
    {
-      $$ = (struct TreeNode *) treenode_init_dimTypeF ($3, &@$);
+      $$ = treenode_init_dimTypeF ($3, &@$);
    }
  ;
 
@@ -552,7 +527,7 @@ dimtype_specifier
 template_declaration
  : TEMPLATE '<' template_quantifiers '>' procedure_definition
    {
-     $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_DECL, &@$);
+     $$ = treenode_init(NODE_TEMPLATE_DECL, &@$);
      treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
@@ -566,7 +541,7 @@ template_quantifiers
    }
  | template_quantifier
    {
-     $$ = (struct TreeNode*) treenode_init(NODE_INTERNAL_USE, &@$);
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
    }
  ;
@@ -574,13 +549,13 @@ template_quantifiers
 template_quantifier
  : DOMAIN identifier ':' identifier
   {
-    $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANT, &@$);
     treenode_appendChild($$, $2);
     treenode_appendChild($$, $4);
   }
  | DOMAIN identifier
   {
-    $$ = (struct TreeNode*) treenode_init(NODE_TEMPLATE_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANT, &@$);
     treenode_appendChild($$, $2);
   }
  ;
@@ -590,10 +565,7 @@ template_quantifier
 *******************************************************************************/
 
 return_type_specifier
- : VOID
-   {
-     $$ = (struct TreeNode *) treenode_init(NODE_TYPEVOID, &@$);
-   }
+ : VOID { $$ = treenode_init(NODE_TYPEVOID, &@$); }
  | type_specifier
  ;
 
@@ -676,20 +648,16 @@ operator_definition
 
 compound_statement
  : '{' '}' { $$ = treenode_init(NODE_STMT_COMPOUND, &@$); }
- | '{' statement_list '}' { $$ = $2; treenode_setLocation($$, &@$); }
+ | '{' statement_list '}' { $$ = treenode_init_compound ($2, &@$); }
  ;
 
 statement_list
- : variable_declaration ';' statement_list
-   {
-     $$ = add_vardecl($1, $3, &@$);
-   }
- | statement statement_list
-   {
-     $$ = add_stmt($1, $2, &@$);
-   }
- | variable_declaration ';'
+ : statement_list statement { $$ = $1; treenode_add_stmt ($$, $2); treenode_setLocation($$, &@$); }
  | statement
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+   }
  ;
 
 statement
@@ -701,6 +669,7 @@ statement
  | assert_statement
  | print_statement
  | syscall_statement
+ | variable_declaration ';'
  | RETURN expression ';'
    {
      $$ = treenode_init(NODE_STMT_RETURN, &@$);

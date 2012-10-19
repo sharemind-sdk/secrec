@@ -41,10 +41,11 @@ using namespace SecreC;
 #define SIMPLE(x) "void myprocedure() {" x "}"
 #define SIMPLE_PARSE(x) XB3("MODULE", "PROGRAM", "PROCDEF",\
         XID("myprocedure") XTYPEVOID x)
+#define SIMPLE_PARSE_STMTS(x) SIMPLE_PARSE(XSTMTS(x))
 
 // Macros for testing expressions as a statement:
 #define SIMPLE_E(x) SIMPLE(x ";")
-#define SIMPLE_PARSE_E(x) SIMPLE_PARSE(XB("STMT_EXPR",x))
+#define SIMPLE_PARSE_E(x) SIMPLE_PARSE_STMTS(XB("STMT_EXPR",x))
 
 // Macros to test binary operators:
 #define SIMPLE_BINARY_DETAIL(a,b,c) SIMPLE_E(a b c)
@@ -199,28 +200,28 @@ void TestParse::testStmtCompound_data() {
 
     QTest::newRow("compoundOne")
         << QString(SIMPLE("{1;}"))
-        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(1))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(1))));
 
     QTest::newRow("compoundTwo")
         << QString(SIMPLE("true;false;"))
-        << QString(SIMPLE_PARSE(XSTMTS(
+        << QString(SIMPLE_PARSE_STMTS(
                                    XB("STMT_EXPR", XBOOL(true))
-                                   XB("STMT_EXPR", XBOOL(false)))));
+                                   XB("STMT_EXPR", XBOOL(false))));
 
     QTest::newRow("compoundThree")
         << QString(SIMPLE("1;2;3;"))
-        << QString(SIMPLE_PARSE(XSTMTS(
+        << QString(SIMPLE_PARSE_STMTS(
                                    XB("STMT_EXPR", XINT(1))
                                    XB("STMT_EXPR", XINT(2))
-                                   XB("STMT_EXPR", XINT(3)))));
+                                   XB("STMT_EXPR", XINT(3))));
 
     QTest::newRow("compoundDecl")
         << QString(SIMPLE("1;{public int a;;}3;"))
-        << QString(SIMPLE_PARSE(XSTMTS(
+        << QString(SIMPLE_PARSE_STMTS(
                                    XB("STMT_EXPR", XINT(1))
                                    XB("STMT_COMPOUND",
                                       XDECL(XSIMPLEPTYPE("int64", "0"), XID("a") NODIMENSIONS))
-                                   XB("STMT_EXPR", XINT(3)))));
+                                   XB("STMT_EXPR", XINT(3))));
 }
 
 void TestParse::testStmtIf_data() {
@@ -228,11 +229,11 @@ void TestParse::testStmtIf_data() {
 
     QTest::newRow("ifOnly")
         << QString(SIMPLE("if(1);"))
-        << QString(SIMPLE_PARSE(XB("STMT_IF", XINT(1) XSCE)));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_IF", XINT(1) XSCE)));
 
     QTest::newRow("ifElse")
         << QString(SIMPLE("if(1);else;"))
-        << QString(SIMPLE_PARSE(XB("STMT_IF", XINT(1) XSCE XSCE)));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_IF", XINT(1) XSCE XSCE)));
 }
 
 void TestParse::testStmtFor_data() {
@@ -240,11 +241,11 @@ void TestParse::testStmtFor_data() {
 
     QTest::newRow("forFull")
         << QString(SIMPLE("for(1;2;3);"))
-        << QString(SIMPLE_PARSE(XB("STMT_FOR", XINT(1) XINT(2) XINT(3) XSCE)));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_FOR", XINT(1) XINT(2) XINT(3) XSCE)));
 
     QTest::newRow("forEmpty")
         << QString(SIMPLE("for(;;);"))
-        << QString(SIMPLE_PARSE(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
                                                "<EXPR_NONE/>" XSCE)));
 }
 
@@ -253,7 +254,7 @@ void TestParse::testStmtWhile_data() {
 
     QTest::newRow("whileHello")
         << QString(SIMPLE("while(\"hello\");"))
-        << QString(SIMPLE_PARSE(XB("STMT_WHILE", XSTR("hello") XSCE)));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_WHILE", XSTR("hello") XSCE)));
 }
 
 void TestParse::testStmtDoWhile_data() {
@@ -261,7 +262,7 @@ void TestParse::testStmtDoWhile_data() {
 
     QTest::newRow("doWhileHello")
         << QString(SIMPLE("do; while(\"hello\");"))
-        << QString(SIMPLE_PARSE(XB("STMT_DOWHILE", XSCE XSTR("hello"))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_DOWHILE", XSCE XSTR("hello"))));
 }
 
 void TestParse::testStmtOther_data() {
@@ -269,38 +270,38 @@ void TestParse::testStmtOther_data() {
 
     QTest::newRow("returnExpression")
         << QString(SIMPLE("return 42;"))
-        << QString(SIMPLE_PARSE(XB("STMT_RETURN", XINT(42))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_RETURN", XINT(42))));
 
     QTest::newRow("return")
         << QString(SIMPLE("return;"))
-        << QString(SIMPLE_PARSE("<STMT_RETURN/>"));
+        << QString(SIMPLE_PARSE_STMTS("<STMT_RETURN/>"));
 
     QTest::newRow("continue")
         << QString(SIMPLE("for(;;) continue;"))
-        << QString(SIMPLE_PARSE(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
                                    "<EXPR_NONE/><STMT_CONTINUE/>")));
 
     QTest::newRow("break")
         << QString(SIMPLE("for(;;) break;"))
-        << QString(SIMPLE_PARSE(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_FOR", "<EXPR_NONE/><EXPR_NONE/>"
                                    "<EXPR_NONE/><STMT_BREAK/>")));
 
     QTest::newRow("statementExpression")
         << QString(SIMPLE("42;"))
-        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))));
 
     QTest::newRow("emptyExpressionEnd")
         << QString(SIMPLE("42;;"))
-        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))));
 
     QTest::newRow("emptyExpressionMiddle")
         << QString(SIMPLE("42;;42;"))
-        << QString(SIMPLE_PARSE(XSTMTS(XB("STMT_EXPR", XINT(42))
-                                       XB("STMT_EXPR", XINT(42)))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))
+                                       XB("STMT_EXPR", XINT(42))));
 
     QTest::newRow("emptyExpressionBegin")
         << QString(SIMPLE(";42;"))
-        << QString(SIMPLE_PARSE(XB("STMT_EXPR", XINT(42))));
+        << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))));
 }
 
 void TestParse::testExprPrimary_data() {
@@ -673,17 +674,17 @@ void TestParse::testInlineDecls_data() {
 
     QTest::newRow("simpleInlineDeclAfter")
         << QString(SIMPLE("f(); { public int i; f(); }"))
-        << QString(SIMPLE_PARSE(XSTMTS(
+        << QString(SIMPLE_PARSE_STMTS(
                       XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
-                      XDECL(XSIMPLEPTYPE("int64", "0"), XID("i") NODIMENSIONS)
-                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
-                  )));
+                      XSTMTS(XDECL(XSIMPLEPTYPE("int64", "0"), XID("i") NODIMENSIONS)
+                      XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f")))
+                  ));
 
     QTest::newRow("simpleInlineDeclLonelyAfter")
         << QString(SIMPLE("f(); { public int i;; }"))
         << QString(SIMPLE_PARSE(XSTMTS(
                       XB2("STMT_EXPR", "EXPR_PROCCALL", XID("f"))
-                      XDECL(XSIMPLEPTYPE("int64", "0"), XID("i") NODIMENSIONS)
+                      XSTMTS(XDECL(XSIMPLEPTYPE("int64", "0"), XID("i") NODIMENSIONS))
                   )));
 
     QTest::newRow("simpleInlineDeclMiddle")
