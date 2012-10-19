@@ -1121,6 +1121,7 @@ prefix_op
      treenode_appendChild($$, $2);
    }
  | postfix_op
+ ;
 
 postfix_op
  : lvalue INC_OP
@@ -1134,6 +1135,7 @@ postfix_op
      treenode_appendChild($$, $1);
    }
  | unary_expression
+ ;
 
 unary_expression
  : '-' cast_expression %prec UMINUS
