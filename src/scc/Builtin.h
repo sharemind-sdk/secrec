@@ -30,7 +30,6 @@ class StringLiterals;
 
 class BuiltinFunction {
 public: /* Methods: */
-    BuiltinFunction () { }
     virtual ~BuiltinFunction () { }
     virtual void generate (VMFunction& function, VMSymbolTable& st) = 0;
     virtual BuiltinFunction* clone () const = 0;
@@ -72,7 +71,6 @@ private: /* Fields: */
 class BuiltinAlloc : public BuiltinFunction {
 public: /* Methods: */
     BuiltinAlloc (unsigned size) : m_size (size) { }
-    ~BuiltinAlloc () { }
     
     void generate (VMFunction& function, VMSymbolTable& st);
 
@@ -92,7 +90,6 @@ private: /* Fields: */
 class BuiltinVArith : public BuiltinFunction {
 public: /* Methods: */
     BuiltinVArith (const SecreC::Imop* imop) : m_imop (imop) { }
-    ~BuiltinVArith () { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 
@@ -115,8 +112,6 @@ public: /* Methods: */
         , m_src (src)
     { }
 
-    ~BuiltinVCast () { }
-
     void generate (VMFunction& function, VMSymbolTable& st);
 
     BuiltinFunction* clone () const {
@@ -138,8 +133,6 @@ public: /* Methods: */
         : m_src (src)
     { }
 
-    ~BuiltinVBoolCast () { }
-
     void generate (VMFunction& function, VMSymbolTable& st);
 
     BuiltinFunction* clone () const {
@@ -156,8 +149,6 @@ private: /* Fields: */
 
 class BuiltinStrAppend : public BuiltinFunction {
 public: /* Methods: */
-    BuiltinStrAppend () { }
-    ~BuiltinStrAppend () { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 
@@ -172,8 +163,6 @@ public: /* Methods: */
 
 class BuiltinStrDup : public BuiltinFunction  {
 public: /* Methods: */
-    BuiltinStrDup () {}
-    ~BuiltinStrDup () { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 
@@ -192,8 +181,6 @@ public: /* Methods: */
         : m_strLit (strLit)
         , m_base (base)
     { }
-
-    ~BuiltinNumericToString () { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 
@@ -216,8 +203,6 @@ public: /* Methods: */
         : m_strLit (strLit)
     { }
 
-    ~BuiltinBoolToString () { }
-
     void generate (VMFunction& function, VMSymbolTable& st);
 
     BuiltinFunction* clone () const {
@@ -234,10 +219,6 @@ private: /* Fields: */
 
 class BuiltinStringCmp : public BuiltinFunction  {
 public: /* Methods: */
-
-    BuiltinStringCmp () { }
-
-    ~BuiltinStringCmp () { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 

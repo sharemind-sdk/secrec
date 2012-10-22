@@ -96,7 +96,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     CGStmtResult result;
     std::ostringstream os;
-    os << "Start of procedure: " << id->value();
+    os << "Start of procedure: " << def->printableSignature();
     result.setFirstImop(pushComment(os.str()));
     os.str("");
 
@@ -186,7 +186,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     assert(result.nextList().empty());
 
-    os << "End of procedure: " << id->value();
+    os << "End of procedure: " << def->printableSignature();
     pushComment(os.str());
     return result;
 }

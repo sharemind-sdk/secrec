@@ -21,9 +21,9 @@ namespace SecreCC {
 
 namespace /* anonymous */ {
 
-template <typename T, typename V >
-void deleteValues (typename std::map<T, V* >& kvs) {
-    typename std::map<T, V* >::iterator i;
+template <typename MapContainer >
+void deleteValues (MapContainer& kvs) {
+    typename MapContainer::iterator i;
     for (i = kvs.begin (); i != kvs.end (); ++ i) {
         delete i->second;
     }
@@ -38,27 +38,36 @@ void deleteValues (typename std::map<T, V* >& kvs) {
 *******************************************************************************/
 
 class VMSTImpl {
-public:
+public: /* Types: */
 
-    VMSTImpl () { }
+    typedef std::map<std::string, VMLabel* > LabelMap;
+    typedef std::map<uint64_t, VMImm* > ImmMap;
+    typedef std::map<unsigned, VMStack* > LocalMap;
+    typedef std::map<unsigned, VMReg* > GlobalMap;
+    typedef std::set<VMVReg* > VRegSet;
+    typedef std::map<const SecreC::Symbol*, VMValue*> SymbolMap;
+
+public: /* Methods: */
+
     ~VMSTImpl () {
         deleteValues (m_globals);
         deleteValues (m_locals);
         deleteValues (m_imms);
         deleteValues (m_labels);       
-        for (std::set<VMVReg*>::iterator
-             i = m_vregs.begin (); i != m_vregs.end (); ++ i) {
+        for (VRegSet::iterator i = m_vregs.begin (); i != m_vregs.end (); ++ i) {
             VMVReg* vreg = *i;
             delete vreg;
         }
     }
 
-    std::map<unsigned, VMReg* >                m_globals;
-    std::map<unsigned, VMStack* >              m_locals;
-    std::map<uint64_t, VMImm* >                m_imms;
-    std::map<std::string, VMLabel* >           m_labels;
-    std::set<VMVReg* >                         m_vregs;
-    std::map<const SecreC::Symbol*, VMValue*>  m_mapping;
+public: /* Fields: */
+
+    GlobalMap   m_globals;
+    LocalMap    m_locals;
+    ImmMap      m_imms;
+    LabelMap    m_labels;
+    VRegSet     m_vregs;
+    SymbolMap   m_mapping;
 };
 
 /*******************************************************************************
@@ -83,7 +92,7 @@ VMVReg* VMSymbolTable::getVReg (bool isGlobal) {
 
 VMValue* VMSymbolTable::find (const SecreC::Symbol* symbol) const {
     assert (symbol != 0);
-    typedef std::map<const SecreC::Symbol*, VMValue*>  SVM;
+    typedef VMSTImpl::SymbolMap SVM;
     SVM::const_iterator i = m_impl->m_mapping.find (symbol);
     if (i == m_impl->m_mapping.end ()) {
         return 0;
@@ -95,7 +104,7 @@ VMValue* VMSymbolTable::find (const SecreC::Symbol* symbol) const {
 void VMSymbolTable::store (const SecreC::Symbol* symbol, VMValue* value) {
     assert (symbol != 0);
     assert (value != 0);
-    typedef std::map<const SecreC::Symbol*, VMValue*>  SVM;
+    typedef VMSTImpl::SymbolMap  SVM;
     SVM::iterator i = m_impl->m_mapping.find (symbol);
     if (i == m_impl->m_mapping.end ()) {
         i = m_impl->m_mapping.insert (i, std::make_pair (symbol, value));
@@ -103,7 +112,7 @@ void VMSymbolTable::store (const SecreC::Symbol* symbol, VMValue* value) {
 }
 
 VMImm* VMSymbolTable::getImm (uint64_t value) {
-    std::map<uint64_t, VMImm* >::iterator i = m_impl->m_imms.find (value);
+    VMSTImpl::ImmMap::iterator i = m_impl->m_imms.find (value);
     if (i == m_impl->m_imms.end ()) {
         i = m_impl->m_imms.insert (i, std::make_pair (value, new VMImm (value)));
     }
@@ -112,7 +121,7 @@ VMImm* VMSymbolTable::getImm (uint64_t value) {
 }
 
 VMReg* VMSymbolTable::getReg (unsigned number) {
-    std::map<unsigned, VMReg* >::iterator i = m_impl->m_globals.find (number);
+    VMSTImpl::GlobalMap::iterator i = m_impl->m_globals.find (number);
     if (i == m_impl->m_globals.end ()) {
         i = m_impl->m_globals.insert (i, std::make_pair (number, new VMReg (number)));
     }
@@ -121,7 +130,7 @@ VMReg* VMSymbolTable::getReg (unsigned number) {
 }
 
 VMStack* VMSymbolTable::getStack (unsigned number) {
-    std::map<unsigned, VMStack* >::iterator i = m_impl->m_locals.find (number);
+    VMSTImpl::LocalMap::iterator i = m_impl->m_locals.find (number);
     if (i == m_impl->m_locals.end ()) {
         i = m_impl->m_locals.insert (i, std::make_pair (number, new VMStack (number)));
     }
@@ -130,7 +139,7 @@ VMStack* VMSymbolTable::getStack (unsigned number) {
 }
 
 VMLabel* VMSymbolTable::getLabel (const std::string& name) {
-    std::map<std::string, VMLabel* >::iterator i = m_impl->m_labels.find (name);
+    VMSTImpl::LabelMap::iterator i = m_impl->m_labels.find (name);
     if (i == m_impl->m_labels.end ()) {
         i = m_impl->m_labels.insert (i, std::make_pair (name, new VMLabel (name)));
     }

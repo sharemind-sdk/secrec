@@ -51,7 +51,7 @@ void TestTreeNode::testInitBool_data() {
 void TestTreeNode::testInitInt() {
     SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitInt");
 
-    QFETCH(int, value1);
+    QFETCH(uint64_t, value1);
 
     TreeNodeExprInt n(value1, loc);
     QCOMPARE(n.type(), NODE_LITE_INT);
@@ -59,14 +59,14 @@ void TestTreeNode::testInitInt() {
 }
 
 void TestTreeNode::testInitInt_data() {
-    QTest::addColumn<int>("value1");
-    QTest::addColumn<int>("value2");
+    QTest::addColumn<uint64_t>("value1");
+    QTest::addColumn<uint64_t>("value2");
 
-    NR2(-42,-42); NR2(-42,-1); NR2(-42,0); NR2(-42,1); NR2(-42,42);
-    NR2(-1,-42);  NR2(-1,-1);  NR2(-1,0);  NR2(-1,1);  NR2(-1,42);
-    NR2(0,-42);   NR2(0,-1);   NR2(0,0);   NR2(0,1);   NR2(0,42);
-    NR2(1,-42);   NR2(1,-1);   NR2(1,0);   NR2(1,1);   NR2(1,42);
-    NR2(42,-42);  NR2(42,-1);  NR2(42,0);  NR2(42,1);  NR2(42,42);
+    NR2(-42ul,-42ul); NR2(-42ul,-1ul); NR2(-42ul,0ul); NR2(-42ul,1ul); NR2(-42ul,42ul);
+    NR2(-1ul,-42ul);  NR2(-1ul,-1ul);  NR2(-1ul,0ul);  NR2(-1ul,1ul);  NR2(-1ul,42ul);
+    NR2(0ul,-42ul);   NR2(0ul,-1ul);   NR2(0ul,0ul);   NR2(0ul,1ul);   NR2(0ul,42ul);
+    NR2(1ul,-42ul);   NR2(1ul,-1ul);   NR2(1ul,0ul);   NR2(1ul,1ul);   NR2(1ul,42ul);
+    NR2(42ul,-42ul);  NR2(42ul,-1ul);  NR2(42ul,0ul);  NR2(42ul,1ul);  NR2(42ul,42ul);
 }
 
 void TestTreeNode::testInitString() {

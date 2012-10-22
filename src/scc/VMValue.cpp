@@ -17,9 +17,8 @@ namespace SecreCC {
   VMValue
 ******************************************************************/
 
-std::ostream& operator << (std::ostream& os,
-                           const VMValue& value) {
-    os << value.toString ();
+std::ostream& operator << (std::ostream& os, const VMValue& value) {
+    value.printV (os);
     return os;
 }
 
@@ -27,54 +26,44 @@ std::ostream& operator << (std::ostream& os,
   VMImm
 ******************************************************************/
 
-std::string VMImm::toString () const {
-    std::ostringstream ss;
-    ss << "imm 0x" << std::hex << value ();
-    return ss.str ();
+void VMImm::printV (std::ostream& os) const {
+    os << "imm 0x" << std::hex << value ();
 }
 
 /******************************************************************
   VMStack
 ******************************************************************/
 
-std::string VMStack::toString () const {
-    std::ostringstream ss;
-    ss << "stack 0x" << std::hex << number ();
-    return ss.str ();
+void VMStack::printV (std::ostream& os) const {
+    os << "stack 0x" << std::hex << number ();
 }
 
 /******************************************************************
   VMReg
 ******************************************************************/
 
-std::string VMReg::toString () const {
-    std::ostringstream ss;
-    ss << "reg 0x" << std::hex << number ();
-    return ss.str ();
+void VMReg::printV (std::ostream& os) const {
+    os << "reg 0x" << std::hex << number ();
 }
 
 /******************************************************************
   VMLabel
 ******************************************************************/
 
-std::string VMLabel::toString () const {
-    std::ostringstream ss;
-    ss << "imm " << name ();
-    return ss.str ();
+void VMLabel::printV (std::ostream& os) const {
+    os << "imm " << name ();
 }
 
 /******************************************************************
   VMVreg
 ******************************************************************/
 
-std::string VMVReg::toString () const {
+void VMVReg::printV (std::ostream& os) const {
     if (m_actualReg == 0) {
-        std::ostringstream ss;
-        ss << "vreg " << this;
-        return ss.str ();
+        os << "vreg " << this;
     }
     else {
-        return m_actualReg->toString ();
+        os << *m_actualReg;
     }
 }
 

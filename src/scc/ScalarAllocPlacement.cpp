@@ -26,7 +26,7 @@ void releaseAfter (const Imop* imop, Symbol* sym) {
 }
 
 bool isDead (const LiveVariables::Symbols& liveness, const Symbol* sym) {
-    return liveness.find (sym) == liveness.end ();
+    return liveness.count (sym) == 0;
 }
 
 }  // namespace anonymous
@@ -49,7 +49,7 @@ AllocMap placePrivateScalarAllocs (SecreC::ICode& code) {
         BOOST_REVERSE_FOREACH (const Imop& imop, block) {
 
             // if symbol is dead before its use:
-            if (imop.type () != Imop::ASSIGN && imop.type () != Imop::RELEASE && imop.type () != Imop::RETURN) {
+            if (imop.type () != Imop::RELEASE && imop.type () != Imop::RETURN) {
                 BOOST_FOREACH (Symbol* sym, imop.useRange ()) {
                     if (isCandidate (sym) && isDead (live, sym)) {
                         releases[sym].insert (&imop);
@@ -62,7 +62,6 @@ AllocMap placePrivateScalarAllocs (SecreC::ICode& code) {
             // if symbol is dead before it's definition:
             switch (imop.type ()) {
             case Imop::CALL:
-            case Imop::ASSIGN:
                 break;
             default:
                 BOOST_FOREACH (Symbol* sym, imop.defRange ()) {

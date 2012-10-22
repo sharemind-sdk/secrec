@@ -16,18 +16,29 @@ namespace SecreC {
 namespace /* anonymous */ {
 
 template <class T >
-T * childAt(const TreeNode * node, unsigned i) {
+T * childAt(const TreeNode * node, size_t i) {
     assert(i < node->children().size());
     assert(dynamic_cast<T *>(node->children().at(i)) != 0);
     return static_cast<T *>(node->children().at(i));
 }
 
-TreeNodeStmt * statementAt(const TreeNode * node, unsigned i) {
+template <class T >
+T *& childPtrRefAt(TreeNode * node, size_t i) {
+    assert(i < node->children().size());
+    assert(dynamic_cast<T *>(node->children().at(i)) != 0);
+    return reinterpret_cast<T *&>(node->children().at(i));
+}
+
+TreeNodeStmt * statementAt(const TreeNode * node, size_t i) {
     return childAt<TreeNodeStmt>(node, i);
 }
 
-TreeNodeExpr * expressionAt(const TreeNode * node, unsigned i) {
+TreeNodeExpr * expressionAt(const TreeNode * node, size_t i) {
     return childAt<TreeNodeExpr>(node, i);
+}
+
+TreeNodeExpr *& expressionPtrRefAt(TreeNode * node, size_t i) {
+    return childPtrRefAt<TreeNodeExpr>(node, i);
 }
 
 } // namespace anonymous
@@ -429,6 +440,16 @@ TreeNodeExpr * TreeNodeExprBinary::rightExpression() const {
     return expressionAt(this, 1);
 }
 
+TreeNodeExpr *& TreeNodeExprBinary::leftExpressionPtrRef() {
+    assert(children().size() == 2u);
+    return expressionPtrRefAt(this, 0u);
+}
+
+TreeNodeExpr *& TreeNodeExprBinary::rightExpressionPtrRef() {
+    assert(children().size() == 2u);
+    return expressionPtrRefAt(this, 1u);
+}
+
 const char *TreeNodeExprBinary::operatorString() const {
     switch (getOperator()) {
     case SCOP_BIN_ADD:  return "+";
@@ -588,6 +609,16 @@ TreeNodeExpr* TreeNodeExprTernary::falseBranch () const {
     return expressionAt (this, 2);
 }
 
+TreeNodeExpr *& TreeNodeExprTernary::trueBranchPtrRef() {
+    assert(children().size() == 3u);
+    return expressionPtrRefAt(this, 1u);
+}
+
+TreeNodeExpr *& TreeNodeExprTernary::falseBranchPtrRef() {
+    assert(children().size() == 3u);
+    return expressionPtrRefAt(this, 2u);
+}
+
 /*******************************************************************************
   TreeNodeExprAssign
 *******************************************************************************/
@@ -614,6 +645,11 @@ TreeNodeIdentifier* TreeNodeExprAssign::identifier () const {
 TreeNodeExpr* TreeNodeExprAssign::rightHandSide () const {
     assert(children().size() == 2);
     return expressionAt (this, 1);
+}
+
+TreeNodeExpr *& TreeNodeExprAssign::rightHandSidePtrRef() {
+    assert(children().size() == 2u);
+    return expressionPtrRefAt(this, 1u);
 }
 
 /*******************************************************************************
@@ -698,6 +734,15 @@ TreeNodeExpr* TreeNodeExprCat::rightExpression () const {
     assert (children().size() == 3 ||
             children().size() == 2);
     return expressionAt (this, 1);
+}
+
+TreeNodeExpr *& TreeNodeExprCat::leftExpressionPtrRef() {
+    assert(children().size() == 3u || children().size() == 2u);
+    return expressionPtrRefAt(this, 0u);
+}
+TreeNodeExpr *& TreeNodeExprCat::rightExpressionPtrRef() {
+    assert(children().size() == 3u || children().size() == 2u);
+    return expressionPtrRefAt(this, 1u);
 }
 
 TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
@@ -911,6 +956,11 @@ TreeNodeExpr* TreeNodeVarInit::rightHandSide () const {
     return 0;
 }
 
+TreeNodeExpr *& TreeNodeVarInit::rightHandSidePtrRef() {
+    assert(children().size() > 2u && children().size() <= 3u);
+    return expressionPtrRefAt(this, 2u);
+}
+
 const std::string &TreeNodeVarInit::variableName() const {
     assert(children().size() > 0 && children().size() <= 3);
     return childAt<TreeNodeIdentifier>(this, 0)->value ();
@@ -1017,6 +1067,11 @@ TreeNodeExpr* TreeNodeStmtReturn::expression () const {
     }
 
     return 0;
+}
+
+TreeNodeExpr *& TreeNodeStmtReturn::expressionPtrRef() {
+    assert(!children().empty());
+    return expressionPtrRefAt(this, 0u);
 }
 
 /*******************************************************************************
@@ -1282,7 +1337,7 @@ TreeNode * treenode_init_bool(unsigned value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprBool(value, *loc);
 }
 
-TreeNode * treenode_init_int(int value, YYLTYPE * loc) {
+TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprInt(value, *loc);
 }
 

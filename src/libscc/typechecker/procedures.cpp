@@ -44,7 +44,7 @@ void mangleTemplateParameters (std::ostream& os,
 
 std::string mangleProcedure (const std::string& name,
                              DataTypeProcedureVoid* dt,
-                             const TemplateParams& targs)
+                             const TemplateParams& targs = TemplateParams ())
 {
     std::ostringstream os;
     os << "{proc}" << name << dt->mangle ();
@@ -92,7 +92,7 @@ findProcedures (SymbolTable* st,
                 DataTypeProcedureVoid* dt)
 {
     std::vector<SymbolProcedure* > out;
-    const std::string actualName = mangleProcedure (name, dt, TemplateParams ());
+    const std::string actualName = mangleProcedure (name, dt);
     BOOST_FOREACH (Symbol* _procSym, st->findAll (actualName)) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
         SymbolProcedure* procSym = static_cast<SymbolProcedure*>(_procSym);
@@ -500,8 +500,8 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             return E_TYPE;
         }
 
-        // Add implicit classify node if needed:
-        classifyIfNeeded (arguments[i]);
+        // Add implicit classify node if needed (NOT NEEDED):
+        // classifyIfNeeded (arguments[i]);
     }
 
     // Set result type:

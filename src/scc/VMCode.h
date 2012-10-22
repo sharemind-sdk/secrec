@@ -93,8 +93,6 @@ public: /* Methods: */
         , m_numLocals (0)
     { }
 
-    ~VMFunction () { }
-
     const VMLabel* name () const { return m_name; }
 
     unsigned numLocals () const { return m_numLocals; }
@@ -133,8 +131,6 @@ public: /* Methods: */
         : m_label (label)
         , m_name (name)
     { }
-
-    ~VMBinding () { }
 
     friend std::ostream& operator << (std::ostream& os, const VMBinding& binding);
 
@@ -182,8 +178,6 @@ public: /* Methods: */
     explicit VMBindingSection (const char* name)
         : VMSection (name)
     { }
-
-    virtual ~VMBindingSection () { }
 
     void addBinding (VMLabel* label, const std::string& name) {
         m_bindings.push_back (VMBinding (label, name));
@@ -246,8 +240,6 @@ public: /* Methods: */
         , m_type (type)
     { }
 
-    virtual ~VMDataSection () { }
-
     void addRecord (VMLabel* l, const char* t, const std::string& v) {
         m_records.push_back (Record (l, t, v));
     }
@@ -280,8 +272,6 @@ public: /* Methods: */
         : VMSection ("TEXT")
         , m_numGlobals (0)
     { }
-
-    ~VMCodeSection () { }
 
     unsigned numGlobals () const { return m_numGlobals; }
     void setNumGlobals (unsigned n) { m_numGlobals = n; }
@@ -319,7 +309,7 @@ private:
 
 public: /* Types: */
 
-    typedef std::list<VMSection* > SectionList;
+    typedef std::vector<VMSection* > SectionList;
     typedef SectionList::iterator iterator;
     typedef SectionList::const_iterator const_iterator;
 

@@ -196,27 +196,17 @@ public: /* Methods: */
     inline bool hasParent() const { return m_parent != 0; }
     inline SecrecTreeNodeType type() const { return m_type; }
     inline ChildrenList &children() { return m_children; }
-    inline const ChildrenList &children() const {
-        return m_children;
-    }
+    inline const ChildrenList &children() const { return m_children; }
     inline const Location & location() const { return m_location; }
 
     void appendChild(TreeNode *child);
     void prependChild(TreeNode *child);
     void setLocation(const Location & location);
 
-    ChildrenListIterator begin () {
-        return children ().begin ();
-    }
-    ChildrenListIterator end () {
-        return children ().end ();
-    }
-    ChildrenListConstIterator begin () const {
-        return children ().begin ();
-    }
-    ChildrenListConstIterator end () const {
-        return children ().end ();
-    }
+    ChildrenListIterator begin () { return children ().begin (); }
+    ChildrenListIterator end () { return children ().end (); }
+    ChildrenListConstIterator begin () const { return children ().begin (); }
+    ChildrenListConstIterator end () const { return children ().end (); }
 
     std::string toString(unsigned indentation = 2,
                          unsigned startIndent = 0) const;
@@ -509,10 +499,8 @@ protected: /* Methods: */
 
     virtual TreeNode* cloneV () const = 0;
 
-    virtual void instantiateDataTypeV (Context& cxt, SecrecDataType dType) {
-        (void) cxt;
-        (void) dType;
-        assert (false && "ICE!");
+    virtual void instantiateDataTypeV (Context&, SecrecDataType) {
+        assert ("ICE! data types should not be instantiated on given tree node type");
     }
 
     void setResultType(SecreC::Type *type);
@@ -547,11 +535,11 @@ protected:
 
 class TreeNodeExprInt: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprInt(int value, const Location & loc)
+    inline TreeNodeExprInt(uint64_t value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
-    inline void setValue(int value) { m_value = value; }
-    inline int value() const { return m_value; }
+    inline void setValue(uint64_t value) { m_value = value; }
+    inline uint64_t value() const { return m_value; }
 
     virtual std::string stringHelper() const;
     virtual std::string xmlHelper() const;
@@ -567,7 +555,7 @@ protected:
     virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
 private: /* Fields: */
-    int m_value;
+    uint64_t m_value;
 };
 
 /******************************************************************
@@ -586,6 +574,7 @@ public: /* Methods: */
     TreeNode* slice () const;
     TreeNodeIdentifier* identifier () const;
     TreeNodeExpr* rightHandSide () const;
+    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 
@@ -702,6 +691,8 @@ public:
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
+    TreeNodeExpr *& leftExpressionPtrRef();
+    TreeNodeExpr *& rightExpressionPtrRef();
     TreeNodeExprInt* dimensionality () const;
 
 protected:
@@ -820,6 +811,8 @@ public: /* Methods: */
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
+    TreeNodeExpr *& leftExpressionPtrRef();
+    TreeNodeExpr *& rightExpressionPtrRef();
     const char *operatorString() const;
 
 protected:
@@ -1050,6 +1043,8 @@ public: /* Methods: */
     TreeNodeExpr* conditional () const;
     TreeNodeExpr* trueBranch () const;
     TreeNodeExpr* falseBranch () const;
+    TreeNodeExpr *& trueBranchPtrRef();
+    TreeNodeExpr *& falseBranchPtrRef();
 
 protected:
 
@@ -1174,7 +1169,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual void instantiateDataType (Context &cxt, SecrecDataType dType);
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprQualified (m_location);
@@ -1562,8 +1557,14 @@ public: /* Methods: */
     /// \retval 0 if shape is not specified
     TreeNode* shape () const;
 
+    inline bool hasRightHandSide() const {
+        return children().size() > 2;
+    }
+
     /// \retval 0 if right hand side is not defined
     TreeNodeExpr* rightHandSide () const;
+
+    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 
@@ -1760,7 +1761,12 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
+    inline bool hasExpression() const {
+        return !children().empty();
+    }
+
     TreeNodeExpr* expression () const;
+    TreeNodeExpr *& expressionPtrRef();
 
 protected:
 

@@ -26,6 +26,7 @@
 #include "SyscallManager.h"
 #include "StringLiterals.h"
 #include "RegisterAllocator.h"
+#include "RemoveUnreachableBlocks.h"
 #include "Builtin.h"
 #include "VMDataType.h"
 
@@ -312,8 +313,9 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
+    removeUnreachableBlocks (m_code);
     eliminateDeadVariables (m_code);
-    eliminateRedundantCopies (m_code);
+    // eliminateRedundantCopies (m_code);
     m_allocs = placePrivateScalarAllocs (m_code);
 
     // Create and add the linking unit sections:
@@ -560,10 +562,8 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     }
 
     if (isPrivate (imop)) {
-        if (imop.isVectorized ()) {
-            cgPrivateAssign (block, imop);
-            return;
-        }
+        cgPrivateAssign (block, imop);
+        return;
     }
 
     VMInstruction instr;
@@ -954,9 +954,17 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
     if (imop.type () == Imop::PUSHREF) {
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
         assert (! arg->isConstant ());
+
+        if (arg->isArray() || isString(arg)) {
+            block.push_new ()  << "pushcref mem" << find (arg);
+            return;
+        }
+
         block.push_new ()
-            << ((arg->isArray () || isString (arg)) ? "pushref mem" : "pushref")
-            << find (arg);
+            << "pushrefpart"
+            << find (arg)
+            << "imm" << m_st.getImm(0)
+            << sizeInBytes(representationType(arg->secrecType()));
         return;
     }
 
@@ -967,9 +975,17 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
             return;
         }
 
+        if (arg->isArray()) {
+            block.push_new ()  << "pushcref mem" << find (arg);
+            return;
+        }
+
+        // scalars
         block.push_new ()
-            << (arg->isArray () ? "pushcref mem" : "pushcref")
-            << find (arg);
+            << "pushcrefpart"
+            << find (arg)
+            << "imm" << m_st.getImm(0)
+            << sizeInBytes(representationType(arg->secrecType()));
         return;
     }
 }
@@ -977,6 +993,12 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
     pushString (block, imop.arg1 ());
     emitSyscall (block, "miner_log_string");
+}
+
+void Compiler::cgComment(VMBlock & block, const Imop & imop) {
+    assert(dynamic_cast<const ConstantString*>(imop.arg1()) != 0);
+    block.push_new() << "#" <<
+        VMInstruction::str (static_cast<const ConstantString*>(imop.arg1())->value());
 }
 
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
@@ -1065,7 +1087,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         cgPrint (block, imop);
         return;
     case Imop::RETCLEAN:
+        return;
     case Imop::COMMENT:
+        cgComment(block, imop);
         return;
     default:
         break;

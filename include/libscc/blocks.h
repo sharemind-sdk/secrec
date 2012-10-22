@@ -49,6 +49,8 @@ struct Edge {
     static const Label begin = Jump;
     static const Label end = End;
     static inline Label next (Label label) {
+        assert ((label & (label - 1)) == 0 &&
+                "Iterating non-power-of-two label!");
         return static_cast<Label>(label << 1);
     }
 };

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 
 #include <libscc/symbol.h>
 #include <libscc/constant.h>
@@ -88,15 +89,19 @@ class IGraphImpl {
 
 public: /* Types: */
 
-    typedef std::map<VMVReg*, std::set<VMVReg*> > Type;
+    typedef boost::container::flat_set<VMVReg*> Neighbours;
+    typedef std::map<VMVReg*, Neighbours> Type;
     typedef Type::value_type value_type;
     typedef Type::iterator Iterator;
     typedef Type::const_iterator ConstIterator;
-    typedef std::set<VMVReg*> Neighbours;
     typedef Neighbours::iterator NIterator;
     typedef Neighbours::const_iterator NConstIterator;
     typedef std::pair<NIterator, NIterator> NRange;
     typedef std::pair<NConstIterator, NConstIterator> NConstRange;
+
+    typedef std::map<VMVReg*, unsigned> ColorMap;
+    typedef boost::container::flat_set<unsigned> ColorSet;
+    typedef std::map<VMVReg*, ColorSet> ColorGraph;
 
 private:
 
@@ -113,10 +118,6 @@ private:
 
 public: /* Methods: */
 
-    IGraphImpl () { }
-
-    ~IGraphImpl () { }
-
     void addEdge (VMVReg* a, VMVReg* b) {
         assert (a != 0 && b != 0);
         m_nodes[a].insert (b);
@@ -127,7 +128,7 @@ public: /* Methods: */
         assert (node != 0);
         Iterator i = m_nodes.find (node);
         if (i == m_nodes.end ()) {
-            m_nodes.insert (i, std::make_pair (node, std::set<VMVReg*>()));
+            m_nodes.insert (i, std::make_pair (node, Neighbours ()));
         }
     }
 
@@ -146,7 +147,7 @@ public: /* Methods: */
     }
 
     // also acts as trivial coloring
-    unsigned label (std::map<VMVReg*, unsigned>& labels) const {
+    unsigned label (ColorMap& labels) const {
         unsigned count = 0;
         labels.clear ();
         for (ConstIterator i = begin (), e = end (); i != e; ++ i)
@@ -154,16 +155,17 @@ public: /* Methods: */
         return count;
     }
 
-    unsigned colorGreedy (std::map<VMVReg*, unsigned>& colors) const {
+    unsigned colorGreedy (ColorMap& colors) const {
         std::vector<VMVReg*> vertices;
-        std::set<unsigned> usedRegisters;
-        std::map<VMVReg*, std::set<unsigned > > neighbours; // colors of neighbours
+        ColorSet usedRegisters;
+        ColorGraph neighbours; // colors of neighbours
         unsigned count = 0;
         order (vertices);
         colors.clear ();
         BOOST_FOREACH (VMVReg* v, vertices) {
-            std::set<unsigned> candidates = usedRegisters;
-            candidates -= neighbours[v];
+            ColorSet candidates = usedRegisters;
+            BOOST_FOREACH (unsigned u, neighbours[v])
+                candidates.erase(u);
             const unsigned color = candidates.empty () ? (count ++) : *candidates.begin ();
             usedRegisters.insert (color);
             colors[v] = color;
@@ -177,7 +179,7 @@ public: /* Methods: */
 
     void dump () const {
         std::cerr << "IGraphImpl:\n";
-        std::map<VMVReg*, unsigned > labels;
+        ColorMap labels;
         label (labels);
         for (ConstIterator i = begin (), e = end (); i != e; ++ i) {
             const unsigned from = labels[i->first];
@@ -260,7 +262,7 @@ public: /* Methods: */
 protected:
 
     unsigned color (VMSymbolTable& st, bool isGlobal) {
-        std::map<VMVReg*, unsigned> colors;
+        IGraphImpl::ColorMap colors;
         unsigned count = 0;
         if (isGlobal)
             count = m_global.colorGreedy (colors);
@@ -270,8 +272,8 @@ protected:
         return count;
     }
 
-    void assignColors (VMSymbolTable& st, const std::map<VMVReg*, unsigned>& colors, bool isGlobal) {
-        typedef std::map<VMVReg*, unsigned>::value_type RC_pair;
+    void assignColors (VMSymbolTable& st, const IGraphImpl::ColorMap& colors, bool isGlobal) {
+        typedef IGraphImpl::ColorMap::value_type RC_pair;
         BOOST_FOREACH (const RC_pair& rc, colors) {
             VMVReg* reg = rc.first;
             const unsigned color = rc.second;

@@ -10,8 +10,9 @@
 #ifndef VM_VALUE_H
 #define VM_VALUE_H
 
-#include <stdint.h>
+#include <iosfwd>
 #include <string>
+#include <stdint.h>
 
 namespace SecreCC {
 
@@ -48,8 +49,11 @@ public:
 
     virtual ~VMValue () { }
     
-    virtual std::string toString () const = 0;
     friend std::ostream& operator << (std::ostream& os, const VMValue& value);
+
+protected:
+
+    virtual void printV (std::ostream& os) const = 0;
 
 private: /* Fields: */
 
@@ -74,10 +78,11 @@ protected: /* Methods: */
 
 public:
 
-    ~VMImm () { }
-
     uint64_t value () const { return m_value; }
-    std::string toString () const;
+
+protected:
+
+    void printV (std::ostream& os) const;
 
 private: /* Fields: */
 
@@ -100,10 +105,11 @@ protected: /* Methods: */
 
 public:
 
-    ~VMStack () { }
-
     unsigned number () const { return m_number; }
-    std::string toString () const;
+
+protected:
+
+    void printV (std::ostream& os) const;
 
 private: /* Fields: */
 
@@ -126,10 +132,11 @@ protected: /* Methods: */
 
 public:
 
-    ~VMReg () { }
-
     unsigned number () const { return m_number; }
-    std::string toString () const;
+
+protected:
+
+    void printV (std::ostream& os) const;
 
 private: /* Fields: */
 
@@ -152,10 +159,11 @@ protected: /* Methods: */
 
 public:
 
-    ~VMLabel () { }
-
     inline const std::string& name () const { return m_name; }
-    std::string toString () const;
+
+protected:
+
+    void printV (std::ostream& os) const;
 
 private: /* Fields: */
 
@@ -184,14 +192,16 @@ protected: /* Methods: */
 
 public:
 
-    ~VMVReg () { }
-
     std::string toString () const;
     bool isGlobal () const { return m_isGlobal; }
     VMValue* actualReg () const { return m_actualReg; }
     void setActualReg (VMValue* reg) {
         m_actualReg = reg;
     }
+
+protected:
+
+    void printV (std::ostream& os) const;
 
 private: /* Fields: */
 

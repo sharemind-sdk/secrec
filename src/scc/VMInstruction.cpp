@@ -9,6 +9,7 @@
 
 #include "VMInstruction.h"
 #include "VMValue.h"
+#include <boost/foreach.hpp>
 
 #include <cassert>
 #include <ostream>
@@ -16,43 +17,53 @@
 
 namespace SecreCC {
 
+boost::ptr_vector<std::string> VMInstruction::m_allocStrings;
+
 /*******************************************************************************
   VMInstruction
 *******************************************************************************/
 
-VMInstruction& VMInstruction::arg (const char* str) {
-    m_operands.push_back (0);
-    m_strings.push_back (str);
+VMInstruction& VMInstruction::arg (const StringOperand& str) {
+    std::string* copy = new std::string (str.m_str);
+    m_allocStrings.push_back (copy);
+    m_operands.push_back (Operand (copy->c_str()));
     return *this;
 }
 
 VMInstruction& VMInstruction::arg (VMValue* val) {
     assert (val != 0);
-    m_operands.push_back (val);
-    m_strings.push_back ("");
+    m_operands.push_back (Operand (*val));
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (unsigned n) {
-    std::ostringstream ss;
-    ss << "0x" << std::hex << n;
-    m_operands.push_back (0);
-    m_strings.push_back (ss.str ());
+VMInstruction& VMInstruction::arg (uint64_t n) {
+    m_operands.push_back (Operand (n));
     return *this;
+}
+
+VMInstruction& VMInstruction::arg (const char* cstr) {
+    m_operands.push_back (Operand (cstr));
+    return *this;
+}
+
+void VMInstruction::print (std::ostream& os) const {
+    bool first = true;
+    BOOST_FOREACH (const Operand& op, m_operands) {
+        if (! first)
+            os << ' ';
+        else
+            first = false;
+
+        switch (op.m_type) {
+        case Operand::Value:  os << *op.un_value;                     break;
+        case Operand::Number: os << "0x" << std::hex << op.un_number; break;
+        case Operand::String: os << op.un_string;                     break;
+        }
+    }
 }
 
 std::ostream& operator << (std::ostream& os, const VMInstruction& instr) {
-    const size_t n = instr.m_operands.size ();
-    for (size_t i = 0; i < n; ++ i) {
-        if (i > 0) os << ' ';
-        if (instr.m_operands[i] == 0) {
-            os << instr.m_strings[i];
-        }
-        else {
-            os << instr.m_operands[i]->toString ();
-        }
-    }
-
+    instr.print (os);
     return os;
 }
 

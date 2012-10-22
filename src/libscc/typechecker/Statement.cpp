@@ -25,52 +25,56 @@ namespace SecreC {
 TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
                                               TreeNodeVarInit * varInit)
 {
-    SecrecDimType n = 0;
+    SecrecDimType shapeExpressions = 0;
 
     if (m_st->findFromCurrentScope (varInit->variableName ()) != 0) {
-        m_log.fatalInProc(varInit) << "Redeclaration of variable at " << varInit->location () << '.';
+        m_log.fatalInProc(varInit) << "Redeclaration of variable at "
+                                   << varInit->location () << '.';
         return E_TYPE;
     }
 
-    BOOST_FOREACH (TreeNode* node, varInit->shape ()->children ()) {
-        assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
-        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
-        e->setContextIndexType (getContext ());
-        Status s = visitExpr (e);
-        if (s != OK)
-            return s;
-        if (checkAndLogIfVoid(e))
-            return E_TYPE;
-        if (! e->resultType ()->isPublicIntScalar ()) {
-            m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
-                          << e->location() << '.';
-            return E_TYPE;
-        }
-
-        ++ n;
-    }
-
-    if (n > 0 && n != ty->secrecDimType()) {
-        m_log.fatalInProc(varInit) << "Mismatching number of shape components in declaration at "
-                      << varInit->location() << '.';
-        return E_TYPE;
-    }
-
-    if (varInit->rightHandSide () != 0) {
-        TreeNodeExpr *e = varInit->rightHandSide ();
-        e->setContext (ty);
+    BOOST_FOREACH (TreeNode * const node, varInit->shape()->children()) {
+        assert(dynamic_cast<TreeNodeExpr *>(node) != 0);
+        TreeNodeExpr * const e = static_cast<TreeNodeExpr *>(node);
+        e->setContextIndexType(getContext());
         Status s = visitExpr(e);
         if (s != OK)
             return s;
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        if (! ty->canAssign (e->resultType ())) {
-            m_log.fatalInProc(varInit) << "Illegal assignment at " << varInit->location () << '.';
-            m_log.fatal () << "Got " << *e->resultType () << " expected " << *ty << '.';
+        if (!e->resultType ()->isPublicIntScalar()) {
+            m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
+                                       << e->location() << '.';
             return E_TYPE;
         }
 
-        e = classifyIfNeeded (e, ty->secrecSecType ());
+        ++shapeExpressions;
+    }
+
+    if (shapeExpressions > 0 && shapeExpressions != ty->secrecDimType()) {
+        m_log.fatalInProc(varInit) << "Mismatching number of shape components "
+                                      "in declaration at "
+                                   << varInit->location() << '.';
+        return E_TYPE;
+    }
+
+    if (varInit->rightHandSide() != 0) {
+        TreeNodeExpr *& e = varInit->rightHandSidePtrRef();
+        e->setContext(ty);
+        Status s = visitExpr(e);
+        if (s != OK)
+            return s;
+        if (checkAndLogIfVoid(e))
+            return E_TYPE;
+        if (!ty->canAssign(e->resultType())) {
+            m_log.fatalInProc(varInit) << "Illegal assignment at "
+                                       << varInit->location() << '.';
+            m_log.fatal() << "Got " << (*e->resultType())
+                          << " expected " << *ty << '.';
+            return E_TYPE;
+        }
+
+        classifyIfNeeded(e, ty->secrecSecType());
     }
 
     return OK;
@@ -210,15 +214,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
     TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
-    TreeNodeExpr *e = stmt->expression ();
-    if (e == 0) {
+    if (!stmt->hasExpression()) {
         if (procType->kind () == TypeNonVoid::PROCEDURE) {
             m_log.fatalInProc(stmt) << "Cannot return from non-void procedure "
                                        "without value at " << stmt->location() << '.';
             return E_TYPE;
         }
-    }
-    else {
+    } else {
+        TreeNodeExpr *& e = stmt->expressionPtrRef();
 
         if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
             m_log.fatalInProc(stmt) << "Cannot return value from void procedure at"
@@ -230,7 +233,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
         Status s = visitExpr(e);
         if (s != OK)
             return s;
-        e = classifyIfNeeded (e, procType->secrecSecType ());
+        classifyIfNeeded(e, procType->secrecSecType());
         if (!procType->canAssign (e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
@@ -287,9 +290,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
+    Status s = visitExpr(e);
+    if (s != OK)
+        return s;
+
     if (checkPublicBooleanScalar (e) != OK) {
-        m_log.fatalInProc(stmt) << "Conditional expression in assert statement "
-                                   "must be of type public bool at " << e->location() << '.';
+        assert(e->haveResultType());
+        m_log.fatalInProc(stmt) << "Invalid expression of type "
+                                << e->resultType()->toNormalString()
+                                << " given for assert statement at " << e->location() << '.';
         return E_TYPE;
     }
 
