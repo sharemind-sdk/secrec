@@ -31,7 +31,7 @@ class TreeNode;
  */
 class TreeNode {
 public: /* Types: */
-    typedef std::deque<TreeNode*> ChildrenList;
+    typedef std::vector<TreeNode*> ChildrenList;
     typedef ChildrenList::iterator ChildrenListIterator;
     typedef ChildrenList::const_iterator
         ChildrenListConstIterator;
@@ -200,7 +200,6 @@ public: /* Methods: */
     inline const Location & location() const { return m_location; }
 
     void appendChild(TreeNode *child);
-    void prependChild(TreeNode *child);
     void setLocation(const Location & location);
 
     ChildrenListIterator begin () { return children ().begin (); }

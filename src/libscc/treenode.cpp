@@ -96,12 +96,6 @@ void TreeNode::appendChild(TreeNode * child) {
     child->resetParent(this);
 }
 
-void TreeNode::prependChild(TreeNode * child) {
-    assert(child != 0);
-    m_children.push_front(child);
-    child->resetParent(this);
-}
-
 void TreeNode::setLocation(const TreeNode::Location & location) {
     m_location = location;
 }
@@ -1312,11 +1306,6 @@ TreeNode * treenode_childAt(const TreeNode * node, unsigned index) {
 
 void treenode_appendChild(TreeNode * parent, TreeNode * child) {
     return ((SecreC::TreeNode *) parent)->appendChild((SecreC::TreeNode *) child);
-}
-
-void treenode_prependChild(TreeNode * parent, TreeNode * child) {
-    typedef SecreC::TreeNode TN;
-    return ((TN *) parent)->prependChild((TN *) child);
 }
 
 void treenode_setLocation(TreeNode * node, YYLTYPE * loc) {

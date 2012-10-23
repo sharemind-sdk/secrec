@@ -99,33 +99,21 @@ void TestTreeNode::testInitType_data() {
 }
 
 void TestTreeNode::testChildren() {
-    typedef std::deque<TreeNode*>::size_type ST;
+    typedef TreeNode::ChildrenList::size_type ST;
     SecreC::TreeNode::Location loc(1, 2, 3, 4, "testChildren");
 
     TreeNodeExprString *n  = new TreeNodeExprString("n", loc);
     TreeNodeExprString *c1 = new TreeNodeExprString("c1", loc);
     TreeNodeExprString *c2 = new TreeNodeExprString("c2", loc);
-    TreeNodeExprString *c3 = new TreeNodeExprString("c3", loc);
-    TreeNodeExprString *c4 = new TreeNodeExprString("c4", loc);
     QCOMPARE(n->children().size(), (ST) 0);
-    n->appendChild(c3);
+    n->appendChild(c1);
     QCOMPARE(n->children().size(), (ST) 1);
-    QCOMPARE(n->children().at(0), c3);
-    n->prependChild(c2);
+    QCOMPARE(n->children().at(0), c1);
+    n->appendChild(c2);
     QCOMPARE(n->children().size(), (ST) 2);
-    QCOMPARE(n->children().at(0), c2);
-    QCOMPARE(n->children().at(1), c3);
-    n->appendChild(c4);
-    QCOMPARE(n->children().size(), (ST) 3);
-    QCOMPARE(n->children().at(0), c2);
-    QCOMPARE(n->children().at(1), c3);
-    QCOMPARE(n->children().at(2), c4);
-    n->prependChild(c1);
-    QCOMPARE(n->children().size(), (ST) 4);
     QCOMPARE(n->children().at(0), c1);
     QCOMPARE(n->children().at(1), c2);
-    QCOMPARE(n->children().at(2), c3);
-    QCOMPARE(n->children().at(3), c4);
+
     delete n;
 }
 
