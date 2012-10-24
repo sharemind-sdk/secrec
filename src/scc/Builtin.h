@@ -177,20 +177,18 @@ public: /* Methods: */
 
 class BuiltinNumericToString : public BuiltinFunction  {
 public: /* Methods: */
-    explicit BuiltinNumericToString (StringLiterals* strLit, unsigned base = 10)
+    explicit BuiltinNumericToString (StringLiterals* strLit)
         : m_strLit (strLit)
-        , m_base (base)
     { }
 
     void generate (VMFunction& function, VMSymbolTable& st);
 
     BuiltinFunction* clone () const {
-        return new BuiltinNumericToString (m_strLit, m_base);
+        return new BuiltinNumericToString (m_strLit);
     }
 
 private: /* Fields: */
     StringLiterals*  const m_strLit;
-    unsigned         const m_base;
 };
 
 /*******************************************************************************

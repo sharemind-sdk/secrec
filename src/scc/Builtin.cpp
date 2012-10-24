@@ -376,17 +376,7 @@ void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
 
 void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) {
     VMImm* const charSize = st.getImm (1);
-
-    char prefixChar = '?';
-    switch (m_base) {
-    case 2: prefixChar = 'b'; break;
-    case 8: prefixChar = 'o'; break;
-    case 10: prefixChar = 'd'; break;
-    case 16: prefixChar = 'x'; break;
-    default:
-        assert (false && "Invalid number base!");
-        break;
-    }
+    VMImm* const base = st.getImm (10);
 
     VMLabel* charTable = m_strLit->insert ("0123456789abcdef").label;
     VMStack* src = st.getStack (0);
@@ -398,7 +388,7 @@ void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) 
     VMBlock entryB (0, 0);
     entryB.push_new () << "resizestack" << 5;
     entryB.push_new () << "mov" << src << temp;
-    entryB.push_new () << "mov" << st.getImm (3) << length; // room for "0x" and '\0'
+    entryB.push_new () << "mov" << st.getImm (1) << length; // room '\0'
     entryB.push_new () << "mov imm :RODATA" << rodata;
 
     /*
@@ -407,12 +397,10 @@ void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) 
     VMLabel* lengthL = st.getUniqLabel ();
     VMBlock lengthB (lengthL, 0);
     lengthB.push_new () << "uinc" << VM_UINT64 << length;
-    lengthB.push_new () << "bdiv" << VM_UINT64 << temp << st.getImm (m_base);
+    lengthB.push_new () << "bdiv" << VM_UINT64 << temp << base;
     lengthB.push_new () << "jnz" << lengthL << VM_UINT64 << temp;
     lengthB.push_new () << "alloc" << dest << length;
     lengthB.push_new () << "udec" << VM_UINT64 << length;
-    lengthB.push_new () << "mov" << st.getImm ('0') << "mem" << dest << st.getImm (0) << charSize;
-    lengthB.push_new () << "mov" << st.getImm (prefixChar) << "mem" << dest << st.getImm (1) << charSize;
     lengthB.push_new () << "mov" << st.getImm ('\0') << "mem" << dest << length << charSize;
     /*
      * Copy bytes to output:
@@ -420,11 +408,11 @@ void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) 
     VMLabel* copyL = st.getUniqLabel ();
     VMBlock copyB (copyL, 0);
     copyB.push_new () << "udec" << VM_UINT64 << length;
-    copyB.push_new () << "tmod" << VM_UINT64 << temp << src << st.getImm (m_base);
+    copyB.push_new () << "tmod" << VM_UINT64 << temp << src << base;
     copyB.push_new () << "badd" << VM_UINT64 << temp << charTable;
     copyB.push_new () << "mov mem" << rodata << temp << "mem" << dest << length << charSize;
-    copyB.push_new () << "bdiv" << VM_UINT64 << src << st.getImm (m_base);
-    copyB.push_new () << "jne" << copyL << VM_UINT64 << st.getImm (2) << length;
+    copyB.push_new () << "bdiv" << VM_UINT64 << src << base;
+    copyB.push_new () << "jne" << copyL << VM_UINT64 << st.getImm (0) << length;
     copyB.push_new () << "return" << dest;
 
     function.push_back (entryB)
