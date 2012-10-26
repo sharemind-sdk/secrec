@@ -30,21 +30,31 @@
 %option extra-type="const char *"
 %option bison-bridge bison-locations reentrant noyywrap nounput noinput
 
-/* =============================================================================
-  Character classes
-============================================================================= */
+ /* =============================================================================
+    Character classes
+    ============================================================================= */
 BINARYDIGIT     [0-1]
 OCTALDIGIT      [0-7]
 DIGIT           [0-9]
 HEXDIGIT        [0-9a-fA-F]
 UNDERSCORE      _
 WHITESPACE      [ \t]
-UPPERCASE       [ABCDEFGHIJKLMNOPQRSTUVWXYZ]
-LOWERCASE       [abcdefghijklmnopqrstuvwxyz]
+UPPERCASE       [A-Z]
+LOWERCASE       [a-z]
 LETTER          ({UPPERCASE}|{LOWERCASE})
 NONDIGIT        ({UPPERCASE}|{LOWERCASE}|{UNDERSCORE})
 DECIMAL         0|[1-9]{DIGIT}*
 EXPONENT        (e|E)[+-]?{DECIMAL}
+IDENTIFIER      {NONDIGIT}({NONDIGIT}|{DIGIT})*
+BINARYLIT       0b{BINARYDIGIT}+
+OCTALLIT        0o{OCTALDIGIT}+
+HEXLIT          0x{HEXDIGIT}+
+SIMPLEFLOAT     {DECIMAL}{EXPONENT}
+SCIENTIFICFLOAT {DECIMAL}\.{DIGIT}*{EXPONENT}?
+STRINGLIT       \"(\\.|[^\\"])*\"
+NEWLINE         (\n\r|\r\n|\n|\r)
+SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
+
 
 %x COMMENT_C
 %x COMMENT_CPP
@@ -53,10 +63,7 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "/*"                      { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_C); }
 <COMMENT_C>[^*\n\r]*      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
 <COMMENT_C>"*"+[^*/\n\r]* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
-<COMMENT_C>\n\r           { newline(yyget_lloc(yyscanner)); }
-<COMMENT_C>\r\n           { newline(yyget_lloc(yyscanner)); }
-<COMMENT_C>\n             { newline(yyget_lloc(yyscanner)); }
-<COMMENT_C>\r             { newline(yyget_lloc(yyscanner)); }
+<COMMENT_C>{NEWLINE}      { newline(yyget_lloc(yyscanner)); }
 <COMMENT_C>"*"+"/"        { BEGIN(INITIAL); }
 
  /* Ignore C++-style comments: */
@@ -119,19 +126,18 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
 "__syscall"           { stepLen(yyget_lloc(yyscanner), 9);  return SYSCALL; }
 
-{NONDIGIT}({NONDIGIT}|{DIGIT})* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
-
-0b{BINARYDIGIT}+ { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return BIN_LITERAL; }
-0o{OCTALDIGIT}+  { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return OCT_LITERAL; }
-0x{HEXDIGIT}+ { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return HEX_LITERAL; }
-{DECIMAL}{EXPONENT} { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
-{DECIMAL}\.{DIGIT}*{EXPONENT}? { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
-{DECIMAL} { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DEC_LITERAL; }
-\"(\\.|[^\\"])*\" {
+{IDENTIFIER}       { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
+{BINARYLIT}        { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return BIN_LITERAL; }
+{OCTALLIT}         { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return OCT_LITERAL; }
+{HEXLIT}           { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return HEX_LITERAL; }
+{SIMPLEFLOAT}      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
+{SCIENTIFICFLOAT}  { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
+{DECIMAL}          { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DEC_LITERAL; }
+{STRINGLIT}        {
     stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));
     yyget_lval(yyscanner)->str = strndup(yyget_text(yyscanner) + 1, yyget_leng(yyscanner) - 2);
     return STRING_LITERAL;
- }
+}
 
 "+=" { stepLen(yyget_lloc(yyscanner), 2); return ADD_ASSIGN; }
 "&=" { stepLen(yyget_lloc(yyscanner), 2); return AND_ASSIGN; }
@@ -150,34 +156,9 @@ EXPONENT        (e|E)[+-]?{DECIMAL}
 "-=" { stepLen(yyget_lloc(yyscanner), 2); return SUB_ASSIGN; }
 "::" { stepLen(yyget_lloc(yyscanner), 2); return TYPE_QUAL; }
 "^=" { stepLen(yyget_lloc(yyscanner), 2); return XOR_ASSIGN; }
-"-"  { stepChar(yyget_lloc(yyscanner)); return '-'; }
-","  { stepChar(yyget_lloc(yyscanner)); return ','; }
-";"  { stepChar(yyget_lloc(yyscanner)); return ';'; }
-":"  { stepChar(yyget_lloc(yyscanner)); return ':'; }
-"!"  { stepChar(yyget_lloc(yyscanner)); return '!'; }
-"?"  { stepChar(yyget_lloc(yyscanner)); return '?'; }
-"/"  { stepChar(yyget_lloc(yyscanner)); return '/'; }
-"^"  { stepChar(yyget_lloc(yyscanner)); return '^'; }
-"~"  { stepChar(yyget_lloc(yyscanner)); return '~'; }
-"("  { stepChar(yyget_lloc(yyscanner)); return '('; }
-")"  { stepChar(yyget_lloc(yyscanner)); return ')'; }
-"["  { stepChar(yyget_lloc(yyscanner)); return '['; }
-"]"  { stepChar(yyget_lloc(yyscanner)); return ']'; }
-"{"  { stepChar(yyget_lloc(yyscanner)); return '{'; }
-"}"  { stepChar(yyget_lloc(yyscanner)); return '}'; }
-"*"  { stepChar(yyget_lloc(yyscanner)); return '*'; }
-"&"  { stepChar(yyget_lloc(yyscanner)); return '&'; }
-"%"  { stepChar(yyget_lloc(yyscanner)); return '%'; }
-"+"  { stepChar(yyget_lloc(yyscanner)); return '+'; }
-"<"  { stepChar(yyget_lloc(yyscanner)); return '<'; }
-"="  { stepChar(yyget_lloc(yyscanner)); return '='; }
-">"  { stepChar(yyget_lloc(yyscanner)); return '>'; }
-"|"  { stepChar(yyget_lloc(yyscanner)); return '|'; }
 
-"\n\r" { newline(yyget_lloc(yyscanner)); }
-"\r\n" { newline(yyget_lloc(yyscanner)); }
-"\n" { newline(yyget_lloc(yyscanner)); }
-"\r" { newline(yyget_lloc(yyscanner)); }
+{SIMPLEOP}   { stepChar(yyget_lloc(yyscanner)); return yyget_text(yyscanner)[0]; }
+{NEWLINE}    { newline(yyget_lloc(yyscanner)); }
 {WHITESPACE} { stepChar(yyget_lloc(yyscanner)); }
 
 . { /* Ignore bad characters */ }
