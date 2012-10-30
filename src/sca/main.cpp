@@ -122,6 +122,7 @@ int run (const Configuration& cfg) {
     SecreC::TreeNodeModule* parseTree = 0;
     std::ostream out (cout.rdbuf ());
     io::stream_buffer<io::file_sink > fileBuf;
+    SecreC::ICode icode;
 
     if (! cfg.m_stdout) {
         fileBuf.open (cfg.m_output);
@@ -135,7 +136,7 @@ int run (const Configuration& cfg) {
 
     int exitCode = 0;
     if (cfg.m_stdin) {
-        exitCode = sccparse("-", &parseTree);
+        exitCode = sccparse(&icode.stringTable(), "-", &parseTree);
     } else {
         FILE *f = fopen (cfg.m_input.c_str (), "r");
         if (f != NULL) {
@@ -144,7 +145,7 @@ int run (const Configuration& cfg) {
                 cerr << flush;
             }
 
-            exitCode = sccparse_file(cfg.m_input.c_str(), f, &parseTree);
+            exitCode = sccparse_file(&icode.stringTable(), cfg.m_input.c_str(), f, &parseTree);
             fclose(f);
 
             if (cfg.m_verbose) {
@@ -166,11 +167,10 @@ int run (const Configuration& cfg) {
 
     assert (parseTree != 0);
     if (cfg.m_printAST) {
-        out << parseTree->toString() << endl;
+        parseTree->print(out);
+        out << endl;
         return EXIT_SUCCESS;
     }
-
-    SecreC::ICode icode;
 
     BOOST_FOREACH (const std::string& path, cfg.m_includes) {
         icode.modules ().addSearchPath (path);
