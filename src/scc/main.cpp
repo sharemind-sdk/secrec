@@ -27,6 +27,7 @@
 #include <libscc/intermediate.h>
 #include <libscc/treenode.h>
 #include <libscc/blocks.h>
+#include <libscc/StringTable.h>
 
 #include <sharemind/libas/assemble.h>
 #include <sharemind/libas/linker.h>
@@ -182,7 +183,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 /*
  * Parse a secrec program, returns 0 on failure.
  */
-SecreC::TreeNodeModule * parseProgram(const ProgramOptions & opts, int & errorCode) {
+SecreC::TreeNodeModule * parseProgram(SecreC::StringTable& stringTable, const ProgramOptions & opts, int & errorCode) {
     SecreC::TreeNodeModule * ast = NULL;
 
     if (opts.input) {
@@ -194,14 +195,14 @@ SecreC::TreeNodeModule * parseProgram(const ProgramOptions & opts, int & errorCo
                 cerr << flush;
             }
 
-            errorCode = sccparse_file(fname.c_str(), f, &ast);
+            errorCode = sccparse_file(&stringTable, fname.c_str(), f, &ast);
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
         }
     }
     else {
-        errorCode = sccparse("-", &ast);
+        errorCode = sccparse(&stringTable, "-", &ast);
     }
 
     return ast;
@@ -314,16 +315,15 @@ int main (int argc, char *argv[]) {
         os.rdbuf (&fileBuf);
     }
 
+    SecreC::ICode icode;
+
     /* Parse the program: */
     int parseErrorCode = 0;
-    SecreC::TreeNodeModule * parseTree = parseProgram(opts, parseErrorCode);
+    SecreC::TreeNodeModule * parseTree = parseProgram(icode.stringTable(), opts, parseErrorCode);
     if (parseErrorCode != 0) {
         cerr << "Parsing failed! Error code " << parseErrorCode << '.' << endl;
         return EXIT_FAILURE;
     }
-
-    /* Translate to intermediate code: */
-    SecreC::ICode icode;
 
     /* Collect possible include files: */
     BOOST_FOREACH (const string& name, opts.includes) {

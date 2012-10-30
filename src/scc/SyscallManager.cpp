@@ -30,7 +30,7 @@ VMLabel* SyscallManager::getPD (SecreC::PrivateSecType* secTy) {
         ss << ":PD_" << m_st->uniq ();
         VMLabel* label = m_st->getLabel (ss.str ());
         i = m_pds.insert (i, std::make_pair (secTy, label));
-        m_pdSection->addBinding (label, secTy->name ());
+        m_pdSection->addBinding (label, secTy->name ().str());
     }
 
     return i->second;
