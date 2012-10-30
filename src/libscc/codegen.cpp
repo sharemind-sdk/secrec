@@ -31,6 +31,7 @@ CodeGen::CodeGen(ICodeList& code, ICode& icode)
     , m_log(icode.compileLog())
     , m_modules(icode.modules())
     , m_context(icode.context())
+    , m_stringTable(icode.stringTable())
     , m_tyChecker(0)
 {
     m_tyChecker = new TypeChecker(icode.symbols(), m_log, m_context);
@@ -97,13 +98,13 @@ CGStmtResult CodeGen::codeGenStmt(TreeNodeStmt * s) {
     return r;
 }
 
-Imop * CodeGen::newComment(const std::string & comment) const {
-    ConstantString * str = ConstantString::get(getContext(), comment);
+Imop * CodeGen::newComment(StringRef comment) const {
+    ConstantString * str = ConstantString::get(getContext(), comment.str ());
     Imop * c = new Imop(0, Imop::COMMENT, 0, str);
     return c;
 }
 
-Imop * CodeGen::pushComment(const std::string & comment) {
+Imop * CodeGen::pushComment(StringRef comment) {
     Imop * c = newComment(comment);
     push_imop(c);
     return c;

@@ -62,7 +62,7 @@ std::ostream & SymbolDomain::print(std::ostream & os) const {
   SymbolSymbol
 *******************************************************************************/
 
-SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid* valueType)
+SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     : Symbol (SYMBOL, valueType)
     , m_decl(NULL)
     , m_scopeType (LOCAL)
@@ -73,7 +73,7 @@ SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid* valueType)
     setName(name);
 }
 
-SymbolSymbol::SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bool)
+SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     : Symbol (SYMBOL, valueType)
     , m_decl(NULL)
     , m_scopeType (LOCAL)

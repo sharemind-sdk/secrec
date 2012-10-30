@@ -10,6 +10,7 @@
 #include "symboltable.h"
 #include "treenode_c.h"
 #include "typechecker.h"
+#include "StringTable.h"
 
 namespace SecreC {
 
@@ -200,24 +201,20 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
 
 #undef CASE_NODE_NAME
 
-std::string TreeNode::toString(unsigned indent, unsigned startIndent) const {
-    std::ostringstream os;
-
+void TreeNode::print (std::ostream& os, unsigned indent, unsigned startIndent) const {
     os << std::string(startIndent, ' ');
-    os << typeName(m_type);
+    os << typeName(m_type) << ' ';
+    if (printHelper (os)) {
+        os << ' ';
+    }
 
-    const std::string sh(stringHelper());
-    if (!sh.empty())
-        os << ' ' << sh;
-
-    os << " at " << location();
+    os << "at " << location();
 
     BOOST_FOREACH(TreeNode* child, m_children) {
         os << std::endl;
         assert(child->parent() == this);
-        os << child->toString(indent, startIndent + indent);
+        child->print (os, indent, startIndent + indent);
     }
-    return os.str();
 }
 
 std::string TreeNode::toXml(bool full) const {
@@ -260,23 +257,21 @@ TreeNodeIdentifier * TreeNodeSecTypeF::identifier() const {
     return childAt<TreeNodeIdentifier>(this, 0);
 }
 
-std::string TreeNodeSecTypeF::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeSecTypeF::printHelper (std::ostream & os) const {
     if (m_isPublic)
         os << "public";
     else
         os << static_cast<TreeNodeIdentifier *>(children().at(0))->value();
-    return os.str();
+    return true;
 }
 
 /*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
 
-std::string TreeNodeDataTypeF::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeDataTypeF::printHelper (std::ostream & os) const {
     os << m_dataType;
-    return os.str();
+    return true;
 }
 
 std::string TreeNodeDataTypeF::xmlHelper() const {
@@ -289,10 +284,9 @@ std::string TreeNodeDataTypeF::xmlHelper() const {
   TreeNodeDimTypeF
 *******************************************************************************/
 
-std::string TreeNodeDimTypeF::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeDimTypeF::printHelper (std::ostream & os) const {
     os << m_dimType;
-    return os.str();
+    return true;
 }
 
 std::string TreeNodeDimTypeF::xmlHelper() const {
@@ -546,9 +540,16 @@ TreeNodeIdentifier * TreeNodeExprRVariable::identifier() const {
   TreeNodeExprBool
 *******************************************************************************/
 
+bool TreeNodeExprBool::printHelper(std::ostream & os) const {
+    os << (m_value ? "true" : "false");
+    return true;
+}
+
 std::string TreeNodeExprBool::xmlHelper() const {
     std::ostringstream os;
-    os << "value=\"bool:" << stringHelper() << "\"";
+    os << "value=\"bool:";
+    printHelper(os);
+    os << "\"";
     return os.str();
 }
 
@@ -556,15 +557,14 @@ std::string TreeNodeExprBool::xmlHelper() const {
   TreeNodeExprString
 *******************************************************************************/
 
-std::string TreeNodeExprString::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeExprString::printHelper (std::ostream & os) const {
     os << "\"" << m_value << "\"";
-    return os.str();
+    return true;
 }
 
 std::string TreeNodeExprString::xmlHelper() const {
     std::ostringstream os;
-    os << "value=\"string:" << xmlEncode(m_value) << "\"";
+    os << "value=\"string:" << xmlEncode(m_value.str()) << "\"";
     return os.str();
 }
 
@@ -572,10 +572,9 @@ std::string TreeNodeExprString::xmlHelper() const {
   TreeNodeExprFloat
 *******************************************************************************/
 
-std::string TreeNodeExprFloat::stringHelper() const {
-    std::ostringstream os;
-    os << m_value ;
-    return os.str();
+bool TreeNodeExprFloat::printHelper (std::ostream & os) const {
+    os << m_value;
+    return true;
 }
 
 std::string TreeNodeExprFloat::xmlHelper() const {
@@ -752,10 +751,9 @@ TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
   TreeNodeExprInt
 *******************************************************************************/
 
-std::string TreeNodeExprInt::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeExprInt::printHelper (std::ostream & os) const {
     os << m_value;
-    return os.str();
+    return true;
 }
 
 std::string TreeNodeExprInt::xmlHelper() const {
@@ -768,7 +766,7 @@ std::string TreeNodeExprInt::xmlHelper() const {
   TreeNodeProcDef
 *******************************************************************************/
 
-const std::string &TreeNodeProcDef::procedureName() const {
+StringRef TreeNodeProcDef::procedureName() const {
     return identifier ()->value ();
 }
 
@@ -900,15 +898,14 @@ TreeNodeExpr* TreeNodeExprBytesFromString::expression () const {
   TreeNodeIdentifier
 *******************************************************************************/
 
-std::string TreeNodeIdentifier::stringHelper() const {
-    std::ostringstream os;
+bool TreeNodeIdentifier::printHelper (std::ostream & os) const {
     os << "\"" << m_value << "\"";
-    return os.str();
+    return true;
 }
 
 std::string TreeNodeIdentifier::xmlHelper() const {
     std::ostringstream os;
-    os << "value=\"string:" << xmlEncode(m_value) << "\"";
+    os << "value=\"string:" << xmlEncode(m_value.str()) << "\"";
     return os.str();
 }
 
@@ -955,7 +952,7 @@ TreeNodeExpr *& TreeNodeVarInit::rightHandSidePtrRef() {
     return expressionPtrRefAt(this, 2u);
 }
 
-const std::string &TreeNodeVarInit::variableName() const {
+StringRef TreeNodeVarInit::variableName() const {
     assert(children().size() > 0 && children().size() <= 3);
     return childAt<TreeNodeIdentifier>(this, 0)->value ();
 }
@@ -1109,10 +1106,13 @@ TreeNode::ChildrenListConstRange TreeNodeStmtSyscall::paramRange () const {
   TreeNodeTypeType
 *******************************************************************************/
 
-std::string TreeNodeTypeType::stringHelper() const {
-    if (m_cachedType != 0)
-        return secrecType()->toString();
-    return "";
+bool TreeNodeTypeType::printHelper (std::ostream & os) const {
+    if (m_cachedType != 0) {
+        os << secrecType()->toString();
+        return true;
+    }
+
+    return false;
 }
 
 /*******************************************************************************
@@ -1129,14 +1129,14 @@ bool TreeNodeModule::hasName() const {
    return children().size() == 2;
 }
 
-std::string TreeNodeModule::name() const {
+StringRef TreeNodeModule::name() const {
     assert(children().size() == 1 || children().size() == 2);
 
     if (hasName()) {
         return childAt<TreeNodeIdentifier>(this, 1)->value();
     }
 
-    return "";
+    return StringRef ("", 0);
 }
 
 TreeNodeProgram * TreeNodeModule::program() const {
@@ -1148,7 +1148,7 @@ TreeNodeProgram * TreeNodeModule::program() const {
   TreeNodeImport
 *******************************************************************************/
 
-const std::string & TreeNodeImport::name() const {
+StringRef TreeNodeImport::name() const {
     assert(children().size() == 1);
     return childAt<TreeNodeIdentifier>(this, 0)->value();
 }
@@ -1330,16 +1330,16 @@ TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprInt(value, *loc);
 }
 
-TreeNode * treenode_init_string(const char * value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprString(value, *loc);
+TreeNode * treenode_init_string(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeExprString(*value, *loc);
 }
 
-TreeNode * treenode_init_float(const char * value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprFloat(value, *loc);
+TreeNode * treenode_init_float(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeExprFloat(*value, *loc);
 }
 
-TreeNode * treenode_init_identifier(const char * value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeIdentifier(value, *loc);
+TreeNode * treenode_init_identifier(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeIdentifier(*value, *loc);
 }
 
 TreeNode * treenode_init_publicSecTypeF(YYLTYPE * loc) {
@@ -1358,10 +1358,10 @@ TreeNode * treenode_init_dimTypeF(unsigned dimType, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeDimTypeF(dimType, *loc);
 }
 
-TreeNode * treenode_init_opdef(enum SecrecOperator op, YYLTYPE * loc) {
+TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE * loc) {
     TreeNode * node = (TreeNode *) new SecreC::TreeNodeOpDef(op, *loc);
     std::ostringstream os;
     os << "__operator" << op;
-    treenode_appendChild(node, treenode_init_identifier(os.str().c_str(), loc));
+    treenode_appendChild(node, treenode_init_identifier(table->addString (os.str()), loc));
     return node;
 }

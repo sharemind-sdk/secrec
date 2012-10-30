@@ -152,7 +152,7 @@ bool SymbolTable::addImport (SymbolTable* st) {
     return false;
 }
 
-Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
+Symbol* SymbolTable::findFromCurrentScope (StringRef name) const {
     BOOST_REVERSE_FOREACH (SymbolTable* import, m_imports)
         BOOST_REVERSE_FOREACH (Symbol* s, import->m_table)
             if (s->name () == name)
@@ -161,11 +161,11 @@ Symbol* SymbolTable::findFromCurrentScope (const std::string& name) const {
 }
 
 std::vector<Symbol *>
-SymbolTable::findPrefixedFromCurrentScope(const std::string & prefix) const {
+SymbolTable::findPrefixedFromCurrentScope(StringRef prefix) const {
     std::vector<Symbol *> r;
     BOOST_REVERSE_FOREACH(SymbolTable * import, m_imports)
         BOOST_REVERSE_FOREACH(Symbol * s, import->m_table)
-            if (s->name().compare(0u, prefix.size(), prefix) == 0)
+            if (prefix.isPrefixOf(s->name()))
                 r.push_back(s);
     return r;
 }
@@ -209,7 +209,7 @@ SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
     return m_other->temporary (type);
 }
 
-Symbol *SymbolTable::find (const std::string& name) const {
+Symbol *SymbolTable::find (StringRef name) const {
     const SymbolTable *c = this;
     while (c != 0) {
         Symbol* s = c->findFromCurrentScope (name);
@@ -222,7 +222,7 @@ Symbol *SymbolTable::find (const std::string& name) const {
 }
 
 std::vector<Symbol *>
-SymbolTable::findPrefixed(const std::string & prefix) const {
+SymbolTable::findPrefixed(StringRef prefix) const {
     std::vector<Symbol *> r;
     const SymbolTable * c = this;
     while (c != 0) {
@@ -244,7 +244,7 @@ SymbolTable::findPrefixed(const std::string & prefix) const {
     return r;
 }
 
-std::vector<Symbol* > SymbolTable::findAll (const std::string& name) const {
+std::vector<Symbol* > SymbolTable::findAll (StringRef name) const {
     std::vector<Symbol* > out;
     for (Symbol* s = find (name); s != 0; s = s->previos ()) {
         out.push_back (s);

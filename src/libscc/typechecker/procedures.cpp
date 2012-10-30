@@ -61,7 +61,7 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
            || procdef.procedureType()->kind() == TypeNonVoid::PROCEDUREVOID);
     assert(dynamic_cast<DTPV*>(procdef.procedureType()->dataType()) != 0);
     DTPV* dt = static_cast<DTPV*>(procdef.procedureType()->dataType());
-    SymbolProcedure * ns = new SymbolProcedure(mangleProcedure(procdef.procedureName(),
+    SymbolProcedure * ns = new SymbolProcedure(mangleProcedure(procdef.procedureName().str(),
                                                                dt,
                                                                targs),
                                                &procdef);
@@ -71,11 +71,11 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
 
 SymbolProcedure*
 findProcedure (SymbolTable* st,
-               const std::string& name,
+               const StringRef& name,
                DataTypeProcedureVoid* dt,
                const TemplateParams& targs = TemplateParams ())
 {
-    const std::string actualName = mangleProcedure (name, dt, targs);
+    const std::string actualName = mangleProcedure (name.str(), dt, targs);
     SymbolProcedure* procSym = 0;
     Symbol* _procSym = st->find (actualName);
     if (_procSym != 0) {
@@ -88,11 +88,11 @@ findProcedure (SymbolTable* st,
 
 std::vector<SymbolProcedure*>
 findProcedures (SymbolTable* st,
-                const std::string& name,
+                const StringRef& name,
                 DataTypeProcedureVoid* dt)
 {
     std::vector<SymbolProcedure* > out;
-    const std::string actualName = mangleProcedure (name, dt);
+    const std::string actualName = mangleProcedure (name.str(), dt);
     BOOST_FOREACH (Symbol* _procSym, st->findAll (actualName)) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
         SymbolProcedure* procSym = static_cast<SymbolProcedure*>(_procSym);
@@ -103,10 +103,10 @@ findProcedures (SymbolTable* st,
 }
 
 std::vector<SymbolTemplate*>
-findTemplates (SymbolTable* st, const std::string& name)
+findTemplates (SymbolTable* st, const StringRef& name)
 {
     std::vector<SymbolTemplate*> out;
-    BOOST_FOREACH (Symbol* _symTempl, st->findAll ("{templ}" + name)) {
+    BOOST_FOREACH (Symbol* _symTempl, st->findAll ("{templ}" + name.str())) {
         assert (dynamic_cast<SymbolTemplate*>(_symTempl) != 0);
         SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
         out.push_back (symTempl);
@@ -197,7 +197,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
         SymbolProcedure* procSym = appendProcedure (m_st, *proc);
         proc->setSymbol (procSym);
 
-        const std::string& shortName = "{proc}" + proc->identifier ()->value ();
+        const std::string& shortName = "{proc}" + proc->identifier ()->value ().str();
         BOOST_FOREACH (Symbol* sym, m_st->findAll (shortName)) {
             if (sym->symbolType () == Symbol::PROCEDURE) {
                 SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
@@ -241,8 +241,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     // Check that quantifiers are saneley defined
-    typedef std::map<std::string, TreeNodeIdentifier*> TypeVariableMap;
-    typedef std::set<std::string> TypeVariableSet;
+    typedef std::map<StringRef, TreeNodeIdentifier*, StringRef::FastCmp> TypeVariableMap;
+    typedef std::set<StringRef, StringRef::FastCmp> TypeVariableSet;
     TypeVariableSet quantifiedDomains;
     TypeVariableMap freeTypeVariables;
     BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
@@ -311,7 +311,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     SymbolTemplate* s = new SymbolTemplate (templ);
-    s->setName ("{templ}" + id->value ());
+    s->setName ("{templ}" + id->value ().str());
     m_st->appendSymbol (s);
     return OK;
 }
@@ -425,7 +425,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
 
         bool haveCandidatesLabel = false;
-        std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value());
+        std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value().str());
         if (!cs.empty()) {
             std::vector<SymbolProcedure *> cps;
             do {
@@ -449,7 +449,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 }
             }
         }
-        cs = m_st->findPrefixed("{templ}" + name->value());
+        cs = m_st->findPrefixed("{templ}" + name->value().str());
         if (!cs.empty()) {
             if (!haveCandidatesLabel)
                 m_log.info() << "Candidates are:";
@@ -541,7 +541,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
 }
 
 TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
-                                                      const std::string & name,
+                                                      StringRef name,
                                                       const TypeContext & tyCxt,
                                                       DataTypeProcedureVoid * argTypes,
                                                       const TreeNode * errorCxt)
@@ -623,7 +623,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
 bool TypeChecker::unify (Instantiation& inst,
                          const TypeContext& tyCxt,
                          DataTypeProcedureVoid* argTypes) const {
-    typedef std::map<std::string, SecurityType* > DomainMap;
+    typedef std::map<StringRef, SecurityType*, StringRef::FastCmp > DomainMap;
     const TreeNodeTemplate* t = inst.getTemplate ()->decl ();
     DomainMap argDomains;
 

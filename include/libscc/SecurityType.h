@@ -10,7 +10,8 @@
 #ifndef SECREC_SECURITYTYPE_H
 #define SECREC_SECURITYTYPE_H
 
-#include <string>
+#include <iosfwd>
+#include "StringRef.h"
 
 namespace SecreC {
 
@@ -70,23 +71,23 @@ public: /* Methods: */
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
 
-    PrivateSecType (const std::string& name,
+    PrivateSecType (StringRef name,
                     SymbolKind* kind)
         : SecurityType (false)
         , m_name (name)
         , m_kind (kind)
     { }
 
-    inline const std::string& name () const { return m_name; }
+    inline StringRef name () const { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
     std::ostream& print (std::ostream & os) const;
 
-    static PrivateSecType* get (Context& cxt, const std::string& name, SymbolKind* kind);
+    static PrivateSecType* get (Context& cxt, StringRef name, SymbolKind* kind);
 
 private: /* Fields: */
 
-    std::string   const m_name;
-    SymbolKind*   const m_kind;
+    StringRef   const m_name;
+    SymbolKind* const m_kind;
 };
 
 inline bool latticeSecTypeLEQ (SecurityType* a, SecurityType* b) {

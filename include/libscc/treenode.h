@@ -12,6 +12,7 @@
 #include "codegenResult.h"
 #include "typechecker.h"
 #include "TypeContext.h"
+#include "StringRef.h"
 
 namespace SecreC {
 
@@ -207,9 +208,8 @@ public: /* Methods: */
     ChildrenListConstIterator begin () const { return children ().begin (); }
     ChildrenListConstIterator end () const { return children ().end (); }
 
-    std::string toString(unsigned indentation = 2,
-                         unsigned startIndent = 0) const;
-    virtual std::string stringHelper() const { return ""; }
+    void print (std::ostream& os, unsigned indentation = 2, unsigned startIndent = 0) const;
+    virtual bool printHelper (std::ostream&) const { return false; }
 
     std::string toXml(bool full = false) const;
     virtual inline std::string xmlHelper() const { return ""; }
@@ -264,14 +264,14 @@ inline std::ostream & operator<<(std::ostream & os, const TreeNode::Location & l
 
 class TreeNodeIdentifier: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeIdentifier(const std::string &value,
+    inline TreeNodeIdentifier(StringRef value,
                               const Location & loc)
         : TreeNode(NODE_IDENTIFIER, loc)
         , m_value(value)
     { }
 
-    inline const std::string &value() const { return m_value; }
-    virtual std::string stringHelper() const;
+    inline StringRef value() const { return m_value; }
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper() const;
 
 protected:
@@ -281,7 +281,7 @@ protected:
     }
 
 private: /* Fields: */
-    const std::string m_value;
+    const StringRef m_value;
 };
 
 /******************************************************************
@@ -296,7 +296,7 @@ public: /* Methods: */
         , m_cachedType (0)
     { }
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
 
     inline bool isPublic () const { return m_isPublic; }
     SecurityType* cachedType () const { return m_cachedType; }
@@ -329,7 +329,7 @@ public: /* Methods: */
         return m_dataType;
     }
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper() const;
 
 protected:
@@ -356,7 +356,7 @@ public: /* Methods: */
         return m_dimType;
     }
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper() const;
 
 protected:
@@ -417,7 +417,7 @@ public: /* Methods: */
     explicit inline TreeNodeTypeType(const Location & loc)
         : TreeNodeType(NODE_TYPETYPE, loc) {}
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
 
 protected:
 
@@ -540,7 +540,7 @@ public: /* Methods: */
     inline void setValue(uint64_t value) { m_value = value; }
     inline uint64_t value() const { return m_value; }
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper() const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
@@ -840,9 +840,7 @@ public: /* Methods: */
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
     virtual std::string xmlHelper() const;
-    virtual inline std::string stringHelper() const {
-        return (m_value ? "true" : "false");
-    }
+    virtual bool printHelper(std::ostream & os) const;
 
 protected:
 
@@ -973,15 +971,15 @@ protected:
 /// String constants.
 class TreeNodeExprString: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprString(const std::string &value,
+    inline TreeNodeExprString(StringRef value,
                               const Location & loc)
         : TreeNodeExpr(NODE_LITE_STRING, loc)
         , m_value(value)
     { }
 
-    inline const std::string &value() const { return m_value; }
+    inline StringRef value() const { return m_value; }
 
-    virtual std::string stringHelper() const;
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper() const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
@@ -994,7 +992,7 @@ protected:
     }
 
 private: /* Fields: */
-    const std::string m_value;
+    const StringRef m_value;
 };
 
 /******************************************************************
@@ -1003,14 +1001,14 @@ private: /* Fields: */
 
 class TreeNodeExprFloat: public TreeNodeExpr {
 public: /* Methods: */
-    TreeNodeExprFloat (const std::string & value,
+    TreeNodeExprFloat (StringRef value,
                        const Location & loc)
         : TreeNodeExpr (NODE_LITE_FLOAT, loc)
         , m_value (value)
     { }
 
-    inline const std::string & value () const { return m_value; }
-    virtual std::string stringHelper() const;
+    inline StringRef value () const { return m_value; }
+    virtual bool printHelper(std::ostream & os) const;
     virtual std::string xmlHelper () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen & cg);
@@ -1022,7 +1020,7 @@ protected:
     }
 
 private: /* Fields: */
-    const std::string m_value;
+    const StringRef m_value;
 };
 
 /******************************************************************
@@ -1291,7 +1289,7 @@ public:
         return m_procSymbol;
     }
 
-    const std::string &procedureName() const;
+    StringRef procedureName() const;
     const std::string printableSignature() const;
 
     inline bool haveProcedureType() const {
@@ -1443,7 +1441,7 @@ public: /* Methods: */
         : TreeNode (NODE_IMPORT, loc)
     { }
 
-    const std::string& name () const;
+    StringRef name () const;
 
 protected:
 
@@ -1465,7 +1463,7 @@ public: /* Methods: */
     ~TreeNodeModule();
 
     bool hasName () const;
-    std::string name () const;
+    StringRef name () const;
     TreeNodeProgram* program () const;
 
     void addGeneratedInstance (TreeNodeProcDef * instance) {
@@ -1551,7 +1549,7 @@ public: /* Methods: */
         : TreeNode (NODE_VAR_INIT, loc)
     { }
 
-    const std::string &variableName() const;
+    StringRef variableName() const;
 
     /// \retval 0 if shape is not specified
     TreeNode* shape () const;
@@ -1609,7 +1607,7 @@ public: /* Methods: */
     ChildrenListConstRange initializers () const;
     TreeNodeType* varType () const;
 
-    const std::string &variableName() const {
+    StringRef variableName() const {
         return initializer ()->variableName ();
     }
 

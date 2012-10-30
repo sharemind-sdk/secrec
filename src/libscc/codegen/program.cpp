@@ -198,9 +198,11 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
     typedef std::map<const TreeNodeProcDef *, std::set<Imop *> > CallMap;
 
+    const StringRef* name = m_stringTable.addString ("Module " + mod->body()->name().str());
+
     assert(mod->status() == ModuleInfo::CGNotStarted);
     SymbolTable * moduleScope = m_st->newScope();
-    moduleScope->setName("Module " + mod->body()->name());
+    moduleScope->setName(*name);
     mod->codeGenState().m_node = mod->body();
     mod->codeGenState().m_st = moduleScope;
     mod->codeGenState().m_insertPoint = m_code.end();
@@ -278,7 +280,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
 
 CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
-    ModuleInfo * modInfo = new ModuleInfo();
+    ModuleInfo * modInfo = new ModuleInfo(m_stringTable);
     {
         std::auto_ptr<ModuleInfo> newMod(modInfo);
         if (! m_modules.addModule("__main", newMod)) {

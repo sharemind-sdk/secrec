@@ -1236,7 +1236,7 @@ CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    result.setResult(ConstantString::get(getContext(), e->value()));
+    result.setResult(ConstantString::get(getContext(), e->value().str()));
     return result;
 }
 
@@ -1258,7 +1258,7 @@ CGResult CodeGen::cgExprFloat(TreeNodeExprFloat * e) {
     case DATATYPE_FLOAT32: {
         uint32_t i_val;
         float f_val;
-        std::istringstream(e->value()) >> f_val;
+        std::istringstream(e->value().str()) >> f_val;
         memcpy(&i_val, &f_val, sizeof(float));
         result.setResult(ConstantFloat32::get(getContext(), i_val));
     }
@@ -1267,7 +1267,7 @@ CGResult CodeGen::cgExprFloat(TreeNodeExprFloat * e) {
     case DATATYPE_FLOAT64: {
         uint64_t i_val;
         double f_val;
-        std::istringstream(e->value()) >> f_val;
+        std::istringstream(e->value().str()) >> f_val;
         memcpy(&i_val, &f_val, sizeof(double));
         result.setResult(ConstantFloat64::get(getContext(), i_val));
     }

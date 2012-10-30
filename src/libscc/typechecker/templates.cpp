@@ -35,7 +35,7 @@ unsigned Instantiation::unrestrictedTemplateParamCount () const {
 
 unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
     unsigned count = 0;
-    std::set<std::string > quantifiedDomains;
+    std::set<StringRef, StringRef::FastCmp > quantifiedDomains;
     const TreeNodeTemplate* templ = getTemplate ()->decl ();
     const TreeNodeProcDef* body = templ->body ();
     BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
@@ -82,7 +82,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         Instantiation::const_iterator secIt = i.begin ();
         BOOST_FOREACH (TreeNode* _quant, i.getTemplate ()->decl ()->quantifiers ()) {
             TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-            const std::string& qname = quant->domain ()->value ();
+            StringRef qname = quant->domain ()->value ();
             SecurityType* argSecTy = *secIt;
             local->appendSymbol(new SymbolDomain(qname, argSecTy));
             ++ secIt;

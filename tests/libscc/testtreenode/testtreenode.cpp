@@ -77,7 +77,7 @@ void TestTreeNode::testInitString() {
 
     TreeNodeExprString n(value1.toStdString(), loc);
     QCOMPARE(n.type(), NODE_LITE_STRING);
-    QCOMPARE(n.value(), value1.toStdString());
+    QCOMPARE(n.value().str(), value1.toStdString());
 }
 
 void TestTreeNode::testInitString_data() {

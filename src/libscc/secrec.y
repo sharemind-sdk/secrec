@@ -8,7 +8,7 @@
   #include "lex_secrec.h"
   #include "treenode_c.h"
 
-  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, const char *s);
+  void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, TYPE_STRINGTABLE table, const char *s);
 
   uint64_t char_to_digit(char c)
   {
@@ -22,22 +22,23 @@
       return 0;
   }
 
-  uint64_t convert_to_base(const char * input, uint64_t base)
+  uint64_t convert_to_base(TYPE_STRINGREF input, uint64_t base)
   {
+      const char* begin = stringref_begin(input);
+      size_t length = stringref_length(input);
+
       assert(base == 2 || base == 8 || base == 10 || base == 16);
       uint64_t out = 0;
       size_t offset = 0;
       if (base != 10) {
           /* skip the headers: 0b, 0o, and 0x */
-          assert(input[0] != '\0' && input[1] != '\0');
-          if (input[0] == '\0') return 0;
-          if (input[1] == '\0') return 0;
+          assert(length > 1);
+          if (length <= 1) return 0;
           offset += 2;
       }
 
-      const char * ptr = 0;
-      for (ptr = &input[offset]; *ptr != '\0'; ++ ptr) {
-          uint64_t digit = char_to_digit(*ptr);
+      for (; offset < length; ++ offset) {
+          uint64_t digit = char_to_digit(begin[offset]);
           assert(digit < base);
           uint64_t new_out = out*base + digit;
           assert(new_out >= out);
@@ -47,39 +48,14 @@
       return out;
   }
 
-  struct TreeNode * init_op(enum SecrecOperator op, YYLTYPE * loc,
+  struct TreeNode * init_op(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE * loc,
                             struct TreeNode * ret,
                             struct TreeNode * params)
   {
-      struct TreeNode * out = treenode_init_opdef(op, loc);
+      struct TreeNode * out = treenode_init_opdef(table, op, loc);
       treenode_appendChild(out, ret);
       treenode_moveChildren(params, out);
       treenode_free(params);
-      return out;
-  }
-
-  struct TreeNode * init_binop(enum SecrecOperator op, YYLTYPE * loc,
-                               struct TreeNode * ret, struct TreeNode * body,
-                               struct TreeNode * arg1, struct TreeNode * arg2)
-  {
-      struct TreeNode * out = treenode_init_opdef(op, loc);
-      /* indentifier is added automatically by treenode_init_opdef! */
-      treenode_appendChild(out, ret);
-      treenode_appendChild(out, body);
-      treenode_appendChild(out, arg1);
-      treenode_appendChild(out, arg2);
-      return out;
-  }
-
-  struct TreeNode * init_unop(enum SecrecOperator op, YYLTYPE * loc,
-                              struct TreeNode * ret, struct TreeNode * body,
-                              struct TreeNode * arg1)
-  {
-      struct TreeNode * out = treenode_init_opdef(op, loc);
-      /* indentifier is added automatically by treenode_init_opdef! */
-      treenode_appendChild(out, ret);
-      treenode_appendChild(out, body);
-      treenode_appendChild(out, arg1);
       return out;
   }
 
@@ -117,9 +93,10 @@
 %error-verbose
 %glr-parser
 %lex-param {yyscan_t yyscanner}
-%parse-param {yyscan_t yyscanner}
-%parse-param {TYPE_TREENODE *parseTree}
-%parse-param {char const * fileName};
+%parse-param { yyscan_t yyscanner }
+%parse-param { TYPE_TREENODE *parseTree }
+%parse-param { char const * fileName }
+%parse-param { TYPE_STRINGTABLE table }
 %initial-action {
   @$.first_line = 1u;
   @$.first_column = 1u;
@@ -608,24 +585,24 @@ unop_def_helper
  ;
 
 operator_definition
- :  return_type_specifier OPERATOR '+' binop_def_helper     { $$ = init_op(SCOP_BIN_ADD, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '&' binop_def_helper     { $$ = init_op(SCOP_BIN_BAND, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '|' binop_def_helper     { $$ = init_op(SCOP_BIN_BOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '/' binop_def_helper     { $$ = init_op(SCOP_BIN_DIV, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '>' binop_def_helper     { $$ = init_op(SCOP_BIN_GT, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '<' binop_def_helper     { $$ = init_op(SCOP_BIN_LT, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '%' binop_def_helper     { $$ = init_op(SCOP_BIN_MOD, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '*' binop_def_helper     { $$ = init_op(SCOP_BIN_MUL, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '-' binop_def_helper     { $$ = init_op(SCOP_BIN_SUB, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '^' binop_def_helper     { $$ = init_op(SCOP_BIN_XOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR EQ_OP binop_def_helper   { $$ = init_op(SCOP_BIN_EQ, &@$, $1, $4); }
- |  return_type_specifier OPERATOR GE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_GE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LAND_OP binop_def_helper { $$ = init_op(SCOP_BIN_LAND, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_LE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LOR_OP binop_def_helper  { $$ = init_op(SCOP_BIN_LOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR NE_OP binop_def_helper   { $$ = init_op(SCOP_BIN_NE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '-' unop_def_helper      { $$ = init_op(SCOP_UN_MINUS, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(SCOP_UN_NEG, &@$, $1, $4); }
+ :  return_type_specifier OPERATOR '+' binop_def_helper     { $$ = init_op(table, SCOP_BIN_ADD, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '&' binop_def_helper     { $$ = init_op(table, SCOP_BIN_BAND, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '|' binop_def_helper     { $$ = init_op(table, SCOP_BIN_BOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '/' binop_def_helper     { $$ = init_op(table, SCOP_BIN_DIV, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '>' binop_def_helper     { $$ = init_op(table, SCOP_BIN_GT, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '<' binop_def_helper     { $$ = init_op(table, SCOP_BIN_LT, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '%' binop_def_helper     { $$ = init_op(table, SCOP_BIN_MOD, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '*' binop_def_helper     { $$ = init_op(table, SCOP_BIN_MUL, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '-' binop_def_helper     { $$ = init_op(table, SCOP_BIN_SUB, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '^' binop_def_helper     { $$ = init_op(table, SCOP_BIN_XOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR EQ_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_EQ, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR GE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_GE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LAND_OP binop_def_helper { $$ = init_op(table, SCOP_BIN_LAND, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_LE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR LOR_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_LOR, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR NE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_NE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '-' unop_def_helper      { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
  ;
 
 /*******************************************************************************
@@ -1251,10 +1228,10 @@ primary_expression
  ;
 
 int_literal_helper
- : BIN_LITERAL { $$ = convert_to_base ($1,  2); free ($1); }
- | OCT_LITERAL { $$ = convert_to_base ($1,  8); free ($1); }
- | DEC_LITERAL { $$ = convert_to_base ($1, 10); free ($1); }
- | HEX_LITERAL { $$ = convert_to_base ($1, 16); free ($1); }
+ : BIN_LITERAL { $$ = convert_to_base ($1,  2); }
+ | OCT_LITERAL { $$ = convert_to_base ($1,  8); }
+ | DEC_LITERAL { $$ = convert_to_base ($1, 10); }
+ | HEX_LITERAL { $$ = convert_to_base ($1, 16); }
  ;
 
 int_literal
@@ -1268,7 +1245,6 @@ float_literal
  : FLOAT_LITERAL
    {
      $$ = treenode_init_float ($1, &@$);
-     free ($1);
    }
  ;
 
@@ -1276,7 +1252,6 @@ string_literal
  : STRING_LITERAL
    {
      $$ = treenode_init_string($1, &@$);
-     free($1);
    }
  ;
 
@@ -1296,17 +1271,17 @@ identifier
  : IDENTIFIER
    {
      $$ = treenode_init_identifier($1, &@$);
-     free($1);
    }
  ;
 
 %%
 
 void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
-             const char * fileName, const char *s)
+             const char * fileName, TYPE_STRINGTABLE table, const char *s)
 {
     (void) yyscanner;
     (void) parseTree;
+    (void) table;
     fprintf(stderr, "%s:(%zu,%zu)-(%zu,%zu): %s\n",
             fileName,
             loc->first_line, loc->first_column,
@@ -1314,28 +1289,28 @@ void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree,
             s);
 }
 
-int sccparse(const char * filename, TYPE_TREENODEMODULE *result) {
+int sccparse(TYPE_STRINGTABLE table, const char * filename, TYPE_TREENODEMODULE *result) {
     assert(filename);
     yyscan_t scanner;
     int r;
-    yylex_init(&scanner);
-    r = yyparse(scanner, result, filename);
+    yylex_init_extra(table, &scanner);
+    r = yyparse(scanner, result, filename, table);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_file(const char * filename, FILE *input, TYPE_TREENODEMODULE *result) {
+int sccparse_file(TYPE_STRINGTABLE table, const char * filename, FILE *input, TYPE_TREENODEMODULE *result) {
     assert(filename);
     yyscan_t scanner;
     int r;
-    yylex_init(&scanner);
+    yylex_init_extra(table, &scanner);
     yyset_in(input, scanner);
-    r = yyparse(scanner, result, filename);
+    r = yyparse(scanner, result, filename, table);
     yylex_destroy(scanner);
     return r;
 }
 
-int sccparse_mem(const char * filename, const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
+int sccparse_mem(TYPE_STRINGTABLE table, const char * filename, const void *buf, size_t size, TYPE_TREENODEMODULE *result) {
     assert(filename);
     FILE *memoryFile;
     yyscan_t scanner;
@@ -1353,9 +1328,9 @@ int sccparse_mem(const char * filename, const void *buf, size_t size, TYPE_TREEN
     rewind(memoryFile);
 #endif
 
-    yylex_init(&scanner);
+    yylex_init_extra(table, &scanner);
     yyset_in(memoryFile, scanner);
-    r = yyparse(scanner, result, filename);
+    r = yyparse(scanner, result, filename, table);
     yylex_destroy(scanner);
     fclose(memoryFile);
     return r;

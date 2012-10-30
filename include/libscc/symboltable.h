@@ -3,8 +3,13 @@
 
 #include <vector>
 #include <string>
+#include "StringRef.h"
 
 namespace SecreC {
+
+/**
+ * \todo Try to use StringRef instead of std::string here.
+ */
 
 class Imop;
 class TreeNodeStmtDecl;
@@ -35,16 +40,17 @@ public: /* Methods: */
     SymbolSymbol* appendTemporary (TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 
-    Symbol* find(const std::string& name) const;
+    Symbol* find (StringRef name) const;
+
 
     /**
       Finds symbols given a name prefix, following imported modules.
       \param[in] prefix the name prefix of the symbols to find.
       \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol *> findPrefixed(const std::string & prefix) const;
+    std::vector<Symbol *> findPrefixed(StringRef prefix) const;
 
-    std::vector<Symbol* > findAll (const std::string& name) const;
+    std::vector<Symbol* > findAll (StringRef name) const;
 
     SymbolTable* newScope ();
     SymbolTable* parent () const { return m_parent; }
@@ -57,7 +63,7 @@ public: /* Methods: */
      */
     bool addImport (SymbolTable* st);
 
-    void setName (const std::string& name) { m_name = name; }
+    void setName (StringRef name) { m_name = name; }
 
     std::string toString(unsigned level = 0, unsigned indent = 4) const;
 
@@ -66,7 +72,7 @@ public: /* Methods: */
       \param[in] name the name of the symbol to find.
       \returns a pointer to the symbol or NULL no such symbol was found.
     */
-    Symbol* findFromCurrentScope (const std::string& name) const;
+    Symbol* findFromCurrentScope (StringRef name) const;
 
     /**
       Finds symbols in current scope given their name prefix, following imported modules.
@@ -74,7 +80,7 @@ public: /* Methods: */
       \returns a vector of pointers to the matching symbols.
     */
     std::vector<Symbol *>
-    findPrefixedFromCurrentScope(const std::string & prefix) const;
+    findPrefixedFromCurrentScope(StringRef prefix) const;
 
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;
@@ -88,7 +94,7 @@ private: /* Fields: */
     OtherSymbols* const         m_other;    ///< Temporaries and labels.
     std::vector<SymbolTable* >  m_imports;  ///< STs of imported modules.
     std::vector<SymbolTable* >  m_scopes;   ///< Local scopes.
-    std::string                 m_name;     ///< Debugging.
+    StringRef                   m_name;     ///< Debugging.
 };
 
 std::ostream & operator<<(std::ostream & out, const SymbolTable & st);

@@ -9,13 +9,19 @@
 namespace SecreC {
     class TreeNode;
     class TreeNodeModule;
+    class StringTable;
+    class StringRef;
 } // namespace SecreC
 #define TYPE_TREENODE        SecreC::TreeNode*
 #define TYPE_TREENODEMODULE  SecreC::TreeNodeModule*
+#define TYPE_STRINGTABLE     SecreC::StringTable*
+#define TYPE_STRINGREF       const SecreC::StringRef*
 extern "C" {
 #else /* #ifdef __cplusplus */
 #define TYPE_TREENODE        void*
-#define TYPE_TREENODEMODULE void*
+#define TYPE_TREENODEMODULE  void*
+#define TYPE_STRINGTABLE     void*
+#define TYPE_STRINGREF       const void*
 #endif /* #ifdef __cplusplus */
 
 union YYSTYPE;
@@ -179,7 +185,7 @@ namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse(const char * filename, TYPE_TREENODEMODULE * result);
+extern int sccparse(TYPE_STRINGTABLE table, const char * filename, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given input.
@@ -189,7 +195,7 @@ extern int sccparse(const char * filename, TYPE_TREENODEMODULE * result);
     \retval 1 Parsing failed due to syntax errors.
     \retval 2 Parsing failed due to memory exhaustion.
 */
-extern int sccparse_file(const char * filename, FILE * input, TYPE_TREENODEMODULE * result);
+extern int sccparse_file(TYPE_STRINGTABLE table, const char * filename, FILE * input, TYPE_TREENODEMODULE * result);
 
 /**
     Parses SecreC from the given memory region.
@@ -201,12 +207,18 @@ extern int sccparse_file(const char * filename, FILE * input, TYPE_TREENODEMODUL
     \retval 2 Parsing failed due to memory exhaustion.
     \retval 3 Parsing failed because the input could not be read.
 */
-extern int sccparse_mem(const char * filename, const void * buf, size_t size, TYPE_TREENODEMODULE * result);
+extern int sccparse_mem(TYPE_STRINGTABLE table, const char * filename, const void * buf, size_t size, TYPE_TREENODEMODULE * result);
+
+extern TYPE_STRINGREF add_string (TYPE_STRINGTABLE table, const char * str, size_t size);
+
+extern size_t stringref_length (TYPE_STRINGREF ref);
+
+extern const char* stringref_begin (TYPE_STRINGREF ref);
 
 union YYSTYPE {
     TYPE_TREENODE treenode;
-    char * nothing;
-    char * str;
+    void * nothing;
+    TYPE_STRINGREF str;
     uint64_t integer_literal;
 };
 typedef union YYSTYPE YYSTYPE;

@@ -28,7 +28,7 @@ private:
 
 public: /* Types: */
 
-    typedef std::map<std::string, PrivateSecType*> PrivateSecTypeMap;
+    typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
     typedef std::map<DataType*, DataTypeVar*> DataTypeVarMap;
     typedef std::map<DataType*, TypeNonVoid*> TypeNonVoidMap;
     typedef std::map<std::vector<DataType*>, DataTypeProcedureVoid* > DataTypeProcedureVoidMap;
@@ -48,7 +48,7 @@ public: /* Methods: */
 
     /* Security types: */
     PublicSecType* publicType ();
-    PrivateSecType* privateType (const std::string& domain,
+    PrivateSecType* privateType (StringRef domain,
                                  SymbolKind* kind);
 
     /* Data types: */

@@ -47,7 +47,7 @@ PublicSecType* ContextImpl::publicType () {
     return &m_pubSecType;
 }
 
-PrivateSecType* ContextImpl::privateType (const std::string& name,
+PrivateSecType* ContextImpl::privateType (StringRef name,
                                           SymbolKind* kind)
 {
     PrivateSecTypeMap::iterator i = m_privSecTypes.find (name);

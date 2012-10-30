@@ -2,6 +2,7 @@
 
 #include <libscc/parser.h>
 #include <libscc/treenode.h>
+#include <libscc/StringTable.h>
 #include <string>
 
 using namespace SecreC;
@@ -93,7 +94,8 @@ void TestParse::simpleParseTest() {
 
     TreeNodeModule *n;
     std::string input(sccInput.toStdString());
-    QCOMPARE(sccparse_mem("inMemory", input.c_str(), input.size(), &n), 0);
+    StringTable table;
+    QCOMPARE(sccparse_mem(&table, "inMemory", input.c_str(), input.size(), &n), 0);
     QCOMPARE(QString(n->toXml(false).c_str()), xmlOutput);
     delete n;
 }

@@ -297,8 +297,8 @@ private:
     void newScope ();
     void popScope ();
 
-    Imop* newComment (const std::string& commnet) const;
-    Imop* pushComment (const std::string& comment);
+    Imop* newComment (StringRef commnet) const;
+    Imop* pushComment (StringRef comment);
 
     /**
      * \brief Used to push instruction right after code block.
@@ -347,6 +347,7 @@ private: /* Fields: */
     CompileLog&   m_log;          ///< Compiler log.
     ModuleMap&    m_modules;      ///< Mapping from names to modules.
     Context&      m_context;
+    StringTable&  m_stringTable;
 
     // Local components:
     STList        m_loops;

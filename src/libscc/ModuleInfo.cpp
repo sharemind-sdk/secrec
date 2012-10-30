@@ -40,7 +40,7 @@ bool ModuleInfo::read() {
         return false;
 
     TreeNodeModule* treeNode = 0;
-    int parseResult = sccparse_file(m_location.path().c_str (), f, &treeNode);
+    int parseResult = sccparse_file(&m_stringTable, m_location.path().c_str (), f, &treeNode);
     fclose (f);
     if (parseResult != 0 || treeNode == 0)
         return false;

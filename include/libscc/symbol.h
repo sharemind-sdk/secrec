@@ -47,7 +47,7 @@ public: /* Methods: */
     inline bool isConstant () const { return m_symbolType == CONSTANT; }
     inline Type symbolType() const { return m_symbolType; }
     inline const std::string &name() const { return m_name; }
-    inline void setName(const std::string &name) { m_name = name; }
+    inline void setName(StringRef name) { m_name = name.str(); }
     inline TypeNonVoid* secrecType() const { return m_type; }
     Symbol* previos () const { return m_previous; }
     void setPrevious (Symbol* prev) { m_previous = prev; }
@@ -85,7 +85,7 @@ public: /* Methods: */
 class SymbolKind : public Symbol {
 public: /* Methods: */
 
-    SymbolKind(const std::string & name)
+    SymbolKind(StringRef name)
         : Symbol (Symbol::PKIND)
     {
         setName(name);
@@ -101,7 +101,7 @@ public: /* Methods: */
 class SymbolDomain : public Symbol {
 public: /* Methods: */
 
-    SymbolDomain(const std::string & name, SecurityType * secType)
+    SymbolDomain(StringRef name, SecurityType * secType)
         : Symbol (Symbol::PDOMAIN)
         , m_secType (secType)
     {
@@ -127,9 +127,9 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit SymbolSymbol(const std::string & name, TypeNonVoid * valueType);
+    explicit SymbolSymbol(StringRef name, TypeNonVoid * valueType);
 
-    explicit SymbolSymbol(const std::string & name, TypeNonVoid * valueType, bool);
+    explicit SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool);
 
     inline TreeNodeVarInit * decl() const { return m_decl; }
     inline void setDecl(TreeNodeVarInit * decl) { m_decl = decl; }

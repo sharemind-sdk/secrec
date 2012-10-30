@@ -29,7 +29,7 @@ std::ostream& PrivateSecType::print (std::ostream & os) const {
     return os;
 }
 
-PrivateSecType* PrivateSecType::get (Context& cxt, const std::string& name,
+PrivateSecType* PrivateSecType::get (Context& cxt, StringRef name,
                                      SymbolKind* kind)
 {
     ContextImpl& impl = *cxt.pImpl ();

@@ -23,11 +23,14 @@
     (loc)->last_column++;\
 }
 
-#define saveText(s) yyget_lval(s)->str = strndup(yyget_text(s), yyget_leng(s));
+#define saveText(s) do {\
+        stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));\
+        yyget_lval(s)->str = add_string (yyget_extra(s), yyget_text(s), yyget_leng(s));\
+    } while (0)
 
 %}
 
-%option extra-type="const char *"
+%option extra-type="TYPE_STRINGTABLE"
 %option bison-bridge bison-locations reentrant noyywrap nounput noinput
 
  /* =============================================================================
@@ -126,16 +129,19 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
 "__syscall"           { stepLen(yyget_lloc(yyscanner), 9);  return SYSCALL; }
 
-{IDENTIFIER}       { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return IDENTIFIER; }
-{BINARYLIT}        { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return BIN_LITERAL; }
-{OCTALLIT}         { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return OCT_LITERAL; }
-{HEXLIT}           { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return HEX_LITERAL; }
-{SIMPLEFLOAT}      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
-{SCIENTIFICFLOAT}  { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return FLOAT_LITERAL; }
-{DECIMAL}          { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); saveText(yyscanner); return DEC_LITERAL; }
+{IDENTIFIER}       { saveText(yyscanner); return IDENTIFIER; }
+{BINARYLIT}        { saveText(yyscanner); return BIN_LITERAL; }
+{OCTALLIT}         { saveText(yyscanner); return OCT_LITERAL; }
+{HEXLIT}           { saveText(yyscanner); return HEX_LITERAL; }
+{SIMPLEFLOAT}      { saveText(yyscanner); return FLOAT_LITERAL; }
+{SCIENTIFICFLOAT}  { saveText(yyscanner); return FLOAT_LITERAL; }
+{DECIMAL}          { saveText(yyscanner); return DEC_LITERAL; }
 {STRINGLIT}        {
     stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));
-    yyget_lval(yyscanner)->str = strndup(yyget_text(yyscanner) + 1, yyget_leng(yyscanner) - 2);
+    yyget_lval(yyscanner)->str = add_string (
+        yyget_extra(yyscanner),
+        yyget_text(yyscanner) + 1,
+        yyget_leng(yyscanner) - 2);
     return STRING_LITERAL;
 }
 

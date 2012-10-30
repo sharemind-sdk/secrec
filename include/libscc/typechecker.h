@@ -170,7 +170,7 @@ protected:
      * \param[in] errorCtx the location about which to print errors.
      */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
-                                const std::string & name,
+                                StringRef name,
                                 const TypeContext & tyCxt,
                                 DataTypeProcedureVoid * argTypes,
                                 const TreeNode * errorCxt);
