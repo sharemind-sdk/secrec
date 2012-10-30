@@ -228,10 +228,6 @@ class RegisterAllocator::InferenceGraph {
 
 public: /* Methods: */
 
-    InferenceGraph () { }
-
-    ~InferenceGraph () { }
-
     void addNode (VMVReg* node) {
         if (node->isGlobal ())
             m_global.addNode (node);

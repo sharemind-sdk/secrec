@@ -412,7 +412,7 @@ void BuiltinNumericToString::generate (VMFunction& function, VMSymbolTable& st) 
     copyB.push_new () << "badd" << VM_UINT64 << temp << charTable;
     copyB.push_new () << "mov mem" << rodata << temp << "mem" << dest << length << charSize;
     copyB.push_new () << "bdiv" << VM_UINT64 << src << base;
-    copyB.push_new () << "jne" << copyL << VM_UINT64 << st.getImm (0) << length;
+    copyB.push_new () << "jnz" << copyL << VM_UINT64 << length;
     copyB.push_new () << "return" << dest;
 
     function.push_back (entryB)
