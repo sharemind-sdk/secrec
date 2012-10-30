@@ -181,6 +181,16 @@ struct disposer {
     }
 };
 
+struct LeaderInfo {
+    std::set<SymbolLabel*>  jumps;
+    const SymbolProcedure*  procedure;
+
+    LeaderInfo ()
+        : jumps ()
+        , procedure (0)
+    { }
+};
+
 } // anonymous namespace
 
 /*******************************************************************************
@@ -214,15 +224,12 @@ void Program::assignToBlocks (ICodeList& imops) {
     assert (!imops.empty ());
 
     // 1. find leaders
-    std::set<const Imop*> leaders;
-    std::map<const Imop*, std::set<SymbolLabel*> > jumps;
-    std::map<const Imop*, const SymbolProcedure*> functions;
-    functions[&imops.front ()] = 0;
+    std::map<const Imop*, LeaderInfo> leaders;
 
     bool nextIsLeader = true;  // first instruction is leader
     BOOST_FOREACH (Imop& imop, imops) {
         if (nextIsLeader) {
-            leaders.insert (&imop);
+            leaders[&imop];
             nextIsLeader = false;
         }
 
@@ -230,8 +237,7 @@ void Program::assignToBlocks (ICodeList& imops) {
         if (imop.isJump ()) {
             assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != 0);
             SymbolLabel* dest = static_cast<SymbolLabel*>(imop.dest ());
-            leaders.insert (dest->target ());
-            jumps[dest->target ()].insert (dest);
+            leaders[dest->target()].jumps.insert (dest);
         }
 
         // anything following terminator is leader
@@ -241,35 +247,43 @@ void Program::assignToBlocks (ICodeList& imops) {
 
         // call destinations are leaders (we might have interprocedural analysis)
         if (imop.type () == Imop::CALL) {
-            leaders.insert (imop.callDest ());
-            functions[imop.callDest ()] = static_cast<const SymbolProcedure*>(imop.dest ());
+            leaders[imop.callDest()].procedure = static_cast<const SymbolProcedure*>(imop.dest ());
             nextIsLeader = true; // RETCLEAN is leader too
         }
     }
 
     // 2. assign all instructions to basic blocks in procedures
     // Anything in range [leader, nextLeader) is a basic block.
-    Procedure* curProc = 0;
-    Block* curBlock = 0;
     ImopList::iterator i = imops.begin ();
+    std::map<const Imop*, LeaderInfo>::iterator it;
+
+    // Initialize the entry procedure.
+    Procedure* curProc = new Procedure (0);
+    Block* curBlock = 0;
+    push_back(*curProc);
+
     while (! imops.empty ()) {
         Imop& imop = *i;
-        if (functions.find (&imop) != functions.end ()) {
-            curProc = new Procedure (functions[&imop]);
-            push_back (*curProc);
-        }
+        it = leaders.find (&imop);
 
-        if (leaders.find (&imop) != leaders.end ()) {
+        if (it != leaders.end ()) {
+            const std::set<SymbolLabel*>& jumps = it->second.jumps;
+            const SymbolProcedure* proc = it->second.procedure;
+
+            if (proc != NULL) {
+                curProc = new Procedure (proc);
+                push_back (*curProc);
+            }
+
             curBlock = new Block ();
             curProc->push_back (*curBlock);
-            BOOST_FOREACH (SymbolLabel* incoming, jumps[&imop]) {
+            BOOST_FOREACH (SymbolLabel* incoming, jumps) {
                 incoming->setBlock (curBlock);
             }
         }
 
         i = imops.erase (i);
         curBlock->push_back (imop);
-
 
         switch (imop.type ()) {
         case Imop::END:
