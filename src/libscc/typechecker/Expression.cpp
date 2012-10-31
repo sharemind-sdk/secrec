@@ -373,8 +373,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
     {
         SecurityType * lSecTy = eTypes[0]->secrecSecType();
         SecurityType * rSecTy = eTypes[1]->secrecSecType();
-        TreeNodeExpr *& left = root->leftExpressionPtrRef();
-        TreeNodeExpr *& right = root->rightExpressionPtrRef();
+        TreeNodeExpr *& left = root->leftExpression();
+        TreeNodeExpr *& right = root->rightExpression();
         classifyIfNeeded(left, rSecTy);
         classifyIfNeeded(right, lSecTy);
         eTypes[0] = static_cast<TNV *>(left->resultType());
