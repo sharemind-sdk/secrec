@@ -209,16 +209,18 @@ public: /* Methods: */
     ChildrenListConstIterator end () const { return children ().end (); }
 
     void print (std::ostream& os, unsigned indentation = 2, unsigned startIndent = 0) const;
-    virtual bool printHelper (std::ostream&) const { return false; }
-
-    std::string toXml(bool full = false) const;
-    virtual inline std::string xmlHelper() const { return ""; }
+    void printXml (std::ostream& os, bool full = false) const;
 
     static const char *typeName(SecrecTreeNodeType type);
 
     TreeNode* clone (TreeNode* parent) const;
 
 protected: /* Methods: */
+
+    virtual inline bool printHelper (std::ostream&) const { return false; }
+
+    virtual inline bool printXmlHelper (std::ostream&) const { return false; }
+
     void setParentDirectly(TreeNode *parent) {
         m_parent = parent;
     }
@@ -271,11 +273,11 @@ public: /* Methods: */
     { }
 
     inline StringRef value() const { return m_value; }
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper() const;
 
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeIdentifier (m_value, m_location);
     }
@@ -296,8 +298,6 @@ public: /* Methods: */
         , m_cachedType (0)
     { }
 
-    virtual bool printHelper(std::ostream & os) const;
-
     inline bool isPublic () const { return m_isPublic; }
     SecurityType* cachedType () const { return m_cachedType; }
     void setCachedType (SecurityType* ty);
@@ -305,6 +305,7 @@ public: /* Methods: */
 
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeSecTypeF (m_isPublic, m_location);
     }
@@ -329,11 +330,10 @@ public: /* Methods: */
         return m_dataType;
     }
 
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper() const;
-
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeDataTypeF (m_dataType, m_location);
     }
@@ -356,11 +356,10 @@ public: /* Methods: */
         return m_dimType;
     }
 
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper() const;
-
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeDimTypeF (m_dimType, m_location);
     }
@@ -417,10 +416,9 @@ public: /* Methods: */
     explicit inline TreeNodeTypeType(const Location & loc)
         : TreeNodeType(NODE_TYPETYPE, loc) {}
 
-    virtual bool printHelper(std::ostream & os) const;
-
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeTypeType (m_location);
     }
@@ -540,13 +538,13 @@ public: /* Methods: */
     inline void setValue(uint64_t value) { m_value = value; }
     inline uint64_t value() const { return m_value; }
 
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper() const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprInt (m_value, m_location);
     }
@@ -839,11 +837,11 @@ public: /* Methods: */
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
-    virtual std::string xmlHelper() const;
-    virtual bool printHelper(std::ostream & os) const;
 
 protected:
 
+    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual bool printHelper(std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprBool (m_value, m_location);
     }
@@ -979,14 +977,14 @@ public: /* Methods: */
 
     inline StringRef value() const { return m_value; }
 
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper() const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprString (m_value, m_location);
     }
@@ -1008,13 +1006,13 @@ public: /* Methods: */
     { }
 
     inline StringRef value () const { return m_value; }
-    virtual bool printHelper(std::ostream & os) const;
-    virtual std::string xmlHelper () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen & cg);
 
 protected:
 
+    virtual bool printHelper(std::ostream & os) const;
+    virtual bool printXmlHelper (std::ostream & os) const;
     virtual TreeNode * cloneV () const {
         return new TreeNodeExprString (m_value, m_location);
     }

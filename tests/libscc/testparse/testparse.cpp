@@ -94,9 +94,11 @@ void TestParse::simpleParseTest() {
 
     TreeNodeModule *n;
     std::string input(sccInput.toStdString());
+    std::ostringstream output;
     StringTable table;
     QCOMPARE(sccparse_mem(&table, "inMemory", input.c_str(), input.size(), &n), 0);
-    QCOMPARE(QString(n->toXml(false).c_str()), xmlOutput);
+    n->printXml (output);
+    QCOMPARE(QString(output.str ().c_str()), xmlOutput);
     delete n;
 }
 
