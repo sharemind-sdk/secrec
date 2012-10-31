@@ -219,7 +219,7 @@ protected: /* Methods: */
 
     virtual inline bool printHelper (std::ostream&) const { return false; }
 
-    virtual inline bool printXmlHelper (std::ostream&) const { return false; }
+    virtual inline void printXmlHelper (std::ostream&) const { }
 
     void setParentDirectly(TreeNode *parent) {
         m_parent = parent;
@@ -277,7 +277,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeIdentifier (m_value, m_location);
     }
@@ -333,7 +333,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeDataTypeF (m_dataType, m_location);
     }
@@ -359,7 +359,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeDimTypeF (m_dimType, m_location);
     }
@@ -544,7 +544,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprInt (m_value, m_location);
     }
@@ -688,8 +688,8 @@ public:
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
-    TreeNodeExpr *& leftExpressionPtrRef();
-    TreeNodeExpr *& rightExpressionPtrRef();
+    TreeNodeExpr *& leftExpression ();
+    TreeNodeExpr *& rightExpression ();
     TreeNodeExprInt* dimensionality () const;
 
 protected:
@@ -840,7 +840,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual bool printHelper(std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprBool (m_value, m_location);
@@ -984,7 +984,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprString (m_value, m_location);
     }
@@ -1012,7 +1012,7 @@ public: /* Methods: */
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
-    virtual bool printXmlHelper (std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode * cloneV () const {
         return new TreeNodeExprString (m_value, m_location);
     }

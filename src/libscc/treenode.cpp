@@ -222,10 +222,8 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
     if (full) {
         os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     }
-    os << '<' << typeName(m_type) << ' ';
-    if (printXmlHelper (os)) {
-        os << ' ';
-    }
+    os << '<' << typeName(m_type);
+    printXmlHelper (os);
 
     if (m_children.empty()) {
         os << "/>";
@@ -272,9 +270,8 @@ bool TreeNodeDataTypeF::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeDataTypeF::printXmlHelper (std::ostream & os) const {
-    os << "type=\"" << SecrecFundDataTypeToString(m_dataType) << "\"";
-    return true;
+void TreeNodeDataTypeF::printXmlHelper (std::ostream & os) const {
+    os << " type=\"" << SecrecFundDataTypeToString(m_dataType) << "\"";
 }
 
 /*******************************************************************************
@@ -286,9 +283,8 @@ bool TreeNodeDimTypeF::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeDimTypeF::printXmlHelper (std::ostream & os) const {
-    os << "dim=\"" << m_dimType << "\"";
-    return true;
+void TreeNodeDimTypeF::printXmlHelper (std::ostream & os) const {
+    os << " dim=\"" << m_dimType << "\"";
 }
 
 /*******************************************************************************
@@ -541,11 +537,10 @@ bool TreeNodeExprBool::printHelper(std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeExprBool::printXmlHelper (std::ostream & os) const {
-    os << "value=\"bool:";
+void TreeNodeExprBool::printXmlHelper (std::ostream & os) const {
+    os << " value=\"bool:";
     printHelper(os);
     os << "\"";
-    return true;
 }
 
 /*******************************************************************************
@@ -557,9 +552,8 @@ bool TreeNodeExprString::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeExprString::printXmlHelper (std::ostream & os) const {
-    os << "value=\"string:" << xmlEncode(m_value.str()) << "\"";
-    return true;
+void TreeNodeExprString::printXmlHelper (std::ostream & os) const {
+    os << " value=\"string:" << xmlEncode(m_value.str()) << "\"";
 }
 
 /*******************************************************************************
@@ -571,9 +565,8 @@ bool TreeNodeExprFloat::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeExprFloat::printXmlHelper (std::ostream & os) const {
-    os << "value=\"double:" << m_value << "\"";
-    return true;
+void TreeNodeExprFloat::printXmlHelper (std::ostream & os) const {
+    os << " value=\"double:" << m_value << "\"";
 }
 
 /*******************************************************************************
@@ -722,11 +715,12 @@ TreeNodeExpr* TreeNodeExprCat::rightExpression () const {
     return expressionAt (this, 1);
 }
 
-TreeNodeExpr *& TreeNodeExprCat::leftExpressionPtrRef() {
+TreeNodeExpr *& TreeNodeExprCat::leftExpression () {
     assert(children().size() == 3u || children().size() == 2u);
     return expressionPtrRefAt(this, 0u);
 }
-TreeNodeExpr *& TreeNodeExprCat::rightExpressionPtrRef() {
+
+TreeNodeExpr *& TreeNodeExprCat::rightExpression () {
     assert(children().size() == 3u || children().size() == 2u);
     return expressionPtrRefAt(this, 1u);
 }
@@ -749,9 +743,8 @@ bool TreeNodeExprInt::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeExprInt::printXmlHelper (std::ostream & os) const {
-    os << "value=\"int:" << m_value << "\"";
-    return true;
+void TreeNodeExprInt::printXmlHelper (std::ostream & os) const {
+    os << " value=\"int:" << m_value << "\"";
 }
 
 /*******************************************************************************
@@ -895,9 +888,8 @@ bool TreeNodeIdentifier::printHelper (std::ostream & os) const {
     return true;
 }
 
-bool TreeNodeIdentifier::printXmlHelper (std::ostream & os) const {
-    os << "value=\"string:" << xmlEncode(m_value.str()) << "\"";
-    return true;
+void TreeNodeIdentifier::printXmlHelper (std::ostream & os) const {
+    os << " value=\"string:" << xmlEncode(m_value.str()) << "\"";
 }
 
 /*******************************************************************************

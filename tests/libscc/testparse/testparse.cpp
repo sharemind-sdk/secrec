@@ -97,7 +97,7 @@ void TestParse::simpleParseTest() {
     std::ostringstream output;
     StringTable table;
     QCOMPARE(sccparse_mem(&table, "inMemory", input.c_str(), input.size(), &n), 0);
-    n->printXml (output);
+    n->printXml (output, false);
     QCOMPARE(QString(output.str ().c_str()), xmlOutput);
     delete n;
 }
