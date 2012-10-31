@@ -139,7 +139,6 @@ class Imop : public auto_unlink_hook {
                              Symbol *arg1, Symbol *arg2, Symbol *arg3)
             : m_creator(creator), m_type(type), m_args(4)
         { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
-        ~Imop();
 
         inline TreeNode *creator() const { return m_creator; }
 

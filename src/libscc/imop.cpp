@@ -12,6 +12,10 @@
 
 namespace {
 
+#ifndef UD
+#define UD (~static_cast<unsigned>(0))
+#endif
+
 using namespace  SecreC;
 
 struct ImopInfoBits {
@@ -29,7 +33,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Unary operators:
       { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
     , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
-    , { Imop::TOSTRING,   1, 0, 0, 0,-1, 1 }
+    , { Imop::TOSTRING,   1, 0, 0, 0,UD, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
     , { Imop::UINV,       1, 0, 0, 1, 3, 1 }
@@ -53,31 +57,31 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::BOR,        1, 0, 0, 1, 4, 1 }
     , { Imop::XOR,        1, 0, 0, 1, 4, 1 }
     // Array expressions:
-    , { Imop::STORE,      0, 0, 0, 1,-1, 0 }
-    , { Imop::LOAD,       1, 0, 0, 0,-1, 1 }
-    , { Imop::ALLOC,      1, 0, 0, 0,-1, 1 }
-    , { Imop::COPY,       1, 0, 0, 0,-1, 1 }
-    , { Imop::RELEASE,    0, 0, 0, 0,-1, 1 }
+    , { Imop::STORE,      0, 0, 0, 1,UD, 0 }
+    , { Imop::LOAD,       1, 0, 0, 0,UD, 1 }
+    , { Imop::ALLOC,      1, 0, 0, 0,UD, 1 }
+    , { Imop::COPY,       1, 0, 0, 0,UD, 1 }
+    , { Imop::RELEASE,    0, 0, 0, 0,UD, 1 }
     // Other expressions:
-    , { Imop::PARAM,      1, 0, 0, 0,-1, 1 }
-    , { Imop::DOMAINID,   1, 0, 0, 0,-1,-1 }
-    , { Imop::CALL,       1, 0, 1, 0,-1, 1 }
+    , { Imop::PARAM,      1, 0, 0, 0,UD, 1 }
+    , { Imop::DOMAINID,   1, 0, 0, 0,UD,UD }
+    , { Imop::CALL,       1, 0, 1, 0,UD, 1 }
     // Jumps:
-    , { Imop::JUMP,       0, 1, 1, 0,-1, 1 }
-    , { Imop::JT,         0, 1, 1, 0,-1, 1 }
-    , { Imop::JF,         0, 1, 1, 0,-1, 1 }
+    , { Imop::JUMP,       0, 1, 1, 0,UD, 1 }
+    , { Imop::JT,         0, 1, 1, 0,UD, 1 }
+    , { Imop::JF,         0, 1, 1, 0,UD, 1 }
     // Terminators:
-    , { Imop::ERROR,      0, 0, 1, 0,-1,-1 }
-    , { Imop::RETURN,     0, 0, 1, 0,-1, 1 }
-    , { Imop::END,        0, 0, 1, 0,-1,-1 }
+    , { Imop::ERROR,      0, 0, 1, 0,UD,UD }
+    , { Imop::RETURN,     0, 0, 1, 0,UD, 1 }
+    , { Imop::END,        0, 0, 1, 0,UD,UD }
     // Other:
-    , { Imop::COMMENT,    0, 0, 0, 0,-1,-1 }
-    , { Imop::PRINT,      0, 0, 0, 0,-1,-1 }
-    , { Imop::SYSCALL,    0, 0, 0, 0,-1, 1 }
-    , { Imop::PUSH,       0, 0, 0, 0,-1, 1 }
-    , { Imop::PUSHREF,    0, 0, 0, 0,-1, 1 }
-    , { Imop::PUSHCREF,   0, 0, 0, 0,-1, 1 }
-    , { Imop::RETCLEAN,   0, 0, 0, 0,-1,-1 }
+    , { Imop::COMMENT,    0, 0, 0, 0,UD,UD }
+    , { Imop::PRINT,      0, 0, 0, 0,UD,UD }
+    , { Imop::SYSCALL,    0, 0, 0, 0,UD, 1 }
+    , { Imop::PUSH,       0, 0, 0, 0,UD, 1 }
+    , { Imop::PUSHREF,    0, 0, 0, 0,UD, 1 }
+    , { Imop::PUSHCREF,   0, 0, 0, 0,UD, 1 }
+    , { Imop::RETCLEAN,   0, 0, 0, 0,UD,UD }
 };
 
 const ImopInfoBits& getImopInfoBits (Imop::Type type) {
@@ -87,40 +91,87 @@ const ImopInfoBits& getImopInfoBits (Imop::Type type) {
     return out;
 }
 
-std::string ulongToString(unsigned long n) {
-    std::ostringstream os;
-    os << n;
-    return os.str();
-}
-
-std::string uniqueName(const SecreC::Symbol *s) {
-    assert(s != 0);
-    if (s->symbolType() == SecreC::Symbol::CONSTANT) return s->name();
-    std::ostringstream os;
-    os << s->name() << '{' << s << '}';
-    return os.str();
-}
-
-std::string symToString (const SecreC::Symbol* s) {
-    return s == 0 ? "_" : uniqueName (s);
-}
-
 SecreC::Symbol* getSizeSymbol (SecreC::Symbol* sym) {
     assert (sym != 0);
     assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != 0);
     return static_cast<SecreC::SymbolSymbol*>(sym)->getSizeSym ();
 }
 
+class SymbolWrapperBase {
+protected: /* Methods: */
+    SymbolWrapperBase (const SecreC::Symbol * symbol) : m_symbol (symbol) { }
+protected: /* Fields: */
+    const SecreC::Symbol * const m_symbol;
+};
+
+struct SymbolOstreamWrapper : public SymbolWrapperBase {
+
+    SymbolOstreamWrapper (const SecreC::Symbol * symbol)
+        : SymbolWrapperBase (symbol)
+    { }
+
+    inline void print (std::ostream& os) const {
+        if (! m_symbol) {
+            os << '_';
+            return;
+        }
+
+        os << m_symbol->name();
+        if (m_symbol->symbolType() != SecreC::Symbol::CONSTANT) {
+            os << '{' << m_symbol << '}';
+        }
+    }
+};
+
+struct LabelOstreamWrapper : public SymbolWrapperBase  {
+
+    LabelOstreamWrapper (const SecreC::Symbol * symbol)
+        : SymbolWrapperBase (symbol)
+    { }
+
+    inline void print (std::ostream& os) const {
+        if (! m_symbol) {
+            os << '_';
+            return;
+        }
+
+        assert (dynamic_cast<const SymbolLabel*>(m_symbol) != 0);
+        os << static_cast<const SymbolLabel*>(m_symbol)->target()->index();
+    }
+};
+
+struct ProcedureOstreamWrapper : public SymbolWrapperBase   {
+
+    ProcedureOstreamWrapper (const SecreC::Symbol * symbol)
+        : SymbolWrapperBase (symbol)
+    { }
+
+    inline void print (std::ostream& os) const {
+        if (! m_symbol) {
+            os << '_';
+            return;
+        }
+
+        assert (dynamic_cast<const SymbolProcedure*>(m_symbol) != 0);
+        os << static_cast<const SymbolProcedure*>(m_symbol)->target ()->index();
+    }
+};
+
+std::ostream& operator << (std::ostream & os, const SymbolOstreamWrapper & wrapper) { wrapper.print (os); return os; }
+std::ostream& operator << (std::ostream & os, const LabelOstreamWrapper & wrapper) { wrapper.print (os); return os; }
+std::ostream& operator << (std::ostream & os, const ProcedureOstreamWrapper & wrapper) { wrapper.print (os); return os; }
+
+
 } // anonymous namespace
 
 namespace SecreC {
 
-#define dname  (dest() == 0 ? "_" : uniqueName(dest()))
-#define tname  (dest() == 0 ? "_" : ulongToString(static_cast<const SymbolLabel*>(dest())->target()->index()))
-#define a1name (arg1() == 0 ? "_" : uniqueName(arg1()))
-#define a2name (arg2() == 0 ? "_" : uniqueName(arg2()))
-#define a3name (arg3() == 0 ? "_" : uniqueName(arg3()))
-#define cImop  (arg1() == 0 ? "_" : ulongToString(static_cast<const SymbolProcedure*>(arg1())->target ()->index()))
+#define dname  (SymbolOstreamWrapper (dest()))
+#define tname  (LabelOstreamWrapper (dest()))
+#define a1name (SymbolOstreamWrapper (arg1()))
+#define a2name (SymbolOstreamWrapper (arg2()))
+#define a3name (SymbolOstreamWrapper (arg3()))
+#define cImop  (ProcedureOstreamWrapper (arg1()))
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
     Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
@@ -173,8 +224,6 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
 
     return i;
 }
-
-Imop::~Imop() { }
 
 bool Imop::isJump () const {
     return getImopInfoBits (m_type).isJump;
@@ -382,21 +431,21 @@ std::ostream & Imop::print(std::ostream & os) const {
                         os << ", ";
                     }
 
-                    os << symToString (sym);
+                    os << SymbolOstreamWrapper (sym);
                     isFirst = false;
                 }
 
                 if (! isFirst)
                     os << " = ";
 
-                os << "CALL " << symToString (m_args[0]) << " (";
+                os << "CALL " << SymbolOstreamWrapper (m_args[0]) << " (";
                 isFirst = true;
                 BOOST_FOREACH (const Symbol* sym, useRange ()) {
                     if (! isFirst) {
                         os << ", ";
                     }
 
-                    os << symToString (sym);
+                    os << SymbolOstreamWrapper (sym);
                     isFirst = false;
                 }
 
@@ -457,7 +506,7 @@ std::ostream & Imop::print(std::ostream & os) const {
                     }
 
                     const Symbol* sym = *it;
-                    os << symToString (sym);
+                    os << SymbolOstreamWrapper (sym);
                 }
             }
             os << ");";
