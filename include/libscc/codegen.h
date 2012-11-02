@@ -60,6 +60,7 @@ public: /* Types: */
     typedef IndexList::const_iterator const_iterator;
 
     struct LoopCheck {
+        Symbol* index;
         Imop* test;
         Imop* jump;
     };
@@ -81,14 +82,20 @@ protected:
 
     friend class CodeGen;
 
-    void pushJump (Imop* test, Imop* jump) {
-        LoopCheck temp = { test, jump };
+    void pushJump (Symbol* index, Imop* test, Imop* jump) {
+        LoopCheck temp = { index, test, jump };
         m_jumpStack.push_back (temp);
     }
 
+    void pushNop (Symbol* index) {
+        LoopCheck temp = { index, 0, 0 };
+        m_jumpStack.push_back (temp);
+    }
+
+    bool isTopNop () const { return m_jumpStack.back ().test == 0; }
     bool empty () const { return m_jumpStack.empty (); }
     LoopCheck top () const { return m_jumpStack.back (); }
-    void pop () { return m_jumpStack.pop_back ();}
+    void pop () { return m_jumpStack.pop_back (); }
 
 private: /* Fields: */
     IndexList                m_indices;
