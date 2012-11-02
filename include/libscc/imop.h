@@ -205,7 +205,7 @@ class Imop : public auto_unlink_hook {
         OperandConstRange useRange () const;
         OperandConstRange defRange () const;
 
-        std::ostream& print (std::ostream& os) const;
+        void print (std::ostream& os) const;
 
         template <typename Iter >
         friend Imop* newReturn (TreeNode *node, Iter begin, Iter end);
@@ -264,7 +264,8 @@ Imop* newCall (TreeNode* node, Iter beginRet, Iter endRet, Iter beginArg, Iter e
 }
 
 inline std::ostream & operator<<(std::ostream & out, const Imop & i) {
-    return i.print(out);
+    i.print(out);
+    return out;
 }
 
 } // namespace SecreC

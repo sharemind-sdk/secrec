@@ -319,7 +319,7 @@ void Imop::setReturnDestFirstImop (SymbolLabel *label) {
     setDest (label);
 }
 
-std::ostream & Imop::print(std::ostream & os) const {
+void Imop::print(std::ostream & os) const {
     switch (m_type) {
         case ASSIGN:       /*   d = arg1;                        */
             os << dname << " = " << a1name;
@@ -518,8 +518,6 @@ std::ostream & Imop::print(std::ostream & os) const {
             os << "TODO";
             break;
     }
-
-    return os;
 }
 
 } // namespace SecreC
