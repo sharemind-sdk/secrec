@@ -72,7 +72,7 @@ public: /* Methods: */
         if (m_size > ref.m_size)
             return false;
 
-        return std::strncmp (m_data, ref.m_data, m_size);
+        return std::strncmp (m_data, ref.m_data, m_size) == 0;
     }
 
     /**
