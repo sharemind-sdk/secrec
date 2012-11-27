@@ -4,6 +4,7 @@
 #include <libscc/treenode.h>
 #include <libscc/StringTable.h>
 #include <string>
+#include <sstream>
 
 using namespace SecreC;
 
@@ -353,7 +354,7 @@ void TestParse::testExprPostfix_data() {
 
     QTest::newRow("matrixExpressionWildCard")
         << QString(SIMPLE_E("m[:]"))
-        << QString(SIMPLE_PARSE_E(XB("EXPR_INDEX", 
+        << QString(SIMPLE_PARSE_E(XB("EXPR_INDEX",
                 XRVAR("m") XB2("SUBSCRIPT", "INDEX_SLICE", XNONE XNONE))));
 
     QTest::newRow("matrixExpressionWildCards")
@@ -382,7 +383,7 @@ void TestParse::testExprPostfix_data() {
                   XB("INDEX_SLICE", XNONE XNONE)
           XB("INDEX_INT", XINT(42))
                   XB("INDEX_SLICE", XNONE XNONE)
-		))));
+        ))));
 }
 
 void TestParse::testExprUnary_data() {
@@ -610,7 +611,7 @@ void TestParse::testExprPrecedence_data() {
 
     QTest::newRow("unegToWildcard") /// \todo RVAR or LVAR
         << QString(SIMPLE_E("!o1[:]"))
-        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_INDEX", 
+        << QString(SIMPLE_PARSE_E(XB2("EXPR_UNEG", "EXPR_INDEX",
                                       XRVAR("o1") XB2("SUBSCRIPT", "INDEX_SLICE", XNONE XNONE))));
 
     QTest::newRow("uminusToSubscript") /// \todo RVAR or LVAR
