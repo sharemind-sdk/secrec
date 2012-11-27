@@ -289,7 +289,7 @@ const Imop *Imop::callDest() const {
     assert(m_type == CALL);
     assert(dest()->symbolType() == Symbol::PROCEDURE);
     assert(dynamic_cast<const SymbolProcedure*>(dest()) != 0);
-
+    assert(static_cast<const SymbolProcedure*>(dest())->target () != 0);
     return static_cast<const SymbolProcedure*>(dest())->target ();
 }
 
@@ -297,26 +297,6 @@ SymbolLabel* Imop::jumpDest() const {
     Symbol* sym = dest ();
     assert (dynamic_cast<SymbolLabel*>(sym) != 0);
     return static_cast<SymbolLabel*>(sym);
-}
-
-void Imop::setJumpDest (SymbolLabel *dest) {
-    assert (dest != 0);
-    assert (isJump ());
-    setDest (dest);
-}
-
-void Imop::setCallDest(SymbolProcedure *proc) {
-    assert (proc != 0);
-    assert (m_type == CALL);
-    assert (proc->target () != 0);
-    setDest (proc);
-}
-
-void Imop::setReturnDestFirstImop (SymbolLabel *label) {
-    assert (label != 0);
-    assert (label->target () != 0);
-    assert (label->target ()->m_type == COMMENT);
-    setDest (label);
 }
 
 void Imop::print(std::ostream & os) const {

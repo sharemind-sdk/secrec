@@ -64,7 +64,6 @@ std::ostream & SymbolDomain::print(std::ostream & os) const {
 
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     : Symbol (SYMBOL, valueType)
-    , m_decl(NULL)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType())
     , m_size (0)
@@ -75,7 +74,6 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
 
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     : Symbol (SYMBOL, valueType)
-    , m_decl(NULL)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType ())
     , m_size (0)
@@ -85,9 +83,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
 }
 
 const TreeNode::Location * SymbolSymbol::location() const {
-    if (m_decl)
-        return &m_decl->location();
-    return NULL;
+    return NULL; // TODO
 }
 
 std::ostream & SymbolSymbol::print(std::ostream & os) const {
@@ -112,7 +108,7 @@ void SymbolSymbol::inheritShape (Symbol* from) {
   SymbolProcedure
 *******************************************************************************/
 
-SymbolProcedure::SymbolProcedure(const std::string & name,
+SymbolProcedure::SymbolProcedure(StringRef name,
                                  const TreeNodeProcDef * procdef,
                                  SymbolProcedure * shortOf)
     : Symbol(Symbol::PROCEDURE, procdef->procedureType())
@@ -125,6 +121,10 @@ SymbolProcedure::SymbolProcedure(const std::string & name,
 
 const TreeNode::Location * SymbolProcedure::location() const {
     return &m_decl->location();
+}
+
+StringRef SymbolProcedure::procedureName () const {
+    return m_decl->procedureName ();
 }
 
 namespace {

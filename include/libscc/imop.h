@@ -172,10 +172,7 @@ class Imop : public auto_unlink_hook {
 
         // everything to do with jumping to labels and calling functions
         SymbolLabel* jumpDest() const;
-        void setJumpDest (SymbolLabel *dest);
         const Imop *callDest() const;
-        void setCallDest(SymbolProcedure *proc);
-        void setReturnDestFirstImop(SymbolLabel *label);
 
         inline Block *block() const { return m_block; }
         inline void setBlock(Block *block) { m_block = block; }

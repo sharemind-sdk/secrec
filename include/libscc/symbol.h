@@ -131,8 +131,6 @@ public: /* Methods: */
 
     explicit SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool);
 
-    inline TreeNodeVarInit * decl() const { return m_decl; }
-    inline void setDecl(TreeNodeVarInit * decl) { m_decl = decl; }
     inline ScopeType scopeType() const { return m_scopeType; }
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
     inline bool isTemporary () const { return m_isTemporary; }
@@ -153,7 +151,6 @@ protected:
 
 private: /* Fields: */
 
-    TreeNodeVarInit *      m_decl;
     ScopeType              m_scopeType;
     std::vector<Symbol* >  m_dims;
     Symbol*                m_size;
@@ -224,7 +221,7 @@ inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol
 
 class SymbolProcedure: public Symbol {
 public: /* Methods: */
-    SymbolProcedure(const std::string & name,
+    SymbolProcedure(StringRef name,
                     const TreeNodeProcDef * procdef,
                     SymbolProcedure * shortOf = NULL);
 
@@ -232,6 +229,7 @@ public: /* Methods: */
     inline const TreeNodeProcDef *decl() const { return m_decl; }
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
+    StringRef procedureName () const;
 
     virtual const TreeNode::Location * location() const;
     virtual std::ostream & print(std::ostream & os) const;

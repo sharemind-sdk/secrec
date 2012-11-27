@@ -89,12 +89,12 @@ std::string ReachingJumps::toString(const Program & pr) const {
         std::map<unsigned long, char> jumps;
 
         if (posi != m_inPos.end()) {
-            for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); jt++) {
+            for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); ++ jt) {
                 jumps.insert(std::make_pair((*jt)->index(), '+'));
             }
 
             if (negi != m_inNeg.end()) {
-                for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
+                for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); ++ jt) {
                     LCMI kt = jumps.find((*jt)->index());
 
                     if (kt != jumps.end()) {
@@ -107,7 +107,7 @@ std::string ReachingJumps::toString(const Program & pr) const {
             }
         }
         else if (negi != m_inNeg.end()) {
-            for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); jt++) {
+            for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); ++ jt) {
                 jumps.insert(std::make_pair((*jt)->index(), '-'));
             }
         }
@@ -116,7 +116,7 @@ std::string ReachingJumps::toString(const Program & pr) const {
             os << "NONE";
         }
         else {
-            for (LCMCI jt = jumps.begin(); jt != jumps.end(); jt++) {
+            for (LCMCI jt = jumps.begin(); jt != jumps.end(); ++ jt) {
                 if (jt != jumps.begin()) {
                     os << ", ";
                 }

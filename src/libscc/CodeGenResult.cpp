@@ -11,6 +11,7 @@
 
 #include <boost/foreach.hpp>
 #include "intermediate.h"
+#include "symbol.h"
 
 namespace SecreC {
 
@@ -18,7 +19,7 @@ namespace /* anonymous */ {
 
 inline void patchList(PatchList & list, SymbolLabel * dest) {
     BOOST_FOREACH (Imop * imop, list) {
-        imop->setJumpDest(dest);
+        imop->setDest(dest);
     }
 
     list.clear();

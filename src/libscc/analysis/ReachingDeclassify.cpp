@@ -229,8 +229,7 @@ std::string ReachingDeclassify::toString(const Program &) const {
                     assert(dynamic_cast<TreeNodeExprProcCall *>(imop->creator()) != 0);
                     TreeNodeExprProcCall * c = static_cast<TreeNodeExprProcCall *>(imop->creator());
                     assert(c->symbolProcedure() != 0);
-                    assert(c->symbolProcedure()->decl() != 0);
-                    os << "call to " << c->symbolProcedure()->decl()->procedureName()
+                    os << "call to " << c->symbolProcedure()->procedureName()
                        << " at " << c->location();
                 }
 

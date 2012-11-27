@@ -85,7 +85,7 @@ std::string ReachingDefinitions::toString(const Program & pr) const {
                 os << "      " << *sdef.first << ": ";
                 const Defs & ds = sdef.second;
 
-                for (DCI jt = ds.begin(); jt != ds.end(); jt++) {
+                for (DCI jt = ds.begin(); jt != ds.end(); ++ jt) {
                     if (jt != ds.begin()) {
                         os << ", ";
                     }

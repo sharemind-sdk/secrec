@@ -507,7 +507,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     // out: r[i] = t
     i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
     push_imop(i);
-    jump_out->setJumpDest(m_st->label(i));
+    jump_out->setDest(m_st->label(i));
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count != strides[2].size(); ++ count) {
@@ -1441,7 +1441,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         // r = e1
         Imop * i = newAssign(e, resSym, e2Result.symbol());
         push_imop(i);
-        jmp->setJumpDest(m_st->label(i));
+        jmp->setDest(m_st->label(i));
 
         // counter = 0
         i = new Imop(e, Imop::ASSIGN, counter, indexConstant(0));
@@ -1467,7 +1467,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         // if b goto T0
         i = new Imop(e, Imop::JT, (Symbol *) 0, b);
         push_imop(i);
-        i->setJumpDest(m_st->label(t0));
+        i->setDest(m_st->label(t0));
 
         // t = e3[counter]
         // T1: result[counter] = t
@@ -1481,7 +1481,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         // goto L0
         i = new Imop(e, Imop::JUMP, (Symbol *) 0);
         push_imop(i);
-        i->setJumpDest(m_st->label(test));
+        i->setDest(m_st->label(test));
 
         releaseTemporary(result, e1Result.symbol());
         releaseTemporary(result, e2Result.symbol());

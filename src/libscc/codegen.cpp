@@ -375,13 +375,13 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
             push_imop(i);
             result.patchFirstImop(i);
             if (prevJump != 0) {
-                prevJump->setJumpDest(m_st->label(i));
+                prevJump->setDest(m_st->label(i));
             }
 
             i = new Imop(m_node, Imop::JUMP, (Symbol *) 0);
             push_imop(i);
 
-            i->setJumpDest(m_st->label(check.test));
+            i->setDest(m_st->label(check.test));
             prevJump = check.jump;
         }
 
@@ -479,7 +479,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
 
                 i = new Imop(m_node, Imop::JT, 0, temp_bool);
                 push_imop(i);
-                i->setJumpDest(errLabel);
+                i->setDest(errLabel);
             }
             else {
                 i = new Imop(m_node, Imop::GT, temp_bool, s_lo, s_hi);
@@ -487,14 +487,14 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
 
                 i = new Imop(m_node, Imop::JT, 0, temp_bool);
                 push_imop(i);
-                i->setJumpDest(errLabel);
+                i->setDest(errLabel);
 
                 i = new Imop(m_node, Imop::GT, temp_bool, s_hi, d);
                 push_imop(i);
 
                 i = new Imop(m_node, Imop::JT, 0, temp_bool);
                 push_imop(i);
-                i->setJumpDest(errLabel);
+                i->setDest(errLabel);
             }
         }
 

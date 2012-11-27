@@ -264,7 +264,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
 
                 Imop * const jmp = new Imop(varInit, Imop::JUMP, (Symbol *) 0);
                 Imop * const i = new Imop(varInit, Imop::COPY, ns, eResultSymbol, ns->getSizeSym());
-                jmp->setJumpDest(m_st->label(i));
+                jmp->setDest(m_st->label(i));
                 pushImopAfter(result, jmp);
                 push_imop(err);
                 push_imop(i);
@@ -427,7 +427,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     result.patchFirstImop(condResult.firstImop());
     result.addToNextList(condResult.falseList());   // if condition if false jump out of for loop
     result.addToNextList(bodyResult.breakList());   // if break is reach jump out of for loop
-    j->setJumpDest(m_st->label(condResult.firstImop()));    // after iteration jump to contitional
+    j->setDest(m_st->label(condResult.firstImop()));    // after iteration jump to contitional
     condResult.patchTrueList(firstBodyDest);  // if conditional is true jump to body
     bodyResult.patchNextList(nextIterDest);  // next jumps to iteration
     bodyResult.patchContinueList(nextIterDest);  // continue jumps to iteration
@@ -569,7 +569,7 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         releaseProcVariables(result);
 
         Imop * i = newReturn(s);
-        i->setReturnDestFirstImop(m_st->label(s->containingProcedure()->symbol()->target()));
+        i->setDest(m_st->label(s->containingProcedure()->symbol()->target()));
         pushImopAfter(result, i);
     } else {
         TreeNodeExpr * e = s->expression();
@@ -585,7 +585,7 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         std::vector<Symbol * > rets(dim_begin(eResult.symbol()), dim_end(eResult.symbol()));
         rets.push_back(eResult.symbol());
         Imop * i = newReturn(s, rets.begin(), rets.end());
-        i->setReturnDestFirstImop(m_st->label(s->containingProcedure()->symbol()->target()));
+        i->setDest(m_st->label(s->containingProcedure()->symbol()->target()));
         pushImopAfter(result, i);
     }
 
@@ -651,7 +651,7 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
 
     Imop * i = new Imop(s, Imop::JUMP, 0);
     pushImopAfter(bodyResult, i);
-    i->setJumpDest(jumpDest);
+    i->setDest(jumpDest);
 
     // Patch jump lists:
     eResult.patchTrueList(m_st->label(bodyResult.firstImop()));

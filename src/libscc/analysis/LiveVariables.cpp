@@ -144,7 +144,7 @@ private:
 };
 
 inline void operator += (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
-    out.insert(arg.begin(),arg.end());
+    out.insert(arg.begin(), arg.end());
 }
 
 inline void operator -= (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {

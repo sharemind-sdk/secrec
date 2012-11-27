@@ -60,14 +60,14 @@ void printBlocks(std::ostream &os, const char *prefix, Iter begin, Iter end)
                 unreachables.insert((*jt)->index ());
             }
         }
-        for (std::set<unsigned long>::const_iterator jt = reachables.begin(); jt != reachables.end(); jt++) {
+        for (std::set<unsigned long>::const_iterator jt = reachables.begin(); jt != reachables.end(); ++ jt) {
             if (jt != reachables.begin()) os << ", ";
             os << (*jt);
         }
         if (!reachables.empty() && !unreachables.empty()) os << " ";
         if (!unreachables.empty()) {
             os << "(";
-            for (std::set<unsigned long>::const_iterator jt = unreachables.begin(); jt != unreachables.end(); jt++) {
+            for (std::set<unsigned long>::const_iterator jt = unreachables.begin(); jt != unreachables.end(); ++ jt) {
                 if (jt != unreachables.begin()) os << ", ";
                 os << (*jt);
             }
@@ -176,7 +176,7 @@ void printProcName (std::ostream& os, const Procedure& pr) {
 
 template<class T >
 struct disposer {
-    void operator () (T* obj) {
+    void operator () (T* obj) const {
         delete obj;
     }
 };

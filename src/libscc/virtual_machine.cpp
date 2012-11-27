@@ -122,7 +122,10 @@ private:
     void increase_size () {
         m_size = ((m_size + 1) * 3) / 2;
         TRACE("RESIZE STACK TO %u\n", m_size);
-        m_bptr = (Value*) realloc (m_bptr, m_size * sizeof (Value));
+        Value* newBPtr = (Value*) realloc (m_bptr, m_size * sizeof (Value));
+        if (newBPtr != 0) {
+            m_bptr = newBPtr;
+        }
     }
 };
 

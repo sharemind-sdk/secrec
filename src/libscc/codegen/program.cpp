@@ -68,7 +68,7 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 
 struct ScopePusher {
     ScopePusher(CodeGen & cg, SymbolTable * newScope)
-        : m_cg(cg), m_oldScope(cg.m_st)
+        : m_oldScope(cg.m_st), m_cg(cg)
     {
         cg.setScope(newScope);
     }
@@ -88,8 +88,6 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     typedef TreeNode::ChildrenListConstIterator CLCI;
 
     assert(def != 0);
-
-    const TNI * id = def->identifier();
 
     if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
@@ -179,7 +177,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
             releaseProcVariables(result);
 
             Imop * i = newReturn(def);
-            i->setReturnDestFirstImop(m_st->label(result.firstImop()));
+            i->setDest (m_st->label(result.firstImop()));
             pushImopAfter(result, i);
         }
     }
@@ -317,7 +315,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     // Patch up calls to template instances:
     BOOST_FOREACH (const CallMap::value_type& v, m_callsTo) {
         BOOST_FOREACH (Imop * imop, v.second) {
-            imop->setCallDest(v.first->symbol());
+            imop->setDest(v.first->symbol ());
         }
     }
 
@@ -338,7 +336,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     }
 
     // Bind call to main(), i.e. mainCall:
-    mainCall->setCallDest(mainProc);
+    mainCall->setDest(mainProc);
     retClean->setArg2(m_st->label(mainCall));
     return result;
 }
