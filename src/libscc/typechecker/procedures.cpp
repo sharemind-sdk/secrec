@@ -71,7 +71,7 @@ SymbolProcedure* appendProcedure (SymbolTable* st,
 
 SymbolProcedure*
 findProcedure (SymbolTable* st,
-               const StringRef& name,
+               StringRef name,
                DataTypeProcedureVoid* dt,
                const TemplateParams& targs = TemplateParams ())
 {
@@ -88,7 +88,7 @@ findProcedure (SymbolTable* st,
 
 std::vector<SymbolProcedure*>
 findProcedures (SymbolTable* st,
-                const StringRef& name,
+                StringRef name,
                 DataTypeProcedureVoid* dt)
 {
     std::vector<SymbolProcedure* > out;
@@ -103,7 +103,7 @@ findProcedures (SymbolTable* st,
 }
 
 std::vector<SymbolTemplate*>
-findTemplates (SymbolTable* st, const StringRef& name)
+findTemplates (SymbolTable* st, StringRef name)
 {
     std::vector<SymbolTemplate*> out;
     BOOST_FOREACH (Symbol* _symTempl, st->findAll ("{templ}" + name.str())) {
