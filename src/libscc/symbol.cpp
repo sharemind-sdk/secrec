@@ -41,21 +41,19 @@ bool Symbol::isArray () const {
   SymbolKind
 *******************************************************************************/
 
-std::ostream & SymbolKind::print(std::ostream & os) const {
+void SymbolKind::print(std::ostream & os) const {
     os << "KIND " << name ();
-    return os;
 }
 
 /*******************************************************************************
   SymbolDomain
 *******************************************************************************/
 
-std::ostream & SymbolDomain::print(std::ostream & os) const {
+void SymbolDomain::print(std::ostream & os) const {
     os << "DOMAIN (" << name ();
     if (secrecType ())
         os << " : " << secrecType ()->toString ();
     os << ')';
-    return os;
 }
 
 /*******************************************************************************
@@ -86,11 +84,10 @@ const TreeNode::Location * SymbolSymbol::location() const {
     return NULL; // TODO
 }
 
-std::ostream & SymbolSymbol::print(std::ostream & os) const {
+void SymbolSymbol::print(std::ostream & os) const {
     if (m_isTemporary) os << "TEMPORARY ";
     os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
        << *secrecType () << ' ' << name () << '{' << this << '}';
-    return os;
 }
 
 
@@ -128,7 +125,7 @@ StringRef SymbolProcedure::procedureName () const {
 }
 
 namespace {
-std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
+void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
     os << procDef->returnType()->typeString()
        << ' ' << procDef->identifier()->value() << '(';
     TreeNode::ChildrenListConstIterator it = procDef->paramBegin();
@@ -145,12 +142,11 @@ std::ostream & printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) 
         }
     }
     os << ')';
-    return os;
 }
 }
 
-std::ostream & SymbolProcedure::print(std::ostream & os) const {
-    return printProcDef(os, m_decl);
+void SymbolProcedure::print(std::ostream & os) const {
+    printProcDef(os, m_decl);
 }
 
 /*******************************************************************************
@@ -178,7 +174,7 @@ const Imop* SymbolLabel::target () const {
     return &m_block->front ();
 }
 
-std::ostream & SymbolLabel::print(std::ostream & os) const {
+void SymbolLabel::print(std::ostream & os) const {
     os << "Lable to ";
     assert (m_target != 0);
     if (m_target->block () != 0) {
@@ -187,8 +183,6 @@ std::ostream & SymbolLabel::print(std::ostream & os) const {
     else {
         os << "imop " << m_target->index ();
     }
-
-    return os;
 }
 
 /*******************************************************************************
@@ -204,7 +198,7 @@ const TreeNode::Location * SymbolTemplate::location() const {
     return &m_templ->location();
 }
 
-std::ostream & SymbolTemplate::print(std::ostream & os) const {
+void SymbolTemplate::print(std::ostream & os) const {
     os << "template <domain ";
     const TreeNode::ChildrenList & qs = m_templ->quantifiers();
     assert(!qs.empty());
@@ -224,7 +218,6 @@ std::ostream & SymbolTemplate::print(std::ostream & os) const {
     }
 
     printProcDef(os << "> ", m_templ->body());
-    return os;
 }
 
 }

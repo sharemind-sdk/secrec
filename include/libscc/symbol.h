@@ -56,7 +56,7 @@ public: /* Methods: */
     bool isArray () const;
 
     virtual const TreeNode::Location * location() const { return NULL; }
-    virtual std::ostream & print(std::ostream & os) const = 0;
+    virtual void print(std::ostream & os) const = 0;
 
 private: /* Fields: */
     Type          const  m_symbolType;  ///< Type of the symbol.
@@ -91,7 +91,7 @@ public: /* Methods: */
         setName(name);
     }
 
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 };
 
 /*******************************************************************************
@@ -109,7 +109,7 @@ public: /* Methods: */
     }
 
     inline SecurityType* securityType () const { return m_secType; }
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 
 private:
 
@@ -142,7 +142,7 @@ public: /* Methods: */
     void inheritShape (Symbol* from);
 
     virtual const TreeNode::Location * location() const;
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 
 protected:
 
@@ -232,7 +232,7 @@ public: /* Methods: */
     StringRef procedureName () const;
 
     virtual const TreeNode::Location * location() const;
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 
 private: /* Fields: */
     const TreeNodeProcDef*  const  m_decl;
@@ -252,7 +252,7 @@ public: /* Methods: */
     inline const TreeNodeTemplate *decl() const { return m_templ; }
 
     virtual const TreeNode::Location * location() const;
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 
 private: /* Fields: */
     const TreeNodeTemplate* m_templ;
@@ -276,7 +276,7 @@ public:
         m_block = block;
     }
 
-    virtual std::ostream & print(std::ostream & os) const;
+    void print(std::ostream & os) const;
 
 private:
     Imop*   m_target;
@@ -284,7 +284,8 @@ private:
 };
 
 inline std::ostream &operator<<(std::ostream &out, const Symbol &s) {
-    return s.print(out);
+    s.print(out);
+    return out;
 }
 
 } // namespace SecreC

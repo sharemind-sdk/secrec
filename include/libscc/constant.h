@@ -58,9 +58,8 @@ public: /* Methods: */
         return m_value;
     }
 
-    std::ostream& print (std::ostream& os) const {
+    void print (std::ostream& os) const {
         os << trait::CName << ' ' << m_value;
-        return os;
     }
 
 private: /* Fields: */
