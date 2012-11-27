@@ -46,13 +46,13 @@ const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
        {X,  X,  E,  X,  X,  E,  E,  E,  E,  S,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT8,
        {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  S,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT16,
        {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  S,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT32,
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  S,  E,  E,  E,  E,  X,  X},     // DATATYPE_UINT64,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  S,  E,  E,  E,  E,  E,  E},     // DATATYPE_UINT64,
        {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  S,  E,  E,  E,  X,  X},     // DATATYPE_XOR_UINT8
        {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  S,  E,  E,  X,  X},     // DATATYPE_XOR_UINT16
        {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  S,  E,  X,  X},     // DATATYPE_XOR_UINT32
        {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  E,  S,  X,  X},     // DATATYPE_XOR_UINT64
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  X,  S,  E},     // DATATYPE_FLOAT32
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  X,  E,  S}      // DATATYPE_FLOAT64
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  S,  E},     // DATATYPE_FLOAT32
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  S}      // DATATYPE_FLOAT64
 };
 
 #undef X
