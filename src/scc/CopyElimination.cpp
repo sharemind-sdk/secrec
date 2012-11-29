@@ -27,6 +27,8 @@ ReachableReleases::Values getReleases (const Imop* i, ReachableReleases& rr) {
     return after;
 }
 
+#if 0
+// For debugging
 void print_graph (std::ostream& os, const std::set<const Imop*>& deadCopies) {
     unsigned count = 1;
     std::map<const Symbol*, unsigned> labels;
@@ -55,6 +57,7 @@ void print_graph (std::ostream& os, const std::set<const Imop*>& deadCopies) {
 
     os << "}\n";
 }
+#endif
 
 } // namespace anonymous
 
