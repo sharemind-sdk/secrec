@@ -43,12 +43,12 @@ public: /* Methods: */
 
 private: /* Fields: */
 
+    Status       m_status;
     Context      m_context;
     StringTable  m_stringTable;
     SymbolTable  m_symbols;
     ModuleMap    m_modules;
     Program      m_program;
-    Status       m_status;
     CompileLog   m_log;
 };
 

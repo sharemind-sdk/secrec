@@ -62,7 +62,7 @@ private: /* Fields: */
     Type          const  m_symbolType;  ///< Type of the symbol.
     TypeNonVoid*  const  m_type;        ///< Type of the symbol or NULL.
     std::string          m_name;        ///< Name of the symbol.
-    Symbol*              m_previous;    ///< Previous symbol with same name.
+    Symbol*              m_previous;    ///< Previous symbol with the same name.
 };
 
 /*******************************************************************************

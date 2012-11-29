@@ -140,26 +140,8 @@ struct LabelOstreamWrapper : public SymbolWrapperBase  {
     }
 };
 
-struct ProcedureOstreamWrapper : public SymbolWrapperBase   {
-
-    ProcedureOstreamWrapper (const SecreC::Symbol * symbol)
-        : SymbolWrapperBase (symbol)
-    { }
-
-    inline void print (std::ostream& os) const {
-        if (! m_symbol) {
-            os << '_';
-            return;
-        }
-
-        assert (dynamic_cast<const SymbolProcedure*>(m_symbol) != 0);
-        os << static_cast<const SymbolProcedure*>(m_symbol)->target ()->index();
-    }
-};
-
 std::ostream& operator << (std::ostream & os, const SymbolOstreamWrapper & wrapper) { wrapper.print (os); return os; }
 std::ostream& operator << (std::ostream & os, const LabelOstreamWrapper & wrapper) { wrapper.print (os); return os; }
-std::ostream& operator << (std::ostream & os, const ProcedureOstreamWrapper & wrapper) { wrapper.print (os); return os; }
 
 
 } // anonymous namespace
@@ -171,7 +153,6 @@ namespace SecreC {
 #define a1name (SymbolOstreamWrapper (arg1()))
 #define a2name (SymbolOstreamWrapper (arg2()))
 #define a3name (SymbolOstreamWrapper (arg3()))
-#define cImop  (ProcedureOstreamWrapper (arg1()))
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
     Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, msg);

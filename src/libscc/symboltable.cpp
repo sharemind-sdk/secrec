@@ -91,13 +91,10 @@ public: /* Methods: */
         return tmp;
     }
 
-    std::string toString () const {
-        std::ostringstream os;
+    void print (std::ostream& os) const {
         os << "Temporaries:\n";
         BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
             os << '\t' << *s << '\n';
-
-        return os.str ();
     }
 
 private: /* Fields: */
@@ -111,7 +108,7 @@ private: /* Fields: */
   SymbolTable
 *******************************************************************************/
 
-SymbolTable::SymbolTable (const std::string& name)
+SymbolTable::SymbolTable (StringRef name)
     : m_parent (0)
     , m_global (this)
     , m_other (new OtherSymbols ())
@@ -121,7 +118,7 @@ SymbolTable::SymbolTable (const std::string& name)
     // Intentionally empty
 }
 
-SymbolTable::SymbolTable (SymbolTable *parent, const std::string& name)
+SymbolTable::SymbolTable (SymbolTable *parent, StringRef name)
     : m_parent (parent)
     , m_global (parent->m_global)
     , m_other (parent->m_other)
@@ -259,12 +256,10 @@ SymbolTable *SymbolTable::newScope () {
     return scope;
 }
 
-std::string SymbolTable::toString(unsigned level, unsigned indent) const {
-    std::ostringstream os;
-
+void SymbolTable::print (std::ostream& os, unsigned level, unsigned indent) const {
     if (m_parent == 0) {
         os << "--- Other Symbols ---" << std::endl;
-        os << m_other->toString ();
+        m_other->print (os);
     }
 
     printIndent(os, level, indent);
@@ -286,14 +281,12 @@ std::string SymbolTable::toString(unsigned level, unsigned indent) const {
     }
 
     BOOST_FOREACH (SymbolTable* table, m_scopes) {
-        os << table->toString(level+1, indent);
+        table->print (os, level + 1, indent);
     }
-
-    return os.str();
 }
 
 std::ostream & operator<<(std::ostream & out, const SymbolTable & st) {
-    out << st.toString ();
+    st.print (out);
     return out;
 }
 

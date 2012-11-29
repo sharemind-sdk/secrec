@@ -62,18 +62,18 @@ std::string escape (const std::string& str) {
 
 namespace SecreC {
 
-const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "Bool";
-const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "String";
-const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "Int8";
-const char* SecrecTypeInfo<DATATYPE_UINT8>::CName = "UInt8";
-const char* SecrecTypeInfo<DATATYPE_INT16>::CName = "Int16";
-const char* SecrecTypeInfo<DATATYPE_UINT16>::CName = "UInt16";
-const char* SecrecTypeInfo<DATATYPE_INT32>::CName = "Int32";
-const char* SecrecTypeInfo<DATATYPE_UINT32>::CName = "UInt32";
-const char* SecrecTypeInfo<DATATYPE_INT64>::CName = "Int64";
-const char* SecrecTypeInfo<DATATYPE_UINT64>::CName = "UInt64";
-const char* SecrecTypeInfo<DATATYPE_FLOAT32>::CName = "Float32";
-const char* SecrecTypeInfo<DATATYPE_FLOAT64>::CName = "Float64";
+const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "bool";
+const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "string";
+const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "int8";
+const char* SecrecTypeInfo<DATATYPE_UINT8>::CName = "uint8";
+const char* SecrecTypeInfo<DATATYPE_INT16>::CName = "int16";
+const char* SecrecTypeInfo<DATATYPE_UINT16>::CName = "uint16";
+const char* SecrecTypeInfo<DATATYPE_INT32>::CName = "int32";
+const char* SecrecTypeInfo<DATATYPE_UINT32>::CName = "uint32";
+const char* SecrecTypeInfo<DATATYPE_INT64>::CName = "int64";
+const char* SecrecTypeInfo<DATATYPE_UINT64>::CName = "uint64";
+const char* SecrecTypeInfo<DATATYPE_FLOAT32>::CName = "float32";
+const char* SecrecTypeInfo<DATATYPE_FLOAT64>::CName = "float64";
 
 
 /*******************************************************************************

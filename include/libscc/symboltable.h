@@ -2,7 +2,6 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include <vector>
-#include <string>
 #include "StringRef.h"
 
 namespace SecreC {
@@ -31,8 +30,8 @@ private: /* Types: */
     SymbolTable& operator = (const SymbolTable&); // do not implement
 
 public: /* Methods: */
-    SymbolTable (const std::string& name = "Global");
-    explicit SymbolTable(SymbolTable *parent, const std::string& name = "Local");
+    SymbolTable (StringRef name = "Global");
+    explicit SymbolTable(SymbolTable *parent, StringRef name = "Local");
 
     ~SymbolTable();
 
@@ -65,7 +64,7 @@ public: /* Methods: */
 
     void setName (StringRef name) { m_name = name; }
 
-    std::string toString(unsigned level = 0, unsigned indent = 4) const;
+    void print (std::ostream& os, unsigned level = 0, unsigned indent = 4) const;
 
     /**
       Find a symbol in current scope given its name, following imported modules.

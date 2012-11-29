@@ -1157,7 +1157,6 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
      * Compute length of the array:
      */
 
-    Imop * i = 0;
     Imop * loadChar = new Imop(e, Imop::LOAD, charSym, strSym, sizeSym);
     Imop * inc = new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1));
 
