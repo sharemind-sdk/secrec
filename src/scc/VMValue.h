@@ -16,8 +16,6 @@
 
 namespace SecreCC {
 
-class VMSymbolTable;
-
 /******************************************************************
   VMValue
 ******************************************************************/
@@ -27,25 +25,7 @@ class VMSymbolTable;
  * Only (de)allocated by the VM symbol table class.
  */
 class VMValue {
-    friend class VMSymbolTable;
-
-public: /* Types: */
-
-    enum Type {
-        Imm = 0, ///< Immediate
-        Stack,   ///< Stack register
-        Reg,     ///< Global register
-        Label,   ///< Label
-        VReg     ///< Virtual Register
-    };
-
-protected: /* Methods: */
-
-    explicit VMValue (Type type)
-        : m_type (type)
-    { }
-
-public:
+public: /* Methods: */
 
     virtual ~VMValue () { }
     
@@ -54,10 +34,6 @@ public:
 protected:
 
     virtual void printV (std::ostream& os) const = 0;
-
-private: /* Fields: */
-
-    const Type m_type;
 };
     
 std::ostream& operator << (std::ostream& os, const VMValue& value);
@@ -67,16 +43,11 @@ std::ostream& operator << (std::ostream& os, const VMValue& value);
 ******************************************************************/
 
 class VMImm : public VMValue {
-    friend class VMSymbolTable;
+public: /* Methods: */
 
-protected: /* Methods: */
-
-    VMImm (uint64_t value)
-        : VMValue (VMValue::Imm)
-        , m_value (value)
+    explicit VMImm (uint64_t value)
+        : m_value (value)
     { }
-
-public:
 
     uint64_t value () const { return m_value; }
 
@@ -94,16 +65,11 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMStack : public VMValue {
-    friend class VMSymbolTable;
+public: /* Methods: */
 
-protected: /* Methods: */
-
-    VMStack (unsigned num)
-        : VMValue (VMValue::Imm)
-        , m_number (num)
+    explicit VMStack (unsigned num)
+        : m_number (num)
     { }
-
-public:
 
     unsigned number () const { return m_number; }
 
@@ -121,16 +87,11 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMReg : public VMValue {
-    friend class VMSymbolTable;
+public: /* Methods: */
 
-protected: /* Methods: */
-
-    VMReg (unsigned num)
-        : VMValue (VMValue::Imm)
-        , m_number (num)
+    explicit VMReg (unsigned num)
+        : m_number (num)
     { }
-
-public:
 
     unsigned number () const { return m_number; }
 
@@ -148,16 +109,11 @@ private: /* Fields: */
 ******************************************************************/
 
 class VMLabel : public VMValue {
-    friend class VMSymbolTable;
-
-protected: /* Methods: */
+public: /* Methods: */
 
     explicit VMLabel (const std::string& name)
-        : VMValue (VMValue::Label)
-        , m_name (name)
+        : m_name (name)
     { }
-
-public:
 
     inline const std::string& name () const { return m_name; }
 
@@ -180,17 +136,12 @@ private: /* Fields: */
  * at the register allocation pass.
  */
 class VMVReg: public VMValue {
-    friend class VMSymbolTable;
-
-protected: /* Methods: */
+public: /* Methods: */
 
     explicit VMVReg (bool isGlobal)
-        : VMValue (VMValue::VReg)
-        , m_actualReg (0)
+        : m_actualReg (0)
         , m_isGlobal (isGlobal)
     { }
-
-public:
 
     std::string toString () const;
     bool isGlobal () const { return m_isGlobal; }

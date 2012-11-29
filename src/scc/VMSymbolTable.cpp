@@ -31,6 +31,18 @@ void deleteValues (MapContainer& kvs) {
     kvs.clear ();
 }
 
+template <class T> struct TypeProvider { };
+
+template <class Map, typename Key, class Value>
+Value* insertNew (Map& map, const Key& key, TypeProvider<Value>) {
+    typename Map::iterator i = map.find (key);
+    if (i == map.end ()) {
+        i = map.insert (i, std::make_pair (key, new Value (key)));
+    }
+
+    return i->second;
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -112,39 +124,19 @@ void VMSymbolTable::store (const SecreC::Symbol* symbol, VMValue* value) {
 }
 
 VMImm* VMSymbolTable::getImm (uint64_t value) {
-    VMSTImpl::ImmMap::iterator i = m_impl->m_imms.find (value);
-    if (i == m_impl->m_imms.end ()) {
-        i = m_impl->m_imms.insert (i, std::make_pair (value, new VMImm (value)));
-    }
-
-    return i->second;
+    return insertNew (m_impl->m_imms, value, TypeProvider<VMImm>());
 }
 
 VMReg* VMSymbolTable::getReg (unsigned number) {
-    VMSTImpl::GlobalMap::iterator i = m_impl->m_globals.find (number);
-    if (i == m_impl->m_globals.end ()) {
-        i = m_impl->m_globals.insert (i, std::make_pair (number, new VMReg (number)));
-    }
-
-    return i->second;
+    return insertNew (m_impl->m_globals, number, TypeProvider<VMReg>());
 }
 
 VMStack* VMSymbolTable::getStack (unsigned number) {
-    VMSTImpl::LocalMap::iterator i = m_impl->m_locals.find (number);
-    if (i == m_impl->m_locals.end ()) {
-        i = m_impl->m_locals.insert (i, std::make_pair (number, new VMStack (number)));
-    }
-
-    return i->second;
+    return insertNew (m_impl->m_locals, number, TypeProvider<VMStack>());
 }
 
 VMLabel* VMSymbolTable::getLabel (const std::string& name) {
-    VMSTImpl::LabelMap::iterator i = m_impl->m_labels.find (name);
-    if (i == m_impl->m_labels.end ()) {
-        i = m_impl->m_labels.insert (i, std::make_pair (name, new VMLabel (name)));
-    }
-
-    return i->second;
+    return insertNew (m_impl->m_labels, name, TypeProvider<VMLabel>());
 }
 
 VMLabel* VMSymbolTable::getUniqLabel () {
