@@ -29,18 +29,6 @@ namespace {
 
 using namespace SecreCC;
 
-bool isGlobalSymbol (const Symbol* symbol) {
-    assert (symbol != 0);
-    switch (symbol->symbolType ()) {
-    case Symbol::SYMBOL:
-        assert (dynamic_cast<const SymbolSymbol*>(symbol) != 0);
-        return static_cast<const SymbolSymbol*>(symbol)->scopeType () == SymbolSymbol::GLOBAL;
-    default:
-        assert (false && "Allocating non-variable!");
-        return true;
-    }
-}
-
 void getImm (VMSymbolTable& st, const Symbol* sym) {
     assert (sym != 0);
     assert (sym->symbolType () == Symbol::CONSTANT);
@@ -84,92 +72,85 @@ inline std::set<T> &operator-=(std::set<T> &dest, const std::set<U> &src) {
   IGraphImpl
 *******************************************************************************/
 
-// \todo consider register-register assignments as different kinds of edges
 class IGraphImpl {
+private: /* Types: */
 
-public: /* Types: */
+    typedef unsigned Vertex;
+    typedef unsigned Color;
 
-    typedef boost::container::flat_set<VMVReg*> Neighbours;
-    typedef std::map<VMVReg*, Neighbours> Type;
-    typedef Type::value_type value_type;
-    typedef Type::iterator Iterator;
-    typedef Type::const_iterator ConstIterator;
-    typedef Neighbours::iterator NIterator;
-    typedef Neighbours::const_iterator NConstIterator;
-    typedef std::pair<NIterator, NIterator> NRange;
-    typedef std::pair<NConstIterator, NConstIterator> NConstRange;
-
-    typedef std::map<VMVReg*, unsigned> ColorMap;
-    typedef boost::container::flat_set<unsigned> ColorSet;
-    typedef std::map<VMVReg*, ColorSet> ColorGraph;
-
-private:
+    typedef std::map<VMVReg*, Vertex> Index; ///< Maps VRegs to vertices
+    typedef std::vector<VMVReg*> Vertices; ///< Maps vertices back to VRegs
+    typedef boost::container::flat_set<Vertex> Neighbours; ///< Set of vertices. Represented as flat set to conserve space.
+    typedef std::vector<Neighbours> AdjacencyList; ///< Maps vertices to neighbours.
+    typedef boost::container::flat_set<Color> ColorSet;
+    typedef std::map<Color, ColorSet> ColorGraph;
 
     struct DegreeCmp {
-        DegreeCmp (const Type& nodes) : m_nodes (nodes) { }
-        bool operator () (VMVReg* a, VMVReg* b) const {
-            return  m_nodes.find (a)->second.size () >
-                    m_nodes.find (b)->second.size ();
+        DegreeCmp (const IGraphImpl* self) : m_adjacencyList (self->m_adjacencyList) { }
+        inline bool operator () (Vertex u, Vertex v) const {
+            return m_adjacencyList[u].size () > m_adjacencyList[v].size ();
         }
 
     private:
-        const Type& m_nodes;
+        const AdjacencyList& m_adjacencyList;
     };
+
+private: /* Methods: */
+
+    std::vector<Vertex> iota () const {
+        std::vector<Vertex> out;
+        const Vertices::size_type n = m_vertices.size ();
+        out.reserve (n);
+        for (Vertex i = 0; i < n; ++ i) {
+            out.push_back (i);
+        }
+
+        return boost::move (out);
+    }
 
 public: /* Methods: */
 
-    void addEdge (VMVReg* a, VMVReg* b) {
-        assert (a != 0 && b != 0);
-        m_nodes[a].insert (b);
-        m_nodes[b].insert (a);
+    Vertex addNode (VMVReg* node) {
+        Index::iterator i = m_index.find (node);
+        if (i != m_index.end ()) {
+            return i->second;
+        }
+
+        Vertex u = m_index.size ();
+        m_index.insert (i, std::make_pair (node, u));
+        m_vertices.push_back (node);
+        m_adjacencyList.push_back (Neighbours ());
+        return u;
     }
 
-    void addNode (VMVReg* node) {
-        assert (node != 0);
-        Iterator i = m_nodes.find (node);
-        if (i == m_nodes.end ()) {
-            m_nodes.insert (i, std::make_pair (node, Neighbours ()));
-        }
+    void addEdge (VMVReg* a, VMVReg* b) {
+        Vertex u = addNode (a);
+        Vertex v = addNode (b);
+        m_adjacencyList[u].insert (v);
+        m_adjacencyList[v].insert (u);
     }
 
     void reset () {
-        m_nodes.clear ();
+        m_index.clear ();
+        m_vertices.clear ();
+        m_adjacencyList.clear ();
     }
 
-    void order (std::vector<VMVReg*>& vertices) const {
-        vertices.clear ();
-        vertices.reserve (m_nodes.size ());
-        for (ConstIterator i = begin (), e = end (); i != e; ++ i) {
-            vertices.push_back (i->first);
-        }
-
-        std::sort (vertices.begin (), vertices.end (), DegreeCmp (m_nodes));
-    }
-
-    // also acts as trivial coloring
-    unsigned label (ColorMap& labels) const {
-        unsigned count = 0;
-        labels.clear ();
-        for (ConstIterator i = begin (), e = end (); i != e; ++ i)
-            labels[i->first] = count ++;
-        return count;
-    }
-
-    unsigned colorGreedy (ColorMap& colors) const {
-        std::vector<VMVReg*> vertices;
+    template <typename ColorSetter >
+    unsigned colorGreedy (ColorSetter setColor) const {
+        std::vector<Vertex> vertices = iota ();
+        std::sort (vertices.begin (), vertices.end (), DegreeCmp (this));
         ColorSet usedRegisters;
         ColorGraph neighbours; // colors of neighbours
         unsigned count = 0;
-        order (vertices);
-        colors.clear ();
-        BOOST_FOREACH (VMVReg* v, vertices) {
+        BOOST_FOREACH (unsigned v, vertices) {
             ColorSet candidates = usedRegisters;
             BOOST_FOREACH (unsigned u, neighbours[v])
                 candidates.erase(u);
-            const unsigned color = candidates.empty () ? (count ++) : *candidates.begin ();
+            const Color color = candidates.empty () ? (count ++) : *candidates.begin ();
             usedRegisters.insert (color);
-            colors[v] = color;
-            BOOST_FOREACH (VMVReg* u, neighbourRange (v)) {
+            setColor (m_vertices[v], color);
+            BOOST_FOREACH (Vertex u, m_adjacencyList[v]) {
                 neighbours[u].insert (color);
             }
         }
@@ -177,43 +158,13 @@ public: /* Methods: */
         return count;
     }
 
-    void dump () const {
-        std::cerr << "IGraphImpl:\n";
-        ColorMap labels;
-        label (labels);
-        for (ConstIterator i = begin (), e = end (); i != e; ++ i) {
-            const unsigned from = labels[i->first];
-            BOOST_FOREACH (VMVReg* u, i->second) {
-                const unsigned to = labels[u];
-                if (from <= to)
-                    std::cerr << from << " - " << to << std::endl;
-            }
-        }
-    }
-
-protected:
-
-    Iterator begin () { return m_nodes.begin (); }
-    ConstIterator begin () const { return m_nodes.begin (); }
-    Iterator end () { return m_nodes.end (); }
-    ConstIterator end () const { return m_nodes.end (); }
-
-    NConstIterator beginNeighbours (VMVReg* v) const {
-        return m_nodes.find (v)->second.begin ();
-    }
-
-    NConstIterator endNeighbours (VMVReg* v) const {
-        return m_nodes.find (v)->second.end ();
-    }
-
-    NConstRange neighbourRange (VMVReg* v) const {
-        return std::make_pair (beginNeighbours (v), endNeighbours (v));
-    }
-
 private: /* Fields: */
 
-    Type     m_nodes;
+    Index         m_index;
+    Vertices      m_vertices;
+    AdjacencyList m_adjacencyList;
 };
+
 
 } // anonymous namespace
 
@@ -225,6 +176,27 @@ namespace SecreCC {
 *******************************************************************************/
 
 class RegisterAllocator::InferenceGraph {
+private:
+
+    struct SetReg {
+        SetReg (VMSymbolTable & st) : st (st) { }
+        inline void operator () (VMVReg* reg, unsigned color) {
+            reg->setActualReg (st.getReg (color));
+        }
+
+    private:
+        VMSymbolTable& st;
+    };
+
+    struct SetStack {
+        SetStack (VMSymbolTable & st) : st (st) { }
+        inline void operator () (VMVReg* reg, unsigned color) {
+            reg->setActualReg (st.getStack (color));
+        }
+
+    private:
+        VMSymbolTable& st;
+    };
 
 public: /* Methods: */
 
@@ -244,38 +216,11 @@ public: /* Methods: */
             m_local.addEdge (a, b);
     }
 
-    unsigned colorLocal (VMSymbolTable& st) { return color (st, false); }
+    unsigned colorLocal (VMSymbolTable& st) { return m_local.colorGreedy (SetStack (st)); }
 
-    unsigned colorGlobal (VMSymbolTable& st) { return color (st, true); }
+    unsigned colorGlobal (VMSymbolTable& st) { return m_global.colorGreedy (SetReg (st)); }
 
     void resetLocal () { m_local.reset (); }
-
-    void dump () const {
-        m_local.dump ();
-        m_global.dump ();
-    }
-
-protected:
-
-    unsigned color (VMSymbolTable& st, bool isGlobal) {
-        IGraphImpl::ColorMap colors;
-        unsigned count = 0;
-        if (isGlobal)
-            count = m_global.colorGreedy (colors);
-        else
-            count = m_local.colorGreedy (colors);
-        assignColors (st, colors, isGlobal);
-        return count;
-    }
-
-    void assignColors (VMSymbolTable& st, const IGraphImpl::ColorMap& colors, bool isGlobal) {
-        typedef IGraphImpl::ColorMap::value_type RC_pair;
-        BOOST_FOREACH (const RC_pair& rc, colors) {
-            VMVReg* reg = rc.first;
-            const unsigned color = rc.second;
-            reg->setActualReg (isGlobal ? (VMValue*) st.getReg (color) : (VMValue*) st.getStack (color));
-        }
-    }
 
 private: /* Fields: */
 
