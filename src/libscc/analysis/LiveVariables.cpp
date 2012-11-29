@@ -143,7 +143,7 @@ private:
     unsigned m_count;
 };
 
-inline void operator += (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
+inline void operator += (LiveVariables::Symbols& out, LiveVariables::Symbols& arg) {
     out.insert(arg.begin(), arg.end());
 }
 
