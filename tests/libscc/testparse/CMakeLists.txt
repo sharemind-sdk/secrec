@@ -5,7 +5,8 @@
 SET(TEST_NAME "testparse")
 include_directories("${CMAKE_SOURCE_DIR}/include"
     ${QT_INCLUDE_DIR}
-    ${QT_QTTEST_INCLUDE_DIR})
+    ${QT_QTTEST_INCLUDE_DIR}
+    ${BOOST_INCLUDES})
 SET(QT4_TEST_MOC)
 QT4_WRAP_CPP(QT4_TEST_MOC "${TEST_NAME}.h")
 ADD_EXECUTABLE("test-libscc-${TEST_NAME}"
