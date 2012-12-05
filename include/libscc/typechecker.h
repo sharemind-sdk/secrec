@@ -55,6 +55,7 @@ public: /* Methods: */
 
     Status visitExpr(TreeNodeExpr * e);
 
+    Status visit(TreeNodeExprArrayConstructor * e);
     Status visit(TreeNodeExprBool * e);
     Status visit(TreeNodeExprCast * root);
     Status visit(TreeNodeExprIndex * root);

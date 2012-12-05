@@ -15,6 +15,7 @@ namespace SecreC {
 class TreeNode;
 class TreeNodeDomain;
 class TreeNodeExpr;
+class TreeNodeExprArrayConstructor;
 class TreeNodeExprAssign;
 class TreeNodeExprBinary;
 class TreeNodeExprBool;

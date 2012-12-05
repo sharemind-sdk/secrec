@@ -60,6 +60,16 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
     return DATATYPE_UNDEFINED;
 }
 
+TypeNonVoid* upperTypeNonVoid (Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
+    SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
+    SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
+    SecrecDataType dataType = upperDataType (a->secrecDataType (), b->secrecDataType ());
+    if (secType == 0 || dimType < 0 || dataType == DATATYPE_UNDEFINED)
+        return 0;
+
+    return TypeNonVoid::get (cxt, secType, dataType, dimType);
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -787,6 +797,73 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBool * e) {
     }
 
     return OK;
+}
+
+/*******************************************************************************
+  TreeNodeExprArrayConstructor
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeExprArrayConstructor::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit(this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
+    if (e->haveResultType ()) {
+        return OK;
+    }
+
+    TypeNonVoid* elemType = 0;
+    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(c) != 0);
+        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
+        child->setContextSecType (e->contextSecType ());
+        child->setContextDataType (e->contextDataType ());
+        child->setContextDimType (0);
+        Status s = visitExpr (child);
+        if (s != OK) {
+            return s;
+        }
+
+        if (checkAndLogIfVoid (child))
+            return E_TYPE;
+
+        TypeNonVoid* childType = static_cast<TypeNonVoid*>(child->resultType ());
+
+        if (! childType->isScalar ()) {
+            m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at " << child->location () << ".";
+            return E_TYPE;
+        }
+
+        assert (childType != 0);
+        if (elemType == 0) {
+            elemType = childType;
+        }
+        else {
+            elemType = upperTypeNonVoid (getContext (), childType, elemType);
+            if (elemType == 0) {
+                m_log.fatalInProc (e) << "Array element of invalid type at " << child->location () << ".";
+                return E_TYPE;
+            }
+        }
+    }
+
+    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
+        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
+        child->instantiateDataType (getContext (), elemType->secrecDataType ());
+        classifyIfNeeded (child, elemType->secrecSecType ());
+    }
+
+
+    e->setResultType (TypeNonVoid::get (getContext (), elemType->secrecSecType (), elemType->secrecDataType (), 1));
+    return OK;
+}
+
+void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
+    resetDataType (cxt, dType);
+    BOOST_FOREACH (TreeNode* c, expressions ()) {
+        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
+        child->instantiateDataType (cxt, dType);
+    }
 }
 
 /*******************************************************************************

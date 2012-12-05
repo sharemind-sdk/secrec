@@ -233,6 +233,7 @@ public: /* Methods: */
      * Code generation for regular expressions.
      */
     /// \{
+    CGResult cgExprArrayConstructor (TreeNodeExprArrayConstructor* e);
     CGResult cgExprCast (TreeNodeExprCast* e);
     CGResult cgExprBool (TreeNodeExprBool* e);
     CGResult cgExprIndex (TreeNodeExprIndex* e);

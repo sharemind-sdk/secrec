@@ -1527,6 +1527,44 @@ CGBranchResult CodeGen::cgBoolExprTernary(TreeNodeExprTernary * e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprArrayConstructor
+*******************************************************************************/
+
+CGResult TreeNodeExprArrayConstructor::codeGenWith(CodeGen & cg) {
+    return cg.cgExprArrayConstructor(this);
+}
+
+CGResult CodeGen::cgExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
+    // Type check:
+    if (m_tyChecker->visit(e) != TypeChecker::OK)
+        return CGResult::ERROR_CONTINUE;
+
+    CGResult result;
+    SymbolSymbol * resultSymbol = generateResultSymbol (result, e);
+    Symbol* sizeValue = indexConstant (e->expressions ().size ());
+
+    pushImopAfter (result, new Imop (e, Imop::ASSIGN, resultSymbol->getDim (0), sizeValue));
+    pushImopAfter (result, new Imop (e, Imop::ASSIGN, resultSymbol->getSizeSym (), sizeValue));
+    allocTemporaryResult (result);
+
+    unsigned index = 0;
+    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
+        assert (dynamic_cast<TreeNodeExpr*>(c) != 0);
+        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
+        const CGResult& exprResult = codeGen (child);
+        append (result, exprResult);
+        if (result.isNotOk ())
+            return result;
+
+        pushImopAfter (result, new Imop (e, Imop::STORE, resultSymbol, indexConstant (index), exprResult.symbol ()));
+        releaseTemporary (result, exprResult.symbol ());
+        ++ index;
+    }
+
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeExprInt
 *******************************************************************************/
 

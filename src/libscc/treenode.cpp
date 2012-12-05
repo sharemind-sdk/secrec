@@ -110,6 +110,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(DIMENSIONS);
     CASE_NODE_NAME(DIMTYPE_F);
     CASE_NODE_NAME(DOMAIN);
+    CASE_NODE_NAME(EXPR_ARRAY_CONSTRUCTOR);
     CASE_NODE_NAME(EXPR_BINARY_ASSIGN);
     CASE_NODE_NAME(EXPR_BINARY_ASSIGN_ADD);
     CASE_NODE_NAME(EXPR_BINARY_ASSIGN_AND);
@@ -1170,6 +1171,8 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     case NODE_EXPR_PREFIX_INC: /* Fall through: */
     case NODE_EXPR_PREFIX_DEC:
         return (TreeNode *)(new SecreC::TreeNodeExprPrefix(type, *loc));
+    case NODE_EXPR_ARRAY_CONSTRUCTOR:
+        return (TreeNode *)(new SecreC::TreeNodeExprArrayConstructor(*loc));
     case NODE_EXPR_BINARY_ADD:        /* Fall through: */
     case NODE_EXPR_BINARY_DIV:        /* Fall through: */
     case NODE_EXPR_BINARY_EQ:         /* Fall through: */

@@ -519,6 +519,31 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeExprArrayConstructor
+******************************************************************/
+
+class TreeNodeExprArrayConstructor : public TreeNodeExpr {
+public: /* Methods: */
+
+    inline explicit TreeNodeExprArrayConstructor(const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_ARRAY_CONSTRUCTOR, loc) { }
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+    ChildrenList& expressions () { return m_children; }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprArrayConstructor (m_location);
+    }
+
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+};
+
+/******************************************************************
   TreeNodeExprInt
 ******************************************************************/
 

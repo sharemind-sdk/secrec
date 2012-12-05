@@ -1219,6 +1219,12 @@ primary_expression
      $$ = $2;
      treenode_setLocation($$, &@$);
    }
+ | '{' expression_list '}'
+   {
+     $$ = treenode_init (NODE_EXPR_ARRAY_CONSTRUCTOR, &@$);
+     treenode_moveChildren ($2, $$);
+     treenode_free ($2);
+   }
  | identifier
    {
      $$ = treenode_init(NODE_EXPR_RVARIABLE, &@$);

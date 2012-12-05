@@ -109,6 +109,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_UINV              = 0x300, /* ~expr                    */
     NODE_EXPR_UMINUS            = 0x310, /* -expr                    */
     NODE_EXPR_UNEG              = 0x320, /* !expr                    */
+    NODE_EXPR_ARRAY_CONSTRUCTOR = 0x330, /* { e1, e2, ..., en }      */
         NODE_EXPR_MASK          = 0xfff, /* NB! Including literals.  */
 
     NODE_DECL                   = 0x01000,
