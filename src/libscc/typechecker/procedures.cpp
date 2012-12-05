@@ -439,12 +439,10 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 m_log.info() << "Candidates are:";
                 haveCandidatesLabel = true;
                 BOOST_FOREACH(SymbolProcedure * c, cps) {
-                    std::ostringstream oss;
-                    c->print(oss);
                     if (c->location()) {
-                        m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                        m_log.info() << '\t' << *c << " at " << *(c->location());
                     } else {
-                        m_log.info() << '\t' << oss.str();
+                        m_log.info() << '\t' << *c;
                     }
                 }
             }
@@ -455,12 +453,10 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 m_log.info() << "Candidates are:";
             BOOST_REVERSE_FOREACH(Symbol * c, cs) {
                 assert(dynamic_cast<SymbolTemplate *>(c) != 0);
-                std::ostringstream oss;
-                c->print(oss);
                 if (c->location()) {
-                    m_log.info() << '\t' << oss.str() << " at " << *(c->location());
+                    m_log.info() << '\t' << *c << " at " << *(c->location());
                 } else {
-                    m_log.info() << '\t' << oss.str();
+                    m_log.info() << '\t' << *c;
                 }
             }
         }

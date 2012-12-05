@@ -56,6 +56,9 @@ public: /* Methods: */
     bool isArray () const;
 
     virtual const TreeNode::Location * location() const { return NULL; }
+
+protected:
+    friend std::ostream& operator << (std::ostream& os, const Symbol& s);
     virtual void print(std::ostream & os) const = 0;
 
 private: /* Fields: */
@@ -91,6 +94,7 @@ public: /* Methods: */
         setName(name);
     }
 
+protected:
     void print(std::ostream & os) const;
 };
 
@@ -109,6 +113,8 @@ public: /* Methods: */
     }
 
     inline SecurityType* securityType () const { return m_secType; }
+
+protected:
     void print(std::ostream & os) const;
 
 private:
@@ -142,6 +148,8 @@ public: /* Methods: */
     void inheritShape (Symbol* from);
 
     virtual const TreeNode::Location * location() const;
+
+protected:
     void print(std::ostream & os) const;
 
 protected:
@@ -232,6 +240,8 @@ public: /* Methods: */
     StringRef procedureName () const;
 
     virtual const TreeNode::Location * location() const;
+
+protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
@@ -252,6 +262,8 @@ public: /* Methods: */
     inline const TreeNodeTemplate *decl() const { return m_templ; }
 
     virtual const TreeNode::Location * location() const;
+
+protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
@@ -276,6 +288,7 @@ public:
         m_block = block;
     }
 
+protected:
     void print(std::ostream & os) const;
 
 private:

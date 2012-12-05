@@ -52,7 +52,7 @@ void SymbolKind::print(std::ostream & os) const {
 void SymbolDomain::print(std::ostream & os) const {
     os << "DOMAIN (" << name ();
     if (secrecType ())
-        os << " : " << secrecType ()->toString ();
+        os << " : " << *secrecType ();
     os << ')';
 }
 

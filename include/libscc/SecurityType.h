@@ -25,27 +25,28 @@ class SymbolKind;
 class SecurityType {
 private:
     SecurityType (const SecurityType&); // DO NOT IMPLEMENT
+    void operator = (const SecurityType&); // DO NOT IMPLEMENT
 
 public: /* Methods: */
-
     virtual ~SecurityType () { }
-    virtual std::ostream& print (std::ostream& os) const = 0;
     inline bool isPrivate () const { return !m_isPublic; }
     inline bool isPublic () const { return m_isPublic; }
 
 protected:
+    virtual void print (std::ostream& os) const = 0;
+    friend std::ostream& operator<<(std::ostream &out, const SecurityType& type);
 
     explicit SecurityType (bool isPublic)
         : m_isPublic (isPublic)
     { }
 
 private: /* Fields: */
-
     const bool m_isPublic;
 };
 
 inline std::ostream &operator<<(std::ostream &out, const SecurityType& type) {
-    return type.print (out);
+    type.print (out);
+    return out;
 }
 
 /*******************************************************************************
@@ -54,14 +55,14 @@ inline std::ostream &operator<<(std::ostream &out, const SecurityType& type) {
 
 class PublicSecType : public SecurityType {
 public: /* Methods: */
-
     PublicSecType ()
         : SecurityType (true)
     { }
 
-    std::ostream& print (std::ostream & os) const;
-
     static PublicSecType* get (Context& cxt);
+
+protected:
+    void print (std::ostream & os) const;
 };
 
 /*******************************************************************************
@@ -70,7 +71,6 @@ public: /* Methods: */
 
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
-
     PrivateSecType (StringRef name,
                     SymbolKind* kind)
         : SecurityType (false)
@@ -80,12 +80,13 @@ public: /* Methods: */
 
     inline StringRef name () const { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
-    std::ostream& print (std::ostream & os) const;
 
     static PrivateSecType* get (Context& cxt, StringRef name, SymbolKind* kind);
 
-private: /* Fields: */
+protected:
+    void print (std::ostream & os) const;
 
+private: /* Fields: */
     StringRef   const m_name;
     SymbolKind* const m_kind;
 };

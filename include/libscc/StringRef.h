@@ -32,6 +32,16 @@ public: /* Types: */
     typedef char value_type;
     typedef size_t size_type;
 
+    /**
+     * \note Only use if you know what you're doing.
+     */
+    struct FastCmp {
+        inline bool operator () (StringRef r1, StringRef r2) const {
+            return std::make_pair (r1.m_data, r1.m_size) <
+                   std::make_pair (r2.m_data, r2.m_size);
+        }
+    };
+
 public: /* Methods: */
 
     StringRef ()
@@ -74,16 +84,6 @@ public: /* Methods: */
 
         return std::strncmp (m_data, ref.m_data, m_size) == 0;
     }
-
-    /**
-     * \note Only use if you know what you're doing.
-     */
-    struct FastCmp {
-        inline bool operator () (StringRef r1, StringRef r2) const {
-            return std::make_pair (r1.m_data, r1.m_size) <
-                   std::make_pair (r2.m_data, r2.m_size);
-        }
-    };
 
     static void free (StringRef ref) {
         std::free (const_cast<value_type*>(ref.m_data));

@@ -11,7 +11,6 @@
 #define SECREC_MODULE_MAP_H
 
 #include <memory>
-#include <string>
 #include <map>
 #include "StringRef.h"
 
@@ -40,7 +39,7 @@ public: /* Methods: */
     bool addSearchPath (const std::string& pathName);
 
     /// Takes ownership, or frees a ModuleInfo object
-    bool addModule (const std::string& name, std::auto_ptr<ModuleInfo>& info);
+    bool addModule (const std::string& name, std::auto_ptr<ModuleInfo> info);
 
     ModuleInfo* findModule (StringRef name) const;
 

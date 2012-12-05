@@ -237,6 +237,15 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
     }
 }
 
+std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc) {
+    os << loc.filename()
+       << ":(" << loc.firstLine()
+       << ',' << loc.firstColumn()
+       << ")(" << loc.lastLine()
+       << ',' << loc.lastColumn() << ')';
+    return os;
+}
+
 /*******************************************************************************
   TreeNodeSecTypeF
 *******************************************************************************/
@@ -317,13 +326,16 @@ bool TreeNodeType::isNonVoid() const {
 }
 
 std::string TreeNodeType::typeString() const {
-    if (m_cachedType)
-        return m_cachedType->toNormalString();
 
     if (!isNonVoid())
         return "void";
 
     std::ostringstream oss;
+    if (m_cachedType) {
+        oss << Type::PrettyPrint (m_cachedType);
+        return oss.str ();
+    }
+
     TreeNodeSecTypeF * const st = secType();
     if (!st->isPublic())
         oss << st->identifier()->value() << ' ';
@@ -786,7 +798,7 @@ TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramEnd () const {
 const std::string TreeNodeProcDef::printableSignature() const {
     std::ostringstream oss;
     if (m_procSymbol) {
-        m_procSymbol->print(oss);
+        oss << *m_procSymbol;
     } else {
         oss << returnType()->typeString() << ' '
             << procedureName() << '(';
@@ -1091,7 +1103,7 @@ TreeNode::ChildrenListConstRange TreeNodeStmtSyscall::paramRange () const {
 
 bool TreeNodeTypeType::printHelper (std::ostream & os) const {
     if (m_cachedType != 0) {
-        os << secrecType()->toString();
+        os << *secrecType();
         return true;
     }
 

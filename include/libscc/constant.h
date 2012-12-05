@@ -58,6 +58,7 @@ public: /* Methods: */
         return m_value;
     }
 
+protected:
     void print (std::ostream& os) const {
         os << trait::CName << ' ' << m_value;
     }

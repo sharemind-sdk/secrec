@@ -28,7 +28,7 @@ ModuleMap::~ModuleMap () {
     }
 }
 
-bool ModuleMap::addModule (const std::string& name, std::auto_ptr<ModuleInfo>& info) {
+bool ModuleMap::addModule (const std::string& name, std::auto_ptr<ModuleInfo> info) {
     assert (info.get () != 0);
     MapType::iterator it = m_modules.find (name);
     if (it != m_modules.end ())

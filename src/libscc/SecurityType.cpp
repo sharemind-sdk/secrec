@@ -10,9 +10,8 @@ namespace SecreC {
   PublicSecType
 *******************************************************************************/
 
-std::ostream& PublicSecType::print (std::ostream & os) const {
+void PublicSecType::print (std::ostream & os) const {
     os << "public";
-    return os;
 }
 
 PublicSecType* PublicSecType::get (Context& cxt) {
@@ -24,9 +23,8 @@ PublicSecType* PublicSecType::get (Context& cxt) {
   PrivateSecType
 *******************************************************************************/
 
-std::ostream& PrivateSecType::print (std::ostream & os) const {
+void PrivateSecType::print (std::ostream & os) const {
     os << m_name;
-    return os;
 }
 
 PrivateSecType* PrivateSecType::get (Context& cxt, StringRef name,

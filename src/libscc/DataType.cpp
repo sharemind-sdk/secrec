@@ -172,21 +172,18 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
   DataTypeBasic
 *******************************************************************************/
 
-std::ostream& DataTypeBasic::print (std::ostream & os) const {
+void DataTypeBasic::print (std::ostream & os) const {
     os << "(" << *m_secType << ","
        << SecrecFundDataTypeToString(m_dataType) << ","
        << m_dimType << ")";
-    return os;
 }
 
-std::string DataTypeBasic::toNormalString() const {
-    std::ostringstream oss;
+void DataTypeBasic::prettyPrint (std::ostream& os) const {
     if (!m_secType->isPublic())
-        oss << *m_secType << ' ';
-    oss << SecrecFundDataTypeToString(m_dataType);
+        os << *m_secType << ' ';
+    os << SecrecFundDataTypeToString(m_dataType);
     if (m_dimType > 0)
-        oss << "[[" << m_dimType << "]]";
-    return oss.str();
+        os << "[[" << m_dimType << "]]";
 }
 
 DataTypeBasic* DataTypeBasic::get (Context& cxt,
@@ -237,13 +234,12 @@ DataTypeProcedureVoid* DataTypeProcedureVoid::get (Context& cxt)
     return impl.voidProcedureType (std::vector<DataType*> ());
 }
 
-std::ostream& DataTypeProcedureVoid::print (std::ostream & os) const {
+void DataTypeProcedureVoid::print (std::ostream & os) const {
     os << mangle () << " -> void";
-    return os;
 }
 
-std::string DataTypeProcedureVoid::toNormalString() const {
-    return "void ()" + paramsToNormalString();
+void DataTypeProcedureVoid::prettyPrint (std::ostream& os) const {
+    os << "void ()" << paramsToNormalString();
 }
 
 std::string DataTypeProcedureVoid::paramsToNormalString() const {
@@ -252,10 +248,10 @@ std::string DataTypeProcedureVoid::paramsToNormalString() const {
     std::ostringstream oss;
     oss << '(';
     if (m_params.size() > 0) {
-        oss << m_params.at(0)->toNormalString();
+        oss << DataType::PrettyPrint (m_params.at(0));
         if (m_params.size() > 1)
             for (TVCI it(++(m_params.begin())); it != m_params.end(); it++)
-                oss << ", " << (*it)->toNormalString();
+                oss << ", " << DataType::PrettyPrint (*it);
     }
     oss << ')';
     return oss.str();
@@ -298,15 +294,12 @@ DataTypeProcedure* DataTypeProcedure::get (Context& cxt,
     return impl.procedureType (params->paramTypes (), returnType);
 }
 
-std::ostream& DataTypeProcedure::print (std::ostream& os) const {
+void DataTypeProcedure::print (std::ostream& os) const {
     os << mangle() << " -> " << *m_ret;
-    return os;
 }
 
-std::string DataTypeProcedure::toNormalString() const {
-    std::ostringstream oss;
-    oss << *m_ret << " ()" << paramsToNormalString();
-    return oss.str();
+void DataTypeProcedure::prettyPrint (std::ostream& os) const {
+    os << *m_ret << " ()" << paramsToNormalString();
 }
 
 } // namespace SecreC

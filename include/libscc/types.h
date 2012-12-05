@@ -2,7 +2,6 @@
 #define SECREC_TYPES_H
 
 #include <cassert>
-#include <string>
 #include <vector>
 
 #include "parser.h"
@@ -21,6 +20,16 @@ class Type {
 private:
     Type (const Type&); // DO NOT IMPLEMENT
     void operator = (const Type&); // DO NOT IMPLEMENT
+public: /* Types: */
+
+    class PrettyPrint {
+    public: /* Methods: */
+        explicit PrettyPrint (const Type* self) : m_self (self) { }
+        inline void operator () (std::ostream& os) const { m_self->prettyPrint (os); }
+
+    private: /* Fields: */
+        const Type* const m_self;
+    };
 
 public: /* Methods: */
 
@@ -32,9 +41,6 @@ public: /* Methods: */
 
     inline bool isVoid() const { return m_isVoid; }
 
-    virtual std::string toString() const = 0;
-    virtual std::string toNormalString() const = 0;
-
     virtual inline bool canAssign(const Type*) const {
         return false;
     }
@@ -44,6 +50,13 @@ public: /* Methods: */
     inline SecrecDataType secrecDataType() const;
     inline SecrecDimType secrecDimType() const;
     inline bool isScalar () const { return secrecDimType() == 0; }
+
+protected:
+
+    friend std::ostream& operator << (std::ostream& os, const Type& type);
+
+    virtual void print (std::ostream& os) const = 0;
+    virtual void prettyPrint (std::ostream& os) const = 0;
 
 private: /* Fields: */
 
@@ -63,8 +76,10 @@ public: /* Methods: */
 
     static TypeVoid* get (Context& cxt);
 
-    virtual inline std::string toString() const { return "void"; }
-    virtual inline std::string toNormalString() const { return "void"; }
+protected:
+
+    void print (std::ostream& os) const;
+    void prettyPrint (std::ostream& os) const;
 };
 
 /*******************************************************************************
@@ -96,11 +111,6 @@ public: /* Methods: */
     inline Kind kind() const { return m_kind; }
     inline DataType* dataType() const { return m_dataType; }
 
-    virtual std::string toString() const;
-    virtual inline std::string toNormalString() const {
-        return m_dataType->toNormalString();
-    }
-
     virtual inline bool canAssign(const Type* other) const {
         if (other->isVoid ()) return false;
         assert(dynamic_cast<const TypeNonVoid*>(other) != 0);
@@ -120,6 +130,11 @@ public: /* Methods: */
                              SecrecDimType dimType = 0);
     static TypeNonVoid* getIndexType (Context& cxt);
     static TypeNonVoid* getPublicBoolType (Context& cxt);
+
+protected:
+
+    void print (std::ostream& os) const;
+    void prettyPrint (std::ostream& os) const;
 
 private: /* Fields: */
     Kind       const m_kind;
@@ -149,8 +164,13 @@ inline SecrecDimType Type::secrecDimType() const {
 }
 
 inline std::ostream &operator<<(std::ostream &out, const Type &type) {
-    out << type.toString();
+    type.print (out);
     return out;
+}
+
+inline std::ostream& operator << (std::ostream& os, const Type::PrettyPrint& pp) {
+    pp (os);
+    return os;
 }
 
 } // namespace SecreC

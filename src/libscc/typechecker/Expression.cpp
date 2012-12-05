@@ -474,7 +474,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
         if (! dimType->isPublicIntScalar()) {
             m_log.fatalInProc(root) << "Expected public integer scalar at "
                 << dim->location()
-                << " got " << dimType->toString() << '.';
+                << " got " << *dimType << '.';
             return E_TYPE;
         }
     }
@@ -1206,7 +1206,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
             ty->secrecDimType() != 1)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "
-                             << ty->toString() << " at " << e->location() << '.';
+                             << *ty << " at " << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1240,7 +1240,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBytesFromString * e) {
             ty->secrecDimType() != 0)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public string, got "
-                             << ty->toString() << " at " << e->location() << '.';
+                             << *ty << " at " << e->location() << '.';
         return E_TYPE;
     }
 

@@ -29,6 +29,14 @@ TypeNonVoid::Kind kindToKind (DataType::Kind k) {
   TypeVoid
 *******************************************************************************/
 
+void TypeVoid::print (std::ostream & os) const {
+    os << "void";
+}
+
+void TypeVoid::prettyPrint (std::ostream& os) const {
+    os << "void";
+}
+
 TypeVoid* TypeVoid::get (Context& cxt) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.voidType ();
@@ -77,11 +85,12 @@ TypeNonVoid::TypeNonVoid(DataType* dataType)
      , m_dataType (dataType)
 { }
 
-std::string TypeNonVoid::toString() const {
-    assert(m_dataType != 0);
-    std::ostringstream os;
+void TypeNonVoid::print (std::ostream& os) const {
     os << *m_dataType;
-    return os.str();
+}
+
+void TypeNonVoid::prettyPrint (std::ostream& os) const {
+    os << DataType::PrettyPrint (m_dataType);
 }
 
 } // namespace SecreC

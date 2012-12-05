@@ -186,8 +186,7 @@ struct LeaderInfo {
     const SymbolProcedure*  procedure;
 
     LeaderInfo ()
-        : jumps ()
-        , procedure (0)
+        : procedure (0)
     { }
 };
 
@@ -308,7 +307,6 @@ void Program::propagate () {
 
     while (!todo.empty ()) {
         Procedure::iterator cur = *todo.begin ();
-        Procedure* curProc = cur->proc ();
         todo.erase (cur);
 
         if (visited.find (cur) != visited.end ()) continue;
@@ -324,7 +322,6 @@ void Program::propagate () {
 
             Procedure::iterator cleanBlock = cur;
             ++ cleanBlock;
-            assert (cleanBlock != curProc->end () && "Expecting RETCLEAN!");
             todo.insert (cleanBlock);
             Block::addEdge (*cur, Edge::CallPass, *cleanBlock);
 
@@ -343,7 +340,6 @@ void Program::propagate () {
         if (fallsThru (*cur)) {
             Procedure::iterator next = cur;
             ++ next;
-            assert (next != curProc->end () && "Must not fall out of procedure!");
             todo.insert (next);
             Edge::Label label = Edge::None;
             switch (lastImop.type ()) {

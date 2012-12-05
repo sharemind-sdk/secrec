@@ -4,7 +4,7 @@
 #include "parser.h"
 
 #include <cassert>
-#include <deque>
+#include <vector>
 #include <limits>
 #include <map>
 #include <string>
@@ -249,15 +249,7 @@ protected: /* Fields: */
     Location                  m_location;
 };
 
-inline std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc) {
-    os << loc.filename()
-       << ":(" << loc.firstLine()
-       << ',' << loc.firstColumn()
-       << ")(" << loc.lastLine()
-       << ',' << loc.lastColumn() << ')';
-    return os;
-}
-
+std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc);
 
 
 /******************************************************************

@@ -297,7 +297,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     if (checkPublicBooleanScalar (e) != OK) {
         assert(e->haveResultType());
         m_log.fatalInProc(stmt) << "Invalid expression of type "
-                                << e->resultType()->toNormalString()
+                                << Type::PrettyPrint (e->resultType())
                                 << " given for assert statement at " << e->location() << '.';
         return E_TYPE;
     }

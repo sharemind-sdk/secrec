@@ -14,7 +14,7 @@
 #include "SecurityType.h"
 
 #include <cassert>
-#include <ostream>
+#include <iosfwd>
 #include <vector>
 
 namespace SecreC {
@@ -47,6 +47,14 @@ private:
 public: /* Types: */
     enum Kind { BASIC, VAR, PROCEDURE, PROCEDUREVOID };
 
+    class PrettyPrint {
+    public: /* Methods: */
+        explicit PrettyPrint (const DataType* self) : m_self (self) { }
+        inline void operator () (std::ostream& os) const { m_self->prettyPrint (os); }
+    private: /* Fields: */
+        const DataType* const m_self;
+    };
+
 public: /* Methods: */
 
     explicit DataType(Kind kind)
@@ -59,8 +67,8 @@ public: /* Methods: */
     inline SecrecDataType secrecDataType() const;
     inline SecrecDimType secrecDimType() const;
 
-    virtual std::ostream& print (std::ostream& os) const = 0;
-    virtual std::string toNormalString() const = 0;
+    virtual void print (std::ostream& os) const = 0;
+    virtual void prettyPrint (std::ostream& os) const = 0;
 
     virtual inline bool canAssign(const DataType*) const {
         return false;
@@ -81,7 +89,13 @@ private: /* Fields: */
 };
 
 inline std::ostream &operator<<(std::ostream &out, const DataType &type) {
-    return type.print (out);
+    type.print (out);
+    return out;
+}
+
+inline std::ostream &operator<<(std::ostream &out, const DataType::PrettyPrint& pp) {
+    pp (out);
+    return out;
 }
 
 /*******************************************************************************
@@ -106,8 +120,8 @@ public: /* Methods: */
     inline SecrecDataType dataType() const { return m_dataType; }
     inline SecrecDimType dimType() const { return m_dimType; }
 
-    virtual std::ostream& print (std::ostream& os) const;
-    virtual std::string toNormalString() const;
+    virtual void print (std::ostream& os) const;
+    virtual void prettyPrint (std::ostream& os) const;
 
     virtual bool latticeLEQ(const DataType* _other) const {
         const DataTypeBasic* other = static_cast<const DataTypeBasic*>(_other);
@@ -154,13 +168,14 @@ public: /* Methods: */
 
     DataType* dataType() const { return m_dataType; }
 
-    virtual inline std::ostream& print (std::ostream& os) const {
+    virtual inline void print (std::ostream& os) const {
         os << *m_dataType;
-        return os;
     }
-    virtual inline std::string toNormalString() const {
-        return m_dataType->toNormalString();
+
+    virtual void prettyPrint (std::ostream& os) const {
+        m_dataType->prettyPrint (os);
     }
+
     virtual inline bool canAssign(const DataType* other) const {
         return other->latticeLEQ(m_dataType);
     }
@@ -192,8 +207,8 @@ public: /* Methods: */
         : DataType(kind) {}
     virtual ~DataTypeProcedureVoid() { }
 
-    virtual std::ostream& print (std::ostream& os) const;
-    virtual std::string toNormalString() const;
+    virtual void print (std::ostream& os) const;
+    virtual void prettyPrint (std::ostream& os) const;
     std::string paramsToNormalString() const;
 
     std::string mangle() const;
@@ -231,8 +246,8 @@ public: /* Methods: */
 
     virtual inline ~DataTypeProcedure() { }
 
-    virtual std::ostream& print (std::ostream& os) const;
-    virtual std::string toNormalString() const;
+    virtual void print (std::ostream& os) const;
+    virtual void prettyPrint (std::ostream& os) const;
 
     inline DataType* returnType() const { return m_ret; }
 
