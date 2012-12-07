@@ -1,19 +1,17 @@
 #ifndef SECREC_TREENODE_H
 #define SECREC_TREENODE_H
 
-#include "parser.h"
-
 #include <cassert>
 #include <vector>
-#include <map>
 #include <string>
 #include <boost/range.hpp>
 
 #include "codegenResult.h"
 #include "Location.h"
+#include "parser.h"
+#include "StringRef.h"
 #include "typechecker.h"
 #include "TypeContext.h"
-#include "StringRef.h"
 
 namespace SecreC {
 
