@@ -207,6 +207,7 @@ public: /* Methods: */
             m_local.addNode (node);
     }
 
+
     void addEdge (VMVReg* a, VMVReg* b) {
         // the inference graph is colored by two different types of colors (global, and local registers)
         // thus there is no reason to consider edges between those two components

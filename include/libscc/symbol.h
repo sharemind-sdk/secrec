@@ -1,16 +1,20 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
-#include "parser.h"
-#include "treenode.h"
 #include <iterator>
 #include <vector>
+
+#include "parser.h"
+#include "treenode_fwd.h"
+#include "StringRef.h"
 
 namespace SecreC {
 
 class Block;
 class Imop;
 class SecurityType;
+class TypeNonVoid;
+class Location;
 
 /*******************************************************************************
   Symbol
@@ -56,7 +60,7 @@ public: /* Methods: */
     bool isGlobal () const;
     bool isArray () const;
 
-    virtual const TreeNode::Location * location() const { return NULL; }
+    virtual const Location * location() const { return NULL; }
 
 protected:
     friend std::ostream& operator << (std::ostream& os, const Symbol& s);
@@ -170,7 +174,7 @@ public: /* Methods: */
     void setSizeSym (Symbol* sym) { m_size = sym; }
     void inheritShape (Symbol* from);
 
-    virtual const TreeNode::Location * location() const;
+    virtual const Location * location() const;
 
 protected:
     void print(std::ostream & os) const;
@@ -262,7 +266,7 @@ public: /* Methods: */
     inline void setTarget(Imop *target) { m_target = target; }
     StringRef procedureName () const;
 
-    virtual const TreeNode::Location * location() const;
+    virtual const Location * location() const;
 
 protected:
     void print(std::ostream & os) const;
@@ -284,7 +288,7 @@ public: /* Methods: */
 
     inline TreeNodeTemplate *decl() const { return m_templ; }
 
-    virtual const TreeNode::Location * location() const;
+    virtual const Location * location() const;
 
 protected:
     void print(std::ostream & os) const;

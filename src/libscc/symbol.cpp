@@ -88,7 +88,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     setName(name);
 }
 
-const TreeNode::Location * SymbolSymbol::location() const {
+const Location * SymbolSymbol::location() const {
     return NULL; // TODO
 }
 
@@ -124,7 +124,7 @@ SymbolProcedure::SymbolProcedure(StringRef name,
     setName(name);
 }
 
-const TreeNode::Location * SymbolProcedure::location() const {
+const Location * SymbolProcedure::location() const {
     return &m_decl->location();
 }
 
@@ -198,7 +198,7 @@ SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ)
     , m_templ (templ)
 { }
 
-const TreeNode::Location * SymbolTemplate::location() const {
+const Location * SymbolTemplate::location() const {
     return &m_templ->location();
 }
 

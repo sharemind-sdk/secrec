@@ -2,13 +2,10 @@
 #define SECREC_MISC_H
 
 #include <cassert>
-#include <ostream>
 #include <string>
 #include "parser.h"
 
-
 std::string xmlEncode(const std::string &input);
-
 
 inline const char * SecrecFundDataTypeToString(SecrecDataType dataType) {
     switch (dataType) {

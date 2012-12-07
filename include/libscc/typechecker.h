@@ -1,10 +1,10 @@
 #ifndef SECREC_TYPE_CHECKER_H
 #define SECREC_TYPE_CHECKER_H
 
-#include <string>
 #include <vector>
 
 #include "parser.h"
+#include "StringRef.h"
 #include "treenode_fwd.h"
 
 namespace SecreC {

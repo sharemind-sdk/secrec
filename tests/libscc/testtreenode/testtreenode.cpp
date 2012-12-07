@@ -11,11 +11,11 @@ using namespace SecreC;
 #define NR4(a,b,c,d) QTest::newRow(#a","#b","#c","#d)<<(a)<<(b)<<(c)<<(d)
 
 void TestTreeNode::testInitTreeNode() {
-    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitTreeNode");
-    SecreC::TreeNode::Location loc2(loc);
+    SecreC::Location loc(1, 2, 3, 4, "testInitTreeNode");
+    SecreC::Location loc2(loc);
 
-    SecreC::TreeNode::Location nloc(4, 3, 2, 1, "testInitTreeNode");
-    SecreC::TreeNode::Location nloc2(nloc);
+    SecreC::Location nloc(4, 3, 2, 1, "testInitTreeNode");
+    SecreC::Location nloc2(nloc);
 
     TreeNode *n = new TreeNode(NODE_INTERNAL_USE, loc);
     QCOMPARE(n->type(), NODE_INTERNAL_USE);
@@ -33,7 +33,7 @@ void TestTreeNode::testInitTreeNode() {
 }
 
 void TestTreeNode::testInitBool() {
-    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitBool");
+    SecreC::Location loc(1, 2, 3, 4, "testInitBool");
 
     QFETCH(bool, value);
 
@@ -49,7 +49,7 @@ void TestTreeNode::testInitBool_data() {
 }
 
 void TestTreeNode::testInitInt() {
-    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitInt");
+    SecreC::Location loc(1, 2, 3, 4, "testInitInt");
 
     QFETCH(uint64_t, value1);
 
@@ -70,7 +70,7 @@ void TestTreeNode::testInitInt_data() {
 }
 
 void TestTreeNode::testInitString() {
-    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testInitString");
+    SecreC::Location loc(1, 2, 3, 4, "testInitString");
 
     QFETCH(QString, value1);
     QFETCH(QString, value2);
@@ -100,7 +100,7 @@ void TestTreeNode::testInitType_data() {
 
 void TestTreeNode::testChildren() {
     typedef TreeNode::ChildrenList::size_type ST;
-    SecreC::TreeNode::Location loc(1, 2, 3, 4, "testChildren");
+    SecreC::Location loc(1, 2, 3, 4, "testChildren");
 
     TreeNodeExprString *n  = new TreeNodeExprString("n", loc);
     TreeNodeExprString *c1 = new TreeNodeExprString("c1", loc);

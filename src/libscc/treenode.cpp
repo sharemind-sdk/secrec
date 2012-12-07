@@ -48,9 +48,6 @@ TreeNodeExpr *& expressionPtrRefAt(TreeNode * node, size_t i) {
   TreeNode
 *******************************************************************************/
 
-TreeNode::Location::FilenameCache TreeNode::Location::m_filenameCache;
-
-
 TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
     : m_parent(0)
     , m_procedure(0)
@@ -97,7 +94,7 @@ void TreeNode::appendChild(TreeNode * child) {
     child->resetParent(this);
 }
 
-void TreeNode::setLocation(const TreeNode::Location & location) {
+void TreeNode::setLocation(const Location & location) {
     m_location = location;
 }
 
@@ -237,15 +234,6 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
         }
         os << "</" << typeName(m_type) << '>';
     }
-}
-
-std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc) {
-    os << loc.filename()
-       << ":(" << loc.firstLine()
-       << ',' << loc.firstColumn()
-       << ")(" << loc.lastLine()
-       << ',' << loc.lastColumn() << ')';
-    return os;
 }
 
 /*******************************************************************************
