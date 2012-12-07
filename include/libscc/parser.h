@@ -146,9 +146,10 @@ enum SecrecTreeNodeType {
     NODE_MODULE                 = 0x600000,
     NODE_SECTYPE_F              = 0x700000,
     NODE_TEMPLATE_DECL          = 0x800000,
-    NODE_TEMPLATE_QUANT         = 0x900000,
-    NODE_TYPETYPE               = 0xa00000,
-    NODE_TYPEVOID               = 0xb00000
+    NODE_TEMPLATE_DIM_QUANT     = 0x900000,
+    NODE_TEMPLATE_DOMAIN_QUANT  = 0xa00000,
+    NODE_TYPETYPE               = 0xb00000,
+    NODE_TYPEVOID               = 0xc00000
 };
 
 enum SecrecDataType {

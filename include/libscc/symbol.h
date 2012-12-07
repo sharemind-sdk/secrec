@@ -25,7 +25,8 @@ public: /* Types: */
         LABEL,
         SYMBOL,
         PKIND,
-        PDOMAIN
+        PDOMAIN,
+        DIMENSIONALITY
     };
 
 public: /* Methods: */
@@ -82,6 +83,28 @@ public: /* Methods: */
 };
 
 /*******************************************************************************
+  SymbolDimensionality
+*******************************************************************************/
+
+class SymbolDimensionality : public Symbol {
+public: /* Methods: */
+    SymbolDimensionality(StringRef name, SecrecDimType dimType)
+        : Symbol (Symbol::DIMENSIONALITY)
+        , m_dimType (dimType)
+    {
+        setName(name);
+    }
+
+    inline SecrecDimType dimType () const { return m_dimType; }
+
+protected:
+    void print(std::ostream & os) const;
+
+private: /* Fields: */
+    SecrecDimType const m_dimType;
+};
+
+/*******************************************************************************
   SymbolKind
 *******************************************************************************/
 
@@ -119,7 +142,7 @@ protected:
 
 private:
 
-    SecurityType* m_secType;
+    SecurityType* const m_secType;
 };
 
 /*******************************************************************************
@@ -257,9 +280,9 @@ private: /* Fields: */
 
 class SymbolTemplate: public Symbol {
 public: /* Methods: */
-    SymbolTemplate(const TreeNodeTemplate *templ);
+    SymbolTemplate(TreeNodeTemplate *templ);
 
-    inline const TreeNodeTemplate *decl() const { return m_templ; }
+    inline TreeNodeTemplate *decl() const { return m_templ; }
 
     virtual const TreeNode::Location * location() const;
 
@@ -267,7 +290,7 @@ protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
-    const TreeNodeTemplate* m_templ;
+    TreeNodeTemplate* m_templ;
 };
 
 

@@ -59,7 +59,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
     }
 
     if (varInit->rightHandSide() != 0) {
-        TreeNodeExpr *& e = varInit->rightHandSidePtrRef();
+        TreeNodeExpr * e = varInit->rightHandSide();
         e->setContext(ty);
         Status s = visitExpr(e);
         if (s != OK)
@@ -157,7 +157,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
-        assert (boost::size (decl->initializers ()) == 1);
+        assert (decl->initializers ().size () == 1);
         assert (decl->initializer () != 0);
         assert (decl->shape ()->children ().empty ());
         assert (decl->initializer ()->rightHandSide () == 0);
@@ -171,35 +171,33 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
-    BOOST_FOREACH (TreeNode* node, stmt->expressions ()) {
-        assert (dynamic_cast<TreeNodeExpr*>(node) != 0);
-        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(node);
-        e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDimType (0);
+    BOOST_FOREACH (TreeNodeExpr& e, stmt->expressions ()) {
+        e.setContextSecType (PublicSecType::get (getContext ()));
+        e.setContextDimType (0);
 
-        Status s = visitExpr(e);
+        Status s = visitExpr(&e);
         if (s != OK)
             return s;
 
-        e->instantiateDataType (getContext ());
+        e.instantiateDataType (getContext ());
 
-        if (checkAndLogIfVoid(e))
+        if (checkAndLogIfVoid(&e))
             return E_TYPE;
 
         bool isLegalType = true;
-        if (  e->resultType()->secrecSecType()->isPrivate ()  ||
-            ! e->resultType()->isScalar ()) {
+        if (  e.resultType()->secrecSecType()->isPrivate ()  ||
+            ! e.resultType()->isScalar ()) {
             isLegalType = false;
         }
 
-        SecrecDataType dType = e->resultType ()->secrecDataType ();
+        SecrecDataType dType = e.resultType ()->secrecDataType ();
         if (  dType != DATATYPE_STRING && dType != DATATYPE_BOOL && ! isNumericDataType (dType)) {
             isLegalType = false;
         }
 
         if (! isLegalType) {
             m_log.fatalInProc(stmt) << "Invalid argument to \"print\" statement."
-                           << "Got " << *e->resultType() << " at " << stmt->location() << ". "
+                           << "Got " << *e.resultType() << " at " << stmt->location() << ". "
                            << "Expected public scalar or string.";
             return E_TYPE;
         }
@@ -221,7 +219,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
             return E_TYPE;
         }
     } else {
-        TreeNodeExpr *& e = stmt->expressionPtrRef();
+        TreeNodeExpr * e = stmt->expression ();
 
         if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
             m_log.fatalInProc(stmt) << "Cannot return value from void procedure at"
@@ -233,7 +231,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
         Status s = visitExpr(e);
         if (s != OK)
             return s;
-        classifyIfNeeded(e, procType->secrecSecType());
+        e = classifyIfNeeded(e, procType->secrecSecType());
         if (!procType->canAssign (e->resultType ()) ||
              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
@@ -259,10 +257,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
     if (s != OK)
         return s;
 
-    BOOST_FOREACH (TreeNode* arg, stmt->paramRange ()) {
-        assert (dynamic_cast<TreeNodeExpr*>(arg->children ().at (0)) != 0);
-        TreeNodeExpr* e = static_cast<TreeNodeExpr*>(arg->children ().at (0));
-        if (arg->type () != NODE_PUSH) {
+    BOOST_FOREACH (TreeNodeSyscallParam& param, stmt->params ()) {
+        TreeNodeExpr* e = param.expression ();
+        if (param.type () != NODE_PUSH) {
             e->setContextSecType (PublicSecType::get (getContext ()));
         }
 
@@ -272,10 +269,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
         e->instantiateDataType (getContext ());
 
-        if (arg->type () != NODE_PUSH) {
+        if (param.type () != NODE_PUSH) {
             if (e->resultType ()->secrecSecType ()->isPrivate ()) {
                 m_log.fatalInProc(stmt) << "Passing reference to private value at "
-                                        << arg->location () << '.';
+                                        << param.location () << '.';
                 return E_TYPE;
             }
         }

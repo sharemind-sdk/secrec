@@ -1,6 +1,7 @@
 #include "symbol.h"
 
 #include <string>
+#include <boost/foreach.hpp>
 
 #include "blocks.h"
 #include "imop.h"
@@ -36,6 +37,13 @@ bool Symbol::isArray () const {
     return false;
 }
 
+/*******************************************************************************
+  SymbolDimensionality
+*******************************************************************************/
+
+void SymbolDimensionality::print(std::ostream & os) const {
+    os << "DIM (" << name () << " : " << dimType () << ')';
+}
 
 /*******************************************************************************
   SymbolKind
@@ -128,19 +136,15 @@ namespace {
 void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
     os << procDef->returnType()->typeString()
        << ' ' << procDef->identifier()->value() << '(';
-    TreeNode::ChildrenListConstIterator it = procDef->paramBegin();
-    if (it != procDef->paramEnd()) {
-        assert((*it)->type() == NODE_DECL);
-        assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
-        TreeNodeStmtDecl * decl = static_cast<TreeNodeStmtDecl *>(*it);
-        os << decl->varType()->typeString() << ' ' << decl->variableName();
-        while (++it != procDef->paramEnd()) {
-            assert((*it)->type() == NODE_DECL);
-            assert(dynamic_cast<TreeNodeStmtDecl *>(*it) != 0);
-            decl = static_cast<TreeNodeStmtDecl *>(*it);
-            os << ", " << decl->varType()->typeString() << ' ' << decl->variableName();
-        }
+
+    bool first = true;
+    BOOST_FOREACH (const TreeNodeStmtDecl& decl, procDef->params ()) {
+        if (! first)
+            os << ", ";
+        first = false;
+        os << decl.varType()->typeString() << ' ' << decl.variableName();
     }
+
     os << ')';
 }
 }
@@ -189,7 +193,7 @@ void SymbolLabel::print(std::ostream & os) const {
   SymbolTemplate
 *******************************************************************************/
 
-SymbolTemplate::SymbolTemplate(const TreeNodeTemplate *templ)
+SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ)
     : Symbol (Symbol::TEMPLATE)
     , m_templ (templ)
 { }
@@ -200,21 +204,13 @@ const TreeNode::Location * SymbolTemplate::location() const {
 
 void SymbolTemplate::print(std::ostream & os) const {
     os << "template <domain ";
-    const TreeNode::ChildrenList & qs = m_templ->quantifiers();
-    assert(!qs.empty());
-    TreeNode::ChildrenListConstIterator it = qs.begin();
-    assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
-    TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
-    os << q->domain()->value();
-    if (q->kind())
-        os << " : " << q->kind()->value();
-    while (++it != qs.end()) {
-        os << ", domain ";
-        assert(dynamic_cast<TreeNodeQuantifier *>(*it) != NULL);
-        TreeNodeQuantifier * q = static_cast<TreeNodeQuantifier *>(*it);
-        os << q->domain()->value();
-        if (q->kind())
-            os << " : " << q->kind()->value();
+
+    bool first = true;
+    BOOST_FOREACH (TreeNodeDomainQuantifier& q, m_templ->quantifiers ()) {
+        if (! first)
+            os << ", domain ";
+        first = false;
+        q.printQuantifier (os);
     }
 
     printProcDef(os << "> ", m_templ->body());

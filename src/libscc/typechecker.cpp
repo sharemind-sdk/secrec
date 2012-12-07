@@ -120,17 +120,18 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     return static_cast<SymbolSymbol*>(s);
 }
 
-bool TypeChecker::classifyIfNeeded(TreeNodeExpr *& child,
-                                   SecurityType * need)
+// Potentially replaces the child in parent list. Does not invalidate iterators.
+TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
+                                             SecurityType * need)
 {
     if (need == 0)
-        return false;
+        return child;
 
     SecurityType * const haveSecType = child->resultType()->secrecSecType();
     assert(!(need->isPrivate() && haveSecType->isPrivate()) || need == haveSecType);
 
     if (need->isPublic() || haveSecType->isPrivate())
-        return false;
+        return child;
 
     TreeNode * const parent = child->parent();
     const SecrecDataType destDType = child->haveContextDataType()
@@ -155,7 +156,7 @@ bool TypeChecker::classifyIfNeeded(TreeNodeExpr *& child,
     child->setContextSecType(PublicSecType::get(getContext()));
     child->setContextDataType(destDType);
     child = ec;
-    return true;
+    return child;
 }
 
 bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {

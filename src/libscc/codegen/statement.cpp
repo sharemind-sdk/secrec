@@ -331,10 +331,8 @@ CGStmtResult CodeGen::cgStmtDecl(TreeNodeStmtDecl * s) {
     const bool isGlobal = s->global();
     const bool isProcParam = s->procParam();
 
-    BOOST_FOREACH (TreeNode * _varInit, s->initializers()) {
-        assert(dynamic_cast<TreeNodeVarInit *>(_varInit) != 0);
-        TreeNodeVarInit * varInit = static_cast<TreeNodeVarInit *>(_varInit);
-        append(result, cgVarInit(s->resultType(), varInit, isGlobal, isProcParam));
+    BOOST_FOREACH (TreeNodeVarInit& varInit, s->initializers()) {
+        append(result, cgVarInit(s->resultType(), &varInit, isGlobal, isProcParam));
         if (result.isNotOk()) {
             return result;
         }
@@ -679,16 +677,15 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
 
     CGStmtResult result;
     Symbol * accum = 0;
-    BOOST_FOREACH (TreeNode * node, s->expressions()) {
-        TreeNodeExpr * e = static_cast<TreeNodeExpr *>(node);
-        const CGResult & eResult = codeGen(e);
+    BOOST_FOREACH (TreeNodeExpr& e, s->expressions()) {
+        const CGResult & eResult = codeGen(&e);
         append(result, eResult);
         if (result.isNotOk()) {
             return result;
         }
 
         Symbol * str = eResult.symbol();
-        if (e->resultType()->secrecDataType() != DATATYPE_STRING) {
+        if (e.resultType()->secrecDataType() != DATATYPE_STRING) {
             str = m_st->appendTemporary(strTy);
             Imop * i = new Imop(s, Imop::TOSTRING, str, eResult.symbol());
             pushImopAfter(result, i);
@@ -725,17 +722,17 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     }
 
     CGStmtResult result;
-    typedef std::pair<TreeNode *, Symbol *> NodeSymbolPair;
+    typedef std::pair<TreeNodeSyscallParam *, Symbol *> NodeSymbolPair;
     std::vector<NodeSymbolPair> results;
-    BOOST_FOREACH (TreeNode * arg, s->paramRange()) {
-        TreeNodeExpr * e = static_cast<TreeNodeExpr *>(arg->children().at(0));
+    BOOST_FOREACH (TreeNodeSyscallParam& param, s->params()) {
+        TreeNodeExpr * e = param.expression ();
         const CGResult & eResult = codeGen(e);
         append(result, eResult);
         if (result.isNotOk()) {
             return result;
         }
 
-        results.push_back(std::make_pair(arg, eResult.symbol()));
+        results.push_back(std::make_pair(&param, eResult.symbol()));
     }
 
     const CGResult & nameResult = codeGen(s->name());

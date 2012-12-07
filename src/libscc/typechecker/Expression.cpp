@@ -193,7 +193,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     // Add implicit classify node if needed:
-    classifyIfNeeded(src, varType->secrecSecType());
+    src = classifyIfNeeded(src, varType->secrecSecType());
     varType = static_cast<TypeNonVoid *>(src->resultType());
     e->setResultType(lhsType);
     return OK;
@@ -383,10 +383,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
     {
         SecurityType * lSecTy = eTypes[0]->secrecSecType();
         SecurityType * rSecTy = eTypes[1]->secrecSecType();
-        TreeNodeExpr *& left = root->leftExpression();
-        TreeNodeExpr *& right = root->rightExpression();
-        classifyIfNeeded(left, rSecTy);
-        classifyIfNeeded(right, lSecTy);
+        TreeNodeExpr * left = root->leftExpression();
+        TreeNodeExpr * right = root->rightExpression();
+        left = classifyIfNeeded(left, rSecTy);
+        right = classifyIfNeeded(right, lSecTy);
         eTypes[0] = static_cast<TNV *>(left->resultType());
         eTypes[1] = static_cast<TNV *>(right->resultType());
     }
@@ -458,7 +458,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
     if (root->haveResultType())
         return OK;
 
-    SecrecDimType resDim = boost::size(root->dimensions());
+    SecrecDimType resDim = root->dimensions().size ();
     TreeNodeExpr * e = root->reshapee();
     e->setContextSecType(root->contextSecType());
     e->setContextDataType(root->contextDataType());
@@ -470,20 +470,18 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
         return E_TYPE;
 
     TNV * eType = static_cast<TNV *>(e->resultType());
-    BOOST_FOREACH (TreeNode * _dim, root->dimensions()) {
-        assert(dynamic_cast<TreeNodeExpr *>(_dim));
-        TreeNodeExpr * dim = static_cast<TreeNodeExpr *>(_dim);
-        dim->setContextIndexType(getContext());
-        s = visitExpr(dim);
+    BOOST_FOREACH (TreeNodeExpr& dim, root->dimensions()) {
+        dim.setContextIndexType (getContext());
+        s = visitExpr(&dim);
         if (s != OK)
             return s;
 
-        if (checkAndLogIfVoid(dim))
+        if (checkAndLogIfVoid(&dim))
             return E_TYPE;
-        TNV * dimType = static_cast<TNV *>(dim->resultType());
+        TNV * dimType = static_cast<TNV *>(dim.resultType());
         if (! dimType->isPublicIntScalar()) {
             m_log.fatalInProc(root) << "Expected public integer scalar at "
-                << dim->location()
+                << dim.location()
                 << " got " << *dimType << '.';
             return E_TYPE;
         }
@@ -642,9 +640,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         SecurityType * s0 = upperSecType(s1, s2);
 
         // Add implicit classify nodes if needed:
-        classifyIfNeeded(e1, s0);
+        e1 = classifyIfNeeded(e1, s0);
         eType1 = static_cast<TNV *>(e1->resultType());
-        classifyIfNeeded(e2, s0);
+        e2 = classifyIfNeeded(e2, s0);
         eType2 = static_cast<TNV *>(e2->resultType());
 
         SecrecDataType d1 = eType1->secrecDataType();
@@ -813,24 +811,22 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
     }
 
     TypeNonVoid* elemType = 0;
-    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
-        assert (dynamic_cast<TreeNodeExpr*>(c) != 0);
-        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
-        child->setContextSecType (e->contextSecType ());
-        child->setContextDataType (e->contextDataType ());
-        child->setContextDimType (0);
-        Status s = visitExpr (child);
+    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+        child.setContextSecType (e->contextSecType ());
+        child.setContextDataType (e->contextDataType ());
+        child.setContextDimType (0);
+        Status s = visitExpr (&child);
         if (s != OK) {
             return s;
         }
 
-        if (checkAndLogIfVoid (child))
+        if (checkAndLogIfVoid (&child))
             return E_TYPE;
 
-        TypeNonVoid* childType = static_cast<TypeNonVoid*>(child->resultType ());
+        TypeNonVoid* childType = static_cast<TypeNonVoid*>(child.resultType ());
 
         if (! childType->isScalar ()) {
-            m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at " << child->location () << ".";
+            m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at " << child.location () << ".";
             return E_TYPE;
         }
 
@@ -841,16 +837,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
         else {
             elemType = upperTypeNonVoid (getContext (), childType, elemType);
             if (elemType == 0) {
-                m_log.fatalInProc (e) << "Array element of invalid type at " << child->location () << ".";
+                m_log.fatalInProc (e) << "Array element of invalid type at " << child.location () << ".";
                 return E_TYPE;
             }
         }
     }
 
-    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
-        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
-        child->instantiateDataType (getContext (), elemType->secrecDataType ());
-        classifyIfNeeded (child, elemType->secrecSecType ());
+    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+        classifyIfNeeded (&child, elemType->secrecSecType ());
     }
 
 
@@ -860,9 +854,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
 
 void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
     resetDataType (cxt, dType);
-    BOOST_FOREACH (TreeNode* c, expressions ()) {
-        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
-        child->instantiateDataType (cxt, dType);
+    BOOST_FOREACH (TreeNodeExpr& child, expressions ()) {
+        child.instantiateDataType (cxt, dType);
     }
 }
 
@@ -1102,8 +1095,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
             return E_TYPE;
         }
 
-        classifyIfNeeded(e2, s0);
-        classifyIfNeeded(e3, s0);
+        e2 = classifyIfNeeded(e2, s0);
+        e3 = classifyIfNeeded(e3, s0);
 
         if (eType2->secrecDataType() != eType3->secrecDataType()) {
             m_log.fatalInProc(root) << "Results of ternary expression  at "
@@ -1184,25 +1177,25 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     TreeNodeExpr * subExpr = e->expression();
     subExpr->setContext(e);
     bool checkSecType = false, checkDataType = false, checkDimType = false;
-    BOOST_FOREACH (TreeNode * _node, e->types()) {
-        switch (_node->type()) {
+    BOOST_FOREACH (TreeNodeTypeF& node, e->types()) {
+        switch (node.type()) {
         case NODE_SECTYPE_F: {
-            TreeNodeSecTypeF * secTy = static_cast<TreeNodeSecTypeF *>(_node);
-            status = visit(secTy);
+            TreeNodeSecTypeF& secTy = static_cast<TreeNodeSecTypeF&>(node);
+            status = visit(&secTy);
             if (status != OK)
                 return status;
-            subExpr->setContextSecType(secTy->cachedType());
+            subExpr->setContextSecType(secTy.cachedType());
             checkSecType = true;
         }
             break;
         case NODE_DATATYPE_F:
             subExpr->setContextDataType(
-                    static_cast<TreeNodeDataTypeF *>(_node)->dataType());
+                    static_cast<TreeNodeDataTypeF&>(node).dataType());
             checkDataType = true;
             break;
         case NODE_DIMTYPE_F:
             subExpr->setContextDimType(
-                    static_cast<TreeNodeDimTypeF *>(_node)->dimType());
+                    static_cast<TreeNodeDimTypeF&>(node).dimType());
             checkDimType = true;
             break;
         default:

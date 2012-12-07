@@ -24,9 +24,8 @@ namespace SecreC {
 unsigned Instantiation::unrestrictedTemplateParamCount () const {
     unsigned count = 0;
     const TreeNodeTemplate* templ = getTemplate ()->decl ();
-    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
-        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-        if (quant->kind () == 0)
+    BOOST_FOREACH (TreeNodeDomainQuantifier& quant, templ->quantifiers ()) {
+        if (quant.kind () == 0)
             ++ count;
     }
 
@@ -36,17 +35,14 @@ unsigned Instantiation::unrestrictedTemplateParamCount () const {
 unsigned Instantiation::quantifiedDomainOccurrenceCount () const {
     unsigned count = 0;
     std::set<StringRef, StringRef::FastCmp > quantifiedDomains;
-    const TreeNodeTemplate* templ = getTemplate ()->decl ();
-    const TreeNodeProcDef* body = templ->body ();
-    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
-        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-        quantifiedDomains.insert (quant->domain ()->value ());
+    TreeNodeTemplate* templ = getTemplate ()->decl ();
+    TreeNodeProcDef* body = templ->body ();
+    BOOST_FOREACH (TreeNodeDomainQuantifier& quant, templ->quantifiers ()) {
+        quantifiedDomains.insert (quant.domain ()->value ());
     }
 
-    BOOST_FOREACH (TreeNode* _d, body->paramRange ()) {
-        assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
-        TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
-        TreeNodeType* t = d->varType ();
+    BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
+        TreeNodeType* t = decl.varType ();
         if (! t->secType ()->isPublic ()) {
             TreeNodeIdentifier* id = t->secType ()->identifier ();
             if (quantifiedDomains.find (id->value ()) != quantifiedDomains.end ()) {
@@ -80,9 +76,8 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
         Instantiation::const_iterator secIt = i.begin ();
-        BOOST_FOREACH (TreeNode* _quant, i.getTemplate ()->decl ()->quantifiers ()) {
-            TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-            StringRef qname = quant->domain ()->value ();
+        BOOST_FOREACH (TreeNodeDomainQuantifier& quant, i.getTemplate ()->decl ()->quantifiers ()) {
+            StringRef qname = quant.domain ()->value ();
             SecurityType* argSecTy = *secIt;
             local->appendSymbol(new SymbolDomain(qname, argSecTy));
             ++ secIt;

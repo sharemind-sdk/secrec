@@ -32,6 +32,8 @@ class TreeNodeExprPostfix;
 class TreeNodeExprPrefix;
 class TreeNodeExprProcCall;
 class TreeNodeExprQualified;
+class TreeNodeDomainQuantifier;
+class TreeNodeDimQuantifier;
 class TreeNodeExprReshape;
 class TreeNodeExprRVariable;
 class TreeNodeExprShape;
@@ -62,8 +64,10 @@ class TreeNodeStmtPrint;
 class TreeNodeStmtReturn;
 class TreeNodeStmtSyscall;
 class TreeNodeStmtWhile;
+class TreeNodeSyscallParam;
 class TreeNodeTemplate;
 class TreeNodeType;
+class TreeNodeTypeF;
 class TreeNodeVarInit;
 
 } // namespace SecreC

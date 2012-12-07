@@ -136,15 +136,12 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<DataType *> & pa
 {
     typedef DataTypeVar DTV;
     params.clear ();
-    params.reserve (boost::distance (proc->paramRange ()));
-    BOOST_FOREACH (TreeNode* n, proc->paramRange ()) {
-        assert(n->type() == NODE_DECL);
-        assert(dynamic_cast<TreeNodeStmtDecl*>(n) != 0);
-        TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(n);
-        Status s = visit(d);
+    params.reserve (proc->params ().size ());
+    BOOST_FOREACH (TreeNodeStmtDecl& decl, proc->params ()) {
+        Status s = visit(&decl);
         if (s != OK)
             return s;
-        TypeNonVoid* pt = d->resultType();
+        TypeNonVoid* pt =decl.resultType();
         assert(pt->dataType()->kind() == DataType::VAR);
         assert(dynamic_cast<DTV*>(pt->dataType()) != 0);
         params.push_back (static_cast<DTV*>(pt->dataType())->dataType());
@@ -171,7 +168,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
             return E_TYPE;
         }
 
-        if (proc->procedureName() == "main" && proc->paramBegin() != proc->paramEnd()) {
+        if (proc->procedureName() == "main" && proc->params ().size () > 0) {
             m_log.fatal() << "Invalid parameters for procedure 'main' at " << proc->location() << '.';
             return E_TYPE;
         }
@@ -245,16 +242,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     typedef std::set<StringRef, StringRef::FastCmp> TypeVariableSet;
     TypeVariableSet quantifiedDomains;
     TypeVariableMap freeTypeVariables;
-    BOOST_FOREACH (TreeNode* _quant, templ->quantifiers ()) {
-        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-        quantifiedDomains.insert (quant->domain ()->value ());
-        freeTypeVariables[quant->domain ()->value ()] = quant->domain ();
-        if (quant->kind ()) {
-            Symbol* kindSym = findIdentifier (quant->kind ());
+    BOOST_FOREACH (TreeNodeDomainQuantifier& quant, templ->quantifiers ()) {
+        quantifiedDomains.insert (quant.domain ()->value ());
+        freeTypeVariables[quant.domain ()->value ()] = quant.domain ();
+        if (quant.kind ()) {
+            Symbol* kindSym = findIdentifier (quant.kind ());
             if (kindSym == 0)
                 return E_TYPE;
             if (kindSym->symbolType () != Symbol::PKIND) {
-                m_log.fatal () << "Identifier at " << quant->location ()
+                m_log.fatal () << "Identifier at " << quant.location ()
                                << " is not a security domain kind.";
                 return E_TYPE;
             }
@@ -279,10 +275,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     // Check that security types of parameters are either quantified or defined.
-    BOOST_FOREACH (TreeNode* _d, body->paramRange ()) {
-        assert (dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
-        TreeNodeStmtDecl* d = static_cast<TreeNodeStmtDecl*>(_d);
-        TreeNodeType* t = d->varType ();
+    BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
+        TreeNodeType* t = decl.varType ();
         if (! t->secType ()->isPublic ()) {
             TreeNodeIdentifier* id = t->secType ()->identifier ();
             if (retSecTyIdent != 0) {
@@ -521,10 +515,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
     std::vector<TreeNodeExpr*> arguments;
     TreeNodeIdentifier *id = root->procName ();
 
-    BOOST_FOREACH (TreeNode* _arg, root->paramRange ()) {
-        assert(dynamic_cast<TreeNodeExpr*>(_arg) != 0);
-        TreeNodeExpr *arg = static_cast<TreeNodeExpr*>(_arg);
-        arguments.push_back (arg);
+    BOOST_FOREACH (TreeNodeExpr& param, root->params ()) {
+        arguments.push_back (&param);
     }
 
     Status s = checkProcCall(id, *root, arguments, resultType, symProc);
@@ -636,15 +628,13 @@ bool TypeChecker::unify (Instantiation& inst,
     // but ill stick to what works for now.
     //
 
-    if (boost::size (t->body ()->paramRange ()) != argTypes->paramTypes ().size ()) {
+    if (t->body ()->params ().size () != argTypes->paramTypes ().size ()) {
         return false;
     }
 
     unsigned i = 0;
-    BOOST_FOREACH (TreeNode* _d, t->body ()->paramRange ()) {
-        assert(dynamic_cast<TreeNodeStmtDecl*>(_d) != 0);
-        TreeNodeStmtDecl *d = static_cast<TreeNodeStmtDecl*>(_d);
-        TreeNodeType* argNodeTy = d->varType ();
+    BOOST_FOREACH (TreeNodeStmtDecl& decl, t->body ()->params ()) {
+        TreeNodeType* argNodeTy = decl.varType ();
         DataType* expectedTy = argTypes->paramTypes ().at (i ++);
         if (argNodeTy->secType ()->isPublic ()) {
             if (! expectedTy->secrecSecType ()->isPublic ())
@@ -701,13 +691,12 @@ bool TypeChecker::unify (Instantiation& inst,
     std::vector<SecurityType*> tmp;
     tmp.reserve (t->quantifiers ().size ());
 
-    BOOST_FOREACH (TreeNode* _quant, t->quantifiers ()) {
-        TreeNodeQuantifier* quant = static_cast<TreeNodeQuantifier*>(_quant);
-        SecurityType* argTy = argDomains[quant->domain ()->value ()];
+    BOOST_FOREACH (TreeNodeDomainQuantifier& quant, t->quantifiers ()) {
+        SecurityType* argTy = argDomains[quant.domain ()->value ()];
         assert (argTy != 0);
-        if (quant->kind () != 0) {
+        if (quant.kind () != 0) {
             if (argTy->isPublic ()) return false;
-            SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (quant->kind ()->value ()));
+            SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (quant.kind ()->value ()));
             PrivateSecType* privArgTy = static_cast<PrivateSecType*>(argTy);
             if (sym != privArgTy->securityKind ()) {
                 return false;

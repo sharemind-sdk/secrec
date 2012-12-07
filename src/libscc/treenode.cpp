@@ -192,7 +192,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(STMT_WHILE);
     CASE_NODE_NAME(SUBSCRIPT);
     CASE_NODE_NAME(TEMPLATE_DECL);
-    CASE_NODE_NAME(TEMPLATE_QUANT);
+    CASE_NODE_NAME(TEMPLATE_DIM_QUANT);
+    CASE_NODE_NAME(TEMPLATE_DOMAIN_QUANT);
     CASE_NODE_NAME(TYPETYPE);
     CASE_NODE_NAME(TYPEVOID);
     CASE_NODE_NAME(VAR_INIT);
@@ -526,10 +527,9 @@ TreeNodeIdentifier * TreeNodeExprProcCall::procName() const {
     return childAt<TreeNodeIdentifier>(this, 0);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeExprProcCall::paramRange() const {
-    assert(!children().empty());
-    return std::make_pair(++ children().begin(),
-                             children().end());
+TreeNodeChildren<TreeNodeExpr> TreeNodeExprProcCall::params () const {
+    assert (!children().empty());
+    return TreeNodeChildren<TreeNodeExpr>(++ children().begin(), children().end());
 }
 
 /*******************************************************************************
@@ -599,16 +599,6 @@ TreeNodeExpr* TreeNodeExprTernary::trueBranch () const {
 TreeNodeExpr* TreeNodeExprTernary::falseBranch () const {
     assert(children().size() == 3);
     return expressionAt (this, 2);
-}
-
-TreeNodeExpr *& TreeNodeExprTernary::trueBranchPtrRef() {
-    assert(children().size() == 3u);
-    return expressionPtrRefAt(this, 1u);
-}
-
-TreeNodeExpr *& TreeNodeExprTernary::falseBranchPtrRef() {
-    assert(children().size() == 3u);
-    return expressionPtrRefAt(this, 2u);
 }
 
 /*******************************************************************************
@@ -699,9 +689,8 @@ TreeNodeExpr* TreeNodeExprReshape::reshapee () const {
     return expressionAt (this, 0);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeExprReshape::dimensions () {
-    return std::make_pair (++ m_children.begin (),
-                              m_children.end ());
+TreeNodeChildren<TreeNodeExpr> TreeNodeExprReshape::dimensions () const {
+    return TreeNodeChildren<TreeNodeExpr>(++ m_children.begin (), m_children.end ());
 }
 
 /*******************************************************************************
@@ -726,16 +715,6 @@ TreeNodeExpr* TreeNodeExprCat::rightExpression () const {
     assert (children().size() == 3 ||
             children().size() == 2);
     return expressionAt (this, 1);
-}
-
-TreeNodeExpr *& TreeNodeExprCat::leftExpression () {
-    assert(children().size() == 3u || children().size() == 2u);
-    return expressionPtrRefAt(this, 0u);
-}
-
-TreeNodeExpr *& TreeNodeExprCat::rightExpression () {
-    assert(children().size() == 3u || children().size() == 2u);
-    return expressionPtrRefAt(this, 1u);
 }
 
 TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
@@ -783,17 +762,9 @@ TreeNodeStmt* TreeNodeProcDef::body () const {
     return childAt<TreeNodeStmt>(this, 2);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeProcDef::paramRange () const {
-    return std::make_pair (paramBegin (), paramEnd ());
-}
-
-TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramBegin () const {
+TreeNodeChildren<TreeNodeStmtDecl> TreeNodeProcDef::params () const {
     assert (children ().size () > 2);
-    return children ().begin () + 3;
-}
-
-TreeNode::ChildrenListConstIterator TreeNodeProcDef::paramEnd () const {
-    return children ().end ();
+    return TreeNodeChildren<TreeNodeStmtDecl>(children ().begin () + 3, children ().end ());
 }
 
 const std::string TreeNodeProcDef::printableSignature() const {
@@ -803,15 +774,12 @@ const std::string TreeNodeProcDef::printableSignature() const {
     } else {
         oss << returnType()->typeString() << ' '
             << procedureName() << '(';
-        size_t i = 0u;
-        BOOST_FOREACH (const TreeNode * n, paramRange()) {
-            if (i > 0u)
+        bool first = true;
+        BOOST_FOREACH (const TreeNodeStmtDecl& decl, params ()) {
+            if (! first)
                 oss << ", ";
-            i++;
-
-            assert (dynamic_cast<const TreeNodeStmtDecl*>(n) != 0);
-            const TreeNodeStmtDecl * const d = static_cast<const TreeNodeStmtDecl*>(n);
-            oss << d->varType()->typeString() << ' ' << d->variableName();
+            first = false;
+            oss << decl.varType()->typeString() << ' ' << decl.variableName();
         }
         oss << ')';
     }
@@ -819,22 +787,45 @@ const std::string TreeNodeProcDef::printableSignature() const {
 }
 
 /*******************************************************************************
-  TreeNodeQuantifier
+  TreeNodeDomainQuantifier
 *******************************************************************************/
 
-TreeNodeIdentifier* TreeNodeQuantifier::domain () {
+TreeNodeIdentifier* TreeNodeDomainQuantifier::domain () const {
     assert (children ().size () == 1 || children ().size () == 2);
     return childAt<TreeNodeIdentifier>(this, 0);
 }
 
 // will equal to zero, if kind not specified
-TreeNodeIdentifier* TreeNodeQuantifier::kind () {
+TreeNodeIdentifier* TreeNodeDomainQuantifier::kind () const {
     assert (children ().size () == 1 || children ().size () == 2);
     if (children ().size () == 2) {
         return childAt<TreeNodeIdentifier>(this, 1);
     }
 
     return 0;
+}
+
+void TreeNodeDomainQuantifier::printQuantifier (std::ostream &os) const {
+    os << domain()->value();
+    if (kind())
+        os << " : " << kind()->value();
+}
+
+/*******************************************************************************
+  TreeNodeDimQuantifier
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeDimQuantifier::identifier () const {
+    assert (children ().size () == 1);
+    if (children ().size () == 1) {
+        return childAt<TreeNodeIdentifier>(this, 0);
+    }
+
+    return 0;
+}
+
+void TreeNodeDimQuantifier::printQuantifier (std::ostream &) const {
+
 }
 
 /*******************************************************************************
@@ -846,9 +837,9 @@ TreeNodeProcDef* TreeNodeTemplate::body () const {
     return childAt<TreeNodeProcDef>(this, 1);
 }
 
-TreeNode::ChildrenList& TreeNodeTemplate::quantifiers () const {
+TreeNodeChildren<TreeNodeDomainQuantifier> TreeNodeTemplate::quantifiers () const {
     assert (children ().size () == 2);
-    return children ().at (0)->children ();
+    return TreeNodeChildren<TreeNodeDomainQuantifier>(children ().at (0)->children ());
 }
 
 /*******************************************************************************
@@ -869,9 +860,9 @@ TreeNodeExpr* TreeNodeExprQualified::expression () const {
     return expressionAt (this, 0);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeExprQualified::types () const {
+TreeNodeChildren<TreeNodeTypeF> TreeNodeExprQualified::types() const {
     assert (children ().size () >= 2);
-    return std::make_pair (++ children ().begin (), children ().end ());
+    return TreeNodeChildren<TreeNodeTypeF>(++ children ().begin (), children ().end ());
 }
 
 /*******************************************************************************
@@ -919,10 +910,9 @@ TreeNodeVarInit* TreeNodeStmtDecl::initializer () const {
     return childAt<TreeNodeVarInit>(this, 1);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeStmtDecl::initializers () const {
+TreeNodeChildren<TreeNodeVarInit> TreeNodeStmtDecl::initializers() const {
     assert (children().size () >= 2);
-    return std::make_pair (++ m_children.begin (),
-                              m_children.end ());
+    return TreeNodeChildren<TreeNodeVarInit> (++ m_children.begin (), m_children.end ());
 }
 
 TreeNode* TreeNodeVarInit::shape () const {
@@ -1056,11 +1046,6 @@ TreeNodeExpr* TreeNodeStmtReturn::expression () const {
     return 0;
 }
 
-TreeNodeExpr *& TreeNodeStmtReturn::expressionPtrRef() {
-    assert(!children().empty());
-    return expressionPtrRefAt(this, 0u);
-}
-
 /*******************************************************************************
   TreeNodeStmtWhile
 *******************************************************************************/
@@ -1079,9 +1064,9 @@ TreeNodeStmt* TreeNodeStmtWhile::body () const {
   TreeNodeStmtPrint
 *******************************************************************************/
 
-TreeNode::ChildrenList& TreeNodeStmtPrint::expressions () {
+TreeNodeChildren<TreeNodeExpr> TreeNodeStmtPrint::expressions() {
     assert (children ().size () == 1);
-    return children ().at (0)->children ();
+    return TreeNodeChildren<TreeNodeExpr>(children ().at (0)->children ());
 }
 
 /*******************************************************************************
@@ -1093,9 +1078,9 @@ TreeNodeExprString* TreeNodeStmtSyscall::name () const {
     return childAt<TreeNodeExprString>(this, 0);
 }
 
-TreeNode::ChildrenListConstRange TreeNodeStmtSyscall::paramRange () const {
+TreeNodeChildren<TreeNodeSyscallParam> TreeNodeStmtSyscall::params () const {
     assert (children ().size () >= 1);
-    return std::make_pair (begin () + 1, end ());
+    return TreeNodeChildren<TreeNodeSyscallParam>(begin () + 1, end ());
 }
 
 /*******************************************************************************
@@ -1148,6 +1133,16 @@ StringRef TreeNodeImport::name() const {
     assert(children().size() == 1);
     return childAt<TreeNodeIdentifier>(this, 0)->value();
 }
+
+/*******************************************************************************
+  TreeNodeSyscallParam
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeSyscallParam::expression () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeExpr>(this, 0);
+}
+
 
 } // namespace SecreC
 
@@ -1265,8 +1260,10 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
         return (TreeNode *)(new SecreC::TreeNodeKind(*loc));
     case NODE_DOMAIN:
         return (TreeNode *)(new SecreC::TreeNodeDomain(*loc));
-    case NODE_TEMPLATE_QUANT:
-        return (TreeNode *)(new SecreC::TreeNodeQuantifier(*loc));
+    case NODE_TEMPLATE_DOMAIN_QUANT:
+        return (TreeNode *)(new SecreC::TreeNodeDomainQuantifier(*loc));
+    case NODE_TEMPLATE_DIM_QUANT:
+        return (TreeNode *)(new SecreC::TreeNodeDimQuantifier(*loc));
     case NODE_TEMPLATE_DECL:
         return (TreeNode *)(new SecreC::TreeNodeTemplate(*loc));
     case NODE_VAR_INIT:
@@ -1275,6 +1272,10 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
         return (TreeNode *)(new SecreC::TreeNodeModule(*loc));
     case NODE_IMPORT:
         return (TreeNode *)(new SecreC::TreeNodeImport(*loc));
+    case NODE_PUSH:
+    case NODE_PUSHCREF:
+    case NODE_PUSHREF:
+        return (TreeNode *)(new SecreC::TreeNodeSyscallParam(type,*loc));
     default:
         assert(type != NODE_IDENTIFIER);
         assert((type & NODE_LITE_MASK) == 0x0);

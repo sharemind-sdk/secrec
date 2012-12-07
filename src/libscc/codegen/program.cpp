@@ -105,12 +105,9 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     ScopePusher s(*this, localScope);
 
     if (def->children().size() > 3) {
-        BOOST_FOREACH (TreeNode * node, def->paramRange()) {
-            assert(node->type() == NODE_DECL);
-            assert(dynamic_cast<TreeNodeStmtDecl *>(node) != 0);
-            TreeNodeStmtDecl * paramDecl = static_cast<TreeNodeStmtDecl *>(node);
-            paramDecl->setProcParam(true);
-            append(result, codeGenStmt(paramDecl));
+        BOOST_FOREACH (TreeNodeStmtDecl& paramDecl, def->params()) {
+            paramDecl.setProcParam(true);
+            append(result, codeGenStmt(&paramDecl));
         }
     }
     if (result.isNotOk())

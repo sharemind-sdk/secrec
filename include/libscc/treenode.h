@@ -8,6 +8,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <boost/range.hpp>
 
 #include "codegenResult.h"
 #include "typechecker.h"
@@ -34,14 +35,7 @@ class TreeNode {
 public: /* Types: */
     typedef std::vector<TreeNode*> ChildrenList;
     typedef ChildrenList::iterator ChildrenListIterator;
-    typedef ChildrenList::const_iterator
-        ChildrenListConstIterator;
-    typedef std::pair< ChildrenListIterator
-                     , ChildrenListIterator>
-        ChildrenListRange;
-    typedef std::pair< ChildrenListConstIterator
-                     , ChildrenListConstIterator>
-        ChildrenListConstRange;
+    typedef ChildrenList::const_iterator ChildrenListConstIterator;
 
     class Location {
 
@@ -251,6 +245,120 @@ protected: /* Fields: */
 
 std::ostream & operator<<(std::ostream & os, const TreeNode::Location & loc);
 
+/******************************************************************
+  TreeNodeChildren
+******************************************************************/
+
+template <class SubClass>
+class TreeNodeChildren {
+private: /* Types: */
+
+    typedef TreeNode::ChildrenList::iterator        CLI;
+    typedef TreeNode::ChildrenList::const_iterator  CLCI;
+
+    template <class value_type, class other_iterator>
+    class iterator_base :
+        public std::iterator
+            < typename std::iterator_traits<other_iterator>::iterator_category
+            , value_type
+            >
+    {
+    private: /* Types: */
+        typedef iterator_base<value_type, other_iterator> self_type;
+        typedef std::iterator<typename std::iterator_traits<other_iterator>::iterator_category, value_type> base_type;
+    public: /* Methods: */
+        explicit iterator_base (other_iterator iterator)
+            : m_iterator (iterator) { }
+
+        typename base_type::reference operator * () const {
+            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != 0);
+            return *static_cast<typename base_type::pointer>(*m_iterator);
+        }
+
+        bool operator == (const self_type i) const { return m_iterator == i.m_iterator; }
+        bool operator != (const self_type i) const { return m_iterator != i.m_iterator; }
+        self_type& operator ++ () {  ++ m_iterator; return *this; }
+        self_type operator ++ (int) { const self_type t = *this; ++ m_iterator; return t; }
+
+    private: /* Fields: */
+        other_iterator m_iterator;
+    };
+
+public: /* Types: */
+    typedef SubClass                               value_type;
+    typedef SubClass&                              reference;
+    typedef const SubClass&                        const_reference;
+    typedef SubClass*                              pointer;
+    typedef const SubClass*                        const_pointer;
+    typedef TreeNode::ChildrenList::size_type      size_type;
+    typedef iterator_base<value_type, CLCI>        iterator;
+    typedef iterator_base<const value_type, CLCI>  const_iterator;
+
+public: /* Methods: */
+    explicit TreeNodeChildren (const TreeNode::ChildrenList& children)
+        : m_begin (children.begin ())
+        , m_end (children.end ())
+    { }
+
+    TreeNodeChildren (CLCI begin, CLCI end)
+        : m_begin (begin)
+        , m_end (end)
+    { }
+
+    size_type size () const { return std::distance (m_begin, m_end); }
+
+    bool empty () const { return m_begin == m_end; }
+
+    const_reference operator [] (size_type i) const {
+        assert (i < size ());
+        assert (dynamic_cast<value_type>(*(m_begin + i)) != 0);
+        return *static_cast<value_type>(*(m_begin + i));
+    }
+
+    reference operator [] (size_type i) {
+        assert (i < size ());
+        assert (dynamic_cast<value_type>(*(m_begin + i)) != 0);
+        return *static_cast<value_type>(*(m_begin + i));
+    }
+
+    iterator begin () const { return iterator (m_begin); }
+    iterator end () const { return iterator (m_end); }
+    const_iterator cbegin () const { return iterator (m_begin); }
+    const_iterator cend () const { return iterator (m_end); }
+
+private:
+
+    bool verifyIndex (size_type i) const {
+        return i < size () && dynamic_cast<value_type>(*(m_begin + i)) != 0;
+    }
+
+private: /* Fields: */
+    CLCI m_begin, m_end;
+};
+
+template <class BaseClass>
+inline typename TreeNodeChildren<BaseClass>::iterator
+        range_begin (TreeNodeChildren<BaseClass>& x) {
+    return x.begin ();
+}
+
+template <class BaseClass>
+inline typename TreeNodeChildren<BaseClass>::iterator
+        range_begin (const TreeNodeChildren<BaseClass>& x) {
+    return x.begin ();
+}
+
+template <class BaseClass>
+inline typename TreeNodeChildren<BaseClass>::iterator
+        range_end (TreeNodeChildren<BaseClass>& x) {
+    return x.end ();
+}
+
+template <class BaseClass>
+inline typename TreeNodeChildren<BaseClass>::iterator
+        range_end (const TreeNodeChildren<BaseClass>& x) {
+    return x.end ();
+}
 
 /******************************************************************
   TreeNodeIdentifier
@@ -279,13 +387,28 @@ private: /* Fields: */
 };
 
 /******************************************************************
+  TreeNodeTypeF
+******************************************************************/
+
+class TreeNodeTypeF: public TreeNode {
+public: /* Methods: */
+    inline TreeNodeTypeF (SecrecTreeNodeType type, const Location & loc)
+        : TreeNode (type, loc)
+    { }
+
+protected:
+
+    virtual TreeNode* cloneV () const  = 0;
+};
+
+/******************************************************************
   TreeNodeSecTypeF
 ******************************************************************/
 
-class TreeNodeSecTypeF: public TreeNode {
+class TreeNodeSecTypeF: public TreeNodeTypeF {
 public: /* Methods: */
     inline TreeNodeSecTypeF(bool isPublic, const Location & loc)
-        : TreeNode (NODE_SECTYPE_F, loc)
+        : TreeNodeTypeF (NODE_SECTYPE_F, loc)
         , m_isPublic (isPublic)
         , m_cachedType (0)
     { }
@@ -311,11 +434,11 @@ private: /* Fields: */
   TreeNodeDataType
 ******************************************************************/
 
-class TreeNodeDataTypeF: public TreeNode {
+class TreeNodeDataTypeF: public TreeNodeTypeF {
 public: /* Methods: */
     inline TreeNodeDataTypeF(SecrecDataType dataType,
                              const Location & loc)
-        : TreeNode(NODE_DATATYPE_F, loc)
+        : TreeNodeTypeF(NODE_DATATYPE_F, loc)
         , m_dataType(dataType) {}
 
     const SecrecDataType &dataType() const {
@@ -338,11 +461,11 @@ private: /* Fields: */
   TreeNodeDimType
 ******************************************************************/
 
-class TreeNodeDimTypeF: public TreeNode {
+class TreeNodeDimTypeF: public TreeNodeTypeF {
 public: /* Methods: */
     inline TreeNodeDimTypeF(SecrecDimType dimType,
                             const Location & loc)
-        : TreeNode(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
+        : TreeNodeTypeF(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
 
     SecrecDimType dimType() const {
         return m_dimType;
@@ -532,7 +655,9 @@ public: /* Methods: */
 
     virtual CGResult codeGenWith (CodeGen& cg);
 
-    ChildrenList& expressions () { return m_children; }
+    TreeNodeChildren<TreeNodeExpr> expressions () const {
+        return TreeNodeChildren<TreeNodeExpr>(m_children);
+    }
 
 protected:
 
@@ -705,8 +830,6 @@ public:
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
-    TreeNodeExpr *& leftExpression ();
-    TreeNodeExpr *& rightExpression ();
     TreeNodeExprInt* dimensionality () const;
 
 protected:
@@ -734,9 +857,7 @@ public:
     /// "reshapee" as the expression that is being reshaped!
     TreeNodeExpr* reshapee () const;
 
-    /// \todo use range or iterators?
-    /// that requires a iterator that casts to expression
-    TreeNode::ChildrenListConstRange dimensions ();
+    TreeNodeChildren<TreeNodeExpr> dimensions () const;
 
 protected:
 
@@ -936,8 +1057,7 @@ public: /* Methods: */
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeIdentifier* procName () const;
-
-    ChildrenListConstRange paramRange () const;
+    TreeNodeChildren<TreeNodeExpr> params () const;
 
     void setProcedure (SymbolProcedure* proc) {
         m_procedure = proc;
@@ -1055,8 +1175,6 @@ public: /* Methods: */
     TreeNodeExpr* conditional () const;
     TreeNodeExpr* trueBranch () const;
     TreeNodeExpr* falseBranch () const;
-    TreeNodeExpr *& trueBranchPtrRef();
-    TreeNodeExpr *& falseBranchPtrRef();
 
 protected:
 
@@ -1177,7 +1295,7 @@ public: /* Methods: */
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
-    ChildrenListConstRange types () const;
+    TreeNodeChildren<TreeNodeTypeF> types () const;
 
 protected:
 
@@ -1319,9 +1437,7 @@ public:
     TreeNodeIdentifier* identifier () const;
     TreeNodeType* returnType () const;
     TreeNodeStmt* body () const;
-    ChildrenListConstRange paramRange () const;
-    ChildrenListConstIterator paramBegin () const;
-    ChildrenListConstIterator paramEnd () const;
+    TreeNodeChildren<TreeNodeStmtDecl> params () const;
 
 protected: /* Methods: */
 
@@ -1371,18 +1487,56 @@ protected: /* Fields: */
 
 class TreeNodeQuantifier : public TreeNode {
 public: /* Methods: */
-    explicit inline TreeNodeQuantifier(const Location & loc)
-        : TreeNode(NODE_TEMPLATE_QUANT, loc) {}
+    explicit inline TreeNodeQuantifier(SecrecTreeNodeType type, const Location & loc)
+        : TreeNode(type, loc) { }
 
-    TreeNodeIdentifier* domain ();
+    virtual void printQuantifier (std::ostream& os) const = 0;
+
+protected:
+    virtual TreeNode* cloneV () const = 0;
+};
+
+
+/******************************************************************
+  TreeNodeDomainQuantifier
+******************************************************************/
+
+class TreeNodeDomainQuantifier : public TreeNodeQuantifier {
+public: /* Methods: */
+    explicit inline TreeNodeDomainQuantifier(const Location & loc)
+        : TreeNodeQuantifier(NODE_TEMPLATE_DOMAIN_QUANT, loc) {}
+
+    TreeNodeIdentifier* domain () const;
 
     // will equal to zero, if kind not specified
-    TreeNodeIdentifier* kind ();
+    TreeNodeIdentifier* kind () const;
+
+    void printQuantifier (std::ostream & os) const;
 
 protected:
 
     virtual TreeNode* cloneV () const {
-        return new TreeNodeQuantifier (m_location);
+        return new TreeNodeDomainQuantifier (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeDimensionalityQuantifier
+******************************************************************/
+
+class TreeNodeDimQuantifier : public TreeNodeQuantifier {
+public: /* Methods: */
+    explicit inline TreeNodeDimQuantifier (const Location & loc)
+        : TreeNodeQuantifier(NODE_TEMPLATE_DIM_QUANT, loc) {}
+
+    TreeNodeIdentifier* identifier () const;
+
+    void printQuantifier (std::ostream & os) const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDimQuantifier (m_location);
     }
 };
 
@@ -1399,7 +1553,9 @@ public: /* Methods: */
     { }
 
     TreeNodeProcDef* body () const;
-    TreeNode::ChildrenList& quantifiers () const;
+
+    // TODO: we have dim. quantifiers too
+    TreeNodeChildren<TreeNodeDomainQuantifier> quantifiers() const;
 
     void setContextDependance (bool contextDependance) {
         m_contextDependance = contextDependance;
@@ -1619,7 +1775,7 @@ public: /* Methods: */
 
     /// Returns the first variable initializer.
     TreeNodeVarInit* initializer () const;
-    ChildrenListConstRange initializers () const;
+    TreeNodeChildren<TreeNodeVarInit> initializers () const;
     TreeNodeType* varType () const;
 
     StringRef variableName() const {
@@ -1778,7 +1934,6 @@ public: /* Methods: */
     }
 
     TreeNodeExpr* expression () const;
-    TreeNodeExpr *& expressionPtrRef();
 
 protected:
 
@@ -1820,12 +1975,30 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    ChildrenList& expressions ();
+    TreeNodeChildren<TreeNodeExpr> expressions ();
 
 protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeStmtPrint (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeSyscallParam
+******************************************************************/
+
+class TreeNodeSyscallParam : public TreeNode {
+public: /* Methods: */
+    explicit inline TreeNodeSyscallParam(SecrecTreeNodeType type, const Location & loc)
+        : TreeNode (type, loc) {}
+
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeSyscallParam  (m_type, m_location);
     }
 };
 
@@ -1841,7 +2014,7 @@ public: /* Methods: */
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
     TreeNodeExprString* name () const;
-    ChildrenListConstRange paramRange () const;
+    TreeNodeChildren<TreeNodeSyscallParam> params () const;
 
 protected:
 
@@ -1851,5 +2024,19 @@ protected:
 };
 
 } /* namespace SecreC */
+
+namespace boost {
+
+template<class BaseClass>
+struct range_mutable_iterator<SecreC::TreeNodeChildren<BaseClass> > {
+    typedef typename SecreC::TreeNodeChildren<BaseClass>::iterator type;
+};
+
+template<class BaseClass>
+struct range_const_iterator<SecreC::TreeNodeChildren<BaseClass> > {
+    typedef typename SecreC::TreeNodeChildren<BaseClass>::iterator type;
+};
+
+} // namespace boost
 
 #endif /* TREENODE_H */

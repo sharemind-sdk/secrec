@@ -142,7 +142,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     SymbolSymbol * resSym = generateResultSymbol(result, e);
 
     // 1. evaluate subexpressions
-    TreeNodeExpr * eArg1 = static_cast<TreeNodeExpr *>(e->children().at(0));
+    TreeNodeExpr * eArg1 = e->expression ();
     const CGResult & argResult(codeGen(eArg1));
     append(result, argResult);
     if (result.isNotOk()) {
@@ -152,7 +152,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     Symbol * x = argResult.symbol();
 
     SubscriptInfo subscript;
-    append(result, codeGenSubscript(subscript, x, e->children().at(1)));
+    append(result, codeGenSubscript(subscript, x, e->indices ()));
     if (result.isNotOk()) {
         return result;
     }
@@ -545,7 +545,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
 
     // Evaluate subexpression:
     TreeNodeExpr * eArg = e->reshapee();
-    CGResult result(codeGen(eArg));
+    CGResult result = codeGen(eArg);
     if (result.isNotOk()) {
         return result;
     }
@@ -555,11 +555,9 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
 
     {   // Eval subexpressions and copy dimensionalities:
         dim_iterator dimIt = dim_begin(resSym);
-        BOOST_FOREACH(TreeNode* _dim, e->dimensions()) {
+        BOOST_FOREACH (TreeNodeExpr& dim, e->dimensions()) {
             assert(dimIt != dim_end(resSym));
-            assert(dynamic_cast<TreeNodeExpr *>(_dim) != 0);
-            TreeNodeExpr * dim = static_cast<TreeNodeExpr *>(_dim);
-            const CGResult & argResult(codeGen(dim));
+            const CGResult & argResult = codeGen(&dim);
             append(result, argResult);
             if (result.isNotOk()) {
                 return result;
@@ -601,6 +599,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
     // Copy result:
     Imop * i = new Imop(e, iType, resSym, rhs, resSym->getSizeSym());
     pushImopAfter(result, i);
+    releaseTemporary (result, rhs);
     return result;
 }
 
@@ -971,10 +970,8 @@ CGResult CodeGen::cgExprProcCall(TreeNodeExprProcCall * e) {
         return CGResult::ERROR_CONTINUE;
 
     std::vector<TreeNodeExpr * > args;
-    BOOST_FOREACH(TreeNode* _arg, e->paramRange()) {
-        assert((_arg->type() & NODE_EXPR_MASK) != 0x0);
-        assert(dynamic_cast<TreeNodeExpr *>(_arg) != 0);
-        args.push_back(static_cast<TreeNodeExpr *>(_arg));
+    BOOST_FOREACH(TreeNodeExpr& param, e->params ()) {
+        args.push_back (&param);
     }
 
     return cgProcCall(e->symbolProcedure(), e->resultType(), args);
@@ -1548,10 +1545,8 @@ CGResult CodeGen::cgExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
     allocTemporaryResult (result);
 
     unsigned index = 0;
-    BOOST_FOREACH (TreeNode* c, e->expressions ()) {
-        assert (dynamic_cast<TreeNodeExpr*>(c) != 0);
-        TreeNodeExpr* child = static_cast<TreeNodeExpr*>(c);
-        const CGResult& exprResult = codeGen (child);
+    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+        const CGResult& exprResult = codeGen (&child);
         append (result, exprResult);
         if (result.isNotOk ())
             return result;

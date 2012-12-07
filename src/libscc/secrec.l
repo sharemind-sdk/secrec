@@ -80,6 +80,7 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "cat"        { stepLen(yyget_lloc(yyscanner), 3);  return CAT; }
 "continue"   { stepLen(yyget_lloc(yyscanner), 8);  return CONTINUE; }
 "declassify" { stepLen(yyget_lloc(yyscanner), 8);  return DECLASSIFY; }
+"dim"        { stepLen(yyget_lloc(yyscanner), 3);  return DIMENSIONALITY; }
 "domain"     { stepLen(yyget_lloc(yyscanner), 6);  return DOMAIN; }
 "do"         { stepLen(yyget_lloc(yyscanner), 2);  return DO; }
 "else"       { stepLen(yyget_lloc(yyscanner), 4);  return ELSE; }
