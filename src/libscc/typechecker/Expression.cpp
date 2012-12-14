@@ -194,8 +194,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
 
     // Add implicit classify node if needed:
     src = classifyIfNeeded(src, varType->secrecSecType());
-    varType = static_cast<TypeNonVoid *>(src->resultType());
-    e->setResultType(lhsType);
+    e->setResultType(src->resultType ());
     return OK;
 }
 
