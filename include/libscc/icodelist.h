@@ -27,20 +27,10 @@ public: /* Methods: */
     using ImopList::back;
     using ImopList::iterator_to;
 
-    inline void push_front (Imop* i) {
-        ImopList::push_front (*i);
-        i->setIndex (m_counter ++);
-    }
-
     inline iterator insert (const_iterator i, Imop* imop) {
         iterator j = ImopList::insert (i, *imop);
         imop->setIndex (m_counter ++);
         return j;
-    }
-
-    inline void push_imop (Imop *i) {
-        ImopList::push_back (*i);
-        i->setIndex (m_counter ++);
     }
 
     void resetIndexes();
