@@ -24,7 +24,8 @@ enum VMDataType {
     VM_UINT16   = 0x12,
     VM_UINT32   = 0x13,
     VM_UINT64   = 0x14,
-    VM_FLOAT32  = 0x23
+    VM_FLOAT32  = 0x23,
+    VM_FLOAT64  = 0x24
 };
 
 inline unsigned sizeInBytes (VMDataType dty) { return 1 << ((dty & 0x7) - 1); }
@@ -48,6 +49,7 @@ inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     case DATATYPE_XOR_UINT64: return VM_UINT64;
     case DATATYPE_BOOL:       return VM_UINT8;
     case DATATYPE_FLOAT32:    return VM_FLOAT32;
+    case DATATYPE_FLOAT64:    return VM_FLOAT64;
     default:                  break;
     }
 
@@ -66,6 +68,7 @@ inline const char* dataTypeToStr (VMDataType dty) {
     case VM_UINT32:   return "uint32";
     case VM_UINT64:   return "uint64";
     case VM_FLOAT32:  return "float32";
+    case VM_FLOAT64:  return "float64";
     default:          break;
     }
 
