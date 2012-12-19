@@ -514,6 +514,12 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
         return;
     }
     else
+    if (dType == DATATYPE_FLOAT64) {
+        block.push_new () << "push" << find (imop.arg1 ());
+        emitSyscall (block, find (imop.dest ()), "miner_float64_to_string");
+        return;
+    }
+    else
     if (isNumericDataType (dType)) {
         VMDataType vmDType = secrecDTypeToVMDType (dType);
         target = m_st.getLabel (":numeric_to_string__");
