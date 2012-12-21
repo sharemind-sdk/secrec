@@ -126,6 +126,11 @@ private: /* Types: */
             return *static_cast<typename base_type::pointer>(*m_iterator);
         }
 
+        typename base_type::pointer operator -> () const {
+            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != 0);
+            return static_cast<typename base_type::pointer>(*m_iterator);
+        }
+
         bool operator == (const self_type i) const { return m_iterator == i.m_iterator; }
         bool operator != (const self_type i) const { return m_iterator != i.m_iterator; }
         self_type& operator ++ () {  ++ m_iterator; return *this; }
@@ -162,14 +167,14 @@ public: /* Methods: */
 
     const_reference operator [] (size_type i) const {
         assert (i < size ());
-        assert (dynamic_cast<value_type>(*(m_begin + i)) != 0);
-        return *static_cast<value_type>(*(m_begin + i));
+        assert (dynamic_cast<const_pointer>(*(m_begin + i)) != 0);
+        return *static_cast<const_pointer>(*(m_begin + i));
     }
 
     reference operator [] (size_type i) {
         assert (i < size ());
-        assert (dynamic_cast<value_type>(*(m_begin + i)) != 0);
-        return *static_cast<value_type>(*(m_begin + i));
+        assert (dynamic_cast<pointer>(*(m_begin + i)) != 0);
+        return *static_cast<pointer>(*(m_begin + i));
     }
 
     iterator begin () const { return iterator (m_begin); }
@@ -247,6 +252,9 @@ public: /* Methods: */
         : TreeNode (type, loc)
     { }
 
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
+    virtual void setTypeContext (TypeContext& cxt) const = 0;
+
 protected:
 
     virtual TreeNode* cloneV () const  = 0;
@@ -269,6 +277,9 @@ public: /* Methods: */
     void setCachedType (SecurityType* ty);
     TreeNodeIdentifier* identifier () const;
 
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    virtual void setTypeContext (TypeContext& cxt) const;
+
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
@@ -282,7 +293,7 @@ private: /* Fields: */
 };
 
 /******************************************************************
-  TreeNodeDataType
+  TreeNodeDataTypeF
 ******************************************************************/
 
 class TreeNodeDataTypeF: public TreeNodeTypeF {
@@ -295,6 +306,9 @@ public: /* Methods: */
     const SecrecDataType &dataType() const {
         return m_dataType;
     }
+
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    virtual void setTypeContext (TypeContext& cxt) const;
 
 protected:
 
@@ -309,29 +323,70 @@ private: /* Fields: */
 };
 
 /******************************************************************
-  TreeNodeDimType
+  TreeNodeDimTypeF
 ******************************************************************/
 
 class TreeNodeDimTypeF: public TreeNodeTypeF {
 public: /* Methods: */
-    inline TreeNodeDimTypeF(SecrecDimType dimType,
+    inline TreeNodeDimTypeF(SecrecTreeNodeType type,
                             const Location & loc)
-        : TreeNodeTypeF(NODE_DIMTYPE_F, loc), m_dimType(dimType) {}
+        : TreeNodeTypeF (type, loc)
+        , m_dimType (~ SecrecDimType (0))
+    { }
 
-    SecrecDimType dimType() const {
-        return m_dimType;
-    }
+    inline bool isVariable () const { return m_type == NODE_DIMTYPE_VAR_F; }
+    inline SecrecDimType cachedType () const { return m_dimType; }
+    inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
+    virtual void setTypeContext (TypeContext& cxt) const;
 
 protected:
+    virtual TreeNode* cloneV () const = 0;
 
+private: /* Fields: */
+    SecrecDimType m_dimType;
+};
+
+/******************************************************************
+  TreeNodeDimTypeConstF
+******************************************************************/
+
+class TreeNodeDimTypeConstF: public TreeNodeDimTypeF {
+public: /* Methods: */
+    inline TreeNodeDimTypeConstF(SecrecDimType dimType,
+                                 const Location & loc)
+        : TreeNodeDimTypeF (NODE_DIMTYPE_CONST_F, loc)
+    { setCachedType (dimType); }
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
-        return new TreeNodeDimTypeF (m_dimType, m_location);
+        return new TreeNodeDimTypeConstF (cachedType (), m_location);
     }
+};
 
-private: /* Fields: */
-    const SecrecDimType m_dimType;
+/******************************************************************
+  TreeNodeDimTypeVarF
+******************************************************************/
+
+class TreeNodeDimTypeVarF: public TreeNodeDimTypeF {
+public: /* Methods: */
+    inline TreeNodeDimTypeVarF (const Location & loc)
+        : TreeNodeDimTypeF (NODE_DIMTYPE_VAR_F, loc)
+    { }
+
+    TreeNodeIdentifier* identifier () const;
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual bool printHelper(std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDimTypeVarF (m_location);
+    }
 };
 
 /******************************************************************
@@ -564,7 +619,6 @@ public: /* Methods: */
     TreeNode* slice () const;
     TreeNodeIdentifier* identifier () const;
     TreeNodeExpr* rightHandSide () const;
-    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 
@@ -1343,6 +1397,10 @@ public: /* Methods: */
 
     virtual void printQuantifier (std::ostream& os) const = 0;
 
+    virtual TypeChecker::Status accept (TypeChecker & typeChecker) = 0;
+
+    TreeNodeIdentifier* typeVariable () const;
+
 protected:
     virtual TreeNode* cloneV () const = 0;
 };
@@ -1357,12 +1415,11 @@ public: /* Methods: */
     explicit inline TreeNodeDomainQuantifier(const Location & loc)
         : TreeNodeQuantifier(NODE_TEMPLATE_DOMAIN_QUANT, loc) {}
 
-    TreeNodeIdentifier* domain () const;
-
     // will equal to zero, if kind not specified
     TreeNodeIdentifier* kind () const;
 
-    void printQuantifier (std::ostream & os) const;
+    virtual void printQuantifier (std::ostream & os) const;
+    virtual TypeChecker::Status accept (TypeChecker & typeChecker);
 
 protected:
 
@@ -1380,9 +1437,8 @@ public: /* Methods: */
     explicit inline TreeNodeDimQuantifier (const Location & loc)
         : TreeNodeQuantifier(NODE_TEMPLATE_DIM_QUANT, loc) {}
 
-    TreeNodeIdentifier* identifier () const;
-
     void printQuantifier (std::ostream & os) const;
+    virtual TypeChecker::Status accept (TypeChecker & typeChecker);
 
 protected:
 
@@ -1399,22 +1455,12 @@ class TreeNodeTemplate : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeTemplate(const Location & loc)
         : TreeNode(NODE_TEMPLATE_DECL, loc)
-        , m_contextDependance (false)
         , m_containingModule (0)
     { }
 
     TreeNodeProcDef* body () const;
 
-    // TODO: we have dim. quantifiers too
-    TreeNodeChildren<TreeNodeDomainQuantifier> quantifiers() const;
-
-    void setContextDependance (bool contextDependance) {
-        m_contextDependance = contextDependance;
-    }
-
-    bool isContextDependent () const {
-        return m_contextDependance;
-    }
+    TreeNodeChildren<TreeNodeQuantifier> quantifiers() const;
 
     ModuleInfo* containingModule () const {
         return m_containingModule;
@@ -1431,8 +1477,6 @@ protected:
     }
 
 private: /* Fields: */
-    bool m_contextDependance; /**< true if the template resolution
-                                   requires context */
     ModuleInfo* m_containingModule;
 };
 
@@ -1582,8 +1626,6 @@ public: /* Methods: */
 
     /// \retval 0 if right hand side is not defined
     TreeNodeExpr* rightHandSide () const;
-
-    TreeNodeExpr *& rightHandSidePtrRef();
 
 protected:
 

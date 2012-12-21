@@ -139,17 +139,18 @@ enum SecrecTreeNodeType {
     NODE_VAR_INIT               = 0x1b000,
 
     NODE_DATATYPE_F             = 0x100000,
-    NODE_DIMTYPE_F              = 0x200000,
-    NODE_DOMAIN                 = 0x300000,
-    NODE_IMPORT                 = 0x400000,
-    NODE_KIND                   = 0x500000,
-    NODE_MODULE                 = 0x600000,
-    NODE_SECTYPE_F              = 0x700000,
-    NODE_TEMPLATE_DECL          = 0x800000,
-    NODE_TEMPLATE_DIM_QUANT     = 0x900000,
-    NODE_TEMPLATE_DOMAIN_QUANT  = 0xa00000,
-    NODE_TYPETYPE               = 0xb00000,
-    NODE_TYPEVOID               = 0xc00000
+    NODE_DIMTYPE_CONST_F        = 0x200000,
+    NODE_DIMTYPE_VAR_F          = 0x300000,
+    NODE_DOMAIN                 = 0x400000,
+    NODE_IMPORT                 = 0x500000,
+    NODE_KIND                   = 0x600000,
+    NODE_MODULE                 = 0x700000,
+    NODE_SECTYPE_F              = 0x800000,
+    NODE_TEMPLATE_DECL          = 0x900000,
+    NODE_TEMPLATE_DIM_QUANT     = 0xa00000,
+    NODE_TEMPLATE_DOMAIN_QUANT  = 0xb00000,
+    NODE_TYPETYPE               = 0xc00000,
+    NODE_TYPEVOID               = 0xd00000
 };
 
 enum SecrecDataType {
@@ -175,7 +176,7 @@ enum SecrecDataType {
     NUM_DATATYPES
 };
 
-typedef int SecrecDimType; /**< Dimensionality type is undefined if negative! */
+typedef unsigned SecrecDimType; /**< (~ SecrecDimType(0)) reserved for undefined  */
 #ifdef __cplusplus
 namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
 #endif /* #ifdef __cplusplus */

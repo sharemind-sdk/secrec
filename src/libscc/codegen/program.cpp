@@ -6,6 +6,7 @@
 #include "misc.h"
 #include "ModuleInfo.h"
 #include "ModuleMap.h"
+#include "symbol.h"
 #include "symboltable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"

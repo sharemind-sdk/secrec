@@ -56,6 +56,7 @@ SET(LIBSCC_SOURCES
     "typechecker/Statement.cpp"
     "typechecker/templates.cpp"
     "typechecker/templates.h"
+    "typechecker/Type.cpp"
     "TypeContext.cpp"
     "types.cpp"
     "virtual_machine.cpp"

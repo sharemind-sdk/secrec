@@ -68,12 +68,20 @@ private: /* Fields: */
     const bool m_backward;
 };
 
+/*******************************************************************************
+  ForwardDataFlowAnalysis
+*******************************************************************************/
+
 class ForwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */
     inline ForwardDataFlowAnalysis() : DataFlowAnalysis(true, false) {}
 
     void outTo (const Block&, Edge::Label, const Block&) { }
 };
+
+/*******************************************************************************
+  BackwardDataFlowAnalysis
+*******************************************************************************/
 
 class BackwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */

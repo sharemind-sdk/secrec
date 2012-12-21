@@ -291,8 +291,8 @@ CGResult CodeGen::cgExprSize(TreeNodeExprSize * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    CGResult result(codeGen(e->expression()));
-    if (!result.isOk()) {
+    CGResult result = codeGen(e->expression());
+    if (result.isNotOk ()) {
         return result;
     }
 

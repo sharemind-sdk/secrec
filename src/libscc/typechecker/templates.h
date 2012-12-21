@@ -10,15 +10,16 @@
 #ifndef SECREC_TEMPLATES_H
 #define SECREC_TEMPLATES_H
 
-#include <vector>
-#include <set>
-#include <list>
-#include <utility>
-#include <map>
 #include <boost/foreach.hpp>
+#include <cassert>
+#include <deque>
+#include <map>
+#include <set>
+#include <utility>
+#include <vector>
 
-#include "symbol.h"
-#include "types.h"
+#include "parser.h"
+#include "StringRef.h"
 #include "treenode_fwd.h"
 
 /**
@@ -31,28 +32,91 @@ namespace SecreC {
 
 class SymbolTable;
 class ModuleInfo;
-typedef SecurityType* TemplateParam;
-typedef std::vector<TemplateParam> TemplateParams;
+class SymbolTemplate;
+class TypeNonVoid;
+class DataTypeProcedureVoid;
+class SecurityType;
+class Symbol;
+
+/*******************************************************************************
+  TemplateParameter
+*******************************************************************************/
+
+class TemplateParameter {
+private: /* Types: */
+    enum Tag { SEC, DIM };
+
+public: /* Methods: */
+
+    TemplateParameter (SecrecDimType dimType)
+        : m_tag (DIM)
+        , un_dimType (dimType)
+    { }
+
+    TemplateParameter (SecurityType* secType)
+        : m_tag (SEC)
+        , un_secType (secType)
+    { }
+
+    SecrecDimType dimType () const {
+        assert (m_tag == DIM);
+        return un_dimType;
+    }
+
+    SecurityType* secType () const {
+        assert (m_tag == SEC);
+        return un_secType;
+    }
+
+    Symbol* bind (StringRef name) const;
+
+    friend bool operator == (const TemplateParameter& a, const TemplateParameter& b);
+    friend bool operator < (const TemplateParameter& a, const TemplateParameter& b);
+
+private: /* Fields: */
+    Tag m_tag;
+    union {
+        SecrecDimType un_dimType;
+        SecurityType* un_secType;
+    };
+};
+
+inline bool operator == (const TemplateParameter& a, const TemplateParameter& b) {
+    if (a.m_tag != b.m_tag)
+        return false;
+
+    switch (a.m_tag) {
+    case TemplateParameter::DIM: return a.un_dimType == b.un_dimType;
+    case TemplateParameter::SEC: return a.un_secType == b.un_secType;
+    }
+}
+
+inline bool operator != (const TemplateParameter& a, const TemplateParameter& b) {
+    return !(a == b);
+}
+
+inline bool operator < (const TemplateParameter& a, const TemplateParameter& b) {
+    if (a.m_tag < b.m_tag) return true;
+    if (a.m_tag > b.m_tag) return false;
+    switch (a.m_tag) {
+    case TemplateParameter::DIM: return a.un_dimType < b.un_dimType;
+    case TemplateParameter::SEC: return a.un_secType < b.un_secType;
+    }
+}
+
+typedef std::map<StringRef, TemplateParameter, StringRef::FastCmp>
+    TemplateVarMap;
 
 /*******************************************************************************
   Instantiation
 *******************************************************************************/
 
 /**
- * This class acts as index for template instances. Nameley a template
- * instance is defined by it's declaration and the parameters it takes.
+ * This class acts as index for template instances. Namely, a template
+ * instance is defined by its declaration and the parameters it takes.
  */
 class Instantiation {
-public: /* Types: */
-
-    typedef TemplateParams::iterator iterator;
-    typedef TemplateParams::const_iterator const_iterator;
-
 public: /* Methods: */
-
-    Instantiation ()
-        : m_templ (0)
-    { }
 
     explicit Instantiation (SymbolTemplate* templ)
         : m_templ (templ)
@@ -60,57 +124,28 @@ public: /* Methods: */
 
     inline void swap (Instantiation& i) {
         std::swap (m_templ, i.m_templ);
-        m_params.swap (i.m_params);
+        std::swap (m_params, i.m_params);
     }
 
     SymbolTemplate* getTemplate () const { return m_templ; }
-
-    const_iterator begin () const { return m_params.begin (); }
-    const_iterator end () const { return m_params.end (); }
-    iterator begin () { return m_params.begin (); }
-    iterator end () { return m_params.end (); }
-
-    void addParam (SecurityType* secTy) { m_params.push_back (secTy); }
-
-    unsigned templateParamCount () const { return m_params.size (); }
-    unsigned unrestrictedTemplateParamCount () const;
-    unsigned quantifiedDomainOccurrenceCount () const;
+    std::vector<TemplateParameter>& getParams () { return m_params; }
+    const std::vector<TemplateParameter>& getParams () const { return m_params; }
 
     friend bool operator == (const Instantiation& a, const Instantiation& b);
     friend bool operator <  (const Instantiation& a, const Instantiation& b);
-    friend std::ostream& operator << (std::ostream& os, const Instantiation& i);
-
-protected:
-
-    inline std::pair<SymbolTemplate*, TemplateParams> toPair () const {
-        return std::make_pair (m_templ, m_params);
-    }
 
 private: /* Fields: */
-
-    SymbolTemplate*  m_templ;
-    TemplateParams   m_params;
+    SymbolTemplate*                m_templ;
+    std::vector<TemplateParameter> m_params;
 };
 
 inline bool operator == (const Instantiation& a, const Instantiation& b) {
-    return a.toPair () == b.toPair ();
+    return a.m_templ == b.m_templ && a.m_params == b.m_params;
 }
 
 inline bool operator < (const Instantiation& a, const Instantiation& b) {
-    return a.toPair () < b.toPair ();
+    return a.m_templ < b.m_templ || (a.m_templ == b.m_templ && a.m_params < b.m_params);
 }
-
-inline std::ostream& operator << (std::ostream& os, const Instantiation& i) {
-    os << i.getTemplate () << "(";
-    BOOST_FOREACH (SecurityType* ty, i) {
-        if (ty != *i.begin ()) os << ',';
-        os << ty;
-    }
-
-    os << ')';
-    return os;
-}
-
 
 /*******************************************************************************
   TemplateInstantiator
@@ -129,7 +164,6 @@ struct InstanceInfo {
 };
 
 class TemplateInstantiator {
-
 private: /* Types: */
 
     typedef std::map<Instantiation, InstanceInfo> InstanceInfoMap;
@@ -169,9 +203,9 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    std::set<Instantiation>   m_generated;    // set of generated instances
-    InstanceInfoMap           m_instanceInfo;
-    std::list<Instantiation > m_workList;
+    std::set<Instantiation>     m_generated;    // set of generated instances
+    InstanceInfoMap             m_instanceInfo;
+    std::deque<Instantiation >  m_workList;
 };
 
 

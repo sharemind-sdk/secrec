@@ -40,7 +40,7 @@ public: /* Methods: */
     TypeContext ()
         : m_contextSecType (0)
         , m_contextDataType (DATATYPE_UNDEFINED)
-        , m_contextDimType (-1)
+        , m_contextDimType (~ SecrecDimType (0))
     { }
 
     TypeContext typeContext () const {
@@ -106,7 +106,7 @@ public: /* Methods: */
     }
 
     bool haveContextDimType () const {
-        return m_contextDimType >= 0;
+        return m_contextDimType != ~ SecrecDimType (0);
     }
 
     bool matchType (TypeNonVoid* type) const {

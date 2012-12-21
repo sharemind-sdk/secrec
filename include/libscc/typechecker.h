@@ -9,21 +9,22 @@
 
 namespace SecreC {
 
-struct InstanceInfo;
 class CompileLog;
 class Context;
 class DataType;
 class DataTypeProcedureVoid;
+class Instantiation;
 class SecurityType;
 class Symbol;
 class SymbolProcedure;
 class SymbolSymbol;
 class SymbolTable;
-class Instantiation;
+class SymbolTemplate;
 class TemplateInstantiator;
 class Type;
 class TypeContext;
 class TypeNonVoid;
+struct InstanceInfo;
 
 
 /*******************************************************************************
@@ -82,8 +83,15 @@ public: /* Methods: */
     Status visit(TreeNodeExprBytesFromString * e);
     Status visit(TreeNodeExprStringFromBytes * e);
 
+    Status visit(TreeNodeTypeF* ty);
     Status visit(TreeNodeSecTypeF * ty);
+    Status visit(TreeNodeDimTypeF* ty);
+    Status visit(TreeNodeDimTypeVarF * ty);
     Status visit(TreeNodeType * _ty);
+
+    Status visit(TreeNodeQuantifier* q);
+    Status visit(TreeNodeDimQuantifier* q);
+    Status visit(TreeNodeDomainQuantifier* q);
 
     Status visit(TreeNodeStmtIf * stmt);
     Status visit(TreeNodeStmtWhile * stmt);
@@ -129,10 +137,6 @@ protected:
     Status getInstance(SymbolProcedure *& proc,
                        const Instantiation & inst);
 
-    Status checkParams(const std::vector<TreeNodeExpr *> & arguments,
-                       DataTypeProcedureVoid *& argTypes);
-
-
     Status checkProcCall(SymbolProcedure * symProc,
                          DataTypeProcedureVoid * argTypes,
                          SecreC::Type *& resultType);
@@ -147,14 +151,13 @@ protected:
      */
     Status checkProcCall(TreeNodeIdentifier * name,
                          const TreeNodeExprProcCall & tyCxt,
-                         const std::vector<TreeNodeExpr *> & arguments,
+                         const TreeNodeChildren<TreeNodeExpr>& arguments,
                          SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);
 
     // Try to unify template with given parameter types. On success this
-    // procedure returns true, and gives bindings to quantifiers. No
-    // additional side effects are performed.
-    bool unify (Instantiation& inst,
+    // procedure returns true. No additional side effects are performed.
+    bool unify (Instantiation &inst,
                 const TypeContext& tyCxt,
                 DataTypeProcedureVoid* argTypes) const;
 

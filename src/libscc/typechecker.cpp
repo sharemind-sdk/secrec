@@ -3,6 +3,7 @@
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include "log.h"
+#include "symbol.h"
 #include "symboltable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"
@@ -33,74 +34,11 @@ bool TypeChecker::getForInstantiation (InstanceInfo& info) {
     return m_instantiator->getForInstantiation (info);
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
-    if (ty->cachedType () != 0)
-        return OK;
-
-    if (ty->isPublic ()) {
-        ty->setCachedType (PublicSecType::get (getContext ()));
-        return OK;
-    }
-
-    TreeNodeIdentifier* id = ty->identifier ();
-    Symbol* s = findIdentifier (id);
-    if (s == 0)
-        return E_TYPE;
-
-    if (s->symbolType () != Symbol::PDOMAIN) {
-        m_log.fatalInProc(ty) << "Expecting privacy domain at " << ty->location () << '.';
-        return E_TYPE;
-    }
-
-    assert (dynamic_cast<SymbolDomain*>(s) != 0);
-    ty->setCachedType (static_cast<SymbolDomain*>(s)->securityType ());
-    return OK;
-}
-
-
-TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
-    if (_ty->m_cachedType != 0)
-        return OK;
-
-    if (_ty->type () == NODE_TYPETYPE) {
-        assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
-        TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
-        TreeNodeSecTypeF* secTyNode = tyNode->secType ();
-        Status status = visit(secTyNode);
-        if (status != OK)
-            return status;
-
-        SecurityType* secType = secTyNode->cachedType ();
-        if (secType->isPublic ()) {
-            switch (tyNode->dataType ()->dataType ()) {
-            case DATATYPE_XOR_UINT8:
-            case DATATYPE_XOR_UINT16:
-            case DATATYPE_XOR_UINT32:
-            case DATATYPE_XOR_UINT64:
-                m_log.fatalInProc(_ty) << "XOR types do not have public representation at "
-                                       << _ty->location () << '.';
-                return E_TYPE;
-            default:
-                break;
-            }
-        }
-        tyNode->m_cachedType = TypeNonVoid::get (m_context,
-            secType, tyNode->dataType ()->dataType (),
-                     tyNode->dimType ()->dimType());
-    }
-    else {
-        assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);
-        _ty->m_cachedType = TypeVoid::get (getContext ());
-    }
-
-    return OK;
-}
-
 Symbol* TypeChecker::findIdentifier (TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (id->value ());
     if (s == 0) {
         m_log.fatalInProc(id) << "Idenfier '" << id->value()
-                              << "'' at " << id->location()
+                              << "' at " << id->location()
                               << " not in scope.";
     }
 
@@ -111,7 +49,7 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     Symbol *s = m_st->find (id->value ());
     if (s == 0) {
         m_log.fatalInProc(id) << "Undeclared identifier '" << id->value ()
-                              << "'' at " << id->location() << '.';
+                              << "' at " << id->location() << '.';
         return 0;
     }
 

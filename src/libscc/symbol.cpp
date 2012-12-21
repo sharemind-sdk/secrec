@@ -9,6 +9,50 @@
 
 namespace SecreC {
 
+namespace /* anonymous */ {
+
+SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
+    std::set<StringRef, StringRef::FastCmp > typeVariables;
+
+    unsigned typeVariableCount = templ->quantifiers ().size ();
+    unsigned qualifiedTypeVariableCount = 0;
+    unsigned quantifiedParamCount = 0;
+
+    BOOST_FOREACH (TreeNodeQuantifier& quant, templ->quantifiers ()) {
+        switch (quant.type ()) {
+        case NODE_TEMPLATE_DOMAIN_QUANT:
+            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != 0);
+            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == 0)
+                ++ qualifiedTypeVariableCount;
+        case NODE_TEMPLATE_DIM_QUANT:
+            typeVariables.insert (quant.typeVariable ()->value ());
+        default:
+            break;
+        }
+    }
+
+    TreeNodeProcDef* body = templ->body ();
+    BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
+        TreeNodeType* t = decl.varType ();
+        if (! t->secType ()->isPublic ()) {
+            TreeNodeIdentifier* id = t->secType ()->identifier ();
+            if (typeVariables.count (id->value ()) > 0) {
+                ++ quantifiedParamCount;
+            }
+        }
+
+        if (t->dimType ()->isVariable ()) {
+            ++ quantifiedParamCount;
+        }
+    }
+
+    return SymbolTemplate::Weight (typeVariableCount,
+                                   qualifiedTypeVariableCount,
+                                   quantifiedParamCount);
+}
+
+} // namespace anonymous
+
 /*******************************************************************************
   Symbol
 *******************************************************************************/
@@ -193,9 +237,12 @@ void SymbolLabel::print(std::ostream & os) const {
   SymbolTemplate
 *******************************************************************************/
 
-SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ)
+SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ, bool expectsSecType, bool expectsDimType)
     : Symbol (Symbol::TEMPLATE)
     , m_templ (templ)
+    , m_expectsSecType (expectsSecType)
+    , m_expectsDimType (expectsDimType)
+    , m_weight (computeTemplateWeight (templ))
 { }
 
 const Location * SymbolTemplate::location() const {
@@ -203,12 +250,12 @@ const Location * SymbolTemplate::location() const {
 }
 
 void SymbolTemplate::print(std::ostream & os) const {
-    os << "template <domain ";
+    os << "template <";
 
     bool first = true;
-    BOOST_FOREACH (TreeNodeDomainQuantifier& q, m_templ->quantifiers ()) {
+    BOOST_FOREACH (TreeNodeQuantifier& q, m_templ->quantifiers ()) {
         if (! first)
-            os << ", domain ";
+            os << ", ";
         first = false;
         q.printQuantifier (os);
     }

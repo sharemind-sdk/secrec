@@ -283,18 +283,69 @@ private: /* Fields: */
 *******************************************************************************/
 
 class SymbolTemplate: public Symbol {
+public: /* Types: */
+
+    struct Weight {
+        unsigned m_typeVariableCount;
+        unsigned m_qualifiedTypeVariableCount;
+        unsigned m_quantifiedParamCount;
+
+        Weight ()
+            : m_typeVariableCount (~ unsigned (0))
+            , m_qualifiedTypeVariableCount (~ unsigned (0))
+            , m_quantifiedParamCount (~ unsigned (0))
+        { }
+
+        Weight (unsigned a, unsigned b, unsigned c)
+            : m_typeVariableCount (a)
+            , m_qualifiedTypeVariableCount (b)
+            , m_quantifiedParamCount (c)
+        { }
+
+        inline bool operator == (const Weight& other) const {
+            return m_typeVariableCount == other.m_typeVariableCount &&
+                   m_qualifiedTypeVariableCount == other.m_qualifiedTypeVariableCount &&
+                   m_quantifiedParamCount == other.m_quantifiedParamCount;
+        }
+
+        inline bool operator != (const Weight& other) const { return !(*this == other); }
+
+        inline bool operator < (const Weight& other) const {
+            const unsigned left[3] = { m_typeVariableCount, m_qualifiedTypeVariableCount, m_quantifiedParamCount };
+            const unsigned right[3] = { other.m_typeVariableCount, other.m_qualifiedTypeVariableCount, other.m_quantifiedParamCount };
+            for (unsigned i = 0; i < 3; ++ i) {
+                if (left[i] < right[i]) return true;
+                if (left[i] > right[i]) return false;
+            }
+
+            return false;
+        }
+
+        inline bool operator > (const Weight& other) const {
+            return (other < *this);
+        }
+    };
+
 public: /* Methods: */
-    SymbolTemplate(TreeNodeTemplate *templ);
+    SymbolTemplate (TreeNodeTemplate *templ,
+                    bool expectsSecType,
+                    bool expectsDimType);
 
     inline TreeNodeTemplate *decl() const { return m_templ; }
 
     virtual const Location * location() const;
+    inline bool expectsSecType () const { return m_expectsSecType; }
+    inline bool expectsDimType () const { return m_expectsDimType; }
+    const Weight& weight () const  { return m_weight; }
 
 protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
-    TreeNodeTemplate* m_templ;
+    TreeNodeTemplate*  const  m_templ;
+    bool               const  m_expectsSecType; ///< Expects context to supply security type
+    bool               const  m_expectsDimType; ///< Expects context to supply dimensionality type
+    Weight             const  m_weight;
 };
 
 

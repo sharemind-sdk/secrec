@@ -64,7 +64,7 @@ TypeNonVoid* upperTypeNonVoid (Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
     SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
     SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
     SecrecDataType dataType = upperDataType (a->secrecDataType (), b->secrecDataType ());
-    if (secType == 0 || dimType < 0 || dataType == DATATYPE_UNDEFINED)
+    if (secType == 0 || dimType == (~ SecrecDimType(0)) || dataType == DATATYPE_UNDEFINED)
         return 0;
 
     return TypeNonVoid::get (cxt, secType, dataType, dimType);
@@ -172,7 +172,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     // Calculate type of r-value:
-    TreeNodeExpr *& src = e->rightHandSidePtrRef();
+    TreeNodeExpr * src = e->rightHandSide ();
     TypeNonVoid * lhsType = TypeNonVoid::get(getContext(),
             varType->secrecSecType(), varType->secrecDataType(), destDim);
     src->setContext(lhsType);
@@ -294,8 +294,6 @@ TypeChecker::Status TreeNodeExprSize::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeExprSize * root) {
-    typedef TypeNonVoid TNV;
-
     if (! root->haveResultType()) {
         TreeNodeExpr * e = root->expression();
         const Status s = visitExpr(e);
@@ -1173,34 +1171,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
         return OK;
 
     Status status = OK;
+    TypeContext suppliedContext;
     TreeNodeExpr * subExpr = e->expression();
     subExpr->setContext(e);
-    bool checkSecType = false, checkDataType = false, checkDimType = false;
     BOOST_FOREACH (TreeNodeTypeF& node, e->types()) {
-        switch (node.type()) {
-        case NODE_SECTYPE_F: {
-            TreeNodeSecTypeF& secTy = static_cast<TreeNodeSecTypeF&>(node);
-            status = visit(&secTy);
-            if (status != OK)
-                return status;
-            subExpr->setContextSecType(secTy.cachedType());
-            checkSecType = true;
-        }
-            break;
-        case NODE_DATATYPE_F:
-            subExpr->setContextDataType(
-                    static_cast<TreeNodeDataTypeF&>(node).dataType());
-            checkDataType = true;
-            break;
-        case NODE_DIMTYPE_F:
-            subExpr->setContextDimType(
-                    static_cast<TreeNodeDimTypeF&>(node).dimType());
-            checkDimType = true;
-            break;
-        default:
-            assert(false && "ICE: expression qualified over non-type!");
-            break;
-        }
+        status = visit (&node);
+        if (status != OK)
+            return status;
+
+        node.setTypeContext (suppliedContext);
+        node.setTypeContext (*subExpr); // not the nicest solution
     }
 
     status = visitExpr(subExpr);
@@ -1209,7 +1189,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
 
     /* Check that the actual type matches the qualified type: */
 
-    if (checkSecType) {
+    if (suppliedContext.haveContextSecType ()) {
         if (subExpr->contextSecType() !=
                 subExpr->resultType()->secrecSecType()) {
             m_log.fatalInProc(e) << "Security type of the expression at "
@@ -1219,7 +1199,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
         }
     }
 
-    if (checkDataType) {
+    if (suppliedContext.haveContextDataType ()) {
         if (subExpr->contextDataType() !=
                 subExpr->resultType()->secrecDataType()) {
             m_log.fatalInProc(e) << "Data type of the expression at "
@@ -1230,7 +1210,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
         }
     }
 
-    if (checkDimType) {
+    if (suppliedContext.haveContextDimType ()) {
         if (subExpr->contextDimType() !=
                 subExpr->resultType()->secrecDimType()) {
             m_log.fatalInProc(e) << "Dimensionality type of the expression at "

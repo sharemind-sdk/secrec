@@ -423,7 +423,7 @@ type_specifier
      $$ = treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
-     treenode_appendChild($$, treenode_init_dimTypeF(0, &@$));
+     treenode_appendChild($$, treenode_init_dimTypeConstF(0, &@$));
    }
  | datatype_specifier dimtype_specifier
    {
@@ -437,7 +437,7 @@ type_specifier
      $$ = treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, treenode_init_publicSecTypeF (&@$));
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, treenode_init_dimTypeF(0, &@$));
+     treenode_appendChild($$, treenode_init_dimTypeConstF(0, &@$));
    }
  ;
 
@@ -479,7 +479,12 @@ datatype_specifier
 dimtype_specifier
  : '[' '[' int_literal_helper ']' ']'
    {
-      $$ = treenode_init_dimTypeF ($3, &@$);
+      $$ = treenode_init_dimTypeConstF ($3, &@$);
+   }
+ | '[' '[' identifier ']' ']'
+   {
+      $$ = treenode_init(NODE_DIMTYPE_VAR_F, &@$);
+      treenode_appendChild($$, $3);
    }
  ;
 
