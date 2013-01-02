@@ -1,5 +1,3 @@
-template <domain T > void bug2 () { }
+template <domain T> void bug () { }
 
-void main() {
-    bug2();
-}
+void main() { }
