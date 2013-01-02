@@ -304,6 +304,7 @@ void TestParse::testStmtOther_data() {
         << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))
                                        XB("STMT_EXPR", XINT(42))));
 
+    // TODO: fix this test, or improve parser to again account for this case
     QTest::newRow("emptyExpressionBegin")
         << QString(SIMPLE(";42;"))
         << QString(SIMPLE_PARSE_STMTS(XB("STMT_EXPR", XINT(42))));
