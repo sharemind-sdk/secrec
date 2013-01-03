@@ -965,7 +965,7 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
         assert (! arg->isConstant ());
 
         if (arg->isArray() || isString(arg)) {
-            block.push_new ()  << "pushcref mem" << find (arg);
+            block.push_new ()  << "pushref mem" << find (arg);
             return;
         }
 
