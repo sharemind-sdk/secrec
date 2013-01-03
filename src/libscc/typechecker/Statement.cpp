@@ -257,6 +257,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
     if (s != OK)
         return s;
 
+    bool hasReturn = false;
+
     BOOST_FOREACH (TreeNodeSyscallParam& param, stmt->params ()) {
         TreeNodeExpr* e = param.expression ();
         if (param.type () != NODE_PUSH) {
@@ -275,6 +277,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
                                         << param.location () << '.';
                 return E_TYPE;
             }
+        }
+
+        if (param.type () == NODE_SYSCALL_RETURN) {
+            if (hasReturn) {
+                m_log.fatalInProc (stmt) << "Multiple return values specified for syscall at "
+                                         << stmt->location () << ".";
+                return E_TYPE;
+            }
+
+            hasReturn = true;
         }
     }
 
