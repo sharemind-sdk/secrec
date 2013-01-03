@@ -195,6 +195,7 @@
 %type <treenode> procedure_parameter_list
 %type <treenode> program
 %type <treenode> qualified_expression
+%type <treenode> qualified_type qualified_types
 %type <treenode> relational_expression
 %type <treenode> return_type_specifier
 %type <treenode> sectype_specifier
@@ -927,26 +928,31 @@ assignment_expression /* WARNING: RIGHT RECURSION */
  | qualified_expression
  ;
 
+qualified_type
+ : sectype_specifier
+ | datatype_specifier
+ | dimtype_specifier
+ ;
+
+qualified_types
+ : qualified_types qualified_type
+   {
+     $$ = $1;
+     treenode_appendChild($$, $2);
+   }
+ | qualified_type
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+     treenode_appendChild($$, $1);
+   }
+ ;
+
 qualified_expression
- : qualified_expression TYPE_QUAL sectype_specifier
+ : qualified_expression TYPE_QUAL qualified_types
    {
      $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
-
-   }
- | qualified_expression TYPE_QUAL datatype_specifier
-   {
-     $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
-
-   }
- | qualified_expression TYPE_QUAL dimtype_specifier
-   {
-     $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
+     treenode_moveChildren($3, $$);
    }
  | conditional_expression
  ;
