@@ -746,7 +746,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     BOOST_FOREACH (const NodeSymbolPair & ts, results) {
         Imop::Type iType;
         switch (ts.first->type()) {
-        case NODE_SYSCALL_RETURN:                   continue;
+        case NODE_SYSCALL_RETURN: ret = ts.second;  continue;
         case NODE_PUSH:     iType = Imop::PUSH;     break;
         case NODE_PUSHREF:  iType = Imop::PUSHREF;  break;
         case NODE_PUSHCREF: iType = Imop::PUSHCREF; break;
