@@ -944,7 +944,10 @@ void Compiler::emitSyscall (VMBlock& block, VMValue* dest, const std::string& na
 
 void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
     VMLabel* label = m_scm->getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
-    block.push_new () << "syscall" << label << "imm";
+    if (imop.dest ())
+        block.push_new () << "syscall" << label << find (imop.dest ());
+    else
+        block.push_new () << "syscall" << label << "imm";
 }
 
 void Compiler::cgPush (VMBlock& block, const Imop& imop) {
