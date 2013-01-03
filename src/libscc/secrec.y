@@ -115,6 +115,7 @@
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PRIVATE PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
+%token SYSCALL_RETURN
 
 /* Literals: */
 %token <str> BIN_LITERAL
@@ -779,6 +780,14 @@ syscall_parameter
       $$ = treenode_init(NODE_PUSH, &@$);
       treenode_appendChild($$, $1);
     }
+  | SYSCALL_RETURN identifier
+    {
+      const struct YYLTYPE loc = treenode_location ($2);
+      TreeNode * var = treenode_init(NODE_EXPR_RVARIABLE, &loc);
+      treenode_appendChild(var, $2);
+      $$ = treenode_init(NODE_SYSCALL_RETURN, &@$);
+      treenode_appendChild($$, var);
+    }
   | REF identifier
     {
       const struct YYLTYPE loc = treenode_location ($2);
@@ -786,7 +795,6 @@ syscall_parameter
       treenode_appendChild(var, $2);
       $$ = treenode_init(NODE_PUSHREF, &@$);
       treenode_appendChild($$, var);
-
     }
   | CREF expression
     {

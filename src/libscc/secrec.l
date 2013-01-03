@@ -128,6 +128,7 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "__domainid"          { stepLen(yyget_lloc(yyscanner), 10); return DOMAINID; }
 "__ref"               { stepLen(yyget_lloc(yyscanner), 5);  return REF; }
 "__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
+"__return"            { stepLen(yyget_lloc(yyscanner), 8);  return SYSCALL_RETURN; }
 "__syscall"           { stepLen(yyget_lloc(yyscanner), 9);  return SYSCALL; }
 
 {IDENTIFIER}       { saveText(yyscanner); return IDENTIFIER; }

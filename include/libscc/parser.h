@@ -137,6 +137,7 @@ enum SecrecTreeNodeType {
     NODE_STMT_WHILE             = 0x19000,
     NODE_SUBSCRIPT              = 0x1a000,
     NODE_VAR_INIT               = 0x1b000,
+    NODE_SYSCALL_RETURN         = 0x1c000,
 
     NODE_DATATYPE_F             = 0x100000,
     NODE_DIMTYPE_CONST_F        = 0x200000,
