@@ -1,6 +1,8 @@
 #include "icodelist.h"
 
-namespace {
+namespace SecreC {
+
+namespace /* anonymous */ {
 
 struct imop_disposer {
     inline void operator () (SecreC::Imop* imop) const {
@@ -8,9 +10,7 @@ struct imop_disposer {
     }
 };
 
-}
-
-namespace SecreC {
+} // namespace anonymous
 
 ICodeList::~ICodeList() {
     clear_and_dispose (imop_disposer ());
@@ -18,7 +18,7 @@ ICodeList::~ICodeList() {
 
 void ICodeList::resetIndexes() {
     unsigned long i = 1;
-    for (ImopList::iterator it (begin ()); it != end (); it++) {
+    for (ImopList::iterator it = begin (); it != end (); ++ it) {
         it->setIndex (i);
         i ++;
     }

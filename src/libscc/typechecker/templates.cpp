@@ -55,7 +55,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         TypeVariableMap::iterator it = freeTypeVariables.find (typeVariable);
         if (it != freeTypeVariables.end ()) {
             m_log.fatal ()
-                    << "Redeclaration of type variable \'" << typeVariable << '\''
+                    << "Redeclaration of a type variable \'" << typeVariable << '\''
                     << " at " << id->location () << '.';
             return E_TYPE;
         }

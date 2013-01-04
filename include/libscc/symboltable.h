@@ -41,7 +41,6 @@ public: /* Methods: */
 
     Symbol* find (StringRef name) const;
 
-
     /**
       Finds symbols given a name prefix, following imported modules.
       \param[in] prefix the name prefix of the symbols to find.

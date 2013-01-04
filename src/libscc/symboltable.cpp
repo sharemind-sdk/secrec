@@ -183,7 +183,7 @@ std::vector<SymbolSymbol*> SymbolTable::variables () const {
 
 std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) const {
     std::vector<SymbolSymbol*> out;
-    for (const SymbolTable* st = this; st != end; st = st->parent ()) {
+    for (const SymbolTable* st = this; st != 0 && st != end; st = st->parent ()) {
         const std::vector<SymbolSymbol*>& local = st->variables ();
         out.insert (out.end (), local.begin (), local.end ());
     }

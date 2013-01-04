@@ -509,10 +509,6 @@ public: /* Methods: */
         return CGBranchResult (CGResult::ERROR_FATAL);
     }
 
-    void setContextSecType (SecurityType* ty) {
-        m_contextSecType = ty;
-    }
-
 protected: /* Methods: */
 
     virtual TreeNode* cloneV () const = 0;

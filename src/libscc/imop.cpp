@@ -10,13 +10,13 @@
 #include "symboltable.h"
 #include "treenode.h"
 
-namespace {
+namespace SecreC {
+
+namespace /* anonymous*/ {
 
 #ifndef UD
 #define UD (~static_cast<unsigned>(0))
 #endif
-
-using namespace  SecreC;
 
 struct ImopInfoBits {
     unsigned  type;              ///< Opcode
@@ -146,8 +146,6 @@ std::ostream& operator << (std::ostream & os, const LabelOstreamWrapper & wrappe
 
 } // anonymous namespace
 
-namespace SecreC {
-
 #define dname  (SymbolOstreamWrapper (dest()))
 #define tname  (LabelOstreamWrapper (dest()))
 #define a1name (SymbolOstreamWrapper (arg1()))
@@ -155,8 +153,7 @@ namespace SecreC {
 #define a3name (SymbolOstreamWrapper (arg3()))
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
-    Imop* imop = new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
-    return imop;
+    return new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
 }
 
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
@@ -188,8 +185,7 @@ Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
 }
 
 Imop* newCall (TreeNode* node) {
-   Imop* out = new Imop (node, Imop::CALL, (Symbol*) 0, (Symbol*) 0);
-   return out;
+   return new Imop (node, Imop::CALL, (Symbol*) 0, (Symbol*) 0);
 }
 
 

@@ -30,7 +30,7 @@ public: /* Types: */
         SYMBOL,
         PKIND,
         PDOMAIN,
-        DIMENSIONALITY
+        DIM
     };
 
 public: /* Methods: */
@@ -79,7 +79,7 @@ private: /* Fields: */
 
 class SymbolConstant : public Symbol {
 public: /* Methods: */
-    inline SymbolConstant(TypeNonVoid* valueType)
+    explicit SymbolConstant(TypeNonVoid* valueType)
         : Symbol(CONSTANT,valueType)
     { }
 
@@ -93,7 +93,7 @@ public: /* Methods: */
 class SymbolDimensionality : public Symbol {
 public: /* Methods: */
     SymbolDimensionality(StringRef name, SecrecDimType dimType)
-        : Symbol (Symbol::DIMENSIONALITY)
+        : Symbol (Symbol::DIM)
         , m_dimType (dimType)
     {
         setName(name);
@@ -354,7 +354,7 @@ private: /* Fields: */
 *******************************************************************************/
 
 class SymbolLabel: public Symbol {
-public:
+public: /* Methods: */
     explicit SymbolLabel (Imop* target);
     explicit SymbolLabel (Block* block);
 
@@ -369,7 +369,7 @@ public:
 protected:
     void print(std::ostream & os) const;
 
-private:
+private: /* Fields: */
     Imop*   m_target;
     Block*  m_block;
 };

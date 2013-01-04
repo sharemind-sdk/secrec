@@ -53,7 +53,7 @@ TypeChecker::Status TreeNodeDimQuantifier::accept(TypeChecker& tyChecker) {
     return tyChecker.visit (this);
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeDimQuantifier* q) {
+TypeChecker::Status TypeChecker::visit(TreeNodeDimQuantifier*) {
     return OK;
 }
 
@@ -151,7 +151,7 @@ TypeChecker::Status TypeChecker::visit (TreeNodeDimTypeVarF * ty) {
     if ((s = findIdentifier (ty->identifier ())) == 0)
         return E_TYPE;
 
-    if (s->symbolType () != Symbol::DIMENSIONALITY) {
+    if (s->symbolType () != Symbol::DIM) {
         m_log.fatalInProc (ty) << "Invalid dimensionality specifier at " << ty->identifier ()->location () << ".";
         return E_TYPE;
     }

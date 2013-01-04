@@ -1273,6 +1273,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     case NODE_PUSH:
     case NODE_PUSHCREF:
     case NODE_PUSHREF:
+    case NODE_SYSCALL_RETURN:
         return (TreeNode *)(new SecreC::TreeNodeSyscallParam(type,*loc));
     default:
         assert(type != NODE_IDENTIFIER);

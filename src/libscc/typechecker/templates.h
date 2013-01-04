@@ -42,6 +42,7 @@ class Symbol;
   TemplateParameter
 *******************************************************************************/
 
+// Algebraic data types would be nice...
 class TemplateParameter {
 private: /* Types: */
     enum Tag { SEC, DIM };
@@ -203,9 +204,9 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    std::set<Instantiation>     m_generated;    // set of generated instances
+    std::set<Instantiation>     m_generated; ///< set of generated instances
     InstanceInfoMap             m_instanceInfo;
-    std::deque<Instantiation >  m_workList;
+    std::deque<Instantiation >  m_workList; ///<
 };
 
 

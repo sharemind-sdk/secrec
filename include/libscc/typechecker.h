@@ -90,7 +90,7 @@ public: /* Methods: */
     Status visit(TreeNodeType * _ty);
 
     Status visit(TreeNodeQuantifier* q);
-    Status visit(TreeNodeDimQuantifier* q);
+    Status visit(TreeNodeDimQuantifier*);
     Status visit(TreeNodeDomainQuantifier* q);
 
     Status visit(TreeNodeStmtIf * stmt);
@@ -108,8 +108,6 @@ public: /* Methods: */
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
 
-    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
-
     /// Check if given idenfier is in scope. Logs error message
     /// and returns NULL if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
@@ -120,8 +118,9 @@ public: /* Methods: */
     Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
+private:
 
-protected:
+    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
 
     /// Check if given idenfier is in scope.
     /// Logs error message and returns NULL if not.

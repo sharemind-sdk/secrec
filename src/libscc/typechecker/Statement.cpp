@@ -273,7 +273,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
         if (param.type () != NODE_PUSH) {
             if (e->resultType ()->secrecSecType ()->isPrivate ()) {
-                m_log.fatalInProc(stmt) << "Passing reference to private value at "
+                m_log.fatalInProc(stmt) << "Passing reference to a private value at "
                                         << param.location () << '.';
                 return E_TYPE;
             }

@@ -362,7 +362,8 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
             append(result, initResult);
             temp = initResult.symbol();
         }
-        else if (dynamic_cast<TreeNodeStmtDecl *>(s->initializer()) != 0) {
+        else
+        if (dynamic_cast<TreeNodeStmtDecl *>(s->initializer()) != 0) {
             newScope();
             createdScope = true;
             append(result, codeGenStmt(static_cast<TreeNodeStmtDecl *>(s->initializer())));
