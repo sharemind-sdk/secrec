@@ -82,22 +82,22 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     }
 
     VMBlock entryB (0, 0);
-    entryB.push_back (VMInstruction () << "resizestack" << 4);
-    entryB.push_back (VMInstruction () << "mov imm 0x0" << rOffset);
-    entryB.push_back (VMInstruction () << "uinc uint64" << rSize);
-    entryB.push_back (VMInstruction () << "bmul uint64" << rSize << iSize);
-    entryB.push_back (VMInstruction () << "alloc" << rOut << rSize);
+    entryB.push_new () << "resizestack" << 4;
+    entryB.push_new () << "mov imm 0x0" << rOffset;
+    entryB.push_new () << "uinc uint64" << rSize;
+    entryB.push_new () << "bmul uint64" << rSize << iSize;
+    entryB.push_new () << "alloc" << rOut << rSize;
     function.push_back (entryB);
 
     VMBlock middleB (lBack, 0);
-    middleB.push_back (VMInstruction () << "jge" << lOut << "uint64" << rOffset << rSize);
-    middleB.push_back (VMInstruction () << "mov" << rDefault << "mem" << rOut << rOffset << iSize);
-    middleB.push_back (VMInstruction () << "badd uint64" << rOffset << iSize);
-    middleB.push_back (VMInstruction () << "jmp" << lBack);
+    middleB.push_new () << "jge" << lOut << "uint64" << rOffset << rSize;
+    middleB.push_new () << "mov" << rDefault << "mem" << rOut << rOffset << iSize;
+    middleB.push_new () << "badd uint64" << rOffset << iSize;
+    middleB.push_new () << "jmp" << lBack;
     function.push_back (middleB);
 
     VMBlock exitB (lOut, 0);
-    exitB.push_back (VMInstruction () << "return" << rOut);
+    exitB.push_new () << "return" << rOut;
     function.push_back (exitB);
 }
 
@@ -120,14 +120,10 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
     VMBlock entryB (0, 0);
 
-    entryB.push_back (
-        VMInstruction () << "resizestack" << (2*n + 3)
-    );
+    entryB.push_new () << "resizestack" << (2*n + 3);
 
     for (unsigned i = 0; i < 3; ++ i) {
-        entryB.push_back (
-            VMInstruction () << "mov imm 0x0" << st.getStack (n + i)
-        );
+        entryB.push_new () << "mov imm 0x0" << st.getStack (n + i);
     }
 
     std::vector<VMStack*> rTmp (n - 1);
@@ -153,21 +149,16 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
     // jump out if needed
     VMBlock middleB (lBack, 0);
-    middleB.push_back (
-        VMInstruction ()
-            << "jge" << lOut << "uint64" << rCount << rSize
-    );
+    middleB.push_new () << "jge" << lOut << "uint64" << rCount << rSize;
 
     // move arguments to temporaries
     for (unsigned i = 1; i < n - 1; ++ i) {
-        middleB.push_back (
-            VMInstruction ()
-                << "mov mem"
-                << st.getStack (i)
-                << rOffArg
-                << rTmp[i]
-                << argSize
-        );
+        middleB.push_new ()
+            << "mov mem"
+            << st.getStack (i)
+            << rOffArg
+            << rTmp[i]
+            << argSize;
     }
 
     // perform operation on temporaries
@@ -205,32 +196,24 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     }
 
     // move result to memory
-    middleB.push_back (
-        VMInstruction ()
-            << "mov"
-            << rTmp[0]
-            << "mem"
-            << st.getStack (0)
-            << rOffDest
-            << destSize
-    );
+    middleB.push_new ()
+        << "mov"
+        << rTmp[0]
+        << "mem"
+        << st.getStack (0)
+        << rOffDest
+        << destSize;
 
     // increment offsets and counter
-    middleB.push_back (
-        VMInstruction ()
-            << "badd uint64" << rOffDest << destSize);
-    middleB.push_back (
-        VMInstruction ()
-            << "badd uint64" << rOffArg << argSize);
-    middleB.push_back (
-        VMInstruction ()
-            << "uinc uint64" << rCount);
+    middleB.push_new () << "badd uint64" << rOffDest << destSize;
+    middleB.push_new () << "badd uint64" << rOffArg << argSize;
+    middleB.push_new () << "uinc uint64" << rCount;
 
     // jump back to conditional
-    middleB.push_back (VMInstruction () << "jmp" << lBack);
+    middleB.push_new () << "jmp" << lBack;
 
     VMBlock returnB (lOut, 0);
-    returnB.push_back (VMInstruction () << "return imm 0x0");
+    returnB.push_new () << "return imm 0x0";
 
     function.push_back (entryB);
     function.push_back (middleB);
@@ -257,23 +240,23 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
     ///////////////
     // Entry block:
     VMBlock entryB (0, 0);
-    entryB.push_back (VMInstruction () << "resizestack" << 6);
-    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << srcOff);
-    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << destOff);
-    entryB.push_back (VMInstruction () << "bmul" << VM_UINT64 << size << srcSize);
-    entryB.push_back (VMInstruction () << "jge" << exitL << "uint64" << srcOff << size);
+    entryB.push_new () << "resizestack" << 6;
+    entryB.push_new () << "mov" << st.getImm (0) << srcOff;
+    entryB.push_new () << "mov" << st.getImm (0) << destOff;
+    entryB.push_new () << "bmul" << VM_UINT64 << size << srcSize;
+    entryB.push_new () << "jge" << exitL << VM_UINT64 << srcOff << size;
 
 
     VMBlock middleB (middleL, 0);
-    middleB.push_back (VMInstruction () << "mov" << "mem" << src << srcOff << temp << srcSize);
-    middleB.push_back (VMInstruction () << "convert" << m_src << temp << m_dest << temp);
-    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << destSize);
-    middleB.push_back (VMInstruction () << "badd" << VM_UINT64 << srcOff << srcSize);
-    middleB.push_back (VMInstruction () << "badd" << VM_UINT64 << destOff << destSize);
-    middleB.push_back (VMInstruction () << "jlt" << middleL << "uint64" << srcOff << size);
+    middleB.push_new () << "mov" << "mem" << src << srcOff << temp << srcSize;
+    middleB.push_new () << "convert" << m_src << temp << m_dest << temp;
+    middleB.push_new () << "mov" << temp << "mem" << dest << destOff << destSize;
+    middleB.push_new () << "badd" << VM_UINT64 << srcOff << srcSize;
+    middleB.push_new () << "badd" << VM_UINT64 << destOff << destSize;
+    middleB.push_new () << "jlt" << middleL << VM_UINT64 << srcOff << size;
 
     VMBlock exitB (exitL, 0);
-    exitB.push_back (VMInstruction () << "return imm 0x0");
+    exitB.push_new () << "return imm 0x0";
 
     function.push_back (entryB)
             .push_back (middleB)
@@ -302,22 +285,22 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     ///////////////
     // Entry block:
     VMBlock entryB (0, 0);
-    entryB.push_back (VMInstruction () << "resizestack" << 6);
-    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << srcOff);
-    entryB.push_back (VMInstruction () << "mov" << st.getImm (0) << destOff);
-    entryB.push_back (VMInstruction () << "bmul uint64" << size << srcSize);
-    entryB.push_back (VMInstruction () << "jge" << exitL << "uint64" << srcOff << size);
+    entryB.push_new () << "resizestack" << 6;
+    entryB.push_new () << "mov" << st.getImm (0) << srcOff;
+    entryB.push_new () << "mov" << st.getImm (0) << destOff;
+    entryB.push_new () << "bmul uint64" << size << srcSize;
+    entryB.push_new () << "jge" << exitL << "uint64" << srcOff << size;
 
     VMBlock middleB (middleL, 0);
-    middleB.push_back (VMInstruction () << "mov" << "mem" << src << srcOff << temp << srcSize);
-    middleB.push_back (VMInstruction () << "bgt" << m_src << temp << st.getImm (0));
-    middleB.push_back (VMInstruction () << "mov" << temp << "mem" << dest << destOff << destSize);
-    middleB.push_back (VMInstruction () << "badd uint64" << srcOff << srcSize);
-    middleB.push_back (VMInstruction () << "badd uint64" << destOff << destSize);
-    middleB.push_back (VMInstruction () << "jlt" << middleL << "uint64" << srcOff << size);
+    middleB.push_new () << "mov" << "mem" << src << srcOff << temp << srcSize;
+    middleB.push_new () << "bgt" << m_src << temp << st.getImm (0);
+    middleB.push_new () << "mov" << temp << "mem" << dest << destOff << destSize;
+    middleB.push_new () << "badd uint64" << srcOff << srcSize;
+    middleB.push_new () << "badd uint64" << destOff << destSize;
+    middleB.push_new () << "jlt" << middleL << "uint64" << srcOff << size;
 
     VMBlock exitB (exitL, 0);
-    exitB.push_back (VMInstruction () << "return imm 0x0");
+    exitB.push_new () << "return imm 0x0";
 
     function.push_back (entryB)
             .push_back (middleB)
