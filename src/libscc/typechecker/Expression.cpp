@@ -13,6 +13,7 @@
 #include "imop.h"
 #include "log.h"
 #include "symbol.h"
+#include "constant.h"
 #include "treenode.h"
 #include "typechecker.h"
 
@@ -954,17 +955,22 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
         return OK;
 
     TreeNodeIdentifier * id = e->identifier();
-    SymbolSymbol * s = getSymbol(id);
-    if (s == 0)
-        return E_TYPE;
+    Symbol * s = findIdentifier (SYM_SYMBOL, id);
 
-    assert(!s->secrecType()->isVoid());
-    assert(dynamic_cast<TypeNonVoid *>(s->secrecType()) != 0);
+    if (s == 0) {
+        // TODO: this is not the prettiest solution
+        s = findIdentifier (SYM_DIM, id);
+        if (s == 0)
+            return E_TYPE;
+
+        SymbolDimensionality* symDim = static_cast<SymbolDimensionality*>(s);
+        s = numericConstant (getContext (), DATATYPE_UINT64, symDim->dimType ());
+    }
+
     TypeNonVoid * type = static_cast<TypeNonVoid *>(s->secrecType());
-    assert(type->dataType()->kind() == DataType::VAR);
-    assert(dynamic_cast<DataTypeVar *>(type->dataType()) != 0);
     e->setResultType(TypeNonVoid::get(m_context,
-                static_cast<DataTypeVar *>(type->dataType())->dataType()));
+        type->secrecSecType (), type->secrecDataType (), type->secrecDimType ()));
+    e->setValueSymbol (s);
     return OK;
 }
 

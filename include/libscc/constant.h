@@ -64,7 +64,6 @@ protected:
     }
 
 private: /* Fields: */
-
     const CType m_value;
 };
 

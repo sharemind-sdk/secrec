@@ -113,7 +113,7 @@ Imop * CodeGen::pushComment(StringRef comment) {
 Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
     assert(sym != 0);
     Symbol * sizeSym = indexConstant(val);
-    if (sym->symbolType() == Symbol::SYMBOL) {
+    if (sym->symbolType() == SYM_SYMBOL) {
         assert(dynamic_cast<SymbolSymbol *>(sym) != 0);
         SymbolSymbol * symsym = static_cast<SymbolSymbol *>(sym);
         if (symsym->getSizeSym() != 0) {
@@ -127,6 +127,11 @@ Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
 Symbol * CodeGen::indexConstant(uint64_t value) {
     return ConstantUInt::get(getContext(), value);
 }
+
+Symbol* CodeGen::findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const {
+    return m_st->find (type, id->value ());
+}
+
 
 void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
     if (result.symbol()->secrecType()->isScalar()) {
@@ -189,7 +194,7 @@ void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
 
 void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
     assert(sym != 0);
-    if (sym->symbolType() == Symbol::SYMBOL) {
+    if (sym->symbolType() == SYM_SYMBOL) {
         assert(dynamic_cast<SymbolSymbol *>(sym) != 0);
         SymbolSymbol * ssym = static_cast<SymbolSymbol *>(sym);
         if (ssym->isTemporary()) {

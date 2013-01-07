@@ -32,14 +32,9 @@ TypeChecker::Status TreeNodeDomainQuantifier::accept(TypeChecker& tyChecker) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeDomainQuantifier* q) {
     if (q->kind ()) {
-        Symbol* kindSym = findIdentifier (q->kind ());
+        Symbol* kindSym = findIdentifier (SYM_KIND, q->kind ());
         if (kindSym == 0)
             return E_TYPE;
-        if (kindSym->symbolType () != Symbol::PKIND) {
-            m_log.fatal () << "Identifier at " << q->location ()
-                           << " is not a security domain kind.";
-            return E_TYPE;
-        }
     }
 
     return OK;
@@ -83,14 +78,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
     }
 
     TreeNodeIdentifier* id = ty->identifier ();
-    Symbol* s = findIdentifier (id);
+    Symbol* s = findIdentifier (SYM_DOMAIN, id);
     if (s == 0)
         return E_TYPE;
-
-    if (s->symbolType () != Symbol::PDOMAIN) {
-        m_log.fatalInProc(ty) << "Expecting privacy domain at " << ty->location () << '.';
-        return E_TYPE;
-    }
 
     assert (dynamic_cast<SymbolDomain*>(s) != 0);
     ty->setCachedType (static_cast<SymbolDomain*>(s)->securityType ());
@@ -147,14 +137,8 @@ TypeChecker::Status TypeChecker::visit (TreeNodeDimTypeVarF * ty) {
     }
 
     Symbol* s = 0;
-
-    if ((s = findIdentifier (ty->identifier ())) == 0)
+    if ((s = findIdentifier (SYM_DIM, ty->identifier ())) == 0)
         return E_TYPE;
-
-    if (s->symbolType () != Symbol::DIM) {
-        m_log.fatalInProc (ty) << "Invalid dimensionality specifier at " << ty->identifier ()->location () << ".";
-        return E_TYPE;
-    }
 
     ty->setCachedType (static_cast<SymbolDimensionality*>(s)->dimType ());
     return OK;

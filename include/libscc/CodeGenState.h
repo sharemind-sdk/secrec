@@ -21,7 +21,7 @@ class TreeNode;
   CodeGenState
 *******************************************************************************/
 
-struct ScopePusher;
+struct ScopedSetSymbolTable;
 
 /**
  * The part of code generator that needs to be stored and resumed on demand.
@@ -31,7 +31,7 @@ struct ScopePusher;
  */
 class CodeGenState {
     friend class CodeGen;
-    friend struct ScopePusher;
+    friend struct ScopedSetSymbolTable;
 protected: /* Types: */
 
     typedef ImopList::const_iterator InsertPoint;

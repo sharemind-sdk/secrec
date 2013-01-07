@@ -13,7 +13,6 @@
 #include "parser.h"
 #include "types.h"
 
-
 namespace SecreC {
 
 /*******************************************************************************
@@ -27,6 +26,17 @@ namespace SecreC {
  * dimensionality types.
  */
 class TypeContext {
+public: /* Types: */
+
+    class PrettyPrint {
+    public: /* Methods: */
+        explicit PrettyPrint (const TypeContext& self) : m_self (self) { }
+        inline void operator () (std::ostream& os) const { m_self.prettyPrint (os); }
+
+    private: /* Fields: */
+        const TypeContext& m_self;
+    };
+
 public: /* Methods: */
 
     TypeContext (SecurityType* secType,
@@ -142,7 +152,7 @@ public: /* Methods: */
         return dimType == m_contextDimType;
     }
 
-    std::string toString () const;
+    void prettyPrint (std::ostream& os) const;
 
 protected: /* Fields: */
     SecurityType*    m_contextSecType;
@@ -150,11 +160,11 @@ protected: /* Fields: */
     SecrecDimType    m_contextDimType;
 };
 
-} // namespace SecreC
-
-inline std::ostream &operator<<(std::ostream &out, const SecreC::TypeContext& cxt) {
-    out << cxt.toString();
-    return out;
+inline std::ostream& operator << (std::ostream& os, const TypeContext::PrettyPrint& pp) {
+    pp (os);
+    return os;
 }
+
+} // namespace SecreC
 
 #endif // SECREC_TYPECONTEXT_H

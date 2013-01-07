@@ -985,19 +985,25 @@ protected: /* Fields: */
 class TreeNodeExprRVariable: public TreeNodeExpr {
 public: /* Methods: */
     explicit inline TreeNodeExprRVariable(const Location & loc)
-        : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc) {}
+        : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc)
+        , m_valueSymbol (0) { }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeIdentifier* identifier () const;
+    void setValueSymbol (Symbol* sym) { m_valueSymbol = sym; }
+    Symbol* valueSymbol () const { return m_valueSymbol; }
 
 protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprRVariable (m_location);
     }
+
+private: /* Fields: */
+    Symbol* m_valueSymbol;
 };
 
 /******************************************************************
@@ -1250,14 +1256,15 @@ protected:
 };
 
 /******************************************************************
-  TreeNodeStmtKind
+  TreeNodeKind
 ******************************************************************/
 
-/// Declaration statement. Also tracks if the scope is global.
 class TreeNodeKind : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeKind(const Location & loc)
         : TreeNode (NODE_KIND, loc) { }
+
+    TreeNodeIdentifier* identifier () const;
 
 protected:
 
@@ -1267,14 +1274,16 @@ protected:
 };
 
 /******************************************************************
-  TreeNodeStmtDomain
+  TreeNodeDomain
 ******************************************************************/
 
-/// Declaration statement. Also tracks if the scope is global.
 class TreeNodeDomain : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeDomain(const Location & loc)
         : TreeNode (NODE_DOMAIN, loc) { }
+
+    TreeNodeIdentifier* domainIdentifier () const;
+    TreeNodeIdentifier* kindIdentifier () const;
 
 protected:
 

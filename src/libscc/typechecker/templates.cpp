@@ -35,13 +35,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
-    if (m_st->find (id->value ()) != 0) {
-        m_log.fatal ()
-                << "Redeclaration of template \'" << id->value () << "\'"
-                << " at " << id->location () << '.';
-        return E_TYPE;
-    }
-
     // Check that quantifiers are saneley defined
     typedef std::map<StringRef, TreeNodeIdentifier*, StringRef::FastCmp> TypeVariableMap;
     typedef std::set<StringRef, StringRef::FastCmp> TypeVariableSet;
@@ -93,7 +86,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             }
 
             if (domVariables.count (id) == 0) {
-                if (findIdentifier(retSecTyIdent) == 0)
+                if (findIdentifier(SYM_DOMAIN, retSecTyIdent) == 0)
                     return E_TYPE;
             }
 
@@ -143,7 +136,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             }
 
             if (domVariables.count (id) == 0) {
-                if (findIdentifier(secType->identifier ()) == 0)
+                if (findIdentifier(SYM_DOMAIN, secType->identifier ()) == 0)
                     return E_TYPE;
             }
 
@@ -187,7 +180,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     SymbolTemplate* s = new SymbolTemplate (templ, expectsSecType, expectsDimType);
-    s->setName ("{templ}" + id->value ().str());
+    s->setName (id->value ());
     m_st->appendSymbol (s);
     return OK;
 }

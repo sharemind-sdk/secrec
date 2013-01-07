@@ -345,8 +345,15 @@ std::string TreeNodeType::typeString() const {
         oss << st->identifier()->value() << ' ';
 
     oss << SecrecFundDataTypeToString(dataType()->dataType());
-    if (dimType()->cachedType () != ~ SecrecDimType (0))
-        oss << "[[" << dimType()->cachedType () << "]]";
+    if (! dimType()->isVariable ()) {
+        const SecrecDimType dim = dimType()->cachedType ();
+        if (dim != ~ SecrecDimType (0) && dim != 0)
+            oss << "[[" << dim << "]]";
+    }
+    else {
+        TreeNodeDimTypeVarF* varDimType = static_cast<TreeNodeDimTypeVarF*>(dimType ());
+        oss << "[[" << varDimType->identifier () << "]]";
+    }
 
     return oss.str();
 }
@@ -1139,6 +1146,28 @@ TreeNodeExpr* TreeNodeSyscallParam::expression () const {
     return childAt<TreeNodeExpr>(this, 0);
 }
 
+/*******************************************************************************
+  TreeNodeKind
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeKind::identifier () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeDomain
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeDomain::domainIdentifier () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+TreeNodeIdentifier* TreeNodeDomain::kindIdentifier () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeIdentifier>(this, 1);
+}
 
 } // namespace SecreC
 

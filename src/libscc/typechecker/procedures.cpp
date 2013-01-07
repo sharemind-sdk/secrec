@@ -30,7 +30,7 @@ namespace /* anonymous */ {
 std::string mangleProcedure (const std::string& name, DataTypeProcedureVoid* dt)
 {
     std::ostringstream os;
-    os << "{proc}" << name << dt->mangle ();
+    os << name << dt->mangle ();
     return os.str ();
 }
 
@@ -52,7 +52,7 @@ findProcedure (SymbolTable* st, StringRef name, DataTypeProcedureVoid* dt)
 {
     const std::string actualName = mangleProcedure (name.str(), dt);
     SymbolProcedure* procSym = 0;
-    Symbol* _procSym = st->find (actualName);
+    Symbol* _procSym = st->find (SYM_PROCEDURE, actualName);
     if (_procSym != 0) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
         procSym = static_cast<SymbolProcedure*>(_procSym);
@@ -66,7 +66,7 @@ findProcedures (SymbolTable* st, StringRef name, DataTypeProcedureVoid* dt)
 {
     std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name.str(), dt);
-    BOOST_FOREACH (Symbol* _procSym, st->findAll (actualName)) {
+    BOOST_FOREACH (Symbol* _procSym, st->findAll (SYM_PROCEDURE, actualName)) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
         SymbolProcedure* procSym = static_cast<SymbolProcedure*>(_procSym);
         out.push_back (procSym);
@@ -79,7 +79,8 @@ std::vector<SymbolTemplate*>
 findTemplates (SymbolTable* st, StringRef name)
 {
     std::vector<SymbolTemplate*> out;
-    BOOST_FOREACH (Symbol* _symTempl, st->findAll ("{templ}" + name.str())) {
+    const std::string actualName = name.str();
+    BOOST_FOREACH (Symbol* _symTempl, st->findAll (SYM_TEMPLATE, actualName)) {
         assert (dynamic_cast<SymbolTemplate*>(_symTempl) != 0);
         SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
         out.push_back (symTempl);
@@ -181,9 +182,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
     SymbolProcedure* procSym = appendProcedure (m_st, *proc);
     proc->setSymbol (procSym);
 
-    const std::string& shortName = "{proc}" + proc->identifier ()->value ().str();
-    BOOST_FOREACH (Symbol* sym, m_st->findAll (shortName)) {
-        if (sym->symbolType () == Symbol::PROCEDURE) {
+    const std::string& shortName = proc->identifier ()->value ().str();
+    BOOST_FOREACH (Symbol* sym, m_st->findAll (SYM_PROCEDURE, shortName)) {
+        if (sym->symbolType () == SYM_PROCEDURE) {
             SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
             if (t->decl ()->m_cachedType == proc->m_cachedType) {
                 m_log.fatal () << "Redefinition of procedure '"
@@ -292,10 +293,10 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     if (symProc == 0) {
         m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
-        m_log.fatal () << "In context " << tyCxt.TypeContext::toString() << " at " << tyCxt.location() << '.';
+        m_log.fatal () << "In context " << TypeContext::PrettyPrint (tyCxt) << " at " << tyCxt.location() << '.';
 
         bool haveCandidatesLabel = false;
-        std::vector<Symbol *> cs = m_st->findPrefixed("{proc}" + name->value().str());
+        std::vector<Symbol *> cs = m_st->findPrefixed(SYM_PROCEDURE, name->value());
         if (!cs.empty()) {
             std::vector<SymbolProcedure *> cps;
             do {
@@ -317,7 +318,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 }
             }
         }
-        cs = m_st->findPrefixed("{templ}" + name->value().str());
+        cs = m_st->findPrefixed(SYM_TEMPLATE, name->value());
         if (!cs.empty()) {
             if (!haveCandidatesLabel)
                 m_log.info() << "Candidates are:";
@@ -488,6 +489,7 @@ bool TypeChecker::unify (Instantiation& inst,
 
     params.clear ();
 
+
     if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
         return false;
 
@@ -571,7 +573,7 @@ bool TypeChecker::unify (Instantiation& inst,
             if (domain->kind () != 0) {
                 if (param.secType ()->isPublic ())
                     return false;
-                SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (domain->kind ()->value ()));
+                SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (SYM_KIND, domain->kind ()->value ()));
                 PrivateSecType* privArgTy = static_cast<PrivateSecType*>(param.secType ());
                 if (sym != privArgTy->securityKind ()) {
                     return false;

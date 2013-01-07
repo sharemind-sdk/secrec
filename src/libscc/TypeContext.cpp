@@ -9,9 +9,8 @@
 
 #include "TypeContext.h"
 
-#include <sstream>
+#include <ostream>
 #include "misc.h"
-
 
 namespace SecreC {
 
@@ -19,25 +18,34 @@ namespace SecreC {
   TypeContext
 *******************************************************************************/
 
-std::string TypeContext::toString () const {
-    std::ostringstream os;
-    os << '(';
-    if (haveContextSecType ())
+void TypeContext::prettyPrint (std::ostream& os) const {
+    bool foundAny = false;
+
+    if (haveContextSecType ()) {
+        foundAny = true;
         os << *contextSecType ();
-    else
-        os << '*';
-    os << ',';
-    if (haveContextDataType ())
+    }
+
+    if (haveContextDataType ()) {
+        if (foundAny) {
+            os << ", ";
+            foundAny = true;
+        }
+
         os << SecrecFundDataTypeToString(contextDataType());
-    else
-        os << '*';
-    os << ',';
-    if (haveContextDimType ())
+    }
+
+    if (haveContextDimType ()) {
+        if (foundAny) {
+            os << ", ";
+            foundAny = true;
+        }
+
         os << contextDimType ();
-    else
+    }
+
+    if (! foundAny)
         os << '*';
-    os << ')';
-    return os.str ();
 }
 
 } // namespace SecreC

@@ -117,7 +117,7 @@ struct SymbolOstreamWrapper : public SymbolWrapperBase {
         }
 
         os << m_symbol->name();
-        if (m_symbol->symbolType() != SecreC::Symbol::CONSTANT) {
+        if (m_symbol->symbolType() != SecreC::SYM_CONSTANT) {
             os << '{' << m_symbol << '}';
         }
     }
@@ -264,7 +264,7 @@ Imop::OperandConstRange Imop::defRange () const {
 
 const Imop *Imop::callDest() const {
     assert(m_type == CALL);
-    assert(dest()->symbolType() == Symbol::PROCEDURE);
+    assert(dest()->symbolType() == SYM_PROCEDURE);
     assert(dynamic_cast<const SymbolProcedure*>(dest()) != 0);
     assert(static_cast<const SymbolProcedure*>(dest())->target () != 0);
     return static_cast<const SymbolProcedure*>(dest())->target ();

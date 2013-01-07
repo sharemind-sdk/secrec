@@ -35,7 +35,7 @@ void ReachingDefinitions::inFrom(const Block & from, const Block & to, bool glob
         BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
             const Symbol * s = r.first;
 
-            if ((s->symbolType() == Symbol::SYMBOL)
+            if ((s->symbolType() == SYM_SYMBOL)
                     && static_cast<const SymbolSymbol *>(s)->scopeType() == SymbolSymbol::GLOBAL)
             {
                 m_ins[&to][s] += r.second;

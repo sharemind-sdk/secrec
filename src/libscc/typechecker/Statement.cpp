@@ -27,7 +27,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
 {
     SecrecDimType shapeExpressions = 0;
 
-    if (m_st->findFromCurrentScope (varInit->variableName ()) != 0) {
+    if (m_st->findFromCurrentScope (SYM_SYMBOL, varInit->variableName ()) != 0) {
         m_log.fatalInProc(varInit) << "Redeclaration of variable at "
                                    << varInit->location () << '.';
         return E_TYPE;
@@ -124,6 +124,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
 
     return OK;
 }
+
 
 /*******************************************************************************
   TreeNodeStmtDecl

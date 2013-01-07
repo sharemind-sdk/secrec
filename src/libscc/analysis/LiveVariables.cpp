@@ -50,13 +50,13 @@ template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
 
     BOOST_FOREACH(const Symbol * sym, imop.defRange()) {
-        if (sym->symbolType() == Symbol::SYMBOL) {
+        if (sym->symbolType() == SYM_SYMBOL) {
             visitor.kill(sym);
         }
     }
 
     BOOST_FOREACH(const Symbol * sym, imop.useRange()) {
-        if (sym->symbolType() == Symbol::SYMBOL) {
+        if (sym->symbolType() == SYM_SYMBOL) {
             visitor.gen(sym);
         }
     }

@@ -995,7 +995,7 @@ CGResult CodeGen::cgExprRVariable(TreeNodeExprRVariable * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    SymbolSymbol * sym = m_tyChecker->getSymbol(e->identifier());
+    Symbol * sym = e->valueSymbol ();
     CGResult result;
     result.setResult(sym);
     return result;
@@ -1007,7 +1007,7 @@ CGBranchResult TreeNodeExprRVariable::codeGenBoolWith(CodeGen & cg) {
 
 CGBranchResult CodeGen::cgBoolExprRVariable(TreeNodeExprRVariable * e) {
     CGBranchResult result;
-    SymbolSymbol * sym = m_tyChecker->getSymbol(e->identifier());
+    Symbol * sym = e->valueSymbol ();
     Imop * i = new Imop(e, Imop::JT, 0, sym);
     push_imop(i);
     result.setFirstImop(i);
@@ -1034,8 +1034,8 @@ CGResult CodeGen::cgExprDomainID(TreeNodeExprDomainID * e) {
     assert(dynamic_cast<TypeNonVoid *>(e->resultType()) != 0);
     TypeNonVoid * resultType = static_cast<TypeNonVoid *>(e->resultType());
     SymbolSymbol * t = m_st->appendTemporary(resultType);
-    Symbol * s = m_st->find(e->securityType()->identifier()->value());
-    if (s == 0 || s->symbolType() != Symbol::PDOMAIN) {
+    Symbol * s = findIdentifier (SYM_DOMAIN, e->securityType()->identifier());
+    if (s == 0 || s->symbolType() != SYM_DOMAIN) {
         assert(false && "ICE: Type checker must guarantee that!");
         return CGResult::ERROR_FATAL;
     }
@@ -1782,8 +1782,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     TreeNode * lval = e->children().at(0);
     TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    Symbol * destSym = m_st->find(e1->value());
-    assert(destSym->symbolType() == Symbol::SYMBOL);
+    Symbol * destSym = m_st->find(SYM_SYMBOL, e1->value());
+    assert(destSym->symbolType() == SYM_SYMBOL);
     assert(dynamic_cast<SymbolSymbol *>(destSym) != 0);
     SymbolSymbol * destSymSym = static_cast<SymbolSymbol *>(destSym);
     result.setResult(destSymSym);
@@ -1919,8 +1919,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     // Generate code for child expression:
     TreeNode * lval = e->children().at(0);
     TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    Symbol * destSym = m_st->find(e1->value());
-    assert(destSym->symbolType() == Symbol::SYMBOL);
+    Symbol * destSym = m_st->find(SYM_SYMBOL, e1->value());
+    assert(destSym->symbolType() == SYM_SYMBOL);
     assert(dynamic_cast<SymbolSymbol *>(destSym) != 0);
     SymbolSymbol * destSymSym = static_cast<SymbolSymbol *>(destSym);
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);

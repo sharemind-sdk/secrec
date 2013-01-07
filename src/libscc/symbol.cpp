@@ -51,6 +51,21 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
                                    quantifiedParamCount);
 }
 
+void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
+    os << procDef->returnType()->typeString()
+       << ' ' << procDef->identifier()->value() << '(';
+
+    bool first = true;
+    BOOST_FOREACH (const TreeNodeStmtDecl& decl, procDef->params ()) {
+        if (! first)
+            os << ", ";
+        first = false;
+        os << decl.varType()->typeString() << ' ' << decl.variableName();
+    }
+
+    os << ')';
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -59,7 +74,7 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
 
 bool Symbol::isGlobal () const {
     switch (symbolType ()) {
-    case Symbol::SYMBOL:
+    case SYM_SYMBOL:
         if (static_cast<const SymbolSymbol*>(this)->scopeType () == SymbolSymbol::GLOBAL)
             return true;
     default:
@@ -71,7 +86,7 @@ bool Symbol::isGlobal () const {
 
 bool Symbol::isArray () const {
     switch (symbolType ()) {
-    case Symbol::SYMBOL:
+    case SYM_SYMBOL:
         if (static_cast<const SymbolSymbol*>(this)->secrecType ()->secrecDimType () > 0)
             return true;
     default:
@@ -94,7 +109,7 @@ void SymbolDimensionality::print(std::ostream & os) const {
 *******************************************************************************/
 
 void SymbolKind::print(std::ostream & os) const {
-    os << "KIND " << name ();
+    os << "kind " << name ();
 }
 
 /*******************************************************************************
@@ -102,10 +117,9 @@ void SymbolKind::print(std::ostream & os) const {
 *******************************************************************************/
 
 void SymbolDomain::print(std::ostream & os) const {
-    os << "DOMAIN (" << name ();
-    if (secrecType ())
-        os << " : " << *secrecType ();
-    os << ')';
+    os << "domain " << name ();
+    if (securityType ())
+        os << " : " << *securityType ();
 }
 
 /*******************************************************************************
@@ -113,7 +127,7 @@ void SymbolDomain::print(std::ostream & os) const {
 *******************************************************************************/
 
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
-    : Symbol (SYMBOL, valueType)
+    : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType())
     , m_size (0)
@@ -123,7 +137,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
 }
 
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
-    : Symbol (SYMBOL, valueType)
+    : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType ())
     , m_size (0)
@@ -145,7 +159,7 @@ void SymbolSymbol::print(std::ostream & os) const {
 
 void SymbolSymbol::inheritShape (Symbol* from) {
     assert (from != 0);
-    if (from->symbolType () == Symbol::SYMBOL) {
+    if (from->symbolType () == SYM_SYMBOL) {
         assert (dynamic_cast<SymbolSymbol*>(from) != 0);
         SymbolSymbol* t = static_cast<SymbolSymbol*>(from);
         setSizeSym(t->getSizeSym());
@@ -160,7 +174,7 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 SymbolProcedure::SymbolProcedure(StringRef name,
                                  const TreeNodeProcDef * procdef,
                                  SymbolProcedure * shortOf)
-    : Symbol(Symbol::PROCEDURE, procdef->procedureType())
+    : Symbol(SYM_PROCEDURE, procdef->procedureType())
     , m_decl(procdef)
     , m_target(0)
     , m_shortOf(shortOf)
@@ -176,23 +190,6 @@ StringRef SymbolProcedure::procedureName () const {
     return m_decl->procedureName ();
 }
 
-namespace {
-void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
-    os << procDef->returnType()->typeString()
-       << ' ' << procDef->identifier()->value() << '(';
-
-    bool first = true;
-    BOOST_FOREACH (const TreeNodeStmtDecl& decl, procDef->params ()) {
-        if (! first)
-            os << ", ";
-        first = false;
-        os << decl.varType()->typeString() << ' ' << decl.variableName();
-    }
-
-    os << ')';
-}
-}
-
 void SymbolProcedure::print(std::ostream & os) const {
     printProcDef(os, m_decl);
 }
@@ -202,13 +199,13 @@ void SymbolProcedure::print(std::ostream & os) const {
 *******************************************************************************/
 
 SymbolLabel::SymbolLabel (Imop* target)
-    : Symbol (Symbol::LABEL)
+    : Symbol (SYM_LABEL)
     , m_target (target)
     , m_block (0)
 { }
 
 SymbolLabel::SymbolLabel (Block* block)
-    : Symbol (Symbol::LABEL)
+    : Symbol (SYM_LABEL)
     , m_target (0)
     , m_block (block)
 { }
@@ -238,7 +235,7 @@ void SymbolLabel::print(std::ostream & os) const {
 *******************************************************************************/
 
 SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ, bool expectsSecType, bool expectsDimType)
-    : Symbol (Symbol::TEMPLATE)
+    : Symbol (SYM_TEMPLATE)
     , m_templ (templ)
     , m_expectsSecType (expectsSecType)
     , m_expectsDimType (expectsDimType)

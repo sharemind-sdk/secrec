@@ -9,6 +9,7 @@
 #include "CodeGenState.h"
 #include "icodelist.h"
 #include "treenode_fwd.h"
+#include "symbol_fwd.h"
 
 namespace SecreC {
 
@@ -157,7 +158,7 @@ class CodeGen : public CodeGenState {
     friend class ScopedStateUse;
     friend class ScopedScope;
     friend class ScopedLoop;
-    friend struct ScopePusher;
+    friend struct ScopedSetSymbolTable;
 private:
 
     void operator = (const CodeGen&); // DO NOT IMPLEMENT
@@ -342,6 +343,8 @@ private:
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     Symbol* indexConstant (uint64_t value);
+
+    Symbol* findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const;
 
     void startLoop ();
     void endLoop ();

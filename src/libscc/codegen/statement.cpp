@@ -286,7 +286,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                     }
 
                     // The type checker should ensure that the symbol is a symbol (and not a constant):
-                    assert(eResultSymbol->symbolType() == Symbol::SYMBOL);
+                    assert(eResultSymbol->symbolType() == SYM_SYMBOL);
                     SymbolSymbol * const s = static_cast<SymbolSymbol *>(eResultSymbol);
                     pushImopAfter(result, newAssign(varInit,  ns->getSizeSym(), s->getSizeSym()));
                     pushImopAfter(result, new Imop(varInit, Imop::COPY, ns, s, ns->getSizeSym()));

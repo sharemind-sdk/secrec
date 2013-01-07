@@ -736,13 +736,11 @@ private:
         VMSym out (true, sym );
 
         switch (sym->symbolType()) {
-        case Symbol::SYMBOL:
-            assert (dynamic_cast<SymbolSymbol const*>(sym) != 0
-                    && "VM: Symbol::SYMBOL that isn't SymbolSymbol.");
+        case SYM_SYMBOL:
             if (static_cast<SymbolSymbol const*>(sym)->scopeType() == SymbolSymbol::GLOBAL)
                 out.isLocal = false;
             break;
-        case Symbol::CONSTANT:
+        case SYM_CONSTANT:
             out.isLocal = false;
             storeConstant (out, sym);
         default: break;

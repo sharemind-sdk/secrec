@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "StringRef.h"
 #include "treenode_fwd.h"
+#include "symbol_fwd.h"
 
 namespace SecreC {
 
@@ -15,11 +16,7 @@ class DataType;
 class DataTypeProcedureVoid;
 class Instantiation;
 class SecurityType;
-class Symbol;
-class SymbolProcedure;
-class SymbolSymbol;
 class SymbolTable;
-class SymbolTemplate;
 class TemplateInstantiator;
 class Type;
 class TypeContext;
@@ -122,9 +119,7 @@ private:
 
     TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
 
-    /// Check if given idenfier is in scope.
-    /// Logs error message and returns NULL if not.
-    Symbol* findIdentifier (TreeNodeIdentifier* id) const;
+    Symbol* findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const;
 
     Status checkPostfixPrefixIncDec(TreeNodeExpr * root,
                                     bool isPrefix,

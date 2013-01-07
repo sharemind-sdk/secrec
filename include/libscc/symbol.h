@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "treenode_fwd.h"
 #include "StringRef.h"
+#include "symbol_fwd.h"
 
 namespace SecreC {
 
@@ -22,16 +23,8 @@ class Location;
 
 class Symbol {
 public: /* Types: */
-    enum Type {
-        PROCEDURE,
-        TEMPLATE,
-        CONSTANT,
-        LABEL,
-        SYMBOL,
-        PKIND,
-        PDOMAIN,
-        DIM
-    };
+
+    typedef SymbolType Type;
 
 public: /* Methods: */
 
@@ -47,9 +40,16 @@ public: /* Methods: */
         , m_previous (0)
     { }
 
+    explicit inline Symbol (Type symbolType, StringRef name)
+        : m_symbolType (symbolType)
+        , m_type (0)
+        , m_name (name.str ())
+        , m_previous (0)
+    { }
+
     virtual inline ~Symbol() { }
 
-    inline bool isConstant () const { return m_symbolType == CONSTANT; }
+    inline bool isConstant () const { return m_symbolType == SYM_CONSTANT; }
     inline Type symbolType() const { return m_symbolType; }
     inline const std::string &name() const { return m_name; }
     inline void setName(StringRef name) { m_name = name.str(); }
@@ -80,7 +80,7 @@ private: /* Fields: */
 class SymbolConstant : public Symbol {
 public: /* Methods: */
     explicit SymbolConstant(TypeNonVoid* valueType)
-        : Symbol(CONSTANT,valueType)
+        : Symbol(SYM_CONSTANT, valueType)
     { }
 
     virtual inline ~SymbolConstant() { }
@@ -93,11 +93,9 @@ public: /* Methods: */
 class SymbolDimensionality : public Symbol {
 public: /* Methods: */
     SymbolDimensionality(StringRef name, SecrecDimType dimType)
-        : Symbol (Symbol::DIM)
+        : Symbol (SYM_DIM, name)
         , m_dimType (dimType)
-    {
-        setName(name);
-    }
+    { }
 
     inline SecrecDimType dimType () const { return m_dimType; }
 
@@ -116,10 +114,8 @@ class SymbolKind : public Symbol {
 public: /* Methods: */
 
     SymbolKind(StringRef name)
-        : Symbol (Symbol::PKIND)
-    {
-        setName(name);
-    }
+        : Symbol (SYM_KIND, name)
+    { }
 
 protected:
     void print(std::ostream & os) const;
@@ -133,11 +129,9 @@ class SymbolDomain : public Symbol {
 public: /* Methods: */
 
     SymbolDomain(StringRef name, SecurityType * secType)
-        : Symbol (Symbol::PDOMAIN)
+        : Symbol (SYM_DOMAIN, name)
         , m_secType (secType)
-    {
-        setName(name);
-    }
+    { }
 
     inline SecurityType* securityType () const { return m_secType; }
 

@@ -93,6 +93,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/StringTable.h"
     "${LIBSCC_INCLUDE_DIR}/StringRef.h"
     "${LIBSCC_INCLUDE_DIR}/symbol.h"
+    "${LIBSCC_INCLUDE_DIR}/symbol_fwd.h"
     "${LIBSCC_INCLUDE_DIR}/symboltable.h"
     "${LIBSCC_INCLUDE_DIR}/treenode.h"
     "${LIBSCC_INCLUDE_DIR}/treenode_c.h"

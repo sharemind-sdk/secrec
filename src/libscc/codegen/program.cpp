@@ -22,13 +22,12 @@ namespace SecreC {
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
-    typedef TreeNodeIdentifier TNI;
-    const TNI * id = static_cast<const TNI *>(kind->children().at(0));
+    const TreeNodeIdentifier * id = kind->identifier ();
     SymbolTable * st = m_st->globalScope(); // kinds live in global scope
 
-    if (st->find(id->value()) != 0) {
-        m_log.error() << "Redefinition of global symbol '" << id->value()
-                      << "'' at " << kind->location() << '.';
+    if (findIdentifier (SYM_KIND, id) != 0) {
+        m_log.error() << "Redefinition of kind '" << id->value()
+                      << "' at " << kind->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -41,19 +40,19 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
-    typedef TreeNodeIdentifier TNI;
-    const TNI * idDomain = static_cast<const TNI *>(dom->children().at(0));
-    const TNI * idKind = static_cast<const TNI *>(dom->children().at(1));
+    const TreeNodeIdentifier * idDomain = dom->domainIdentifier ();
+    const TreeNodeIdentifier * idKind = dom->kindIdentifier ();
     SymbolTable * st = m_st->globalScope();
-    SymbolKind * kind = dynamic_cast<SymbolKind *>(st->find(idKind->value()));
+    SymbolKind * kind = static_cast<SymbolKind *>(findIdentifier (SYM_KIND, idKind));
     if (kind == 0) {
-        m_log.error() << "Undefined domain kind at " << dom->location() << '.';
+        m_log.error() << "Undefined domain kind '" << idKind->value ()
+                      << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
-    if (st->find(idDomain->value()) != 0) {
-        m_log.error() << "Redeclaration of global symbol '" << idDomain->value()
-                      << "'' at " << dom->location() << '.';
+    if (findIdentifier (SYM_DOMAIN, idDomain) != 0) {
+        m_log.error() << "Redeclaration of domain '" << idDomain->value()
+                      << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -67,14 +66,14 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
   TreeNodeProcDef
 *******************************************************************************/
 
-struct ScopePusher {
-    ScopePusher(CodeGen & cg, SymbolTable * newScope)
+struct ScopedSetSymbolTable {
+    ScopedSetSymbolTable(CodeGen & cg, SymbolTable * newScope)
         : m_oldScope(cg.m_st), m_cg(cg)
     {
         cg.setScope(newScope);
     }
 
-    ~ScopePusher() {
+    ~ScopedSetSymbolTable() {
         m_cg.setScope(m_oldScope);
     }
 
@@ -103,7 +102,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     ns->setTarget(result.firstImop());
 
     // Generate local scope:
-    ScopePusher s(*this, localScope);
+    ScopedSetSymbolTable s(*this, localScope);
 
     if (def->children().size() > 3) {
         BOOST_FOREACH (TreeNodeStmtDecl& paramDecl, def->params()) {
@@ -361,7 +360,7 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
         m_log.fatal() << "Error at " << import->location() << '.';
         result |= CGResult::ERROR_CONTINUE;
         break;
-    case ModuleInfo::CGNotStarted: {
+    case ModuleInfo::CGNotStarted:
         if (!mod->read()) {
             result |= CGResult::ERROR_CONTINUE;
             return result;
@@ -371,7 +370,6 @@ CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext)
         if (result.isFatal()) {
             return result;
         }
-    }
 
         break;
     }
