@@ -93,7 +93,7 @@ VMLabel* getLabel (VMSymbolTable& st, const Block& block) {
 
 VMLabel* getLabel (VMSymbolTable& st, const Symbol* sym) {
     assert (sym != 0);
-    assert (sym->symbolType () == Symbol::LABEL);
+    assert (sym->symbolType () == SYM_LABEL);
     VMValue* label = st.find (sym);
     if (label == 0) {
         const SymbolLabel* symL = static_cast<const SymbolLabel*>(sym);
@@ -107,7 +107,7 @@ VMLabel* getLabel (VMSymbolTable& st, const Symbol* sym) {
 
 VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
     assert (sym != 0);
-    assert (sym->symbolType () == Symbol::PROCEDURE);
+    assert (sym->symbolType () == SYM_PROCEDURE);
     VMValue* label = st.find (sym);
     if (label == 0) {
         std::stringstream ss;
@@ -362,7 +362,7 @@ VMValue* Compiler::find (const SecreC::Symbol* sym) const {
 
 VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     VMValue* reg = 0; // this holds the value of symbol
-    if (symbol->symbolType () == SecreC::Symbol::CONSTANT) {
+    if (symbol->symbolType () == SecreC::SYM_CONSTANT) {
         reg = m_ra->temporaryReg (); // temporary register
         block.push_new () << "mov" << find (symbol) << reg;
     }

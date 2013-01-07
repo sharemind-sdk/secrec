@@ -54,7 +54,7 @@ public: /* Methods: */
     void enterFunction (VMFunction& function);
     void exitFunction (VMFunction& function);
     void enterBlock (VMBlock& block);
-    void exitBlock (VMBlock& block);
+    void exitBlock (VMBlock&);
 
     unsigned globalCount ();
 

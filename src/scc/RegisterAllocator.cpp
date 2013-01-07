@@ -31,7 +31,7 @@ using namespace SecreCC;
 
 void getImm (VMSymbolTable& st, const Symbol* sym) {
     assert (sym != 0);
-    assert (sym->symbolType () == Symbol::CONSTANT);
+    assert (sym->symbolType () == SYM_CONSTANT);
     VMValue* imm = st.find (sym);
     if (imm == 0) {
         uint64_t value = 0xdeadbeef;
@@ -292,9 +292,7 @@ void RegisterAllocator::enterBlock (VMBlock& block) {
     }
 }
 
-void RegisterAllocator::exitBlock (VMBlock &block) {
-    (void) block;
-}
+void RegisterAllocator::exitBlock (VMBlock &) { }
 
 void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     BOOST_FOREACH (VMVReg* temp, m_temporaries) {
@@ -305,10 +303,10 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
 
     BOOST_FOREACH (const Symbol* symbol, imop.useRange ()) {
         switch (symbol->symbolType ()) {
-        case Symbol::SYMBOL:
+        case SYM_SYMBOL:
             assert (m_st->find (symbol) != 0);
             break;
-        case Symbol::CONSTANT:
+        case SYM_CONSTANT:
             getImm (*m_st, symbol);
         default:
             break;
