@@ -1058,7 +1058,7 @@ protected:
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode * cloneV () const {
-        return new TreeNodeExprString (m_value, m_location);
+        return new TreeNodeExprFloat (m_value, m_location);
     }
 
 private: /* Fields: */
