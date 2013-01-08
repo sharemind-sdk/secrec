@@ -199,6 +199,7 @@ SecreC::TreeNodeModule * parseProgram(SecreC::StringTable& stringTable, const Pr
             fclose (f);
         } else {
             cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
+            errorCode = 1;
         }
     }
     else {
