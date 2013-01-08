@@ -121,6 +121,11 @@ private:
 
     Symbol* findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const;
 
+    template <SymbolType type>
+    typename SymbolTraits<type>::Type* findIdentifier (const TreeNodeIdentifier* id) const {
+        return static_cast<typename SymbolTraits<type>::Type*>(findIdentifier (type, id));
+    }
+
     Status checkPostfixPrefixIncDec(TreeNodeExpr * root,
                                     bool isPrefix,
                                     bool isInc);

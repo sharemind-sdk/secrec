@@ -1782,11 +1782,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     TreeNode * lval = e->children().at(0);
     TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    Symbol * destSym = m_st->find(SYM_SYMBOL, e1->value());
-    assert(destSym->symbolType() == SYM_SYMBOL);
-    assert(dynamic_cast<SymbolSymbol *>(destSym) != 0);
-    SymbolSymbol * destSymSym = static_cast<SymbolSymbol *>(destSym);
-    result.setResult(destSymSym);
+    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
+    result.setResult(destSym);
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -1856,7 +1853,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // increment the value:
 
         // t = x[offset]
-        i = new Imop(e, Imop::LOAD, tmpElem, destSymSym, offset);
+        i = new Imop(e, Imop::LOAD, tmpElem, destSym, offset);
         push_imop(i);
 
         // t = t + 1
@@ -1864,7 +1861,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         push_imop(i);
 
         // x[offset] = t
-        i = new Imop(e, Imop::STORE, destSymSym, offset, tmpElem);
+        i = new Imop(e, Imop::STORE, destSym, offset, tmpElem);
         push_imop(i);
 
         append(result, exitLoop(loopInfo));
@@ -1874,7 +1871,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
     if (!e->resultType()->isScalar()) {
         SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSymSym->getSizeSym());
+        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
         pushImopAfter(result, i);
         one = t;
     }
@@ -1886,7 +1883,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     }
 
     // x = x `iType` 1
-    Imop * i = newBinary(e, iType, destSymSym, destSymSym, one);
+    Imop * i = newBinary(e, iType, destSym, destSym, one);
     pushImopAfter(result, i);
     releaseTemporary(result, one);
     return result;
@@ -1919,21 +1916,18 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     // Generate code for child expression:
     TreeNode * lval = e->children().at(0);
     TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    Symbol * destSym = m_st->find(SYM_SYMBOL, e1->value());
-    assert(destSym->symbolType() == SYM_SYMBOL);
-    assert(dynamic_cast<SymbolSymbol *>(destSym) != 0);
-    SymbolSymbol * destSymSym = static_cast<SymbolSymbol *>(destSym);
+    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
 
     // r = x
     SymbolSymbol * r = generateResultSymbol(result, e);
-    if (! destSymSym->secrecType()->isScalar()) {
-        copyShapeFrom(result, destSymSym);
-        Imop * i = new Imop(e, Imop::COPY, r, destSymSym, destSymSym->getSizeSym());
+    if (! destSym->secrecType()->isScalar()) {
+        copyShapeFrom(result, destSym);
+        Imop * i = new Imop(e, Imop::COPY, r, destSym, destSym->getSizeSym());
         pushImopAfter(result, i);
     }
     else {
-        Imop * i = newAssign(e, r, destSymSym);
+        Imop * i = newAssign(e, r, destSym);
         pushImopAfter(result, i);
     }
 
@@ -2005,7 +1999,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         // increment the value:
 
         // t = x[offset]
-        i = new Imop(e, Imop::LOAD, tmpElem, destSymSym, offset);
+        i = new Imop(e, Imop::LOAD, tmpElem, destSym, offset);
         push_imop(i);
 
         // t = t + 1
@@ -2013,7 +2007,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         push_imop(i);
 
         // x[offset] = t
-        i = new Imop(e, Imop::STORE, destSymSym, offset, tmpElem);
+        i = new Imop(e, Imop::STORE, destSym, offset, tmpElem);
         push_imop(i);
 
         append(result, exitLoop(loopInfo));
@@ -2025,7 +2019,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
     if (!e->resultType()->isScalar()) {
         SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSymSym->getSizeSym());
+        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
         pushImopAfter(result, i);
         one = t;
     }
@@ -2037,7 +2031,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     }
 
     // x = x `iType` 1
-    Imop * i = newBinary(e, iType, destSymSym, destSymSym, one);
+    Imop * i = newBinary(e, iType, destSym, destSym, one);
     push_imop(i);
     releaseTemporary(result, one);
 

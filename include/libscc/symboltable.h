@@ -38,6 +38,11 @@ public: /* Methods: */
 
     Symbol* find (SymbolType symbolType, StringRef name) const;
 
+    template <SymbolType symbolType>
+    typename SymbolTraits<symbolType>::Type* find (StringRef name) const {
+        return static_cast<typename SymbolTraits<symbolType>::Type*>(find (symbolType, name));
+    }
+
     /**
       Finds symbols given a name prefix, following imported modules.
       \param[in] prefix the name prefix of the symbols to find.

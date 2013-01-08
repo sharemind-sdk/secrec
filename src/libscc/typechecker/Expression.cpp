@@ -959,11 +959,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
 
     if (s == 0) {
         // TODO: this is not the prettiest solution
-        s = findIdentifier (SYM_DIM, id);
-        if (s == 0)
+        SymbolDimensionality* symDim = findIdentifier<SYM_DIM>(id);
+        if (symDim == 0)
             return E_TYPE;
 
-        SymbolDimensionality* symDim = static_cast<SymbolDimensionality*>(s);
         s = numericConstant (getContext (), DATATYPE_UINT64, symDim->dimType ());
     }
 

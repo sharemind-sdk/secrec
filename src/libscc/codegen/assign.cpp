@@ -55,13 +55,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     assert(lval != 0);
     assert(dynamic_cast<TreeNodeIdentifier *>(lval->children().at(0)) != 0);
     TreeNodeIdentifier * eArg1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SymbolSymbol * destSym = 0;
-    {
-        Symbol * t = m_st->find(SYM_SYMBOL, eArg1->value());
-        assert(t->symbolType() == SYM_SYMBOL);
-        assert(dynamic_cast<SymbolSymbol *>(t) != 0);
-        destSym = static_cast<SymbolSymbol *>(t);
-    }
+    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
 
     // Generate code for righthand side:
     CGResult result;

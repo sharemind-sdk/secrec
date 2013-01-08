@@ -50,15 +50,7 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
 SymbolProcedure*
 findProcedure (SymbolTable* st, StringRef name, DataTypeProcedureVoid* dt)
 {
-    const std::string actualName = mangleProcedure (name.str(), dt);
-    SymbolProcedure* procSym = 0;
-    Symbol* _procSym = st->find (SYM_PROCEDURE, actualName);
-    if (_procSym != 0) {
-        assert (dynamic_cast<SymbolProcedure*>(_procSym) != 0);
-        procSym = static_cast<SymbolProcedure*>(_procSym);
-    }
-
-    return procSym;
+    return st->find<SYM_PROCEDURE>(mangleProcedure (name.str(), dt));
 }
 
 std::vector<SymbolProcedure*>
@@ -573,7 +565,7 @@ bool TypeChecker::unify (Instantiation& inst,
             if (domain->kind () != 0) {
                 if (param.secType ()->isPublic ())
                     return false;
-                SymbolKind* sym = static_cast<SymbolKind*>(m_st->find (SYM_KIND, domain->kind ()->value ()));
+                SymbolKind* sym = m_st->find<SYM_KIND>(domain->kind ()->value ());
                 PrivateSecType* privArgTy = static_cast<PrivateSecType*>(param.secType ());
                 if (sym != privArgTy->securityKind ()) {
                     return false;

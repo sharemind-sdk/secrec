@@ -32,8 +32,7 @@ TypeChecker::Status TreeNodeDomainQuantifier::accept(TypeChecker& tyChecker) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeDomainQuantifier* q) {
     if (q->kind ()) {
-        Symbol* kindSym = findIdentifier (SYM_KIND, q->kind ());
-        if (kindSym == 0)
+        if (findIdentifier (SYM_KIND, q->kind ()) == 0)
             return E_TYPE;
     }
 
@@ -78,12 +77,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
     }
 
     TreeNodeIdentifier* id = ty->identifier ();
-    Symbol* s = findIdentifier (SYM_DOMAIN, id);
+    SymbolDomain* s = findIdentifier<SYM_DOMAIN>(id);
     if (s == 0)
         return E_TYPE;
 
-    assert (dynamic_cast<SymbolDomain*>(s) != 0);
-    ty->setCachedType (static_cast<SymbolDomain*>(s)->securityType ());
+    ty->setCachedType (s->securityType ());
     return OK;
 }
 

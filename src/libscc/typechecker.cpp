@@ -43,20 +43,17 @@ Symbol* TypeChecker::findIdentifier (SymbolType type, const TreeNodeIdentifier* 
         return 0;
     }
 
-    assert (s->symbolType () == type);
     return s;
 }
 
 SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
-    Symbol *s = m_st->find (SYM_SYMBOL, id->value ());
+    SymbolSymbol *s = m_st->find<SYM_SYMBOL>(id->value ());
     if (s == 0) {
         m_log.fatalInProc(id) << "Undeclared identifier '" << id->value ()
                               << "' at " << id->location() << '.';
         return 0;
     }
 
-    assert (s->symbolType() == SYM_SYMBOL);
-    assert (dynamic_cast<SymbolSymbol*>(s) != 0);
     return static_cast<SymbolSymbol*>(s);
 }
 
