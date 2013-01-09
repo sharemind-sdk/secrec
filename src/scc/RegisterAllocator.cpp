@@ -105,7 +105,7 @@ private: /* Methods: */
             out.push_back (i);
         }
 
-        return boost::move (out);
+        return out;
     }
 
 public: /* Methods: */
