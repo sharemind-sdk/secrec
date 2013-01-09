@@ -1,5 +1,6 @@
 #include "SyscallManager.h"
 
+#include <sstream>
 #include "VMSymbolTable.h"
 #include "VMCode.h"
 

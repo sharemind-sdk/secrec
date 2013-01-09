@@ -1,5 +1,6 @@
 #include "StringLiterals.h"
 
+#include <sstream>
 #include <boost/foreach.hpp>
 
 #include "VMSymbolTable.h"
