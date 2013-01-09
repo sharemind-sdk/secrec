@@ -2,7 +2,6 @@
 #define SECREC_CONSTANT_H
 
 #include <stdint.h>
-#include <sstream>
 
 #include "symbol.h"
 
@@ -32,6 +31,10 @@ DECL_TRAIT (uint64_t,    DATATYPE_UINT64)
 DECL_TRAIT (uint32_t,    DATATYPE_FLOAT32)
 DECL_TRAIT (uint64_t,    DATATYPE_FLOAT64)
 #undef DECL_TRAIT
+
+/******************************************************************
+  Constant
+******************************************************************/
 
 template <SecrecDataType ty >
 class Constant : public SymbolConstant {

@@ -1,5 +1,6 @@
 #include "DataType.h"
 
+#include <sstream>
 #include "context.h"
 #include "context_impl.h"
 #include "misc.h"
