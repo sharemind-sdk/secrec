@@ -11,7 +11,7 @@
 #define SECREC_LIVE_VARIABLES_H
 
 #include "../dataflowanalysis.h"
-#include <boost/container/flat_set.hpp>
+#include <boost/interprocess/containers/flat_set.hpp>
 
 namespace SecreC {
 
@@ -29,6 +29,15 @@ public: /* Types: */
     typedef boost::container::flat_set<const Symbol* > Symbols;
     typedef std::map<const Block*, Symbols> BSM;
 
+    struct BlockInfo {
+        Symbols gen;
+        Symbols kill;
+        Symbols in;
+        Symbols out;
+    };
+
+    typedef std::map<const Block*, BlockInfo> BlockInfoMap;
+
 public: /* Methods: */
 
     std::string toString (const Program &pr) const;
@@ -39,11 +48,12 @@ public: /* Methods: */
      * @return the abstract values
      */
     const Symbols& liveOnExit (const Block& block) const {
-        assert (m_outs.find(&block) != m_outs.end());
-        return m_outs.find (&block)->second;
+        return findBlock (block).out;
     }
 
-    const Symbols& ins (const Block& block) const { return m_ins.find (&block)->second; }
+    const Symbols& ins (const Block& block) const {
+        return findBlock (block).in;
+    }
 
     static void updateBackwards (const Imop& imop, Symbols& live);
 
@@ -69,12 +79,19 @@ private:
     void outToLocal (const Block &from, const Block &to);
     void outToGlobal (const Block &from, const Block &to);
 
+    BlockInfo & findBlock (const Block & block) {
+        return m_blocks[&block];
+    }
+
+    const BlockInfo & findBlock (const Block & block) const {
+        BlockInfoMap::const_iterator it = m_blocks.find (&block);
+        assert (it != m_blocks.end ());
+        return it->second;
+    }
+
 private: /* Fields: */
 
-    BSM m_gen;
-    BSM m_kill;
-    BSM m_outs;
-    BSM m_ins;
+    BlockInfoMap m_blocks;
 };
 
 } // namespace SecreC

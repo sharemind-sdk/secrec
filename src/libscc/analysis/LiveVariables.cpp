@@ -20,6 +20,7 @@ struct CollectGenKill {
     inline void gen(const Symbol * sym) {
         m_gen.insert(sym);
     }
+
     inline void kill(const Symbol * sym) {
         m_kill.insert(sym);
         m_gen.erase(sym);
@@ -167,39 +168,40 @@ void LiveVariables::updateBackwards(const SecreC::Imop & imop, Symbols & live) {
 void LiveVariables::start(const Program & pr) {
     // we need to make sure to allocate all ins and outs
     FOREACH_BLOCK (bi, pr) {
-        const Block& block = *bi;
-        m_ins[&block];
-        m_outs[&block];
-        CollectGenKill collector (m_gen[&block], m_kill[&block]);
-        BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
+        const Block & block = *bi;
+        BlockInfo & blockInfo = m_blocks[&block];
+        CollectGenKill collector (blockInfo.gen, blockInfo.kill);
+        BOOST_REVERSE_FOREACH (const Imop & imop, block) {
             visitImop(imop, collector);
         }
     }
 }
 
 void LiveVariables::startBlock(const Block & b) {
-    m_outs[&b].clear();
+    findBlock (b).out.clear ();
 }
 
 void LiveVariables::outToLocal(const Block & from, const Block & to) {
-    m_outs[&to] += m_ins[&from];
+    findBlock (to).out += findBlock (from).in;
 }
 
 void LiveVariables::outToGlobal(const Block & from, const Block & to) {
-    BOOST_FOREACH (const Symbol * symbol, m_ins[&from]) {
+    Symbols & out = findBlock (to).out;
+    BOOST_FOREACH (const Symbol * symbol, findBlock (from).in) {
         if (symbol->isGlobal()) {
-            m_outs[&to].insert(symbol);
+            out.insert(symbol);
         }
     }
 }
 
 bool LiveVariables::finishBlock(const Block & b) {
-    Symbols & in = m_ins[&b];
-    const Symbols  old = in;
-    const Symbols & out = m_outs[&b];
+    BlockInfo & blockInfo = findBlock (b);
+    Symbols & in = blockInfo.in;
+    const Symbols old = in;
+    const Symbols & out = blockInfo.out;
     in = out;
-    in -= m_kill[&b];
-    in += m_gen[&b];
+    in -= blockInfo.kill;
+    in += blockInfo.gen;
     return old != in;
 }
 
@@ -216,13 +218,13 @@ std::string LiveVariables::toString(const Program & pr) const {
         ss << "    " << "label=\"" << (proc.name() ? proc.name()->name() : "GLOBAL") << "\"\n";
         visitor.clear();
         BOOST_FOREACH (const Block & block, proc) {
-            BSM::const_iterator it = m_outs.find(&block);
+            BlockInfoMap::const_iterator it = m_blocks.find (&block);
 
-            if (it == m_outs.end()) {
+            if (it == m_blocks.end()) {
                 continue;
             }
 
-            visitor.updateLiveness(it->second);
+            visitor.updateLiveness (it->second.out);
             BOOST_REVERSE_FOREACH (const Imop & imop, block) {
                 visitImop(imop, visitor);
             }
