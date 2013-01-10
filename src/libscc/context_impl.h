@@ -36,6 +36,7 @@ public: /* Types: */
     typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType >, DataTypeBasic*> DataTypeBasicMap;
     typedef std::map<std::string, ConstantString* > ConstantStringMap;
     typedef std::map<std::pair<SecrecDataType, uint64_t>, SymbolConstant*> NumericConstantMap;
+    typedef std::map<std::vector<SymbolConstant*>, SymbolConstant*> ConstantVectorMap;
 
 public: /* Methods: */
 
@@ -83,6 +84,7 @@ public: /* Fields: */
     ConstantBool*             m_falseConstant;
     ConstantStringMap         m_stringLiterals;
     NumericConstantMap        m_numericConstants;
+    ConstantVectorMap         m_constantVectors;
 };
 
 } // namespace SecreC

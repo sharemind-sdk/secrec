@@ -8,30 +8,9 @@
 #include "context.h"
 #include "context_impl.h"
 
-namespace {
+namespace SecreC {
 
-using namespace SecreC;
-using namespace std;
-
-template <SecrecDataType ty>
-Constant<ty>* getNumeric (Context& cxt,
-                          const typename SecrecTypeInfo<ty>::CType& value) {
-    ContextImpl& impl = *cxt.pImpl ();
-    const pair<SecrecDataType, uint64_t> index (ty, value);
-    map<pair<SecrecDataType, uint64_t>, SymbolConstant*>::iterator
-        i = impl.m_numericConstants.find (index);
-    if (i == impl.m_numericConstants.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty);
-        i = impl.m_numericConstants.insert (i,
-            make_pair (index, new Constant<ty>(value, tnv)));
-        ostringstream os;
-        os << "{const" << SecrecTypeInfo<ty>::CName << "}" << static_cast<uint64_t>(value);
-        i->second->setName (os.str ());
-    }
-
-    assert (dynamic_cast<Constant<ty>* >(i->second) != 0);
-    return static_cast<Constant<ty>* >(i->second);
-}
+namespace /* anonymous */ {
 
 std::string escape (const std::string& str) {
     std::ostringstream os;
@@ -60,8 +39,6 @@ std::string escape (const std::string& str) {
 
 } // anonymous namesace
 
-namespace SecreC {
-
 const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "bool";
 const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "string";
 const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "int8";
@@ -77,7 +54,35 @@ const char* SecrecTypeInfo<DATATYPE_FLOAT64>::CName = "float64";
 
 
 /*******************************************************************************
-  SymbolConstantBool
+  Constant
+*******************************************************************************/
+
+template <SecrecDataType ty>
+Constant<ty>* Constant<ty>::get (Context &cxt, const typename Constant<ty>::CType& value) {
+    ContextImpl& impl = *cxt.pImpl ();
+    const std::pair<SecrecDataType, uint64_t> index (ty, value);
+    ContextImpl::NumericConstantMap::iterator i = impl.m_numericConstants.find (index);
+    if (i == impl.m_numericConstants.end ()) {
+        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty);
+        i = impl.m_numericConstants.insert (i,
+            make_pair (index, new Constant<ty>(value, tnv)));
+
+        std::ostringstream os;
+        os << "{const " << SecrecTypeInfo<ty>::CName << "}" << static_cast<uint64_t>(value);
+        i->second->setName (os.str ());
+    }
+
+    assert (dynamic_cast<Constant<ty>* >(i->second) != 0);
+    return static_cast<Constant<ty>* >(i->second);
+}
+
+template <SecrecDataType ty>
+void Constant<ty>::print (std::ostream& os) const {
+    os << static_cast<uint64_t>(m_value);
+}
+
+/*******************************************************************************
+  ConstantBool
 *******************************************************************************/
 
 template <>
@@ -87,56 +92,25 @@ ConstantBool* ConstantBool::get (Context& cxt, const bool& value) {
     if (impl.m_trueConstant == 0) {
         impl.m_trueConstant = new ConstantBool (true,
             TypeNonVoid::get (cxt, DATATYPE_BOOL));
-        impl.m_trueConstant->setName ("{constBool}true");
+        impl.m_trueConstant->setName ("{const bool}true");
     }
 
     if (impl.m_falseConstant == 0) {
         impl.m_falseConstant = new ConstantBool (false,
             TypeNonVoid::get (cxt, DATATYPE_BOOL));
-        impl.m_falseConstant->setName ("{constBool}false");
+        impl.m_falseConstant->setName ("{const bool}false");
     }
 
     return value ? impl.m_trueConstant : impl.m_falseConstant;
 }
 
-/*******************************************************************************
-  SymbolConstantInt8
-*******************************************************************************/
-
 template <>
-ConstantInt8* ConstantInt8::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_INT8> (cxt, value);
+void ConstantBool::print (std::ostream& os) const {
+    os << (m_value ? "true" : "false");
 }
 
 /*******************************************************************************
-  SymbolConstantInt16
-*******************************************************************************/
-
-template <>
-ConstantInt16* ConstantInt16::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_INT16> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantInt32
-*******************************************************************************/
-
-template <>
-ConstantInt32* ConstantInt32::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_INT32> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantInt64
-*******************************************************************************/
-
-template <>
-ConstantInt64* ConstantInt64::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_INT64> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantString
+  ConstantString
 *******************************************************************************/
 
 template <>
@@ -149,47 +123,16 @@ ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
         i = impl.m_stringLiterals.insert (i,
             std::make_pair (value, new ConstantString (value, tnv)));
         std::ostringstream os;
-        os << "{constString}" << escape (value);
+        os << "{const string}" << escape (value);
         i->second->setName (os.str ());
     }
 
     return i->second;
 }
 
-/*******************************************************************************
-  SymbolConstantUInt8
-*******************************************************************************/
-
 template <>
-ConstantUInt8* ConstantUInt8::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_UINT8> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantUInt16
-*******************************************************************************/
-
-template <>
-ConstantUInt16* ConstantUInt16::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_UINT16> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantUInt32
-*******************************************************************************/
-
-template <>
-ConstantUInt32* ConstantUInt32::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_UINT32> (cxt, value);
-}
-
-/*******************************************************************************
-  SymbolConstantUInt64
-*******************************************************************************/
-
-template <>
-ConstantUInt64* ConstantUInt64::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_UINT64> (cxt, value);
+void ConstantString::print (std::ostream& os) const {
+    os << m_value;
 }
 
 /*******************************************************************************
@@ -197,8 +140,8 @@ ConstantUInt64* ConstantUInt64::get (Context &cxt, const CType &value) {
 *******************************************************************************/
 
 template <>
-ConstantFloat32* ConstantFloat32::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_FLOAT32> (cxt, value);
+void ConstantFloat32::print (std::ostream& os) const {
+    os << m_value;
 }
 
 /*******************************************************************************
@@ -206,8 +149,8 @@ ConstantFloat32* ConstantFloat32::get (Context &cxt, const CType &value) {
 *******************************************************************************/
 
 template <>
-ConstantFloat64* ConstantFloat64::get (Context &cxt, const CType &value) {
-    return getNumeric<DATATYPE_FLOAT64> (cxt, value);
+void ConstantFloat64::print (std::ostream& os) const {
+    os << m_value;
 }
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
@@ -250,4 +193,65 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
     }
 }
 
+template class Constant<DATATYPE_STRING>;
+template class Constant<DATATYPE_BOOL>;
+template class Constant<DATATYPE_INT8>;
+template class Constant<DATATYPE_UINT8>;
+template class Constant<DATATYPE_INT16>;
+template class Constant<DATATYPE_UINT16>;
+template class Constant<DATATYPE_INT32>;
+template class Constant<DATATYPE_UINT32>;
+template class Constant<DATATYPE_INT64>;
+template class Constant<DATATYPE_UINT64>;
+template class Constant<DATATYPE_FLOAT32>;
+template class Constant<DATATYPE_FLOAT64>;
+
+/******************************************************************
+  ConstantVector
+******************************************************************/
+
+template <SecrecDataType ty>
+ConstantVector<ty>* ConstantVector<ty>::get (Context& cxt, const std::vector<SymbolConstant*>& values) {
+    ContextImpl& impl = *cxt.pImpl ();
+    ContextImpl::ConstantVectorMap::iterator i = impl.m_constantVectors.find (values);
+    if (i == impl.m_constantVectors.end ()) {
+        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty, 1);
+        ConstantVector<ty>* newVec = new ConstantVector<ty>(tnv, values);
+        i = impl.m_constantVectors.insert (i, std::make_pair (values, newVec));
+
+        std::ostringstream ss;
+        ss << "{const " << value_trait::CName << " vec}";
+        newVec->print (ss);
+        newVec->setName (ss.str ());
+    }
+
+    return static_cast<ConstantVector<ty>*>(i->second);
 }
+
+template <SecrecDataType ty>
+void ConstantVector<ty>::print (std::ostream& os) const {
+    os << "{";
+    for (size_t i = 0; i < m_values.size (); ++ i) {
+        if (i != 0)
+            os << ", ";
+
+        os << *at (i);
+    }
+
+    os << '}';
+}
+
+
+template class ConstantVector<DATATYPE_BOOL>;
+template class ConstantVector<DATATYPE_INT8>;
+template class ConstantVector<DATATYPE_UINT8>;
+template class ConstantVector<DATATYPE_INT16>;
+template class ConstantVector<DATATYPE_UINT16>;
+template class ConstantVector<DATATYPE_INT32>;
+template class ConstantVector<DATATYPE_UINT32>;
+template class ConstantVector<DATATYPE_INT64>;
+template class ConstantVector<DATATYPE_UINT64>;
+template class ConstantVector<DATATYPE_FLOAT32>;
+template class ConstantVector<DATATYPE_FLOAT64>;
+
+} // namespace SecreC

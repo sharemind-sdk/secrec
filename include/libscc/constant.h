@@ -36,7 +36,7 @@ DECL_TRAIT (uint64_t,    DATATYPE_FLOAT64)
   Constant
 ******************************************************************/
 
-template <SecrecDataType ty >
+template <SecrecDataType ty>
 class Constant : public SymbolConstant {
 private:
     typedef Constant<ty> Self;
@@ -50,11 +50,6 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    explicit Constant (const CType& value, TypeNonVoid* type)
-        : SymbolConstant(type)
-        , m_value(value)
-    { }
-
     static Self* get (Context& cxt, const CType& value);
 
     inline const CType& value () const {
@@ -62,9 +57,13 @@ public: /* Methods: */
     }
 
 protected:
-    void print (std::ostream& os) const {
-        os << trait::CName << ' ' << m_value;
-    }
+    void print (std::ostream& os) const;
+
+private:
+    Constant (const CType& value, TypeNonVoid* type)
+        : SymbolConstant(type)
+        , m_value(value)
+    { }
 
 private: /* Fields: */
     const CType m_value;
@@ -87,6 +86,56 @@ typedef Constant<DATATYPE_FLOAT64> ConstantFloat64;
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty);
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
-}
+
+/******************************************************************
+  ConstantVector
+******************************************************************/
+
+template <SecrecDataType ty>
+class ConstantVector : public SymbolConstant {
+    typedef ConstantVector<ty> Self;
+    ConstantVector (const ConstantVector&); // DO NOT IMPLEMENT
+    void operator = (const ConstantVector&); // DO NOT IMPLEMENT
+private: /* Types: */
+    typedef SecrecTypeInfo<ty> value_trait;
+
+public: /* Methods: */
+
+    static Self* get (Context& cxt, const std::vector<SymbolConstant*>& values);
+
+    size_t size () const { return m_values.size (); }
+
+    Constant<ty>* at (size_t i) const {
+        return static_cast<Constant<ty>*>(m_values.at (i));
+    }
+
+protected:
+    void print (std::ostream& os) const;
+
+private:
+    ConstantVector (TypeNonVoid* type, const std::vector<SymbolConstant*>& values)
+        : SymbolConstant (type)
+        , m_values (values)
+    { }
+
+private: /* Fields: */
+    const std::vector<SymbolConstant*> m_values;
+};
+
+typedef ConstantVector<DATATYPE_BOOL> ConstantBoolVector;
+typedef ConstantVector<DATATYPE_INT8> ConstantInt8Vector;
+typedef ConstantVector<DATATYPE_UINT8> ConstantUInt8Vector;
+typedef ConstantVector<DATATYPE_INT16> ConstantInt16Vector;
+typedef ConstantVector<DATATYPE_UINT16> ConstantUInt16Vector;
+typedef ConstantVector<DATATYPE_INT32> ConstantInt32Vector;
+typedef ConstantVector<DATATYPE_UINT32> ConstantUInt32Vector;
+typedef ConstantVector<DATATYPE_INT64> ConstantInt64Vector;
+typedef ConstantVector<DATATYPE_INT64> ConstantIntVector;
+typedef ConstantVector<DATATYPE_UINT64> ConstantUInt64Vector;
+typedef ConstantVector<DATATYPE_UINT64> ConstantUIntVector;
+typedef ConstantVector<DATATYPE_FLOAT32> ConstantFloat32Vector;
+typedef ConstantVector<DATATYPE_FLOAT64> ConstantFloat64Vector;
+
+} // namespace SecreC
 
 #endif
