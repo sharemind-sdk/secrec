@@ -83,7 +83,7 @@ protected: /* Methods: */
 
     // It's assumed that cloneV sets m_type, and m_location.
     // As the children are populated by clone method, it must not
-    // explicitly add any by itself.
+    // explicitly add any by itself. Shallow copy only.
     virtual TreeNode* cloneV () const {
         return new TreeNode (m_type, m_location);
     }
@@ -151,6 +151,9 @@ public: /* Types: */
     typedef iterator_base<const value_type, CLCI>  const_iterator;
 
 public: /* Methods: */
+
+    TreeNodeChildren () { }
+
     explicit TreeNodeChildren (const TreeNode::ChildrenList& children)
         : m_begin (children.begin ())
         , m_end (children.end ())
@@ -181,12 +184,6 @@ public: /* Methods: */
     iterator end () const { return iterator (m_end); }
     const_iterator cbegin () const { return iterator (m_begin); }
     const_iterator cend () const { return iterator (m_end); }
-
-private:
-
-    bool verifyIndex (size_type i) const {
-        return i < size () && dynamic_cast<value_type>(*(m_begin + i)) != 0;
-    }
 
 private: /* Fields: */
     CLCI m_begin, m_end;
@@ -401,7 +398,7 @@ public: /* Methods: */
         , m_cachedType (0)
     { }
 
-    SecreC::Type* secrecType () const;
+    Type* secrecType () const;
     TreeNodeSecTypeF* secType () const;
     TreeNodeDataTypeF* dataType () const;
     TreeNodeDimTypeF* dimType () const;
@@ -413,18 +410,11 @@ protected:
 
     friend class TypeChecker;
 
-    inline TreeNodeType(SecrecTreeNodeType type,
-                        const Location & loc,
-                        SecreC::Type* ty)
-        : TreeNode(type, loc)
-        , m_cachedType (ty)
-    { }
-
     virtual TreeNode* cloneV () const = 0;
 
 protected: /* Fields: */
 
-    SecreC::Type* m_cachedType;
+    Type* m_cachedType;
 };
 
 /******************************************************************
@@ -482,8 +472,6 @@ public: /* Methods: */
 
     virtual ~TreeNodeExpr () { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
-
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
         assert (resultType () != 0);
@@ -494,15 +482,11 @@ public: /* Methods: */
         }
     }
 
-    inline bool haveResultType() const {
-        return m_resultType != 0;
-    }
-
-    /// \todo move to type checker
+    bool haveResultType() const { return m_resultType != 0; }
     bool havePublicBoolType() const;
+    Type* resultType() const;
 
-    SecreC::Type* resultType() const;
-
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
     virtual CGResult codeGenWith (CodeGen& cg) = 0;
     virtual CGBranchResult codeGenBoolWith (CodeGen&) {
         assert (false && "Not implemented!");
@@ -517,12 +501,12 @@ protected: /* Methods: */
         assert ("ICE! data types should not be instantiated on given tree node type");
     }
 
-    void setResultType(SecreC::Type *type);
+    void setResultType(Type *type);
     void resetDataType (Context& cxt, SecrecDataType dType);
 
 protected: /* Fields: */
 
-    SecreC::Type*   m_resultType; ///< Type of resulting value.
+    Type*   m_resultType; ///< Type of resulting value.
 };
 
 /******************************************************************
@@ -554,12 +538,9 @@ public: /* Methods: */
         : TreeNodeExpr(NODE_EXPR_ARRAY_CONSTRUCTOR, loc) { }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
 
-    TreeNodeChildren<TreeNodeExpr> expressions () const {
-        return TreeNodeChildren<TreeNodeExpr>(m_children);
-    }
+    TreeNodeChildren<TreeNodeExpr> expressions () const;
 
 protected:
 
@@ -579,12 +560,11 @@ public: /* Methods: */
     inline TreeNodeExprInt(uint64_t value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
-    inline void setValue(uint64_t value) { m_value = value; }
     inline uint64_t value() const { return m_value; }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
+
 protected:
 
     virtual bool printHelper(std::ostream & os) const;
@@ -754,8 +734,6 @@ public:
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
-    /// \todo yeah, figure a better name out...
-    /// "reshapee" as the expression that is being reshaped!
     TreeNodeExpr* reshapee () const;
 
     TreeNodeChildren<TreeNodeExpr> dimensions () const;
@@ -847,8 +825,6 @@ public: /* Methods: */
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
-    TreeNodeExpr *& leftExpressionPtrRef();
-    TreeNodeExpr *& rightExpressionPtrRef();
     const char *operatorString() const;
 
 protected:
@@ -927,7 +903,6 @@ public: /* Methods: */
         : TreeNodeExpr(NODE_EXPR_DECLASSIFY, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -964,8 +939,9 @@ public: /* Methods: */
         m_procedure = proc;
     }
 
-    inline SymbolProcedure *symbolProcedure() const
-    { return m_procedure; }
+    inline SymbolProcedure *symbolProcedure() const {
+        return m_procedure;
+    }
 
 protected:
 
@@ -1022,7 +998,6 @@ public: /* Methods: */
     inline StringRef value() const { return m_value; }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
@@ -1075,7 +1050,6 @@ public: /* Methods: */
         : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
-
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
@@ -1339,7 +1313,7 @@ public:
         return m_cachedType != 0;
     }
 
-    SecreC::TypeNonVoid* procedureType() const {
+    TypeNonVoid* procedureType() const {
         assert(m_cachedType != 0);
         return m_cachedType;
     }
@@ -1621,15 +1595,8 @@ public: /* Methods: */
     { }
 
     StringRef variableName() const;
-
-    /// \retval 0 if shape is not specified
-    TreeNode* shape () const;
-
-    inline bool hasRightHandSide() const {
-        return children().size() > 2;
-    }
-
-    /// \retval 0 if right hand side is not defined
+    TreeNodeChildren<TreeNodeExpr> shape () const;
+    bool hasRightHandSide() const;
     TreeNodeExpr* rightHandSide () const;
 
 protected:
@@ -1651,16 +1618,18 @@ public: /* Methods: */
         : TreeNodeStmt (NODE_DECL, loc)
         , m_type (0)
         , m_global (global)
-        , m_procParam (procParam) { }
+        , m_procParam (procParam)
+    { }
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    inline SecreC::TypeNonVoid* resultType() const {
+    inline TypeNonVoid* resultType() const {
         assert(m_type != 0);
         return m_type;
     }
 
     inline bool haveResultType() const { return m_type != 0; }
+    void setResultType (TypeNonVoid* type) { m_type = type; }
 
     inline bool global() const { return m_global; }
     inline void setGlobal(bool isGlobal = true) {
@@ -1675,29 +1644,18 @@ public: /* Methods: */
     TreeNodeVarInit* initializer () const;
     TreeNodeChildren<TreeNodeVarInit> initializers () const;
     TreeNodeType* varType () const;
-
-    StringRef variableName() const {
-        return initializer ()->variableName ();
-    }
-
-    TreeNode* shape () const {
-        return initializer ()->shape ();
-    }
-
-    TreeNodeExpr* rightHandSide () const {
-        return initializer ()->rightHandSide ();
-    }
+    StringRef variableName() const;
+    TreeNodeChildren<TreeNodeExpr> shape () const;
+    TreeNodeExpr* rightHandSide () const;
 
 protected:
-
-    friend class TypeChecker;
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeStmtDecl (m_location, m_global, m_procParam);
     }
 
 protected: /* Fields: */
-    SecreC::TypeNonVoid *m_type;
+    TypeNonVoid *m_type;
     bool m_global;
     bool m_procParam;
 };
@@ -1827,10 +1785,7 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    inline bool hasExpression() const {
-        return !children().empty();
-    }
-
+    bool hasExpression() const;
     TreeNodeExpr* expression () const;
 
 protected:

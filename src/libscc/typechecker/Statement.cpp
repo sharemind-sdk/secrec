@@ -33,18 +33,16 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         return E_TYPE;
     }
 
-    BOOST_FOREACH (TreeNode * const node, varInit->shape()->children()) {
-        assert(dynamic_cast<TreeNodeExpr *>(node) != 0);
-        TreeNodeExpr * const e = static_cast<TreeNodeExpr *>(node);
-        e->setContextIndexType(getContext());
-        Status s = visitExpr(e);
+    BOOST_FOREACH (TreeNodeExpr& e, varInit->shape()) {
+        e.setContextIndexType(getContext());
+        Status s = visitExpr(&e);
         if (s != OK)
             return s;
-        if (checkAndLogIfVoid(e))
+        if (checkAndLogIfVoid(&e))
             return E_TYPE;
-        if (!e->resultType ()->isPublicIntScalar()) {
+        if (!e.resultType ()->isPublicIntScalar()) {
             m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
-                                       << e->location() << '.';
+                                       << e.location() << '.';
             return E_TYPE;
         }
 
@@ -137,7 +135,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
     typedef DataTypeBasic DTB;
     typedef TypeNonVoid TNV;
 
-    if (decl->m_type != 0)
+    if (decl->haveResultType ())
         return OK;
 
     TreeNodeType *type = decl->varType ();
@@ -153,14 +151,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
     assert(dynamic_cast<DTB*>(justType->dataType()) != 0);
     DTB* dataType = static_cast<DTB*>(justType->dataType());
 
-    decl->m_type = TypeNonVoid::get (getContext (),
-        DataTypeVar::get (getContext (), dataType));
+    decl->setResultType (TypeNonVoid::get (getContext (),
+        DataTypeVar::get (getContext (), dataType)));
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
         assert (decl->initializers ().size () == 1);
         assert (decl->initializer () != 0);
-        assert (decl->shape ()->children ().empty ());
+        assert (decl->shape ().empty ());
         assert (decl->initializer ()->rightHandSide () == 0);
     }
 

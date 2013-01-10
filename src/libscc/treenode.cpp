@@ -23,23 +23,12 @@ T * childAt(const TreeNode * node, size_t i) {
     return static_cast<T *>(node->children().at(i));
 }
 
-template <class T >
-T *& childPtrRefAt(TreeNode * node, size_t i) {
-    assert(i < node->children().size());
-    assert(dynamic_cast<T *>(node->children().at(i)) != 0);
-    return reinterpret_cast<T *&>(node->children().at(i));
-}
-
 TreeNodeStmt * statementAt(const TreeNode * node, size_t i) {
     return childAt<TreeNodeStmt>(node, i);
 }
 
 TreeNodeExpr * expressionAt(const TreeNode * node, size_t i) {
     return childAt<TreeNodeExpr>(node, i);
-}
-
-TreeNodeExpr *& expressionPtrRefAt(TreeNode * node, size_t i) {
-    return childPtrRefAt<TreeNodeExpr>(node, i);
 }
 
 } // namespace anonymous
@@ -398,6 +387,14 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
 }
 
 /*******************************************************************************
+  TreeNodeExprArrayConstructor
+*******************************************************************************/
+
+TreeNodeChildren<TreeNodeExpr> TreeNodeExprArrayConstructor::expressions () const {
+    return TreeNodeChildren<TreeNodeExpr>(m_children);
+}
+
+/*******************************************************************************
   TreeNodeExprUnary
 *******************************************************************************/
 
@@ -441,16 +438,6 @@ TreeNodeExpr * TreeNodeExprBinary::leftExpression() const {
 TreeNodeExpr * TreeNodeExprBinary::rightExpression() const {
     assert(children().size() == 2);
     return expressionAt(this, 1);
-}
-
-TreeNodeExpr *& TreeNodeExprBinary::leftExpressionPtrRef() {
-    assert(children().size() == 2u);
-    return expressionPtrRefAt(this, 0u);
-}
-
-TreeNodeExpr *& TreeNodeExprBinary::rightExpressionPtrRef() {
-    assert(children().size() == 2u);
-    return expressionPtrRefAt(this, 1u);
 }
 
 const char *TreeNodeExprBinary::operatorString() const {
@@ -899,6 +886,18 @@ void TreeNodeIdentifier::printXmlHelper (std::ostream & os) const {
   TreeNodeStmtDecl
 *******************************************************************************/
 
+StringRef TreeNodeStmtDecl::variableName() const {
+    return initializer ()->variableName ();
+}
+
+TreeNodeChildren<TreeNodeExpr> TreeNodeStmtDecl::shape () const {
+    return initializer ()->shape ();
+}
+
+TreeNodeExpr* TreeNodeStmtDecl::rightHandSide () const {
+    return initializer ()->rightHandSide ();
+}
+
 TreeNodeType* TreeNodeStmtDecl::varType () const {
     assert (children().size () >= 2);
     return childAt<TreeNodeType>(this, 0);
@@ -914,13 +913,17 @@ TreeNodeChildren<TreeNodeVarInit> TreeNodeStmtDecl::initializers() const {
     return TreeNodeChildren<TreeNodeVarInit> (++ m_children.begin (), m_children.end ());
 }
 
-TreeNode* TreeNodeVarInit::shape () const {
+TreeNodeChildren<TreeNodeExpr> TreeNodeVarInit::shape () const {
     assert(children().size() > 0 && children().size() <= 3);
     if (children().size() > 1) {
-        return children ().at (1);
+        return TreeNodeChildren<TreeNodeExpr>(children ().at (1)->children ());
     }
 
-    return 0;
+    return TreeNodeChildren<TreeNodeExpr>();
+}
+
+bool TreeNodeVarInit::hasRightHandSide() const {
+    return children().size() > 2;
 }
 
 TreeNodeExpr* TreeNodeVarInit::rightHandSide () const {
@@ -1047,6 +1050,10 @@ TreeNodeExpr* TreeNodeStmtReturn::expression () const {
     }
 
     return 0;
+}
+
+bool TreeNodeStmtReturn::hasExpression() const {
+    return !children().empty();
 }
 
 /*******************************************************************************

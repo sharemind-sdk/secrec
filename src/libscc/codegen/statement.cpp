@@ -174,16 +174,15 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     CGStmtResult result;
 
     // evaluate shape if given, also compute size
-    if (! varInit->shape()->children().empty()) {
+    if (! varInit->shape().empty()) {
         if (!isScalar)
             pushImopAfter(result, new Imop(varInit, Imop::ASSIGN,
                                            ns->getSizeSym(), indexConstant(1)));
 
-        BOOST_FOREACH (TreeNode * const e, varInit->shape()->children()) {
+        BOOST_FOREACH (TreeNodeExpr& e, varInit->shape()) {
 
             // Evaluate shape expression:
-            assert(dynamic_cast<TreeNodeExpr *>(e) != 0);
-            const CGResult & eResult = codeGen(static_cast<TreeNodeExpr *>(e));
+            const CGResult & eResult = codeGen(&e);
             append(result, eResult);
             if (result.isNotOk())
                 return result;

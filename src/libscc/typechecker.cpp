@@ -40,7 +40,6 @@ Symbol* TypeChecker::findIdentifier (SymbolType type, const TreeNodeIdentifier* 
         m_log.fatalInProc(id) << "Idenfier '" << id->value()
                               << "' at " << id->location()
                               << " not in scope.";
-        return 0;
     }
 
     return s;

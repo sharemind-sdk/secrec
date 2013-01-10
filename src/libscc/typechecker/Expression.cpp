@@ -264,17 +264,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprIndex * root) {
     SecrecDimType k = 0;
     SecrecDimType n = eType->secrecDimType();
 
-    if (root->indices()->children().size() != static_cast<size_t>(n)) {
+    if (root->indices()->children().size() != n) {
         m_log.fatalInProc(root) << "Incorrent number of indices at"
             << e->location() << '.';
         return E_TYPE;
     }
 
-    {
-        s = checkIndices(root->indices(), k);
-        if (s != OK)
-            return s;
-    }
+    s = checkIndices(root->indices(), k);
+    if (s != OK)
+        return s;
 
     root->setResultType(TypeNonVoid::get(getContext(),
                 eType->secrecSecType(), eType->secrecDataType(), k));
@@ -476,11 +474,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
 
         if (checkAndLogIfVoid(&dim))
             return E_TYPE;
+
         TNV * dimType = static_cast<TNV *>(dim.resultType());
         if (! dimType->isPublicIntScalar()) {
-            m_log.fatalInProc(root) << "Expected public integer scalar at "
-                << dim.location()
-                << " got " << *dimType << '.';
+            m_log.fatalInProc(root) << "Expecting public integer scalar at "
+                << dim.location() << " got " << *dimType << '.';
             return E_TYPE;
         }
     }
@@ -550,8 +548,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
     if (root->haveResultType())
         return OK;
 
-    TreeNodeExpr *& e1 = root->leftExpressionPtrRef();
-    TreeNodeExpr *& e2 = root->rightExpressionPtrRef();
+    TreeNodeExpr * e1 = root->leftExpression ();
+    TreeNodeExpr * e2 = root->rightExpression ();
     TypeNonVoid * eType1 = 0, *eType2 = 0;
 
     //set context data type
