@@ -70,10 +70,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
         return child;
 
     TreeNode * const parent = child->parent();
-    const SecrecDataType destDType = child->haveContextDataType()
-                                   ? child->contextDataType()
-                                   : child->resultType()->secrecDataType();
-
+    const SecrecDataType destDType = child->resultType()->secrecDataType();
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
     TypeNonVoid * const newTy = TypeNonVoid::get(getContext(), need, destDType, dimDType);
     TreeNodeExprClassify * const ec = new TreeNodeExprClassify(need, child->location());
