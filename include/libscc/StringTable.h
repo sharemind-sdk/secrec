@@ -48,6 +48,10 @@ public: /* Methods: */
         return addString (str.c_str(), str.length());
     }
 
+    const StringRef* addString (StringRef str) {
+        return addString (str.data (), str.size ());
+    }
+
     const StringRef* addString (const char* str, size_t size) {
         iterator i = m_impl.find (StringRef (str, size));
         if (i == end ()) {

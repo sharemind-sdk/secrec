@@ -110,7 +110,8 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/include/libscc/"
     "${CMAKE_SOURCE_DIR}/src/libscc/"
     "${CMAKE_CURRENT_BINARY_DIR}"
-    ${Boost_INCLUDE_DIRS})
+    ${Boost_INCLUDE_DIRS}
+    ${MPFR_INCLUDE_DIRS})
 
 ADD_LIBRARY("libscc" SHARED
     ${LIBSCC_SOURCES}

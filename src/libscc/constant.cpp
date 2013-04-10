@@ -12,246 +12,156 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-std::string escape (const std::string& str) {
-    std::ostringstream os;
-
-    os << '\"';
-    BOOST_FOREACH (char c, str) {
-        switch (c) {
-        case '\'': os << "\\\'"; break;
-        case '\"': os << "\\\""; break;
-        case '\?': os << "\\?";  break;
-        case '\\': os << "\\\\"; break;
-        case '\a': os << "\\a";  break;
-        case '\b': os << "\\b";  break;
-        case '\f': os << "\\f";  break;
-        case '\n': os << "\\n";  break;
-        case '\r': os << "\\r";  break;
-        case '\t': os << "\\t";  break;
-        case '\v': os << "\\v";  break;
-        default:   os << c;      break;
-        }
+unsigned widthInBits (SecrecDataType type) {
+    switch (type) {
+    case DATATYPE_BOOL: return 1;
+    case DATATYPE_XOR_UINT8:
+    case DATATYPE_UINT8:
+    case DATATYPE_INT8:
+        return 8;
+    case DATATYPE_XOR_UINT16:
+    case DATATYPE_UINT16:
+    case DATATYPE_INT16:
+        return 16;
+    case DATATYPE_XOR_UINT32:
+    case DATATYPE_FLOAT32:
+    case DATATYPE_UINT32:
+    case DATATYPE_INT32:
+        return 32;
+    case DATATYPE_XOR_UINT64:
+    case DATATYPE_FLOAT64:
+    case DATATYPE_UINT64:
+    case DATATYPE_INT64:
+        return 64;
+    default:
+        assert (false && "widthInBits: Unsupported type!"); return 0;
     }
+}
 
-    os << "\\0\"";
-    return os.str ();
+APFloat::prec_t floatPrec (SecrecDataType type) {
+    switch (type) {
+    case DATATYPE_FLOAT32: return 24;
+    case DATATYPE_FLOAT64: return 53;
+    default:  assert (false && "floatPrec: Unsupported type!"); return 0;
+    }
 }
 
 } // anonymous namesace
 
-const char* SecrecTypeInfo<DATATYPE_BOOL>::CName = "bool";
-const char* SecrecTypeInfo<DATATYPE_STRING>::CName = "string";
-const char* SecrecTypeInfo<DATATYPE_INT8>::CName = "int8";
-const char* SecrecTypeInfo<DATATYPE_UINT8>::CName = "uint8";
-const char* SecrecTypeInfo<DATATYPE_INT16>::CName = "int16";
-const char* SecrecTypeInfo<DATATYPE_UINT16>::CName = "uint16";
-const char* SecrecTypeInfo<DATATYPE_INT32>::CName = "int32";
-const char* SecrecTypeInfo<DATATYPE_UINT32>::CName = "uint32";
-const char* SecrecTypeInfo<DATATYPE_INT64>::CName = "int64";
-const char* SecrecTypeInfo<DATATYPE_UINT64>::CName = "uint64";
-const char* SecrecTypeInfo<DATATYPE_FLOAT32>::CName = "float32";
-const char* SecrecTypeInfo<DATATYPE_FLOAT64>::CName = "float64";
+SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
+    switch (ty) {
+    case DATATYPE_BOOL: return ConstantInt::getBool (cxt, false);
+    case DATATYPE_STRING: return ConstantString::get (cxt, "");
+    default:
+        if (isNumericDataType (ty)) {
+            return numericConstant (cxt, ty, 0);
+        }
+    }
+
+    return 0;
+}
+
+SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
+    assert (isNumericDataType (ty));
+    if (isFloatingDataType (ty))
+        return ConstantFloat::get (cxt, ty, value);
+    else
+        return ConstantInt::get (cxt, ty, value);
+}
 
 
 /*******************************************************************************
-  Constant
+  APFloat
 *******************************************************************************/
 
-template <SecrecDataType ty>
-Constant<ty>* Constant<ty>::get (Context &cxt, const typename Constant<ty>::CType& value) {
-    ContextImpl& impl = *cxt.pImpl ();
-    const std::pair<SecrecDataType, uint64_t> index (ty, value);
-    ContextImpl::NumericConstantMap::iterator i = impl.m_numericConstants.find (index);
-    if (i == impl.m_numericConstants.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty);
-        i = impl.m_numericConstants.insert (i,
-            make_pair (index, new Constant<ty>(value, tnv)));
-
-        std::ostringstream os;
-        os << "{const " << SecrecTypeInfo<ty>::CName << "}" << static_cast<uint64_t>(value);
-        i->second->setName (os.str ());
-    }
-
-    assert (dynamic_cast<Constant<ty>* >(i->second) != 0);
-    return static_cast<Constant<ty>* >(i->second);
+// TODO: don't rely on IEEE representation!
+uint32_t APFloat::ieee32bits () const {
+    assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
+    float float_result = mpfr_get_flt (m_value, MPFR_RNDN);
+    uint32_t* result = new (&float_result) uint32_t;
+    return *result;
 }
 
-template <SecrecDataType ty>
-void Constant<ty>::print (std::ostream& os) const {
-    os << static_cast<uint64_t>(m_value);
+// TODO: don't rely on IEEE representation!
+uint64_t APFloat::ieee64bits () const {
+    assert (getPrec () == floatPrec (DATATYPE_FLOAT64));
+    double double_result = mpfr_get_d (m_value, MPFR_RNDN);
+    uint64_t* result = new (&double_result) uint64_t;
+    return *result;
 }
 
 /*******************************************************************************
-  ConstantBool
+  ConstantInt
 *******************************************************************************/
 
-template <>
-ConstantBool* ConstantBool::get (Context& cxt, const bool& value) {
-    ContextImpl& impl = *cxt.pImpl ();
-
-    if (impl.m_trueConstant == 0) {
-        impl.m_trueConstant = new ConstantBool (true,
-            TypeNonVoid::get (cxt, DATATYPE_BOOL));
-        impl.m_trueConstant->setName ("{const bool}true");
+ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value) {
+    typedef ContextImpl::NumericConstantMap IntMap;
+    const APInt apvalue (widthInBits (type), value);
+    IntMap& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
+    IntMap::iterator it = map.find (apvalue);
+    if (it == map.end ()) {
+        ConstantInt* cvalue = new ConstantInt (TypeNonVoid::get (cxt, type), apvalue);
+        it = map.insert (it, std::make_pair (apvalue, cvalue));
     }
 
-    if (impl.m_falseConstant == 0) {
-        impl.m_falseConstant = new ConstantBool (false,
-            TypeNonVoid::get (cxt, DATATYPE_BOOL));
-        impl.m_falseConstant->setName ("{const bool}false");
+    return it->second;
+}
+
+ConstantInt* ConstantInt::getBool (Context& cxt, bool value) {
+    return ConstantInt::get (cxt, DATATYPE_BOOL, value);
+}
+
+void ConstantInt::print (std::ostream &os) const { os << m_value; }
+
+/*******************************************************************************
+  ConstantFloat
+*******************************************************************************/
+
+ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, uint64_t value) {
+    return get (cxt, type, APFloat (floatPrec (type), value));
+}
+
+ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, StringRef str) {
+    return get (cxt, type, APFloat (floatPrec (type), str));
+}
+
+ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, const APFloat& value) {
+    typedef ContextImpl::FloatConstantMap FloatMap;
+    FloatMap& map = cxt.pImpl ()->m_floatConstants;
+    FloatMap::iterator it = map.find (value);
+    if (it == map.end ()) {
+        ConstantFloat* cfloat = new ConstantFloat (TypeNonVoid::get (cxt, type), value);
+        it = map.insert (it, std::make_pair (value, cfloat));
     }
 
-    return value ? impl.m_trueConstant : impl.m_falseConstant;
+    return it->second;
 }
 
-template <>
-void ConstantBool::print (std::ostream& os) const {
-    os << (m_value ? "true" : "false");
-}
+void ConstantFloat::print (std::ostream &os) const { os << m_value; }
 
 /*******************************************************************************
   ConstantString
 *******************************************************************************/
 
-template <>
-ConstantString* ConstantString::get (Context &cxt, const std::string& value) {
-    ContextImpl& impl = *cxt.pImpl ();
-    std::map<std::string, ConstantString*>::iterator
-            i = impl.m_stringLiterals.find (value);
-    if (i == impl.m_stringLiterals.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::get (cxt, DATATYPE_STRING);
-        i = impl.m_stringLiterals.insert (i,
-            std::make_pair (value, new ConstantString (value, tnv)));
-        std::ostringstream os;
-        os << "{const string}" << escape (value);
-        i->second->setName (os.str ());
+ConstantString* ConstantString::get (Context& cxt, StringRef str) {
+    typedef ContextImpl::ConstantStringMap StringMap;
+    StringMap& map = cxt.pImpl ()->m_stringLiterals;
+    StringMap::iterator it = map.find (str);
+    if (it == map.end ()) {
+        // Make sure that the string is allocated in the table
+        StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
+        ConstantString* cstr = new ConstantString (TypeNonVoid::get (cxt, DATATYPE_STRING), val);
+        it = map.insert (it, std::make_pair (val, cstr));
     }
 
-    return i->second;
+    return it->second;
 }
 
-template <>
-void ConstantString::print (std::ostream& os) const {
-    os << m_value;
+void ConstantString::print (std::ostream &os) const {
+    // TODO: not escaped! do we assume that input is always escaped?
+    os.put ('"');
+    os.write (m_value.data (), m_value.size ());
+    os.put ('"');
 }
-
-/*******************************************************************************
-  ConstantFloat32
-*******************************************************************************/
-
-template <>
-void ConstantFloat32::print (std::ostream& os) const {
-    os << m_value;
-}
-
-/*******************************************************************************
-  ConstantFloat64
-*******************************************************************************/
-
-template <>
-void ConstantFloat64::print (std::ostream& os) const {
-    os << m_value;
-}
-
-SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
-    switch (ty) {
-    case DATATYPE_BOOL:   return ConstantBool::get (cxt, false); break;
-    case DATATYPE_STRING: return ConstantString::get (cxt, ""); break;
-    default:              return numericConstant (cxt, ty, 0); break;
-    }
-}
-
-SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
-    switch (ty) {
-    case DATATYPE_INT8: return ConstantInt8::get (cxt, value); break;
-    case DATATYPE_UINT8: return ConstantUInt8::get (cxt, value); break;
-    case DATATYPE_INT16: return ConstantInt16::get (cxt, value); break;
-    case DATATYPE_UINT16: return ConstantUInt16::get (cxt, value); break;
-    case DATATYPE_INT32: return ConstantInt32::get (cxt, value); break;
-    case DATATYPE_UINT32: return ConstantUInt32::get (cxt, value); break;
-    case DATATYPE_INT64: return ConstantInt64::get (cxt, value); break;
-    case DATATYPE_UINT64: return ConstantUInt64::get (cxt, value); break;
-    case DATATYPE_XOR_UINT8: return ConstantUInt8::get (cxt, value); break;
-    case DATATYPE_XOR_UINT16: return ConstantUInt16::get (cxt, value); break;
-    case DATATYPE_XOR_UINT32: return ConstantUInt32::get (cxt, value); break;
-    case DATATYPE_XOR_UINT64: return ConstantUInt64::get (cxt, value); break;
-    case DATATYPE_FLOAT32: {
-            uint32_t i_val;
-            const float f_val = static_cast<float>(value);
-            memcpy (&i_val, &f_val, sizeof (float));
-            return ConstantFloat32::get (cxt, i_val);
-        }
-    case DATATYPE_FLOAT64: {
-            uint64_t i_val;
-            const double f_val = static_cast<double>(value);
-            memcpy (&i_val, &f_val, sizeof (double));
-            return ConstantFloat64::get (cxt, i_val);
-        }
-    default:
-        assert (false && "Not numeric constant");
-        return 0;
-    }
-}
-
-template class Constant<DATATYPE_STRING>;
-template class Constant<DATATYPE_BOOL>;
-template class Constant<DATATYPE_INT8>;
-template class Constant<DATATYPE_UINT8>;
-template class Constant<DATATYPE_INT16>;
-template class Constant<DATATYPE_UINT16>;
-template class Constant<DATATYPE_INT32>;
-template class Constant<DATATYPE_UINT32>;
-template class Constant<DATATYPE_INT64>;
-template class Constant<DATATYPE_UINT64>;
-template class Constant<DATATYPE_FLOAT32>;
-template class Constant<DATATYPE_FLOAT64>;
-
-/******************************************************************
-  ConstantVector
-******************************************************************/
-
-template <SecrecDataType ty>
-ConstantVector<ty>* ConstantVector<ty>::get (Context& cxt, const std::vector<SymbolConstant*>& values) {
-    ContextImpl& impl = *cxt.pImpl ();
-    ContextImpl::ConstantVectorMap::iterator i = impl.m_constantVectors.find (values);
-    if (i == impl.m_constantVectors.end ()) {
-        TypeNonVoid* tnv = TypeNonVoid::get (cxt, ty, 1);
-        ConstantVector<ty>* newVec = new ConstantVector<ty>(tnv, values);
-        i = impl.m_constantVectors.insert (i, std::make_pair (values, newVec));
-
-        std::ostringstream ss;
-        ss << "{const " << value_trait::CName << " vec}";
-        newVec->print (ss);
-        newVec->setName (ss.str ());
-    }
-
-    return static_cast<ConstantVector<ty>*>(i->second);
-}
-
-template <SecrecDataType ty>
-void ConstantVector<ty>::print (std::ostream& os) const {
-    os << "{";
-    for (size_t i = 0; i < m_values.size (); ++ i) {
-        if (i != 0)
-            os << ", ";
-
-        os << *at (i);
-    }
-
-    os << '}';
-}
-
-
-template class ConstantVector<DATATYPE_BOOL>;
-template class ConstantVector<DATATYPE_INT8>;
-template class ConstantVector<DATATYPE_UINT8>;
-template class ConstantVector<DATATYPE_INT16>;
-template class ConstantVector<DATATYPE_UINT16>;
-template class ConstantVector<DATATYPE_INT32>;
-template class ConstantVector<DATATYPE_UINT32>;
-template class ConstantVector<DATATYPE_INT64>;
-template class ConstantVector<DATATYPE_UINT64>;
-template class ConstantVector<DATATYPE_FLOAT32>;
-template class ConstantVector<DATATYPE_FLOAT64>;
 
 } // namespace SecreC

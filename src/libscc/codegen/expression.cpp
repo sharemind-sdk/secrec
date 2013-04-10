@@ -1107,7 +1107,7 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
 
     push_imop(new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1)));
 
-    push_imop(new Imop(e, Imop::ALLOC, resSym, ConstantUInt8::get(cxt, 0), sizeSym));
+    push_imop(new Imop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym));
 
     /**
      * Copy the data from array to the string:
@@ -1149,6 +1149,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     Symbol * strSym = argResult.symbol();
     Symbol * charSym = m_st->appendTemporary(TypeNonVoid::get(cxt, DATATYPE_UINT8));
     Symbol * tempBool = m_st->appendTemporary(TypeNonVoid::getPublicBoolType(cxt));
+    Symbol * zeroByte = ConstantInt::get(cxt, DATATYPE_UINT8, 0);
 
     /**
      * Compute length of the array:
@@ -1158,8 +1159,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     Imop * inc = new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1));
 
     // i = 0
-    pushImopAfter(result,
-            new Imop(e, Imop::ASSIGN, sizeSym, indexConstant(0)));
+    pushImopAfter(result, new Imop(e, Imop::ASSIGN, sizeSym, indexConstant(0)));
 
     // jump L1
     push_imop(new Imop(e, Imop::JUMP, m_st->label(loadChar)));
@@ -1171,8 +1171,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     push_imop(loadChar);
 
     // b = (c == 0)
-    push_imop(
-            new Imop(e, Imop::EQ, tempBool, charSym, ConstantUInt8::get(cxt, 0)));
+    push_imop(new Imop(e, Imop::EQ, tempBool, charSym, zeroByte));
 
     // if !b jump L2
     push_imop(new Imop(e, Imop::JF, m_st->label(inc), tempBool));
@@ -1183,7 +1182,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
 
     // r = ALLOC 0 i
     push_imop(
-            new Imop(e, Imop::ALLOC, resSym, ConstantUInt8::get(cxt, 0), sizeSym));
+            new Imop(e, Imop::ALLOC, resSym, zeroByte, sizeSym));
 
     /**
      * Copy the data:
@@ -1208,7 +1207,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     push_imop(new Imop(e, Imop::STORE, resSym, sizeSym, charSym));
 
     // b = (c == 0)
-    push_imop(new Imop(e, Imop::EQ, tempBool, charSym, ConstantUInt8::get(cxt, 0)));
+    push_imop(new Imop(e, Imop::EQ, tempBool, charSym, zeroByte));
 
     // if !b jump L2
     push_imop(new Imop(e, Imop::JF, m_st->label(inc), tempBool));
@@ -1250,31 +1249,8 @@ CGResult CodeGen::cgExprFloat(TreeNodeExprFloat * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    switch (e->resultType()->secrecDataType()) {
-    case DATATYPE_FLOAT32: {
-        uint32_t i_val;
-        float f_val;
-        std::istringstream(e->value().str()) >> f_val;
-        memcpy(&i_val, &f_val, sizeof(float));
-        result.setResult(ConstantFloat32::get(getContext(), i_val));
-    }
-
-        break;
-    case DATATYPE_FLOAT64: {
-        uint64_t i_val;
-        double f_val;
-        std::istringstream(e->value().str()) >> f_val;
-        memcpy(&i_val, &f_val, sizeof(double));
-        result.setResult(ConstantFloat64::get(getContext(), i_val));
-    }
-
-        break;
-    default:
-        assert(false);
-        result.setStatus(CGResult::ERROR_FATAL);
-        break;
-    }
-
+    result.setResult(ConstantFloat::get (getContext(),
+        e->resultType()->secrecDataType(), e->value ()));
     return result;
 }
 
@@ -1594,7 +1570,7 @@ CGResult CodeGen::cgExprBool(TreeNodeExprBool * e) {
 
     CGResult result;
     Context & cxt = getContext();
-    result.setResult(ConstantBool::get(cxt, e->value()));
+    result.setResult(ConstantInt::getBool (cxt, e->value()));
     return result;
 }
 

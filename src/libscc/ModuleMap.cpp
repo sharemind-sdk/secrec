@@ -33,7 +33,7 @@ bool ModuleMap::addModule (const std::string& name, std::auto_ptr<ModuleInfo> in
     MapType::iterator it = m_modules.find (name);
     if (it != m_modules.end ())
         return false;
-    m_modules.insert (it, std::make_pair (*m_stringTable.addString (name), info.get ()));
+    m_modules.insert (it, std::make_pair (name, info.get ()));
     info.release ();
     return true;
 }
@@ -49,7 +49,7 @@ bool ModuleMap::addSearchPath (const std::string& pathName) {
     BOOST_FOREACH (const directory_entry& f, range) {
         if (! is_regular_file (f)) continue;
         if (f.path ().extension () != ".sc") continue;
-        std::auto_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_stringTable));
+        std::auto_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
         if (! addModule (f.path ().stem ().string (), newModule)) {
             return false;
         }
@@ -58,7 +58,7 @@ bool ModuleMap::addSearchPath (const std::string& pathName) {
     return true;
 }
 
-ModuleInfo* ModuleMap::findModule (StringRef name) const {
+ModuleInfo* ModuleMap::findModule (const std::string& name) const {
     MapType::const_iterator i = m_modules.find (name);
     if (i == m_modules.end ())
         return 0;

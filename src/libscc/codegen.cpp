@@ -8,6 +8,7 @@
 #include "symboltable.h"
 #include "treenode.h"
 #include "typechecker.h"
+#include "context_impl.h"
 
 namespace SecreC {
 
@@ -31,7 +32,6 @@ CodeGen::CodeGen(ICodeList& code, ICode& icode)
     , m_log(icode.compileLog())
     , m_modules(icode.modules())
     , m_context(icode.context())
-    , m_stringTable(icode.stringTable())
     , m_tyChecker(0)
 {
     m_tyChecker = new TypeChecker(icode.symbols(), m_log, m_context);
@@ -40,6 +40,11 @@ CodeGen::CodeGen(ICodeList& code, ICode& icode)
 CodeGen::~CodeGen() {
     delete m_tyChecker;
 }
+
+StringTable& CodeGen::getStringTable () const {
+    return m_context.pImpl ()->m_stringTable;
+}
+
 
 void CodeGen::updateTypeChecker() {
     m_tyChecker->setScope(*m_st);
@@ -125,7 +130,7 @@ Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
 }
 
 Symbol * CodeGen::indexConstant(uint64_t value) {
-    return ConstantUInt::get(getContext(), value);
+    return ConstantInt::get(getContext(), DATATYPE_UINT64, value);
 }
 
 Symbol* CodeGen::findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const {

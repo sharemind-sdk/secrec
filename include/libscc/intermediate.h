@@ -1,19 +1,21 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
+#include <boost/optional/optional_fwd.hpp>
 #include <iosfwd>
+#include <string>
 
 #include "blocks.h"
 #include "context.h"
 #include "imop.h"
 #include "log.h"
 #include "ModuleMap.h"
-#include "StringTable.h"
 #include "symboltable.h"
 
 namespace SecreC {
 
 class TreeNodeModule;
+class StringTable;
 
 class ICode {
     ICode (const ICode&); // do not implement
@@ -25,10 +27,12 @@ public: /* Types: */
 public: /* Methods: */
     ICode ()
         : m_status (NOT_READY)
-        , m_modules (m_stringTable)
+        , m_modules (m_context)
     { }
 
-    Status init (TreeNodeModule* mod);
+
+    TreeNodeModule* parseMain (const boost::optional<std::string>& mfile);
+    void compile (TreeNodeModule *mod);
 
     SymbolTable& symbols () { return m_symbols; }
     const SymbolTable& symbols () const { return m_symbols; }
@@ -39,17 +43,17 @@ public: /* Methods: */
     const CompileLog& compileLog () const { return m_log; }
     ModuleMap& modules () { return m_modules; }
     Context& context () { return m_context; }
-    StringTable& stringTable () { return m_stringTable; }
+    StringTable& stringTable ();
 
 private: /* Fields: */
 
-    Status       m_status;
-    Context      m_context;
-    StringTable  m_stringTable;
-    SymbolTable  m_symbols;
-    ModuleMap    m_modules;
-    Program      m_program;
-    CompileLog   m_log;
+    Status          m_status;
+    Context         m_context;
+    SymbolTable     m_symbols;
+    ModuleMap       m_modules;
+    Program         m_program;
+    TreeNodeModule* m_ast;
+    CompileLog      m_log;
 };
 
 std::ostream &operator<<(std::ostream &out, const ICode::Status &s);

@@ -1,7 +1,11 @@
 #ifndef SECREC_CONSTANT_H
 #define SECREC_CONSTANT_H
 
+#include <cassert>
 #include <stdint.h>
+#include <mpfr.h>
+#include <iostream>
+#include <stdexcept>
 
 #include "symbol.h"
 
@@ -9,132 +13,247 @@ namespace SecreC {
 
 class Context;
 
-template <SecrecDataType ty>
-struct SecrecTypeInfo { };
-
-#define DECL_TRAIT(cValTy, secrecValTy)\
-    template <> struct SecrecTypeInfo <secrecValTy > {\
-        typedef cValTy CType;\
-        static const char* CName;\
-    };
-
-DECL_TRAIT (std::string, DATATYPE_STRING)
-DECL_TRAIT (bool,        DATATYPE_BOOL)
-DECL_TRAIT (int8_t,      DATATYPE_INT8)
-DECL_TRAIT (int16_t,     DATATYPE_INT16)
-DECL_TRAIT (int32_t,     DATATYPE_INT32)
-DECL_TRAIT (int64_t,     DATATYPE_INT64)
-DECL_TRAIT (uint8_t,     DATATYPE_UINT8)
-DECL_TRAIT (uint16_t,    DATATYPE_UINT16)
-DECL_TRAIT (uint32_t,    DATATYPE_UINT32)
-DECL_TRAIT (uint64_t,    DATATYPE_UINT64)
-DECL_TRAIT (uint32_t,    DATATYPE_FLOAT32)
-DECL_TRAIT (uint64_t,    DATATYPE_FLOAT64)
-#undef DECL_TRAIT
-
-/******************************************************************
-  Constant
-******************************************************************/
-
-template <SecrecDataType ty>
-class Constant : public SymbolConstant {
-private:
-    typedef Constant<ty> Self;
-    Constant (const Self&); // DO NOT IMPLEMENT
-    void operator = (const Self&); // DO NOT IMPLEMENT
-
-private: /* Types: */
-
-    typedef SecrecTypeInfo<ty> trait;
-    typedef typename trait::CType CType;
-
-public: /* Methods: */
-
-    static Self* get (Context& cxt, const CType& value);
-
-    inline const CType& value () const {
-        return m_value;
-    }
-
-protected:
-    void print (std::ostream& os) const;
-
-private:
-    Constant (const CType& value, TypeNonVoid* type)
-        : SymbolConstant(type)
-        , m_value(value)
-    { }
-
-private: /* Fields: */
-    const CType m_value;
-};
-
-typedef Constant<DATATYPE_STRING> ConstantString;
-typedef Constant<DATATYPE_BOOL> ConstantBool;
-typedef Constant<DATATYPE_INT8> ConstantInt8;
-typedef Constant<DATATYPE_UINT8> ConstantUInt8;
-typedef Constant<DATATYPE_INT16> ConstantInt16;
-typedef Constant<DATATYPE_UINT16> ConstantUInt16;
-typedef Constant<DATATYPE_INT32> ConstantInt32;
-typedef Constant<DATATYPE_UINT32> ConstantUInt32;
-typedef Constant<DATATYPE_INT64> ConstantInt64;
-typedef Constant<DATATYPE_INT64> ConstantInt;
-typedef Constant<DATATYPE_UINT64> ConstantUInt64;
-typedef Constant<DATATYPE_UINT64> ConstantUInt;
-typedef Constant<DATATYPE_FLOAT32> ConstantFloat32;
-typedef Constant<DATATYPE_FLOAT64> ConstantFloat64;
-
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty);
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
 
 /******************************************************************
-  ConstantVector
+  APInt
 ******************************************************************/
 
-template <SecrecDataType ty>
-class ConstantVector : public SymbolConstant {
-    typedef ConstantVector<ty> Self;
-    ConstantVector (const ConstantVector&); // DO NOT IMPLEMENT
-    void operator = (const ConstantVector&); // DO NOT IMPLEMENT
+class APInt {
+public: /* Types: */
+
+    struct BitwiseCmp {
+        inline bool operator () (const APInt& x, const APInt& y) const {
+            return x.m_numBits < y.m_numBits ||
+                (x.m_numBits == y.m_numBits && x.m_value < y.m_value);
+        }
+    };
+
 private: /* Types: */
-    typedef SecrecTypeInfo<ty> value_trait;
+    typedef uint64_t value_type;
+    enum {
+        BitsPerWord = static_cast<unsigned>(sizeof (value_type)) * 8,
+        WordSize = static_cast<unsigned>(sizeof (value_type))
+    };
 
 public: /* Methods: */
 
-    static Self* get (Context& cxt, const std::vector<SymbolConstant*>& values);
+    APInt (unsigned numBits, uint64_t value)
+        : m_numBits (numBits)
+        , m_value (value)
+    { }
 
-    size_t size () const { return m_values.size (); }
-
-    Constant<ty>* at (size_t i) const {
-        return static_cast<Constant<ty>*>(m_values.at (i));
+    APInt trunc (unsigned numBits) {
+        assert (numBits && numBits < m_numBits);
+        APInt val (numBits, m_value);
+        val.clearUnusedBits ();
+        return val;
     }
+
+    APInt zeroExtend (unsigned numBits) {
+        assert (numBits <= BitsPerWord);
+        assert (numBits > m_numBits);
+        APInt val (numBits, m_value);
+        val.clearUnusedBits ();
+        return val;
+    }
+
+    bool isNegative () const {
+        assert (m_numBits > 0);
+        return (*this)[m_numBits - 1];
+    }
+
+    bool operator [] (size_t i) const {
+        assert (i < m_numBits);
+        return m_value & (value_type (1) << i);
+    }
+
+    // TODO: temporary solution
+    operator uint64_t () const {
+        return m_value;
+    }
+
+private:
+
+    APInt& clearUnusedBits () {
+        const unsigned wordSize = m_numBits % BitsPerWord;
+        if (wordSize == 0)
+            return *this;
+
+        const value_type mask = ~value_type(0) >> (BitsPerWord - wordSize);
+        m_value &= mask;
+        return *this;
+    }
+
+private: /* Fields: */
+    unsigned   m_numBits;
+    value_type m_value;
+};
+
+/******************************************************************
+  APFloat
+******************************************************************/
+
+class APFloat {
+public: /* Types: */
+
+    typedef mpfr_prec_t prec_t;
+
+    struct BitwiseCmp {
+        inline bool operator () (const APFloat& x, const APFloat& y) const {
+            return cmpMpfrStructs (x.m_value, y.m_value);
+        }
+    private:
+
+        // TODO: this function breaks MPFR abstraction
+        static inline bool cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr y) {
+            if (x->_mpfr_prec < y->_mpfr_prec) return true;
+            if (x->_mpfr_prec > y->_mpfr_prec) return false;
+            if (x->_mpfr_sign < y->_mpfr_sign) return true;
+            if (x->_mpfr_sign > y->_mpfr_sign) return false;
+            if (x->_mpfr_exp  < y->_mpfr_exp)  return true;
+            if (x->_mpfr_exp  > y->_mpfr_exp)  return false;
+            const size_t num_limbs = (x->_mpfr_prec + mp_bits_per_limb - 1) / mp_bits_per_limb;
+            return std::lexicographical_compare (
+                x->_mpfr_d, x->_mpfr_d + num_limbs,
+                y->_mpfr_d, y->_mpfr_d + num_limbs);
+        }
+    };
+
+public: /* Methods: */
+
+    APFloat (prec_t p, StringRef str) {
+        mpfr_init2 (m_value, p);
+        if (mpfr_set_str (m_value, str.str ().c_str (), 10, MPFR_RNDN) != 0) {
+            mpfr_clear (m_value);
+            throw std::logic_error ("Invalid floating point string literal!");
+        }
+    }
+
+    APFloat (prec_t p, uint64_t value) {
+        mpfr_init2 (m_value, p);
+        mpfr_set_ui (m_value, value, MPFR_RNDN);
+    }
+
+    ~APFloat () {
+        mpfr_clear (m_value);
+    }
+
+    APFloat (const APFloat& apf) {
+        mpfr_init2 (m_value, apf.getPrec ());
+        mpfr_set (m_value, apf.m_value, MPFR_RNDN);
+    }
+
+    APFloat& operator = (const APFloat& apf) {
+        mpfr_set (m_value, apf.m_value, MPFR_RNDN);
+        return *this;
+    }
+
+    friend std::ostream& operator << (std::ostream& os, const APFloat& apf);
+
+    prec_t getPrec () const {
+        return mpfr_get_prec (m_value);
+    }
+
+    uint32_t ieee32bits () const;
+    uint64_t ieee64bits () const;
+
+private: /* Fields: */
+    mpfr_t m_value;
+};
+
+// TODO: respect float formatting?
+inline std::ostream& operator << (std::ostream& os, const APFloat& apf) {
+    const size_t buff_size = 256;
+    char buff [buff_size];
+    const int n = mpfr_snprintf (buff, buff_size, "%.RNg", apf.m_value);
+    if (n < 0) {
+        os.setstate (std::ios::failbit);
+        assert (false);
+        return os;
+    }
+
+    os.write (buff, n);
+    return os;
+}
+
+
+/******************************************************************
+  ConstantInt
+******************************************************************/
+
+class ConstantInt : public SymbolConstant {
+private: /* Methods: */
+    ConstantInt (TypeNonVoid* type, const APInt& value)
+        : SymbolConstant (type)
+        , m_value (value)
+    { }
+
+public:
+
+    static ConstantInt* get (Context& cxt, SecrecDataType type, uint64_t value);
+    static ConstantInt* getBool (Context& cxt, bool value);
+
+    const APInt& value () const { return m_value; }
 
 protected:
     void print (std::ostream& os) const;
 
-private:
-    ConstantVector (TypeNonVoid* type, const std::vector<SymbolConstant*>& values)
-        : SymbolConstant (type)
-        , m_values (values)
-    { }
-
 private: /* Fields: */
-    const std::vector<SymbolConstant*> m_values;
+    const APInt m_value;
 };
 
-typedef ConstantVector<DATATYPE_BOOL> ConstantBoolVector;
-typedef ConstantVector<DATATYPE_INT8> ConstantInt8Vector;
-typedef ConstantVector<DATATYPE_UINT8> ConstantUInt8Vector;
-typedef ConstantVector<DATATYPE_INT16> ConstantInt16Vector;
-typedef ConstantVector<DATATYPE_UINT16> ConstantUInt16Vector;
-typedef ConstantVector<DATATYPE_INT32> ConstantInt32Vector;
-typedef ConstantVector<DATATYPE_UINT32> ConstantUInt32Vector;
-typedef ConstantVector<DATATYPE_INT64> ConstantInt64Vector;
-typedef ConstantVector<DATATYPE_INT64> ConstantIntVector;
-typedef ConstantVector<DATATYPE_UINT64> ConstantUInt64Vector;
-typedef ConstantVector<DATATYPE_UINT64> ConstantUIntVector;
-typedef ConstantVector<DATATYPE_FLOAT32> ConstantFloat32Vector;
-typedef ConstantVector<DATATYPE_FLOAT64> ConstantFloat64Vector;
+/******************************************************************
+  ConstantFloat
+******************************************************************/
+
+class ConstantFloat : public SymbolConstant {
+private: /* Methods: */
+
+    ConstantFloat (TypeNonVoid* type, const APFloat& value)
+        : SymbolConstant (type)
+        , m_value (value)
+    { }
+
+public:
+
+    static ConstantFloat* get (Context& cxt, SecrecDataType type, uint64_t value);
+    static ConstantFloat* get (Context& cxt, SecrecDataType type, StringRef str);
+    static ConstantFloat* get (Context& cxt, SecrecDataType type, const APFloat& value);
+
+    const APFloat& value () const { return m_value; }
+
+protected:
+    void print (std::ostream& os) const;
+
+private: /* Fields: */
+    const APFloat m_value;
+};
+
+/******************************************************************
+  ConstantString
+******************************************************************/
+
+class ConstantString : public SymbolConstant {
+private: /* Methods: */
+
+    ConstantString (TypeNonVoid* type, StringRef value)
+        : SymbolConstant (type)
+        , m_value (value)
+    { }
+
+public:
+
+    static ConstantString* get (Context& cxt, StringRef str);
+    StringRef value () const { return m_value; }
+
+protected:
+    void print (std::ostream& os) const;
+
+private: /* Fields: */
+    const StringRef m_value;
+};
 
 } // namespace SecreC
 

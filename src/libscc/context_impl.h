@@ -17,6 +17,7 @@
 #include "parser.h"
 #include "types.h"
 #include "constant.h"
+#include "StringTable.h"
 
 namespace SecreC {
 
@@ -34,40 +35,37 @@ public: /* Types: */
     typedef std::map<std::vector<DataType*>, DataTypeProcedureVoid* > DataTypeProcedureVoidMap;
     typedef std::map<std::pair<DataTypeProcedureVoid*, DataType*>, DataTypeProcedure*> DataTypeProcedureMap;
     typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType >, DataTypeBasic*> DataTypeBasicMap;
-    typedef std::map<std::string, ConstantString* > ConstantStringMap;
-    typedef std::map<std::pair<SecrecDataType, uint64_t>, SymbolConstant*> NumericConstantMap;
-    typedef std::map<std::vector<SymbolConstant*>, SymbolConstant*> ConstantVectorMap;
+
+    typedef std::map<StringRef, ConstantString*> ConstantStringMap;
+    typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;
+    typedef std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp> FloatConstantMap;
 
 public: /* Methods: */
 
-    ContextImpl ()
-        : m_trueConstant (0)
-        , m_falseConstant (0)
-    { }
+    ContextImpl () { }
 
     ~ContextImpl ();
 
+    StringTable& stringTable () { return m_stringTable; }
+
     /* Security types: */
     PublicSecType* publicType ();
-    PrivateSecType* privateType (StringRef domain,
-                                 SymbolKind* kind);
+    PrivateSecType* privateType (StringRef domain, SymbolKind* kind);
 
     /* Data types: */
     DataTypeVar* varType (DataType* dtype);
-    DataTypeProcedureVoid* voidProcedureType (
-            const std::vector<DataType*>& params);
-    DataTypeProcedure* procedureType (
-            const std::vector<DataType*>& params,
-            DataType* ret);
-    DataTypeBasic* basicDataType (SecurityType* secTy,
-                                  SecrecDataType dataType,
-                                  SecrecDimType dim = 0);
+    DataTypeProcedureVoid* voidProcedureType (const std::vector<DataType*>& params);
+    DataTypeProcedure* procedureType (const std::vector<DataType*>& params, DataType* ret);
+    DataTypeBasic* basicDataType (SecurityType* secTy, SecrecDataType dataType, SecrecDimType dim = 0);
 
     /* Types: */
     TypeVoid* voidType ();
     TypeNonVoid* nonVoidType (DataType* dType);
 
 public: /* Fields: */
+
+    /* Strings: */
+    StringTable               m_stringTable;
 
     /* All types: */
     TypeVoid                  m_voidType;
@@ -80,11 +78,9 @@ public: /* Fields: */
     DataTypeBasicMap          m_basicTypes;
 
     /* All constants: */
-    ConstantBool*             m_trueConstant;
-    ConstantBool*             m_falseConstant;
     ConstantStringMap         m_stringLiterals;
-    NumericConstantMap        m_numericConstants;
-    ConstantVectorMap         m_constantVectors;
+    NumericConstantMap        m_numericConstants[2]; ///< 0 - unsigned, 1 - signed
+    FloatConstantMap          m_floatConstants;
 };
 
 } // namespace SecreC

@@ -28,6 +28,7 @@ bool latticeDataTypeLEQ (SecrecDataType a, SecrecDataType b);
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m);
 bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b);
 
+bool isFloatingDataType (SecrecDataType dType);
 bool isNumericDataType (SecrecDataType dType);
 bool isXorDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);

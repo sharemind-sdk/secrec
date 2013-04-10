@@ -17,9 +17,9 @@
 #include "types.h"
 
 namespace /* anonymous */ {
-template <typename Key, typename T >
-void eraseAll (const std::map<Key, T*>& m) {
-    typedef const typename std::map<Key, T*>::value_type value_type;
+template <typename Key, typename T, typename Cmp >
+void deleteValues (const std::map<Key, T*, Cmp>& m) {
+    typedef const typename std::map<Key, T*, Cmp>::value_type value_type;
     BOOST_FOREACH (const value_type& p, m) {
         delete p.second;
     }
@@ -30,16 +30,15 @@ void eraseAll (const std::map<Key, T*>& m) {
 namespace SecreC {
 
 ContextImpl::~ContextImpl () {
-    eraseAll (m_privSecTypes);
-    eraseAll (m_varTypes);
-    eraseAll (m_nonVoidTypes);
-    eraseAll (m_voidProcTypes);
-    eraseAll (m_procTypes);
-    eraseAll (m_basicTypes);
-    delete m_trueConstant;
-    delete m_falseConstant;
-    eraseAll (m_stringLiterals);
-    eraseAll (m_numericConstants);
+    deleteValues (m_privSecTypes);
+    deleteValues (m_varTypes);
+    deleteValues (m_nonVoidTypes);
+    deleteValues (m_voidProcTypes);
+    deleteValues (m_procTypes);
+    deleteValues (m_basicTypes);
+    deleteValues (m_stringLiterals);
+    deleteValues (m_numericConstants[0]);
+    deleteValues (m_numericConstants[1]);
 }
 
 /* Security types: */

@@ -961,7 +961,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
         if (symDim == 0)
             return E_TYPE;
 
-        s = numericConstant (getContext (), DATATYPE_UINT64, symDim->dimType ());
+        s = ConstantInt::get (getContext (), DATATYPE_UINT64, symDim->dimType ());
     }
 
     TypeNonVoid * type = static_cast<TypeNonVoid *>(s->secrecType());

@@ -116,10 +116,7 @@ struct SymbolOstreamWrapper : public SymbolWrapperBase {
             return;
         }
 
-        os << m_symbol->name();
-        if (m_symbol->symbolType() != SecreC::SYM_CONSTANT) {
-            os << '{' << m_symbol << '}';
-        }
+        os << *m_symbol;
     }
 };
 

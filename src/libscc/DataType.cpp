@@ -116,9 +116,21 @@ bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b) {
     }
 }
 
+bool isFloatingDataType (SecrecDataType dType) {
+    switch (dType) {
+    case DATATYPE_FLOAT32:
+    case DATATYPE_FLOAT64:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool isNumericDataType (SecrecDataType dType) {
-    return isSignedNumericDataType (dType) ||
-           isUnsignedNumericDataType (dType);
+    return isFloatingDataType (dType) ||
+           isSignedNumericDataType (dType) ||
+           isUnsignedNumericDataType (dType) ||
+           isXorDataType (dType);
 }
 
 bool isSignedNumericDataType (SecrecDataType dType) {

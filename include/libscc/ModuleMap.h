@@ -12,12 +12,12 @@
 
 #include <memory>
 #include <map>
-#include "StringRef.h"
+#include <string>
 
 namespace SecreC {
 
 class ModuleInfo;
-class StringTable;
+class Context;
 
 /*******************************************************************************
   ModuleMap
@@ -27,25 +27,19 @@ class ModuleMap {
     ModuleMap (ModuleMap&); // DO NOT IMPLEMENT
     void operator = (ModuleMap&); // DO NOT IMPLEMENT
 private: /* Types: */
-    typedef std::map<StringRef, ModuleInfo*, StringRef::FastCmp> MapType;
+    typedef std::map<std::string, ModuleInfo*> MapType;
 public: /* Methods: */
 
-    explicit ModuleMap (StringTable& stringTable)
-        : m_stringTable (stringTable)
-    { }
-
+    explicit ModuleMap (Context& cxt) : m_cxt (cxt) { }
     ~ModuleMap ();
 
     bool addSearchPath (const std::string& pathName);
-
-    /// Takes ownership, or frees a ModuleInfo object
     bool addModule (const std::string& name, std::auto_ptr<ModuleInfo> info);
-
-    ModuleInfo* findModule (StringRef name) const;
+    ModuleInfo* findModule (const std::string& name) const;
 
 private: /* Fields: */
     MapType m_modules;
-    StringTable& m_stringTable;
+    Context& m_cxt;
 };
 
 } // namespace SecreC

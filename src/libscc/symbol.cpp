@@ -151,11 +151,8 @@ const Location * SymbolSymbol::location() const {
 }
 
 void SymbolSymbol::print(std::ostream & os) const {
-    if (m_isTemporary) os << "TEMPORARY ";
-    os << (m_scopeType == GLOBAL ? "GLOBAL" : "LOCAL") << ' '
-       << *secrecType () << ' ' << name () << '{' << this << '}';
+    os << name ();
 }
-
 
 void SymbolSymbol::inheritShape (Symbol* from) {
     assert (from != 0);

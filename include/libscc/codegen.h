@@ -288,6 +288,8 @@ private:
         return m_context;
     }
 
+    StringTable& getStringTable () const;
+
     void swap (CodeGenState& state) {
         swapState (state);
         updateTypeChecker ();
@@ -358,7 +360,6 @@ private: /* Fields: */
     CompileLog&   m_log;          ///< Compiler log.
     ModuleMap&    m_modules;      ///< Mapping from names to modules.
     Context&      m_context;
-    StringTable&  m_stringTable;
 
     // Local components:
     STList        m_loops;

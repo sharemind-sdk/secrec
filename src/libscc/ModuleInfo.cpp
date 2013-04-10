@@ -9,6 +9,8 @@
 
 #include "ModuleInfo.h"
 #include "treenode.h"
+#include "context.h"
+#include "context_impl.h"
 
 #include <boost/filesystem.hpp>
 
@@ -39,8 +41,9 @@ bool ModuleInfo::read() {
     if (f == 0)
         return false;
 
+    ContextImpl* pImpl = m_cxt.pImpl ();
     TreeNodeModule* treeNode = 0;
-    int parseResult = sccparse_file(&m_stringTable, m_location.path().c_str (), f, &treeNode);
+    int parseResult = sccparse_file(&pImpl->stringTable (), m_location.path().c_str (), f, &treeNode);
     fclose (f);
     if (parseResult != 0 || treeNode == 0)
         return false;

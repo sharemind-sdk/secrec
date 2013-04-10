@@ -21,14 +21,14 @@
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
 #define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
 
-namespace { // anonymous namespace
+namespace SecreC {
 
-using namespace SecreC;
+namespace /* anonymous */ {
 
 /// Primitive values of the VM.
 union Value {
-    float               un_float32_val;
     double              un_float64_val;
+    float               un_float32_val;
     uint64_t            un_uint_val;
     uint32_t            un_uint32_val;
     uint16_t            un_uint16_val;
@@ -37,44 +37,60 @@ union Value {
     int32_t             un_int32_val;
     int16_t             un_int16_val;
     int8_t              un_int8_val;
+    bool                un_bool_val;
+
     Value*              un_ptr;
     const std::string*  un_str_val;
-    bool                un_bool_val;
 };
 
+template <SecrecDataType ty> struct secrec_type_traits;
+template <> struct secrec_type_traits<DATATYPE_FLOAT64> { typedef double type; };
+template <> struct secrec_type_traits<DATATYPE_FLOAT32> { typedef float type; };
+template <> struct secrec_type_traits<DATATYPE_UINT64> { typedef uint64_t type; };
+template <> struct secrec_type_traits<DATATYPE_UINT32> { typedef uint32_t type; };
+template <> struct secrec_type_traits<DATATYPE_UINT16> { typedef uint16_t type; };
+template <> struct secrec_type_traits<DATATYPE_UINT8> { typedef uint8_t type; };
+template <> struct secrec_type_traits<DATATYPE_INT64> { typedef int64_t type; };
+template <> struct secrec_type_traits<DATATYPE_INT32> { typedef int32_t type; };
+template <> struct secrec_type_traits<DATATYPE_INT16> { typedef int16_t type; };
+template <> struct secrec_type_traits<DATATYPE_INT8> { typedef int8_t type; };
+template <> struct secrec_type_traits<DATATYPE_STRING> { typedef const std::string& type; };
+template <> struct secrec_type_traits<DATATYPE_BOOL> { typedef bool type; };
+
 /// Get value based on the data type.
-template <SecrecDataType ty> typename SecrecTypeInfo<ty>::CType getValue (const Value&);
-template <> bool getValue<DATATYPE_BOOL> (const Value& v) { return v.un_bool_val; }
+template <SecrecDataType ty> typename secrec_type_traits<ty>::type getValue (const Value&);
+template <> double getValue<DATATYPE_FLOAT64> (const Value& v) { return v.un_float64_val; }
+template <> float getValue<DATATYPE_FLOAT32> (const Value& v) { return v.un_float32_val; }
 template <> uint64_t getValue<DATATYPE_UINT64> (const Value& v) { return v.un_uint_val; }
-template <> int64_t getValue<DATATYPE_INT64> (const Value& v) { return v.un_int_val; }
 template <> uint32_t getValue<DATATYPE_UINT32> (const Value& v) { return v.un_uint32_val; }
-template <> int32_t getValue<DATATYPE_INT32> (const Value& v) { return v.un_int32_val; }
 template <> uint16_t getValue<DATATYPE_UINT16> (const Value& v) { return v.un_uint16_val; }
-template <> int16_t getValue<DATATYPE_INT16> (const Value& v) { return v.un_int16_val; }
 template <> uint8_t getValue<DATATYPE_UINT8> (const Value& v) { return v.un_uint8_val; }
+template <> int64_t getValue<DATATYPE_INT64> (const Value& v) { return v.un_int_val; }
+template <> int32_t getValue<DATATYPE_INT32> (const Value& v) { return v.un_int32_val; }
+template <> int16_t getValue<DATATYPE_INT16> (const Value& v) { return v.un_int16_val; }
 template <> int8_t getValue<DATATYPE_INT8> (const Value& v) { return v.un_int8_val; }
-template <> std::string getValue<DATATYPE_STRING> (const Value& v) { return *v.un_str_val; }
+template <> bool getValue<DATATYPE_BOOL> (const Value& v) { return v.un_bool_val; }
+template <> const std::string& getValue<DATATYPE_STRING> (const Value& v) { return *v.un_str_val; }
 
 /// Set value based on C data type.
-inline void assignValue (Value& v, bool r) { v.un_bool_val = r; }
-inline void assignValue (Value& v, int8_t r) { v.un_int8_val = r; }
-inline void assignValue (Value& v, uint8_t r) { v.un_uint8_val = r; }
-inline void assignValue (Value& v, int16_t r) { v.un_int16_val = r; }
-inline void assignValue (Value& v, uint16_t r) { v.un_uint16_val = r; }
-inline void assignValue (Value& v, int32_t r) { v.un_int32_val = r; }
-inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
-inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
+inline void assignValue (Value& v, double r) { v.un_float64_val = r; }
+inline void assignValue (Value& v, float r) { v.un_float32_val = r; }
 inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
-inline void assignValue (Value& v, const std::string& r) {
-    std::string* copy =  new std::string (r);
-    v.un_str_val = copy;
-}
+inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
+inline void assignValue (Value& v, uint16_t r) { v.un_uint16_val = r; }
+inline void assignValue (Value& v, uint8_t r) { v.un_uint8_val = r; }
+inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
+inline void assignValue (Value& v, int32_t r) { v.un_int32_val = r; }
+inline void assignValue (Value& v, int16_t r) { v.un_int16_val = r; }
+inline void assignValue (Value& v, int8_t r) { v.un_int8_val = r; }
+inline void assignValue (Value& v, bool r) { v.un_bool_val = r; }
+inline void assignValue (Value& v, const std::string& r) { v.un_str_val = new std::string (r); }
 
 /// Statically typed value casting.
 template <SecrecDataType toTy, SecrecDataType fromTy >
 void castValue (Value& dest, const Value& from) {
-    typedef typename SecrecTypeInfo<toTy>::CType toCType;
-    assignValue (dest, static_cast<toCType>(getValue<fromTy>(from)));
+    typedef typename secrec_type_traits<toTy>::type type;
+    assignValue (dest, static_cast<type>(getValue<fromTy>(from)));
 }
 
 /// Stack for values
@@ -128,7 +144,6 @@ private:
         }
     }
 };
-
 
 struct Instruction;
 
@@ -207,6 +222,9 @@ Frame* m_frames = 0;
 Store m_global;
 
 void free_store (Store& store) {
+    // TODO: not actually releasing any dynamically allocated memory
+    // This is not a serious issue as this VM is only used for testing
+    // and should be removed as soon as possible.
     store.clear();
 }
 
@@ -509,16 +527,18 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     SWITCH_ONE (NAME, DATATYPE_UINT16)\
     SWITCH_ONE (NAME, DATATYPE_UINT32)\
     SWITCH_ONE (NAME, DATATYPE_UINT64)
+#define SWITCH_FLOAT(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_FLOAT32)\
+    SWITCH_ONE (NAME, DATATYPE_FLOAT64)
 #define SWITCH_ARITH(NAME)\
     SWITCH_SIGNED(NAME)\
     SWITCH_UNSIGNED(NAME)
-#define SWITCH_ANY(NAME)\
-    SWITCH_ONE (NAME, DATATYPE_BOOL)\
-    SWITCH_ONE (NAME, DATATYPE_STRING)\
-    SWITCH_ARITH(NAME)
 #define SWITCH_NONSTRING(NAME)\
     SWITCH_ONE (NAME, DATATYPE_BOOL)\
     SWITCH_ARITH(NAME)
+#define SWITCH_ANY(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_STRING)\
+    SWITCH_NONSTRING(NAME)
 #define SET_SPECIALIZE_CALLBACK(NAME, SWITCHER) do {\
     assert (ty != DATATYPE_UNDEFINED);\
     switch (ty) {\
@@ -654,14 +674,17 @@ CallbackTy getCallback (const Imop& imop) {
  * to the global scope.
  */
 
-template <SecrecDataType ty>
-void storeConstantHelper (Value& out, const Symbol* c) {
-    assignValue (out, static_cast<const Constant<ty>* >(c)->value ());
+void storeConstantString (Value& out, const Symbol* c) {
+    const ConstantString* str = static_cast<const ConstantString*>(c);
+    out.un_str_val = new std::string (str->value ().str ());
 }
 
-template <>
-void storeConstantHelper<DATATYPE_STRING> (Value& out, const Symbol* c) {
-    out.un_str_val = &static_cast<const ConstantString* >(c)->value ();
+template <SecrecDataType ty>
+void storeConstantInt (Value& out, const Symbol* c) {
+    typedef typename secrec_type_traits<ty>::type type;
+    const ConstantInt* intSym = static_cast<const ConstantInt*>(c);
+    const uint64_t value = intSym->value ();
+    assignValue (out, static_cast<type>(value));
 }
 
 void storeConstant (VMSym sym, const Symbol* c) {
@@ -669,16 +692,16 @@ void storeConstant (VMSym sym, const Symbol* c) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     Value& out = store[sym.un_sym];
     switch (dtype) {
-    case DATATYPE_BOOL: storeConstantHelper<DATATYPE_BOOL>(out, c); break;
-    case DATATYPE_STRING: storeConstantHelper<DATATYPE_STRING>(out, c); break;
-    case DATATYPE_INT8: storeConstantHelper<DATATYPE_INT8>(out, c); break;
-    case DATATYPE_UINT8: storeConstantHelper<DATATYPE_UINT8>(out, c); break;
-    case DATATYPE_INT16: storeConstantHelper<DATATYPE_INT16>(out, c); break;
-    case DATATYPE_UINT16: storeConstantHelper<DATATYPE_UINT16>(out, c); break;
-    case DATATYPE_INT32: storeConstantHelper<DATATYPE_INT32>(out, c); break;
-    case DATATYPE_UINT32: storeConstantHelper<DATATYPE_UINT32>(out, c); break;
-    case DATATYPE_INT64: storeConstantHelper<DATATYPE_INT64>(out, c); break;
-    case DATATYPE_UINT64: storeConstantHelper<DATATYPE_UINT64>(out, c); break;
+    case DATATYPE_STRING: storeConstantString(out, c); break;
+    case DATATYPE_BOOL: storeConstantInt<DATATYPE_BOOL>(out, c); break;
+    case DATATYPE_INT8: storeConstantInt<DATATYPE_INT8>(out, c); break;
+    case DATATYPE_UINT8: storeConstantInt<DATATYPE_UINT8>(out, c); break;
+    case DATATYPE_INT16: storeConstantInt<DATATYPE_INT16>(out, c); break;
+    case DATATYPE_UINT16: storeConstantInt<DATATYPE_UINT16>(out, c); break;
+    case DATATYPE_INT32: storeConstantInt<DATATYPE_INT32>(out, c); break;
+    case DATATYPE_UINT32: storeConstantInt<DATATYPE_UINT32>(out, c); break;
+    case DATATYPE_INT64: storeConstantInt<DATATYPE_INT64>(out, c); break;
+    case DATATYPE_UINT64: storeConstantInt<DATATYPE_UINT64>(out, c); break;
     default:
         assert (false && "Invalid data type.");
     }
@@ -880,9 +903,7 @@ private: /* Fields: */
 };
 
 
-} // end of anonymous namespace
-
-namespace SecreC {
+} // namespace anonymous
 
 int VirtualMachine::run (const Program& pr) {
     Compiler comp;
@@ -904,4 +925,4 @@ int VirtualMachine::run (const Program& pr) {
     return status;
 }
 
-}
+} // namespace SecreC

@@ -11,6 +11,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION "2.8")
 CMAKE_POLICY(SET CMP0015 NEW)
 PROJECT("SecreC framework" "CXX" "C")
 
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
+
 INCLUDE("config.local" OPTIONAL)
 
 MACRO(SHAREMIND_ADD_EXT name pname)
@@ -41,6 +43,7 @@ SHAREMIND_ADD_EXT(libas SHAREMIND_LIBAS)
 find_package(Boost COMPONENTS thread system filesystem iostreams program_options REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
+find_package(MPFR REQUIRED)
 find_package(Qt4 COMPONENTS qtcore qttest)
 
 ADD_SUBDIRECTORY(src/libscc)

@@ -8,6 +8,7 @@
 #include "ModuleMap.h"
 #include "symbol.h"
 #include "symboltable.h"
+#include "StringTable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"
 
@@ -193,7 +194,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
     typedef std::map<const TreeNodeProcDef *, std::set<Imop *> > CallMap;
 
-    const StringRef* name = m_stringTable.addString ("Module " + mod->body()->name().str());
+    const StringRef* name = getStringTable ().addString ("Module " + mod->body()->name().str());
 
     assert(mod->status() == ModuleInfo::CGNotStarted);
     SymbolTable * moduleScope = m_st->newScope();
@@ -275,7 +276,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
 
 CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
-    ModuleInfo * modInfo = new ModuleInfo(m_stringTable);
+    ModuleInfo * modInfo = new ModuleInfo(getContext ());
     {
         std::auto_ptr<ModuleInfo> newMod(modInfo);
         if (! m_modules.addModule("__main", newMod)) {
@@ -343,7 +344,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext) {
-    ModuleInfo * mod = m_modules.findModule(import->name());
+    ModuleInfo * mod = m_modules.findModule(import->name().str ());
     if (mod == 0) {
         m_log.fatal() << "Module \"" << import->name() << "\" not found within search path.";
         m_log.fatal() << "Error at " << import->location() << '.';

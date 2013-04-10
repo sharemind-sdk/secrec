@@ -15,12 +15,12 @@
 #include <boost/filesystem.hpp>
 
 #include "CodeGenState.h"
-#include "StringTable.h"
 #include "treenode_fwd.h"
 
 namespace SecreC {
 
 class TreeNodeProgram;
+class Context;
 
 /*******************************************************************************
   ModuleInfo
@@ -43,17 +43,17 @@ public:
 
 public: /* Methods: */
 
-    explicit ModuleInfo (StringTable& stringTable)
+    explicit ModuleInfo (Context& cxt)
         : m_status (CGNotStarted)
         , m_body (0)
-        , m_stringTable (stringTable)
+        , m_cxt (cxt)
     { }
 
-    explicit ModuleInfo (const directory_entry& location, StringTable& stringTable)
+    explicit ModuleInfo (const directory_entry& location, Context& cxt)
         : m_location (location)
         , m_status (CGNotStarted)
         , m_body (0)
-        , m_stringTable (stringTable)
+        , m_cxt (cxt)
     { }
 
     ~ModuleInfo ();
@@ -73,7 +73,7 @@ private: /* Fields: */
     CGStatus                 m_status;
     CodeGenState             m_cgState;
     TreeNodeModule*          m_body;
-    StringTable&             m_stringTable;
+    Context&                 m_cxt;
 };
 
 } // namespace SecreC

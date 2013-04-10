@@ -1,5 +1,6 @@
 #include "intermediate.h"
 
+#include <boost/optional/optional.hpp>
 #include <iostream>
 
 #include "codegen.h"
@@ -7,20 +8,55 @@
 #include "treenode.h"
 #include "virtual_machine.h"
 #include "symboltable.h"
+#include "context_impl.h"
 
 namespace SecreC {
 
-ICode::Status ICode::init (TreeNodeModule *mod) {
-    assert(m_status == NOT_READY);
+TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
+    int errorCode = 1;
+    TreeNodeModule * parseTree = 0;
+    StringTable& table = stringTable ();
+
+    if (mfile) {
+        const char* name = mfile.get ().c_str ();
+        FILE* h = fopen(name, "r");
+        if (h != NULL) {
+            errorCode = sccparse_file(&table, name, h, &parseTree);
+            fclose (h);
+        }
+        else {
+            m_status = ERROR;
+            m_log.fatal () << "Failed to open file \"" << name << "\".";
+        }
+    }
+    else {
+        errorCode = sccparse(&table, "-", &parseTree);
+    }
+
+    if (errorCode != 0) {
+        m_status = ERROR;
+        m_log.fatal () << "Parsing main module failed.";
+    }
+
+    m_status = OK;
+    return parseTree;
+}
+
+void ICode::compile (TreeNodeModule *mod) {
     assert (mod != 0);
     ICodeList code;
     CodeGen cg (code, *this);
-    if (cg.cgMain(mod).status() != CGResult::OK)
-        return m_status;
+    if (cg.cgMain(mod).status() != CGResult::OK) {
+        m_status = ERROR;
+        return;
+    }
 
     m_status = OK;
     m_program.init (code);
-    return m_status;
+}
+
+StringTable& ICode::stringTable () {
+    return context ().pImpl ()->m_stringTable;
 }
 
 std::ostream &operator<<(std::ostream &out, const ICode::Status &s) {

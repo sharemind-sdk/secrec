@@ -13,7 +13,7 @@ class Block;
 class Symbol;
 class SymbolProcedure;
 class SymbolLabel;
-template <SecrecDataType ty> class Constant;
+class ConstantString;
 class TreeNode;
 
 typedef boost::intrusive::list_base_hook<
@@ -227,7 +227,7 @@ typedef boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false>
  * Convenience operators for Imop creation.
  */
 
-Imop* newError (TreeNode* node, Constant<DATATYPE_STRING>* msg);
+Imop* newError (TreeNode* node, ConstantString* msg);
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* arg);
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1, Symbol* arg2);
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol* dest, Symbol* arg1);
