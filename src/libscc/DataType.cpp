@@ -15,7 +15,7 @@ std::string mangleDataType (DataType* dty) {
     std::ostringstream os;
     os << '(';
     os << *dty->secrecSecType () << ',';
-    os << dty->secrecDataType() << ',';
+    os << SecrecFundDataTypeToString (dty->secrecDataType()) << ',';
     os << dty->secrecDimType();
     os << ')';
     return os.str ();
