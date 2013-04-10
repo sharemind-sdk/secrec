@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 
+#include <boost/optional/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/foreach.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -134,31 +135,9 @@ int run (const Configuration& cfg) {
         out.rdbuf (&fileBuf);
     }
 
-    int exitCode = 0;
-    if (cfg.m_stdin) {
-        exitCode = sccparse(&icode.stringTable(), "-", &parseTree);
-    } else {
-        FILE *f = fopen (cfg.m_input.c_str (), "r");
-        if (f != NULL) {
-            if (cfg.m_verbose) {
-                cerr << "Parsing file: \"" << cfg.m_input << "\"... ";
-                cerr << flush;
-            }
-
-            exitCode = sccparse_file(&icode.stringTable(), cfg.m_input.c_str(), f, &parseTree);
-            fclose(f);
-
-            if (cfg.m_verbose) {
-              cerr << "DONE!" << endl;
-            }
-        } else {
-            cerr << "Unable to open file: \"" << cfg.m_input << '\"' << endl;
-            return EXIT_FAILURE;
-        }
-    }
-
-    if (exitCode != 0) {
-        cerr << "Parsing input file failed." << endl;
+    parseTree = icode.parseMain (cfg.m_stdin ? boost::optional<std::string>() : cfg.m_input);
+    if (icode.status () != SecreC::ICode::OK) {
+        std::cerr << icode.compileLog ();
         return EXIT_FAILURE;
     }
 
@@ -176,7 +155,7 @@ int run (const Configuration& cfg) {
         icode.modules ().addSearchPath (path);
     }
 
-    icode.init (parseTree);
+    icode.compile (parseTree);
 
     if (icode.status() == SecreC::ICode::OK) {
         SecreC::Program& pr = icode.program ();
