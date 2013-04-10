@@ -55,7 +55,7 @@ void StringLiterals::init (VMSymbolTable& st, VMDataSection* section) {
 }
 
 StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str) {
-    return insert (str->value ());
+    return insert (str->value ().str ());
 }
 
 StringLiterals::LiteralInfo StringLiterals::insert (const std::string& str) {

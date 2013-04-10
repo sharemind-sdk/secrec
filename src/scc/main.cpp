@@ -181,35 +181,6 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 }
 
 /*
- * Parse a secrec program, returns 0 on failure.
- */
-SecreC::TreeNodeModule * parseProgram(SecreC::StringTable& stringTable, const ProgramOptions & opts, int & errorCode) {
-    SecreC::TreeNodeModule * ast = NULL;
-
-    if (opts.input) {
-        const std::string& fname = opts.input.get ();
-        FILE* f = fopen(fname.c_str (), "r");
-        if (f != NULL) {
-            if (opts.verbose) {
-                cerr << "Parsing file: \"" << fname << "\"... ";
-                cerr << flush;
-            }
-
-            errorCode = sccparse_file(&stringTable, fname.c_str(), f, &ast);
-            fclose (f);
-        } else {
-            cerr << "Unable to open file \"" << fname << "\" for parsing." << endl;
-            errorCode = 1;
-        }
-    }
-    else {
-        errorCode = sccparse(&stringTable, "-", &ast);
-    }
-
-    return ast;
-}
-
-/*
  * Compile the actual bytecode executable.
  */
 bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
@@ -319,10 +290,9 @@ int main (int argc, char *argv[]) {
     SecreC::ICode icode;
 
     /* Parse the program: */
-    int parseErrorCode = 0;
-    SecreC::TreeNodeModule * parseTree = parseProgram(icode.stringTable(), opts, parseErrorCode);
-    if (parseErrorCode != 0) {
-        cerr << "Parsing failed! Error code " << parseErrorCode << '.' << endl;
+    SecreC::TreeNodeModule * parseTree = icode.parseMain (opts.input);
+    if (icode.status () != SecreC::ICode::OK) {
+        std::cerr << icode.compileLog ();
         return EXIT_FAILURE;
     }
 
@@ -333,7 +303,9 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    if (icode.init (parseTree) != SecreC::ICode::OK) {
+    /* Translate to intermediate code: */
+    icode.compile (parseTree);
+    if (icode.status () != SecreC::ICode::OK) {
         cerr << "Error generating valid intermediate code." << endl;
         cerr << icode.compileLog () << endl;
         return EXIT_FAILURE;

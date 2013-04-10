@@ -42,7 +42,7 @@ TARGET_LINK_LIBRARIES("scc" "libscc" "libas"
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_IOSTREAMS_LIBRARY}
-    )
+    ${MPFR_LIBRARY})
 INSTALL(TARGETS "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"

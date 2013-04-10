@@ -38,7 +38,7 @@ VMLabel* SyscallManager::getPD (SecreC::PrivateSecType* secTy) {
 }
 
 VMLabel* SyscallManager::getSyscallBinding (const SecreC::ConstantString* str) {
-  return getSyscallBinding (str->value ());
+  return getSyscallBinding (str->value ().str ());
 }
 
 VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {

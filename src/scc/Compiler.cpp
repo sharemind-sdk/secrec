@@ -1007,7 +1007,7 @@ void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
 void Compiler::cgComment(VMBlock & block, const Imop & imop) {
     assert(dynamic_cast<const ConstantString*>(imop.arg1()) != 0);
     block.push_new() << "#" <<
-        VMInstruction::str (static_cast<const ConstantString*>(imop.arg1())->value());
+        VMInstruction::str (static_cast<const ConstantString*>(imop.arg1())->value().str ());
 }
 
 void Compiler::cgError (VMBlock& block, const Imop& imop) {

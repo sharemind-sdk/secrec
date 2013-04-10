@@ -36,21 +36,27 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
     if (imm == 0) {
         uint64_t value = 0xdeadbeef;
         switch (sym->secrecType ()->secrecDataType ()) {
-            case DATATYPE_BOOL:    value = static_cast<const ConstantBool*>(sym)->value ();   break;
-            case DATATYPE_INT8:    value = static_cast<const ConstantInt8*>(sym)->value ();   break;
-            case DATATYPE_INT16:   value = static_cast<const ConstantInt16*>(sym)->value ();  break;
-            case DATATYPE_INT32:   value = static_cast<const ConstantInt32*>(sym)->value ();  break;
-            case DATATYPE_INT64:   value = static_cast<const ConstantInt64*>(sym)->value ();  break;
-            case DATATYPE_UINT8:   value = static_cast<const ConstantUInt8*>(sym)->value ();  break;
-            case DATATYPE_UINT16:  value = static_cast<const ConstantUInt16*>(sym)->value (); break;
-            case DATATYPE_UINT32:  value = static_cast<const ConstantUInt32*>(sym)->value (); break;
-            case DATATYPE_UINT64:  value = static_cast<const ConstantUInt64*>(sym)->value (); break;
-            case DATATYPE_FLOAT32: value = static_cast<const ConstantFloat32*>(sym)->value (); break;
-            case DATATYPE_FLOAT64: value = static_cast<const ConstantFloat64*>(sym)->value (); break;
-            case DATATYPE_STRING: /* string literals are not managed by the RA */ return;
-            default:
-                assert (false && "Undefined SecreC data type.");
-                break;
+        case DATATYPE_FLOAT32:
+            value = static_cast<const ConstantFloat*>(sym)->value ().ieee32bits ();
+            break;
+        case DATATYPE_FLOAT64:
+            value = static_cast<const ConstantFloat*>(sym)->value ().ieee64bits ();
+            break;
+        case DATATYPE_STRING: /* string literals are not managed by the RA */ return;
+        case DATATYPE_BOOL:
+        case DATATYPE_INT8:
+        case DATATYPE_INT16:
+        case DATATYPE_INT32:
+        case DATATYPE_INT64:
+        case DATATYPE_UINT8:
+        case DATATYPE_UINT16:
+        case DATATYPE_UINT32:
+        case DATATYPE_UINT64:
+            value = static_cast<const ConstantInt*>(sym)->value ();
+            break;
+        default:
+            assert (false && "Undefined SecreC data type.");
+            break;
         }
 
         imm = st.getImm (value);
