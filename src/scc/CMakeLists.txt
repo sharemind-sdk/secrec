@@ -32,7 +32,10 @@ SET(SCC_SOURCES
     "VMValue.cpp"
     "VMDataType.h")
 
-include_directories("${CMAKE_SOURCE_DIR}/include/" ${Boost_INCLUDE_DIRS})
+include_directories(
+    "${CMAKE_SOURCE_DIR}/include/"
+    ${Boost_INCLUDE_DIRS}
+    ${MPFR_INCLUDE_DIRS})
 ADD_EXECUTABLE("scc" ${SCC_SOURCES})
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
@@ -42,7 +45,7 @@ TARGET_LINK_LIBRARIES("scc" "libscc" "libas"
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_IOSTREAMS_LIBRARY}
-    ${MPFR_LIBRARY})
+    ${MPFR_LIBRARIES})
 INSTALL(TARGETS "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
