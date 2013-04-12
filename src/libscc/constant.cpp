@@ -74,6 +74,21 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
   APFloat
 *******************************************************************************/
 
+// TODO: this function breaks MPFR abstraction
+
+bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr y) {
+    if (x->_mpfr_prec < y->_mpfr_prec) return true;
+    if (x->_mpfr_prec > y->_mpfr_prec) return false;
+    if (x->_mpfr_sign < y->_mpfr_sign) return true;
+    if (x->_mpfr_sign > y->_mpfr_sign) return false;
+    if (x->_mpfr_exp  < y->_mpfr_exp)  return true;
+    if (x->_mpfr_exp  > y->_mpfr_exp)  return false;
+    const size_t num_limbs = (x->_mpfr_prec + mp_bits_per_limb - 1) / mp_bits_per_limb;
+    return std::lexicographical_compare (
+        x->_mpfr_d, x->_mpfr_d + num_limbs,
+        y->_mpfr_d, y->_mpfr_d + num_limbs);
+}
+
 // TODO: don't rely on IEEE representation!
 uint32_t APFloat::ieee32bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
