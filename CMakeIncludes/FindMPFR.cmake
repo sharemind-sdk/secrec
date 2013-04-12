@@ -14,7 +14,7 @@
 FIND_PATH(
     MPFR_INCLUDE_DIR
     NAMES
-        gmp.h
+        mpfr.h
     HINTS
         $ENV{MPFR_ROOT}
         ${MPFR_ROOT}
