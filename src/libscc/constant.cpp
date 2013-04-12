@@ -2,6 +2,7 @@
 
 #include <string>
 #include <sstream>
+#include <cstring>
 
 #include <boost/foreach.hpp>
 
@@ -83,10 +84,8 @@ bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr
     if (x->_mpfr_sign > y->_mpfr_sign) return false;
     if (x->_mpfr_exp  < y->_mpfr_exp)  return true;
     if (x->_mpfr_exp  > y->_mpfr_exp)  return false;
-    const size_t num_limbs = (x->_mpfr_prec + mp_bits_per_limb - 1) / mp_bits_per_limb;
-    return std::lexicographical_compare (
-        x->_mpfr_d, x->_mpfr_d + num_limbs,
-        y->_mpfr_d, y->_mpfr_d + num_limbs);
+    const size_t num_bytes = mpfr_custom_get_size (x->_mpfr_prec);
+    return std::memcmp (x->_mpfr_d, y->_mpfr_d, num_bytes) < 0;
 }
 
 // TODO: don't rely on IEEE representation!
