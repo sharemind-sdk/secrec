@@ -458,7 +458,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
     TreeNodeExpr * e = root->reshapee();
     e->setContextSecType(root->contextSecType());
     e->setContextDataType(root->contextDataType());
-    e->setContextDimType(resDim);
     Status s = visitExpr(e);
     if (s != OK)
         return s;
