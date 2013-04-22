@@ -140,14 +140,26 @@ struct LabelOstreamWrapper : public SymbolWrapperBase  {
 std::ostream& operator << (std::ostream & os, const SymbolOstreamWrapper & wrapper) { wrapper.print (os); return os; }
 std::ostream& operator << (std::ostream & os, const LabelOstreamWrapper & wrapper) { wrapper.print (os); return os; }
 
+#define dname  (SymbolOstreamWrapper (imop.dest()))
+#define tname  (LabelOstreamWrapper (imop.dest()))
+#define a1name (SymbolOstreamWrapper (imop.arg1()))
+#define a2name (SymbolOstreamWrapper (imop.arg2()))
+#define a3name (SymbolOstreamWrapper (imop.arg3()))
+
+void printBinaryArith (std::ostream& os, const Imop& imop, const char* opname) {
+    os << dname << " = " << a1name << ' ' << opname << ' ' << a2name;
+    if (imop.nArgs () == 4)
+        os << " (" << a3name << ")";
+}
+
+void printUnaryArith (std::ostream& os, const Imop& imop, const char* opname) {
+    os << dname << " = " << opname << ' ' << a1name;
+    if (imop.nArgs () == 3)
+        os << " (" << a2name << ")";
+}
 
 } // anonymous namespace
 
-#define dname  (SymbolOstreamWrapper (dest()))
-#define tname  (LabelOstreamWrapper (dest()))
-#define a1name (SymbolOstreamWrapper (arg1()))
-#define a2name (SymbolOstreamWrapper (arg2()))
-#define a3name (SymbolOstreamWrapper (arg3()))
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
     return new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
@@ -245,7 +257,7 @@ Imop::OperandConstRange Imop::defRange () const {
     OperandConstIterator i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
 
-    // vectorised operantions don't DEF any operands.
+    // vectorised operations don't DEF any operands.
     if (isVectorized () || ! getImopInfoBits (m_type).isExpr) {
         return std::make_pair (e, e);
     }
@@ -274,203 +286,144 @@ SymbolLabel* Imop::jumpDest() const {
 }
 
 void Imop::print(std::ostream & os) const {
+    const Imop& imop = *this;
     switch (m_type) {
-        case ASSIGN:       /*   d = arg1;                        */
-            os << dname << " = " << a1name;
-            if (nArgs() == 3) os <<  "(" << a2name << ")";
-            break;
-        case CAST:         /* d = CAST (arg1 {, arg2})           */
-            os << dname << " = CAST(" << a1name;
-            if (nArgs() == 3) os << ", " << a2name;
-            os << ")";
-            break;
-        case TOSTRING:       /*   d = TOSTRING arg1;             */
-            os << dname << " = TOSTRING " << a1name;
-            break;
-        case CLASSIFY:     /*   d = CLASSIFY(arg1);              */
-            os << dname << " = CLASSIFY(" << a1name;
-            if (nArgs() == 3) os << ", " << a2name;
-            os << ")";
-            break;
-        case DECLASSIFY:   /*   d = DECLASSIFY(arg1);            */
-            os << dname << " = DECLASSIFY(" << a1name;
-            if (nArgs() == 3) os << ", " << a2name;
-            os << ")";
-            break;
-        case ALLOC:
-            os << dname << " = ALLOC " << a1name << " " << a2name;
-            break;
-        case COPY:
-            os << dname << " = COPY " << a1name << " " << a2name;
-            break;
-        case RELEASE:
-            os << "RELEASE " << a1name;
-            break;
-        case STORE:
-            os << dname << "[" << a1name << "] = " << a2name;
-            break;
-        case LOAD:
-            os << dname << " = " << a1name << "[" << a2name << "]";
-            break;
-        case UINV:         /*   d = ~arg1;                       */
-            os << dname << " = ~" << a1name;
-            if (nArgs() == 3) os << " (" << a2name << ")";
-            break;
-        case UNEG:         /*   d = !arg1;                       */
-            os << dname << " = !" << a1name;
-            if (nArgs() == 3) os << " (" << a2name << ")";
-            break;
-        case UMINUS:       /*   d = -arg1;                       */
-            os << dname << " = -" << a1name;
-            if (nArgs() == 3) os << " (" << a2name << ")";
-            break;
-        case MUL:          /*   d = arg1 * arg2;                 */
-            os << dname << " = " << a1name << " * " << a2name;
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case DIV:          /*   d = arg1 /  arg2;                */
-            os << dname << " = " << a1name << " / " << a2name;
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case MOD:          /*   d = arg1 %  arg2;                */
-            os << dname << " = " << a1name << " % " << a2name;
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case ADD:          /*   d = arg1 +  arg2;                */
-            os << dname << " = " << a1name << " + " << a2name;
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case SUB:          /*   d = arg1 -  arg2;                */
-            os << dname << " = " << a1name << " - " << a2name;
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case EQ:           /*   d = arg1 == arg2;                */
-            os << dname << " = (" << a1name << " == " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case NE:           /*   d = arg1 != arg2;                */
-            os << dname << " = (" << a1name << " != " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case LE:           /*   d = arg1 <= arg2;                */
-            os << dname << " = (" << a1name << " <= " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case LT:           /*   d = arg1 <  arg2;                */
-            os << dname << " = (" << a1name << " < " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case GE:           /*   d = arg1 >= arg2;                */
-            os << dname << " = (" << a1name << " >= " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case GT:           /*   d = arg1 >  arg2;                */
-            os << dname << " = (" << a1name << " > " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case LAND:         /*   d = arg1 && arg2;                */
-            os << dname << " = (" << a1name << " && " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case LOR:          /*   d = arg1 || arg2;                */
-            os << dname << " = (" << a1name << " || " << a2name << ")";
-            if (nArgs() == 4) os << " (" << a3name << ")";
-            break;
-        case CALL:         /*   d = arg1(PARAMS);   (Imop *arg2) */
-            {
+    case ASSIGN:       /*   d = arg1;                        */
+        os << dname << " <- " << a1name;
+        if (nArgs() == 3) os <<  " (" << a2name << ")";
+        break;
+    case TOSTRING:       /*   d = TOSTRING arg1;             */
+        os << dname << " = TOSTRING " << a1name;
+        break;
+    case ALLOC:
+        os << dname << " = ALLOC " << a1name << " " << a2name;
+        break;
+    case COPY:
+        os << dname << " = COPY " << a1name << " " << a2name;
+        break;
+    case RELEASE:
+        os << "RELEASE " << a1name;
+        break;
+    case STORE:
+        os << dname << "[" << a1name << "] = " << a2name;
+        break;
+    case LOAD:
+        os << dname << " = " << a1name << "[" << a2name << "]";
+        break;
+    case CAST: printUnaryArith (os, imop, "CAST"); break;
+    case CLASSIFY: printUnaryArith (os, imop, "CLASSIFY"); break;
+    case DECLASSIFY: printUnaryArith (os, imop, "DECLASSIFY"); break;
+    case UINV: printUnaryArith (os, imop, "~"); break;
+    case UNEG: printUnaryArith (os, imop, "!"); break;
+    case UMINUS: printUnaryArith (os, imop, "-"); break;
+    case MUL: printBinaryArith (os, imop, "*"); break;
+    case DIV: printBinaryArith (os, imop, "/"); break;
+    case MOD: printBinaryArith (os, imop, "%"); break;
+    case ADD: printBinaryArith (os, imop, "+"); break;
+    case SUB: printBinaryArith (os, imop, "-"); break;
+    case EQ: printBinaryArith (os, imop, "==");  break;
+    case NE: printBinaryArith (os, imop, "!=");  break;
+    case LE: printBinaryArith (os, imop, "<=");  break;
+    case LT: printBinaryArith (os, imop, "<");  break;
+    case GE: printBinaryArith (os, imop, ">=");  break;
+    case GT: printBinaryArith (os, imop, ">");  break;
+    case LAND: printBinaryArith (os, imop, "&&"); break;
+    case LOR: printBinaryArith (os, imop, "||"); break;
+    case BAND: printBinaryArith (os, imop, "&"); break;
+    case BOR: printBinaryArith (os, imop, "|"); break;
+    case XOR: printBinaryArith (os, imop, "^"); break;
+    case CALL:
+    {
 
-                bool isFirst = true;
-                BOOST_FOREACH (const Symbol* sym, defRange ()) {
-                    if (! isFirst) {
-                        os << ", ";
-                    }
-
-                    os << SymbolOstreamWrapper (sym);
-                    isFirst = false;
-                }
-
-                if (! isFirst)
-                    os << " = ";
-
-                os << "CALL " << SymbolOstreamWrapper (m_args[0]) << " (";
-                isFirst = true;
-                BOOST_FOREACH (const Symbol* sym, useRange ()) {
-                    if (! isFirst) {
-                        os << ", ";
-                    }
-
-                    os << SymbolOstreamWrapper (sym);
-                    isFirst = false;
-                }
-
-                os << ");";
+        bool isFirst = true;
+        BOOST_FOREACH (const Symbol* sym, defRange ()) {
+            if (! isFirst) {
+                os << ", ";
             }
-            break;
-        case PARAM:
-            os << ".PARAM " << dname;
-            break;
-        case DOMAINID:
-            os << dname << " = DOMAINID " << a1name;
-            break;
-        case JUMP:         /* GOTO d;                            */
-            os << "GOTO " << tname;
-            break;
-        case JT:           /* if (arg1) GOTO d;                  */
-            os << "IF (" << a1name << ") GOTO " << tname;
-            break;
-        case JF:           /* if (!arg1) GOTO d;                 */
-            os << "if (!" << a1name << ") GOTO " << tname;
-            break;
-        case COMMENT:      /* // arg1                            */
-            assert (arg1 () != 0);
-            assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
-            os << "// " << static_cast<const ConstantString*>(arg1())->value ();
-            break;
-        case ERROR:        /* // arg1                            */
-            os << "ERROR " <<  a1name;
-            break;
-        case PRINT:
-            os << "PRINT " << a1name;
-            break;
-        case SYSCALL:
-            assert (arg1 () != 0);
-            assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
-            os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
-            break;
-        case PUSH:
-            os << "__PUSH " << a1name;
-            break;
-        case PUSHREF:
-            os << "__PUSHREF " << a1name;
-            break;
-        case PUSHCREF:
-            os << "__PUSHCREF " << a1name;
-            break;
-        case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
-            os << "RETCLEAN;";
-            break;
-        case RETURN:       /* RETURN arg1;                       */
-            os << "RETURN (";
-            {
-                const OperandConstIterator itBegin = m_args.begin () + 1; // !
-                const OperandConstIterator itEnd = m_args.end ();
-                for (OperandConstIterator it = itBegin; it != itEnd; ++ it) {
-                    if (it != itBegin) {
-                        os << ", ";
-                    }
 
-                    const Symbol* sym = *it;
-                    os << SymbolOstreamWrapper (sym);
-                }
+            os << SymbolOstreamWrapper (sym);
+            isFirst = false;
+        }
+
+        if (! isFirst)
+            os << " = ";
+
+        os << "CALL \"" << m_args[0]->name () << "\" ";
+        isFirst = true;
+        BOOST_FOREACH (const Symbol* sym, useRange ()) {
+            if (! isFirst) {
+                os << " ";
             }
-            os << ");";
-            break;
-        case END:          /* END PROGRAM                        */
-            os << "END";
-            break;
-        default:
-            os << "TODO";
-            break;
+
+            os << SymbolOstreamWrapper (sym);
+            isFirst = false;
+        }
+    }
+        break;
+    case PARAM:
+        os << "PARAM " << dname;
+        break;
+    case DOMAINID:
+        os << dname << " = DOMAINID " << a1name;
+        break;
+    case JUMP:         /* GOTO d;                            */
+        os << "GOTO " << tname;
+        break;
+    case JT:           /* if (arg1) GOTO d;                  */
+        os << "IF (" << a1name << ") GOTO " << tname;
+        break;
+    case JF:           /* if (!arg1) GOTO d;                 */
+        os << "if (!" << a1name << ") GOTO " << tname;
+        break;
+    case COMMENT:      /* // arg1                            */
+        assert (arg1 () != 0);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+        os << "// " << static_cast<const ConstantString*>(arg1())->value ();
+        break;
+    case ERROR:        /* // arg1                            */
+        os << "ERROR " <<  a1name;
+        break;
+    case PRINT:
+        os << "PRINT " << a1name;
+        break;
+    case SYSCALL:
+        assert (arg1 () != 0);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+        os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
+        break;
+    case PUSH:
+        os << "__PUSH " << a1name;
+        break;
+    case PUSHREF:
+        os << "__PUSHREF " << a1name;
+        break;
+    case PUSHCREF:
+        os << "__PUSHCREF " << a1name;
+        break;
+    case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
+        os << "RETCLEAN";
+        break;
+    case RETURN:       /* RETURN arg1;                       */
+        os << "RETURN ";
+    {
+        const OperandConstIterator itBegin = m_args.begin () + 1; // !
+        const OperandConstIterator itEnd = m_args.end ();
+        for (OperandConstIterator it = itBegin; it != itEnd; ++ it) {
+            if (it != itBegin) {
+                os << ", ";
+            }
+
+            const Symbol* sym = *it;
+            os << SymbolOstreamWrapper (sym);
+        }
+    }
+        break;
+    case END:          /* END PROGRAM                        */
+        os << "END";
+        break;
+    default:
+        os << "TODO";
+        break;
     }
 }
 
