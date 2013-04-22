@@ -52,6 +52,10 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
         case DATATYPE_UINT16:
         case DATATYPE_UINT32:
         case DATATYPE_UINT64:
+        case DATATYPE_XOR_UINT8:
+        case DATATYPE_XOR_UINT16:
+        case DATATYPE_XOR_UINT32:
+        case DATATYPE_XOR_UINT64:
             value = static_cast<const ConstantInt*>(sym)->value ();
             break;
         default:
@@ -140,6 +144,16 @@ public: /* Methods: */
         m_index.clear ();
         m_vertices.clear ();
         m_adjacencyList.clear ();
+    }
+
+    template <typename ColorSetter >
+    unsigned colorNaive (ColorSetter setColor) const {
+        const unsigned n = m_vertices.size ();
+        for (unsigned i = 0; i < n; ++ i) {
+            setColor (m_vertices[i], i);
+        }
+
+        return n;
     }
 
     template <typename ColorSetter >
