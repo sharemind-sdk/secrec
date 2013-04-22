@@ -44,7 +44,7 @@ struct Configuration {
 
     string m_output;
     string m_input;
-    set<string > m_includes;
+    vector<string > m_includes;
     set<string > m_analysis;
 
     Configuration ()
@@ -80,8 +80,7 @@ struct Configuration {
         }
 
         if (vm.count ("include")) {
-            const vector<string >& v = vm["include"].as<vector<string > >();
-            m_includes.insert (v.begin (), v.end ());
+            m_includes = vm["include"].as<vector<string > >();
         }
 
         if (vm.count ("analysis")) {
@@ -152,66 +151,68 @@ int run (const Configuration& cfg) {
     }
 
     BOOST_FOREACH (const std::string& path, cfg.m_includes) {
-        icode.modules ().addSearchPath (path);
+        std::cerr << path << std::endl;
+        if (! icode.modules ().addSearchPath (path) && cfg.m_verbose) {
+            cerr << "Invalid search path \"" << path << "\"." << endl;
+        }
     }
 
     icode.compile (parseTree);
-
-    if (icode.status() == SecreC::ICode::OK) {
-        SecreC::Program& pr = icode.program ();
-
-        if (cfg.m_verbose) {
-            cerr << "Valid intermediate code generated." << endl
-                 << icode.compileLog();
-        }
-
-        if (cfg.m_printST) {
-            out << icode.symbols () << endl;
-            return EXIT_SUCCESS;
-        }
-
-        if (cfg.m_printIR) {
-            out << pr << endl;
-            return EXIT_SUCCESS;
-        }
-
-        if (cfg.m_printDom) {
-            SecreC::Dominators dominators;
-            dominators.calculate (&pr);
-            dominators.dumpToDot (out);
-            return EXIT_SUCCESS;
-        }
-
-        if (cfg.m_printCFG) {
-            pr.toDotty (out);
-            out << flush;
-            return EXIT_SUCCESS;
-        }
-
-        // Run data flow analysis and print the results:
-        if (! cfg.m_analysis.empty ()) {
-            SecreC::DataFlowAnalysisRunner runner;
-            boost::ptr_vector<SecreC::DataFlowAnalysis> analysis;
-            BOOST_FOREACH (const std::string& name, cfg.m_analysis) {
-                SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
-                if (a != 0) {
-                    analysis.push_back (a);
-                    runner.addAnalysis (*a);
-                }
-            }
-
-            runner.run (pr);
-            out << runner.toString (pr) << endl;
-        }
-
-        if (cfg.m_eval) {
-            SecreC::VirtualMachine eval;
-            return eval.run (pr);
-        }
-    } else {
-        cerr << "Error generating valid intermediate code." << endl
-             << icode.compileLog();
+    if (icode.status () != SecreC::ICode::OK) {
+        cerr << "Error generating valid intermediate code." << endl;
+        cerr << icode.compileLog () << endl;
         return EXIT_FAILURE;
+    }
+
+    SecreC::Program& pr = icode.program ();
+
+    if (cfg.m_verbose) {
+        cerr << "Valid intermediate code generated." << endl
+             << icode.compileLog();
+    }
+
+    if (cfg.m_printST) {
+        out << icode.symbols () << endl;
+        return EXIT_SUCCESS;
+    }
+
+    if (cfg.m_printIR) {
+        out << pr << endl;
+        return EXIT_SUCCESS;
+    }
+
+    if (cfg.m_printDom) {
+        SecreC::Dominators dominators;
+        dominators.calculate (&pr);
+        dominators.dumpToDot (out);
+        return EXIT_SUCCESS;
+    }
+
+    if (cfg.m_printCFG) {
+        pr.toDotty (out);
+        out << flush;
+        return EXIT_SUCCESS;
+    }
+
+    // Run data flow analysis and print the results:
+    if (! cfg.m_analysis.empty ()) {
+        SecreC::DataFlowAnalysisRunner runner;
+        boost::ptr_vector<SecreC::DataFlowAnalysis> analysis;
+        BOOST_FOREACH (const std::string& name, cfg.m_analysis) {
+            SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
+            if (a != 0) {
+                analysis.push_back (a);
+                runner.addAnalysis (*a);
+            }
+        }
+
+        runner.run (pr);
+        out << runner.toString (pr) << endl;
+    }
+
+    if (cfg.m_eval) {
+        SecreC::VirtualMachine eval;
+        return eval.run (pr);
     }
 
     return EXIT_SUCCESS;
