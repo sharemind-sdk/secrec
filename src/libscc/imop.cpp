@@ -364,7 +364,7 @@ void Imop::print(std::ostream & os) const {
         os << "PARAM " << dname;
         break;
     case DOMAINID:
-        os << dname << " = DOMAINID " << a1name;
+        os << dname << " = DOMAINID " << *static_cast<SymbolDomain*>(imop.arg1 ())->securityType ();
         break;
     case JUMP:         /* GOTO d;                            */
         os << "GOTO " << tname;

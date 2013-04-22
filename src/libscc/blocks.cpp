@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <boost/foreach.hpp>
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <sstream>
 
@@ -429,7 +430,7 @@ std::ostream & Program::print(std::ostream & os) const {
             // Print code:
             os << "    CODE:" << std::endl;
             BOOST_FOREACH (const Imop& imop, block) {
-                os << "      " << imop.index () << "  " << imop;
+                os << std::setw (10) << imop.index () << "  " << imop;
                 if (imop.creator() != 0) {
                     os << " // Created by "
                        << TreeNode::typeName(imop.creator()->type())
