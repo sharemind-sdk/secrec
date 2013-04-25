@@ -24,9 +24,9 @@ using namespace SecreC;
 #define XTYPEVOID "<TYPEVOID/>"
 #define NODIMENSIONS "<DIMENSIONS/>"
 #define XTYPETYPE(a,b,c) XB("TYPETYPE", a b c)
-#define XTYPESECF(a) XB("SECTYPE_F", XID(a))
-#define XTYPESECF_PUBLIC "<SECTYPE_F/>"
-#define XTYPEDATAF(a) "<DATATYPE_F type=\"" a "\"/>"
+#define XTYPESECF(a) XB("SECTYPE_PRIVATE_F", XID(a))
+#define XTYPESECF_PUBLIC "<SECTYPE_PUBLIC_F/>"
+#define XTYPEDATAF(a) "<DATATYPE_CONST_F type=\"" a "\"/>"
 #define XTYPEDIMF(a) "<DIMTYPE_CONST_F dim=\"" a "\"/>"
 #define XTYPEDATAARRAY(a,b) "<DATATYPE_ARRAY dim=\"" #a "\">" b "</DATATYPE_ARRAY>"
 #define XTYPEDATAARRAY2(a,b,c) XTYPEDATAARRAY(a,XTYPEDATAARRAY(b,c))
