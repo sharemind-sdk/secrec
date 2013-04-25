@@ -41,6 +41,8 @@ TreeNode *treenode_init_identifier(TYPE_STRINGREF value, YYLTYPE *loc);
 
 TreeNode *treenode_init_publicSecTypeF(YYLTYPE *loc);
 TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc);
+TreeNode *treenode_init_dataTypeVarF (YYLTYPE * loc);
+TreeNode *treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * loc);
 TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType, YYLTYPE *loc);
 TreeNode *treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE *loc);
 TreeNode *treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE *loc);

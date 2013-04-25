@@ -481,7 +481,6 @@ bool TypeChecker::unify (Instantiation& inst,
 
     params.clear ();
 
-
     if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
         return false;
 
@@ -495,6 +494,8 @@ bool TypeChecker::unify (Instantiation& inst,
     BOOST_FOREACH (TreeNodeStmtDecl& decl, t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         DataType* expectedTy = argTypes->paramTypes ().at (i ++);
+
+        // Verify security type:
         if (argNodeTy->secType ()->isPublic ()) {
             if (! expectedTy->secrecSecType ()->isPublic ())
                 return false;
@@ -505,9 +506,19 @@ bool TypeChecker::unify (Instantiation& inst,
                 return false;
         }
 
-        if (expectedTy->secrecDataType () != argNodeTy->dataType ()->dataType ())
+        // Verify data type:
+        if (argNodeTy->dataType ()->isVariable ()) {
+            TreeNodeDataTypeVarF* dataVar = static_cast<TreeNodeDataTypeVarF*>(argNodeTy->dataType ());
+            StringRef styId = dataVar->identifier ()->value ();
+            if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
+                return false;
+        }
+        else
+        if (expectedTy->secrecDataType () != argNodeTy->dataType ()->cachedType ()) {
             return false;
+        }
 
+        // Verify dimensionality type:
         if (argNodeTy->dimType ()->isVariable ()) {
             TreeNodeDimTypeVarF* dimVar = static_cast<TreeNodeDimTypeVarF*>(argNodeTy->dimType ());
             StringRef styId = dimVar->identifier ()->value ();
@@ -522,6 +533,8 @@ bool TypeChecker::unify (Instantiation& inst,
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();
     if (retNodeTy->isNonVoid ()) {
+
+        // Verify security type:
         if (tyCxt.haveContextSecType ()) {
             if (retNodeTy->secType ()->isPublic ()) {
                 if (! tyCxt.contextSecType ()->isPublic ())
@@ -534,9 +547,21 @@ bool TypeChecker::unify (Instantiation& inst,
             }
         }
 
-        if (! tyCxt.matchDataType (retNodeTy->dataType ()->dataType ()))
-            return false;
+        // Verify data type:
+        if (tyCxt.haveContextDataType ()) {
+            TreeNodeDataTypeF* dataType = retNodeTy->dataType ();
+            if (dataType->isVariable ()) {
+                StringRef styId = static_cast<TreeNodeDataTypeVarF*>(dataType)->identifier ()->value ();
+                if (! mapVariable (varMap, styId, tyCxt.contextDataType ()))
+                    return false;
+            }
+            else {
+                if (dataType->cachedType () != tyCxt.contextDataType ())
+                    return false;
+            }
+        }
 
+        // Verify dimensionality type:
         if (tyCxt.haveContextDimType ()) {
             TreeNodeDimTypeF* dimType = retNodeTy->dimType ();
             if (dimType->isVariable ()) {

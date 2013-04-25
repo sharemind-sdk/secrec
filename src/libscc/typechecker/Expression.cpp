@@ -211,11 +211,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
     if (root->haveResultType())
         return OK;
 
+    Status status = visit (root->dataType ());
+    if (status != OK)
+        return status;
+
+    SecrecDataType resultingDType = root->dataType()->cachedType ();
     TreeNodeExpr * subExpr = root->expression();
-    SecrecDataType resultingDType = root->dataType()->dataType();
     subExpr->setContextSecType(root->contextSecType());
     subExpr->setContextDimType(root->contextDimType());
-    const Status status = visitExpr(subExpr);
+    status = visitExpr(subExpr);
     if (status != OK)
         return status;
 

@@ -10,6 +10,7 @@
 #include "typechecker.h"
 #include "treenode.h"
 #include "symbol.h"
+#include "symboltable.h"
 #include "log.h"
 
 namespace SecreC {
@@ -52,11 +53,54 @@ TypeChecker::Status TypeChecker::visit(TreeNodeDimQuantifier*) {
 }
 
 /*******************************************************************************
+ TreeNodeDataQuantifier
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeDataQuantifier::accept(TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeDataQuantifier*) {
+    return OK;
+}
+
+/*******************************************************************************
  TreeNodeTypeF
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeF* ty) {
     return ty->accept (*this);
+}
+
+/*******************************************************************************
+  TreeNodeTypeVarF
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeTypeVarF::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeVarF* ty) {
+    if (ty->typeVariable ())
+        return OK;
+
+    const StringRef name = ty->identifier ()->value ();
+    SymbolTypeVariable* symType = m_st->find<SYM_TYPE>(name);
+    SymbolTypeVariable* symDomain = m_st->find<SYM_DOMAIN>(name);
+    if (symType == 0 && symDomain == 0) {
+        m_log.fatalInProc(ty) << "Idenfier '" << name
+                              << "' at " << ty->identifier ()->location()
+                              << " not in scope.";
+        return E_TYPE;
+    }
+
+    ty->setTypeVariable (symType ? symType : symDomain);
+    return OK;
+}
+
+void TreeNodeTypeVarF::setTypeContext (TypeContext& cxt) const {
+    assert (typeVariable () != 0);
+    typeVariable ()->setTypeContext (cxt);
 }
 
 /*******************************************************************************
@@ -90,15 +134,36 @@ void TreeNodeSecTypeF::setTypeContext (TypeContext& cxt) const {
 }
 
 /*******************************************************************************
-  TreeNodeDataTypeF
+  TreeNodeDataTypeConstF
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeDataTypeF::accept(TypeChecker&) {
+TypeChecker::Status TreeNodeDataTypeConstF::accept(TypeChecker&) {
     return TypeChecker::OK;
 }
 
 void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
-    cxt.setContextDataType (dataType ());
+    cxt.setContextDataType (cachedType ());
+}
+
+/*******************************************************************************
+  TreeNodeDataTypeVarF
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeDataTypeVarF::accept(TypeChecker& tyChecker) {
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit (TreeNodeDataTypeVarF* ty) {
+    if (ty->cachedType () != DATATYPE_UNDEFINED) {
+        return OK;
+    }
+
+    Symbol* s = 0;
+    if ((s = findIdentifier (SYM_TYPE, ty->identifier ())) == 0)
+        return E_TYPE;
+
+    ty->setCachedType (static_cast<SymbolDataType*>(s)->dataType ());
+    return OK;
 }
 
 /*******************************************************************************
@@ -162,9 +227,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
         if (status != OK)
             return status;
 
+        status = visit (tyNode->dataType ());
+        if (status != OK)
+            return status;
+
         SecurityType* secType = secTyNode->cachedType ();
+        SecrecDataType dataType = tyNode->dataType ()->cachedType ();
         if (secType->isPublic ()) {
-            switch (tyNode->dataType ()->dataType ()) {
+            switch (dataType) {
             case DATATYPE_XOR_UINT8:
             case DATATYPE_XOR_UINT16:
             case DATATYPE_XOR_UINT32:
@@ -178,8 +248,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
         }
 
         tyNode->m_cachedType = TypeNonVoid::get (m_context,
-            secType, tyNode->dataType ()->dataType (),
-                     tyNode->dimType ()->cachedType ());
+            secType, dataType, tyNode->dimType ()->cachedType ());
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);

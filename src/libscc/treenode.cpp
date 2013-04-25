@@ -91,7 +91,8 @@ void TreeNode::setLocation(const Location & location) {
 const char *TreeNode::typeName(SecrecTreeNodeType type) {
     switch (type) {
     CASE_NODE_NAME(INTERNAL_USE);
-    CASE_NODE_NAME(DATATYPE_F);
+    CASE_NODE_NAME(DATATYPE_CONST_F);
+    CASE_NODE_NAME(DATATYPE_VAR_F);
     CASE_NODE_NAME(DECL);
     CASE_NODE_NAME(DIMENSIONS);
     CASE_NODE_NAME(DOMAIN);
@@ -162,7 +163,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(PUSH);
     CASE_NODE_NAME(PUSHCREF);
     CASE_NODE_NAME(PUSHREF);
-    CASE_NODE_NAME(SECTYPE_F);
+    CASE_NODE_NAME(SECTYPE_PUBLIC_F);
+    CASE_NODE_NAME(SECTYPE_PRIVATE_F);
     CASE_NODE_NAME(STMT_ASSERT);
     CASE_NODE_NAME(STMT_BREAK);
     CASE_NODE_NAME(STMT_COMPOUND);
@@ -181,6 +183,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(TEMPLATE_DOMAIN_QUANT);
     CASE_NODE_NAME(TYPETYPE);
     CASE_NODE_NAME(TYPEVOID);
+    CASE_NODE_NAME(TYPEVAR);
     CASE_NODE_NAME(VAR_INIT);
     CASE_NODE_NAME(DIMTYPE_CONST_F);
     CASE_NODE_NAME(DIMTYPE_VAR_F);
@@ -227,6 +230,22 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
 }
 
 /*******************************************************************************
+  TreeNodeTypeF
+*******************************************************************************/
+
+bool TreeNodeTypeF::isVariable () const {
+    return m_type == NODE_TYPEVAR ||
+           m_type == NODE_DATATYPE_VAR_F ||
+           m_type == NODE_DIMTYPE_VAR_F ||
+           m_type == NODE_SECTYPE_PRIVATE_F;
+}
+
+TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
+    assert (isVariable () && children ().size () == 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+/*******************************************************************************
   TreeNodeSecTypeF
 *******************************************************************************/
 
@@ -236,14 +255,8 @@ void TreeNodeSecTypeF::setCachedType(SecurityType * ty) {
     m_cachedType = ty;
 }
 
-TreeNodeIdentifier * TreeNodeSecTypeF::identifier() const {
-    assert(children().size() == 1 &&
-           "Called on public type?");
-    return childAt<TreeNodeIdentifier>(this, 0);
-}
-
 bool TreeNodeSecTypeF::printHelper (std::ostream & os) const {
-    if (m_isPublic)
+    if (isPublic ())
         os << "public";
     else
         os << static_cast<TreeNodeIdentifier *>(children().at(0))->value();
@@ -251,16 +264,29 @@ bool TreeNodeSecTypeF::printHelper (std::ostream & os) const {
 }
 
 /*******************************************************************************
-  TreeNodeDataTypeF
+  TreeNodeDataTypeConstF
 *******************************************************************************/
 
-bool TreeNodeDataTypeF::printHelper (std::ostream & os) const {
-    os << m_dataType;
+bool TreeNodeDataTypeConstF::printHelper (std::ostream & os) const {
+    os << cachedType ();
     return true;
 }
 
-void TreeNodeDataTypeF::printXmlHelper (std::ostream & os) const {
-    os << " type=\"" << SecrecFundDataTypeToString(m_dataType) << "\"";
+void TreeNodeDataTypeConstF::printXmlHelper (std::ostream & os) const {
+    os << " type=\"" << SecrecFundDataTypeToString (cachedType ()) << "\"";
+}
+
+/*******************************************************************************
+  TreeNodeDataTypeVarF
+*******************************************************************************/
+
+bool TreeNodeDataTypeVarF::printHelper (std::ostream & os) const {
+    os << identifier ()->value ();
+    return true;
+}
+
+void TreeNodeDataTypeVarF::printXmlHelper (std::ostream & os) const {
+    os << " type=\"" << identifier ()->value () << "\"";
 }
 
 /*******************************************************************************
@@ -298,6 +324,11 @@ SecreC::Type * TreeNodeType::secrecType() const {
     return m_cachedType;
 }
 
+TreeNodeChildren<TreeNodeTypeF> TreeNodeType::types () const {
+    assert(children().size() == 3);
+    return TreeNodeChildren<TreeNodeTypeF>(m_children);
+}
+
 TreeNodeSecTypeF * TreeNodeType::secType() const {
     assert(children().size() == 3);
     return childAt<TreeNodeSecTypeF>(this, 0);
@@ -318,33 +349,42 @@ bool TreeNodeType::isNonVoid() const {
     return ! children().empty();
 }
 
-std::string TreeNodeType::typeString() const {
+void TreeNodeType::typeString(std::ostream& os) const {
 
-    if (!isNonVoid())
-        return "void";
-
-    std::ostringstream oss;
-    if (m_cachedType) {
-        oss << Type::PrettyPrint (m_cachedType);
-        return oss.str ();
+    if (!isNonVoid()) {
+        os << "void";
+        return;
     }
 
+    if (m_cachedType) {
+        os << Type::PrettyPrint (m_cachedType);
+        return;
+    }
+
+    // Security type:
     TreeNodeSecTypeF * const st = secType();
     if (!st->isPublic())
-        oss << st->identifier()->value() << ' ';
+        os << st->identifier()->value() << ' ';
 
-    oss << SecrecFundDataTypeToString(dataType()->dataType());
+    // Data type:
+    if (! dataType ()->isVariable ()) {
+        os << SecrecFundDataTypeToString(dataType()->cachedType ());
+    }
+    else {
+        TreeNodeDataTypeVarF* varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());
+        os << varDataType->identifier ()->value ();
+    }
+
+    // Dimensionality type:
     if (! dimType()->isVariable ()) {
         const SecrecDimType dim = dimType()->cachedType ();
         if (dim != ~ SecrecDimType (0) && dim != 0)
-            oss << "[[" << dim << "]]";
+            os << "[[" << dim << "]]";
     }
     else {
-        TreeNodeDimTypeVarF* varDimType = static_cast<TreeNodeDimTypeVarF*>(dimType ());
-        oss << "[[" << varDimType->identifier () << "]]";
+        TreeNodeDimTypeVarF* const varDimType = static_cast<TreeNodeDimTypeVarF*>(dimType ());
+        os << "[[" << varDimType->identifier ()->value () << "]]";
     }
-
-    return oss.str();
 }
 
 /*******************************************************************************
@@ -763,14 +803,15 @@ const std::string TreeNodeProcDef::printableSignature() const {
     if (m_procSymbol) {
         oss << *m_procSymbol;
     } else {
-        oss << returnType()->typeString() << ' '
-            << procedureName() << '(';
+        returnType()->typeString(oss);
+        oss << ' ' << procedureName() << '(';
         bool first = true;
         BOOST_FOREACH (const TreeNodeStmtDecl& decl, params ()) {
             if (! first)
                 oss << ", ";
             first = false;
-            oss << decl.varType()->typeString() << ' ' << decl.variableName();
+            decl.varType()->typeString(oss);
+            oss << ' ' << decl.variableName();
         }
         oss << ')';
     }
@@ -812,6 +853,14 @@ void TreeNodeDomainQuantifier::printQuantifier (std::ostream &os) const {
 
 void TreeNodeDimQuantifier::printQuantifier (std::ostream & os) const {
     os << "dim " << typeVariable ()->value ();
+}
+
+/*******************************************************************************
+  TreeNodeDataQuantifier
+*******************************************************************************/
+
+void TreeNodeDataQuantifier::printQuantifier (std::ostream & os) const {
+    os << "type " << typeVariable ()->value ();
 }
 
 /*******************************************************************************
@@ -970,15 +1019,6 @@ TreeNodeExpr* TreeNodeStmtExpr::expression () const {
 TreeNodeExpr* TreeNodeStmtAssert::expression () const {
     assert (children ().size () == 1);
     return expressionAt (this, 0);
-}
-
-/*******************************************************************************
-  TreeNodeDimTypeVarF
-*******************************************************************************/
-
-TreeNodeIdentifier* TreeNodeDimTypeVarF::identifier () const {
-    assert (children ().size () == 1);
-    return childAt<TreeNodeIdentifier>(this, 0);
 }
 
 /*******************************************************************************
@@ -1182,135 +1222,110 @@ TreeNodeIdentifier* TreeNodeDomain::kindIdentifier () const {
   C interface for Yacc
 *******************************************************************************/
 
+#define SELECTNODE(ENUM,NAME)\
+    case NODE_ ## ENUM : do { \
+        return (TreeNode *)(new SecreC :: TreeNode ## NAME (*loc)); \
+    } while (0)
+
+#define SELECTNODETYPE(ENUM,NAME)\
+    case NODE_ ## ENUM : do { \
+        return (TreeNode *)(new SecreC :: TreeNode ## NAME (type, *loc)); \
+    } while (0)
+
+#define SELECTEXPR(ENUM, NAME) SELECTNODE (EXPR_ ## ENUM, Expr ## NAME)
+#define SELECTEXPRTYPE(ENUM, NAME) SELECTNODETYPE (EXPR_ ## ENUM, Expr ## NAME)
+#define SELECTSTMT(ENUM, NAME) SELECTNODE (STMT_ ## ENUM, Stmt ## NAME)
+
 TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     switch (type) {
-    case NODE_PROGRAM:
-        return (TreeNode *)(new SecreC::TreeNodeProgram(*loc));
-    case NODE_PROCDEF:
-        return (TreeNode *)(new SecreC::TreeNodeProcDef(*loc));
-    case NODE_EXPR_UINV:     /* Fall through: */
-    case NODE_EXPR_UNEG:     /* Fall through: */
-    case NODE_EXPR_UMINUS:
-        return (TreeNode *)(new SecreC::TreeNodeExprUnary(type, *loc));
-    case NODE_EXPR_POSTFIX_INC: /* Fall through: */
-    case NODE_EXPR_POSTFIX_DEC:
-        return (TreeNode *)(new SecreC::TreeNodeExprPostfix(type, *loc));
-    case NODE_EXPR_PREFIX_INC: /* Fall through: */
-    case NODE_EXPR_PREFIX_DEC:
-        return (TreeNode *)(new SecreC::TreeNodeExprPrefix(type, *loc));
-    case NODE_EXPR_ARRAY_CONSTRUCTOR:
-        return (TreeNode *)(new SecreC::TreeNodeExprArrayConstructor(*loc));
-    case NODE_EXPR_BINARY_ADD:        /* Fall through: */
-    case NODE_EXPR_BINARY_DIV:        /* Fall through: */
-    case NODE_EXPR_BINARY_EQ:         /* Fall through: */
-    case NODE_EXPR_BINARY_GE:         /* Fall through: */
-    case NODE_EXPR_BINARY_GT:         /* Fall through: */
-    case NODE_EXPR_BINARY_LAND:       /* Fall through: */
-    case NODE_EXPR_BINARY_LE:         /* Fall through: */
-    case NODE_EXPR_BINARY_LOR:        /* Fall through: */
-    case NODE_EXPR_BINARY_LT:         /* Fall through: */
-    case NODE_EXPR_BINARY_MATRIXMUL:  /* Fall through: */
-    case NODE_EXPR_BINARY_MOD:        /* Fall through: */
-    case NODE_EXPR_BINARY_MUL:        /* Fall through: */
-    case NODE_EXPR_BINARY_NE:         /* Fall through: */
-    case NODE_EXPR_BINARY_SUB:        /* Fall through: */
-    case NODE_EXPR_BITWISE_AND:       /* Fall through: */
-    case NODE_EXPR_BITWISE_OR:        /* Fall through: */
-    case NODE_EXPR_BITWISE_XOR:       /* Fall through: */
-        return (TreeNode *)(new SecreC::TreeNodeExprBinary(type, *loc));
-    case NODE_EXPR_TERNIF:
-        return (TreeNode *)(new SecreC::TreeNodeExprTernary(*loc));
-    case NODE_EXPR_BINARY_ASSIGN_ADD: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_AND: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_DIV: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_MOD: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_MUL: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_OR:  /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_SUB: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN_XOR: /* Fall through: */
-    case NODE_EXPR_BINARY_ASSIGN:
-        return (TreeNode *)(new SecreC::TreeNodeExprAssign(type, *loc));
-    case NODE_EXPR_DECLASSIFY:
-        return (TreeNode *)(new SecreC::TreeNodeExprDeclassify(*loc));
-    case NODE_EXPR_PROCCALL:
-        return (TreeNode *)(new SecreC::TreeNodeExprProcCall(*loc));
-    case NODE_EXPR_RVARIABLE:
-        return (TreeNode *)(new SecreC::TreeNodeExprRVariable(*loc));
-    case NODE_EXPR_INDEX:
-        return (TreeNode *)(new SecreC::TreeNodeExprIndex(*loc));
-    case NODE_EXPR_SIZE:
-        return (TreeNode *)(new SecreC::TreeNodeExprSize(*loc));
-    case NODE_EXPR_SHAPE:
-        return (TreeNode *)(new SecreC::TreeNodeExprShape(*loc));
-    case NODE_EXPR_CAT:
-        return (TreeNode *)(new SecreC::TreeNodeExprCat(*loc));
-    case NODE_EXPR_RESHAPE:
-        return (TreeNode *)(new SecreC::TreeNodeExprReshape(*loc));
-    case NODE_EXPR_TOSTRING:
-        return (TreeNode *)(new SecreC::TreeNodeExprToString(*loc));
-    case NODE_EXPR_STRING_FROM_BYTES:
-        return (TreeNode *)(new SecreC::TreeNodeExprStringFromBytes(*loc));
-    case NODE_EXPR_BYTES_FROM_STRING:
-        return (TreeNode *)(new SecreC::TreeNodeExprBytesFromString(*loc));
-    case NODE_STMT_BREAK:
-        return (TreeNode *)(new SecreC::TreeNodeStmtBreak(*loc));
-    case NODE_STMT_CONTINUE:
-        return (TreeNode *)(new SecreC::TreeNodeStmtContinue(*loc));
-    case NODE_STMT_COMPOUND:
-        return (TreeNode *)(new SecreC::TreeNodeStmtCompound(*loc));
-    case NODE_STMT_DOWHILE:
-        return (TreeNode *)(new SecreC::TreeNodeStmtDoWhile(*loc));
-    case NODE_STMT_EXPR:
-        return (TreeNode *)(new SecreC::TreeNodeStmtExpr(*loc));
-    case NODE_STMT_ASSERT:
-        return (TreeNode *)(new SecreC::TreeNodeStmtAssert(*loc));
-    case NODE_STMT_FOR:
-        return (TreeNode *)(new SecreC::TreeNodeStmtFor(*loc));
-    case NODE_STMT_IF:
-        return (TreeNode *)(new SecreC::TreeNodeStmtIf(*loc));
-    case NODE_STMT_RETURN:
-        return (TreeNode *)(new SecreC::TreeNodeStmtReturn(*loc));
-    case NODE_STMT_WHILE:
-        return (TreeNode *)(new SecreC::TreeNodeStmtWhile(*loc));
-    case NODE_STMT_PRINT:
-        return (TreeNode *)(new SecreC::TreeNodeStmtPrint(*loc));
-    case NODE_STMT_SYSCALL:
-        return (TreeNode *)(new SecreC::TreeNodeStmtSyscall(*loc));
-    case NODE_EXPR_DOMAINID:
-        return (TreeNode *)(new SecreC::TreeNodeExprDomainID(*loc));
-    case NODE_EXPR_TYPE_QUAL:
-        return (TreeNode *)(new SecreC::TreeNodeExprQualified(*loc));
-    case NODE_DECL:
-        return (TreeNode *)(new SecreC::TreeNodeStmtDecl(*loc));
-    case NODE_TYPETYPE:
-        return (TreeNode *)(new SecreC::TreeNodeTypeType(*loc));
-    case NODE_TYPEVOID:
-        return (TreeNode *)(new SecreC::TreeNodeTypeVoid(*loc));
-    case NODE_EXPR_CAST:
-        return (TreeNode *)(new SecreC::TreeNodeExprCast(*loc));
-    case NODE_KIND:
-        return (TreeNode *)(new SecreC::TreeNodeKind(*loc));
-    case NODE_DOMAIN:
-        return (TreeNode *)(new SecreC::TreeNodeDomain(*loc));
-    case NODE_TEMPLATE_DOMAIN_QUANT:
-        return (TreeNode *)(new SecreC::TreeNodeDomainQuantifier(*loc));
-    case NODE_TEMPLATE_DIM_QUANT:
-        return (TreeNode *)(new SecreC::TreeNodeDimQuantifier(*loc));
-    case NODE_TEMPLATE_DECL:
-        return (TreeNode *)(new SecreC::TreeNodeTemplate(*loc));
-    case NODE_VAR_INIT:
-        return (TreeNode *)(new SecreC::TreeNodeVarInit(*loc));
-    case NODE_MODULE:
-        return (TreeNode *)(new SecreC::TreeNodeModule(*loc));
-    case NODE_IMPORT:
-        return (TreeNode *)(new SecreC::TreeNodeImport(*loc));
-    case NODE_DIMTYPE_VAR_F:
-        return (TreeNode *)(new SecreC::TreeNodeDimTypeVarF(*loc));
-    case NODE_PUSH:
-    case NODE_PUSHCREF:
-    case NODE_PUSHREF:
-    case NODE_SYSCALL_RETURN:
-        return (TreeNode *)(new SecreC::TreeNodeSyscallParam(type,*loc));
+
+    SELECTNODE(PROGRAM, Program);
+    SELECTNODE(PROCDEF, ProcDef);
+    SELECTNODE(DECL, StmtDecl);
+    SELECTNODE(TYPETYPE, TypeType);
+    SELECTNODE(TYPEVOID, TypeVoid);
+    SELECTNODE(EXPR_CAST, ExprCast);
+    SELECTNODE(KIND, Kind);
+    SELECTNODE(DOMAIN, Domain);
+    SELECTNODE(TEMPLATE_DOMAIN_QUANT, DomainQuantifier);
+    SELECTNODE(TEMPLATE_DIM_QUANT, DimQuantifier);
+    SELECTNODE(TEMPLATE_DECL, Template);
+    SELECTNODE(VAR_INIT, VarInit);
+    SELECTNODE(MODULE, Module);
+    SELECTNODE(IMPORT, Import);
+    SELECTNODE(DIMTYPE_VAR_F, DimTypeVarF);
+    SELECTNODE(TYPEVAR, TypeVarF);
+
+    SELECTNODETYPE(PUSH, SyscallParam);
+    SELECTNODETYPE(PUSHCREF, SyscallParam);
+    SELECTNODETYPE(PUSHREF, SyscallParam);
+    SELECTNODETYPE(SYSCALL_RETURN, SyscallParam);
+
+    SELECTEXPR(DECLASSIFY, Declassify);
+    SELECTEXPR(PROCCALL, ProcCall);
+    SELECTEXPR(RVARIABLE, RVariable);
+    SELECTEXPR(INDEX, Index);
+    SELECTEXPR(SIZE, Size);
+    SELECTEXPR(SHAPE, Shape);
+    SELECTEXPR(CAT, Cat);
+    SELECTEXPR(RESHAPE, Reshape);
+    SELECTEXPR(TOSTRING, ToString);
+    SELECTEXPR(STRING_FROM_BYTES, StringFromBytes);
+    SELECTEXPR(BYTES_FROM_STRING, BytesFromString);
+    SELECTEXPR(DOMAINID, DomainID);
+    SELECTEXPR(TYPE_QUAL, Qualified);
+    SELECTEXPR(ARRAY_CONSTRUCTOR, ArrayConstructor);
+
+    SELECTEXPR(TERNIF, Ternary);
+    SELECTEXPRTYPE(UINV, Unary);
+    SELECTEXPRTYPE(UNEG, Unary);
+    SELECTEXPRTYPE(UMINUS, Unary);
+
+    SELECTEXPRTYPE(POSTFIX_INC, Postfix);
+    SELECTEXPRTYPE(POSTFIX_DEC, Postfix);
+    SELECTEXPRTYPE(PREFIX_INC, Prefix);
+    SELECTEXPRTYPE(PREFIX_DEC, Prefix);
+
+    SELECTEXPRTYPE(BINARY_ADD, Binary);
+    SELECTEXPRTYPE(BINARY_DIV, Binary);
+    SELECTEXPRTYPE(BINARY_EQ, Binary);
+    SELECTEXPRTYPE(BINARY_GE, Binary);
+    SELECTEXPRTYPE(BINARY_GT, Binary);
+    SELECTEXPRTYPE(BINARY_LAND, Binary);
+    SELECTEXPRTYPE(BINARY_LE, Binary);
+    SELECTEXPRTYPE(BINARY_LOR, Binary);
+    SELECTEXPRTYPE(BINARY_LT, Binary);
+    SELECTEXPRTYPE(BINARY_MATRIXMUL, Binary);
+    SELECTEXPRTYPE(BINARY_MOD, Binary);
+    SELECTEXPRTYPE(BINARY_MUL, Binary);
+    SELECTEXPRTYPE(BINARY_NE, Binary);
+    SELECTEXPRTYPE(BINARY_SUB, Binary);
+    SELECTEXPRTYPE(BITWISE_AND, Binary);
+    SELECTEXPRTYPE(BITWISE_OR, Binary);
+    SELECTEXPRTYPE(BITWISE_XOR, Binary);
+
+    SELECTEXPRTYPE(BINARY_ASSIGN_ADD, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_AND, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_DIV, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_MOD, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_MUL, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_OR, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_SUB, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN_XOR, Assign);
+    SELECTEXPRTYPE(BINARY_ASSIGN, Assign);
+
+    SELECTSTMT(BREAK, Break);
+    SELECTSTMT(CONTINUE, Continue);
+    SELECTSTMT(COMPOUND, Compound);
+    SELECTSTMT(DOWHILE, DoWhile);
+    SELECTSTMT(EXPR, Expr);
+    SELECTSTMT(ASSERT, Assert);
+    SELECTSTMT(FOR, For);
+    SELECTSTMT(IF, If);
+    SELECTSTMT(RETURN, Return);
+    SELECTSTMT(WHILE, While);
+    SELECTSTMT(PRINT, Print);
+    SELECTSTMT(SYSCALL, Syscall);
     default:
         assert(type != NODE_IDENTIFIER);
         assert((type & NODE_LITE_MASK) == 0x0);
@@ -1377,15 +1392,19 @@ TreeNode * treenode_init_identifier(TYPE_STRINGREF value, YYLTYPE * loc) {
 }
 
 TreeNode * treenode_init_publicSecTypeF(YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeSecTypeF(true, *loc);
+    return (TreeNode *) new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PUBLIC_F, *loc);
 }
 
 TreeNode * treenode_init_privateSecTypeF(YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeSecTypeF(false, *loc);
+    return (TreeNode *) new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PRIVATE_F, *loc);
 }
 
-TreeNode * treenode_init_dataTypeF(enum SecrecDataType dataType, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeF(dataType, *loc);
+TreeNode * treenode_init_dataTypeVarF (YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeDataTypeVarF (*loc);
+}
+
+TreeNode * treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeDataTypeConstF(dataType, *loc);
 }
 
 TreeNode * treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE * loc) {

@@ -13,10 +13,14 @@
 namespace SecreC {
 
 class TreeNode;
-class TreeNodeDomain;
+class TreeNodeDataTypeConstF;
+class TreeNodeDataTypeVarF;
+class TreeNodeDimQuantifier;
 class TreeNodeDimTypeConstF;
 class TreeNodeDimTypeF;
 class TreeNodeDimTypeVarF;
+class TreeNodeDomain;
+class TreeNodeDomainQuantifier;
 class TreeNodeExpr;
 class TreeNodeExprArrayConstructor;
 class TreeNodeExprAssign;
@@ -35,8 +39,6 @@ class TreeNodeExprPostfix;
 class TreeNodeExprPrefix;
 class TreeNodeExprProcCall;
 class TreeNodeExprQualified;
-class TreeNodeDomainQuantifier;
-class TreeNodeDimQuantifier;
 class TreeNodeExprReshape;
 class TreeNodeExprRVariable;
 class TreeNodeExprShape;
@@ -72,7 +74,11 @@ class TreeNodeSyscallParam;
 class TreeNodeTemplate;
 class TreeNodeType;
 class TreeNodeTypeF;
+class TreeNodeDataQuantifier;
+class TreeNodeTypeVarF;
 class TreeNodeVarInit;
+
+
 
 template <class SubClass>
 class TreeNodeChildren;

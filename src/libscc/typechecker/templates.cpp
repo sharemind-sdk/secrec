@@ -17,7 +17,111 @@
 #include "symboltable.h"
 #include "treenode.h"
 
+#define GUARD(expr) \
+    do { \
+        Status status = (expr); \
+        if (status != OK) \
+            return status; \
+    } while (0)
+
 namespace SecreC {
+
+namespace /* anonymous */ {
+
+struct TemplateTypeVariable {
+    TreeNodeIdentifier*  id;
+    TypeVariableKind     kind;
+    bool                 bound;
+    bool                 ret;
+
+    TemplateTypeVariable (TreeNodeIdentifier* id, TypeVariableKind kind)
+        : id (id)
+        , kind (kind)
+        , bound (false)
+        , ret (false)
+    { }
+};
+
+typedef std::map<StringRef, TemplateTypeVariable, StringRef::FastCmp> TypeVariableMap;
+
+TypeVariableKind typeFragmentKind (const TreeNodeTypeF& ty) {
+    switch (ty.type ()) {
+    case NODE_DATATYPE_VAR_F:
+    case NODE_DATATYPE_CONST_F:
+        return TV_DATA;
+    case NODE_DIMTYPE_VAR_F:
+    case NODE_DIMTYPE_CONST_F:
+        return TV_DIM;
+    case NODE_SECTYPE_PRIVATE_F:
+    case NODE_SECTYPE_PUBLIC_F:
+        return TV_SEC;
+    default:
+        assert (false && "Invalid tree node.");
+        return TV_UNDEF;
+    }
+}
+
+SymbolCategory symbolCategory (TypeVariableKind kind) {
+    switch (kind) {
+    case TV_SEC: return SYM_DOMAIN;
+    case TV_DATA: return SYM_TYPE;
+    case TV_DIM: return SYM_DIM;
+    case TV_UNDEF: return SYM_UNDEFINED;
+    }
+}
+
+TypeVariableKind quantifierKind (const TreeNodeQuantifier& quant) {
+    switch (quant.type ()) {
+    case NODE_TEMPLATE_DOMAIN_QUANT: return TV_SEC;
+    case NODE_TEMPLATE_DATA_QUANT: return TV_DATA;
+    case NODE_TEMPLATE_DIM_QUANT: return TV_DIM;
+    default: return TV_UNDEF;
+    }
+}
+
+const char* kindAsString (TypeVariableKind kind) {
+    switch (kind) {
+    case TV_SEC: return "domain";
+    case TV_DATA: return "data";
+    case TV_DIM: return "dimensionality";
+    case TV_UNDEF:
+        assert (false && "Invalid type variable kind.");
+        return "undefined";
+    }
+}
+
+TypeChecker::Status checkTypeVariable (TypeVariableMap& map, SymbolTable* st, CompileLog& log, const TreeNodeTypeF& t, bool isReturn) {
+    if (! t.isVariable ())
+        return TypeChecker::OK;
+
+    const StringRef name = t.identifier ()->value ();
+    const TypeVariableKind kind = typeFragmentKind (t);
+    const TypeVariableMap::iterator it = map.find (name);
+    if (it != map.end ()) {
+        TemplateTypeVariable& tv = it->second;
+        if (tv.kind != kind) {
+            log.fatal () << "Unexpected " << kindAsString (kind) << " type variable \'" << name
+                         << "\' at " << t.identifier ()->location () << ". "
+                         << "Expecting " <<  kindAsString (tv.kind) << " type variable.";
+            return TypeChecker::E_TYPE;
+        }
+
+        tv.bound = true;
+        tv.ret = isReturn;
+    }
+    else {
+        Symbol* sym = st->find (symbolCategory (kind), name);
+        if (sym == 0) {
+            log.fatal () << "Unable to find " << kindAsString (kind) << " type variable \'" << name
+                         << "\' at " << t.identifier ()->location () << ". ";
+            return TypeChecker::E_TYPE;
+        }
+    }
+
+    return TypeChecker::OK;
+}
+
+} // namespace anonymous
 
 /*******************************************************************************
   TreeNodeTemplate
@@ -28,158 +132,73 @@ namespace SecreC {
  * We do not perform two phase name lookup like C++ so at the pass over
  * template declarations we perform no type checking of the template body --
  * it only needs to parse.
- *
- * TODO: refactor this.
  */
 TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
-    // Check that quantifiers are saneley defined
-    typedef std::map<StringRef, TreeNodeIdentifier*, StringRef::FastCmp> TypeVariableMap;
-    typedef std::set<StringRef, StringRef::FastCmp> TypeVariableSet;
-
-    TypeVariableSet domVariables;
-    TypeVariableSet dimVariables;
-    TypeVariableMap freeTypeVariables;
-
+    // Collect quantifiers:
+    TypeVariableMap typeVariables;
     BOOST_FOREACH (TreeNodeQuantifier& quant, templ->quantifiers ()) {
-        StringRef typeVariable = quant.typeVariable ()->value ();
-        TypeVariableMap::iterator it = freeTypeVariables.find (typeVariable);
-        if (it != freeTypeVariables.end ()) {
+        const StringRef name = quant.typeVariable ()->value ();
+        TypeVariableMap::iterator it = typeVariables.find (name);
+        if (it != typeVariables.end ()) {
             m_log.fatal ()
-                    << "Redeclaration of a type variable \'" << typeVariable << '\''
+                    << "Redeclaration of a type variable \'" << name << '\''
                     << " at " << id->location () << '.';
             return E_TYPE;
         }
 
-        freeTypeVariables.insert (it, std::make_pair (typeVariable, quant.typeVariable ()));
-        switch (quant.type ()) {
-        case NODE_TEMPLATE_DOMAIN_QUANT: domVariables.insert (typeVariable); break;
-        case NODE_TEMPLATE_DIM_QUANT: dimVariables.insert (typeVariable); break;
-        default: break;
-        }
+        typeVariables.insert (it, std::make_pair (name,
+            TemplateTypeVariable (quant.typeVariable (), quantifierKind (quant))));
 
-        Status status = visit (&quant);
-        if (status != OK)
-            return status;
+        GUARD (visit (&quant));
     }
-
-    // Check return type.
-    TreeNodeIdentifier* retSecTyIdent = 0;
-    TreeNodeIdentifier* retDimTyIdent = 0;
-    bool expectsSecType = false;
-    bool expectsDimType = false;
 
     if (body->returnType ()->isNonVoid ()) {
-        TreeNodeType* t = body->returnType ();
-        if (! t->secType ()->isPublic ()) {
-            retSecTyIdent = t->secType ()->identifier ();
-            StringRef id = retSecTyIdent->value ();
-            expectsSecType = true;
-
-            if (dimVariables.count (id) > 0) {
-                m_log.fatal () << "Unexpected dimensionality type variable \'" << id
-                               << "\' at " << retSecTyIdent->location () << ". "
-                               << "Expecting security domain.";
-                return E_TYPE;
-            }
-
-            if (domVariables.count (id) == 0) {
-                if (findIdentifier(SYM_DOMAIN, retSecTyIdent) == 0)
-                    return E_TYPE;
-            }
-
-            freeTypeVariables.erase (id);
-        }
-
-        if (t->dimType ()->type () == NODE_DIMTYPE_VAR_F) {
-            TreeNodeDimTypeVarF* dimType = static_cast<TreeNodeDimTypeVarF*>(t->dimType ());
-            retDimTyIdent = dimType->identifier ();
-            StringRef id = retDimTyIdent->value ();
-            expectsDimType = true;
-
-            if (domVariables.count (id) > 0) {
-                m_log.fatal () << "Unexpected domain type variable \'" << id
-                               << "\' at " << retDimTyIdent->location () << ". "
-                               << "Expecting dimensionality type.";
-                return E_TYPE;
-            }
-
-            if (dimVariables.count (retDimTyIdent->value ()) == 0) {
-                m_log.fatal () << "Dimensionality variable \'" << retDimTyIdent->value ()
-                               <<  "\' at " << retDimTyIdent->location () << " not declared.";
-                return E_TYPE;
-            }
-
-            freeTypeVariables.erase (retDimTyIdent->value ());
+        BOOST_FOREACH (TreeNodeTypeF& t, body->returnType ()->types ()) {
+            GUARD (checkTypeVariable (typeVariables, m_st, m_log, t, true));
         }
     }
 
-    // Check that security types of parameters are either quantified or defined.
     BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
-        TreeNodeType* t = decl.varType ();
-        if (! t->secType ()->isPublic ()) {
-            TreeNodeSecTypeF* secType = t->secType ();
-            StringRef id = secType->identifier ()->value ();
-            if (retSecTyIdent != 0) {
-                if (id == retSecTyIdent->value ()) {
-                    expectsSecType = false;
-                }
-            }
-
-            if (dimVariables.count (id) > 0) {
-                m_log.fatal () << "Unexpected dimensionality type variable \'" << id
-                               << "\' at " << retSecTyIdent->location () << ". "
-                               << "Expecting security domain.";
-                return E_TYPE;
-            }
-
-            if (domVariables.count (id) == 0) {
-                if (findIdentifier(SYM_DOMAIN, secType->identifier ()) == 0)
-                    return E_TYPE;
-            }
-
-            freeTypeVariables.erase (id);
-        }
-
-        if (t->dimType ()->type () == NODE_DIMTYPE_VAR_F) {
-            TreeNodeDimTypeVarF* dimType = static_cast<TreeNodeDimTypeVarF*>(t->dimType ());
-            StringRef id = dimType->identifier ()->value ();
-            if (retDimTyIdent != 0) {
-                if (id == retDimTyIdent->value ()) {
-                    expectsDimType = false;
-                }
-            }
-
-            if (domVariables.count (id) > 0) {
-                m_log.fatal () << "Unexpected domain type variable \'" << id
-                               << "\' at " << retDimTyIdent->location () << ". "
-                               << "Expecting dimensionality type.";
-                return E_TYPE;
-            }
-
-            if (dimVariables.count (id) == 0) {
-                m_log.fatal () << "Dimensionality variable \'" << id
-                               <<  "\' at " << dimType->identifier ()->location () << " not declared.";
-                return E_TYPE;
-            }
-
-            freeTypeVariables.erase (id);
+        BOOST_FOREACH (TreeNodeTypeF& t, decl.varType ()->types ()) {
+            GUARD (checkTypeVariable (typeVariables, m_st, m_log, t, false));
         }
     }
 
-    if (!freeTypeVariables.empty()) {
+    bool expectsSecType = false;
+    bool expectsDataType = false;
+    bool expectsDimType = false;
+
+    std::vector<TreeNodeIdentifier*> unboundTV;
+    BOOST_FOREACH (const TypeVariableMap::value_type& v, typeVariables) {
+        const TemplateTypeVariable& tv = v.second;
+        if (! tv.bound) {
+            unboundTV.push_back (tv.id);
+            continue;
+        }
+
+        if (! tv.ret) {
+            continue;
+        }
+
+        if (tv.kind == TV_SEC) expectsSecType = true;
+        if (tv.kind == TV_DATA) expectsDataType = true;
+        if (tv.kind == TV_DIM) expectsDimType = true;
+    }
+
+    if (! unboundTV.empty()) {
         std::stringstream ss;
-        BOOST_FOREACH(const TypeVariableMap::value_type& v, freeTypeVariables) {
-            ss << " " << v.second->location();
+        BOOST_FOREACH (TreeNodeIdentifier* id, unboundTV) {
+            ss << " " << id->location();
         }
 
         m_log.fatal() << "Template definition has free type variables at" << ss.str () << '.';
         return E_TYPE;
     }
 
-    SymbolTemplate* s = new SymbolTemplate (templ, expectsSecType, expectsDimType);
+    SymbolTemplate* s = new SymbolTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
     s->setName (id->value ());
     m_st->appendSymbol (s);
     return OK;
@@ -189,10 +208,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
   TemplateParameter
 *******************************************************************************/
 
-Symbol* TemplateParameter::bind (StringRef name) const {
-    switch (m_tag) {
-    case SEC: return new SymbolDomain (name, secType ());
-    case DIM: return new SymbolDimensionality (name, dimType ());
+SymbolTypeVariable* TemplateParameter::bind (StringRef name) const {
+    switch (m_kind) {
+    case TV_SEC:   return new SymbolDomain (name, secType ());
+    case TV_DIM:   return new SymbolDimensionality (name, dimType ());
+    case TV_DATA:  return new SymbolDataType (name, dataType ());
+    case TV_UNDEF: return 0;
     }
 }
 

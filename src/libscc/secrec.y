@@ -112,10 +112,10 @@
 /* Keywords: */
 %token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
 %token DO DOMAIN DOMAINID ELSE FALSE_B FLOAT FLOAT32 FLOAT64 FOR IF IMPORT INT INT16
-%token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PRIVATE PUBLIC REF RESHAPE RETURN
+%token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
-%token SYSCALL_RETURN
+%token SYSCALL_RETURN TYPE
 
 /* Literals: */
 %token <str> BIN_LITERAL
@@ -156,6 +156,8 @@
 %type <treenode> compound_statement
 %type <treenode> conditional_expression
 %type <treenode> datatype_specifier
+%type <treenode> primitive_datatype_specifier
+%type <treenode> variable_datatype_specifier
 %type <treenode> dimension_list
 %type <treenode> dimensions
 %type <treenode> dimtype_specifier
@@ -199,6 +201,8 @@
 %type <treenode> relational_expression
 %type <treenode> return_type_specifier
 %type <treenode> sectype_specifier
+%type <treenode> public_sectype_specifier
+%type <treenode> private_sectype_specifier
 %type <treenode> statement
 %type <treenode> statement_list
 %type <treenode> string_literal
@@ -444,11 +448,19 @@ type_specifier
  ;
 
 sectype_specifier
+ : public_sectype_specifier
+ | private_sectype_specifier
+ ;
+
+public_sectype_specifier
  : PUBLIC
    {
      $$ = treenode_init_publicSecTypeF (&@$);
    }
- | identifier
+ ;
+
+private_sectype_specifier
+ : identifier
    {
      $$ = treenode_init_privateSecTypeF(&@$);
      treenode_appendChild($$, $1);
@@ -456,26 +468,39 @@ sectype_specifier
  ;
 
 datatype_specifier
- : BOOL        { $$ = treenode_init_dataTypeF(DATATYPE_BOOL,       &@$); }
- | INT         { $$ = treenode_init_dataTypeF(DATATYPE_INT64,      &@$); }
- | UINT        { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,     &@$); }
- | INT8        { $$ = treenode_init_dataTypeF(DATATYPE_INT8,       &@$); }
- | UINT8       { $$ = treenode_init_dataTypeF(DATATYPE_UINT8,      &@$); }
- | INT16       { $$ = treenode_init_dataTypeF(DATATYPE_INT16,      &@$); }
- | UINT16      { $$ = treenode_init_dataTypeF(DATATYPE_UINT16,     &@$); }
- | INT32       { $$ = treenode_init_dataTypeF(DATATYPE_INT32,      &@$); }
- | UINT32      { $$ = treenode_init_dataTypeF(DATATYPE_UINT32,     &@$); }
- | INT64       { $$ = treenode_init_dataTypeF(DATATYPE_INT64,      &@$); }
- | UINT64      { $$ = treenode_init_dataTypeF(DATATYPE_UINT64,     &@$); }
- | STRING      { $$ = treenode_init_dataTypeF(DATATYPE_STRING,     &@$); }
- | XOR_UINT8   { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT8,  &@$); }
- | XOR_UINT16  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT16, &@$); }
- | XOR_UINT32  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT32, &@$); }
- | XOR_UINT64  { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
- | XOR_UINT    { $$ = treenode_init_dataTypeF(DATATYPE_XOR_UINT64, &@$); }
- | FLOAT       { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
- | FLOAT32     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT32,    &@$); }
- | FLOAT64     { $$ = treenode_init_dataTypeF(DATATYPE_FLOAT64,    &@$); }
+ : primitive_datatype_specifier
+ /* | variable_datatype_specifier */
+ ;
+
+primitive_datatype_specifier
+ : BOOL        { $$ = treenode_init_dataTypeConstF(DATATYPE_BOOL,       &@$); }
+ | INT         { $$ = treenode_init_dataTypeConstF(DATATYPE_INT64,      &@$); }
+ | UINT        { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT64,     &@$); }
+ | INT8        { $$ = treenode_init_dataTypeConstF(DATATYPE_INT8,       &@$); }
+ | UINT8       { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT8,      &@$); }
+ | INT16       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT16,      &@$); }
+ | UINT16      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT16,     &@$); }
+ | INT32       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT32,      &@$); }
+ | UINT32      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT32,     &@$); }
+ | INT64       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT64,      &@$); }
+ | UINT64      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT64,     &@$); }
+ | STRING      { $$ = treenode_init_dataTypeConstF(DATATYPE_STRING,     &@$); }
+ | XOR_UINT8   { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT8,  &@$); }
+ | XOR_UINT16  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT16, &@$); }
+ | XOR_UINT32  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT32, &@$); }
+ | XOR_UINT64  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT64, &@$); }
+ | XOR_UINT    { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT64, &@$); }
+ | FLOAT       { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT32,    &@$); }
+ | FLOAT32     { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT32,    &@$); }
+ | FLOAT64     { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT64,    &@$); }
+ ;
+
+variable_datatype_specifier
+ : identifier
+   {
+     $$ = treenode_init_dataTypeVarF(&@$);
+     treenode_appendChild($$, $1);
+   }
  ;
 
 dimtype_specifier
@@ -529,10 +554,15 @@ template_quantifier
     treenode_appendChild($$, $2);
   }
  | DIMENSIONALITY identifier
-   {
+  {
     $$ = treenode_init(NODE_TEMPLATE_DIM_QUANT, &@$);
     treenode_appendChild($$, $2);
-   }
+  }
+ | TYPE identifier
+  {
+    $$ = treenode_init(NODE_TEMPLATE_DATA_QUANT, &@$);
+    treenode_appendChild($$, $2);
+  }
  ;
 
 /*******************************************************************************
@@ -929,9 +959,14 @@ assignment_expression /* WARNING: RIGHT RECURSION */
  ;
 
 qualified_type
- : sectype_specifier
- | datatype_specifier
+ : public_sectype_specifier
+ | primitive_datatype_specifier
  | dimtype_specifier
+ | identifier
+   {
+     $$ = treenode_init(NODE_TYPEVAR, &@$);
+     treenode_appendChild($$, $1);
+   }
  ;
 
 qualified_types

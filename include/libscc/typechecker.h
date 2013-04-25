@@ -81,14 +81,17 @@ public: /* Methods: */
     Status visit(TreeNodeExprStringFromBytes * e);
 
     Status visit(TreeNodeTypeF* ty);
+    Status visit(TreeNodeTypeVarF* ty);
     Status visit(TreeNodeSecTypeF * ty);
     Status visit(TreeNodeDimTypeF* ty);
     Status visit(TreeNodeDimTypeVarF * ty);
+    Status visit(TreeNodeDataTypeVarF * ty);
     Status visit(TreeNodeType * _ty);
 
     Status visit(TreeNodeQuantifier* q);
     Status visit(TreeNodeDimQuantifier*);
     Status visit(TreeNodeDomainQuantifier* q);
+    Status visit(TreeNodeDataQuantifier* q);
 
     Status visit(TreeNodeStmtIf * stmt);
     Status visit(TreeNodeStmtWhile * stmt);
@@ -119,9 +122,9 @@ private:
 
     TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
 
-    Symbol* findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const;
+    Symbol* findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const;
 
-    template <SymbolType type>
+    template <SymbolCategory type>
     typename SymbolTraits<type>::Type* findIdentifier (const TreeNodeIdentifier* id) const {
         return static_cast<typename SymbolTraits<type>::Type*>(findIdentifier (type, id));
     }

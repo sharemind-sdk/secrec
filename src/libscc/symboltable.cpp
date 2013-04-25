@@ -149,7 +149,7 @@ bool SymbolTable::addImport (SymbolTable* st) {
     return false;
 }
 
-Symbol* SymbolTable::findFromCurrentScope (SymbolType type, StringRef name) const {
+Symbol* SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
     BOOST_REVERSE_FOREACH (SymbolTable* import, m_imports)
         BOOST_REVERSE_FOREACH (Symbol* s, import->m_table)
             if (s->symbolType () == type && s->name () == name)
@@ -158,7 +158,7 @@ Symbol* SymbolTable::findFromCurrentScope (SymbolType type, StringRef name) cons
 }
 
 std::vector<Symbol *>
-SymbolTable::findPrefixedFromCurrentScope(SymbolType type, StringRef prefix) const {
+SymbolTable::findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
     BOOST_REVERSE_FOREACH(SymbolTable * import, m_imports)
         BOOST_REVERSE_FOREACH(Symbol * s, import->m_table)
@@ -206,7 +206,7 @@ SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
     return m_other->temporary (type);
 }
 
-Symbol *SymbolTable::find (SymbolType type, StringRef name) const {
+Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
     for (const SymbolTable* c = this; c != 0; c = c->m_parent) {
         if (Symbol* s = c->findFromCurrentScope (type, name))
             return s;
@@ -216,7 +216,7 @@ Symbol *SymbolTable::find (SymbolType type, StringRef name) const {
 }
 
 std::vector<Symbol *>
-SymbolTable::findPrefixed(SymbolType type, StringRef prefix) const {
+SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
     const SymbolTable * c = this;
     while (c != 0) {
@@ -238,7 +238,7 @@ SymbolTable::findPrefixed(SymbolType type, StringRef prefix) const {
     return r;
 }
 
-std::vector<Symbol* > SymbolTable::findAll (SymbolType type, StringRef name) const {
+std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
     std::vector<Symbol* > out;
     for (Symbol* s = find (type, name); s != 0; s = s->previos ()) {
         out.push_back (s);

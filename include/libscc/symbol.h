@@ -15,6 +15,7 @@ class Block;
 class Imop;
 class SecurityType;
 class TypeNonVoid;
+class TypeContext;
 class Location;
 
 /*******************************************************************************
@@ -24,7 +25,7 @@ class Location;
 class Symbol {
 public: /* Types: */
 
-    typedef SymbolType Type;
+    typedef SymbolCategory Type;
 
 public: /* Methods: */
 
@@ -82,18 +83,30 @@ public: /* Methods: */
     explicit SymbolConstant(TypeNonVoid* valueType)
         : Symbol(SYM_CONSTANT, valueType)
     { }
+};
 
-    virtual inline ~SymbolConstant() { }
+/*******************************************************************************
+  SymbolTypeVariable
+*******************************************************************************/
+
+class SymbolTypeVariable: public Symbol {
+public: /* Methods: */
+
+    SymbolTypeVariable(SymbolCategory symCategory, StringRef name)
+        : Symbol (symCategory, name)
+    { }
+
+    virtual void setTypeContext (TypeContext& cxt) const = 0;
 };
 
 /*******************************************************************************
   SymbolDimensionality
 *******************************************************************************/
 
-class SymbolDimensionality : public Symbol {
+class SymbolDimensionality : public SymbolTypeVariable {
 public: /* Methods: */
     SymbolDimensionality(StringRef name, SecrecDimType dimType)
-        : Symbol (SYM_DIM, name)
+        : SymbolTypeVariable (SYM_DIM, name)
         , m_dimType (dimType)
     { }
 
@@ -101,9 +114,32 @@ public: /* Methods: */
 
 protected:
     void print(std::ostream & os) const;
+    void setTypeContext (TypeContext& cxt) const;
 
 private: /* Fields: */
     SecrecDimType const m_dimType;
+};
+
+/*******************************************************************************
+  SymbolType
+*******************************************************************************/
+
+class SymbolDataType : public SymbolTypeVariable {
+public: /* Methods: */
+
+    SymbolDataType (StringRef name, SecrecDataType dataType)
+        : SymbolTypeVariable (SYM_TYPE, name)
+        , m_dataType (dataType)
+    { }
+
+    inline SecrecDataType dataType () const { return m_dataType; }
+
+protected:
+    void print(std::ostream & os) const;
+    void setTypeContext (TypeContext& cxt) const;
+
+private: /* Fields: */
+    SecrecDataType const m_dataType;
 };
 
 /*******************************************************************************
@@ -125,11 +161,11 @@ protected:
   SymbolDomain
 *******************************************************************************/
 
-class SymbolDomain : public Symbol {
+class SymbolDomain : public SymbolTypeVariable {
 public: /* Methods: */
 
     SymbolDomain(StringRef name, SecurityType * secType)
-        : Symbol (SYM_DOMAIN, name)
+        : SymbolTypeVariable (SYM_DOMAIN, name)
         , m_secType (secType)
     { }
 
@@ -137,6 +173,7 @@ public: /* Methods: */
 
 protected:
     void print(std::ostream & os) const;
+    void setTypeContext (TypeContext& cxt) const;
 
 private:
 
@@ -323,6 +360,7 @@ public: /* Types: */
 public: /* Methods: */
     SymbolTemplate (TreeNodeTemplate *templ,
                     bool expectsSecType,
+                    bool expectsDataType,
                     bool expectsDimType);
 
     inline TreeNodeTemplate *decl() const { return m_templ; }
@@ -330,6 +368,7 @@ public: /* Methods: */
     virtual const Location * location() const;
     inline bool expectsSecType () const { return m_expectsSecType; }
     inline bool expectsDimType () const { return m_expectsDimType; }
+    inline bool expectsDataType () const { return m_expectsDataType; }
     const Weight& weight () const  { return m_weight; }
 
 protected:
@@ -338,6 +377,7 @@ protected:
 private: /* Fields: */
     TreeNodeTemplate*  const  m_templ;
     bool               const  m_expectsSecType; ///< Expects context to supply security type
+    bool               const  m_expectsDataType; ///< Expects context to supply data type
     bool               const  m_expectsDimType; ///< Expects context to supply dimensionality type
     Weight             const  m_weight;
 };

@@ -346,7 +346,7 @@ private:
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     Symbol* indexConstant (uint64_t value);
 
-    Symbol* findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const;
+    Symbol* findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const;
 
     void startLoop ();
     void endLoop ();

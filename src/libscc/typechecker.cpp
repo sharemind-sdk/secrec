@@ -34,7 +34,7 @@ bool TypeChecker::getForInstantiation (InstanceInfo& info) {
     return m_instantiator->getForInstantiation (info);
 }
 
-Symbol* TypeChecker::findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const {
+Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (type, id->value ());
     if (s == 0) {
         m_log.fatalInProc(id) << "Idenfier '" << id->value()

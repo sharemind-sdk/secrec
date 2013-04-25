@@ -52,15 +52,16 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
 }
 
 void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
-    os << procDef->returnType()->typeString()
-       << ' ' << procDef->identifier()->value() << '(';
+    procDef->returnType()->typeString(os);
+    os << ' ' << procDef->identifier()->value() << '(';
 
     bool first = true;
     BOOST_FOREACH (const TreeNodeStmtDecl& decl, procDef->params ()) {
         if (! first)
             os << ", ";
         first = false;
-        os << decl.varType()->typeString() << ' ' << decl.variableName();
+        decl.varType()->typeString (os);
+        os << ' ' << decl.variableName();
     }
 
     os << ')';
@@ -104,6 +105,22 @@ void SymbolDimensionality::print(std::ostream & os) const {
     os << "dim " << name ();
 }
 
+void SymbolDimensionality::setTypeContext (TypeContext& cxt) const {
+    cxt.setContextDimType (dimType ());
+}
+
+/*******************************************************************************
+  SymbolDataType
+*******************************************************************************/
+
+void SymbolDataType::print (std::ostream& os) const {
+    os << "type " << name ();
+}
+
+void SymbolDataType::setTypeContext (TypeContext& cxt) const {
+    cxt.setContextDataType (dataType ());
+}
+
 /*******************************************************************************
   SymbolKind
 *******************************************************************************/
@@ -118,8 +135,12 @@ void SymbolKind::print(std::ostream & os) const {
 
 void SymbolDomain::print(std::ostream & os) const {
     os << "domain " << name ();
-    if (securityType ())
+    if (securityType ()) // TODO: not correct printing
         os << " : " << *securityType ();
+}
+
+void SymbolDomain::setTypeContext (TypeContext& cxt) const {
+    cxt.setContextSecType (securityType ());
 }
 
 /*******************************************************************************
@@ -231,10 +252,11 @@ void SymbolLabel::print(std::ostream & os) const {
   SymbolTemplate
 *******************************************************************************/
 
-SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ, bool expectsSecType, bool expectsDimType)
+SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ, bool expectsSecType, bool expectsDataType, bool expectsDimType)
     : Symbol (SYM_TEMPLATE)
     , m_templ (templ)
     , m_expectsSecType (expectsSecType)
+    , m_expectsDataType (expectsDataType)
     , m_expectsDimType (expectsDimType)
     , m_weight (computeTemplateWeight (templ))
 { }

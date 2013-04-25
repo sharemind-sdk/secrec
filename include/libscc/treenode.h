@@ -20,6 +20,7 @@ class TypeChecker;
 class ModuleInfo;
 class TreeNodeProcDef;
 class TreeNode;
+class SymbolTypeVariable;
 
 /******************************************************************
   TreeNode
@@ -249,6 +250,8 @@ public: /* Methods: */
         : TreeNode (type, loc)
     { }
 
+    bool isVariable () const;
+    TreeNodeIdentifier* identifier () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
     virtual void setTypeContext (TypeContext& cxt) const = 0;
 
@@ -258,21 +261,47 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeTypeF
+******************************************************************/
+
+// Unclassified type variable:
+class TreeNodeTypeVarF: public TreeNodeTypeF {
+public: /* Methods: */
+    inline TreeNodeTypeVarF (const Location & loc)
+        : TreeNodeTypeF (NODE_TYPEVAR, loc)
+        , m_typeVariable (0)
+    { }
+
+    SymbolTypeVariable* typeVariable () const { return m_typeVariable; }
+    void setTypeVariable (SymbolTypeVariable* tv) { m_typeVariable = tv; }
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    virtual void setTypeContext (TypeContext& cxt) const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeVarF (m_location);
+    }
+
+private: /* Fields: */
+    SymbolTypeVariable* m_typeVariable;
+};
+
+
+/******************************************************************
   TreeNodeSecTypeF
 ******************************************************************/
 
 class TreeNodeSecTypeF: public TreeNodeTypeF {
 public: /* Methods: */
-    inline TreeNodeSecTypeF(bool isPublic, const Location & loc)
-        : TreeNodeTypeF (NODE_SECTYPE_F, loc)
-        , m_isPublic (isPublic)
+    inline TreeNodeSecTypeF(SecrecTreeNodeType type, const Location & loc)
+        : TreeNodeTypeF (type, loc)
         , m_cachedType (0)
     { }
 
-    inline bool isPublic () const { return m_isPublic; }
+    inline bool isPublic () const { return m_type == NODE_SECTYPE_PUBLIC_F; }
     SecurityType* cachedType () const { return m_cachedType; }
     void setCachedType (SecurityType* ty);
-    TreeNodeIdentifier* identifier () const;
 
     virtual TypeChecker::Status accept(TypeChecker& tyChecker);
     virtual void setTypeContext (TypeContext& cxt) const;
@@ -281,11 +310,10 @@ protected:
 
     virtual bool printHelper(std::ostream & os) const;
     virtual TreeNode* cloneV () const {
-        return new TreeNodeSecTypeF (m_isPublic, m_location);
+        return new TreeNodeSecTypeF (m_type, m_location);
     }
 
 private: /* Fields: */
-    const bool     m_isPublic;
     SecurityType*  m_cachedType;
 };
 
@@ -295,28 +323,57 @@ private: /* Fields: */
 
 class TreeNodeDataTypeF: public TreeNodeTypeF {
 public: /* Methods: */
-    inline TreeNodeDataTypeF(SecrecDataType dataType,
-                             const Location & loc)
-        : TreeNodeTypeF(NODE_DATATYPE_F, loc)
-        , m_dataType(dataType) {}
+    inline TreeNodeDataTypeF (SecrecTreeNodeType type,
+                              const Location & loc)
+        : TreeNodeTypeF(type, loc)
+        , m_dataType (DATATYPE_UNDEFINED) {}
 
-    const SecrecDataType &dataType() const {
-        return m_dataType;
-    }
-
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    inline SecrecDataType cachedType () const { return m_dataType; }
+    inline void setCachedType (SecrecDataType dataType) { m_dataType = dataType; }
     virtual void setTypeContext (TypeContext& cxt) const;
 
-protected:
+private: /* Fields: */
+    SecrecDataType m_dataType;
+};
 
+/******************************************************************
+  TreeNodeDataTypeConstF
+******************************************************************/
+
+class TreeNodeDataTypeConstF: public TreeNodeDataTypeF {
+public: /* Methods: */
+    inline TreeNodeDataTypeConstF (SecrecDataType dataType, const Location & loc)
+        : TreeNodeDataTypeF (NODE_DATATYPE_CONST_F, loc)
+    { setCachedType (dataType); }
+
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+
+protected:
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
-        return new TreeNodeDataTypeF (m_dataType, m_location);
+        return new TreeNodeDataTypeConstF (cachedType (), m_location);
     }
+};
 
-private: /* Fields: */
-    const SecrecDataType m_dataType;
+/******************************************************************
+  TreeNodeDataTypeVarF
+******************************************************************/
+
+class TreeNodeDataTypeVarF: public TreeNodeDataTypeF {
+public: /* Methods: */
+    inline TreeNodeDataTypeVarF (const Location & loc)
+        : TreeNodeDataTypeF (NODE_DATATYPE_VAR_F, loc)
+    { }
+
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+
+protected:
+    virtual bool printHelper(std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDataTypeVarF (m_location);
+    }
 };
 
 /******************************************************************
@@ -331,14 +388,9 @@ public: /* Methods: */
         , m_dimType (~ SecrecDimType (0))
     { }
 
-    inline bool isVariable () const { return m_type == NODE_DIMTYPE_VAR_F; }
     inline SecrecDimType cachedType () const { return m_dimType; }
     inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
     virtual void setTypeContext (TypeContext& cxt) const;
-
-protected:
-    virtual TreeNode* cloneV () const = 0;
 
 private: /* Fields: */
     SecrecDimType m_dimType;
@@ -375,7 +427,6 @@ public: /* Methods: */
         : TreeNodeDimTypeF (NODE_DIMTYPE_VAR_F, loc)
     { }
 
-    TreeNodeIdentifier* identifier () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:
@@ -399,12 +450,13 @@ public: /* Methods: */
     { }
 
     Type* secrecType () const;
+    TreeNodeChildren<TreeNodeTypeF> types () const;
     TreeNodeSecTypeF* secType () const;
     TreeNodeDataTypeF* dataType () const;
     TreeNodeDimTypeF* dimType () const;
     bool isNonVoid () const;
 
-    std::string typeString() const;
+    void typeString(std::ostream& os) const;
 
 protected:
 
@@ -1384,7 +1436,6 @@ protected:
     virtual TreeNode* cloneV () const = 0;
 };
 
-
 /******************************************************************
   TreeNodeDomainQuantifier
 ******************************************************************/
@@ -1423,6 +1474,25 @@ protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeDimQuantifier (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeDataQuantifier
+******************************************************************/
+
+class TreeNodeDataQuantifier : public TreeNodeQuantifier {
+public: /* Methods: */
+    explicit inline TreeNodeDataQuantifier (const Location & loc)
+        : TreeNodeQuantifier(NODE_TEMPLATE_DATA_QUANT, loc) {}
+
+    void printQuantifier (std::ostream & os) const;
+    virtual TypeChecker::Status accept (TypeChecker & typeChecker);
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDataQuantifier (m_location);
     }
 };
 

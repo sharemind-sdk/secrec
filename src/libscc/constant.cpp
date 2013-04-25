@@ -76,7 +76,6 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
 *******************************************************************************/
 
 // TODO: this function breaks MPFR abstraction
-
 bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr y) {
     if (x->_mpfr_prec < y->_mpfr_prec) return true;
     if (x->_mpfr_prec > y->_mpfr_prec) return false;

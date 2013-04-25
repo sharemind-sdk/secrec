@@ -37,6 +37,18 @@ class TypeNonVoid;
 class DataTypeProcedureVoid;
 class SecurityType;
 class Symbol;
+class SymbolTypeVariable;
+
+/*******************************************************************************
+  TypeVariableKind
+*******************************************************************************/
+
+enum TypeVariableKind {
+    TV_UNDEF,
+    TV_SEC,
+    TV_DATA,
+    TV_DIM
+};
 
 /*******************************************************************************
   TemplateParameter
@@ -44,51 +56,61 @@ class Symbol;
 
 // Algebraic data types would be nice...
 class TemplateParameter {
-private: /* Types: */
-    enum Tag { SEC, DIM };
-
 public: /* Methods: */
 
     TemplateParameter (SecrecDimType dimType)
-        : m_tag (DIM)
+        : m_kind (TV_DIM)
         , un_dimType (dimType)
     { }
 
     TemplateParameter (SecurityType* secType)
-        : m_tag (SEC)
+        : m_kind (TV_SEC)
         , un_secType (secType)
     { }
 
+    TemplateParameter (SecrecDataType dataType)
+        : m_kind (TV_DATA)
+        , un_dataType (dataType)
+    { }
+
     SecrecDimType dimType () const {
-        assert (m_tag == DIM);
+        assert (m_kind == TV_DIM);
         return un_dimType;
     }
 
     SecurityType* secType () const {
-        assert (m_tag == SEC);
+        assert (m_kind == TV_SEC);
         return un_secType;
     }
 
-    Symbol* bind (StringRef name) const;
+    SecrecDataType dataType () const {
+        assert (m_kind == TV_DATA);
+        return un_dataType;
+    }
+
+    SymbolTypeVariable* bind (StringRef name) const;
 
     friend bool operator == (const TemplateParameter& a, const TemplateParameter& b);
     friend bool operator < (const TemplateParameter& a, const TemplateParameter& b);
 
 private: /* Fields: */
-    Tag m_tag;
+    TypeVariableKind m_kind;
     union {
-        SecrecDimType un_dimType;
-        SecurityType* un_secType;
+        SecrecDimType   un_dimType;
+        SecurityType*   un_secType;
+        SecrecDataType  un_dataType;
     };
 };
 
 inline bool operator == (const TemplateParameter& a, const TemplateParameter& b) {
-    if (a.m_tag != b.m_tag)
+    if (a.m_kind != b.m_kind)
         return false;
 
-    switch (a.m_tag) {
-    case TemplateParameter::DIM: return a.un_dimType == b.un_dimType;
-    case TemplateParameter::SEC: return a.un_secType == b.un_secType;
+    switch (a.m_kind) {
+    case TV_DIM:  return a.un_dimType  == b.un_dimType;
+    case TV_SEC:  return a.un_secType  == b.un_secType;
+    case TV_DATA: return a.un_dataType == b.un_dataType;
+    case TV_UNDEF: return false;
     }
 }
 
@@ -97,11 +119,13 @@ inline bool operator != (const TemplateParameter& a, const TemplateParameter& b)
 }
 
 inline bool operator < (const TemplateParameter& a, const TemplateParameter& b) {
-    if (a.m_tag < b.m_tag) return true;
-    if (a.m_tag > b.m_tag) return false;
-    switch (a.m_tag) {
-    case TemplateParameter::DIM: return a.un_dimType < b.un_dimType;
-    case TemplateParameter::SEC: return a.un_secType < b.un_secType;
+    if (a.m_kind < b.m_kind) return true;
+    if (a.m_kind > b.m_kind) return false;
+    switch (a.m_kind) {
+    case TV_DIM:  return a.un_dimType  < b.un_dimType;
+    case TV_SEC:  return a.un_secType  < b.un_secType;
+    case TV_DATA: return a.un_dataType < b.un_dataType;
+    case TV_UNDEF: return false;
     }
 }
 

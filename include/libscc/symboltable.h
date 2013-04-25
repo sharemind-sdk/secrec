@@ -36,9 +36,9 @@ public: /* Methods: */
     SymbolSymbol* appendTemporary (TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 
-    Symbol* find (SymbolType symbolType, StringRef name) const;
+    Symbol* find (SymbolCategory symbolType, StringRef name) const;
 
-    template <SymbolType symbolType>
+    template <SymbolCategory symbolType>
     typename SymbolTraits<symbolType>::Type* find (StringRef name) const {
         return static_cast<typename SymbolTraits<symbolType>::Type*>(find (symbolType, name));
     }
@@ -48,10 +48,10 @@ public: /* Methods: */
       \param[in] prefix the name prefix of the symbols to find.
       \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol *> findPrefixed(SymbolType type, StringRef prefix) const;
+    std::vector<Symbol *> findPrefixed(SymbolCategory type, StringRef prefix) const;
 
 
-    std::vector<Symbol* > findAll (SymbolType type, StringRef name) const;
+    std::vector<Symbol* > findAll (SymbolCategory type, StringRef name) const;
 
     SymbolTable* newScope ();
     SymbolTable* parent () const { return m_parent; }
@@ -73,7 +73,7 @@ public: /* Methods: */
       \param[in] name the name of the symbol to find.
       \returns a pointer to the symbol or NULL no such symbol was found.
     */
-    Symbol* findFromCurrentScope (SymbolType symbolType, StringRef name) const;
+    Symbol* findFromCurrentScope (SymbolCategory symbolType, StringRef name) const;
 
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;
@@ -85,7 +85,7 @@ private:
       \param[in] prefix the name prefix of the symbol to find.
       \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol *> findPrefixedFromCurrentScope(SymbolType type, StringRef prefix) const;
+    std::vector<Symbol *> findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const;
 
 private: /* Fields: */
     class OtherSymbols;

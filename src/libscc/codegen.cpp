@@ -133,7 +133,7 @@ Symbol * CodeGen::indexConstant(uint64_t value) {
     return ConstantInt::get(getContext(), DATATYPE_UINT64, value);
 }
 
-Symbol* CodeGen::findIdentifier (SymbolType type, const TreeNodeIdentifier* id) const {
+Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     return m_st->find (type, id->value ());
 }
 

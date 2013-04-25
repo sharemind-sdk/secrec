@@ -139,19 +139,23 @@ enum SecrecTreeNodeType {
     NODE_VAR_INIT               = 0x1b000,
     NODE_SYSCALL_RETURN         = 0x1c000,
 
-    NODE_DATATYPE_F             = 0x100000,
-    NODE_DIMTYPE_CONST_F        = 0x200000,
-    NODE_DIMTYPE_VAR_F          = 0x300000,
-    NODE_DOMAIN                 = 0x400000,
-    NODE_IMPORT                 = 0x500000,
-    NODE_KIND                   = 0x600000,
-    NODE_MODULE                 = 0x700000,
-    NODE_SECTYPE_F              = 0x800000,
-    NODE_TEMPLATE_DECL          = 0x900000,
-    NODE_TEMPLATE_DIM_QUANT     = 0xa00000,
-    NODE_TEMPLATE_DOMAIN_QUANT  = 0xb00000,
-    NODE_TYPETYPE               = 0xc00000,
-    NODE_TYPEVOID               = 0xd00000
+    NODE_DATATYPE_CONST_F       = 0x0100000,
+    NODE_DATATYPE_VAR_F         = 0x0200000,
+    NODE_DIMTYPE_CONST_F        = 0x0300000,
+    NODE_DIMTYPE_VAR_F          = 0x0400000,
+    NODE_DOMAIN                 = 0x0500000,
+    NODE_IMPORT                 = 0x0600000,
+    NODE_KIND                   = 0x0700000,
+    NODE_MODULE                 = 0x0800000,
+    NODE_SECTYPE_PUBLIC_F       = 0x0900000,
+    NODE_SECTYPE_PRIVATE_F      = 0x0a00000,
+    NODE_TEMPLATE_DECL          = 0x0b00000,
+    NODE_TEMPLATE_DIM_QUANT     = 0x0c00000,
+    NODE_TEMPLATE_DOMAIN_QUANT  = 0x0d00000,
+    NODE_TEMPLATE_DATA_QUANT    = 0x0e00000,
+    NODE_TYPETYPE               = 0x0f00000,
+    NODE_TYPEVOID               = 0x1000000,
+    NODE_TYPEVAR                = 0x2000000
 };
 
 enum SecrecDataType {

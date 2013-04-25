@@ -109,6 +109,7 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "template"   { stepLen(yyget_lloc(yyscanner), 8);  return TEMPLATE; }
 "tostring"   { stepLen(yyget_lloc(yyscanner), 8);  return TOSTRING; }
 "true"       { stepLen(yyget_lloc(yyscanner), 4);  return TRUE_B; }
+"type"       { stepLen(yyget_lloc(yyscanner), 4);  return TYPE; }
 "uint16"     { stepLen(yyget_lloc(yyscanner), 6);  return UINT16; }
 "uint32"     { stepLen(yyget_lloc(yyscanner), 6);  return UINT32; }
 "uint64"     { stepLen(yyget_lloc(yyscanner), 6);  return UINT64; }
