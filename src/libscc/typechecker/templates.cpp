@@ -189,12 +189,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     if (! unboundTV.empty()) {
+        bool first = true;
         std::stringstream ss;
         BOOST_FOREACH (TreeNodeIdentifier* id, unboundTV) {
-            ss << " " << id->location();
+            if (! first)
+                ss << ",";
+            ss << " \'" << id->value () << "\' at " << id->location();
+            first = false;
         }
 
-        m_log.fatal() << "Template definition has free type variables at" << ss.str () << '.';
+        m_log.fatal() << "Template definition has free type variables:" << ss.str () << '.';
         return E_TYPE;
     }
 

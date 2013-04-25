@@ -91,6 +91,19 @@ bool mapVariable (TemplateVarMap& varMap, StringRef id, const TemplateParameter&
     return true;
 }
 
+bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt) {
+    if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
+        return false;
+
+    if (sym->expectsDataType () && !tyCxt.haveContextDataType ())
+        return false;
+
+    if (sym->expectsDimType () && !tyCxt.haveContextDimType ())
+        return false;
+
+    return true;
+}
+
 } // anonymous namespace
 
 /// Return symbol for the main procedure (if exists).
@@ -481,10 +494,7 @@ bool TypeChecker::unify (Instantiation& inst,
 
     params.clear ();
 
-    if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
-        return false;
-
-    if (sym->expectsDimType () && !tyCxt.haveContextDimType ())
+    if (! providesExpectedTypeContext (sym, tyCxt))
         return false;
 
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
@@ -590,10 +600,12 @@ bool TypeChecker::unify (Instantiation& inst,
             if (domain->kind () != 0) {
                 if (param.secType ()->isPublic ())
                     return false;
-                SymbolKind* sym = m_st->find<SYM_KIND>(domain->kind ()->value ());
-                PrivateSecType* privArgTy = static_cast<PrivateSecType*>(param.secType ());
-                if (sym != privArgTy->securityKind ()) {
-                    return false;
+                else {
+                    SymbolKind* sym = m_st->find<SYM_KIND>(domain->kind ()->value ());
+                    PrivateSecType* privArgTy = static_cast<PrivateSecType*>(param.secType ());
+                    if (sym != privArgTy->securityKind ()) {
+                        return false;
+                    }
                 }
             }
         }
