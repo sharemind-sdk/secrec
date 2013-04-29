@@ -106,10 +106,10 @@
 }
 %destructor { treenode_free($$); } <treenode>
 
-/* Identifiers: */
+ /* Identifiers: */
 %token <str> IDENTIFIER
 
-/* Keywords: */
+ /* Keywords: */
 %token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
 %token DO DOMAIN DOMAINID ELSE FALSE_B FLOAT FLOAT32 FLOAT64 FOR IF IMPORT INT INT16
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
@@ -117,7 +117,7 @@
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
 %token SYSCALL_RETURN TYPE
 
-/* Literals: */
+ /* Literals: */
 %token <str> BIN_LITERAL
 %token <str> DEC_LITERAL
 %token <str> FLOAT_LITERAL
@@ -125,7 +125,7 @@
 %token <str> OCT_LITERAL
 %token <str> STRING_LITERAL
 
-/* Operators from higher to lower precedence: */
+ /* Operators from higher to lower precedence: */
 %right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
 %left TYPE_QUAL
 %left '?' ':'
@@ -141,7 +141,6 @@
 %nonassoc INC_OP
 %nonassoc DEC_OP
 %right UINV UNEG UMINUS
-
 
 %type <treenode> additive_expression
 %type <treenode> assert_statement
@@ -161,6 +160,7 @@
 %type <treenode> dimension_list
 %type <treenode> dimensions
 %type <treenode> dimtype_specifier
+%type <treenode> maybe_dimtype_specifier
 %type <treenode> domain_declaration
 %type <treenode> dowhile_statement
 %type <treenode> equality_expression
@@ -201,6 +201,7 @@
 %type <treenode> relational_expression
 %type <treenode> return_type_specifier
 %type <treenode> sectype_specifier
+%type <treenode> maybe_sectype_specifier
 %type <treenode> public_sectype_specifier
 %type <treenode> private_sectype_specifier
 %type <treenode> statement
@@ -224,14 +225,14 @@
 %type <integer_literal> int_literal_helper
 %type <nothing> module
 
-/* Starting nonterminal: */
+ /* Starting nonterminal: */
 %start module
 
 %%
 
-/*******************************************************************************
-  Program and variable declarations:
-*******************************************************************************/
+ /*******************************************************************************
+  * Program and variable declarations:                                          *
+  *******************************************************************************/
 
 module
  : MODULE identifier ';' program
@@ -412,39 +413,28 @@ dimension_list
  ;
 
 
-/*******************************************************************************
-  Types:
-*******************************************************************************/
+ /*******************************************************************************
+  * Types:                                                                      *
+  *******************************************************************************/
 
 type_specifier
- : sectype_specifier datatype_specifier dimtype_specifier
+ : maybe_sectype_specifier datatype_specifier maybe_dimtype_specifier
    {
      $$ = treenode_init(NODE_TYPETYPE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
      treenode_appendChild($$, $3);
    }
- | sectype_specifier datatype_specifier
-   {
-     $$ = treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $2);
-     treenode_appendChild($$, treenode_init_dimTypeConstF(0, &@$));
-   }
- | datatype_specifier dimtype_specifier
-   {
-     $$ = treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, treenode_init_publicSecTypeF (&@$));
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $2);
-   }
- | datatype_specifier
-   {
-     $$ = treenode_init(NODE_TYPETYPE, &@$);
-     treenode_appendChild($$, treenode_init_publicSecTypeF (&@$));
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, treenode_init_dimTypeConstF(0, &@$));
-   }
+ ;
+
+maybe_sectype_specifier
+ : /* nothing */ { $$ = treenode_init_publicSecTypeF (&@$); }
+ | sectype_specifier
+ ;
+
+maybe_dimtype_specifier
+ : /* nothing */ { $$ = treenode_init_dimTypeConstF(0, &@$); }
+ | dimtype_specifier
  ;
 
 sectype_specifier
@@ -469,7 +459,7 @@ private_sectype_specifier
 
 datatype_specifier
  : primitive_datatype_specifier
- /* | variable_datatype_specifier */
+ | variable_datatype_specifier
  ;
 
 primitive_datatype_specifier
@@ -515,9 +505,9 @@ dimtype_specifier
    }
  ;
 
-/*******************************************************************************
-  Templates:
-*******************************************************************************/
+ /*******************************************************************************
+  * Templates:                                                                  *
+  *******************************************************************************/
 
 template_declaration
  : TEMPLATE '<' template_quantifiers '>' procedure_definition
@@ -565,9 +555,9 @@ template_quantifier
   }
  ;
 
-/*******************************************************************************
-  Procedures:
-*******************************************************************************/
+ /*******************************************************************************
+  * Procedures:                                                                 *
+  *******************************************************************************/
 
 return_type_specifier
  : VOID { $$ = treenode_init(NODE_TYPEVOID, &@$); }
@@ -647,9 +637,9 @@ operator_definition
  |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
  ;
 
-/*******************************************************************************
-  Statements:
-*******************************************************************************/
+ /*******************************************************************************
+  * Statements:                                                                 *
+  *******************************************************************************/
 
 compound_statement
  : '{' '}' { $$ = treenode_init(NODE_STMT_COMPOUND, &@$); }
@@ -834,9 +824,9 @@ syscall_parameter
     }
   ;
 
-/*******************************************************************************
-  Indices: not strictly expressions as they only appear in specific context
-*******************************************************************************/
+ /*******************************************************************************
+  * Indices: not strictly expressions as they only appear in specific context   *
+  *******************************************************************************/
 
 subscript
   : '[' indices ']'
@@ -860,10 +850,10 @@ indices
     }
   ;
 
-/* Precedence of slicing operator? Right now it binds weakest as it can appear
- * in very specific context. However, if we ever wish for "foo : bar" evaluate
- * to value in some other context we need to figure out sane precedence.
- */
+ /* Precedence of slicing operator? Right now it binds weakest as it can appear
+  * in very specific context. However, if we ever wish for "foo : bar" evaluate
+  * to value in some other context we need to figure out sane precedence.
+  */
 index
  : maybe_expression ':' maybe_expression
    {
@@ -878,9 +868,9 @@ index
    }
  ;
 
-/*******************************************************************************
-  Expressions:
-*******************************************************************************/
+ /*******************************************************************************
+  * Expressions:                                                                *
+  *******************************************************************************/
 
 lvalue
  : identifier
@@ -1135,11 +1125,32 @@ multiplicative_expression
  | cast_expression
  ;
 
+ /**
+  * I would use the following rule, but bison seems to think that
+  * this would cause a reduce/reduce conflict. I don't quite
+  * understand why, but right now I'll be using this workaround.
+  * I think it's a LALR(1) specific limitation.
+  *
+  *  cast_expression
+  *   : '(' datatype_specifier ')' cast_expression
+  *     { ... }
+  *   | prefix_op
+  *   ;
+  */
+
 cast_expression
- : '(' datatype_specifier ')' cast_expression
+ : '(' primitive_datatype_specifier ')' cast_expression
    {
      $$ = treenode_init(NODE_EXPR_CAST, &@$);
      treenode_appendChild($$, $2);
+     treenode_appendChild($$, $4);
+   }
+ | '(' identifier ')' cast_expression
+   {
+     $$ = treenode_init(NODE_EXPR_CAST, &@$);
+     TreeNode* temp = treenode_init_dataTypeVarF(&@$);
+     treenode_appendChild(temp, $2);
+     treenode_appendChild($$, temp);
      treenode_appendChild($$, $4);
    }
  | prefix_op
