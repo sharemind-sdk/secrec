@@ -232,6 +232,10 @@ bool Imop::isVectorized () const {
     return getImopInfoBits (m_type).vecArgNum == argNum;
 }
 
+bool Imop::isComment () const {
+    return m_type == COMMENT;
+}
+
 bool Imop::writesDest () const {
     if (! isVectorized ()) {
         return m_type == Imop::STORE;
