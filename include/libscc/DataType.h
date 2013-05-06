@@ -46,7 +46,7 @@ private:
     void operator = (const DataType&); // DO NOT IMPLEMENT
 
 public: /* Types: */
-    enum Kind { BASIC, VAR, PROCEDURE, PROCEDUREVOID };
+    enum Kind { BASIC, PROCEDURE, PROCEDUREVOID };
 
     class PrettyPrint {
     public: /* Methods: */
@@ -70,10 +70,6 @@ public: /* Methods: */
 
     virtual void print (std::ostream& os) const = 0;
     virtual void prettyPrint (std::ostream& os) const = 0;
-
-    virtual inline bool canAssign(const DataType*) const {
-        return false;
-    }
 
     /**
      * We define less-than-equal relation on data types to check
@@ -156,45 +152,6 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
-  DataTypeVar
-*******************************************************************************/
-
-class DataTypeVar: public DataType {
-public: /* Methods: */
-
-    explicit DataTypeVar(DataType* dataType)
-        : DataType(DataType::VAR), m_dataType(dataType) {}
-
-    virtual inline ~DataTypeVar() { }
-
-    DataType* dataType() const { return m_dataType; }
-
-    virtual inline void print (std::ostream& os) const {
-        os << *m_dataType;
-    }
-
-    virtual void prettyPrint (std::ostream& os) const {
-        m_dataType->prettyPrint (os);
-    }
-
-    virtual inline bool canAssign(const DataType* other) const {
-        return other->latticeLEQ(m_dataType);
-    }
-
-    virtual inline bool latticeLEQ(const DataType* other) const {
-        return
-            m_dataType->DataType::latticeLEQ(other) &&
-            m_dataType->latticeLEQ(static_cast<const DataTypeVar*>(other)->m_dataType);
-    }
-
-    static DataTypeVar* get (Context& cxt, DataType* base);
-
-
-private: /* Fields: */
-    DataType* const m_dataType;
-};
-
-/*******************************************************************************
   DataTypeProcedureVoid
 *******************************************************************************/
 
@@ -252,10 +209,6 @@ public: /* Methods: */
 
     inline DataType* returnType() const { return m_ret; }
 
-    virtual inline bool canAssign(const DataType* other) const {
-        return other->latticeLEQ(m_ret);
-    }
-
     virtual bool latticeLEQ(const DataType*) const {
         assert (false && "We don't define lattice structure on function types yet!");
         return false;
@@ -274,9 +227,6 @@ inline SecurityType* DataType::secrecSecType() const {
     case BASIC:
         assert(dynamic_cast<const DataTypeBasic*>(this) != 0);
         return static_cast<const DataTypeBasic*>(this)->secType();
-    case VAR:
-        assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-        return static_cast<const DataTypeVar*>(this)->dataType()->secrecSecType();
     case PROCEDURE:
         assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
         return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecSecType();
@@ -292,9 +242,6 @@ inline SecrecDataType DataType::secrecDataType() const {
         case BASIC:
             assert(dynamic_cast<const DataTypeBasic*>(this) != 0);
             return static_cast<const DataTypeBasic*>(this)->dataType();
-        case VAR:
-            assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-            return static_cast<const DataTypeVar*>(this)->dataType()->secrecDataType();
         case PROCEDURE:
             assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
             return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDataType();
@@ -309,9 +256,6 @@ inline SecrecDimType DataType::secrecDimType() const {
         case BASIC:
             assert(dynamic_cast<const DataTypeBasic*>(this) != 0);
             return static_cast<const DataTypeBasic*>(this)->dimType();
-        case VAR:
-            assert(dynamic_cast<const DataTypeVar*>(this) != 0);
-            return static_cast<const DataTypeVar*>(this)->dataType()->secrecDimType();
         case PROCEDURE:
             assert(dynamic_cast<const DataTypeProcedure*>(this) != 0);
             return static_cast<const DataTypeProcedure*>(this)->returnType()->secrecDimType();

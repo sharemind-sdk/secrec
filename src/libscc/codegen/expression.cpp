@@ -73,6 +73,14 @@ CGBranchResult CodeGen::cgBoolSimple(TreeNodeExpr * e) {
 }
 
 /******************************************************************
+  TreeNodeExprNone
+******************************************************************/
+
+CGResult TreeNodeExprNone::codeGenWith (CodeGen&) {
+    return CGResult ();
+}
+
+/******************************************************************
   TreeNodeExprCast
 ******************************************************************/
 
@@ -1218,6 +1226,58 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
 }
 
 /*******************************************************************************
+  TreeNodeStringPart
+*******************************************************************************/
+
+CGResult CodeGen::cgStringPart (TreeNodeStringPart* p) {
+    return p->codeGenWith (*this);
+}
+
+/*******************************************************************************
+  TreeNodeStringPartFragment
+*******************************************************************************/
+
+CGResult TreeNodeStringPartFragment::codeGenWith (CodeGen& cg) {
+    return cg.cgStringPartFragment (this);
+}
+
+CGResult CodeGen::cgStringPartFragment (TreeNodeStringPartFragment* p) {
+    CGResult result;
+    result.setResult (ConstantString::get (getContext (), p->staticValue ()));
+    return result;
+}
+
+/*******************************************************************************
+  TreeNodeStringPartIdentifier
+*******************************************************************************/
+
+CGResult TreeNodeStringPartIdentifier::codeGenWith (CodeGen& cg) {
+    return cg.cgStringPartIdentifier (this);
+}
+
+CGResult CodeGen::cgStringPartIdentifier (TreeNodeStringPartIdentifier* p) {
+    CGResult result;
+    if (p->isConstant ()) {
+        result.setResult (ConstantString::get (getContext (), p->staticValue ()));
+    }
+    else {
+        TypeNonVoid* stringType = TypeNonVoid::get (getContext (), DATATYPE_STRING);
+        Symbol* argSymbol = m_st->find (SYM_SYMBOL, p->name ());
+
+        if (argSymbol->secrecType () == stringType) {
+            result.setResult (argSymbol);
+        }
+        else {
+            SymbolSymbol* resultSymbol = m_st->appendTemporary (stringType);
+            pushImopAfter (result, new Imop (p, Imop::TOSTRING, resultSymbol, argSymbol));
+            result.setResult (resultSymbol);
+        }
+    }
+
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeExprString
 *******************************************************************************/
 
@@ -1231,7 +1291,64 @@ CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    result.setResult(ConstantString::get(getContext(), e->value().str()));
+    std::vector<Symbol*> partResults;
+    BOOST_FOREACH (TreeNodeStringPart& part, e->parts ()) {
+        const CGResult& partResult = cgStringPart (&part);
+        append (result, partResult);
+        if (result.isNotOk ())
+            return result;
+
+        Symbol* sym = partResult.symbol ();
+        if (sym->symbolType () == SYM_CONSTANT) {
+            if (static_cast<ConstantString*>(sym)->value ().empty ())
+                continue;
+        }
+
+        partResults.push_back (sym);
+    }
+
+    std::vector<Symbol*> allocs; // temporary allocations
+    TypeNonVoid* stringType = static_cast<TypeNonVoid*>(e->resultType ());
+
+    while (partResults.size () > 1) {
+        std::vector<Symbol*> temp;
+        for (size_t i = 1, n = partResults.size (); i < n; i += 2) {
+            Symbol* prev = partResults[i-1];
+            Symbol* curr = partResults[i];
+
+            if (prev->symbolType () == SYM_CONSTANT && curr->symbolType () == SYM_CONSTANT) {
+                std::stringstream ss;
+                ss << static_cast<ConstantString*>(prev)->value ();
+                ss << static_cast<ConstantString*>(curr)->value ();
+                temp.push_back (ConstantString::get (getContext (), ss.str ()));
+            }
+            else {
+                Symbol* resultSym = m_st->appendTemporary (stringType);
+                pushImopAfter (result, new Imop (e, Imop::ADD, resultSym, prev, curr));
+                temp.push_back (resultSym);
+            }
+
+            if (prev->symbolType () != SYM_CONSTANT) allocs.push_back (prev);
+            if (curr->symbolType () != SYM_CONSTANT) allocs.push_back (curr);
+        }
+
+        if (partResults.size () % 2 == 1) {
+            temp.push_back (partResults.back ());
+        }
+
+        std::swap (temp, partResults);
+    }
+
+    assert (partResults.size () <= 1);
+    if (partResults.empty ()) {
+        partResults.push_back (ConstantString::get (getContext (), ""));
+    }
+
+    BOOST_FOREACH (Symbol* sym, allocs) {
+        releaseTemporary (result, sym);
+    }
+
+    result.setResult(partResults.front ());
     return result;
 }
 

@@ -219,18 +219,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != 0);
         TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF* secTyNode = tyNode->secType ();
-        Status status = visit(secTyNode);
-        if (status != OK)
-            return status;
-
-        status = visit (tyNode->dimType ());
-        if (status != OK)
-            return status;
-
-        status = visit (tyNode->dataType ());
-        if (status != OK)
-            return status;
-
+        TCGUARD (visit(secTyNode));
+        TCGUARD (visit (tyNode->dimType ()));
+        TCGUARD (visit (tyNode->dataType ()));
         SecurityType* secType = secTyNode->cachedType ();
         SecrecDataType dataType = tyNode->dataType ()->cachedType ();
         if (secType->isPublic ()) {

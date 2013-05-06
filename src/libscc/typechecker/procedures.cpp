@@ -127,13 +127,8 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<DataType *> & pa
     params.clear ();
     params.reserve (proc->params ().size ());
     BOOST_FOREACH (TreeNodeStmtDecl& decl, proc->params ()) {
-        Status s = visit (&decl);
-        if (s != OK)
-            return s;
-
-        TypeNonVoid* pt = decl.resultType();
-        assert(dynamic_cast<DataTypeVar*>(pt->dataType()) != 0);
-        params.push_back (static_cast<DataTypeVar*>(pt->dataType())->dataType());
+        TCGUARD (visit (&decl));
+        params.push_back (decl.resultType()->dataType ());
     }
 
     return OK;
@@ -151,9 +146,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
 
     std::swap (m_st, localScope);
     TreeNodeType* rt = proc->returnType ();
-    Status s = visit(rt);
-    if (s != OK)
-        return s;
+    TCGUARD (visit(rt));
 
     if (proc->procedureName() == "main" && rt->isNonVoid()) {
         m_log.fatal() << "Invalid return type procedure 'main' at " << proc->location() << '.';
@@ -166,8 +159,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
     }
 
     std::vector<DataType*> params;
-    if ((s = populateParamTypes(params, proc)) != OK)
-        return s;
+    TCGUARD (populateParamTypes(params, proc));
 
     DataTypeProcedureVoid* voidProcType =
             DataTypeProcedureVoid::get (getContext (), params);
@@ -267,7 +259,7 @@ TypeChecker::Status TypeChecker::checkProcCall(SymbolProcedure * symProc,
 
 TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                                                const TreeNodeExprProcCall & tyCxt,
-                                               const TreeNodeChildren<TreeNodeExpr>& arguments,
+                                               const TreeNodeSeqView<TreeNodeExpr>& arguments,
                                                SecreC::Type *& resultType,
                                                SymbolProcedure *& symProc)
 {
@@ -278,9 +270,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     std::vector<DataType*> argumentDataTypes;
 
     BOOST_FOREACH (TreeNodeExpr& arg, arguments) {
-        Status status = visitExpr(&arg);
-        if (status != OK)
-            return status;
+        TCGUARD (visitExpr(&arg));
         if (checkAndLogIfVoid(&arg))
             return E_TYPE;
         arg.instantiateDataType (getContext ());
@@ -291,9 +281,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     DataTypeProcedureVoid* argTypes =
             DataTypeProcedureVoid::get (getContext (), argumentDataTypes);
-    Status status = findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt);
-    if (status != OK)
-        return status;
+    TCGUARD (findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt));
 
     if (symProc == 0) {
         m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
@@ -391,10 +379,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
     Type* resultType = 0;
     SymbolProcedure* symProc = 0;
     TreeNodeIdentifier *id = root->procName ();
-    Status s = checkProcCall(id, *root, root->params (), resultType, symProc);
-    if (s != OK)
-        return s;
-
+    TCGUARD (checkProcCall(id, *root, root->params (), resultType, symProc));
     root->setProcedure (symProc);
     root->setResultType (resultType);
     return OK;
@@ -626,9 +611,7 @@ TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
     SymbolTable* localST = info.m_localScope;
     assert (localST->parent () == moduleST);
     std::swap (m_st, moduleST);
-    Status status = visit(body, localST);
-    if (status != OK)
-        return status;
+    TCGUARD (visit(body, localST));
 
     proc = findProcedure (m_st, body->procedureName (),
         static_cast<DataTypeProcedureVoid*>(body->procedureType ()->dataType ()));

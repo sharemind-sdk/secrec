@@ -106,8 +106,6 @@
 }
 %destructor { treenode_free($$); } <treenode>
 
- /* Identifiers: */
-%token <str> IDENTIFIER
 
  /* Keywords: */
 %token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
@@ -117,13 +115,17 @@
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
 %token SYSCALL_RETURN TYPE
 
+ /* Identifiers: */
+%token <str> IDENTIFIER
+
  /* Literals: */
 %token <str> BIN_LITERAL
 %token <str> DEC_LITERAL
 %token <str> FLOAT_LITERAL
 %token <str> HEX_LITERAL
 %token <str> OCT_LITERAL
-%token <str> STRING_LITERAL
+%token <str> STR_FRAGMENT
+%token <str> STR_IDENTIFIER
 
  /* Operators from higher to lower precedence: */
 %right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
@@ -221,6 +223,7 @@
 %type <treenode> variable_initialization
 %type <treenode> variable_initializations
 %type <treenode> while_statement
+%type <treenode> string_part
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -1325,10 +1328,21 @@ float_literal
  ;
 
 string_literal
- : STRING_LITERAL
+ : string_literal string_part
    {
-     $$ = treenode_init_string($1, &@$);
+     $$ = $1;
+     treenode_appendChild ($$, $2);
    }
+ | string_part
+   {
+     $$ = treenode_init (NODE_LITE_STRING, &@$);
+     treenode_appendChild ($$, $1);
+   }
+ ;
+
+string_part
+ : STR_IDENTIFIER { $$ = treenode_init_str_ident ($1, &@$); }
+ | STR_FRAGMENT { $$ = treenode_init_str_fragment ($1, &@$); }
  ;
 
 bool_literal

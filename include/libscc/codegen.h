@@ -262,6 +262,12 @@ public: /* Methods: */
     CGResult cgExprAssign (TreeNodeExprAssign* e);
     /// \}
 
+    /// \{
+    CGResult cgStringPart (TreeNodeStringPart* p);
+    CGResult cgStringPartIdentifier (TreeNodeStringPartIdentifier* p);
+    CGResult cgStringPartFragment (TreeNodeStringPartFragment* p);
+    /// \}
+
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = 0);

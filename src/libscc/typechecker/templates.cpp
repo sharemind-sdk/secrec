@@ -17,13 +17,6 @@
 #include "symboltable.h"
 #include "treenode.h"
 
-#define GUARD(expr) \
-    do { \
-        Status status = (expr); \
-        if (status != OK) \
-            return status; \
-    } while (0)
-
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -152,18 +145,18 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         typeVariables.insert (it, std::make_pair (name,
             TemplateTypeVariable (quant.typeVariable (), quantifierKind (quant))));
 
-        GUARD (visit (&quant));
+        TCGUARD (visit (&quant));
     }
 
     if (body->returnType ()->isNonVoid ()) {
         BOOST_FOREACH (TreeNodeTypeF& t, body->returnType ()->types ()) {
-            GUARD (checkTypeVariable (typeVariables, m_st, m_log, t, true));
+            TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, true));
         }
     }
 
     BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
         BOOST_FOREACH (TreeNodeTypeF& t, decl.varType ()->types ()) {
-            GUARD (checkTypeVariable (typeVariables, m_st, m_log, t, false));
+            TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, false));
         }
     }
 

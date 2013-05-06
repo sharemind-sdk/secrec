@@ -188,6 +188,8 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(VAR_INIT);
     CASE_NODE_NAME(DIMTYPE_CONST_F);
     CASE_NODE_NAME(DIMTYPE_VAR_F);
+    CASE_NODE_NAME(STRING_PART_IDENTIFIER);
+    CASE_NODE_NAME(STRING_PART_FRAGMENT);
     default: return "UNKNOWN";
     }
 }
@@ -235,10 +237,15 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
 *******************************************************************************/
 
 bool TreeNodeTypeF::isVariable () const {
-    return m_type == NODE_TYPEVAR ||
-           m_type == NODE_DATATYPE_VAR_F ||
-           m_type == NODE_DIMTYPE_VAR_F ||
-           m_type == NODE_SECTYPE_PRIVATE_F;
+    switch (m_type) {
+    case NODE_TYPEVAR:
+    case NODE_DATATYPE_VAR_F:
+    case NODE_DIMTYPE_VAR_F:
+    case NODE_SECTYPE_PRIVATE_F:
+        return true;
+    default:
+        return false;
+    }
 }
 
 TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
@@ -325,9 +332,9 @@ SecreC::Type * TreeNodeType::secrecType() const {
     return m_cachedType;
 }
 
-TreeNodeChildren<TreeNodeTypeF> TreeNodeType::types () const {
+TreeNodeSeqView<TreeNodeTypeF> TreeNodeType::types () const {
     assert(children().size() == 3);
-    return TreeNodeChildren<TreeNodeTypeF>(m_children);
+    return TreeNodeSeqView<TreeNodeTypeF>(m_children);
 }
 
 TreeNodeSecTypeF * TreeNodeType::secType() const {
@@ -431,8 +438,8 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
   TreeNodeExprArrayConstructor
 *******************************************************************************/
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeExprArrayConstructor::expressions () const {
-    return TreeNodeChildren<TreeNodeExpr>(m_children);
+TreeNodeSeqView<TreeNodeExpr> TreeNodeExprArrayConstructor::expressions () const {
+    return TreeNodeSeqView<TreeNodeExpr>(m_children);
 }
 
 /*******************************************************************************
@@ -564,9 +571,9 @@ TreeNodeIdentifier * TreeNodeExprProcCall::procName() const {
     return childAt<TreeNodeIdentifier>(this, 0);
 }
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeExprProcCall::params () const {
+TreeNodeSeqView<TreeNodeExpr> TreeNodeExprProcCall::params () const {
     assert (!children().empty());
-    return TreeNodeChildren<TreeNodeExpr>(++ children().begin(), children().end());
+    return TreeNodeSeqView<TreeNodeExpr>(++ children().begin(), children().end());
 }
 
 /*******************************************************************************
@@ -597,13 +604,35 @@ void TreeNodeExprBool::printXmlHelper (std::ostream & os) const {
   TreeNodeExprString
 *******************************************************************************/
 
-bool TreeNodeExprString::printHelper (std::ostream & os) const {
-    os << "\"" << m_value << "\"";
+TreeNodeSeqView<TreeNodeStringPart> TreeNodeExprString::parts () const {
+    return TreeNodeSeqView<TreeNodeStringPart>(m_children);
+}
+
+/*******************************************************************************
+  TreeNodeStringPartFragment
+*******************************************************************************/
+
+bool TreeNodeStringPartFragment::printHelper (std::ostream & os) const {
+    // TODO: escape this string
+    os << "\"" << strEscape (m_value.str ()) << "\"";
     return true;
 }
 
-void TreeNodeExprString::printXmlHelper (std::ostream & os) const {
+void TreeNodeStringPartFragment::printXmlHelper (std::ostream & os) const {
     os << " value=\"string:" << xmlEncode(m_value.str()) << "\"";
+}
+
+/*******************************************************************************
+  TreeNodeStringPartIdentifier
+*******************************************************************************/
+
+bool TreeNodeStringPartIdentifier::printHelper (std::ostream & os) const {
+    os << "\"" << m_name << "\"";
+    return true;
+}
+
+void TreeNodeStringPartIdentifier::printXmlHelper (std::ostream & os) const {
+    os << " value=\"string:" << xmlEncode(m_name.str()) << "\"";
 }
 
 /*******************************************************************************
@@ -721,8 +750,8 @@ TreeNodeExpr* TreeNodeExprReshape::reshapee () const {
     return expressionAt (this, 0);
 }
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeExprReshape::dimensions () const {
-    return TreeNodeChildren<TreeNodeExpr>(++ m_children.begin (), m_children.end ());
+TreeNodeSeqView<TreeNodeExpr> TreeNodeExprReshape::dimensions () const {
+    return TreeNodeSeqView<TreeNodeExpr>(++ m_children.begin (), m_children.end ());
 }
 
 /*******************************************************************************
@@ -794,9 +823,9 @@ TreeNodeStmt* TreeNodeProcDef::body () const {
     return childAt<TreeNodeStmt>(this, 2);
 }
 
-TreeNodeChildren<TreeNodeStmtDecl> TreeNodeProcDef::params () const {
+TreeNodeSeqView<TreeNodeStmtDecl> TreeNodeProcDef::params () const {
     assert (children ().size () > 2);
-    return TreeNodeChildren<TreeNodeStmtDecl>(children ().begin () + 3, children ().end ());
+    return TreeNodeSeqView<TreeNodeStmtDecl>(children ().begin () + 3, children ().end ());
 }
 
 const std::string TreeNodeProcDef::printableSignature() const {
@@ -873,9 +902,9 @@ TreeNodeProcDef* TreeNodeTemplate::body () const {
     return childAt<TreeNodeProcDef>(this, 1);
 }
 
-TreeNodeChildren<TreeNodeQuantifier> TreeNodeTemplate::quantifiers () const {
+TreeNodeSeqView<TreeNodeQuantifier> TreeNodeTemplate::quantifiers () const {
     assert (children ().size () == 2);
-    return TreeNodeChildren<TreeNodeQuantifier>(children ().at (0)->children ());
+    return TreeNodeSeqView<TreeNodeQuantifier>(children ().at (0)->children ());
 }
 
 /*******************************************************************************
@@ -896,9 +925,9 @@ TreeNodeExpr* TreeNodeExprQualified::expression () const {
     return expressionAt (this, 0);
 }
 
-TreeNodeChildren<TreeNodeTypeF> TreeNodeExprQualified::types() const {
+TreeNodeSeqView<TreeNodeTypeF> TreeNodeExprQualified::types() const {
     assert (children ().size () >= 2);
-    return TreeNodeChildren<TreeNodeTypeF>(++ children ().begin (), children ().end ());
+    return TreeNodeSeqView<TreeNodeTypeF>(++ children ().begin (), children ().end ());
 }
 
 /*******************************************************************************
@@ -940,7 +969,7 @@ StringRef TreeNodeStmtDecl::variableName() const {
     return initializer ()->variableName ();
 }
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeStmtDecl::shape () const {
+TreeNodeSeqView<TreeNodeExpr> TreeNodeStmtDecl::shape () const {
     return initializer ()->shape ();
 }
 
@@ -958,18 +987,18 @@ TreeNodeVarInit* TreeNodeStmtDecl::initializer () const {
     return childAt<TreeNodeVarInit>(this, 1);
 }
 
-TreeNodeChildren<TreeNodeVarInit> TreeNodeStmtDecl::initializers() const {
+TreeNodeSeqView<TreeNodeVarInit> TreeNodeStmtDecl::initializers() const {
     assert (children().size () >= 2);
-    return TreeNodeChildren<TreeNodeVarInit> (++ m_children.begin (), m_children.end ());
+    return TreeNodeSeqView<TreeNodeVarInit> (++ m_children.begin (), m_children.end ());
 }
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeVarInit::shape () const {
+TreeNodeSeqView<TreeNodeExpr> TreeNodeVarInit::shape () const {
     assert(children().size() > 0 && children().size() <= 3);
     if (children().size() > 1) {
-        return TreeNodeChildren<TreeNodeExpr>(children ().at (1)->children ());
+        return TreeNodeSeqView<TreeNodeExpr>(children ().at (1)->children ());
     }
 
-    return TreeNodeChildren<TreeNodeExpr>();
+    return TreeNodeSeqView<TreeNodeExpr>();
 }
 
 bool TreeNodeVarInit::hasRightHandSide() const {
@@ -1115,9 +1144,9 @@ TreeNodeStmt* TreeNodeStmtWhile::body () const {
   TreeNodeStmtPrint
 *******************************************************************************/
 
-TreeNodeChildren<TreeNodeExpr> TreeNodeStmtPrint::expressions() {
+TreeNodeSeqView<TreeNodeExpr> TreeNodeStmtPrint::expressions() {
     assert (children ().size () == 1);
-    return TreeNodeChildren<TreeNodeExpr>(children ().at (0)->children ());
+    return TreeNodeSeqView<TreeNodeExpr>(children ().at (0)->children ());
 }
 
 /*******************************************************************************
@@ -1129,9 +1158,9 @@ TreeNodeExprString* TreeNodeStmtSyscall::name () const {
     return childAt<TreeNodeExprString>(this, 0);
 }
 
-TreeNodeChildren<TreeNodeSyscallParam> TreeNodeStmtSyscall::params () const {
+TreeNodeSeqView<TreeNodeSyscallParam> TreeNodeStmtSyscall::params () const {
     assert (children ().size () >= 1);
-    return TreeNodeChildren<TreeNodeSyscallParam>(begin () + 1, end ());
+    return TreeNodeSeqView<TreeNodeSyscallParam>(begin () + 1, end ());
 }
 
 /*******************************************************************************
@@ -1257,12 +1286,21 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(IMPORT, Import);
     SELECTNODE(DIMTYPE_VAR_F, DimTypeVarF);
     SELECTNODE(TYPEVAR, TypeVarF);
+    SELECTNODE(LITE_STRING, ExprString);
+
+    SELECTNODE(INTERNAL_USE, InternalUse);
+    SELECTNODE(DIMENSIONS, Dimensions);
+    SELECTNODE(LVALUE, LValue);
+    SELECTNODE(SUBSCRIPT, Subscript);
+    SELECTNODE(INDEX_INT, IndexInt);
+    SELECTNODE(INDEX_SLICE, IndexSlice);
 
     SELECTNODETYPE(PUSH, SyscallParam);
     SELECTNODETYPE(PUSHCREF, SyscallParam);
     SELECTNODETYPE(PUSHREF, SyscallParam);
     SELECTNODETYPE(SYSCALL_RETURN, SyscallParam);
 
+    SELECTEXPR(NONE, None);
     SELECTEXPR(DECLASSIFY, Declassify);
     SELECTEXPR(PROCCALL, ProcCall);
     SELECTEXPR(RVARIABLE, RVariable);
@@ -1328,10 +1366,12 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTSTMT(WHILE, While);
     SELECTSTMT(PRINT, Print);
     SELECTSTMT(SYSCALL, Syscall);
+
     default:
-        assert(type != NODE_IDENTIFIER);
-        assert((type & NODE_LITE_MASK) == 0x0);
-        return (TreeNode *)(new SecreC::TreeNode(type, *loc));
+
+        // std::cerr << SecreC::TreeNode::typeName (type) << std::endl;
+        assert (false && "Node of this type should not be initialized with treenode_init");
+        return 0;
     }
 }
 
@@ -1381,8 +1421,12 @@ TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
     return (TreeNode *) new SecreC::TreeNodeExprInt(value, *loc);
 }
 
-TreeNode * treenode_init_string(TYPE_STRINGREF value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprString(*value, *loc);
+TreeNode * treenode_init_str_fragment(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeStringPartFragment (*value, *loc);
+}
+
+TreeNode * treenode_init_str_ident(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeStringPartIdentifier (*value, *loc);
 }
 
 TreeNode * treenode_init_float(TYPE_STRINGREF value, YYLTYPE * loc) {

@@ -30,7 +30,6 @@ private:
 public: /* Types: */
 
     typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
-    typedef std::map<DataType*, DataTypeVar*> DataTypeVarMap;
     typedef std::map<DataType*, TypeNonVoid*> TypeNonVoidMap;
     typedef std::map<std::vector<DataType*>, DataTypeProcedureVoid* > DataTypeProcedureVoidMap;
     typedef std::map<std::pair<DataTypeProcedureVoid*, DataType*>, DataTypeProcedure*> DataTypeProcedureMap;
@@ -53,7 +52,6 @@ public: /* Methods: */
     PrivateSecType* privateType (StringRef domain, SymbolKind* kind);
 
     /* Data types: */
-    DataTypeVar* varType (DataType* dtype);
     DataTypeProcedureVoid* voidProcedureType (const std::vector<DataType*>& params);
     DataTypeProcedure* procedureType (const std::vector<DataType*>& params, DataType* ret);
     DataTypeBasic* basicDataType (SecurityType* secTy, SecrecDataType dataType, SecrecDimType dim = 0);
@@ -71,7 +69,6 @@ public: /* Fields: */
     TypeVoid                  m_voidType;
     PublicSecType             m_pubSecType;
     PrivateSecTypeMap         m_privSecTypes;
-    DataTypeVarMap            m_varTypes;
     TypeNonVoidMap            m_nonVoidTypes;
     DataTypeProcedureVoidMap  m_voidProcTypes;
     DataTypeProcedureMap      m_procTypes;

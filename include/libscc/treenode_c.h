@@ -35,7 +35,8 @@ void treenode_moveChildren(TreeNode* from, TreeNode* to);
 TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
 TreeNode *treenode_init_int(uint64_t value, YYLTYPE *loc);
 
-TreeNode *treenode_init_string(TYPE_STRINGREF value, YYLTYPE *loc);
+TreeNode *treenode_init_str_fragment(TYPE_STRINGREF value, YYLTYPE *loc);
+TreeNode *treenode_init_str_ident(TYPE_STRINGREF value, YYLTYPE *loc);
 TreeNode *treenode_init_float(TYPE_STRINGREF value, YYLTYPE *loc);
 TreeNode *treenode_init_identifier(TYPE_STRINGREF value, YYLTYPE *loc);
 

@@ -13,6 +13,7 @@
 namespace SecreC {
 
 class TreeNode;
+class TreeNodeDataQuantifier;
 class TreeNodeDataTypeConstF;
 class TreeNodeDataTypeVarF;
 class TreeNodeDimQuantifier;
@@ -70,18 +71,19 @@ class TreeNodeStmtPrint;
 class TreeNodeStmtReturn;
 class TreeNodeStmtSyscall;
 class TreeNodeStmtWhile;
+class TreeNodeStringPart;
+class TreeNodeStringPartFragment;
+class TreeNodeStringPartIdentifier;
 class TreeNodeSyscallParam;
 class TreeNodeTemplate;
 class TreeNodeType;
 class TreeNodeTypeF;
-class TreeNodeDataQuantifier;
 class TreeNodeTypeVarF;
 class TreeNodeVarInit;
 
 
-
 template <class SubClass>
-class TreeNodeChildren;
+class TreeNodeSeqView;
 
 } // namespace SecreC
 

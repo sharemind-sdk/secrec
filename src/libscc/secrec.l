@@ -24,8 +24,26 @@
 }
 
 #define saveText(s) do {\
-        stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));\
+        stepLen(yyget_lloc(s), yyget_leng(s));\
         yyget_lval(s)->str = add_string (yyget_extra(s), yyget_text(s), yyget_leng(s));\
+    } while (0)
+
+#define STRBUF_SIZE 2048
+static char secrec_strbuf[STRBUF_SIZE];
+static unsigned secrec_strbuflen;
+
+void bufferChar (char c) {
+    secrec_strbuf[secrec_strbuflen ++] = c;
+}
+
+void clearBuffer () {
+    secrec_strbuflen = 0;
+}
+
+#define saveString(s) \
+    do { \
+        yyget_lval(s)->str = add_string (yyget_extra(s), &secrec_strbuf[0], secrec_strbuflen); \
+        clearBuffer (); \
     } while (0)
 
 %}
@@ -54,26 +72,42 @@ OCTALLIT        0o{OCTALDIGIT}+
 HEXLIT          0x{HEXDIGIT}+
 SIMPLEFLOAT     {DECIMAL}{EXPONENT}
 SCIENTIFICFLOAT {DECIMAL}\.{DIGIT}*{EXPONENT}?
-STRINGLIT       \"(\\.|[^\\"])*\"
 NEWLINE         (\n\r|\r\n|\n|\r)
 SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 
 
 %x COMMENT_C
 %x COMMENT_CPP
+%x STATE_STRING
+%x STATE_STRING_VARIABLE
 %%
 
+ /* C-style comments: */
 "/*"                      { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_C); }
 <COMMENT_C>[^*\n\r]*      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
 <COMMENT_C>"*"+[^*/\n\r]* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
 <COMMENT_C>{NEWLINE}      { newline(yyget_lloc(yyscanner)); }
 <COMMENT_C>"*"+"/"        { BEGIN(INITIAL); }
 
- /* Ignore C++-style comments: */
+ /* C++-style comments: */
 "//"               { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_CPP); }
 <COMMENT_CPP>[^\n] { stepChar(yyget_lloc(yyscanner)); }
 <COMMENT_CPP>[\n]  { newline(yyget_lloc(yyscanner)); BEGIN(INITIAL); }
 
+ /* String literals: */
+\"                 { BEGIN(STATE_STRING); stepChar(yyget_lloc(yyscanner)); clearBuffer (); }
+<STATE_STRING>\"   { BEGIN(INITIAL); stepChar(yyget_lloc(yyscanner)); saveString(yyscanner); return STR_FRAGMENT; }
+<STATE_STRING>\$   { BEGIN(STATE_STRING_VARIABLE); stepChar(yyget_lloc(yyscanner)); saveString(yyscanner); return STR_FRAGMENT; }
+<STATE_STRING>\\n  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\n'); }
+<STATE_STRING>\\t  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\t'); }
+<STATE_STRING>\\r  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\r'); }
+<STATE_STRING>\\.  { stepLen(yyget_lloc(yyscanner), 2); bufferChar (yyget_text(yyscanner)[1]); }
+<STATE_STRING>.    { stepChar(yyget_lloc(yyscanner)); bufferChar (yyget_text(yyscanner)[0]); }
+
+ /* String identifier: */
+<STATE_STRING_VARIABLE>{IDENTIFIER} { BEGIN(STATE_STRING); saveText(yyscanner); return STR_IDENTIFIER; }
+
+ /* Keywords: */
 "assert"     { stepLen(yyget_lloc(yyscanner), 6);  return ASSERT; }
 "bool"       { stepLen(yyget_lloc(yyscanner), 4);  return BOOL; }
 "break"      { stepLen(yyget_lloc(yyscanner), 5);  return BREAK; }
@@ -139,14 +173,6 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 {SIMPLEFLOAT}      { saveText(yyscanner); return FLOAT_LITERAL; }
 {SCIENTIFICFLOAT}  { saveText(yyscanner); return FLOAT_LITERAL; }
 {DECIMAL}          { saveText(yyscanner); return DEC_LITERAL; }
-{STRINGLIT}        {
-    stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner));
-    yyget_lval(yyscanner)->str = add_string (
-        yyget_extra(yyscanner),
-        yyget_text(yyscanner) + 1,
-        yyget_leng(yyscanner) - 2);
-    return STRING_LITERAL;
-}
 
 "+=" { stepLen(yyget_lloc(yyscanner), 2); return ADD_ASSIGN; }
 "&=" { stepLen(yyget_lloc(yyscanner), 2); return AND_ASSIGN; }

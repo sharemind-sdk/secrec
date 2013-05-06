@@ -17,7 +17,6 @@ namespace /* anonymous */ {
 TypeNonVoid::Kind kindToKind (DataType::Kind k) {
     switch (k) {
         case DataType::BASIC:         return TypeNonVoid::BASIC;
-        case DataType::VAR:           return TypeNonVoid::VAR;
         case DataType::PROCEDURE:     return TypeNonVoid::PROCEDURE;
         case DataType::PROCEDUREVOID: return TypeNonVoid::PROCEDUREVOID;
     }

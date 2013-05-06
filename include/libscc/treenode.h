@@ -21,6 +21,7 @@ class ModuleInfo;
 class TreeNodeProcDef;
 class TreeNode;
 class SymbolTypeVariable;
+class ConstantString;
 
 /******************************************************************
   TreeNode
@@ -85,9 +86,7 @@ protected: /* Methods: */
     // It's assumed that cloneV sets m_type, and m_location.
     // As the children are populated by clone method, it must not
     // explicitly add any by itself. Shallow copy only.
-    virtual TreeNode* cloneV () const {
-        return new TreeNode (m_type, m_location);
-    }
+    virtual TreeNode* cloneV () const = 0;
 
 protected: /* Fields: */
     TreeNode*                 m_parent;
@@ -98,11 +97,11 @@ protected: /* Fields: */
 };
 
 /******************************************************************
-  TreeNodeChildren
+  TreeNodesView
 ******************************************************************/
 
 template <class SubClass>
-class TreeNodeChildren {
+class TreeNodeSeqView {
 private: /* Types: */
 
     typedef TreeNode::ChildrenList::iterator        CLI;
@@ -153,14 +152,14 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    TreeNodeChildren () { }
+    TreeNodeSeqView () { }
 
-    explicit TreeNodeChildren (const TreeNode::ChildrenList& children)
+    explicit TreeNodeSeqView (const TreeNode::ChildrenList& children)
         : m_begin (children.begin ())
         , m_end (children.end ())
     { }
 
-    TreeNodeChildren (CLCI begin, CLCI end)
+    TreeNodeSeqView (CLCI begin, CLCI end)
         : m_begin (begin)
         , m_end (end)
     { }
@@ -191,28 +190,148 @@ private: /* Fields: */
 };
 
 template <class BaseClass>
-inline typename TreeNodeChildren<BaseClass>::iterator
-        range_begin (TreeNodeChildren<BaseClass>& x) {
+inline typename TreeNodeSeqView<BaseClass>::iterator
+        range_begin (TreeNodeSeqView<BaseClass>& x) {
     return x.begin ();
 }
 
 template <class BaseClass>
-inline typename TreeNodeChildren<BaseClass>::iterator
-        range_begin (const TreeNodeChildren<BaseClass>& x) {
+inline typename TreeNodeSeqView<BaseClass>::iterator
+        range_begin (const TreeNodeSeqView<BaseClass>& x) {
     return x.begin ();
 }
 
 template <class BaseClass>
-inline typename TreeNodeChildren<BaseClass>::iterator
-        range_end (TreeNodeChildren<BaseClass>& x) {
+inline typename TreeNodeSeqView<BaseClass>::iterator
+        range_end (TreeNodeSeqView<BaseClass>& x) {
     return x.end ();
 }
 
 template <class BaseClass>
-inline typename TreeNodeChildren<BaseClass>::iterator
-        range_end (const TreeNodeChildren<BaseClass>& x) {
+inline typename TreeNodeSeqView<BaseClass>::iterator
+        range_end (const TreeNodeSeqView<BaseClass>& x) {
     return x.end ();
 }
+
+/******************************************************************
+  TreeNodeInternalUse
+******************************************************************/
+
+class TreeNodeInternalUse: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeInternalUse(const Location & loc)
+        : TreeNode(NODE_INTERNAL_USE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeInternalUse (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeDimensions
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeDimensions: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeDimensions(const Location & loc)
+        : TreeNode(NODE_DIMENSIONS, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDimensions (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeLValue
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeLValue: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeLValue(const Location & loc)
+        : TreeNode(NODE_LVALUE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeLValue (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeSubscript
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeSubscript: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeSubscript(const Location & loc)
+        : TreeNode(NODE_SUBSCRIPT, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeSubscript (m_location);
+    }
+};
+
+// TODO: use this!
+/******************************************************************
+  TreeNodeIndex
+******************************************************************/
+
+class TreeNodeIndex: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeIndex(SecrecTreeNodeType type, const Location & loc)
+        : TreeNode(type, loc)
+    { }
+};
+
+/******************************************************************
+  TreeNodeIndexInt
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeIndexInt: public TreeNodeIndex {
+public: /* Methods: */
+
+    inline TreeNodeIndexInt(const Location & loc)
+        : TreeNodeIndex(NODE_INDEX_INT, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeIndexInt (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeIndexSlice
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeIndexSlice: public TreeNodeIndex {
+public: /* Methods: */
+
+    inline TreeNodeIndexSlice(const Location & loc)
+        : TreeNodeIndex(NODE_INDEX_SLICE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeIndexSlice (m_location);
+    }
+};
 
 /******************************************************************
   TreeNodeIdentifier
@@ -254,10 +373,6 @@ public: /* Methods: */
     TreeNodeIdentifier* identifier () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
     virtual void setTypeContext (TypeContext& cxt) const = 0;
-
-protected:
-
-    virtual TreeNode* cloneV () const  = 0;
 };
 
 /******************************************************************
@@ -450,7 +565,7 @@ public: /* Methods: */
     { }
 
     Type* secrecType () const;
-    TreeNodeChildren<TreeNodeTypeF> types () const;
+    TreeNodeSeqView<TreeNodeTypeF> types () const;
     TreeNodeSecTypeF* secType () const;
     TreeNodeDataTypeF* dataType () const;
     TreeNodeDimTypeF* dimType () const;
@@ -461,8 +576,6 @@ public: /* Methods: */
 protected:
 
     friend class TypeChecker;
-
-    virtual TreeNode* cloneV () const = 0;
 
 protected: /* Fields: */
 
@@ -522,8 +635,6 @@ public: /* Methods: */
         , m_resultType (0)
     { }
 
-    virtual ~TreeNodeExpr () { }
-
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
         assert (resultType () != 0);
@@ -547,8 +658,6 @@ public: /* Methods: */
 
 protected: /* Methods: */
 
-    virtual TreeNode* cloneV () const = 0;
-
     virtual void instantiateDataTypeV (Context&, SecrecDataType) {
         assert ("ICE! data types should not be instantiated on given tree node type");
     }
@@ -559,6 +668,27 @@ protected: /* Methods: */
 protected: /* Fields: */
 
     Type*   m_resultType; ///< Type of resulting value.
+};
+
+/******************************************************************
+  TreeNodeExprNone
+******************************************************************/
+
+class TreeNodeExprNone: public TreeNodeExpr {
+public: /* Methods: */
+
+    inline TreeNodeExprNone(const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_NONE, loc)
+    { }
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+protected:
+    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType);
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprNone (m_location);
+    }
 };
 
 /******************************************************************
@@ -573,10 +703,6 @@ public: /* Methods: */
     virtual ~TreeNodeStmt() { }
 
     virtual CGStmtResult codeGenWith (CodeGen&) = 0;
-
-protected:
-
-    virtual TreeNode* cloneV () const = 0;
 };
 
 /******************************************************************
@@ -592,7 +718,7 @@ public: /* Methods: */
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
-    TreeNodeChildren<TreeNodeExpr> expressions () const;
+    TreeNodeSeqView<TreeNodeExpr> expressions () const;
 
 protected:
 
@@ -788,7 +914,7 @@ public:
 
     TreeNodeExpr* reshapee () const;
 
-    TreeNodeChildren<TreeNodeExpr> dimensions () const;
+    TreeNodeSeqView<TreeNodeExpr> dimensions () const;
 
 protected:
 
@@ -985,7 +1111,7 @@ public: /* Methods: */
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeIdentifier* procName () const;
-    TreeNodeChildren<TreeNodeExpr> params () const;
+    TreeNodeSeqView<TreeNodeExpr> params () const;
 
     void setProcedure (SymbolProcedure* proc) {
         m_procedure = proc;
@@ -1041,15 +1167,56 @@ private: /* Fields: */
 /// String constants.
 class TreeNodeExprString: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprString(StringRef value,
-                              const Location & loc)
+    inline TreeNodeExprString(const Location & loc)
         : TreeNodeExpr(NODE_LITE_STRING, loc)
-        , m_value(value)
     { }
 
-    inline StringRef value() const { return m_value; }
+    TreeNodeSeqView<TreeNodeStringPart> parts () const;
 
+    bool isConstant () const;
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprString (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeStringPart
+******************************************************************/
+
+class TreeNodeStringPart: public TreeNode {
+public: /* Methods: */
+
+    TreeNodeStringPart (SecrecTreeNodeType type,
+                        const Location& loc)
+        : TreeNode (type, loc)
+    { }
+
+    virtual bool isConstant () const = 0;
+    virtual StringRef staticValue () const = 0;
+    virtual TypeChecker::Status accept (TypeChecker & tyChecker) = 0;
+    virtual CGResult codeGenWith (CodeGen& cg) = 0;
+};
+
+/******************************************************************
+  TreeNodeStringPartFragment
+******************************************************************/
+
+class TreeNodeStringPartFragment: public TreeNodeStringPart {
+public: /* Methods: */
+
+    TreeNodeStringPartFragment (StringRef value, const Location& loc)
+        : TreeNodeStringPart (NODE_STRING_PART_FRAGMENT, loc)
+        , m_value (value)
+    { }
+
+    bool isConstant () const { return true; }
+    StringRef staticValue () const { return m_value; }
+    TypeChecker::Status accept (TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
 protected:
@@ -1057,11 +1224,50 @@ protected:
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
-        return new TreeNodeExprString (m_value, m_location);
+        return new TreeNodeStringPartFragment (m_value, m_location);
     }
 
-private: /* Fields: */
+public: /* Private: */
     const StringRef m_value;
+};
+
+/******************************************************************
+  TreeNodeStringPartIdentifier
+******************************************************************/
+
+class TreeNodeStringPartIdentifier: public TreeNodeStringPart {
+public: /* Methods: */
+
+    TreeNodeStringPartIdentifier (StringRef name, const Location& loc)
+        : TreeNodeStringPart (NODE_STRING_PART_IDENTIFIER, loc)
+        , m_name (name)
+        , m_value (0)
+        , m_secrecType (0)
+    { }
+
+    StringRef name () const { return m_name; }
+    ConstantString* value () const { return m_value; }
+    void setValue (ConstantString* value) { m_value = value; }
+    TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (TypeNonVoid* secrecType) { m_secrecType = secrecType; }
+
+    bool isConstant () const { return m_value != 0; }
+    StringRef staticValue () const;
+    TypeChecker::Status accept (TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+
+protected:
+
+    virtual bool printHelper(std::ostream & os) const;
+    virtual void printXmlHelper (std::ostream & os) const;
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStringPartIdentifier (m_name, m_location);
+    }
+
+public: /* Private: */
+    const StringRef m_name;
+    ConstantString* m_value;
+    TypeNonVoid*    m_secrecType;
 };
 
 /******************************************************************
@@ -1228,7 +1434,7 @@ public: /* Methods: */
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
-    TreeNodeChildren<TreeNodeTypeF> types () const;
+    TreeNodeSeqView<TreeNodeTypeF> types () const;
 
 protected:
 
@@ -1373,7 +1579,7 @@ public:
     TreeNodeIdentifier* identifier () const;
     TreeNodeType* returnType () const;
     TreeNodeStmt* body () const;
-    TreeNodeChildren<TreeNodeStmtDecl> params () const;
+    TreeNodeSeqView<TreeNodeStmtDecl> params () const;
 
 protected: /* Methods: */
 
@@ -1509,7 +1715,7 @@ public: /* Methods: */
 
     TreeNodeProcDef* body () const;
 
-    TreeNodeChildren<TreeNodeQuantifier> quantifiers() const;
+    TreeNodeSeqView<TreeNodeQuantifier> quantifiers() const;
 
     ModuleInfo* containingModule () const {
         return m_containingModule;
@@ -1665,7 +1871,7 @@ public: /* Methods: */
     { }
 
     StringRef variableName() const;
-    TreeNodeChildren<TreeNodeExpr> shape () const;
+    TreeNodeSeqView<TreeNodeExpr> shape () const;
     bool hasRightHandSide() const;
     TreeNodeExpr* rightHandSide () const;
 
@@ -1712,10 +1918,10 @@ public: /* Methods: */
 
     /// Returns the first variable initializer.
     TreeNodeVarInit* initializer () const;
-    TreeNodeChildren<TreeNodeVarInit> initializers () const;
+    TreeNodeSeqView<TreeNodeVarInit> initializers () const;
     TreeNodeType* varType () const;
     StringRef variableName() const;
-    TreeNodeChildren<TreeNodeExpr> shape () const;
+    TreeNodeSeqView<TreeNodeExpr> shape () const;
     TreeNodeExpr* rightHandSide () const;
 
 protected:
@@ -1898,7 +2104,7 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    TreeNodeChildren<TreeNodeExpr> expressions ();
+    TreeNodeSeqView<TreeNodeExpr> expressions ();
 
 protected:
 
@@ -1937,7 +2143,7 @@ public: /* Methods: */
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
     TreeNodeExprString* name () const;
-    TreeNodeChildren<TreeNodeSyscallParam> params () const;
+    TreeNodeSeqView<TreeNodeSyscallParam> params () const;
 
 protected:
 
@@ -1951,13 +2157,13 @@ protected:
 namespace boost {
 
 template<class BaseClass>
-struct range_mutable_iterator<SecreC::TreeNodeChildren<BaseClass> > {
-    typedef typename SecreC::TreeNodeChildren<BaseClass>::iterator type;
+struct range_mutable_iterator<SecreC::TreeNodeSeqView<BaseClass> > {
+    typedef typename SecreC::TreeNodeSeqView<BaseClass>::iterator type;
 };
 
 template<class BaseClass>
-struct range_const_iterator<SecreC::TreeNodeChildren<BaseClass> > {
-    typedef typename SecreC::TreeNodeChildren<BaseClass>::iterator type;
+struct range_const_iterator<SecreC::TreeNodeSeqView<BaseClass> > {
+    typedef typename SecreC::TreeNodeSeqView<BaseClass>::iterator type;
 };
 
 } // namespace boost

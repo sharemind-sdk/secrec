@@ -222,15 +222,6 @@ DataTypeBasic* DataTypeBasic::get (Context& cxt,
 }
 
 /*******************************************************************************
-  DataTypeVar
-*******************************************************************************/
-
-DataTypeVar* DataTypeVar::get (Context& cxt, DataType* base) {
-    ContextImpl& impl = *cxt.pImpl ();
-    return impl.varType (base);
-}
-
-/*******************************************************************************
   DataTypeProcedureVoid
 *******************************************************************************/
 

@@ -15,6 +15,7 @@
 #include <boost/foreach.hpp>
 
 #include "types.h"
+#include "misc.h"
 
 namespace /* anonymous */ {
 template <typename Key, typename T, typename Cmp >
@@ -31,7 +32,6 @@ namespace SecreC {
 
 ContextImpl::~ContextImpl () {
     deleteValues (m_privSecTypes);
-    deleteValues (m_varTypes);
     deleteValues (m_nonVoidTypes);
     deleteValues (m_voidProcTypes);
     deleteValues (m_procTypes);
@@ -53,17 +53,6 @@ PrivateSecType* ContextImpl::privateType (StringRef name,
     if (i == m_privSecTypes.end ()) {
         i = m_privSecTypes.insert (i,
             PrivateSecTypeMap::value_type (name, new PrivateSecType (name, kind)));
-    }
-
-    return i->second;
-}
-
-/* Data types: */
-DataTypeVar* ContextImpl::varType (DataType* dtype) {
-    DataTypeVarMap::iterator i = m_varTypes.find (dtype);
-    if (i == m_varTypes.end ()) {
-        i = m_varTypes.insert (i,
-            DataTypeVarMap::value_type (dtype, new DataTypeVar (dtype)));
     }
 
     return i->second;

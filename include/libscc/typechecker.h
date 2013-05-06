@@ -23,6 +23,15 @@ class TypeContext;
 class TypeNonVoid;
 struct InstanceInfo;
 
+#ifndef TCGUARD
+#define TCGUARD(expr) \
+    do { \
+        const Status status = (expr); \
+        if (status != OK) \
+            return status; \
+    } \
+    while (false)
+#endif
 
 /*******************************************************************************
   TypeChecker
@@ -102,6 +111,10 @@ public: /* Methods: */
     Status visit(TreeNodeStmtSyscall * stmt);
     Status visit(TreeNodeStmtAssert * stmt);
 
+    Status visit(TreeNodeStringPart * p);
+    Status visit(TreeNodeStringPartFragment * p);
+    Status visit(TreeNodeStringPartIdentifier * p);
+
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
 
@@ -153,7 +166,7 @@ private:
      */
     Status checkProcCall(TreeNodeIdentifier * name,
                          const TreeNodeExprProcCall & tyCxt,
-                         const TreeNodeChildren<TreeNodeExpr>& arguments,
+                         const TreeNodeSeqView<TreeNodeExpr>& arguments,
                          SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);
 

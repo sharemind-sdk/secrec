@@ -87,7 +87,7 @@ bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr
     return std::memcmp (x->_mpfr_d, y->_mpfr_d, num_bytes) < 0;
 }
 
-// TODO: don't rely on IEEE representation!
+// TODO: don't rely on IEEE representation of float!
 uint32_t APFloat::ieee32bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
     float float_result = mpfr_get_flt (m_value, MPFR_RNDN);
@@ -95,7 +95,7 @@ uint32_t APFloat::ieee32bits () const {
     return *result;
 }
 
-// TODO: don't rely on IEEE representation!
+// TODO: don't rely on IEEE representation of double!
 uint64_t APFloat::ieee64bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT64));
     double double_result = mpfr_get_d (m_value, MPFR_RNDN);

@@ -41,10 +41,6 @@ public: /* Methods: */
 
     inline bool isVoid() const { return m_isVoid; }
 
-    virtual inline bool canAssign(const Type*) const {
-        return false;
-    }
-
     inline bool isPublicIntScalar () const;
     inline SecurityType* secrecSecType() const;
     inline SecrecDataType secrecDataType() const;
@@ -91,7 +87,6 @@ public: /* Types: */
 
     enum Kind {
         BASIC,        /**< DataTypeBasic.         */
-        VAR,          /**< DataTypeVar.           */
         PROCEDURE,    /**< DataTypeProcedure.     */
         PROCEDUREVOID /**< DataTypeProcedureVoid. */
     };
@@ -110,13 +105,6 @@ public: /* Methods: */
 
     inline Kind kind() const { return m_kind; }
     inline DataType* dataType() const { return m_dataType; }
-
-    virtual inline bool canAssign(const Type* other) const {
-        if (other->isVoid ()) return false;
-        assert(dynamic_cast<const TypeNonVoid*>(other) != 0);
-        const TypeNonVoid* o = static_cast<const TypeNonVoid*>(other);
-        return m_dataType->canAssign (o->m_dataType);
-    }
 
     inline bool latticeLEQ(const TypeNonVoid* other) const {
         return m_dataType->latticeLEQ (other->m_dataType);

@@ -35,9 +35,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
 
     BOOST_FOREACH (TreeNodeExpr& e, varInit->shape()) {
         e.setContextIndexType(getContext());
-        Status s = visitExpr(&e);
-        if (s != OK)
-            return s;
+        TCGUARD (visitExpr(&e));
         if (checkAndLogIfVoid(&e))
             return E_TYPE;
         if (!e.resultType ()->isPublicIntScalar()) {
@@ -59,12 +57,10 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
     if (varInit->rightHandSide() != 0) {
         TreeNodeExpr * e = varInit->rightHandSide();
         e->setContext(ty);
-        Status s = visitExpr(e);
-        if (s != OK)
-            return s;
+        TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        if (!ty->canAssign(e->resultType())) {
+        if (!static_cast<TypeNonVoid*>(e->resultType())->latticeLEQ (ty)) {
             m_log.fatalInProc(varInit) << "Illegal assignment at "
                                        << varInit->location() << '.';
             m_log.fatal() << "Got " << (*e->resultType())
@@ -132,27 +128,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
 // individual variable initializations will be requested by the code
 // generator (see CodeGen::cgVarInit).
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
-    typedef DataTypeBasic DTB;
-    typedef TypeNonVoid TNV;
-
     if (decl->haveResultType ())
         return OK;
 
     TreeNodeType *type = decl->varType ();
-    Status s = visit(type);
-    if (s != OK)
-        return s;
-
-    assert (!type->secrecType()->isVoid());
-    assert (dynamic_cast<TNV*>(type->secrecType()) != 0);
-    TNV* justType = static_cast<TNV*>(type->secrecType());
-
-    assert(justType->kind() == TNV::BASIC);
-    assert(dynamic_cast<DTB*>(justType->dataType()) != 0);
-    DTB* dataType = static_cast<DTB*>(justType->dataType());
-
-    decl->setResultType (TypeNonVoid::get (getContext (),
-        DataTypeVar::get (getContext (), dataType)));
+    TCGUARD (visit(type));
+    assert (! type->secrecType()->isVoid());
+    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != 0);
+    TypeNonVoid* justType = static_cast<TypeNonVoid*>(type->secrecType());
+    decl->setResultType (justType);
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
@@ -174,9 +158,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
         e.setContextSecType (PublicSecType::get (getContext ()));
         e.setContextDimType (0);
 
-        Status s = visitExpr(&e);
-        if (s != OK)
-            return s;
+        TCGUARD (visitExpr(&e));
 
         e.instantiateDataType (getContext ());
 
@@ -226,13 +208,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
             return E_TYPE;
         }
 
+        // TODO: fix this workaround
+        DataType* procReturnType = static_cast<DataTypeProcedure*>(procType->dataType ())->returnType ();
         e->setContext (procType);
-        Status s = visitExpr(e);
-        if (s != OK)
-            return s;
+        TCGUARD (visitExpr(e));
         e = classifyIfNeeded(e, procType->secrecSecType());
-        if (!procType->canAssign (e->resultType ()) ||
-             procType->secrecDimType () != e->resultType ()->secrecDimType ())
+        if (! static_cast<TypeNonVoid*>(e->resultType ())->dataType ()->latticeLEQ (procReturnType) ||
+              procType->secrecDimType () != e->resultType ()->secrecDimType ())
         {
             m_log.fatalInProc(stmt) << "Cannot return value of type "
                                     << *e->resultType ()
@@ -252,9 +234,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
     TreeNodeExprString* e = stmt->name ();
-    Status s = visit (e);
-    if (s != OK)
-        return s;
+    TCGUARD (visit (e));
+
+    if (! e->isConstant ()) {
+        m_log.fatalInProc (stmt) << "Syscall name at " << e->location ()
+                              << " is not a static string.";
+        return E_TYPE;
+    }
 
     bool hasReturn = false;
 
@@ -264,9 +250,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
             e->setContextSecType (PublicSecType::get (getContext ()));
         }
 
-        s = visitExpr (e);
-        if (s != OK)
-            return s;
+        TCGUARD (visitExpr (e));
 
         e->instantiateDataType (getContext ());
 
@@ -298,9 +282,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
-    Status s = visitExpr(e);
-    if (s != OK)
-        return s;
+    TCGUARD (visitExpr(e));
 
     if (checkPublicBooleanScalar (e) != OK) {
         assert(e->haveResultType());

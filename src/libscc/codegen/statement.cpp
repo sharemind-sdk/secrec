@@ -760,8 +760,11 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
         pushImopAfter(result, i);
     }
 
-    Imop * i = new Imop(s, Imop::SYSCALL, ret, nameResult.symbol());
-    pushImopAfter(result, newComment(s->name()->value()));
+    assert (dynamic_cast<ConstantString*>(nameResult.symbol ()) != 0);
+    ConstantString* syscallName = static_cast<ConstantString*>(nameResult.symbol ());
+
+    Imop * i = new Imop(s, Imop::SYSCALL, ret, syscallName);
+    pushImopAfter(result, newComment(syscallName->value()));
     pushImopAfter(result, i);
 
     BOOST_FOREACH (const NodeSymbolPair & ts, results) {
