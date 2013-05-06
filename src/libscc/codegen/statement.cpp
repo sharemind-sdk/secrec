@@ -141,7 +141,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     const bool isPrivate = ty->secrecSecType()->isPrivate();
 
 
-    TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
     ns->setScopeType(scopeType);
@@ -152,7 +152,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
            && "ICE: string arrays should be forbidden by the type checker!");
 
     // Initialize shape:
-    TypeNonVoid * const dimType = TypeNonVoid::getIndexType(getContext());
+    TypeBasic * const dimType = TypeBasic::getIndexType(getContext());
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         std::stringstream ss;
         ss << varInit->variableName() << "{d" << i << "}";
@@ -673,7 +673,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
     if (m_tyChecker->visit(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    TypeNonVoid * strTy = TypeNonVoid::get(getContext(), DATATYPE_STRING);
+    TypeBasic * strTy = TypeBasic::get(getContext(), DATATYPE_STRING);
 
     CGStmtResult result;
     Symbol * accum = 0;

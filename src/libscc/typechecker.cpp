@@ -77,7 +77,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
     }
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
-    TypeNonVoid * const newTy = TypeNonVoid::get(getContext(), need, destDType, dimDType);
+    TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
     TreeNodeExprClassify * const ec = new TreeNodeExprClassify(need, child->location());
     ec->appendChild(child);
     ec->resetParent(parent);
@@ -150,16 +150,14 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
             assert (dynamic_cast<TreeNodeExpr*>(j) != 0);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
             e->setContextIndexType (getContext ());
-            Status s = visitExpr(e);
-            if (s != OK)
-                return s;
+            TCGUARD (visitExpr(e));
 
             if (checkAndLogIfVoid(e))
                 return E_TYPE;
 
             TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
 
-            if (! eTy->isPublicIntScalar ()) {
+            if (! eTy->isPublicUIntScalar ()) {
                 m_log.fatalInProc(node) << "Invalid type for index at "
                                         << e->location()
                                         << ". Expected public integer scalar, got "

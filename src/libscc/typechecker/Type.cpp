@@ -238,7 +238,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
             }
         }
 
-        tyNode->m_cachedType = TypeNonVoid::get (m_context,
+        tyNode->m_cachedType = TypeBasic::get (m_context,
             secType, dataType, tyNode->dimType ()->cachedType ());
     }
     else {

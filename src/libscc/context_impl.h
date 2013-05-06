@@ -30,10 +30,8 @@ private:
 public: /* Types: */
 
     typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
-    typedef std::map<DataType*, TypeNonVoid*> TypeNonVoidMap;
-    typedef std::map<std::vector<DataType*>, DataTypeProcedureVoid* > DataTypeProcedureVoidMap;
-    typedef std::map<std::pair<DataTypeProcedureVoid*, DataType*>, DataTypeProcedure*> DataTypeProcedureMap;
-    typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType >, DataTypeBasic*> DataTypeBasicMap;
+    typedef std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*> TypeProcMap;
+    typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType>, TypeBasic*> TypeBasicMap;
 
     typedef std::map<StringRef, ConstantString*> ConstantStringMap;
     typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;
@@ -51,33 +49,22 @@ public: /* Methods: */
     PublicSecType* publicType ();
     PrivateSecType* privateType (StringRef domain, SymbolKind* kind);
 
-    /* Data types: */
-    DataTypeProcedureVoid* voidProcedureType (const std::vector<DataType*>& params);
-    DataTypeProcedure* procedureType (const std::vector<DataType*>& params, DataType* ret);
-    DataTypeBasic* basicDataType (SecurityType* secTy, SecrecDataType dataType, SecrecDimType dim = 0);
-
-    /* Types: */
-    TypeVoid* voidType ();
-    TypeNonVoid* nonVoidType (DataType* dType);
-
 public: /* Fields: */
 
     /* Strings: */
-    StringTable               m_stringTable;
+    StringTable           m_stringTable;
 
     /* All types: */
-    TypeVoid                  m_voidType;
-    PublicSecType             m_pubSecType;
-    PrivateSecTypeMap         m_privSecTypes;
-    TypeNonVoidMap            m_nonVoidTypes;
-    DataTypeProcedureVoidMap  m_voidProcTypes;
-    DataTypeProcedureMap      m_procTypes;
-    DataTypeBasicMap          m_basicTypes;
+    TypeVoid              m_voidType;
+    TypeProcMap           m_procTypes;
+    TypeBasicMap          m_basicTypes;
+    PublicSecType         m_pubSecType;
+    PrivateSecTypeMap     m_privSecTypes;
 
     /* All constants: */
-    ConstantStringMap         m_stringLiterals;
-    NumericConstantMap        m_numericConstants[2]; ///< 0 - unsigned, 1 - signed
-    FloatConstantMap          m_floatConstants;
+    ConstantStringMap     m_stringLiterals;
+    NumericConstantMap    m_numericConstants[2]; ///< 0 - unsigned, 1 - signed
+    FloatConstantMap      m_floatConstants;
 };
 
 } // namespace SecreC

@@ -248,7 +248,7 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
 SymbolSymbol * CodeGen::generateResultSymbol(CGResult & result, SecreC::Type * _ty) {
     if (! _ty->isVoid()) {
         TypeNonVoid * ty = static_cast<TypeNonVoid *>(_ty);
-        TypeNonVoid * intTy = TypeNonVoid::getIndexType(getContext());
+        TypeBasic * intTy = TypeBasic::getIndexType(getContext());
         SymbolSymbol * sym = m_st->appendTemporary(ty);
         result.setResult(sym);
 
@@ -272,7 +272,7 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 }
 
 CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
-    TypeNonVoid * ty = TypeNonVoid::getIndexType(getContext());
+    TypeBasic * ty = TypeBasic::getIndexType(getContext());
     CGResult result;
     Symbol * tmp = strideInfo.symbol();
     const unsigned n = tmp->secrecType()->secrecDimType();
@@ -308,7 +308,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
     assert(dynamic_cast<SymbolSymbol *>(tmp) != 0);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     Symbol * zero = indexConstant(0);
-    TypeNonVoid * boolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
     unsigned count = 0;
     BOOST_FOREACH (Symbol * idx, loopInfo) {
         Imop * i = new Imop(m_node, Imop::ASSIGN, idx, zero);
@@ -331,7 +331,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
 CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv) {
     typedef SubscriptInfo::SPV SPV;
     assert(loopInfo.empty());
-    TypeNonVoid * boolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
     CGResult result;
     LoopInfo::const_iterator idxIt;
 
@@ -473,7 +473,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
 
-        TypeNonVoid * boolTy = TypeNonVoid::getPublicBoolType(getContext());
+        TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
         SymbolTemporary * temp_bool = m_st->appendTemporary(boolTy);
 
         dim_iterator dit = dim_begin(x);

@@ -1571,7 +1571,7 @@ public:
         return m_cachedType != 0;
     }
 
-    TypeNonVoid* procedureType() const {
+    TypeProc* procedureType() const {
         assert(m_cachedType != 0);
         return m_cachedType;
     }
@@ -1590,7 +1590,7 @@ protected: /* Methods: */
     }
 
 protected: /* Fields: */
-    TypeNonVoid*      m_cachedType;
+    TypeProc*         m_cachedType;
     SymbolProcedure*  m_procSymbol;
 };
 

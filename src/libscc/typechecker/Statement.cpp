@@ -38,7 +38,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         TCGUARD (visitExpr(&e));
         if (checkAndLogIfVoid(&e))
             return E_TYPE;
-        if (!e.resultType ()->isPublicIntScalar()) {
+        if (!e.resultType ()->isPublicUIntScalar()) {
             m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
                                        << e.location() << '.';
             return E_TYPE;
@@ -192,29 +192,30 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
-    TypeNonVoid* procType = stmt->containingProcedure ()->procedureType ();
-    if (!stmt->hasExpression()) {
-        if (procType->kind () == TypeNonVoid::PROCEDURE) {
+    TypeProc* procType = stmt->containingProcedure ()->procedureType ();
+    if (!stmt->hasExpression()) { // stmt = return;
+        if (! procType->returnType ()->isVoid ()) {
             m_log.fatalInProc(stmt) << "Cannot return from non-void procedure "
                                        "without value at " << stmt->location() << '.';
             return E_TYPE;
         }
-    } else {
+    }
+    else { // stmt = return e;
         TreeNodeExpr * e = stmt->expression ();
 
-        if (procType->kind () == TypeNonVoid::PROCEDUREVOID) {
+        if (procType->returnType ()->isVoid ()) {
             m_log.fatalInProc(stmt) << "Cannot return value from void procedure at"
                                     << stmt->location() << '.';
             return E_TYPE;
         }
 
-        // TODO: fix this workaround
-        DataType* procReturnType = static_cast<DataTypeProcedure*>(procType->dataType ())->returnType ();
         e->setContext (procType);
         TCGUARD (visitExpr(e));
         e = classifyIfNeeded(e, procType->secrecSecType());
-        if (! static_cast<TypeNonVoid*>(e->resultType ())->dataType ()->latticeLEQ (procReturnType) ||
-              procType->secrecDimType () != e->resultType ()->secrecDimType ())
+        TypeBasic* resultType = static_cast<TypeBasic*>(e->resultType ());
+        TypeBasic* returnType = static_cast<TypeBasic*>(procType->returnType ());
+        if (! resultType->latticeLEQ (returnType) ||
+              resultType->secrecDimType () != returnType->secrecDimType ())
         {
             m_log.fatalInProc(stmt) << "Cannot return value of type "
                                     << *e->resultType ()

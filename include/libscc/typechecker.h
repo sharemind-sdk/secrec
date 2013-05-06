@@ -12,8 +12,8 @@ namespace SecreC {
 
 class CompileLog;
 class Context;
-class DataType;
-class DataTypeProcedureVoid;
+class TypeBasic;
+class TypeProc;
 class Instantiation;
 class SecurityType;
 class SymbolTable;
@@ -147,14 +147,10 @@ private:
                                     bool isInc);
     Status checkIndices(TreeNode * node, SecrecDimType & destDim);
     bool checkAndLogIfVoid (TreeNodeExpr * e);
-    Status populateParamTypes(std::vector<DataType *> & params,
+    Status populateParamTypes(std::vector<TypeBasic *> & params,
                               TreeNodeProcDef * proc);
     Status getInstance(SymbolProcedure *& proc,
                        const Instantiation & inst);
-
-    Status checkProcCall(SymbolProcedure * symProc,
-                         DataTypeProcedureVoid * argTypes,
-                         SecreC::Type *& resultType);
 
     /**
      * \brief Type check a procedure, and classify parameters if needed.
@@ -174,7 +170,7 @@ private:
     // procedure returns true. No additional side effects are performed.
     bool unify (Instantiation &inst,
                 const TypeContext& tyCxt,
-                DataTypeProcedureVoid* argTypes) const;
+                TypeProc* argTypes) const;
 
     /**
      * \brief Looks for a best matching procedure or template.
@@ -191,7 +187,7 @@ private:
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 StringRef name,
                                 const TypeContext & tyCxt,
-                                DataTypeProcedureVoid * argTypes,
+                                TypeProc* argTypes,
                                 const TreeNode * errorCxt);
 
 private: /* Fields: */

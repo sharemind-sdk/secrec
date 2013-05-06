@@ -113,7 +113,7 @@ ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value
     IntMap& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
     IntMap::iterator it = map.find (apvalue);
     if (it == map.end ()) {
-        ConstantInt* cvalue = new ConstantInt (TypeNonVoid::get (cxt, type), apvalue);
+        ConstantInt* cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
         it = map.insert (it, std::make_pair (apvalue, cvalue));
     }
 
@@ -143,7 +143,7 @@ ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, const APFl
     FloatMap& map = cxt.pImpl ()->m_floatConstants;
     FloatMap::iterator it = map.find (value);
     if (it == map.end ()) {
-        ConstantFloat* cfloat = new ConstantFloat (TypeNonVoid::get (cxt, type), value);
+        ConstantFloat* cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
         it = map.insert (it, std::make_pair (value, cfloat));
     }
 
@@ -163,7 +163,7 @@ ConstantString* ConstantString::get (Context& cxt, StringRef str) {
     if (it == map.end ()) {
         // Make sure that the string is allocated in the table
         StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
-        ConstantString* cstr = new ConstantString (TypeNonVoid::get (cxt, DATATYPE_STRING), val);
+        ConstantString* cstr = new ConstantString (TypeBasic::get (cxt, DATATYPE_STRING), val);
         it = map.insert (it, std::make_pair (val, cstr));
     }
 

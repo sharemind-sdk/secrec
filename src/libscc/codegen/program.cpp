@@ -132,10 +132,9 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     assert(bodyResult.continueList().empty());
 
     // Static checking:
-    assert(!ns->secrecType()->isVoid());
-    assert(dynamic_cast<TNV *>(ns->secrecType()) != 0);
-    TNV * fType = static_cast<TNV *>(ns->secrecType());
-    if (fType->kind() == TNV::PROCEDURE) {
+    assert(ns->secrecType()->kind () == Type::PROCEDURE);
+    TypeProc * fType = static_cast<TypeProc*>(ns->secrecType());
+    if (! fType->returnType ()->isVoid ()) {
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
                 m_log.fatal() << "Procedure at " << def->location()
@@ -157,7 +156,6 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
         }
         assert((bodyResult.flags() & CGStmtResult::RETURN) != 0x0);
     } else {
-        assert(fType->kind() == TNV::PROCEDUREVOID);
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {
                 m_log.fatal() << "Procedure at " << def->location()
@@ -171,7 +169,6 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
                 return result;
             }
 
-            assert(fType->kind() == TNV::PROCEDUREVOID);
             releaseProcVariables(result);
 
             Imop * i = newReturn(def);

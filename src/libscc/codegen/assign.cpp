@@ -68,8 +68,8 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
     result.setResult (arg2Result.symbol ());
 
-    TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());
-    TypeNonVoid * pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
+    TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     // x[e1,...,ek] = e
     if (lval->children().size() == 2) {
@@ -164,7 +164,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // 9. load and store
         {
-            TypeNonVoid * ty = TypeNonVoid::get(getContext(),
+            TypeBasic * ty = TypeBasic::get(getContext(),
                     e->resultType()->secrecSecType(), e->resultType()->secrecDataType());
             if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
                 if (!eArg2->resultType()->isScalar()) {

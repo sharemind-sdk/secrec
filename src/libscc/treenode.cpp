@@ -428,7 +428,7 @@ void TreeNodeExpr::setResultType(SecreC::Type * type) {
 
 void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
     assert(dynamic_cast<TypeNonVoid *>(m_resultType) != 0);
-    m_resultType = TypeNonVoid::get(cxt,
+    m_resultType = TypeBasic::get(cxt,
             m_resultType->secrecSecType(),
             dType,
             m_resultType->secrecDimType());

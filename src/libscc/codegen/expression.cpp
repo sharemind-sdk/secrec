@@ -199,14 +199,14 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     // 4. initialze required temporary symbols
     LoopInfo loopInfo;
     Context & cxt = getContext();
-    TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(cxt);
+    TypeBasic * pubIntTy = TypeBasic::getIndexType(cxt);
     for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
         Symbol * sym = m_st->appendTemporary(pubIntTy);
         loopInfo.push_index(sym);
     }
 
     Symbol * offset = m_st->appendTemporary(pubIntTy);
-    Symbol * tmp_result = m_st->appendTemporary(TypeNonVoid::get(cxt,
+    Symbol * tmp_result = m_st->appendTemporary(TypeBasic::get(cxt,
                 e->resultType()->secrecSecType(), e->resultType()->secrecDataType()));
     Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
 
@@ -385,7 +385,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     SecrecDimType k = e->dimensionality()->value();
     SecrecDimType n = e->resultType()->secrecDimType();
@@ -439,7 +439,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Symbols for running indices:
     LoopInfo loopInfo;
-    TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());
+    TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
     for (SecrecDimType it = 0; it < n; ++ it) {
         Symbol * sym = m_st->appendTemporary(pubIntTy);
         loopInfo.push_index(sym);
@@ -451,7 +451,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    TypeNonVoid * elemType = TypeNonVoid::get(getContext(),
+    TypeBasic * elemType = TypeBasic::get(getContext(),
             e->resultType()->secrecSecType(), e->resultType()->secrecDataType());
     Symbol * offset = m_st->appendTemporary(pubIntTy);
     Symbol * tmpInt = m_st->appendTemporary(pubIntTy);
@@ -465,7 +465,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     initSymbol(result, offset, indexConstant(0));
 
     // IF (i_k >= d_k) GOTO T1;
-    SymbolTemporary * temp_bool = m_st->appendTemporary(TypeNonVoid::getPublicBoolType(getContext()));
+    SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
     Imop * i = new Imop(e, Imop::GE, temp_bool, loopInfo.at(k), arg1ResultSymbol->getDim(k));
     push_imop(i);
 
@@ -586,7 +586,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         assert(dynamic_cast<SymbolSymbol *>(rhs) != 0);
         // Check that new and old sizes are equal:
         Symbol * sizeSymbol = static_cast<SymbolSymbol *>(rhs)->getSizeSym();
-        SymbolTemporary * temp_bool = m_st->appendTemporary(TypeNonVoid::getPublicBoolType(getContext()));
+        SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
 
         Imop * test = new Imop(e, Imop::EQ, temp_bool, sizeSymbol, resSym->getSizeSym());
         pushImopAfter(result, test);
@@ -653,7 +653,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
     TreeNodeExpr * eArg1 = e->leftExpression();
     TreeNodeExpr * eArg2 = e->rightExpression();
 
@@ -895,7 +895,7 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
                 return result;
             }
 
-            SymbolSymbol * temp = m_st->appendTemporary(TypeNonVoid::getPublicBoolType(getContext()));
+            SymbolSymbol * temp = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
             pushImopAfter(result, new Imop(e, iType, temp, arg1Result.symbol(), arg2Result.symbol()));
             releaseTemporary(result, arg1Result.symbol());
             releaseTemporary(result, arg2Result.symbol());
@@ -1103,8 +1103,8 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
 
     Context & cxt = getContext();
     SymbolSymbol * arrSym = static_cast<SymbolSymbol *>(argResult.symbol());
-    Symbol * sizeSym = m_st->appendTemporary(TypeNonVoid::getIndexType(cxt));
-    Symbol * tempElem = m_st->appendTemporary(TypeNonVoid::get(cxt, DATATYPE_UINT8));
+    Symbol * sizeSym = m_st->appendTemporary(TypeBasic::getIndexType(cxt));
+    Symbol * tempElem = m_st->appendTemporary(TypeBasic::get(cxt, DATATYPE_UINT8));
 
     /**
      * Allocate memory for the string:
@@ -1122,7 +1122,7 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
      */
 
     LoopInfo loopInfo;
-    loopInfo.push_index(m_st->appendTemporary(TypeNonVoid::getIndexType(cxt)));
+    loopInfo.push_index(m_st->appendTemporary(TypeBasic::getIndexType(cxt)));
     append(result, enterLoop(loopInfo, arrSym));
     push_imop(new Imop(e, Imop::LOAD, tempElem, arrSym, loopInfo.at(0)));
     push_imop(new Imop(e, Imop::STORE, resSym, loopInfo.at(0), tempElem));
@@ -1155,8 +1155,8 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
 
     Symbol * sizeSym = resSym->getDim(0);
     Symbol * strSym = argResult.symbol();
-    Symbol * charSym = m_st->appendTemporary(TypeNonVoid::get(cxt, DATATYPE_UINT8));
-    Symbol * tempBool = m_st->appendTemporary(TypeNonVoid::getPublicBoolType(cxt));
+    Symbol * charSym = m_st->appendTemporary(TypeBasic::get(cxt, DATATYPE_UINT8));
+    Symbol * tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType(cxt));
     Symbol * zeroByte = ConstantInt::get(cxt, DATATYPE_UINT8, 0);
 
     /**
@@ -1261,7 +1261,7 @@ CGResult CodeGen::cgStringPartIdentifier (TreeNodeStringPartIdentifier* p) {
         result.setResult (ConstantString::get (getContext (), p->staticValue ()));
     }
     else {
-        TypeNonVoid* stringType = TypeNonVoid::get (getContext (), DATATYPE_STRING);
+        TypeNonVoid* stringType = TypeBasic::get (getContext (), DATATYPE_STRING);
         Symbol* argSymbol = m_st->find (SYM_SYMBOL, p->name ());
 
         if (argSymbol->secrecType () == stringType) {
@@ -1388,7 +1388,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
     TreeNodeExpr * e1 = e->conditional();
     TreeNodeExpr * e2 = e->trueBranch();
     TreeNodeExpr * e3 = e->falseBranch();
-    TypeNonVoid * const pubBoolTy = TypeNonVoid::getPublicBoolType(getContext());
+    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     if (e1->havePublicBoolType()) {
         generateResultSymbol(result, e);
@@ -1519,11 +1519,11 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
 
         // Set up some temporary scalars:
         Context & cxt = getContext();
-        Symbol * counter = m_st->appendTemporary(TypeNonVoid::getIndexType(cxt));
-        Symbol * b = m_st->appendTemporary(TypeNonVoid::get(cxt,
+        Symbol * counter = m_st->appendTemporary(TypeBasic::getIndexType(cxt));
+        Symbol * b = m_st->appendTemporary(TypeBasic::get(cxt,
                     e1->resultType()->secrecSecType(),
                     e1->resultType()->secrecDataType()));
-        Symbol * t = m_st->appendTemporary(TypeNonVoid::get(cxt,
+        Symbol * t = m_st->appendTemporary(TypeBasic::get(cxt,
                     e->resultType()->secrecSecType(),
                     e->resultType()->secrecDataType()));
 
@@ -1537,7 +1537,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         push_imop(i);
 
         SymbolTemporary * temp_bool = m_st->appendTemporary(
-                TypeNonVoid::getPublicBoolType(getContext()));
+                TypeBasic::getPublicBoolType(getContext()));
         Imop * test = new Imop(e, Imop::GE, temp_bool, counter, resSym->getSizeSym());
         push_imop(test);
 
@@ -1869,7 +1869,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());
+    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
 
     // Generate code for child expression:
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
@@ -1908,7 +1908,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Initialize required temporary symbols:
         LoopInfo loopInfo;
         Symbol * offset = m_st->appendTemporary(pubIntTy);
-        TypeNonVoid * elemType = TypeNonVoid::get(getContext(),
+        TypeNonVoid * elemType = TypeBasic::get(getContext(),
                 e->resultType()->secrecSecType(),
                 e->resultType()->secrecDataType());
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
@@ -2004,7 +2004,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    TypeNonVoid * pubIntTy = TypeNonVoid::getIndexType(getContext());
+    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
 
     // Generate code for child expression:
     TreeNode * lval = e->children().at(0);
@@ -2053,7 +2053,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Initialize required temporary symbols:
         LoopInfo loopInfo;
-        TypeNonVoid * elemType = TypeNonVoid::get(getContext(),
+        TypeNonVoid * elemType = TypeBasic::get(getContext(),
                 e->resultType()->secrecSecType(),
                 e->resultType()->secrecDataType());
         Symbol * offset = m_st->appendTemporary(pubIntTy);
