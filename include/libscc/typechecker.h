@@ -152,6 +152,8 @@ private:
     Status getInstance(SymbolProcedure *& proc,
                        const Instantiation & inst);
 
+    static bool canPrintValue (Type* ty);
+
     /**
      * \brief Type check a procedure, and classify parameters if needed.
      * \param[in] name name of the procedure to call

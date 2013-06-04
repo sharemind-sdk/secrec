@@ -165,18 +165,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
         if (checkAndLogIfVoid(&e))
             return E_TYPE;
 
-        bool isLegalType = true;
-        if (  e.resultType()->secrecSecType()->isPrivate ()  ||
-            ! e.resultType()->isScalar ()) {
-            isLegalType = false;
-        }
-
-        SecrecDataType dType = e.resultType ()->secrecDataType ();
-        if (  dType != DATATYPE_STRING && dType != DATATYPE_BOOL && ! isNumericDataType (dType)) {
-            isLegalType = false;
-        }
-
-        if (! isLegalType) {
+        if (! canPrintValue (e.resultType ())) {
             m_log.fatalInProc(stmt) << "Invalid argument to \"print\" statement."
                            << "Got " << *e.resultType() << " at " << stmt->location() << ". "
                            << "Expected public scalar or string.";

@@ -1014,7 +1014,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
     }
     else
     if (symSym != 0) {
-        p->setSecrecType (symSym->secrecType ());
+        TypeNonVoid* ty = symSym->secrecType ();
+        if (! canPrintValue (ty)) {
+            m_log.fatalInProc(p)
+                << "Unable to convert \"" << symSym->name () << "\" to string."
+                << "Expected public scalar or string.";
+            return E_TYPE;
+        }
+
+        p->setSecrecType (ty);
     }
 
     return OK;

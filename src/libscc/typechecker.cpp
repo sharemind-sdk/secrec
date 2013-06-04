@@ -170,5 +170,24 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
     return OK;
 }
 
+bool TypeChecker::canPrintValue (Type* ty) {
+    if (ty->isVoid ())
+        return false;
+
+    if (ty->secrecSecType()->isPrivate ())
+        return false;
+
+    if (! ty->isScalar ())
+        return false;
+
+    SecrecDataType dType = ty->secrecDataType ();
+    if (dType != DATATYPE_STRING && dType != DATATYPE_BOOL && ! isNumericDataType (dType)) {
+        return false;
+    }
+
+    return true;
+}
+
+
 
 } // namespace SecreC
