@@ -1017,8 +1017,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
         TypeNonVoid* ty = symSym->secrecType ();
         if (! canPrintValue (ty)) {
             m_log.fatalInProc(p)
-                << "Unable to convert \"" << symSym->name () << "\" to string."
-                << "Expected public scalar or string.";
+                << "Unable to convert variable \"" << symSym->name () << "\" to string. "
+                << "Got " << Type::PrettyPrint (ty) << " at " << p->location() << ". "
+                << "Expecting a public scalar or a string.";
             return E_TYPE;
         }
 
