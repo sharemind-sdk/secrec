@@ -172,26 +172,6 @@ public: /* Methods: */
 };
 
 /*******************************************************************************
-  BuiltinNumericToString
-*******************************************************************************/
-
-class BuiltinNumericToString : public BuiltinFunction  {
-public: /* Methods: */
-    explicit BuiltinNumericToString (StringLiterals* strLit)
-        : m_strLit (strLit)
-    { }
-
-    void generate (VMFunction& function, VMSymbolTable& st);
-
-    BuiltinFunction* clone () const {
-        return new BuiltinNumericToString (m_strLit);
-    }
-
-private: /* Fields: */
-    StringLiterals*  const m_strLit;
-};
-
-/*******************************************************************************
   BuiltinBoolToString
 *******************************************************************************/
 

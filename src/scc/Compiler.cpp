@@ -254,11 +254,19 @@ public: /* Methods: */
 
     static std::string arithm (TypeNonVoid* ty, Imop::Type iType);
     static std::string cast (TypeNonVoid* from, TypeNonVoid* to);
+    static std::string tostring (SecrecDataType dType);
     static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true, bool needVec = true);
 
 private: /* Fields: */
     std::ostringstream   m_os;
 };
+
+std::string SyscallName::tostring (SecrecDataType dType) {
+    SyscallName scname;
+    scname << "miner_" << dType << "_to_string";
+    return scname.str ();
+}
+
 
 std::string SyscallName::basic (TypeNonVoid* ty, const char* name,  bool needDataType, bool needVec) {
     SyscallName scname;
@@ -508,37 +516,9 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
         return;
     }
     else
-    if (dType == DATATYPE_FLOAT32) {
-        block.push_new () << "push" << find (imop.arg1 ());
-        emitSyscall (block, find (imop.dest ()), "miner_float32_to_string");
-        return;
-    }
-    else
-    if (dType == DATATYPE_FLOAT64) {
-        block.push_new () << "push" << find (imop.arg1 ());
-        emitSyscall (block, find (imop.dest ()), "miner_float64_to_string");
-        return;
-    }
-    else
     if (isNumericDataType (dType)) {
-        VMDataType vmDType = secrecDTypeToVMDType (dType);
-        target = m_st.getLabel (":numeric_to_string__");
-        m_funcs->insert (target, BuiltinNumericToString (m_strLit));
-
-        if (vmDType != VM_UINT64) {
-            VMValue* rTmp = m_ra->temporaryReg ();
-            VMValue* arg = loadToRegister (block, imop.arg1 ());
-            block.push_new () << "convert"
-                              << vmDType << arg
-                              << VM_UINT64 << rTmp;
-            block.push_new () << "push" << rTmp;
-        }
-        else {
-            block.push_new () << "push" << find (imop.arg1 ());
-        }
-
-        block.push_new () << "call" << target << find (imop.dest ());
-        return;
+        block.push_new () << "push" << find (imop.arg1 ());
+        emitSyscall (block, find (imop.dest ()), SyscallName::tostring (dType));
     }
     else {
         assert (false && "Unable to convert given data type to string!");
