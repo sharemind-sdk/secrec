@@ -293,6 +293,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
                 }
             } else { // scalar_type x = scalar;
                 pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns, eResultSymbol));
+                releaseTemporary(result, eResultSymbol);
             }
         }
 
@@ -573,9 +574,18 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         TreeNodeExpr * e = s->expression();
         assert(e->haveResultType());
 
-        const CGResult & eResult(codeGen(e));
+        CGResult eResult = codeGen(e);
         append(result, eResult);
-        releaseProcVariables(result, eResult.symbol());
+        Symbol* resultSym = eResult.symbol ();
+        if (resultSym->isConstant () && resultSym->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+            Symbol* copy = m_st->appendTemporary (resultSym->secrecType ());
+            Imop* i = new Imop (s, Imop::ASSIGN, copy, resultSym);
+            pushImopAfter (result, i);
+            resultSym = copy;
+            eResult.setResult (resultSym);
+        }
+
+        releaseProcVariables(result, resultSym);
         if (result.isNotOk()) {
             return result;
         }
