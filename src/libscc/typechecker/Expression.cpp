@@ -809,7 +809,7 @@ TypeChecker::Status TreeNodeExprInt::accept(TypeChecker & tyChecker) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeExprInt * e) {
     if (! e->haveResultType()) {
-        SecrecDataType dtype = DATATYPE_NUMERIC; /* default */;
+        SecrecDataType dtype = DATATYPE_NUMERIC; /* default */
         if (e->haveContextDataType()) {
             dtype = dtypeDeclassify(e->contextDataType());
             if (! isNumericDataType(dtype)) {
@@ -825,6 +825,42 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprInt * e) {
 }
 
 void TreeNodeExprInt::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
+    resetDataType(cxt, dType);
+}
+
+/*******************************************************************************
+  TreeNodeExprFloat
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeExprFloat::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit(this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeExprFloat * e) {
+    if (!e->haveResultType()) {
+        SecrecDataType dType = DATATYPE_NUMERIC; /* default */
+        if (e->haveContextDataType()) {
+            dType = dtypeDeclassify(e->contextDataType());
+            switch (dType) {
+            case DATATYPE_NUMERIC:
+            case DATATYPE_FLOAT32:
+            case DATATYPE_FLOAT64:
+                break;
+            default:
+                m_log.fatalInProc(e) << "Expecting floating point, got "
+                    << dType << " at " << e->location() << '.';
+                return E_TYPE;
+            }
+        }
+
+        e->setResultType(TypeBasic::get(getContext(), dType));
+    }
+
+    return OK;
+}
+
+void TreeNodeExprFloat::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
+    assert (dType == DATATYPE_FLOAT32 || dType == DATATYPE_FLOAT64);
     resetDataType(cxt, dType);
 }
 
@@ -1024,38 +1060,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
         }
 
         p->setSecrecType (ty);
-    }
-
-    return OK;
-}
-
-/*******************************************************************************
-  TreeNodeExprFloat
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeExprFloat::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprFloat * e) {
-    if (!e->haveResultType()) {
-        if (e->haveContextDataType()) {
-            SecrecDataType dType = e->contextDataType();
-            switch (dType) {
-            case DATATYPE_NUMERIC:
-                break;
-            case DATATYPE_FLOAT32:
-            case DATATYPE_FLOAT64:
-                e->setResultType(TypeBasic::get(m_context, dType));
-                return OK;
-            default:
-                m_log.fatalInProc(e) << "Expecting floating point, got "
-                    << dType << " at " << e->location() << '.';
-                return E_TYPE;
-            }
-        }
-
-        e->setResultType(TypeBasic::get(m_context, DATATYPE_FLOAT32));
     }
 
     return OK;

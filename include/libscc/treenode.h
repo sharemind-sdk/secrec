@@ -284,11 +284,11 @@ protected:
     }
 };
 
-// TODO: use this!
 /******************************************************************
   TreeNodeIndex
 ******************************************************************/
 
+// TODO: use this!
 class TreeNodeIndex: public TreeNode {
 public: /* Methods: */
 
@@ -1287,7 +1287,7 @@ public: /* Methods: */
     virtual CGResult codeGenWith (CodeGen & cg);
 
 protected:
-
+    virtual void instantiateDataTypeV(Context & cxt, SecrecDataType dType);
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode * cloneV () const {
