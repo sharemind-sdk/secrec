@@ -73,7 +73,7 @@ public: /* Methods: */
       \param[in] name the name of the symbol to find.
       \returns a pointer to the symbol or NULL no such symbol was found.
     */
-    Symbol* findFromCurrentScope (SymbolCategory symbolType, StringRef name) const;
+    std::vector<Symbol *> findFromCurrentScope (SymbolCategory symbolType, StringRef name) const;
 
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;

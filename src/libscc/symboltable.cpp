@@ -149,12 +149,14 @@ bool SymbolTable::addImport (SymbolTable* st) {
     return false;
 }
 
-Symbol* SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
+std::vector<Symbol *>
+SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
+    std::vector<Symbol *> r;
     BOOST_REVERSE_FOREACH (SymbolTable* import, m_imports)
         BOOST_REVERSE_FOREACH (Symbol* s, import->m_table)
             if (s->symbolType () == type && s->name () == name)
-                return s;
-    return 0;
+                r.push_back (s);
+    return r;
 }
 
 std::vector<Symbol *>
@@ -193,7 +195,6 @@ std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) c
 
 void SymbolTable::appendSymbol (Symbol* symbol) {
     assert (symbol != 0);
-    symbol->setPrevious (findFromCurrentScope (symbol->symbolType (), symbol->name ()));
     m_table.push_back (symbol);
 }
 
@@ -208,8 +209,10 @@ SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
 
 Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
     for (const SymbolTable* c = this; c != 0; c = c->m_parent) {
-        if (Symbol* s = c->findFromCurrentScope (type, name))
-            return s;
+        const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
+        if (syms.empty ()) continue;
+        if (syms.size () > 1) return 0;
+        return syms.front ();
     }
 
     return 0;
@@ -220,8 +223,7 @@ SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
     const SymbolTable * c = this;
     while (c != 0) {
-        std::vector<Symbol *> r2 = c->findPrefixedFromCurrentScope(type, prefix);
-        BOOST_FOREACH(Symbol * s2, r2) {
+        BOOST_FOREACH(Symbol * s2, c->findPrefixedFromCurrentScope(type, prefix)) {
             bool overridden = false;
             BOOST_FOREACH(Symbol * s, r)
                 if (s2->name() != s->name()) {
@@ -240,8 +242,9 @@ SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
 
 std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
     std::vector<Symbol* > out;
-    for (Symbol* s = find (type, name); s != 0; s = s->previos ()) {
-        out.push_back (s);
+    for (const SymbolTable* c = this; c != 0; c = c->m_parent) {
+        const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
+        out.insert (out.end (), syms.begin (), syms.end ());
     }
 
     return out;

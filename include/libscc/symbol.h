@@ -32,20 +32,17 @@ public: /* Methods: */
     inline Symbol(Type symbolType, TypeNonVoid* valueType)
         : m_symbolType (symbolType)
         , m_type (valueType)
-        , m_previous (0)
     { }
 
     explicit inline Symbol (Type symbolType)
         : m_symbolType (symbolType)
         , m_type (0)
-        , m_previous (0)
     { }
 
     explicit inline Symbol (Type symbolType, StringRef name)
         : m_symbolType (symbolType)
         , m_type (0)
         , m_name (name.str ())
-        , m_previous (0)
     { }
 
     virtual inline ~Symbol() { }
@@ -55,8 +52,6 @@ public: /* Methods: */
     inline const std::string &name() const { return m_name; }
     inline void setName(StringRef name) { m_name = name.str(); }
     inline TypeNonVoid* secrecType() const { return m_type; }
-    Symbol* previos () const { return m_previous; }
-    void setPrevious (Symbol* prev) { m_previous = prev; }
 
     bool isGlobal () const;
     bool isArray () const;
@@ -71,7 +66,6 @@ private: /* Fields: */
     Type          const  m_symbolType;  ///< Type of the symbol.
     TypeNonVoid*  const  m_type;        ///< Type of the symbol or NULL.
     std::string          m_name;        ///< Name of the symbol.
-    Symbol*              m_previous;    ///< Previous symbol with the same name.
 };
 
 /*******************************************************************************
