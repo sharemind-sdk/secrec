@@ -485,7 +485,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
 
             if (s_hi == 0) {
                 i = new Imop(m_node, Imop::GE, temp_bool, s_lo, d);
-                push_imop(i);
+                pushImopAfter(result, i);
 
                 i = new Imop(m_node, Imop::JT, 0, temp_bool);
                 push_imop(i);
