@@ -861,6 +861,10 @@ CGStmtResult TreeNodeStmtExpr::codeGenWith(CodeGen & cg) {
 }
 
 CGStmtResult CodeGen::cgStmtExpr(TreeNodeStmtExpr * s) {
+    if (m_tyChecker->visitExpr (s->expression ()) != TypeChecker::OK)
+        return CGStmtResult ();
+
+    s->expression ()->instantiateDataType (getContext ());
     CGStmtResult result = codeGen(s->expression());
     if (result.symbol() != 0) {
         releaseTemporary(result, result.symbol());
