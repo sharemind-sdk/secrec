@@ -84,8 +84,8 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     VMBlock entryB (0, 0);
     entryB.push_new () << "resizestack" << 4;
     entryB.push_new () << "mov imm 0x0" << rOffset;
-    entryB.push_new () << "uinc uint64" << rSize;
     entryB.push_new () << "bmul uint64" << rSize << iSize;
+    entryB.push_new () << "uinc uint64" << rSize;
     entryB.push_new () << "alloc" << rOut << rSize;
     function.push_back (entryB);
 
