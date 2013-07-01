@@ -16,6 +16,7 @@ TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
     int errorCode = 1;
     TreeNodeModule * parseTree = 0;
     StringTable& table = stringTable ();
+    m_status = OK;
 
     if (mfile) {
         const char* name = mfile.get ().c_str ();
@@ -38,7 +39,6 @@ TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
         m_log.fatal () << "Parsing main module failed.";
     }
 
-    m_status = OK;
     return parseTree;
 }
 
