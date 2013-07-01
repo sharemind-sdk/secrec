@@ -94,7 +94,12 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
 
     TreeNodeIdentifier * e =
         static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SecreC::Type * eType = getSymbol(e)->secrecType();
+    SecreC::Type * eType = NULL;
+    if (SymbolSymbol* sym = getSymbol (e))
+        eType = sym->secrecType ();
+    else
+        return E_TYPE;
+
     SecrecDimType destDim = eType->secrecDimType();
     if (lval->children().size() == 2) {
         TCGUARD (checkIndices(lval->children().at(1), destDim));
