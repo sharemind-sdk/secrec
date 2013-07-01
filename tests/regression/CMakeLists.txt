@@ -14,8 +14,6 @@ add_test_secrec_execute("scalars/02-decl")
 add_test_secrec_execute("scalars/03-scope")
 add_test_secrec_execute("scalars/04-function")
 add_test_secrec_execute("scalars/05-assert-fail")
-SET_TESTS_PROPERTIES("scalars/05-assert-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 add_test_secrec_execute("scalars/05-declassify")
 add_test_secrec_execute("scalars/06-rec")
 add_test_secrec_execute("scalars/07-while")
@@ -55,8 +53,6 @@ add_test_secrec_execute("scalars/40-casts")
 add_test_secrec_execute("scalars/41-param-order")
 add_test_secrec_execute("scalars/42-ra-fail")
 add_test_secrec_execute("scalars/43-domain-fail")
-SET_TESTS_PROPERTIES("scalars/43-domain-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
 add_test_secrec_execute("scalars/44-classify")
 add_test_secrec_execute("scalars/45-return-type-overloading")
 add_test_secrec_execute("scalars/46-domain-id")
@@ -67,6 +63,10 @@ add_test_secrec_execute("scalars/50-integer-types")
 add_test_secrec_execute("scalars/51-qualified-expressions")
 add_test_secrec_execute("scalars/52-empty-false-branch")
 add_test_secrec_execute("scalars/53-for-loop-bug")
+
+SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
+SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
+SET_TESTS_PROPERTIES("scalars/53-for-loop-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,32\\)\\(3,37\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
