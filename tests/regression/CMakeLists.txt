@@ -66,6 +66,7 @@ add_test_secrec_execute("scalars/49-multiple-var-decl-bug")
 add_test_secrec_execute("scalars/50-integer-types")
 add_test_secrec_execute("scalars/51-qualified-expressions")
 add_test_secrec_execute("scalars/52-empty-false-branch")
+add_test_secrec_execute("scalars/53-for-loop-bug")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
