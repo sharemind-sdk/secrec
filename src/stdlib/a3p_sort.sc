@@ -15,7 +15,7 @@ import stdlib;
 import additive3pp;
 import a3p_random;
 import oblivious;
-import a3p_oblivious
+import a3p_oblivious;
 import xor3pp;
 /**
 * \endcond
@@ -34,7 +34,7 @@ import xor3pp;
 * \defgroup sortingnetwork_mat3 sortingNetworkSort[[2]](3 columns)
 */
 
-/** \addtogroup <a3p_sort> 
+/** \addtogroup <a3p_sort>
 *@{
 * @brief Module with functions for sorting values
 */
@@ -47,15 +47,15 @@ import xor3pp;
 ********************************************************************************
 *******************************************************************************/
 
-/** \addtogroup <sort> 
+/** \addtogroup <sort>
  *  @{
  *  @brief Functions for sorting values
  *  @note **D** - additive3pp protection domain
- *  @note **T** - any \ref data_types "data" type 
+ *  @note **T** - any \ref data_types "data" type
  *  @note boolean values are sorted after their numerical value. **false** first then **true**
  */
 
-/** \addtogroup <sort_vec> 
+/** \addtogroup <sort_vec>
  *  @{
  *  @brief Function for sorting values in a vector
  *  @note **D** - additive3pp protection domain
@@ -75,20 +75,20 @@ D bool[[1]] sort(D bool[[1]] arr) {
 
     uint n = size (arr);
 
-    D uint [[1]] pTrue (n);    
+    D uint [[1]] pTrue (n);
     D uint acc = 0;
     for (uint i = 0; i < n; ++ i) {
         pTrue[i] = acc;
         acc += ivec[i];
     }
-        
+
     D uint [[1]] pFalse (n);
     acc = n - 1;
     for (uint i = 1; i <= n; ++ i) {
         pFalse[n-i] = acc;
         acc -= vec[n-i];
     }
-    
+
     // vec*pFalse + ivec*pTrue
     // ivec = 1-vec
     D uint[[1]] indexes = vec * (pFalse - pTrue) + pTrue;
@@ -165,7 +165,7 @@ D T[[1]] sort(D T[[1]] vec) {
     return sorted;
 }
 /** @}*/
-/** \addtogroup <sort_mat> 
+/** \addtogroup <sort_mat>
  *  @{
  *  @brief Function for sorting columns in a matrix
  *  @note **D** - additive3pp protection domain
@@ -173,9 +173,9 @@ D T[[1]] sort(D T[[1]] vec) {
  */
 
 /**
- *  @note Supported types - \ref bool "bool" 
+ *  @note Supported types - \ref bool "bool"
  *  @note boolean values are sorted after their numerical value. **false** first then **true**
- *  @param column - an \ref uint64 "uint" type value for specifying the column to be sorted 
+ *  @param column - an \ref uint64 "uint" type value for specifying the column to be sorted
  *  @param matrix - a matrix of supported type
 */
 template <domain D : additive3pp>
@@ -220,7 +220,7 @@ D bool[[2]] sort(D bool[[2]] matrix, uint column) {
 /**
  *  @note **T** - any \ref data_types "data" type
  *  @note boolean values are sorted after their numerical value. **false** first then **true**
- *  @param column - an \ref uint64 "uint" type value for specifying the column to be sorted 
+ *  @param column - an \ref uint64 "uint" type value for specifying the column to be sorted
  *  @param matrix - a matrix of supported type
 */
 
@@ -310,14 +310,14 @@ uint[[1]] generateSortingNetwork(uint arraysize) {
 */
 
 
-/** \addtogroup <sortingnetwork> 
+/** \addtogroup <sortingnetwork>
  *  @{
  *  @brief Functions for sorting values with sorting network
  *  @note **D** - all protection domains
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref xor_uint8 "xor_uint8" / \ref xor_uint16 "xor_uint16" / \ref xor_uint32 "xor_uint32" / \ref xor_uint64 "xor_uint64"
  */
 
-/** \addtogroup <sortingnetwork_vec> 
+/** \addtogroup <sortingnetwork_vec>
  *  @{
  *  @brief Function for sorting values in a vector with sorting network
  *  @note **D** - all protection domains
@@ -422,7 +422,7 @@ D T[[1]] sortingNetworkSort (D T[[1]] array) {
             firstVector[i] = array[sortnet[offset]];
             offset++;
         }
-        
+
         // Set up second comparison vector
         for (uint i = 0; i < sizeOfStage; ++i) {
             secondVector[i] = array[sortnet[offset]];
@@ -457,7 +457,7 @@ D T[[1]] sortingNetworkSort (D T[[1]] array) {
             secondFactor[i + 1] = firstVector[counter];
             counter++;
         }
-      
+
         D T[[1]] choiceResults (2 * sizeOfStage);
 
         choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
@@ -469,8 +469,8 @@ D T[[1]] sortingNetworkSort (D T[[1]] array) {
         for (uint i = 1; i < (2 * sizeOfStage + 1); i = i + 2) {
             array[sortnet[offset++]] = choiceResults [i];
         }
-       
-        
+
+
     }
     return array;
 }
@@ -478,7 +478,7 @@ D T[[1]] sortingNetworkSort (D T[[1]] array) {
 
 
 /** @}*/
-/** \addtogroup <sortingnetwork_mat> 
+/** \addtogroup <sortingnetwork_mat>
  *  @{
  *  @brief Function for sorting a specified column in a matrix with sorting network
  *  @note **D** - all protection domains
@@ -559,7 +559,7 @@ D int64[[2]] sortingNetworkSort (D int64[[2]] array, uint column) {
 */
 template <domain D, type T>
 D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column) {
-    uint[[1]] matShape = shape(matrix); 
+    uint[[1]] matShape = shape(matrix);
 
     // Generate sorting network
     uint[[1]] sortnet = generateSortingNetwork (matShape[0]);
@@ -620,7 +620,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column) {
 
         // Run the largest multiplication this side of Dantoiine
         D T[[2]] choiceResults (2 * sizeOfStage, matShape[1]);
-        
+
         choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
 
         // Finalize oblivious choices
@@ -637,7 +637,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column) {
 }
 
 /** @}*/
-/** \addtogroup <sortingnetwork_mat2> 
+/** \addtogroup <sortingnetwork_mat2>
  *  @{
  *  @brief Function for sorting specified columns in a matrix with sorting network
  *  @note **D** - all protection domains
@@ -720,7 +720,7 @@ D int64[[2]] sortingNetworkSort (D int64[[2]] array, uint column1, uint column2)
 */
 template <domain D, type T>
 D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2) {
-    uint[[1]] matShape = shape(matrix); 
+    uint[[1]] matShape = shape(matrix);
 
     // Generate sorting network
     uint[[1]] sortnet = generateSortingNetwork (matShape[0]);
@@ -781,7 +781,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2) {
 
         // Run the largest multiplication this side of Dantoiine
         D T[[2]] choiceResults (2 * sizeOfStage, matShape[1]);
-        
+
         choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
 
         // Finalize oblivious choices
@@ -797,7 +797,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2) {
     return matrix;
 }
 /** @}*/
-/** \addtogroup <sortingnetwork_mat3> 
+/** \addtogroup <sortingnetwork_mat3>
  *  @{
  *  @brief Function for sorting specified columns in a matrix with sorting network
  *  @note **D** - all protection domains
@@ -881,7 +881,7 @@ D int64[[2]] sortingNetworkSort (D int64[[2]] array, uint column1, uint column2,
 */
 template <domain D, type T>
 D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint column3) {
-    uint[[1]] matShape = shape(matrix); 
+    uint[[1]] matShape = shape(matrix);
 
     // Generate sorting network
     uint[[1]] sortnet = generateSortingNetwork (matShape[0]);
@@ -942,7 +942,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint 
 
         // Run the largest multiplication this side of Dantoiine
         D T[[2]] choiceResults (2 * sizeOfStage, matShape[1]);
-        
+
         choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
 
         // Finalize oblivious choices
@@ -1062,7 +1062,7 @@ D T[[1]] sortingNetworkSort (D T[[1]] array) {
 }
 template <domain D, type T>
 D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column) {
-    uint[[1]] matShape = shape(matrix); 
+    uint[[1]] matShape = shape(matrix);
 
     // Generate sorting network
     uint[[1]] sortnet = generateSortingNetwork (matShape[0]);
