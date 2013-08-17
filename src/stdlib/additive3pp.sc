@@ -14,7 +14,7 @@ module additive3pp;
 
 import stdlib;
 
-kind additive3pp; 
+kind additive3pp;
 /**
 * \endcond
 */
@@ -51,7 +51,7 @@ kind additive3pp;
 * \defgroup a3p_ceiling ceiling
 */
 
-/** \addtogroup <additive3pp> 
+/** \addtogroup <additive3pp>
 *@{
 * @brief Module with additive3pp protection domain functions
 */
@@ -78,7 +78,7 @@ D T[[N]] classify(T[[N]] value) {
     sign, abs
 ********************************/
 
-/** \addtogroup <sign> 
+/** \addtogroup <sign>
  *  @{
  *  @brief Function for determining the sign of values
  *  @note **D** - additive3pp protection domain
@@ -112,7 +112,7 @@ D int[[N]] sign (D int[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_abs> 
+/** \addtogroup <a3p_abs>
  *  @{
  *  @brief Function for finding absolute values
  *  @note **D** - additive3pp protection domain
@@ -157,14 +157,14 @@ D uint[[N]] abs (D int[[N]] x) {
 /*******************************
     sum
 ********************************/
-/** \addtogroup <a3p_sum> 
+/** \addtogroup <a3p_sum>
  *  @{
  *  @brief Functions for finding sums
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  */
 
-/** \addtogroup <a3p_sum_vec> 
+/** \addtogroup <a3p_sum_vec>
  *  @{
  *  @brief Function for finding the sum of all the elements in a vector
  *  @note **D** - additive3pp protection domain
@@ -179,7 +179,7 @@ D uint[[N]] abs (D int[[N]] x) {
 
 /**
 * @note boolean values are converted to numerical values and then added, for more info click \ref bool "here"
-* @return returns the sum of all the elements in the input vector as an \ref uint "uint64" type value 
+* @return returns the sum of all the elements in the input vector as an \ref uint "uint64" type value
 */
 template <domain D : additive3pp>
 D uint sum (D bool[[1]] vec) {
@@ -262,7 +262,7 @@ D float64 sum (D float64[[1]] vec) {
 
 /** @}*/
 
-/** \addtogroup <a3p_sum_k> 
+/** \addtogroup <a3p_sum_k>
  *  @{
  *  @brief Function for finding the sum of all elements in the input vector in specified parts.
  *  @note **D** - additive3pp protection domain
@@ -370,7 +370,7 @@ D float64[[1]] sum (D float64[[1]] vec, uint k) {
 /*******************************
     product
 ********************************/
-/** \addtogroup <a3p_product> 
+/** \addtogroup <a3p_product>
  *  @{
  *  @brief Functions for finding products
  *  @note **D** - additive3pp protection domain
@@ -378,7 +378,7 @@ D float64[[1]] sum (D float64[[1]] vec, uint k) {
  */
 
 
-/** \addtogroup <a3p_product_vec> 
+/** \addtogroup <a3p_product_vec>
  *  @{
  *  @brief Function for finding the product of the input vector
  *  @note **D** - additive3pp protection domain
@@ -449,7 +449,7 @@ D int product (D int[[1]] vec) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_product_k> 
+/** \addtogroup <a3p_product_k>
  *  @{
  *  @brief Function for finding the product of all elements in the input vector in specified parts.
  *  @note **D** - additive3pp protection domain
@@ -506,7 +506,7 @@ D int16[[1]] product (D int16[[1]] vec, uint k) {
     D int16[[1]] out (k);
     __syscall ("additive3pp::product_int16_vec", __domainid (D), vec, out);
     return out;
-} 
+}
 
 template <domain D : additive3pp>
 D int32[[1]] product (D int32[[1]] vec, uint k) {
@@ -533,7 +533,7 @@ D int[[1]] product (D int[[1]] vec, uint k) {
 ********************************/
 
 
-/** \addtogroup <a3p_any> 
+/** \addtogroup <a3p_any>
  *  @{
  *  @brief Function for checking if any value of the input vector is true
  *  @note **D** - additive3pp protection domain
@@ -545,23 +545,23 @@ D int[[1]] product (D int[[1]] vec, uint k) {
 
 /**
 * @param b - scalar boolean
-*/ 
+*/
 template <domain D : additive3pp>
 D bool any (D bool b) {
     return b;
 }
 
 /**
-* @param vec - boolean 1-dimensional vector 
-*/ 
+* @param vec - boolean 1-dimensional vector
+*/
 template <domain D : additive3pp>
 D bool any (D bool[[1]] vec) {
     return sum (vec) != 0;
 }
 
 /**
-* @param vec - boolean 1-dimensional vector 
-* @param k - an \ref uint64 "uint" type value that shows in how many subarrays must **any** be found 
+* @param vec - boolean 1-dimensional vector
+* @param k - an \ref uint64 "uint" type value that shows in how many subarrays must **any** be found
 */
 template <domain D : additive3pp>
 D bool[[1]] any (D bool[[1]] vec, uint k) {
@@ -569,15 +569,15 @@ D bool[[1]] any (D bool[[1]] vec, uint k) {
 }
 
 /**
-* @param arr - boolean any dimension vector 
-*/ 
+* @param arr - boolean any dimension vector
+*/
 template <domain D : additive3pp, dim N>
 D bool any (D bool[[N]] arr) {
     return any(flatten(arr));
 }
 /** @}*/
 
-/** \addtogroup <a3p_all> 
+/** \addtogroup <a3p_all>
  *  @{
  *  @brief Function for checking if all values of the input vector are true
  *  @note **D** - additive3pp protection domain
@@ -589,15 +589,15 @@ D bool any (D bool[[N]] arr) {
 
 /**
 * @param b - scalar boolean
-*/ 
+*/
 template <domain D : additive3pp>
 D bool all (D bool b) {
     return b;
 }
 
 /**
-* @param vec - boolean 1-dimensional vector 
-*/ 
+* @param vec - boolean 1-dimensional vector
+*/
 template <domain D : additive3pp>
 D bool all (D bool [[1]] arr) {
     uint n = size (arr);
@@ -605,8 +605,8 @@ D bool all (D bool [[1]] arr) {
 }
 
 /**
-* @param vec - boolean 1-dimensional vector 
-* @param k - an \ref uint64 "uint" type value that shows in how many subarrays must **all** be found 
+* @param vec - boolean 1-dimensional vector
+* @param k - an \ref uint64 "uint" type value that shows in how many subarrays must **all** be found
 */
 template <domain D : additive3pp>
 D bool[[1]] all (D bool[[1]] vec, uint k) {
@@ -617,8 +617,8 @@ D bool[[1]] all (D bool[[1]] vec, uint k) {
 }
 
 /**
-* @param arr - boolean any dimension vector 
-*/ 
+* @param arr - boolean any dimension vector
+*/
 template <domain D : additive3pp, dim N>
 D bool all (D bool[[N]] arr) {
     return all(flatten(arr));
@@ -629,7 +629,7 @@ D bool all (D bool[[N]] arr) {
     truePrefixLength
 ********************************/
 
-/** \addtogroup <a3p_trueprefixlength> 
+/** \addtogroup <a3p_trueprefixlength>
  *  @{
  *  @brief Function for finding how many elements from the start of a vector are true
  *  @note **D** - additive3pp protection domain
@@ -640,8 +640,8 @@ D bool all (D bool[[N]] arr) {
  */
 
 /**
-* @param arr - boolean 1-dimensional vector 
-*/ 
+* @param arr - boolean 1-dimensional vector
+*/
 template <domain D : additive3pp>
 D uint truePrefixLength (D bool [[1]] arr) {
     for (uint shift = 1, n = size (arr); shift < n; shift *= 2) {
@@ -1174,7 +1174,7 @@ D float64[[N]] operator / (D float64[[N]] arr, float64[[N]] pubArr) {
     inv, sqrt, sin, ln, exp, erf, isNegligible
 *****************************************************/
 
-/** \addtogroup <a3p_inv> 
+/** \addtogroup <a3p_inv>
  *  @{
  *  @brief Function for inversing a value
  *  @note **D** - additive3pp protection domain
@@ -1195,12 +1195,12 @@ D float64[[N]] inv (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_sqrt> 
+/** \addtogroup <a3p_sqrt>
  *  @{
  *  @brief Function for finding the square root of a value
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref float32 "float32" / \ref float64 "float64"
- *  @return returns the square roots of the input array 
+ *  @return returns the square roots of the input array
  */
 
 template <domain D : additive3pp, dim N>
@@ -1216,7 +1216,7 @@ D float64[[N]] sqrt (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_sin> 
+/** \addtogroup <a3p_sin>
  *  @{
  *  @brief Function for finding the sine of a value
  *  @note **D** - additive3pp protection domain
@@ -1237,7 +1237,7 @@ D float64[[N]] sin (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_ln> 
+/** \addtogroup <a3p_ln>
  *  @{
  *  @brief Function for finding the natural logarithm of a value
  *  @note **D** - additive3pp protection domain
@@ -1258,7 +1258,7 @@ D float64[[N]] ln (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_exp> 
+/** \addtogroup <a3p_exp>
  *  @{
  *  @brief Function for finding exp(x)
  *  @note **D** - additive3pp protection domain
@@ -1279,7 +1279,7 @@ D float64[[N]] exp (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_erf> 
+/** \addtogroup <a3p_erf>
  *  @{
  *  @brief Function for finding the value of error function
  *  @note **D** - additive3pp protection domain
@@ -1300,7 +1300,7 @@ D float64[[N]] erf (D float64[[N]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_isnegligible> 
+/** \addtogroup <a3p_isnegligible>
  *  @{
  *  @brief Function for finding if the error is small enough to neglect
  *  @note **D** - additive3pp protection domain
@@ -1361,14 +1361,14 @@ D bool[[1]] isNegligible (D float64[[1]] a) {
     Min, max
 ********************************/
 
-/** \addtogroup <a3p_min> 
+/** \addtogroup <a3p_min>
  *  @{
  *  @brief Functions for finding the minimum value
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
  */
 
-/** \addtogroup <a3p_min_vec> 
+/** \addtogroup <a3p_min_vec>
  *  @{
  *  @brief Function for finding the minimum element of the input vector.
  *  @note **D** - additive3pp protection domain
@@ -1412,7 +1412,7 @@ D uint min (D uint[[1]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_min_k> 
+/** \addtogroup <a3p_min_k>
  *  @{
  *  @brief Function for finding the minimum element in the specified parts of the vector.
  *  @note **D** - additive3pp protection domain
@@ -1467,12 +1467,12 @@ D uint[[1]] min (D uint[[1]] x, uint k) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_min_2> 
+/** \addtogroup <a3p_min_2>
  *  @{
  *  @brief Function for finding the pointwise minimum of 2 arrays
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
- *  @returns an array with the pointwise minimum of each element in the two input vectors 
+ *  @returns an array with the pointwise minimum of each element in the two input vectors
  *  @pre both input vectors are of equal length
  */
 
@@ -1551,14 +1551,14 @@ D uint[[N]] min (D uint[[N]] x, D uint[[N]] y) {
 /** @}*/
 
 
-/** \addtogroup <a3p_max> 
+/** \addtogroup <a3p_max>
  *  @{
  *  @brief Functions for finding the maximum value
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
  */
 
-/** \addtogroup <a3p_max_vec> 
+/** \addtogroup <a3p_max_vec>
  *  @{
  *  @brief Function for finding the maximum element of the input vector.
  *  @note **D** - additive3pp protection domain
@@ -1601,7 +1601,7 @@ D uint max (D uint[[1]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_max_k> 
+/** \addtogroup <a3p_max_k>
  *  @{
  *  @brief Function for finding the maximum element in the specified parts of the vector.
  *  @note **D** - additive3pp protection domain
@@ -1657,12 +1657,12 @@ D uint[[1]] max (D uint[[1]] x, uint k) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_max_2> 
+/** \addtogroup <a3p_max_2>
  *  @{
  *  @brief Function for finding the pointwise maximum of 2 arrays
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
- *  @returns an array with the pointwise maximum of each element in the two input vectors 
+ *  @returns an array with the pointwise maximum of each element in the two input vectors
  *  @pre both input vectors are of equal length
  */
 
@@ -1737,7 +1737,7 @@ D uint[[N]] max (D uint[[N]] x, D uint[[N]] y) {
 }
 /** @}*/
 /** @}*/
-/** \addtogroup <a3p_floor> 
+/** \addtogroup <a3p_floor>
  *  @{
  *  @brief Functions for rounding a value downwards
  *  @note **D** - additive3pp protection domain
@@ -1749,9 +1749,9 @@ D uint[[N]] max (D uint[[N]] x, D uint[[N]] y) {
 * @param value - input scalar of supported type
 */
 template <domain D : additive3pp>
-D uint64 floor (D float64 value) {
-    D uint64 out;
-    __syscall("additive3pp::floor_float64", __domainid( D ), value, out);
+D int64 floor (D float64 value) {
+    D int64 out;
+    __syscall("additive3pp::floor_float64_vec", __domainid( D ), value, out);
     return out;
 }
 
@@ -1759,14 +1759,14 @@ D uint64 floor (D float64 value) {
 * @param arr - input vector of supported type
 */
 template <domain D : additive3pp>
-D uint64[[1]] floor (D float64[[1]] arr) {
-    D uint64[[1]] out;
+D int64[[1]] floor (D float64[[1]] arr) {
+    D int64[[1]] out (size (arr));
     __syscall("additive3pp::floor_float64_vec", __domainid( D ), arr, out);
     return out;
 }
 
 /** @}*/
-/** \addtogroup <a3p_ceiling> 
+/** \addtogroup <a3p_ceiling>
  *  @{
  *  @brief Functions for rounding a value upwards
  *  @note **D** - additive3pp protection domain
@@ -1778,9 +1778,9 @@ D uint64[[1]] floor (D float64[[1]] arr) {
 * @param value - input scalar of supported type
 */
 template <domain D : additive3pp>
-D uint64 ceiling (D float64 value) {
-    D uint64 out;
-    __syscall("additive3pp::ceiling_float64", __domainid( D ), value, out);
+D int64 ceiling (D float64 value) {
+    D int64 out;
+    __syscall("additive3pp::ceiling_float64_vec", __domainid( D ), value, out);
     return out;
 }
 
@@ -1788,8 +1788,8 @@ D uint64 ceiling (D float64 value) {
 * @param arr - input vector of supported type
 */
 template <domain D : additive3pp>
-D uint64[[1]] ceiling (D float64[[1]] arr) {
-    D uint64[[1]] out;
+D int64[[1]] ceiling (D float64[[1]] arr) {
+    D int64[[1]] out (size (arr));
     __syscall("additive3pp::ceiling_float64_vec", __domainid( D ), arr, out);
     return out;
 }
