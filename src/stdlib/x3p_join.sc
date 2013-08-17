@@ -25,12 +25,12 @@ import x3p_aes;
 * \defgroup tablejoinaes128 tableJoinAes128
 */
 
-/** \addtogroup <x3p_join> 
+/** \addtogroup <x3p_join>
 *@{
 * @brief Module with tableJoinAes128
 */
 
-/** \addtogroup <tablejoinaes128> 
+/** \addtogroup <tablejoinaes128>
  *  @{
  *  @brief Function for joining two Aes128 matrices
  *  @note **D** - additive3pp protection domain
@@ -79,16 +79,17 @@ D xor_uint32[[2]] tableJoinAes128(D xor_uint32[[2]] left, uint leftKeyCol,
         kIndex += 4;
     }
 
-    D xor_uint32[[1]] realKey;
+    D xor_uint32[[1]] realKey (44 * blocks);
     {
         D xor_uint32[[1]] aesKey = aes128Genkey(1::uint);
         //__syscall("additive3pp::randomize_xor_uint32_vec", __domainid(D), aesKey); // Generate random AES key
         D xor_uint32[[1]] expandedKey = aes128ExpandKey(aesKey);
         //__syscall("additive3pp::aes128_xor_uint32_vec_expand_key", __domainid(D), aesKey, expandedKey); // expand key
-        for (uint roundTimes4 = 0; roundTimes4 < 44; roundTimes4 += 4) {
-            D xor_uint32[[1]] temp = expandedKey[roundTimes4:roundTimes4 + 4];
-            for (uint j = 0; j < blocks; ++j)
-                realKey = cat(realKey, temp, 0);
+        for (uint round = 0; round < 11; round++) {
+            D xor_uint32[[1]] temp = expandedKey[round*4:round*4 + 4];
+            for (uint j = 0; j < blocks; ++j) {
+                realKey[4 * (round * blocks + j):4 * (round * blocks + j) + 4] = temp;
+            }
         }
     }
 
@@ -110,7 +111,7 @@ D xor_uint32[[2]] tableJoinAes128(D xor_uint32[[2]] left, uint leftKeyCol,
             if (comp[0] && comp[1] && comp[2] && comp[3]) {
                 joinedTable[resultRows, :leftCols] = left[i, :];
                 joinedTable[resultRows, leftCols:] = right[j, :];
-                ++resultRows;                
+                ++resultRows;
             }
             rj += 4;
         }
