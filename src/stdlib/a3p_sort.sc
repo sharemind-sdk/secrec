@@ -750,8 +750,19 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2) {
             offset++;
         }
 
+        // Perform compares in parallel as much as possible
+        uint colSize = size (firstVector[:, column1]);
+        D T[[1]] firstComparisonVector (2 * colSize);
+        firstComparisonVector[0:colSize] = firstVector[:, column1];
+        firstComparisonVector[colSize:2*colSize] = secondVector[:, column2];
+        D T[[1]] secondComparisonVector (2 * colSize);
+        secondComparisonVector[0:colSize] = secondVector[:, column1];
+        secondComparisonVector[colSize:2*colSize] = firstVector[:, column2];
+        D bool[[1]] greaterThanResult (2 * colSize);
+        greaterThanResult = firstComparisonVector >= secondComparisonVector;
+
         // Perform compares
-        exchangeFlagsVector = !(firstVector[:, column1] >= secondVector[:, column1]) || (firstVector[:, column1] == secondVector[:, column1] && firstVector[:, column2] <= secondVector[:, column2]);
+        exchangeFlagsVector = !(greaterThanResult[0:colSize]) || (firstVector[:, column1] == secondVector[:, column1] && greaterThanResult[colSize:2*colSize]);
 
         D bool[[2]] expandedExchangeFlagsVector (2 * sizeOfStage, matShape[1]);
 
@@ -911,8 +922,29 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint 
             offset++;
         }
 
-        // Perform compares
-        exchangeFlagsVector = !(firstVector[:, column1] >= secondVector[:, column1]) || (firstVector[:, column1] == secondVector[:, column1] && (!(firstVector[:,column2] >= secondVector[:,column2]) || (firstVector[:,column2] == secondVector[:,column2] && firstVector[:,column3] <= secondVector[:,column3])));
+        // Perform compares in parallel as much as possible
+        uint colSize = size (firstVector[:, column1]);
+        D T[[1]] firstComparisonVector (3 * colSize);
+        firstComparisonVector[0:colSize] = firstVector[:, column1];
+        firstComparisonVector[colSize:2*colSize] = firstVector[:, column2];
+        firstComparisonVector[2*colSize:3*colSize] = secondVector[:, column3];
+        D T[[1]] secondComparisonVector (3 * colSize);
+        secondComparisonVector[0:colSize] = secondVector[:, column1];
+        secondComparisonVector[colSize:2*colSize] = secondVector[:, column2];
+        secondComparisonVector[2*colSize:3*colSize] = firstVector[:, column3];
+        D bool[[1]] greaterThanResult (3 * colSize);
+        greaterThanResult = firstComparisonVector >= secondComparisonVector;
+
+        D T[[1]] firstEqualityVector (2 * colSize);
+        firstEqualityVector[0:colSize] = firstVector[:, column1];
+        firstEqualityVector[colSize:2*colSize] = firstVector[:, column2];
+        D T[[1]] secondEqualityVector (2 * colSize);
+        secondEqualityVector[0:colSize] = secondVector[:, column1];
+        secondEqualityVector[colSize:2*colSize] = secondVector[:, column2];
+        D bool[[1]] equalityResult (3 * colSize);
+        equalityResult = firstEqualityVector == secondEqualityVector;
+
+        exchangeFlagsVector = !(greaterThanResult[0:colSize]) || (equalityResult[0:colSize] && (!(greaterThanResult[colSize:2 * colSize]) || (equalityResult[colSize:2 * colSize] && greaterThanResult[2 * colSize:3 * colSize])));
 
         D bool[[2]] expandedExchangeFlagsVector (2 * sizeOfStage, matShape[1]);
 
@@ -940,7 +972,7 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint 
             counter++;
         }
 
-        // Run the largest multiplication this side of Dantoiine
+        // Run the largest oblivious choice this side of Dantoiine
         D T[[2]] choiceResults (2 * sizeOfStage, matShape[1]);
 
         choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
@@ -962,179 +994,3 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint 
 /** @}*/
 /** @}*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-// old version of sortingNetwork
-
-
-template <domain D, type T>
-D T[[1]] sortingNetworkSort (D T[[1]] array) {
-    // Generate sorting network
-    uint[[1]] sortnet = generateSortingNetwork (size(array));
-
-    // We will use this offset to decode the sorting network
-    uint offset = 0;
-
-    // Extract the number of stages
-    uint numOfStages = sortnet[offset++];
-
-    for (uint stage = 0; stage < numOfStages; stage++) {
-        uint sizeOfStage = sortnet[offset++];
-
-        D T[[1]] firstVector (sizeOfStage);
-        D T[[1]] secondVector (sizeOfStage);
-        D bool[[1]] exchangeFlagsVector (sizeOfStage);
-
-        // Set up first comparison vector
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            firstVector[i] = array[sortnet[offset]];
-            offset++;
-        }
-
-        // Set up second comparison vector
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            secondVector[i] = array[sortnet[offset]];
-            offset++;
-        }
-
-        // Perform compares
-        exchangeFlagsVector = firstVector <= secondVector;
-
-        // Convert to integers
-        D T[[1]] integerExchangeFlagsVector (sizeOfStage);
-        integerExchangeFlagsVector = (T)exchangeFlagsVector;
-
-        D T[[1]] flippedExchangeFlagsVector (sizeOfStage);
-        flippedExchangeFlagsVector = 1 - integerExchangeFlagsVector;
-
-        // Perform exchanges
-        D T[[1]] firstFactor (4 * sizeOfStage);
-        D T[[1]] secondFactor (4 * sizeOfStage);
-
-        for (uint i = 0; i < sizeOfStage; ++i) {
-
-            firstFactor[i] = firstVector[i];
-            firstFactor[i + sizeOfStage] = firstVector[i];
-            firstFactor[i + 2 * sizeOfStage] = secondVector[i];
-            firstFactor[i + 3 * sizeOfStage] = secondVector[i];
-
-            // Comparison bits
-
-            secondFactor[i] = integerExchangeFlagsVector[i];
-            secondFactor[i + sizeOfStage] = flippedExchangeFlagsVector[i];
-            secondFactor[i + 2 * sizeOfStage] = integerExchangeFlagsVector[i];
-            secondFactor[i + 3 * sizeOfStage] = flippedExchangeFlagsVector[i];
-        }
-
-        // Run the largest multiplication this side of Dantoiine
-        D T[[1]] choiceResults (4 * sizeOfStage);
-        choiceResults = firstFactor * secondFactor;
-
-        // Finalize oblivious choices
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            array[sortnet[offset++]] = choiceResults [i] + choiceResults[i + 3 * sizeOfStage];
-        }
-
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            array[sortnet[offset++]] = choiceResults [i + sizeOfStage] + choiceResults[i + 2 * sizeOfStage];
-        }
-
-    }
-    return array;
-}
-template <domain D, type T>
-D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column) {
-    uint[[1]] matShape = shape(matrix);
-
-    // Generate sorting network
-    uint[[1]] sortnet = generateSortingNetwork (matShape[0]);
-
-    // We will use this offset to decode the sorting network
-    uint offset = 0;
-
-    // Extract the number of stages
-    uint numOfStages = sortnet[offset++];
-
-    for (uint stage = 0; stage < numOfStages; stage++) {
-        uint sizeOfStage = sortnet[offset++];
-
-        D T[[2]] firstVector (sizeOfStage, matShape[1]);
-        D T[[2]] secondVector (sizeOfStage, matShape[1]);
-        D bool[[1]] exchangeFlagsVector (sizeOfStage);
-
-        // Set up first comparison vector
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            firstVector[i, :] = matrix[sortnet[offset], :];
-            offset++;
-        }
-
-        // Set up second comparison vector
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            secondVector[i, :] = matrix[sortnet[offset], :];
-            offset++;
-        }
-
-        // Perform compares
-        exchangeFlagsVector = firstVector[:, column] <= secondVector[:, column];
-
-        // Convert to integers
-        D T[[1]] integerExchangeFlagsVector (sizeOfStage);
-        integerExchangeFlagsVector = (T)exchangeFlagsVector;
-
-        D T[[1]] flippedExchangeFlagsVector (sizeOfStage);
-        flippedExchangeFlagsVector = 1 - integerExchangeFlagsVector;
-
-        // Perform exchanges
-        D T[[2]] firstFactor (4 * sizeOfStage, matShape[1]);
-        D T[[2]] secondFactor (4 * sizeOfStage, matShape[1]);
-
-        for (uint i = 0; i < sizeOfStage; ++i) {
-
-            firstFactor[i, :] = firstVector[i, :];
-            firstFactor[i + sizeOfStage, :] = firstVector[i, :];
-            firstFactor[i + 2 * sizeOfStage, :] = secondVector[i, :];
-            firstFactor[i + 3 * sizeOfStage, :] = secondVector[i, :];
-
-            // Comparison bits
-
-            secondFactor[i, :] = integerExchangeFlagsVector[i];
-            secondFactor[i + sizeOfStage, :] = flippedExchangeFlagsVector[i];
-            secondFactor[i + 2 * sizeOfStage, :] = integerExchangeFlagsVector[i];
-            secondFactor[i + 3 * sizeOfStage, :] = flippedExchangeFlagsVector[i];
-        }
-
-        // Run the largest multiplication this side of Dantoiine
-        D T[[2]] choiceResults (4 * sizeOfStage, matShape[1]);
-        choiceResults = firstFactor * secondFactor;
-
-        // Finalize oblivious choices
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            matrix[sortnet[offset++], :] = choiceResults [i, :] + choiceResults[i + 3 * sizeOfStage, :];
-        }
-
-        for (uint i = 0; i < sizeOfStage; ++i) {
-            matrix[sortnet[offset++], :] = choiceResults [i + sizeOfStage, :] + choiceResults[i + 2 * sizeOfStage, :];
-        }
-
-    }
-    return matrix;
-}
-*/
