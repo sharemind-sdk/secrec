@@ -1365,14 +1365,14 @@ D bool[[1]] isNegligible (D float64[[1]] a) {
  *  @{
  *  @brief Functions for finding the minimum value
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  */
 
 /** \addtogroup <a3p_min_vec>
  *  @{
  *  @brief Function for finding the minimum element of the input vector.
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @returns minimum element of the input vector.
  *  @pre input vector is not empty
  */
@@ -1410,13 +1410,49 @@ D uint min (D uint[[1]] x) {
     __syscall ("additive3pp::vecmin_uint64_vec", __domainid (D), x, out);
     return out;
 }
+template <domain D : additive3pp>
+D int8 min (D int8[[1]] x) {
+    assert (size(x) > 0);
+    D uint8[[1]] in = (uint8) x + 128;
+    D uint8 out;
+    __syscall ("additive3pp::vecmin_uint8_vec", __domainid (D), in, out);
+    out -= 128;
+    return (int8) out;
+}
+template <domain D : additive3pp>
+D int16 min (D int16[[1]] x) {
+    assert (size(x) > 0);
+    D uint16[[1]] in = (uint16) x + 32768;
+    D uint16 out;
+    __syscall ("additive3pp::vecmin_uint16_vec", __domainid (D), in, out);
+    out -= 32768;
+    return (int16)out;
+}
+template <domain D : additive3pp>
+D int32 min (D int32[[1]] x) {
+    assert (size(x) > 0);
+    D uint32[[1]] in = (uint32) x + 2147483648;
+    D uint32 out;
+    __syscall ("additive3pp::vecmin_uint32_vec", __domainid (D), in, out);
+    out -= 2147483648;
+    return (int32)out;
+}
+template <domain D : additive3pp>
+D int min (D int[[1]] x) {
+    assert (size(x) > 0);
+    D uint[[1]] in = (uint) x + 9223372036854775808;
+    D uint out;
+    __syscall ("additive3pp::vecmin_uint64_vec", __domainid (D), in, out);
+    out -= 9223372036854775808;
+    return (int)out;
+}
 
 /** @}*/
 /** \addtogroup <a3p_min_k>
  *  @{
  *  @brief Function for finding the minimum element in the specified parts of the vector.
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param k - an \ref uint64 "uint" type value, which specifies into how many subarrays must the input array be divided
  *  @returns a vector with all the minimum elements of all the subarrays specified by k
  *  @pre input vector is not empty
@@ -1466,12 +1502,54 @@ D uint[[1]] min (D uint[[1]] x, uint k) {
     return out;
 }
 
+
+template <domain D : additive3pp>
+D int8[[1]] min (D int8[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint8[[1]] in = (uint8) x + 128;
+    D uint8[[1]] out (k);
+    __syscall ("additive3pp::vecmin_uint8_vec", __domainid (D), in, out);
+    out -= 128;
+    return (int8) out;
+}
+template <domain D : additive3pp>
+D int16[[1]] min (D int16[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint16[[1]] in = (uint16) x + 32768;
+    D uint16[[1]] out (k);
+    __syscall ("additive3pp::vecmin_uint16_vec", __domainid (D), in, out);
+    out -= 32768;
+    return (int16)out;
+}
+template <domain D : additive3pp>
+D int32[[1]] min (D int32[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint32[[1]] in = (uint32) x + 2147483648;
+    D uint32[[1]] out (k);
+    __syscall ("additive3pp::vecmin_uint32_vec", __domainid (D), in, out);
+    out -= 2147483648;
+    return (int32)out;
+}
+template <domain D : additive3pp>
+D int[[1]] min (D int[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint[[1]] in = (uint) x + 9223372036854775808;
+    D uint[[1]] out (k);
+    __syscall ("additive3pp::vecmin_uint64_vec", __domainid (D), in, out);
+    out -= 9223372036854775808;
+    return (int)out;
+}
+
 /** @}*/
 /** \addtogroup <a3p_min_2>
  *  @{
  *  @brief Function for finding the pointwise minimum of 2 arrays
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @returns an array with the pointwise minimum of each element in the two input vectors
  *  @pre both input vectors are of equal length
  */
@@ -1495,6 +1573,38 @@ template <domain D : additive3pp>
 D uint min (D uint x, D uint y) {
     __syscall ("additive3pp::min_uint64_vec", __domainid (D), x, y, x);
     return x;
+}
+template <domain D : additive3pp>
+D int8 min (D int8 x, D int8 y) {
+    D uint8 in1 = (uint8) x + 128;
+    D uint8 in2 = (uint8) y + 128;
+    __syscall ("additive3pp::min_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp>
+D int16 min (D int16 x, D int16 y) {
+    D uint16 in1 = (uint16) x + 32768;
+    D uint16 in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::min_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp>
+D int32 min (D int32 x, D int32 y) {
+    D uint32 in1 = (uint32) x + 2147483648;
+    D uint32 in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::min_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp>
+D int min (D int x, D int y) {
+    D uint in1 = (uint) x + 9223372036854775808;
+    D uint in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::min_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
 }
 
 template <domain D : additive3pp>
@@ -1521,6 +1631,42 @@ D uint[[1]] min (D uint[[1]] x, D uint[[1]] y) {
     __syscall ("additive3pp::min_uint64_vec", __domainid (D), x, y, x);
     return x;
 }
+template <domain D : additive3pp>
+D int8[[1]] min (D int8[[1]] x, D int8[[1]] y) {
+    assert (size (x) == size (y));
+    D uint8[[1]] in1 = (uint8) x + 128;
+    D uint8[[1]] in2 = (uint8) y + 128;
+    __syscall ("additive3pp::min_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp>
+D int16[[1]] min (D int16[[1]] x, D int16[[1]] y) {
+    assert (size (x) == size (y));
+    D uint16[[1]] in1 = (uint16) x + 32768;
+    D uint16[[1]] in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::min_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp>
+D int32[[1]] min (D int32[[1]] x, D int32[[1]] y) {
+    assert (size (x) == size (y));
+    D uint32[[1]] in1 = (uint32) x + 2147483648;
+    D uint32[[1]] in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::min_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp>
+D int[[1]] min (D int[[1]] x, D int[[1]] y) {
+    assert (size (x) == size (y));
+    D uint[[1]] in1 = (uint) x + 9223372036854775808;
+    D uint[[1]] in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::min_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
+}
 
 template <domain D : additive3pp, dim N>
 D uint8[[N]] min (D uint8[[N]] x, D uint8[[N]] y) {
@@ -1546,6 +1692,42 @@ D uint[[N]] min (D uint[[N]] x, D uint[[N]] y) {
     __syscall ("additive3pp::min_uint64_vec", __domainid (D), x, y, x);
     return x;
 }
+template <domain D : additive3pp, dim N>
+D int8[[N]] min (D int8[[N]] x, D int8[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint8[[N]] in1 = (uint8) x + 128;
+    D uint8[[N]] in2 = (uint8) y + 128;
+    __syscall ("additive3pp::min_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp, dim N>
+D int16[[N]] min (D int16[[N]] x, D int16[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint16[[N]] in1 = (uint16) x + 32768;
+    D uint16[[N]] in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::min_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp, dim N>
+D int32[[N]] min (D int32[[N]] x, D int32[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint32[[N]] in1 = (uint32) x + 2147483648;
+    D uint32[[N]] in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::min_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp, dim N>
+D int[[N]] min (D int[[N]] x, D int[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint[[N]] in1 = (uint) x + 9223372036854775808;
+    D uint[[N]] in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::min_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
+}
 
 /** @}*/
 /** @}*/
@@ -1555,14 +1737,14 @@ D uint[[N]] min (D uint[[N]] x, D uint[[N]] y) {
  *  @{
  *  @brief Functions for finding the maximum value
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  */
 
 /** \addtogroup <a3p_max_vec>
  *  @{
  *  @brief Function for finding the maximum element of the input vector.
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @returns maximum element of the input vector.
  *  @pre input vector is not empty
  */
@@ -1600,12 +1782,49 @@ D uint max (D uint[[1]] x) {
     return out;
 }
 
+template <domain D : additive3pp>
+D int8 max (D int8[[1]] x) {
+    assert (size(x) > 0);
+    D uint8[[1]] in = (uint8) x + 128;
+    D uint8 out;
+    __syscall ("additive3pp::vecmax_uint8_vec", __domainid (D), in, out);
+    out -= 128;
+    return (int8) out;
+}
+template <domain D : additive3pp>
+D int16 max (D int16[[1]] x) {
+    assert (size(x) > 0);
+    D uint16[[1]] in = (uint16) x + 32768;
+    D uint16 out;
+    __syscall ("additive3pp::vecmax_uint16_vec", __domainid (D), in, out);
+    out -= 32768;
+    return (int16)out;
+}
+template <domain D : additive3pp>
+D int32 max (D int32[[1]] x) {
+    assert (size(x) > 0);
+    D uint32[[1]] in = (uint32) x + 2147483648;
+    D uint32 out;
+    __syscall ("additive3pp::vecmax_uint32_vec", __domainid (D), in, out);
+    out -= 2147483648;
+    return (int32)out;
+}
+template <domain D : additive3pp>
+D int max (D int[[1]] x) {
+    assert (size(x) > 0);
+    D uint[[1]] in = (uint) x + 9223372036854775808;
+    D uint out;
+    __syscall ("additive3pp::vecmax_uint64_vec", __domainid (D), in, out);
+    out -= 9223372036854775808;
+    return (int)out;
+}
+
 /** @}*/
 /** \addtogroup <a3p_max_k>
  *  @{
  *  @brief Function for finding the maximum element in the specified parts of the vector.
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param k - an \ref uint64 "uint" type value, which specifies into how many subarrays must the input array be divided
  *  @returns a vector with all the maximum elements of all the subarrays specified by k
  *  @pre input vector is not empty
@@ -1656,12 +1875,54 @@ D uint[[1]] max (D uint[[1]] x, uint k) {
     return out;
 }
 
+
+template <domain D : additive3pp>
+D int8[[1]] max (D int8[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint8[[1]] in = (uint8) x + 128;
+    D uint8[[1]] out (k);
+    __syscall ("additive3pp::vecmax_uint8_vec", __domainid (D), in, out);
+    out -= 128;
+    return (int8) out;
+}
+template <domain D : additive3pp>
+D int16[[1]] max (D int16[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint16[[1]] in = (uint16) x + 32768;
+    D uint16[[1]] out (k);
+    __syscall ("additive3pp::vecmax_uint16_vec", __domainid (D), in, out);
+    out -= 32768;
+    return (int16)out;
+}
+template <domain D : additive3pp>
+D int32[[1]] max (D int32[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint32[[1]] in = (uint32) x + 2147483648;
+    D uint32[[1]] out (k);
+    __syscall ("additive3pp::vecmax_uint32_vec", __domainid (D), in, out);
+    out -= 2147483648;
+    return (int32)out;
+}
+template <domain D : additive3pp>
+D int[[1]] max (D int[[1]] x, uint k) {
+    uint n = size(x);
+    assert(n > 0 && k > 0 && n % k == 0);
+    D uint[[1]] in = (uint) x + 9223372036854775808;
+    D uint[[1]] out (k);
+    __syscall ("additive3pp::vecmax_uint64_vec", __domainid (D), in, out);
+    out -= 9223372036854775808;
+    return (int)out;
+}
+
 /** @}*/
 /** \addtogroup <a3p_max_2>
  *  @{
  *  @brief Function for finding the pointwise maximum of 2 arrays
  *  @note **D** - additive3pp protection domain
- *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint"
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @returns an array with the pointwise maximum of each element in the two input vectors
  *  @pre both input vectors are of equal length
  */
@@ -1686,7 +1947,38 @@ D uint max (D uint x, D uint y) {
     __syscall ("additive3pp::max_uint64_vec", __domainid (D), x, y, x);
     return x;
 }
-
+template <domain D : additive3pp>
+D int8 max (D int8 x, D int8 y) {
+    D uint8 in1 = (uint8) x + 128;
+    D uint8 in2 = (uint8) y + 128;
+    __syscall ("additive3pp::max_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp>
+D int16 max (D int16 x, D int16 y) {
+    D uint16 in1 = (uint16) x + 32768;
+    D uint16 in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::max_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp>
+D int32 max (D int32 x, D int32 y) {
+    D uint32 in1 = (uint32) x + 2147483648;
+    D uint32 in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::max_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp>
+D int max (D int x, D int y) {
+    D uint in1 = (uint) x + 9223372036854775808;
+    D uint in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::max_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
+}
 template <domain D : additive3pp>
 D uint8[[1]] max (D uint8[[1]] x, D uint8[[1]] y) {
     assert (size (x) == size (y));
@@ -1710,6 +2002,42 @@ D uint[[1]] max (D uint[[1]] x, D uint[[1]] y) {
     assert (size (x) == size (y));
     __syscall ("additive3pp::max_uint64_vec", __domainid (D), x, y, x);
     return x;
+}
+template <domain D : additive3pp>
+D int8[[1]] max (D int8[[1]] x, D int8[[1]] y) {
+    assert (size (x) == size (y));
+    D uint8[[1]] in1 = (uint8) x + 128;
+    D uint8[[1]] in2 = (uint8) y + 128;
+    __syscall ("additive3pp::max_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp>
+D int16[[1]] max (D int16[[1]] x, D int16[[1]] y) {
+    assert (size (x) == size (y));
+    D uint16[[1]] in1 = (uint16) x + 32768;
+    D uint16[[1]] in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::max_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp>
+D int32[[1]] max (D int32[[1]] x, D int32[[1]] y) {
+    assert (size (x) == size (y));
+    D uint32[[1]] in1 = (uint32) x + 2147483648;
+    D uint32[[1]] in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::max_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp>
+D int[[1]] max (D int[[1]] x, D int[[1]] y) {
+    assert (size (x) == size (y));
+    D uint[[1]] in1 = (uint) x + 9223372036854775808;
+    D uint[[1]] in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::max_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
 }
 template <domain D : additive3pp, dim N>
 D uint8[[N]] max (D uint8[[N]] x, D uint8[[N]] y) {
@@ -1735,6 +2063,43 @@ D uint[[N]] max (D uint[[N]] x, D uint[[N]] y) {
     __syscall ("additive3pp::max_uint64_vec", __domainid (D), x, y, x);
     return x;
 }
+template <domain D : additive3pp, dim N>
+D int8[[N]] max (D int8[[N]] x, D int8[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint8[[N]] in1 = (uint8) x + 128;
+    D uint8[[N]] in2 = (uint8) y + 128;
+    __syscall ("additive3pp::max_uint8_vec", __domainid (D), in1, in2, in1);
+    in1 -= 128;
+    return (int8)in1;
+}
+template <domain D : additive3pp, dim N>
+D int16[[N]] max (D int16[[N]] x, D int16[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint16[[N]] in1 = (uint16) x + 32768;
+    D uint16[[N]] in2 = (uint16) y + 32768;
+    __syscall ("additive3pp::max_uint16_vec", __domainid (D), in1, in2, in1);
+    in1 -= 32768;
+    return (int16)in1;
+}
+template <domain D : additive3pp, dim N>
+D int32[[N]] max (D int32[[N]] x, D int32[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint32[[N]] in1 = (uint32) x + 2147483648;
+    D uint32[[N]] in2 = (uint32) y + 2147483648;
+    __syscall ("additive3pp::max_uint32_vec", __domainid (D), in1, in2, in1);
+    in1 -= 2147483648;
+    return (int32)in1;
+}
+template <domain D : additive3pp, dim N>
+D int[[N]] max (D int[[N]] x, D int[[N]] y) {
+    assert(shapesAreEqual(x,y));
+    D uint[[N]] in1 = (uint) x + 9223372036854775808;
+    D uint[[N]] in2 = (uint) y + 9223372036854775808;
+    __syscall ("additive3pp::max_uint64_vec", __domainid (D), in1, in2, in1);
+    in1 -= 9223372036854775808;
+    return (int)in1;
+}
+
 /** @}*/
 /** @}*/
 /** \addtogroup <a3p_floor>

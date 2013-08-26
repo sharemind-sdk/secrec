@@ -39,7 +39,7 @@ import matrix;
 * \defgroup a3p_diag_matrixmultiplication_cube diagMatrixMultiplication[[3]]
 */
 
-/** \addtogroup <a3p_matrix> 
+/** \addtogroup <a3p_matrix>
 *@{
 *
 * @brief Module with functions for manipulating matrices and vectors (additive3pp protection domain)
@@ -49,7 +49,7 @@ import matrix;
 	rowSums, colSums
 ********************************/
 
-/** \addtogroup <a3p_rowsums> 
+/** \addtogroup <a3p_rowsums>
  *  @{
  *  @brief Function for summarizing the rows of a matrix
  *  @note **D** - additive3pp protection domain
@@ -137,7 +137,7 @@ D float64[[1]] rowSums (D float64[[2]] mat) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_colsums> 
+/** \addtogroup <a3p_colsums>
  *  @{
  *  @brief Function for summarizing the columns of a matrix
  *  @note **D** - additive3pp protection domain
@@ -208,7 +208,7 @@ D float64[[1]] colSums (D float64[[2]] mat) {
 	dotProduct
 ********************************/
 
-/** \addtogroup <a3p_dotproduct> 
+/** \addtogroup <a3p_dotproduct>
  *  @{
  *  @brief Function for finding the dot product of two vectors/matrices
  *  @note **D** - additive3pp protection domain
@@ -221,7 +221,7 @@ D float64[[1]] colSums (D float64[[2]] mat) {
  *  @note **D** - additive3pp domain
  *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  *  @return returns a scalar with the dot product of the two input vectors
- */ 
+ */
 
 template <domain D : additive3pp>
 D uint dotProduct (D bool[[1]] x, D bool[[1]] y) {
@@ -301,14 +301,14 @@ D float64 dotProduct (D float64[[1]] x, D float64[[1]] y) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_dotproduct_mat> 
+/** \addtogroup <a3p_dotproduct_mat>
  *  @{
  *  @brief Function for finding the dot product of two matrices
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  *  @param x,y - matrices of supported type
  *  @return returns a vector with the dot product of each row of the two input matrices
- */ 
+ */
 
 template <domain D : additive3pp>
 D bool[[1]] dotProduct (D bool[[2]] x, D bool[[2]] y) {
@@ -426,12 +426,12 @@ D float64[[1]] dotProduct (D float64[[2]] x, D float64[[2]] y) {
 	vecLength, unitVector
 ********************************/
 
-/** \addtogroup <a3p_veclength> 
+/** \addtogroup <a3p_veclength>
  *  @{
  *  @brief Function for finding the length of a vector
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref float32 "float32" / \ref float64 "float64"
- */ 
+ */
 
 /**
 *  @param x - vector of supported type
@@ -470,12 +470,12 @@ D float64[[1]] vecLength (D float64[[2]] x) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_unitvector> 
+/** \addtogroup <a3p_unitvector>
  *  @{
  *  @brief Function for finding the unit vector of the input vector
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref float32 "float32" / \ref float64 "float64"
- */ 
+ */
 
 /**
 *  @param x - vector of supported type
@@ -539,7 +539,7 @@ D float64[[2]] unitVector (D float64[[2]] x) {
 /*******************************
 	crossProduct
 ********************************/
-/** \addtogroup <a3p_crossproduct> 
+/** \addtogroup <a3p_crossproduct>
  *  @{
  *  @brief Function for finding the cross product of two vectors/matrices
  *  @note **D** - additive3pp protection domain
@@ -547,14 +547,14 @@ D float64[[2]] unitVector (D float64[[2]] x) {
  */
 
 
- /** \addtogroup <a3p_crossproduct_vec> 
+ /** \addtogroup <a3p_crossproduct_vec>
  *  @{
  *  @brief Function for finding the cross product of two vectors
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  *  @param x,y - vectors of supported type
  *  @return returns a vector with the cross product of the two input vectors
- */ 
+ */
 
 
 template <domain D : additive3pp>
@@ -703,14 +703,14 @@ D float64[[1]] crossProduct (D float64[[1]] x, D float64[[1]] y) {
 }
 
 /** @}*/
-/** \addtogroup <a3p_crossproduct_mat> 
+/** \addtogroup <a3p_crossproduct_mat>
  *  @{
  *  @brief Function for finding the cross product of two matrices
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  *  @param x,y - matrices of supported type
  *  @return returns a matrix with the cross product of each row of the two input matrices
- */ 
+ */
 
 template <domain D : additive3pp>
 D int8[[2]] crossProduct (D int8[[2]] x, D int8[[2]] y) {
@@ -916,14 +916,14 @@ D float64[[2]] crossProduct (D float64[[2]] x, D float64[[2]] y) {
 	matrixMultiplication, diagMatrixMultiplication
 *****************************************************/
 
-/** \addtogroup <a3p_matrixmultiplication> 
+/** \addtogroup <a3p_matrixmultiplication>
  *  @{
  *  @brief Function for multiplying two matrices
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  */
 
-/** \addtogroup <a3p_matrixmultiplication_mat> 
+/** \addtogroup <a3p_matrixmultiplication_mat>
  *  @{
  *  @brief Function for multiplying two matrices
  *  @note **D** - additive3pp protection domain
@@ -1373,7 +1373,7 @@ D float64[[2]] matrixMultiplication (D float64[[2]] x, D float64[[2]] y) {
 
 
 /** @}*/
-/** \addtogroup <a3p_matrixmultiplication_cube> 
+/** \addtogroup <a3p_matrixmultiplication_cube>
  *  @{
  *  @brief Function for multiplying two matrices
  *  @note **D** - additive3pp protection domain
@@ -1923,14 +1923,14 @@ D float64[[3]] matrixMultiplication (D float64[[3]] x, D float64[[3]] y) {
 
 
 
-/** \addtogroup <a3p_diag_matrixmultiplication> 
+/** \addtogroup <a3p_diag_matrixmultiplication>
  *  @{
  *  @brief Function for multiplying two diagonal matrices
  *  @note **D** - additive3pp protection domain
  *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  */
 
-/** \addtogroup <a3p_diag_matrixmultiplication_mat> 
+/** \addtogroup <a3p_diag_matrixmultiplication_mat>
  *  @{
  *  @brief Function for multiplying two diagonal matrices
  *  @note **D** - additive3pp protection domain
@@ -2342,7 +2342,7 @@ D float64[[2]] diagMatrixMultiplication (D float64[[2]] x, D float64[[2]] y) {
 
 
 /** @}*/
-/** \addtogroup <a3p_diag_matrixmultiplication_cube> 
+/** \addtogroup <a3p_diag_matrixmultiplication_cube>
  *  @{
  *  @brief Function for multiplying two diagonal matrices
  *  @note **D** - additive3pp protection domain
