@@ -1,0 +1,45 @@
+If you want to create documentation, where "Related Pages" is called "Language reference".
+
+1.
+download the latest SOURCE from 
+http://www.stack.nl/~dimitri/doxygen/download.html 
+
+2.
+extract files and go to the folder
+../doxygen-x.x.x/src
+open the file "translator_en.h"
+
+3.
+find the line that says:
+
+{ return "Related pages"; }
+
+change it to:
+
+{ return "Language reference"; }
+
+save and close the file
+
+4. 
+open your terminal at the
+doxygen-x.x.x directory
+run the configure script:
+
+"sh ./configure"
+
+* if doxygen throws errors, install whatever packages it needs(dot,perl,flex,bison) via the package manager.
+next compile doxygen:
+
+"make"
+
+and finally install doxygen:
+
+"make install"
+
+5.
+The last thing that needs to be done, is to make sure the files "Create_Documentation.sh" and "Doxyfile" are in the same folder and that
+if you open "Doxyfile" the dirs on line 660 are correct for your version of sharemind. If all that is correct go to the directory where those 2 files are and write:
+
+"./Create_Documentation.sh"
+
+the folder "html" should appear in your current directory.
