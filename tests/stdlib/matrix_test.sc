@@ -59,6 +59,14 @@ void test_unit_matrix(){
 
 template<domain D : additive3pp,type T>
 void test_transpose(D T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		mat = transpose(mat);
+		pd_a3p T[[2]] mat2 (2,0);
+		mat2 = transpose(mat2);
+		pd_a3p T[[2]] mat3 (0,2);
+		mat3 = transpose(mat3);
+	}
 	bool result = true;
 	pd_a3p T[[2]] mat (6,6);
 	mat = randomize(mat);
@@ -83,6 +91,20 @@ void test_transpose(D T data){
 
 template<domain D : additive3pp,type T>
 void test_transpose2(D T data){
+	{
+		pd_a3p T[[3]] mat (0,0,0);
+		mat = transpose(mat);
+		pd_a3p T[[3]] mat2 (0,2,0);
+		mat2 = transpose(mat2);
+		pd_a3p T[[3]] mat3 (0,0,2);
+		mat3 = transpose(mat3);
+		pd_a3p T[[3]] mat4 (2,0,0);
+		mat4 = transpose(mat4);
+		pd_a3p T[[3]] mat5 (2,0,2);
+		mat5 = transpose(mat5);
+		pd_a3p T[[3]] mat6 (2,2,0);
+		mat6 = transpose(mat6);
+	}
 	bool result = true;
 	pd_a3p T[[3]] mat (5,5,5);
 	mat = randomize(mat);
@@ -107,6 +129,10 @@ void test_transpose2(D T data){
 
 template<type T>
 void row_sum_test(T data){
+	{
+		T[[2]] mat (3,0);
+		T[[1]] result = rowSums(mat);
+	}
 	pd_a3p T[[2]] mat (5,5);
 	T[[1]] control (5);
 	mat = randomize(mat);
@@ -129,6 +155,11 @@ void row_sum_test(T data){
 
 template<type T>
 void dot_product(T data){
+	{
+		T[[1]] vec (0);
+		T[[1]] vec2 (0);
+		T scalar = dotProduct(vec,vec2);
+	}
 	pd_a3p T[[1]] vec (15);
 	pd_a3p T[[1]] vec2 (15);
 	vec = randomize(vec); vec2 = randomize(vec2);
@@ -150,6 +181,11 @@ void dot_product(T data){
 
 template<type T>
 void dot_product_matrix(T data){
+	{
+		T[[2]] mat (3,0);
+		T[[2]] mat2 (3,0);
+		T[[1]] result = dotProduct(mat,mat2);
+	}
 	pd_a3p T[[2]] mat (10,10);
 	pd_a3p T[[2]] mat2 (10,10);
 	mat = randomize(mat); mat2 = randomize(mat2);
@@ -198,6 +234,11 @@ void cross_product(T data){
 
 template<type T>
 void cross_product_matrix(T data){
+	{
+		T[[2]] mat (0,3);
+		T[[2]] mat2 (0,3);
+		T[[2]] result = crossProduct(mat,mat2);
+	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = randomize(mat); mat2 = randomize(mat2);
@@ -227,6 +268,11 @@ void cross_product_matrix(T data){
 
 template<type T>
 void mat_multiplication(T data){
+	{
+		T[[2]] mat (3,0);
+		T[[2]] mat2 (0,3);
+		T[[2]] result = matrixMultiplication(mat,mat2);
+	}
 	for(uint k = 3; k < 6;++k){
 		for(uint l = 5; l > 2;--l){
 			pd_a3p T[[2]] mat (k,l);

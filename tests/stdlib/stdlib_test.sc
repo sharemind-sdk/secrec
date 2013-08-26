@@ -29,6 +29,10 @@ public uint32 succeeded_tests;
 
 template<type T>
 void test_flattening(T data){
+	{
+		T[[2]] mat (0,0);
+		T[[1]] vec = flatten(mat);
+	}
 	bool result = true;
 	pd_a3p T[[2]] temp (6,6);
 	temp = randomize(temp);
@@ -61,6 +65,17 @@ void test_flattening(T data){
 
 template<type T>
 void equal_shapes_test(T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		bool result = shapesAreEqual(mat,mat2);
+		pd_a3p T[[2]] mat3 (0,2);
+		pd_a3p T[[2]] mat4 (0,2);
+		result = shapesAreEqual(mat3,mat4);
+		pd_a3p T[[2]] mat5 (2,0);
+		pd_a3p T[[2]] mat6 (2,0);
+		result = shapesAreEqual(mat5,mat6);
+	}
 	{
 		pd_a3p T[[2]] mat (5,5); 
 		pd_a3p T[[2]] mat2 (5,5); 
@@ -96,6 +111,10 @@ void equal_shapes_test(T data){
 }
 
 void test_any(){
+	{
+		bool[[1]] vec (0);
+		bool result = any(vec);
+	}
 	bool result = true;
 	bool[[1]] vec (6) = {true,false,true,true,false,false};
 	bool[[1]] vec2 (6) = {true,false,false,false,false,false};
@@ -156,6 +175,10 @@ void test_any2(){
 
 
 void test_all(){
+	{
+		bool[[1]] vec (0);
+		bool result = all(vec);
+	}
 	bool result = true;
 	bool[[1]] vec (6) = {true,false,true,true,false,false};
 	bool[[1]] vec2 (6) = {true,true,true,false,true,true};
@@ -215,6 +238,10 @@ void test_all2(){
 
 template<type T>
 void test_sum(T data){
+	{
+		T[[1]] vec (0);
+		T result = sum(vec);
+	}
 	pd_a3p T[[1]] temp (10); 
 	T[[1]] vec = declassify(randomize(temp));
 	T result = sum(vec);
@@ -262,6 +289,10 @@ void test_sum2(T data){
 
 template<type T>
 void test_product(T data){
+	{
+		T[[1]] vec (0);
+		T result = product(vec);
+	}
 	pd_a3p T[[1]] temp (10);
 	T[[1]] vec = declassify(randomize(temp));
 	T result = product(vec);
@@ -335,6 +366,11 @@ void test_min(T data){
 
 template<type T>
 void test_min2(T data){
+	{
+		T[[1]] vec (0);
+		T[[1]] vec2 (0);
+		T[[1]] result = min(vec,vec2);
+	}
 	pd_a3p T[[1]] temp (25);
 	T[[1]] vec = declassify(randomize(temp));
 	T[[1]] vec2 = declassify(randomize(temp));
@@ -416,6 +452,11 @@ void test_max(T data){
 
 template<type T>
 void test_max2(T data){
+	{
+		T[[1]] vec (0);
+		T[[1]] vec2 (0);
+		T[[1]] result = max(vec,vec2);
+	}
 	pd_a3p T[[1]] temp (25);
 	T[[1]] vec = declassify(randomize(temp));
 	T[[1]] vec2 = declassify(randomize(temp));

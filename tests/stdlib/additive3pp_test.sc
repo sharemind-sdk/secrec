@@ -21,6 +21,7 @@ import x3p_string;
 import x3p_aes;
 import x3p_join;
 import profiling;
+import xor3pp;
 
 domain pd_a3p additive3pp;
 
@@ -29,6 +30,10 @@ public uint32 succeeded_tests;
 
 template<type T>
 void test_sign(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		vec = sign(vec);
+	}
 	pd_a3p T[[1]] temp (15);
 	temp = randomize(temp);
 	T[[1]] vec = declassify(temp);
@@ -58,6 +63,10 @@ void test_sign(T data){
 
 template<type T,type T2>
 void test_abs(T data, T2 data2){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T2[[1]] vec2 = abs(vec);
+	}
 	pd_a3p T[[1]] temp (15);
 	temp = randomize(temp);
 	T[[1]] vec = declassify(temp);
@@ -84,6 +93,10 @@ void test_abs(T data, T2 data2){
 
 template<type T>
 void test_sum(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T vec2 = sum(vec);
+	}
 	pd_a3p T[[1]] temp (10);
 	temp = randomize(temp); 
 	T[[1]] vec = declassify(temp);
@@ -133,6 +146,12 @@ void test_sum2(T data){
 
 template<type T>
 void test_product(T data){
+	/**
+	\todo product does not take 0 element vectors as parameters
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T vec2 = product(vec); 
+	}*/
 	pd_a3p T[[1]] temp (10);
 	temp = randomize(temp);
 	T[[1]] vec = declassify(temp);
@@ -180,6 +199,10 @@ void test_product2(T data){
 }
 
 void test_any(){
+	{
+		pd_a3p bool[[1]] vec (0);
+		pd_a3p bool result = any(vec);
+	}
 	bool result = true;
 	pd_a3p bool[[1]] vec (6) = {true,false,true,true,false,false};
 	pd_a3p bool[[1]] vec2 (6) = {true,false,false,false,false,false};
@@ -209,6 +232,10 @@ void test_any(){
 }
 
 void test_all(){
+	{
+		pd_a3p bool[[1]] vec (0);
+		pd_a3p bool result = all(vec);
+	}
 	bool result = true;
 	pd_a3p bool[[1]] vec (6) = {true,false,true,true,false,false};
 	pd_a3p bool[[1]] vec2 (6) = {true,true,true,false,true,true};
@@ -304,6 +331,20 @@ void test_min2(T data){
 
 template<type T>
 void test_min3(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T[[1]] vec2 (0);
+		pd_a3p T[[1]] result = min(vec,vec2); 
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		pd_a3p T[[2]] result2 = min(mat,mat2); 
+		pd_a3p T[[2]] mat3 (0,2);
+		pd_a3p T[[2]] mat4 (0,2);
+		result2 = min(mat3,mat4);
+		pd_a3p T[[2]] mat5 (2,0);
+		pd_a3p T[[2]] mat6 (2,0);
+		result2 = min(mat5,mat6);  
+	}
 	pd_a3p T[[1]] temp (10);
 	pd_a3p T[[1]] temp2 (10);
 	temp = randomize(temp);
@@ -369,8 +410,13 @@ void test_max2(T data){
 	uint endIndex = 5;
 	for(uint i = 0; i < 5; ++i){
 		for(uint j = startingIndex; j < endIndex;++j){
-			if(vec[j] > control[i]){
+			if(j == startingIndex){
 				control[i] = vec[j];
+			}
+			else{
+				if(vec[j] > control[i]){
+					control[i] = vec[j];
+				}
 			}
 		}
 		startingIndex += 5;
@@ -390,6 +436,20 @@ void test_max2(T data){
 
 template<type T>
 void test_max3(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T[[1]] vec2 (0);
+		pd_a3p T[[1]] result = min(vec,vec2); 
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		pd_a3p T[[2]] result2 = min(mat,mat2); 
+		pd_a3p T[[2]] mat3 (0,2);
+		pd_a3p T[[2]] mat4 (0,2);
+		result2 = min(mat3,mat4);
+		pd_a3p T[[2]] mat5 (2,0);
+		pd_a3p T[[2]] mat6 (2,0);
+		result2 = min(mat5,mat6);  
+	}
 	pd_a3p T[[1]] temp (10);
 	pd_a3p T[[1]] temp2 (10);
 	temp = randomize(temp);
@@ -414,6 +474,64 @@ void test_max3(T data){
 	else{
 		all_tests = all_tests +1;
 		print("FAILURE! Max failed");
+	}
+}
+
+void test_floor(){
+	//scalar
+	pd_a3p float64[[1]] value = {15.892356329,5.12974291,7.5009235790235,-52.325623,-12.5002362,-1,873258};
+	int64[[1]] control = {15,5,7,-53,-13,-2};
+	for(uint i = 0; i < size(value); ++i){
+		int64 result = declassify(floor(value[i]));
+		if(control[i] == result){
+			print("SUCCESS");
+			all_tests += 1;
+			succeeded_tests += 1;
+		}
+		else{
+			print("FAILURE! Floor failed");
+			all_tests += 1;
+		}
+	}
+	//vector
+	int64[[1]] result = declassify(floor(value));
+		if(all(control == result)){
+		print("SUCCESS");
+		all_tests += 1;
+		succeeded_tests += 1;
+	}
+	else{
+		print("FAILURE! Floor failed");
+		all_tests += 1;
+	}
+}
+
+void test_ceiling(){
+	//scalar
+	pd_a3p float64[[1]] value = {15.892356329,5.12974291,7.5009235790235,-52.325623,-12.5002362,-1,873258};
+	int64[[1]] control = {16,6,8,-52,-12,-1};
+	for(uint i = 0; i < size(value); ++i){
+		int64 result = declassify(ceiling(value[i]));
+		if(control[i] == result){
+			print("SUCCESS");
+			all_tests += 1;
+			succeeded_tests += 1;
+		}
+		else{
+			print("FAILURE! Floor failed");
+			all_tests += 1;
+		}
+	}
+	//vector
+	int64[[1]] result = declassify(ceiling(value));
+	if(all(control == result)){
+		print("SUCCESS");
+		all_tests += 1;
+		succeeded_tests += 1;
+	}
+	else{
+		print("FAILURE! Floor failed");
+		all_tests += 1;
 	}
 }
 
@@ -655,6 +773,10 @@ void main(){
 	}
 	print("TEST 9: True Prefix Length");
 	{
+		{
+			pd_a3p bool[[1]] arr (0);
+			uint result = declassify(truePrefixLength(arr));
+		}
 		for(uint i = 0; i < 5; ++i){
 			pd_a3p bool[[1]] arr (10);
 			arr = randomize(arr);
@@ -697,6 +819,22 @@ void main(){
 		print("uint64/uint");
 		test_min(0::uint);
 	}
+	{
+		print("int8");
+		test_min(0::int8);
+	}
+	{
+		print("int16");
+		test_min(0::int16);
+	}
+	{
+		print("int32");
+		test_min(0::int32);
+	}
+	{
+		print("int64/int");
+		test_min(0::int);
+	}
 	print("TEST 11: Min (2)");
 	{
 		print("uint8");
@@ -713,6 +851,22 @@ void main(){
 	{
 		print("uint64/uint");
 		test_min2(0::uint);
+	}
+	{
+		print("int8");
+		test_min2(0::int8);
+	}
+	{
+		print("int16");
+		test_min2(0::int16);
+	}
+	{
+		print("int32");
+		test_min2(0::int32);
+	}
+	{
+		print("int64/int");
+		test_min2(0::int);
 	}
 	print("TEST 12: Min (3)");
 	{
@@ -731,6 +885,22 @@ void main(){
 		print("uint64/uint");
 		test_min3(0::uint);
 	}
+	{
+		print("int8");
+		test_min3(0::int8);
+	}
+	{
+		print("int16");
+		test_min3(0::int16);
+	}
+	{
+		print("int32");
+		test_min3(0::int32);
+	}
+	{
+		print("int64/int");
+		test_min3(0::int);
+	}
 	print("TEST 13: Max");
 	{
 		print("uint8");
@@ -747,6 +917,22 @@ void main(){
 	{
 		print("uint64/uint");
 		test_max(0::uint);
+	}
+	{
+		print("int8");
+		test_max(0::int8);
+	}
+	{
+		print("int16");
+		test_max(0::int16);
+	}
+	{
+		print("int32");
+		test_max(0::int32);
+	}
+	{
+		print("int64/int");
+		test_max(0::int);
 	}
 	print("TEST 14: Max (2)");
 	{
@@ -765,6 +951,22 @@ void main(){
 		print("uint64/uint");
 		test_max2(0::uint);
 	}
+	{
+		print("int8");
+		test_max2(0::int8);
+	}
+	{
+		print("int16");
+		test_max2(0::int16);
+	}
+	{
+		print("int32");
+		test_max2(0::int32);
+	}
+	{
+		print("int64/int");
+		test_max2(0::int);
+	}
 	print("TEST 15: Max (3)");
 	{
 		print("uint8");
@@ -782,6 +984,31 @@ void main(){
 		print("uint64/uint");
 		test_max3(0::uint);
 	}
+	{
+		print("int8");
+		test_max3(0::int8);
+	}
+	{
+		print("int16");
+		test_max3(0::int16);
+	}
+	{
+		print("int32");
+		test_max3(0::int32);
+	}
+	{
+		print("int64/int");
+		test_max3(0::int);
+	}
+	// Uncomment when SecreC is updated to support these Syscalls
+	/*print("TEST 16: Floor");
+	{
+		test_floor();
+	}
+	print("TEST 16: Ceiling");
+	{
+		test_ceiling();
+	}*/
 
 	print("Test finished!");
 	print("Succeeded tests: ", succeeded_tests);

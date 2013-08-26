@@ -41,6 +41,16 @@ void Failure(D T scalar,D T result){
 
 template<type T>
 void test_inv(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = inv(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = inv(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = inv(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = inv(mat3);
+    }
     pd_a3p T temp = 71.504533269388;
     pd_a3p T result = inv(temp);
     pd_a3p T scalar = 0.013985127295811784800214762835242144289506641965459514772424;
@@ -87,6 +97,16 @@ void test_inv(T data){
 
 template<type T>
 void test_sqrt(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = sqrt(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = sqrt(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = sqrt(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = sqrt(mat3);
+    }
     pd_a3p T temp = 2;
     pd_a3p T result = sqrt(temp);
     pd_a3p T scalar = 1.414213562373095048801688724209698078569671875376948073176679;
@@ -146,6 +166,16 @@ void test_sqrt(T data){
 
 template<type T>
 void test_sin(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = sin(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = sin(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = sin(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = sin(mat3);
+    }
     pd_a3p T temp = 2;
     pd_a3p T result = sin(temp);
     pd_a3p T scalar = 0.909297426825681695396019865911744842702254971447890268378973;
@@ -193,6 +223,16 @@ void test_sin(T data){
 
 template<type T>
 void test_ln(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = ln(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = ln(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = ln(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = ln(mat3);
+    }
     pd_a3p T temp = 2;
     pd_a3p T result = ln(temp);
     pd_a3p T scalar = 0.693147180559945309417232121458176568075500134360255254120680;
@@ -223,6 +263,16 @@ void test_ln(T data){
 
 template<type T>
 void test_exp(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = exp(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = exp(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = exp(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = exp(mat3);
+    }
     pd_a3p T temp = 4.730296322569438;
     pd_a3p T result = exp(temp);
     pd_a3p T scalar = 113.3291393553677043956554206064549029386122262400736381482935;
@@ -263,11 +313,18 @@ void test_exp(T data){
 
 
 
-
-
-
 template<type T>
 void test_erf(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T[[1]] result = erf(vec);
+        pd_a3p T[[2]] mat (0,0);
+        pd_a3p T[[2]] result2 = erf(mat);
+        pd_a3p T[[2]] mat2 (2,0);
+        pd_a3p T[[2]] result3 = erf(mat2);
+        pd_a3p T[[2]] mat3 (2,0);
+        pd_a3p T[[2]] result4 = erf(mat3);
+    }
     pd_a3p T temp = 4.730296322569438;
     pd_a3p T result = erf(temp);
     pd_a3p T scalar = 0.99999999997762938171481719714979256601818505390828472741213;

@@ -59,6 +59,11 @@ void test_min(D T data){
 
 template<domain D:additive3pp,type T>
 void test_min2(D T data){
+	{
+		pd_a3p T[[1]] temp (0);
+		pd_a3p T[[1]] temp2 (0);
+		pd_a3p T[[1]] result = min(temp,temp2);
+	}
 	pd_a3p T[[1]] temp (10);
 	pd_a3p T[[1]] temp2 (10);
 	temp = randomize(temp);
@@ -111,6 +116,11 @@ void test_max(D T data){
 
 template<domain D:additive3pp,type T>
 void test_max2(D T data){
+	{
+		pd_a3p T[[1]] temp (0);
+		pd_a3p T[[1]] temp2 (0);
+		pd_a3p T[[1]] result = max(temp,temp2);
+	}
 	pd_a3p T[[1]] temp (10);
 	pd_a3p T[[1]] temp2 (10);
 	temp = randomize(temp);
@@ -152,10 +162,14 @@ void test_reshare(D T data){
 		print("FAILURE!");
 		all_tests += 1;
 	}
-	pd_a3p T[[1]] vector = 0;
+	{
+		pd_a3p T[[1]] vector (0);
+		pd_a3p T[[1]] result = reshare(reshare(vector));
+	}
+	pd_a3p T[[1]] vector (15) = 0;
 	vector = randomize(vector);
 	pd_a3p T[[1]] vector2 = reshare(reshare(vector));
-	if(all(declassify(vector) == declassify(vector))){
+	if(all(declassify(vector) == declassify(vector2))){
 		print("SUCCESS!");
 		all_tests += 1;
 		succeeded_tests += 1;

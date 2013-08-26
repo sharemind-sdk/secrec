@@ -13,6 +13,7 @@ import stdlib;
 import matrix;
 import additive3pp;
 import a3p_matrix;
+import a3p_oblivious;
 import oblivious;
 import a3p_random;
 import a3p_sort;
@@ -30,6 +31,18 @@ public uint32 succeeded_tests;
 
 template<type T>
 void choice_test1(T data){
+	{
+		pd_a3p bool cond = true;
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		pd_a3p T[[2]] mat3 = choose(cond,mat,mat2);
+		pd_a3p T[[2]] mat4 (0,2);
+		pd_a3p T[[2]] mat5 (0,2);
+		mat3 = choose(cond,mat4,mat5);
+		pd_a3p T[[2]] mat6 (2,0);
+		pd_a3p T[[2]] mat7 (2,0);
+		mat3 = choose(cond,mat6,mat7);
+	}
 	pd_a3p bool cond = true;
 	pd_a3p T[[2]] mat (10,10);
 	pd_a3p T[[2]] mat2 (10,10);
@@ -90,6 +103,20 @@ void choice_test1_xor(D T data){
 
 template<type T>
 void choice_test2(T data){
+	{
+		pd_a3p bool[[2]] cond (0,0);
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		pd_a3p T[[2]] mat3 = choose(cond,mat,mat2);
+		pd_a3p bool[[2]] cond2 (0,2);
+		pd_a3p T[[2]] mat4 (0,2);
+		pd_a3p T[[2]] mat5 (0,2);
+		mat3 = choose(cond2,mat4,mat5);
+		pd_a3p bool[[2]] cond3 (2,0);
+		pd_a3p T[[2]] mat6 (2,0);
+		pd_a3p T[[2]] mat7 (2,0);
+		mat3 = choose(cond3,mat6,mat7);
+	}
 	bool result = true;
 	uint column;
 	pd_a3p bool[[2]] cond (6,6);
@@ -170,6 +197,11 @@ void choice_test2_xor(D T data){
 
 template<type T>
 void vector_lookup_test(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p uint index = 0;
+		pd_a3p T scalar = vectorLookup(vec,index);
+	}
 	bool result = true;
 	pd_a3p T scalar;
 	pd_a3p T control;
@@ -201,6 +233,17 @@ void vector_lookup_test(T data){
 
 template<type T>
 void matrix_row_lookup(T data){
+	/**
+	\todo matrixLookupRow fails when given an empty vector
+	{
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p uint index = 0;
+		pd_a3p T[[1]] row = matrixLookupRow(mat,index);
+		pd_a3p T[[2]] mat2 (2,0);
+		row = matrixLookupRow(mat2,index);
+		pd_a3p T[[2]] mat3 (0,2);
+		row = matrixLookupRow(mat3,index);
+	}*/
 	bool result = true;
 	pd_a3p T[[2]] mat (5,5);
 	mat = randomize(mat);
@@ -229,6 +272,17 @@ void matrix_row_lookup(T data){
 
 template<type T>
 void matrix_col_lookup(T data){
+	/**
+	\todo matrixLookupColumn fails when given an empty vector
+	{
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p uint index = 0;
+		pd_a3p T[[1]] row = matrixLookupColumn(mat,index);
+		pd_a3p T[[2]] mat2 (2,0);
+		row = matrixLookupColumn(mat2,index);
+		pd_a3p T[[2]] mat3 (0,2);
+		row = matrixLookupColumn(mat3,index);
+	}*/
 	bool result = true;
 	pd_a3p T[[2]] mat (5,5);
 	mat = randomize(mat);
@@ -257,6 +311,12 @@ void matrix_col_lookup(T data){
 
 template<type T>
 void matrix_lookup(T data){
+	{
+		pd_a3p uint index1 = 0;
+		pd_a3p uint index2 = 0;
+		pd_a3p T[[2]] mat2 (2,0);
+		pd_a3p T result = matrixLookup(mat2,index1,index2);
+	}
 	bool result = true;
 	pd_a3p T[[2]] mat (5,5);
 	mat = randomize(mat);
@@ -292,6 +352,12 @@ void matrix_lookup(T data){
 
 template <type T>
 void vector_update(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p uint index = 0;
+		pd_a3p T newValue;
+		vec = vectorUpdate(vec,index,newValue);
+	}
 	bool result = true;
 	pd_a3p T[[1]] rand (1);
 	rand = randomize(rand);

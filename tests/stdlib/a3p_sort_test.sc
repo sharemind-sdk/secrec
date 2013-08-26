@@ -50,6 +50,10 @@ void test_sorting_xor(D T data){
 
 template <domain D : additive3pp, type T,dim N>
 void test(D T[[N]] vec){
+	{
+		D T[[N]] vec (0);
+		vec = sort(vec);
+	}
 	bool result = true;
 	T last;
 	T[[N]] vec2 = declassify(sort(vec));
@@ -81,6 +85,10 @@ void test(D T[[N]] vec){
 
 template <domain D : additive3pp, type T,dim N>
 void test_xor(D T[[N]] vec){
+	{
+		D T[[N]] vec (0);
+		vec = sort(vec);
+	}
 	bool result = true;
 	D T last;
 	D T[[N]] vec2 = sort(vec);
@@ -113,6 +121,11 @@ void test_xor(D T[[N]] vec){
 
 template <type T>
 void test_4(T data){
+	{
+		pd_a3p T[[2]] mat (0,2);
+		mat = sort(mat,0::uint);
+		mat = sort(mat,1::uint);
+	}
 	pd_a3p T[[2]] mat (5,5);
 	mat = randomize(mat);
 	public bool result = true;
@@ -154,6 +167,11 @@ void test_4(T data){
 
 template <domain D : additive3pp, type T>
 void test_4_xor(D T data){
+	{
+		pd_a3p T[[2]] mat (0,2);
+		mat = sort(mat,0::uint);
+		mat = sort(mat,1::uint);
+	}
 	D T[[2]] mat (5,5);
 	mat = randomize(mat);
 	public bool result = true;
@@ -200,7 +218,11 @@ void sorting_network(D T data){
 		pd_a3p T[[1]] vec (i);
 		D T last;
 		vec = randomize(vec);
+
+		printVector(declassify(vec));
 		D T[[1]] vec2 = sortingNetworkSort(vec);
+		printVector(declassify(vec2));
+
 		for(uint j = 0; j < size(vec);++j){
 			if(j != 0){
 				if(declassify(last) > declassify(vec2[j])){
@@ -272,6 +294,56 @@ void sorting_network_matrix(D T data){
 	}
 }
 
+template <domain D : additive3pp, type T>
+void sorting_network_matrix2(D T data){
+	pd_a3p T[[2]] mat (4,2);
+	mat[:,0] = {1,1,0,0};
+	mat[:,1] = {1,0,1,0};
+	T[[2]] result = declassify(sortingNetworkSort(mat,0::uint,1::uint));
+	T[[2]] control (4,2);
+	control[:,0] = {0,0,1,1};
+	control[:,1] = {0,1,0,1};
+ 	if(all(result == control)){
+		succeeded_tests = succeeded_tests + 1;
+		all_tests = all_tests +1;
+		print("SUCCESS!");
+	}
+	else{
+		print("FAILURE! sorting process failed");
+		print("Got this : ");
+		printMatrix(result);
+		print(" From this: ");
+		printMatrix(declassify(mat));
+		all_tests = all_tests +1;
+	}
+}
+
+template <domain D : additive3pp, type T>
+void sorting_network_matrix3(D T data){
+	pd_a3p T[[2]] mat (8,3);
+	mat[:,0] = {1,1,1,1,0,0,0,0};
+	mat[:,1] = {1,1,0,0,1,1,0,0};
+	mat[:,2] = {1,0,1,0,1,0,1,0};
+	T[[2]] result = declassify(sortingNetworkSort(mat,0::uint,1::uint,2::uint));
+	T[[2]] control (8,3);
+	control[:,0] = {0,0,0,0,1,1,1,1};
+	control[:,1] = {0,0,1,1,0,0,1,1};
+	control[:,2] = {0,1,0,1,0,1,0,1};
+ 	if(all(result == control)){
+		succeeded_tests = succeeded_tests + 1;
+		all_tests = all_tests +1;
+		print("SUCCESS!");
+	}
+	else{
+		print("FAILURE! sorting process failed");
+		print("Got this : ");
+		printMatrix(result);
+		print(" From this: ");
+		printMatrix(declassify(mat));
+		all_tests = all_tests +1;
+	}
+}
+
 void main(){
 	public int8 INT8_MAX = 127;
 	public int8 INT8_MIN = -128;
@@ -290,7 +362,7 @@ void main(){
 
 	print("Sorting test: start");
 
-	/*print("TEST 1: 1-dimensional 3-8 element vector sorting");
+	print("TEST 1: 1-dimensional 3-8 element vector sorting");
 	{
 		print("uint8");
 		test_sorting(0::uint8);
@@ -376,9 +448,12 @@ void main(){
 			test(vec);
 		}
 	}
-
 	print("TEST 2: 1-dimensional boolean vector sorting");
 	{
+		{
+			pd_a3p bool[[1]] vec (0);
+			vec = sort(vec);
+		}
 		for(uint i = 3; i < 10;++i){
 			pd_a3p bool[[1]] vec (i);
 			vec = randomize(vec);
@@ -413,6 +488,11 @@ void main(){
 	}
 	print("TEST 3: 2-dimensional (5,5) boolean matrix sorting by all columns");
 	{
+		{
+			pd_a3p bool[[2]] mat(0,2);
+			mat = sort(mat,0::uint);
+			mat = sort(mat,1::uint);
+		}
 		pd_a3p bool[[2]] mat (5,5) = false;
 		mat = randomize(mat);
 		public bool result = true;
@@ -504,9 +584,9 @@ void main(){
 		pd_a3p xor_uint64 data = 0;
 		test_4_xor(data);
 	}
-	// highest bit makes comparison within sorting wrong.
+	// highest bit makes comparison within sorting wrong.*/
 	print("TEST 5: sorting network sort on vectors");
-	*/{
+	{
 		print("uint8");
 		pd_a3p uint8 data = 0;
 		sorting_network(data);
@@ -566,7 +646,7 @@ void main(){
 		pd_a3p xor_uint64 data = 0;
 		sorting_network(data);
 	}
-	/*print("TEST 6: sorting network sort on matrices");
+	print("TEST 6: sorting network sort on matrices");
 	{
 		print("uint8");
 		pd_a3p uint8 data = 0;
@@ -606,7 +686,89 @@ void main(){
 		print("int64/int");
 		pd_a3p int data = 0;
 		sorting_network_matrix(data);
-	}*/
+	}
+	print("TEST 7: sorting network sort on matrices(2)");
+	{
+		print("uint8");
+		pd_a3p uint8 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("uint16");
+		pd_a3p uint16 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("uint32");
+		pd_a3p uint32 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("uint64/uint");
+		pd_a3p uint data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("int8");
+		pd_a3p int8 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("int16");
+		pd_a3p int16 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("int32");
+		pd_a3p int32 data = 0;
+		sorting_network_matrix2(data);
+	}
+	{
+		print("int64/int");
+		pd_a3p int data = 0;
+		sorting_network_matrix2(data);
+	}
+	print("TEST 8: sorting network sort on matrices(3)");
+	{
+		print("uint8");
+		pd_a3p uint8 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("uint16");
+		pd_a3p uint16 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("uint32");
+		pd_a3p uint32 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("uint64/uint");
+		pd_a3p uint data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("int8");
+		pd_a3p int8 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("int16");
+		pd_a3p int16 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("int32");
+		pd_a3p int32 data = 0;
+		sorting_network_matrix3(data);
+	}
+	{
+		print("int64/int");
+		pd_a3p int data = 0;
+		sorting_network_matrix3(data);
+	}
 	
 	print("Test finished!");
 	print("Succeeded tests: ", succeeded_tests);

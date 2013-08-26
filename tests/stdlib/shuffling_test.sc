@@ -30,6 +30,10 @@ public bool test_result;
 
 template<type T>
 void vector_shuffle_test(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		vec = shuffle(vec);
+	}
 	pd_a3p T[[1]] vec (50);
 	vec = randomize(vec);
 	T[[1]] vec2 = declassify(vec);
@@ -49,6 +53,10 @@ void vector_shuffle_test(T data){
 
 template<domain D : additive3pp, type T>
 void vector_shuffle_test_xor_uint(D T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		vec = shuffle(vec);
+	}
 	pd_a3p T[[1]] vec (50);
 	vec = randomize(vec);
 	pd_a3p T[[1]] vec2 = vec;
@@ -67,6 +75,11 @@ void vector_shuffle_test_xor_uint(D T data){
 
 template<type T>
 void vector_shuffle_test_key(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p uint8[[1]] key (32);
+		vec = shuffle(vec,key);
+	}
 	pd_a3p uint8[[1]] key (32); 
 	pd_a3p T[[1]] vec (50);
 	pd_a3p T[[1]] vec2 (50);
@@ -91,6 +104,11 @@ void vector_shuffle_test_key(T data){
 
 template<domain D : additive3pp, type T>
 void vector_shuffle_test_xor_uint_key(D T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p uint8[[1]] key (32);
+		vec = shuffle(vec,key);
+	}
 	pd_a3p uint8[[1]] key (32);
 	pd_a3p T[[1]] vec (50);
 	pd_a3p T[[1]] vec2 = vec;
@@ -113,6 +131,14 @@ void vector_shuffle_test_xor_uint_key(D T data){
 
 template<type T>
 void matrix_shuffle_test(T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		mat = shuffleRows(mat);
+		pd_a3p T[[2]] mat2 (3,0);
+		mat2 = shuffleRows(mat2);
+		pd_a3p T[[2]] mat3 (0,3);
+		mat3 = shuffleRows(mat3);
+	}
 	pd_a3p T[[2]] mat (50,6);
 	mat = randomize(mat);
 	T[[2]] mat2 = declassify(mat);
@@ -132,6 +158,14 @@ void matrix_shuffle_test(T data){
 
 template<domain D : additive3pp, type T>
 void matrix_shuffle_test_xor_uint(D T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		mat = shuffleRows(mat);
+		pd_a3p T[[2]] mat2 (3,0);
+		mat2 = shuffleRows(mat2);
+		pd_a3p T[[2]] mat3 (0,3);
+		mat3 = shuffleRows(mat3);
+	}
 	pd_a3p T[[2]] mat (50,6);
 	mat = randomize(mat);
 	pd_a3p T[[2]] mat2 = mat;
@@ -150,6 +184,15 @@ void matrix_shuffle_test_xor_uint(D T data){
 
 template<type T>
 void matrix_shuffle_test_key(T data){
+	{
+		pd_a3p uint8[[1]] key (32); 
+		pd_a3p T[[2]] mat (0,0);
+		mat = shuffleRows(mat,key);
+		pd_a3p T[[2]] mat2 (3,0);
+		mat2 = shuffleRows(mat2,key);
+		pd_a3p T[[2]] mat3 (0,3);
+		mat3 = shuffleRows(mat3,key);
+	}
 	pd_a3p uint8[[1]] key (32); 
 	pd_a3p T[[2]] mat (50,6);
 	pd_a3p T[[2]] mat2 (50,6);
@@ -174,6 +217,15 @@ void matrix_shuffle_test_key(T data){
 
 template<domain D : additive3pp, type T>
 void matrix_shuffle_test_xor_uint_key(D T data){
+	{
+		pd_a3p uint8[[1]] key (32); 
+		pd_a3p T[[2]] mat (0,0);
+		mat = shuffleRows(mat,key);
+		pd_a3p T[[2]] mat2 (3,0);
+		mat2 = shuffleRows(mat2,key);
+		pd_a3p T[[2]] mat3 (0,3);
+		mat3 = shuffleRows(mat3,key);
+	}
 	pd_a3p uint8[[1]] key (32);
 	pd_a3p T[[2]] mat (50,6);
 	pd_a3p T[[2]] mat2 = mat;
@@ -207,6 +259,10 @@ void random_test(T data){
  		print("FAILURE! Randomizing failed");
  		all_tests = all_tests +1;
 	}
+	{
+		pd_a3p T[[1]] vec (0);
+		vec = randomize(vec);
+	}
 	pd_a3p T[[1]] vec (25);
 	pd_a3p T[[1]] vec2 = randomize(randomize(vec));
 	if(all(declassify(vec) == declassify(vec2))){
@@ -232,6 +288,10 @@ void random_test_xor(D T data){
  	else{
  		print("FAILURE! Randomizing failed");
  		all_tests = all_tests +1;
+	}
+	{
+		pd_a3p T[[1]] vec (0);
+		vec = randomize(vec);
 	}
 	D T[[1]] vec (25);
 	D T[[1]] vec2 = randomize(randomize(vec));

@@ -29,6 +29,10 @@ public uint32 succeeded_tests;
 
 template<type T>
 void row_sum_test(T data){
+	{
+		pd_a3p T[[2]] mat2 (3,0);
+		pd_a3p T[[1]] result = rowSums(mat2);
+	}
 	pd_a3p T[[2]] mat (5,5);
 	T[[1]] control (5);
 	mat = randomize(mat);
@@ -51,6 +55,11 @@ void row_sum_test(T data){
 
 template<type T>
 void dot_product(T data){
+	{
+		pd_a3p T[[1]] vec (0);
+		pd_a3p T[[1]] vec2 (0);
+		pd_a3p T scalar = dotProduct(vec,vec2);
+	}
 	pd_a3p T[[1]] vec (15);
 	pd_a3p T[[1]] vec2 (15);
 	vec = randomize(vec); vec2 = randomize(vec2);
@@ -72,6 +81,11 @@ void dot_product(T data){
 
 template<type T>
 void dot_product_matrix(T data){
+	{
+		pd_a3p T[[2]] mat (3,0);
+		pd_a3p T[[2]] mat2 (3,0);
+		pd_a3p T[[1]] result = dotProduct(mat,mat2);
+	}
 	pd_a3p T[[2]] mat (10,10);
 	pd_a3p T[[2]] mat2 (10,10);
 	mat = randomize(mat); mat2 = randomize(mat2);
@@ -120,6 +134,11 @@ void cross_product(T data){
 
 template<type T>
 void cross_product_matrix(T data){
+	{
+		pd_a3p T[[2]] mat (0,3);
+		pd_a3p T[[2]] mat2 (0,3);
+		pd_a3p T[[2]] result = crossProduct(mat,mat2);
+	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = randomize(mat); mat2 = randomize(mat2);
@@ -149,6 +168,11 @@ void cross_product_matrix(T data){
 
 template<type T>
 void mat_multiplication(T data){
+	{
+		pd_a3p T[[2]] mat (3,0);
+		pd_a3p T[[2]] mat2 (0,3);
+		pd_a3p T[[2]] result = matrixMultiplication(mat,mat2);
+	}
 	for(uint k = 3; k < 6;++k){
 		for(uint l = 5; l > 2;--l){
 			pd_a3p T[[2]] mat (k,l);
@@ -182,6 +206,14 @@ void mat_multiplication(T data){
 
 template<type T>
 void diag_mat_multiplication(T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		pd_a3p T[[2]] result = diagMatrixMultiplication(mat,mat2);
+		pd_a3p T[[2]] mat3 (3,0);
+		pd_a3p T[[2]] mat4 (0,0);
+		result = diagMatrixMultiplication(mat3,mat4);
+	}
 	for(uint k = 3; k < 6;++k){
 		for(uint l = 5; l > 2;--l){
 			pd_a3p T[[2]] mat (k,l);
@@ -258,6 +290,17 @@ void mat3D_multiplication(T data){
 
 template<type T>
 void diag3D_mat_multiplication(T data){
+	{
+		pd_a3p T[[3]] mat (0,0,0);
+		pd_a3p T[[3]] mat2 (0,0,0);
+		pd_a3p T[[3]] result = diagMatrixMultiplication(mat,mat2);
+		pd_a3p T[[3]] mat3 (3,0,0);
+		pd_a3p T[[3]] mat4 (3,0,0);
+		result = diagMatrixMultiplication(mat3,mat4);
+		pd_a3p T[[3]] mat5 (0,0,3);
+		pd_a3p T[[3]] mat6 (0,3,3);
+		result = diagMatrixMultiplication(mat5,mat6);
+	}
 	for(uint k = 3; k < 6;++k){
 		for(uint l = 5; l > 2;--l){
 			pd_a3p T[[3]] mat (3,k,l);

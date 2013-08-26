@@ -138,6 +138,10 @@ D T[[3]] random(D T[[3]] data){
 
 template<type T>
 void test_flattening(T data){
+	{
+		T[[2]] mat (0,0);
+		T[[1]] vec = flatten(mat);
+	}
 	bool result = true;
 	pd_a3p T[[2]] temp (3,3);
 	temp = random(temp);
@@ -170,6 +174,17 @@ void test_flattening(T data){
 
 template<type T>
 void equal_shapes_test(T data){
+	{
+		pd_a3p T[[2]] mat (0,0);
+		pd_a3p T[[2]] mat2 (0,0);
+		bool result = shapesAreEqual(mat,mat2);
+		pd_a3p T[[2]] mat3 (0,2);
+		pd_a3p T[[2]] mat4 (0,2);
+		result = shapesAreEqual(mat3,mat4);
+		pd_a3p T[[2]] mat5 (2,0);
+		pd_a3p T[[2]] mat6 (2,0);
+		result = shapesAreEqual(mat5,mat6);
+	}
 	{
 		pd_a3p T[[2]] mat (3,3); 
 		pd_a3p T[[2]] mat2 (3,3); 
@@ -206,6 +221,10 @@ void equal_shapes_test(T data){
 
 template<type T>
 void test_sum(T data){
+	{
+		T[[1]] vec (0);
+		T result = sum(vec);
+	}
 	pd_a3p T[[1]] temp (6); 
 	T[[1]] vec = declassify(random(temp));
 	T result = sum(vec);
@@ -253,6 +272,10 @@ void test_sum2(T data){
 
 template<type T>
 void test_product(T data){
+	{
+		T[[1]] vec (0);
+		T result = product(vec);
+	}
 	pd_a3p T[[1]] temp (6);
 	T[[1]] vec = declassify(random(temp));
 	T result = product(vec);

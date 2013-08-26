@@ -139,14 +139,6 @@ D T[[3]] random(D T[[3]] data){
 
 template<domain D : additive3pp,type T>
 void test_transpose(D T data){
-	{
-		pd_a3p T[[2]] mat (0,0);
-		mat = transpose(mat);
-		pd_a3p T[[2]] mat2 (2,0);
-		mat2 = transpose(mat2);
-		pd_a3p T[[2]] mat3 (0,2);
-		mat3 = transpose(mat3);
-	}
 	bool result = true;
 	pd_a3p T[[2]] mat (3,3);
 	mat = random(mat);
@@ -171,20 +163,6 @@ void test_transpose(D T data){
 
 template<domain D : additive3pp,type T>
 void test_transpose2(D T data){
-	{
-		pd_a3p T[[3]] mat (0,0,0);
-		mat = transpose(mat);
-		pd_a3p T[[3]] mat2 (0,2,0);
-		mat2 = transpose(mat2);
-		pd_a3p T[[3]] mat3 (0,0,2);
-		mat3 = transpose(mat3);
-		pd_a3p T[[3]] mat4 (2,0,0);
-		mat4 = transpose(mat4);
-		pd_a3p T[[3]] mat5 (2,0,2);
-		mat5 = transpose(mat5);
-		pd_a3p T[[3]] mat6 (2,2,0);
-		mat6 = transpose(mat6);
-	}
 	bool result = true;
 	pd_a3p T[[3]] mat (2,2,2);
 	mat = random(mat);
@@ -209,10 +187,6 @@ void test_transpose2(D T data){
 
 template<type T>
 void row_sum_test(T data){
-	{
-		T[[2]] mat (3,0);
-		T[[1]] result = rowSums(mat);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	T[[1]] control (3);
 	mat = random(mat);
@@ -235,11 +209,6 @@ void row_sum_test(T data){
 
 template<type T>
 void dot_product(T data){
-	{
-		T[[1]] vec (0);
-		T[[1]] vec2 (0);
-		T scalar = dotProduct(vec,vec2);
-	}
 	pd_a3p T[[1]] vec (6);
 	pd_a3p T[[1]] vec2 (6);
 	vec = random(vec); vec2 = random(vec2);
@@ -261,11 +230,6 @@ void dot_product(T data){
 
 template<type T>
 void dot_product_matrix(T data){
-	{
-		T[[2]] mat (3,0);
-		T[[2]] mat2 (3,0);
-		T[[1]] result = dotProduct(mat,mat2);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -314,11 +278,6 @@ void cross_product(T data){
 
 template<type T>
 void cross_product_matrix(T data){
-	{
-		T[[2]] mat (0,3);
-		T[[2]] mat2 (0,3);
-		T[[2]] result = crossProduct(mat,mat2);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -348,11 +307,6 @@ void cross_product_matrix(T data){
 
 template<type T>
 void mat_multiplication(T data){
-	{
-		T[[2]] mat (3,0);
-		T[[2]] mat2 (0,3);
-		T[[2]] result = matrixMultiplication(mat,mat2);
-	}
 	pd_a3p T[[2]] mat (3,4);
 	pd_a3p T[[2]] mat2 (4,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -382,10 +336,6 @@ void mat_multiplication(T data){
 //---------------------------------------------
 template<type T>
 void a3p_row_sum_test(T data){
-	{
-		pd_a3p T[[2]] mat2 (3,0);
-		pd_a3p T[[1]] result = rowSums(mat2);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	T[[1]] control (3);
 	mat = random(mat);
@@ -408,11 +358,6 @@ void a3p_row_sum_test(T data){
 
 template<type T>
 void a3p_dot_product(T data){
-	{
-		pd_a3p T[[1]] vec (0);
-		pd_a3p T[[1]] vec2 (0);
-		pd_a3p T scalar = dotProduct(vec,vec2);
-	}
 	pd_a3p T[[1]] vec (6);
 	pd_a3p T[[1]] vec2 (6);
 	vec = random(vec); vec2 = random(vec2);
@@ -434,11 +379,6 @@ void a3p_dot_product(T data){
 
 template<type T>
 void a3p_dot_product_matrix(T data){
-	{
-		pd_a3p T[[2]] mat (3,0);
-		pd_a3p T[[2]] mat2 (3,0);
-		pd_a3p T[[1]] result = dotProduct(mat,mat2);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -460,11 +400,6 @@ void a3p_dot_product_matrix(T data){
 
 template<type T>
 void a3p_cross_product(T data){
-	{
-		pd_a3p T[[2]] mat (0,3);
-		pd_a3p T[[2]] mat2 (0,3);
-		pd_a3p T[[2]] result = crossProduct(mat,mat2);
-	}
 	pd_a3p T[[1]] vec (3);
 	pd_a3p T[[1]] vec2 (3);
 	vec = random(vec); vec2 = random(vec2);
@@ -492,11 +427,6 @@ void a3p_cross_product(T data){
 
 template<type T>
 void a3p_cross_product_matrix(T data){
-	{
-		pd_a3p T[[2]] mat (3,0);
-		pd_a3p T[[2]] mat2 (0,3);
-		pd_a3p T[[2]] result = matrixMultiplication(mat,mat2);
-	}
 	pd_a3p T[[2]] mat (3,3);
 	pd_a3p T[[2]] mat2 (3,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -526,14 +456,6 @@ void a3p_cross_product_matrix(T data){
 
 template<type T>
 void a3p_mat_multiplication(T data){
-	{
-		pd_a3p T[[2]] mat (0,0);
-		pd_a3p T[[2]] mat2 (0,0);
-		pd_a3p T[[2]] result = diagMatrixMultiplication(mat,mat2);
-		pd_a3p T[[2]] mat3 (3,0);
-		pd_a3p T[[2]] mat4 (0,0);
-		result = diagMatrixMultiplication(mat3,mat4);
-	}
 	pd_a3p T[[2]] mat (3,4);
 	pd_a3p T[[2]] mat2 (4,3);
 	mat = random(mat); mat2 = random(mat2);
@@ -563,14 +485,6 @@ void a3p_mat_multiplication(T data){
 
 template<type T>
 void a3p_diag_mat_multiplication(T data){
-	{
-		pd_a3p T[[2]] mat (0,0);
-		pd_a3p T[[2]] mat2 (0,0);
-		pd_a3p T[[2]] result = diagMatrixMultiplication(mat,mat2);
-		pd_a3p T[[2]] mat3 (3,0);
-		pd_a3p T[[2]] mat4 (0,0);
-		result = diagMatrixMultiplication(mat3,mat4);
-	}
 	pd_a3p T[[2]] mat (3,4);
 	pd_a3p T[[2]] mat2 (4,4);
 	mat = random(mat); mat2 = random(mat2);
@@ -640,17 +554,6 @@ void a3p_mat3D_multiplication(T data){
 
 template<type T>
 void a3p_diag3D_mat_multiplication(T data){
-	{
-		pd_a3p T[[3]] mat (0,0,0);
-		pd_a3p T[[3]] mat2 (0,0,0);
-		pd_a3p T[[3]] result = diagMatrixMultiplication(mat,mat2);
-		pd_a3p T[[3]] mat3 (3,0,0);
-		pd_a3p T[[3]] mat4 (3,0,0);
-		result = diagMatrixMultiplication(mat3,mat4);
-		pd_a3p T[[3]] mat5 (0,0,3);
-		pd_a3p T[[3]] mat6 (0,3,3);
-		result = diagMatrixMultiplication(mat5,mat6);
-	}
 	pd_a3p T[[3]] mat (2,2,2);
 	pd_a3p T[[3]] mat2 (2,2,2);
 	mat = random(mat); mat2 = random(mat2);
@@ -691,10 +594,6 @@ void a3p_diag3D_mat_multiplication(T data){
 
 template<type T>
 void a3p_vec_length(T data){
-	{
-		pd_a3p T[[1]] vec (0);
-		pd_a3p T length = vecLength(vec);
-	}
 	pd_a3p T[[1]] vec (3);
 	vec = random(vec);
 	T[[1]] vec2 = declassify(vec);
@@ -714,10 +613,6 @@ void a3p_vec_length(T data){
 
 template<type T>
 void a3p_unit_vec(T data){
-	{
-		pd_a3p T[[1]] vec (0);
-		pd_a3p T[[1]] unit_vector = unitVector(vec);
-	}
 	pd_a3p T[[1]] vec (3);
 	vec = random(vec);
 	T[[1]] vec2 = declassify(vec);
@@ -741,14 +636,6 @@ void a3p_unit_vec(T data){
 
 template<type T>
 void a3p_vec_length2D(T data){
-	{
-		pd_a3p T[[2]] vec (0,0);
-		pd_a3p T[[1]] length = vecLength(vec);
-		pd_a3p T[[2]] vec2 (2,0);
-		length = vecLength(vec2);
-		pd_a3p T[[2]] vec3 (0,2);
-		length = vecLength(vec3);
-	}
 	pd_a3p T[[2]] vec (3,3);
 	vec = random(vec);
 	T[[2]] vec2 = declassify(vec);
@@ -774,14 +661,6 @@ void a3p_vec_length2D(T data){
 
 template<type T>
 void a3p_unit_vec2D(T data){
-	{
-		pd_a3p T[[2]] vec (0,0);
-		pd_a3p T[[2]] unit_vector = unitVector(vec);
-		pd_a3p T[[2]] vec2 (2,0);
-		unit_vector = unitVector(vec2);
-		pd_a3p T[[2]] vec3 (0,2);
-		unit_vector = unitVector(vec3);
-	}
 	pd_a3p T[[2]] vec (3,3);
 	vec = random(vec);
 	T[[2]] vec2 = declassify(vec);
@@ -816,14 +695,6 @@ void a3p_unit_vec2D(T data){
 
 template<type T>
 void determinant_test(T data){
-	{
-		T[[2]] mat (0,0);
-		T result = determinant(mat);
-		T[[2]] mat2 (2,0);
-		result = determinant(mat2);
-		T[[2]] mat3 (0,2);
-		result = determinant(mat3);		
-	}
 	T[[2]] mat (3,3);
     T[[1]] vec1 (3) = {1,2,3};
     T[[1]] vec2 (3) = {4,5,6};

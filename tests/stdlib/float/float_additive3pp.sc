@@ -138,6 +138,10 @@ D T[[3]] random(D T[[3]] data){
 
 template<type T>
 void test_sum(T data){
+    {
+        pd_a3p T[[1]] vec (0);
+        pd_a3p T result = sum(vec);
+    }
     pd_a3p T[[1]] temp (10);
     temp = random(temp); 
     T[[1]] vec = declassify(temp);
