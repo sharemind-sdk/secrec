@@ -1045,7 +1045,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
         }
         else {
             p->setValue (ConstantString::get (getContext (),
-                static_cast<PrivateSecType*>(secTy)->securityKind ()->name ()));
+                static_cast<PrivateSecType*>(secTy)->name ()));
         }
     }
     else
