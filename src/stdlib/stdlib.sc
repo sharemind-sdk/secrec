@@ -80,7 +80,7 @@ int64 INT64_MIN = -9223372036854775808;
 * \defgroup round round
 */
 
-/** \addtogroup <stdlib> 
+/** \addtogroup <stdlib>
 *@{
 * @brief Module with standard general functions
 */
@@ -90,7 +90,7 @@ int64 INT64_MIN = -9223372036854775808;
 	Utility - flattening
 ********************************/
 
-/** \addtogroup <flatten> 
+/** \addtogroup <flatten>
  *  @{
  *  @brief Function for converting arrays to 1 dimensional
  *  @note **D** - all protection domains
@@ -111,7 +111,7 @@ D T[[1]] flatten (D T[[N]] arr) {
 	Utility - shapes are equal
 ********************************/
 
-/** \addtogroup <shapesareequal> 
+/** \addtogroup <shapesareequal>
  *  @{
  *  @brief Function for checking the shape equality of two arrays
  *  @note **D1** - all protection domains
@@ -163,7 +163,7 @@ string _vectorToString (T[[1]] vec) {
 * \endcond
 */
 
-/** \addtogroup <arraytostring> 
+/** \addtogroup <arraytostring>
  *  @{
  *  @brief Function for converting an array to a string
  *  @note **D** - all protection domains
@@ -206,13 +206,13 @@ string arrayToString (T[[N]] arr) {
 
 /** @}*/
 
-/** \addtogroup <printvector> 
+/** \addtogroup <printvector>
  *  @{
  *  @brief Function for printing out vectors
  *  @note **T** - any \ref data_types "data" type
  *  @param vec - a 1-dimensional array
  *  @return prints out a string representation of the input vector
- *  @return see also \ref printarray "printArray" 
+ *  @return see also \ref printarray "printArray"
  */
 
 template <type T>
@@ -222,7 +222,7 @@ void printVector (T[[1]] vec) {
 
 /** @}*/
 
-/** \addtogroup <printmatrix> 
+/** \addtogroup <printmatrix>
  *  @{
  *  @brief Function for printing out matrices
  *  @note **T** - any \ref data_types "data" type
@@ -234,7 +234,7 @@ void printVector (T[[1]] vec) {
 // nicer version of 2-dimensional printArray
 template <type T>
 void printMatrix (T[[2]] mat) {
-	uint rows = shape (mat)[0];	
+	uint rows = shape (mat)[0];
 	if (rows == 0) {
 		print("{}");
 	} else {
@@ -248,16 +248,16 @@ void printMatrix (T[[2]] mat) {
 			}
 			print("  " + _vectorToString(mat[rowsm,:]) + " }");
 		}
-	}	
+	}
 }
 
 /** @}*/
-/** \addtogroup <print3darray> 
+/** \addtogroup <print3darray>
  *  @{
  *  @brief Function for printing out 3-dimensional arrays
  *  @note **T** - any \ref data_types "data" type
  *  @param arr - a 3-dimensional array
- *  @return prints out a string representation of the input array. 
+ *  @return prints out a string representation of the input array.
  *  @return see also \ref printarray "printArray"
  */
 
@@ -265,7 +265,7 @@ template <type T>
 void print3dArray (T[[3]] arr) {
 	uint[[1]] s = shape(arr);
 	uint matrices = s[0];
-	uint rows = s[1];	
+	uint rows = s[1];
 	if (matrices == 0) {
 		print("{}");
 	} else {
@@ -279,13 +279,13 @@ void print3dArray (T[[3]] arr) {
 				print(",");
 			}
 			printMatrix(arr[matricesm,:,:]);
-		}		
-		print("}");		
+		}
+		print("}");
 	}
 }
 
 /** @}*/
-/** \addtogroup <printarray> 
+/** \addtogroup <printarray>
  *  @{
  *  @brief Function for printing out any dimension arrays
  *  @note **T** - any \ref data_types "data" type
@@ -306,13 +306,13 @@ void printArray (T[[N]] arr) {
 ********************************/
 
 
-/** \addtogroup <any> 
+/** \addtogroup <any>
  *  @{
  *  @brief Function for checking if any element in a boolean vector is true
  *  @note **D** - all protection domains
  */
 
-/** \addtogroup <any1> 
+/** \addtogroup <any1>
  *  @{
  *  @brief Function for checking if any element in a boolean vector is true
  *  @note **D** - all protection domains
@@ -327,7 +327,7 @@ void printArray (T[[N]] arr) {
 */
 template <domain D>
 D bool any (D bool b) {
-	return b;	
+	return b;
 }
 
 /**
@@ -367,7 +367,7 @@ D bool any (D bool[[N]] arr) {
 
 
 /** @}*/
-/** \addtogroup <any2> 
+/** \addtogroup <any2>
  *  @{
  *  @brief Function for checking if any element in a boolean vector is true in specified parts
  *  @note **D** - all protection domains
@@ -394,7 +394,7 @@ bool[[1]] any (bool[[1]] vec, uint k) {
 			}
 		}
 	}
-	
+
     return result;
 }
 
@@ -418,13 +418,13 @@ D bool[[1]] any (D bool[[1]] vec, uint k) {
 
 /** @}*/
 /** @}*/
-/** \addtogroup <all> 
+/** \addtogroup <all>
  *  @{
  *  @brief Function for checking if all elements in a boolean vector are true
  *  @note **D** - all protection domains
  */
 
-/** \addtogroup <all1> 
+/** \addtogroup <all1>
  *  @{
  *  @brief Function for checking if all elements in a boolean vector are true
  *  @note **D** - all protection domains
@@ -439,7 +439,7 @@ D bool[[1]] any (D bool[[1]] vec, uint k) {
 */
 template <domain D>
 D bool all (D bool b) {
-    return b;   
+    return b;
 }
 
 /**
@@ -478,7 +478,7 @@ D bool all (D bool[[N]] arr) {
 }
 
 /** @}*/
-/** \addtogroup <all2> 
+/** \addtogroup <all2>
  *  @{
  *  @brief Function for checking if all elements in a boolean vector are true in specified parts
  *  @note **D** - all protection domains
@@ -505,7 +505,7 @@ bool[[1]] all (bool[[1]] vec, uint k) {
 			}
 		}
 	}
-	
+
     return result;
 }
 
@@ -537,14 +537,14 @@ D bool[[1]] all (D bool[[1]] vec, uint k) {
 ********************************/
 
 
-/** \addtogroup <sum> 
+/** \addtogroup <sum>
  *  @{
  *  @brief Function for finding the sum of all elements in the input vector
  *  @note **D** - all protection domains
  *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  */
 
-/** \addtogroup <sum1> 
+/** \addtogroup <sum1>
  *  @{
  *  @brief Function for finding the sum of all elements in the input vector
  *  @note **D** - all protection domains
@@ -555,7 +555,7 @@ D bool[[1]] all (D bool[[1]] vec, uint k) {
 
 template <domain D, type T>
 D T sum (D T scalar) {
-	return scalar; 
+	return scalar;
 }
 
 template <domain D>
@@ -664,7 +664,7 @@ D float64 sum (D float64[[1]] vec) {
 }
 
 /** @}*/
-/** \addtogroup <sum2> 
+/** \addtogroup <sum2>
  *  @{
  *  @brief Function for finding the sum of all elements in the input vector in specified parts
  *  @note **D** - all protection domains
@@ -836,14 +836,14 @@ D float64[[1]] sum (D float64[[1]] vec, uint k) {
 	Product
 ********************************/
 
-/** \addtogroup <product> 
+/** \addtogroup <product>
  *  @{
  *  @brief Function for finding the product of all elements in the input vector
  *  @note **D** - all protection domains
  *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
  */
 
-/** \addtogroup <product1> 
+/** \addtogroup <product1>
  *  @{
  *  @brief Function for finding the product of the input vector
  *  @note **D** - all protection domains
@@ -862,7 +862,7 @@ D uint8 product (D uint8[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	uint8 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -876,7 +876,7 @@ D uint16 product (D uint16[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	uint16 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -890,7 +890,7 @@ D uint32 product (D uint32[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	uint32 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -904,7 +904,7 @@ D uint product (D uint[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	uint result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -918,7 +918,7 @@ D int8 product (D int8[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	int8 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -932,7 +932,7 @@ D int16 product (D int16[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	int16 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -946,7 +946,7 @@ D int32 product (D int32[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	int32 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -960,7 +960,7 @@ D int product (D int[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	int result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -974,7 +974,7 @@ D float32 product (D float32[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	float32 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -988,7 +988,7 @@ D float64 product (D float64[[1]] vec) {
 	uint n = size(vec);
 	if (n == 0) {
 		return 0;
-	} 
+	}
 
 	float64 result = 1;
 	for (uint i = 0; i<n; ++i) {
@@ -998,7 +998,7 @@ D float64 product (D float64[[1]] vec) {
 }
 
 /** @}*/
-/** \addtogroup <product2> 
+/** \addtogroup <product2>
  *  @{
  *  @brief Function for finding the product of the input vector in parts
  *  @note **D** - all protection domains
@@ -1011,7 +1011,7 @@ template <domain D>
 D uint8[[1]] product (D uint8[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D uint8[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1026,7 +1026,7 @@ template <domain D>
 D uint16[[1]] product (D uint16[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D uint16[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1041,7 +1041,7 @@ template <domain D>
 D uint32[[1]] product (D uint32[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D uint32[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1056,7 +1056,7 @@ template <domain D>
 D uint[[1]] product (D uint[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D uint[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1071,7 +1071,7 @@ template <domain D>
 D int8[[1]] product (D int8[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D int8[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1086,7 +1086,7 @@ template <domain D>
 D int16[[1]] product (D int16[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D int16[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1101,7 +1101,7 @@ template <domain D>
 D int32[[1]] product (D int32[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D int32[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1116,7 +1116,7 @@ template <domain D>
 D int[[1]] product (D int[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D int[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1131,7 +1131,7 @@ template <domain D>
 D float32[[1]] product (D float32[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D float32[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1146,7 +1146,7 @@ template <domain D>
 D float64[[1]] product (D float64[[1]] vec, uint k) {
 	uint n = size(vec);
 	assert(k > 0 && n % k == 0);
-	
+
 	D float64[[1]] prodsOfSubArrs (k);
 	uint subArrLen = n/k;
 	uint subArrStartIdx = 0;
@@ -1166,15 +1166,15 @@ D float64[[1]] product (D float64[[1]] vec, uint k) {
 
 
 
-/** \addtogroup <min> 
+/** \addtogroup <min>
  *  @{
  *  @brief Function for finding the minimum values
  */
 
- /** \addtogroup <min1> 
+ /** \addtogroup <min1>
  *  @{
  *  @brief Function for finding the minimum value of the input
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @return returns the minimum value of the input
  */
 
@@ -1257,14 +1257,13 @@ T min (T[[N]] arr) {
 }
 
 /** @}*/
- /** \addtogroup <min2> 
+ /** \addtogroup <min2>
  *  @{
  *  @brief Function for finding the pointwise minimum value of the two input vectors
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param x,y - input vector of supported type
  *  @return returns the pointwise minimum of the two input vectors
- *  \cond
  */
 
 /**
@@ -1318,11 +1317,11 @@ D T[[1]] min (D T[[1]] x, D T[[1]] y) {
 
 
  /** @}*/
- /** \addtogroup <min3> 
+ /** \addtogroup <min3>
  *  @{
  *  @brief Function for finding the minimum value of the input in specified parts
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param vec - input vector on supported type
  *  @param k - an \ref uint64 "uint" type value for specifying from how many subarrays **min** must be found
  *  @return returns the minimum value of every subarray in the input
@@ -1380,15 +1379,15 @@ D T[[1]] min (D T[[1]] vec, uint k) {
 
 /** @}*/
 /** @}*/
-/** \addtogroup <max> 
+/** \addtogroup <max>
  *  @{
  *  @brief Function for finding the maximum value of the input
  */
 
- /** \addtogroup <max1> 
+ /** \addtogroup <max1>
  *  @{
  *  @brief Function for finding the maximum value of the input
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @return return the maximum value of the input
  */
 
@@ -1432,7 +1431,6 @@ T max (T[[1]] vec) {
 * @note **D** - all protection domains
 * @param vec - a 1-dimensional vector
 * @return returns the largest value in the vector
-* \cond
 */
 template <domain D, type T>
 D T max (D T[[1]] vec) {
@@ -1475,11 +1473,11 @@ bool max (bool[[1]] vec) {
 */
 
 /** @}*/
- /** \addtogroup <max2> 
+ /** \addtogroup <max2>
  *  @{
  *  @brief Function for finding the pointwise maximum of two input vectors
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param x,y - input vectors of supported type
  *  @return return the pointwise maximum of the two input vectors
  */
@@ -1537,10 +1535,10 @@ D T[[1]] max (D T[[1]] x, D T[[1]] y) {
 	return x;
 }
 /** @}*/
-/** \addtogroup <max3> 
+/** \addtogroup <max3>
 *  @{
 *  @brief Function for finding the maximum value of the input in specified parts
-*  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" 
+*  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
 *  @param vec - a vector of supported type
 *  @param k - an \ref uint64 "uint" type value for specifying from how many subarrays **max** must be found
 *  @return returns the maximum value of every subarray in the input
@@ -1601,11 +1599,11 @@ D T[[1]] max (D T[[1]] vec, uint k) {
 
 /** @}*/
 /** @}*/
-/** \addtogroup <abs> 
+/** \addtogroup <abs>
 *  @{
 *  @brief Function for finding the absolute value of the input
 *  @note **D** - all protection domains
-*  @note Supported types - \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64" 
+*  @note Supported types - \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
 *  @param x - input scalar of supported type
 *  @return returns the absolute value of the input
 *  \todo
@@ -1634,15 +1632,15 @@ float32 abs (float32 x) {
 	return x < 0 ? -x : x;
 }
 
-float64 abs (float64 x) {	
+float64 abs (float64 x) {
 	return x < 0 ? -x : x;
 }
 
 /** @}*/
-/** \addtogroup <round> 
+/** \addtogroup <round>
 *  @{
 *  @brief Function for rounding values
-*  @note Supported types - \ref float32 "float32" / \ref float64 "float64" 
+*  @note Supported types - \ref float32 "float32" / \ref float64 "float64"
 *  @param x - input scalar of supported type
 *  @return returns the rounded value of the input scalar
 * \todo what if argument is bigger than INT64_MAX?
@@ -1658,7 +1656,4 @@ int round (float64 x) {
 }
 
 /** @}*/
-/** @}*/
-
-
 /** @}*/
