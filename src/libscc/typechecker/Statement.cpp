@@ -272,13 +272,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
-    TCGUARD (visitExpr(e));
-
     if (checkPublicBooleanScalar (e) != OK) {
         assert(e->haveResultType());
         m_log.fatalInProc(stmt) << "Invalid expression of type "
                                 << Type::PrettyPrint (e->resultType())
-                                << " given for assert statement at " << e->location() << '.';
+                                << " passed to assert statement at " << e->location() << '.'
+                                << " Expecting public boolean scalar.";
         return E_TYPE;
     }
 
