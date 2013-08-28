@@ -46,28 +46,28 @@ module xor3pp;
  *  @return returns filattened vector of extracted bits
  */
 
-template <domain D : additive3pp>
+template <domain D : additive3pp, dim N>
 D bool[[1]] bit_extract (D xor_uint8[[N]] input) {
     D bool[[1]] out (8 * size (input));
     __syscall ("additive3pp::bit_extract_xor_uint8_vec", __domainid (D), input, out);
     return out;
 }
 
-template <domain D : additive3pp>
+template <domain D : additive3pp, dim N>
 D bool[[1]] bit_extract (D xor_uint16[[N]] input) {
     D bool[[1]] out (16 * size (input));
     __syscall ("additive3pp::bit_extract_xor_uint16_vec", __domainid (D), input, out);
     return out;
 }
 
-template <domain D : additive3pp>
+template <domain D : additive3pp, dim N>
 D bool[[1]] bit_extract (D xor_uint32[[N]] input) {
     D bool[[1]] out (32 * size (input));
     __syscall ("additive3pp::bit_extract_xor_uint32_vec", __domainid (D), input, out);
     return out;
 }
 
-template <domain D : additive3pp>
+template <domain D : additive3pp, dim N>
 D bool[[1]] bit_extract (D xor_uint64[[N]] input) {
     D bool[[1]] out (64 * size (input));
     __syscall ("additive3pp::bit_extract_xor_uint64_vec", __domainid (D), input, out);
