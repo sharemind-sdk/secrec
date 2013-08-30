@@ -29,6 +29,31 @@ public uint32 succeeded_tests;
 public bool test_result;
 public uint repeats = 7; // alter the range of elements to be tested for sorting (min = 4). From function test_sorting()
 
+// function for checking whether all elements that went in also came out
+
+template<type T, dim N>
+bool control_sort(T[[N]] input,T[[N]] output){
+	T[[1]] vec = flatten(input);
+	T[[1]] vec2 = flatten(output);
+	uint hits = 0;
+	for(uint i = 0; i < size(vec);++i){
+		for(uint j = 0; j < size(vec2);++j){
+			if(vec[i] == vec2[j]){
+				hits += 1;
+				break;
+			}
+		}
+	}
+	if(hits == size(vec)){
+		return true;
+	}
+	else{
+		printVector(vec);
+		printVector(vec2);
+		return false;
+	}
+}
+
 template <type T>
 void test_sorting(T data){
 	for(uint i = 3; i < repeats; ++i){
@@ -57,6 +82,11 @@ void test(D T[[N]] vec){
 	bool result = true;
 	T last;
 	T[[N]] vec2 = declassify(sort(vec));
+	if(!control_sort(declassify(vec),vec2)){
+		all_tests += 1;
+		print("Sorting failed,the numbers that went in did not come out");
+		return;
+	}
 	for(uint i = 0; i < size(vec);++i){
 		if(i != 0){
 			if(last > vec2[i]){
@@ -133,6 +163,11 @@ void test_4(T data){
 	public uint column;
 	for(uint i = 0; i < 5; ++i){
 		T[[2]] mat2 = declassify(sort(mat,i));
+		if(!control_sort(declassify(mat),mat2)){
+			all_tests += 1;
+			print("Sorting failed,the numbers that went in did not come out");
+			return;
+		}
 		for(uint j = 0; j < 5; ++j){
 			if(j != 0){
 				if(last > mat2[j,i]){
@@ -218,11 +253,7 @@ void sorting_network(D T data){
 		pd_a3p T[[1]] vec (i);
 		D T last;
 		vec = randomize(vec);
-
-		printVector(declassify(vec));
 		D T[[1]] vec2 = sortingNetworkSort(vec);
-		printVector(declassify(vec2));
-
 		for(uint j = 0; j < size(vec);++j){
 			if(j != 0){
 				if(declassify(last) > declassify(vec2[j])){
@@ -584,7 +615,8 @@ void main(){
 		pd_a3p xor_uint64 data = 0;
 		test_4_xor(data);
 	}
-	// highest bit makes comparison within sorting wrong.*/
+	// highest bit makes comparison within sorting wrong.
+	
 	print("TEST 5: sorting network sort on vectors");
 	{
 		print("uint8");
