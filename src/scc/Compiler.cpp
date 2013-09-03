@@ -112,7 +112,7 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
     if (label == 0) {
         std::stringstream ss;
         const SymbolProcedure* proc = static_cast<const SymbolProcedure*>(sym);
-        ss << ':' << proc->decl ()->procedureName () << '_' << st.uniq ();
+        ss << ':' << proc->procedureName () << '_' << st.uniq ();
         label = st.getLabel (ss.str ());
         st.store (sym, label);
     }
