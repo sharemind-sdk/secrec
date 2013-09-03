@@ -151,7 +151,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // 1. evaluate subexpressions
     TreeNodeExpr * eArg1 = e->expression ();
-    const CGResult & argResult(codeGen(eArg1));
+    const CGResult & argResult = codeGen(eArg1);
     append(result, argResult);
     if (result.isNotOk()) {
         return result;

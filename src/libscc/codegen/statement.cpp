@@ -8,6 +8,8 @@
 #include "misc.h"
 #include "symboltable.h"
 #include "typechecker.h"
+#include "StringTable.h"
+#include "types.h"
 
 /**
  * Code generation for statements.
@@ -126,16 +128,113 @@ CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
   TreeNodeStmtDecl
 *******************************************************************************/
 
-CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
-                                 bool isGlobal, bool isProcParam)
+CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
 {
     if (m_tyChecker->checkVarInit(ty, varInit) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    // Initialize the new symbol (for initializer target)
-    const SymbolSymbol::ScopeType scopeType = isGlobal
-                                            ? SymbolSymbol::GLOBAL
-                                            : SymbolSymbol::LOCAL;
+    CGStmtResult result;
+
+    Imop* i = 0;
+
+    // JUMP SKIP;
+    i = pushComment ("Global variable initialization:");
+    result.setFirstImop (i);
+    Imop* skip = new Imop (varInit, Imop::JUMP, (Symbol*) 0);
+    push_imop (skip);
+
+    SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
+    ns->setScopeType (SymbolSymbol::GLOBAL);
+
+    {
+        // Initialize the result symbol:
+        TypeBasic * const dimType = TypeBasic::getIndexType(getContext());
+        for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
+            std::stringstream ss;
+            ss << varInit->variableName() << "{d" << i << "}";
+            SymbolSymbol * sym = new SymbolSymbol(ss.str(), dimType);
+            sym->setScopeType(SymbolSymbol::GLOBAL);
+            m_st->appendSymbol(sym);
+            ns->setDim(i, sym);
+        }
+
+        if (!ty->isScalar ()) { // set size symbol
+            std::stringstream ss;
+            ss << varInit->variableName() << "{size}";
+            SymbolSymbol * const sizeSym = new SymbolSymbol(ss.str(), dimType);
+            sizeSym->setScopeType(SymbolSymbol::GLOBAL);
+            m_st->appendSymbol(sizeSym);
+            ns->setSizeSym(sizeSym);
+        }
+
+        m_st->appendSymbol (ns);
+    }
+
+    // <initialization function>
+    SymbolProcedure* procSym = 0;
+    {
+        ScopedScope localScope (*this);
+        std::stringstream ss;
+        ss << "__global_init_" << varInit->variableName ();
+
+        const StringRef procName = *getStringTable ().addString (ss.str ());
+        TypeProc* procType = TypeProc::get (getContext (), std::vector<TypeBasic*>(), ty);
+        procSym = new SymbolProcedure (procName, procType);
+
+        // header
+        Imop* funcStart = pushComment ("Global variable initialization function:");
+        procSym->setTarget (funcStart);
+
+        // body
+        CGStmtResult varInitResult = cgLocalVarInit (ty, varInit);
+        append (result, varInitResult);
+        if (result.isNotOk ())
+            return result;
+
+        // footer
+        Symbol* localResultSym = varInitResult.symbol ();
+        releaseProcVariables (result, localResultSym);
+        if (result.isNotOk ())
+            return result;
+
+        std::vector<Symbol*> rets (dim_begin(localResultSym), dim_end(localResultSym));
+        rets.push_back (localResultSym);
+        Imop * i = newReturn(varInit, rets.begin(), rets.end());
+        i->setDest(m_st->label(funcStart));
+        pushImopAfter(result, i);
+    }
+
+    std::vector<Symbol*> retList, argList;
+    retList.insert (retList.end (), dim_begin (ns), dim_end (ns));
+    retList.push_back (ns);
+
+    Imop* callImop = newCall (varInit, retList.begin (), retList.end (), argList.begin (), argList.end ());
+    Imop* cleanImop = new Imop (varInit, Imop::RETCLEAN, 0, 0, 0);
+    cleanImop->setArg2 (m_st->label (callImop));
+    skip->setDest (m_st->label (callImop));
+    callImop->setDest (procSym);
+    push_imop (callImop);
+    push_imop (cleanImop);
+    return result;
+}
+
+CGStmtResult CodeGen::cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
+{
+    return cgVarInit (ty, varInit, false);
+}
+
+CGStmtResult CodeGen::cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
+{
+    return cgVarInit (ty, varInit, true);
+}
+
+
+CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
+                                 bool isProcParam)
+{
+    if (m_tyChecker->checkVarInit(ty, varInit) != TypeChecker::OK)
+        return CGResult::ERROR_CONTINUE;
+
     const bool isScalar = ty->isScalar();
     const bool isString = ty->secrecDataType() == DATATYPE_STRING;
     const bool isPrivate = ty->secrecSecType()->isPrivate();
@@ -144,7 +243,6 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
     TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
-    ns->setScopeType(scopeType);
     m_st->appendSymbol(ns);
 
     SecrecDimType shapeExpressions = 0;
@@ -157,7 +255,6 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
         std::stringstream ss;
         ss << varInit->variableName() << "{d" << i << "}";
         SymbolSymbol * sym = new SymbolSymbol(ss.str(), dimType);
-        sym->setScopeType(scopeType);
         m_st->appendSymbol(sym);
         ns->setDim(i, sym);
     }
@@ -166,12 +263,12 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
         std::stringstream ss;
         ss << varInit->variableName() << "{size}";
         SymbolSymbol * const sizeSym = new SymbolSymbol(ss.str(), dimType);
-        sizeSym->setScopeType(scopeType);
         m_st->appendSymbol(sizeSym);
         ns->setSizeSym(sizeSym);
     }
 
     CGStmtResult result;
+    result.setResult (ns);
 
     // evaluate shape if given, also compute size
     if (! varInit->shape().empty()) {
@@ -330,9 +427,16 @@ CGStmtResult CodeGen::cgStmtDecl(TreeNodeStmtDecl * s) {
     CGStmtResult result;
     const bool isGlobal = s->global();
     const bool isProcParam = s->procParam();
+    assert (! (isGlobal && isProcParam));
+
+    typedef CGStmtResult (CodeGen::*varInitFunc)(TypeNonVoid*, TreeNodeVarInit*);
+    const varInitFunc cgInit =
+        isProcParam ? &CodeGen::cgProcParamInit :
+        isGlobal    ? &CodeGen::cgGlobalVarInit :
+                      &CodeGen::cgLocalVarInit;
 
     BOOST_FOREACH (TreeNodeVarInit& varInit, s->initializers()) {
-        append(result, cgVarInit(s->resultType(), &varInit, isGlobal, isProcParam));
+        append(result, (this->*cgInit) (s->resultType(), &varInit));
         if (result.isNotOk()) {
             return result;
         }
@@ -396,7 +500,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     // Body of for loop:
     TreeNodeStmt * body = s->body();
     startLoop();
-    CGStmtResult bodyResult(codeGenStmt(body));
+    CGStmtResult bodyResult = codeGenStmt(body);
     endLoop();
     if (bodyResult.isNotOk()) {
         result.setStatus(bodyResult.status());
@@ -481,7 +585,7 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
 
     // Generate code for conditional expression:
     TreeNodeExpr * e = s->conditional();
-    CGBranchResult eResult(codeGenBranch(e));
+    CGBranchResult eResult = codeGenBranch(e);
     append(result, eResult);
     if (result.isNotOk()) {
         return result;
@@ -493,7 +597,7 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
     // Generate code for first branch:
     newScope();
     TreeNodeStmt * s1 = s->trueBranch();
-    CGStmtResult trueResult(codeGenStmt(s1));
+    CGStmtResult trueResult = codeGenStmt(s1);
     if (trueResult.isNotOk()) {
         result.setStatus(trueResult.status());
         return result;

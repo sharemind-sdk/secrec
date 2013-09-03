@@ -37,8 +37,8 @@ std::string mangleProcedure (const std::string& name, TypeProc* dt)
 SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procdef)
 {
     TypeProc* dt = procdef.procedureType();
-    SymbolProcedure * ns = new SymbolProcedure(mangleProcedure(procdef.procedureName().str(), dt),
-                                               &procdef);
+    SymbolProcedure * ns = new SymbolUserProcedure (
+        mangleProcedure(procdef.procedureName().str(), dt), &procdef);
     st->appendSymbol (ns);
     return ns;
 }
@@ -189,7 +189,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
         }
     }
 
-    m_st->appendSymbol(new SymbolProcedure(shortName, proc));
+    m_st->appendSymbol(new SymbolUserProcedure(shortName, proc));
 
     return OK;
 }

@@ -82,7 +82,7 @@ void CodeGen::append(CGResult & result, const CGResult & other) {
 CGResult CodeGen::codeGen(TreeNodeExpr * e) {
     TreeNode * const oldNode = m_node;
     m_node = e;
-    const CGResult & r(e->codeGenWith(*this));
+    const CGResult & r = e->codeGenWith(*this);
     m_node = oldNode;
     return r;
 }
@@ -90,7 +90,7 @@ CGResult CodeGen::codeGen(TreeNodeExpr * e) {
 CGBranchResult CodeGen::codeGenBranch(TreeNodeExpr * e) {
     TreeNode * oldNode = m_node;
     m_node = e;
-    const CGBranchResult & r(e->codeGenBoolWith(*this));
+    const CGBranchResult & r = e->codeGenBoolWith(*this);
     m_node = oldNode;
     return r;
 }
@@ -98,7 +98,7 @@ CGBranchResult CodeGen::codeGenBranch(TreeNodeExpr * e) {
 CGStmtResult CodeGen::codeGenStmt(TreeNodeStmt * s) {
     TreeNode * oldNode = m_node;
     m_node = s;
-    const CGStmtResult & r(s->codeGenWith(*this));
+    const CGStmtResult & r = s->codeGenWith(*this);
     m_node = oldNode;
     return r;
 }
@@ -477,7 +477,9 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
         SymbolTemporary * temp_bool = m_st->appendTemporary(boolTy);
 
         dim_iterator dit = dim_begin(x);
-        for (SPV::iterator it(m_spv.begin()); it != m_spv.end(); ++ it, ++ dit) {
+        for (SPV::iterator it = m_spv.begin(), e = m_spv.end ();
+             it != e; ++ it, ++ dit)
+        {
             Symbol * s_lo = it->first;
             Symbol * s_hi = it->second;
             Symbol * d = *dit;

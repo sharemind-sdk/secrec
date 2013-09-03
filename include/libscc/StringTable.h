@@ -10,10 +10,11 @@
 #ifndef SECREC_STRINGTABLE_H
 #define SECREC_STRINGTABLE_H
 
-#include "StringRef.h"
 #include <boost/unordered/unordered_set.hpp>
 
 namespace SecreC {
+
+class StringRef;
 
 /*******************************************************************************
   StringTable

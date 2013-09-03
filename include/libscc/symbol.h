@@ -1,6 +1,7 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
+#include <cassert>
 #include <iterator>
 #include <vector>
 
@@ -17,6 +18,7 @@ class SecurityType;
 class TypeNonVoid;
 class TypeContext;
 class Location;
+class TypeProc;
 
 /*******************************************************************************
   Symbol
@@ -279,29 +281,50 @@ inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol
   SymbolProcedure
 *******************************************************************************/
 
+// TODO: initialize global variables in procedures
 class SymbolProcedure: public Symbol {
 public: /* Methods: */
-    SymbolProcedure(StringRef name,
-                    const TreeNodeProcDef * procdef,
-                    SymbolProcedure * shortOf = NULL);
+    SymbolProcedure(StringRef name, TypeProc* type);
 
-    SymbolProcedure * shortOf() const { return m_shortOf; }
-    inline const TreeNodeProcDef *decl() const { return m_decl; }
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
-    StringRef procedureName () const;
 
-    virtual const Location * location() const;
+    virtual StringRef procedureName () const { return name (); }
+    virtual const TreeNodeProcDef * decl () const { assert (false); return NULL; }
+    virtual const Location * location () const { return NULL; }
+    virtual SymbolProcedure* shortOf () const { return NULL; }
 
 protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
-    const TreeNodeProcDef*  const  m_decl;
     Imop*                          m_target;
-    SymbolProcedure *              m_shortOf;
 };
 
+/*******************************************************************************
+  SymbolUserProcedure
+*******************************************************************************/
+
+// User defined procedure:
+class SymbolUserProcedure : public SymbolProcedure {
+public: /* Methods: */
+
+    SymbolUserProcedure (StringRef name,
+                         const TreeNodeProcDef * decl,
+                         SymbolProcedure * shortOf = NULL);
+
+    StringRef procedureName () const;
+    virtual const TreeNodeProcDef * decl () const { return m_decl; }
+    virtual const Location * location() const;
+    virtual SymbolProcedure* shortOf () const { return m_shortOf; }
+
+protected:
+    void print(std::ostream & os) const;
+
+private: /* Fields: */
+    const TreeNodeProcDef * const  m_decl;
+    SymbolProcedure *              m_shortOf;
+};
 
 /*******************************************************************************
   SymbolTemplate

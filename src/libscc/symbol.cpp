@@ -190,25 +190,50 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 *******************************************************************************/
 
 SymbolProcedure::SymbolProcedure(StringRef name,
-                                 const TreeNodeProcDef * procdef,
-                                 SymbolProcedure * shortOf)
-    : Symbol(SYM_PROCEDURE, procdef->procedureType())
-    , m_decl(procdef)
+                                 TypeProc* type)
+    : Symbol(SYM_PROCEDURE, type)
     , m_target(0)
-    , m_shortOf(shortOf)
 {
     setName(name);
 }
 
-const Location * SymbolProcedure::location() const {
+void SymbolProcedure::print(std::ostream & os) const {
+    typedef SecreC::Type::PrettyPrint PrettyPrint;
+    TypeProc* procType = static_cast<TypeProc*>(secrecType ());
+    os << PrettyPrint (procType->returnType ());
+    os << ' ' << name () << '(';
+    bool first = true;
+    BOOST_FOREACH (const TypeBasic* argType, procType->paramTypes ()) {
+        if (! first)
+            os << ", ";
+        first = false;
+        os << PrettyPrint (argType);
+    }
+
+    os << ')';
+}
+
+/*******************************************************************************
+  SymbolUserProcedure
+*******************************************************************************/
+
+SymbolUserProcedure::SymbolUserProcedure (StringRef name,
+                                          const TreeNodeProcDef * decl,
+                                          SymbolProcedure * shortOf)
+    : SymbolProcedure (name, decl->procedureType ())
+    , m_decl (decl)
+    , m_shortOf (shortOf)
+{ }
+
+const Location * SymbolUserProcedure::location() const {
     return &m_decl->location();
 }
 
-StringRef SymbolProcedure::procedureName () const {
+StringRef SymbolUserProcedure::procedureName () const {
     return m_decl->procedureName ();
 }
 
-void SymbolProcedure::print(std::ostream & os) const {
+void SymbolUserProcedure::print(std::ostream & os) const {
     printProcDef(os, m_decl);
 }
 

@@ -5,14 +5,16 @@
 #include <set>
 #include <vector>
 
-#include "codegenResult.h"
 #include "CodeGenState.h"
 #include "icodelist.h"
-#include "treenode_fwd.h"
 #include "symbol_fwd.h"
+#include "treenode_fwd.h"
 
 namespace SecreC {
 
+class CGBranchResult;
+class CGResult;
+class CGStmtResult;
 class CodeGen;
 class CompileLog;
 class Context;
@@ -21,8 +23,9 @@ class ICodeList;
 class Imop;
 class ModuleInfo;
 class ModuleMap;
-class SymbolSymbol;
+class StringRef;
 class SymbolProcedure;
+class SymbolSymbol;
 class SymbolTable;
 class Type;
 class TypeChecker;
@@ -346,8 +349,10 @@ private:
     /// generate symbol for given type
     SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
 
-    CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
-                            bool isGlobal, bool isProcParam);
+    CGStmtResult cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     Symbol* indexConstant (uint64_t value);

@@ -129,8 +129,6 @@ bool isSignedNumericDataType (SecrecDataType dType) {
     case DATATYPE_INT16:
     case DATATYPE_INT32:
     case DATATYPE_INT64:
-    case DATATYPE_FLOAT32:
-    case DATATYPE_FLOAT64:
         return true;
     default:
         return false;

@@ -2012,8 +2012,6 @@ public: /* Methods: */
 
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
-    TypeChecker::Status accept(TypeChecker & tyChecker);
-
     TreeNode* initializer () const;
     TreeNodeExpr* conditional () const;
     TreeNodeExpr* iteratorExpr () const;

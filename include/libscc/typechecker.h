@@ -4,12 +4,12 @@
 #include <vector>
 
 #include "parser.h"
-#include "StringRef.h"
 #include "treenode_fwd.h"
 #include "symbol_fwd.h"
 
 namespace SecreC {
 
+class StringRef;
 class CompileLog;
 class Context;
 class TypeBasic;
