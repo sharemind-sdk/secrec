@@ -310,7 +310,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     // Patch up calls to template instances:
     BOOST_FOREACH (const CallMap::value_type& v, m_callsTo) {
         BOOST_FOREACH (Imop * imop, v.second) {
-            imop->setDest(v.first->symbol ());
+            imop->setDest(v.first);
         }
     }
 

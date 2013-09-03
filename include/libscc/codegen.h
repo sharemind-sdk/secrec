@@ -169,7 +169,7 @@ private:
 
 private: /* Types: */
 
-    typedef std::map<const TreeNodeProcDef*, std::set<Imop*> > CallMap;
+    typedef std::map<SymbolProcedure*, std::set<Imop*> > CallMap;
     typedef std::vector<SymbolTable*> STList;
 
 public: /* Methods: */

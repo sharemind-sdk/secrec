@@ -954,7 +954,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
 
     Imop* i = newCall (m_node, retList.begin (), retList.end (), argList.begin (), argList.end ());
     Imop* c = new Imop (m_node, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
-    m_callsTo[symProc->decl ()].insert (i);
+    m_callsTo[symProc].insert (i);
 
     c->setArg2 (m_st->label (i));
     pushImopAfter (result, i);
