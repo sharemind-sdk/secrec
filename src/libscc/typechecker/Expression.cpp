@@ -407,6 +407,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
         return E_TYPE;
     }
 
+    if (root->dimensionality ()->value () >=  eTypes[0]->secrecDimType()) {
+        m_log.fatalInProc (root) << "Array concatenation over invalid dimensionality at "
+            << root->dimensionality ()->location () << '.';
+        return E_TYPE;
+    }
+
     // type checker actually allows for aribtrary expression here
     // but right now parser expects integer literals, this is OK
     TreeNodeExpr * e3 = root->dimensionality();
