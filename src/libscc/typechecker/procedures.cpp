@@ -37,8 +37,14 @@ std::string mangleProcedure (const std::string& name, TypeProc* dt)
 SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procdef)
 {
     TypeProc* dt = procdef.procedureType();
-    SymbolProcedure * ns = new SymbolUserProcedure (
-        mangleProcedure(procdef.procedureName().str(), dt), &procdef);
+    const std::string actualName = mangleProcedure (procdef.procedureName ().str(), dt);
+    BOOST_FOREACH (Symbol* _proc, st->findAll (SYM_PROCEDURE, actualName)) {
+        SymbolProcedure* proc = static_cast<SymbolProcedure*>(_proc);
+        if (proc->secrecType () == dt)
+            return proc;
+    }
+
+    SymbolProcedure * ns = new SymbolUserProcedure (actualName, &procdef);
     st->appendSymbol (ns);
     return ns;
 }
