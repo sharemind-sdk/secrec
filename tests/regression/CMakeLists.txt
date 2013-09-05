@@ -65,6 +65,7 @@ add_test_secrec_execute("scalars/52-empty-false-branch")
 add_test_secrec_execute("scalars/53-for-loop-bug")
 add_test_secrec_execute("scalars/54-Bug1478")
 add_test_secrec_execute("scalars/55-invalid-concat")
+add_test_secrec_execute("scalars/56-overlapping-instances")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
