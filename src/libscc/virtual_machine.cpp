@@ -533,9 +533,12 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
 #define SWITCH_ARITH(NAME)\
     SWITCH_SIGNED(NAME)\
     SWITCH_UNSIGNED(NAME)
+#define SWITCH_INTEGRAL(NAME)\
+    SWITCH_ARITH(NAME)\
+    SWITCH_ONE (NAME, DATATYPE_BOOL)
 #define SWITCH_NONSTRING(NAME)\
-    SWITCH_ONE (NAME, DATATYPE_BOOL)\
-    SWITCH_ARITH(NAME)
+    SWITCH_FLOAT(NAME)\
+    SWITCH_INTEGRAL(NAME)
 #define SWITCH_ANY(NAME)\
     SWITCH_ONE (NAME, DATATYPE_STRING)\
     SWITCH_NONSTRING(NAME)
@@ -627,9 +630,9 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::UNEG:       SET_SIMPLE_CALLBACK_V(UNEG); break;
     case Imop::LAND:       SET_SIMPLE_CALLBACK_V(LAND); break;
     case Imop::LOR:        SET_SIMPLE_CALLBACK_V(LOR); break;
-    case Imop::BAND:       SET_SPECIALIZE_CALLBACK_V(BAND,SWITCH_NONSTRING); break;
-    case Imop::BOR:        SET_SPECIALIZE_CALLBACK_V(BOR,SWITCH_NONSTRING); break;
-    case Imop::XOR:        SET_SPECIALIZE_CALLBACK_V(XOR,SWITCH_NONSTRING); break;
+    case Imop::BAND:       SET_SPECIALIZE_CALLBACK_V(BAND,SWITCH_INTEGRAL); break;
+    case Imop::BOR:        SET_SPECIALIZE_CALLBACK_V(BOR,SWITCH_INTEGRAL); break;
+    case Imop::XOR:        SET_SPECIALIZE_CALLBACK_V(XOR,SWITCH_INTEGRAL); break;
     case Imop::UINV:       SET_SPECIALIZE_CALLBACK_V(UINV,SWITCH_ARITH); break;
     case Imop::UMINUS:     SET_SPECIALIZE_CALLBACK_V(UMINUS,SWITCH_ARITH); break;
     case Imop::ADD:        SET_SPECIALIZE_CALLBACK_V(ADD,SWITCH_ANY); break;
@@ -702,6 +705,8 @@ void storeConstant (VMSym sym, const Symbol* c) {
     case DATATYPE_UINT32: storeConstantInt<DATATYPE_UINT32>(out, c); break;
     case DATATYPE_INT64: storeConstantInt<DATATYPE_INT64>(out, c); break;
     case DATATYPE_UINT64: storeConstantInt<DATATYPE_UINT64>(out, c); break;
+    case DATATYPE_FLOAT32: storeConstantInt<DATATYPE_FLOAT32>(out, c); break;
+    case DATATYPE_FLOAT64: storeConstantInt<DATATYPE_FLOAT64>(out, c); break;
     default:
         assert (false && "Invalid data type.");
     }
