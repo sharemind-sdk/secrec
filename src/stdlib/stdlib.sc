@@ -49,6 +49,9 @@ int64 INT64_MIN = -9223372036854775808;
 /**
 * @file
 * \defgroup stdlib stdlib.sc
+* \defgroup sizeof sizeof
+* \defgroup argument argument
+* \defgroup publish publish
 * \defgroup flatten flatten
 * \defgroup shapesareequal shapesAreEqual
 * \defgroup arraytostring arrayToString
@@ -85,6 +88,92 @@ int64 INT64_MIN = -9223372036854775808;
 * @brief Module with standard general functions
 */
 
+/*******************************
+    Sizes of public VM types
+********************************/
+
+/** \addtogroup <sizeof>
+ *  @{
+ *  @brief Function for getting the size of a public value in bytes based on its type.
+ *  @param x the value of public type.
+ *  @return returns the size of a public value in bytes.
+ */
+
+uint sizeof (bool x)     { return 1; }
+uint sizeof (uint8 x)    { return 1; }
+uint sizeof (uint16 x)   { return 2; }
+uint sizeof (uint32 x)   { return 4; }
+uint sizeof (uint64 x)   { return 8; }
+uint sizeof (int8 x)     { return 1; }
+uint sizeof (int16 x)    { return 2; }
+uint sizeof (int32 x)    { return 4; }
+uint sizeof (int64 x)    { return 8; }
+uint sizeof (float32 x)  { return 4; }
+uint sizeof (float64 x)  { return 8; }
+
+/** @}*/
+
+/*******************************
+    Arguments
+********************************/
+
+/** \addtogroup <argument>
+ *  @{
+ *  @brief Function for accessing the named program arguments of public types.
+ *  @note **T** - any \ref data_types "data" type
+ *  @param name The name of the argument.
+ *  @return returns the value associated with the argument specified by parameter name.
+ */
+
+
+/** 
+*  @return An argument of scalar type.
+*/
+template <type T>
+T argument (string name) {
+    uint num_bytes;
+    __syscall ("process_get_argument", __cref name, __return num_bytes);
+    assert (num_bytes == sizeof((T)0));
+    T out;
+    __syscall ("process_get_argument", __cref name, __ref out, __return num_bytes);
+    return out;
+}
+
+/**
+*  @return An argument of 1-dimensional array type.
+*/
+template <type T>
+T[[1]] argument (string name) {
+    uint num_bytes, vector_size;
+    __syscall ("process_get_argument", __cref name, __return num_bytes);
+    assert (num_bytes % sizeof((T)0) == 0);
+    vector_size = num_bytes / sizeof((T)0);
+    T [[1]] out (vector_size);
+    __syscall ("process_get_argument", __cref name, __ref out, __return num_bytes);
+    return out;
+}
+
+/** @}*/
+
+/*******************************
+    Publishing results
+********************************/
+
+/** \addtogroup <publish>
+ *  @{
+ *  @brief Function for publishing the named values of public types.
+ *  @note **N** - any array size of any dimension
+ *  @note **T** - any \ref data_types "data" type
+ *  @param name The name of the argument.
+ *  @param val the value to publish under the given name. Accepts scalars as well as arrays.
+ */
+
+template <type T, dim N>
+void publish (string name, T[[N]] val) {
+    __syscall ("process_set_result", __cref name, __cref "", __cref "$T", __cref val, 0::uint, size(val) * sizeof((T)0));
+}
+
+/** @}*/
 
 /*******************************
 	Utility - flattening
