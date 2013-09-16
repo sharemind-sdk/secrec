@@ -1214,17 +1214,6 @@ D uint[[1]] vectorUpdate(D uint64[[1]] vec, D uint index, D uint64 newValue) {
     return choose(vectorLookupBitmask(size(vec), index), n, vec);
 }
 
-template <domain D>
-D float32[[1]] vectorUpdate(D float32[[1]] vec, D uint index, D float32 newValue) {
-    D float32[[1]] n(size(vec)) = newValue;
-    return choose(vectorLookupBitmask(size(vec), index), n, vec);
-}
-
-template <domain D>
-D float64[[1]] vectorUpdate(D float64[[1]] vec, D uint index, D float64 newValue) {
-    D float64[[1]] n(size(vec)) = newValue;
-    return choose(vectorLookupBitmask(size(vec), index), n, vec);
-}
 
 /** @}*/
 
@@ -1236,11 +1225,11 @@ D float64[[1]] vectorUpdate(D float64[[1]] vec, D uint index, D float64 newValue
 ********************************************************************************
 *******************************************************************************/
 
-/** \addtogroup <matrixupdaterow> 
+/** \addtogroup <matrixupdaterow>
  *  @{
  *  @brief Function for obliviously updating a row in the input matrix
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param mat - a matrix of supported type
  *  @param rowIndex - an \ref uint64 "uint" type scalar for specifying the row to replace
  *  @param newRow - a vector with new values
@@ -1400,39 +1389,7 @@ D int[[2]] matrixUpdateRow(D int[[2]] mat, D uint rowIndex, D int[[1]] newRow) {
     return choose(mask, newRows, mat);
 }
 
-template <domain D : additive3pp>
-D float32[[2]] matrixUpdateRow(D float32[[2]] mat, D uint rowIndex, D float32[[1]] newRow) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    assert(cols == size(newRow));
-    // assert(declassify(rows > rowIndex));
 
-    D bool[[2]] mask = matrixLookupRowBitmask(rows, cols, rowIndex);
-
-    D float32[[2]] newRows(rows, cols);
-    for (uint i = 0; i < rows; ++i)
-        newRows[i,:] = newRow;
-
-    return choose(mask, newRows, mat);
-}
-
-template <domain D : additive3pp>
-D float64[[2]] matrixUpdateRow(D float64[[2]] mat, D uint rowIndex, D float64[[1]] newRow) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    assert(cols == size(newRow));
-    // assert(declassify(rows > rowIndex));
-
-    D bool[[2]] mask = matrixLookupRowBitmask(rows, cols, rowIndex);
-
-    D float64[[2]] newRows(rows, cols);
-    for (uint i = 0; i < rows; ++i)
-        newRows[i,:] = newRow;
-
-    return choose(mask, newRows, mat);
-}
 
 /** @}*/
 
@@ -1444,11 +1401,11 @@ D float64[[2]] matrixUpdateRow(D float64[[2]] mat, D uint rowIndex, D float64[[1
 ********************************************************************************
 *******************************************************************************/
 
-/** \addtogroup <matrixupdatecolumn> 
+/** \addtogroup <matrixupdatecolumn>
  *  @{
  *  @brief Function for obliviously updating a column in the input matrix
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param mat - a matrix of supported type
  *  @param colIndex - an \ref uint64 "uint" type scalar for specifying the column to replace
  *  @param newCol - a vector with new values
@@ -1608,40 +1565,6 @@ D int[[2]] matrixUpdateColumn(D int[[2]] mat, D uint colIndex, D int[[1]] newCol
     return choose(mask, newCols, mat);
 }
 
-template <domain D : additive3pp>
-D float32[[2]] matrixUpdateColumn(D float32[[2]] mat, D uint colIndex, D float32[[1]] newCol) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    assert(rows == size(newCol));
-    // assert(declassify(cols > colIndex));
-
-    D bool[[2]] mask = matrixLookupColumnBitmask(rows, cols, colIndex);
-
-    D float32[[2]] newCols(rows, cols);
-    for (uint i = 0; i < cols; ++i)
-        newCols[:,i] = newCol;
-
-    return choose(mask, newCols, mat);
-}
-
-template <domain D : additive3pp>
-D float64[[2]] matrixUpdateColumn(D float64[[2]] mat, D uint colIndex, D float64[[1]] newCol) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    assert(rows == size(newCol));
-    // assert(declassify(cols > colIndex));
-
-    D bool[[2]] mask = matrixLookupColumnBitmask(rows, cols, colIndex);
-
-    D float64[[2]] newCols(rows, cols);
-    for (uint i = 0; i < cols; ++i)
-        newCols[:,i] = newCol;
-
-    return choose(mask, newCols, mat);
-}
-
 /** @}*/
 
 /*******************************************************************************
@@ -1652,16 +1575,16 @@ D float64[[2]] matrixUpdateColumn(D float64[[2]] mat, D uint colIndex, D float64
 ********************************************************************************
 *******************************************************************************/
 
-/** \addtogroup <matrixupdate> 
+/** \addtogroup <matrixupdate>
  *  @{
  *  @brief Function for obliviously updating a value in the input matrix
  *  @note **D** - all protection domains
- *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref float32 "float32" / \ref float64 "float64"
+ *  @note Supported types - \ref bool "bool" / \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int"
  *  @param mat - a matrix of supported type
  *  @param rowIndex - an \ref uint64 "uint" type scalar for specifying the row in the input matrix
  *  @param colIndex - an \ref uint64 "uint" type scalar for specifying the column in the input matrix
  *  @param newValue - a new scalar value
- *  @return returns a matrix where the element at row **rowIndex** and column **colIndex** has been replaced with **newValue** 
+ *  @return returns a matrix where the element at row **rowIndex** and column **colIndex** has been replaced with **newValue**
  */
 
 template <domain D : additive3pp>
@@ -1772,29 +1695,4 @@ D int[[2]] matrixUpdate(D int[[2]] mat, D uint rowIndex, D uint columnIndex, D i
     return choose(matrixLookupBitmask(rows, cols, rowIndex, columnIndex), n, mat);
 }
 
-template <domain D : additive3pp>
-D float32[[2]] matrixUpdate(D float32[[2]] mat, D uint rowIndex, D uint columnIndex, D float32 newValue) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    // assert(declassify(rows > rowIndex));
-    // assert(declassify(cols > columnIndex));
-
-    D float32[[2]] n(rows, cols) = newValue;
-    return choose(matrixLookupBitmask(rows, cols, rowIndex, columnIndex), n, mat);
-}
-
-template <domain D : additive3pp>
-D float64[[2]] matrixUpdate(D float64[[2]] mat, D uint rowIndex, D uint columnIndex, D float64 newValue) {
-    uint[[1]] s = shape(mat);
-    uint rows = s[0];
-    uint cols = s[1];
-    // assert(declassify(rows > rowIndex));
-    // assert(declassify(cols > columnIndex));
-
-    D float64[[2]] n(rows, cols) = newValue;
-    return choose(matrixLookupBitmask(rows, cols, rowIndex, columnIndex), n, mat);
-}
-
-/** @}*/
 /** @}*/
