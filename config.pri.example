@@ -1,4 +1,0 @@
-# Example config.pri file
-#
-# QMAKE_CXXFLAGS_DEBUG   += -march=native
-# QMAKE_CXXFLAGS_RELEASE += -march=native
