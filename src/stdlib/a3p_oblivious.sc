@@ -22,6 +22,10 @@ import stdlib;
 * @file
 * \defgroup a3p_oblivious a3p_oblivious.sc
 * \defgroup a3p_choose choose
+* \defgroup a3p_vectorupdate vectorUpdate
+* \defgroup a3p_matrixupdate matrixUpdate
+* \defgroup a3p_matrixupdaterow matrixUpdateRow
+* \defgroup a3p_matrixupdatecolumn matrixUpdateColumn
 */
 
 /** \addtogroup <a3p_oblivious>
@@ -55,7 +59,7 @@ D float64[[N]] choose(D bool[[N]] cond, D float64[[N]] first, D float64[[N]] sec
 /** @}*/
 
 
-/** \addtogroup <vectorupdate>
+/** \addtogroup <a3p_vectorupdate>
  *  @{
  *  @brief Function for obliviously updating an element in the input vector
  *  @note **D** - additive3pp protection domain
@@ -79,7 +83,7 @@ D float64[[1]] vectorUpdate(D float64[[1]] vec, D uint index, D float64 newValue
 /** @}*/
 
 
-/** \addtogroup <matrixupdaterow>
+/** \addtogroup <a3p_matrixupdaterow>
  *  @{
  *  @brief Function for obliviously updating a row in the input matrix
  *  @note **D** - additive3pp protection domain
@@ -126,7 +130,7 @@ D float64[[2]] matrixUpdateRow(D float64[[2]] mat, D uint rowIndex, D float64[[1
 /** @}*/
 
 
-/** \addtogroup <matrixupdatecolumn>
+/** \addtogroup <a3p_matrixupdatecolumn>
  *  @{
  *  @brief Function for obliviously updating a column in the input matrix
  *  @note **D** - additive3pp protection domain
@@ -172,7 +176,7 @@ D float64[[2]] matrixUpdateColumn(D float64[[2]] mat, D uint colIndex, D float64
 /** @}*/
 
 
-/** \addtogroup <matrixupdate>
+/** \addtogroup <a3p_matrixupdate>
  *  @{
  *  @brief Function for obliviously updating a value in the input matrix
  *  @note **D** - additive3pp protection domain
