@@ -32,6 +32,9 @@ import xor3pp;
 * \defgroup sortingnetwork_mat sortingNetworkSort[[2]](1 column)
 * \defgroup sortingnetwork_mat2 sortingNetworkSort[[2]](2 columns)
 * \defgroup sortingnetwork_mat3 sortingNetworkSort[[2]](3 columns)
+* \defgroup selectk selectK
+* \defgroup selectk_vec selectK[[1]]
+* \defgroup selectk_mat selectK[[2]]
 */
 
 /** \addtogroup <a3p_sort>
@@ -989,8 +992,306 @@ D T[[2]] sortingNetworkSort (D T[[2]] matrix, uint column1 , uint column2, uint 
     }
     return matrix;
 }
+/** @}*/
+/** @}*/
 
-/** @}*/
-/** @}*/
+/**
+ *\cond
+ */
+bool isPowerOfTwo (uint x) {
+    return (x != 0 && (x & (x - 1)) == 0);
+}
+
+uint[[1]] generateTopKSortingNetwork (uint n, uint k) {
+    assert(isPowerOfTwo (n));
+
+    uint snsize = 0;
+    __syscall ("top_k_sorting_network_get_size", n, k, __return snsize);
+    uint[[1]] sn(snsize);
+    __syscall ("top_k_sorting_network_get", n, k, __ref sn);
+    return sn;
+}
+/**
+ *\endcond
+ */
+
+/** \addtogroup <selectk>
+ *  @{
+ *  @brief Functions for selecting k values from a vector/matrix according to an ordering.
+ *  @note **D** - all protection domains
+ *  @note Supported types \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref xor_uint8 "xor_uint8" / \ref xor_uint16 "xor_uint16" / \ref xor_uint32 "xor_uint32" / \ref xor_uint64 "xor_uint64"
+*/
+
+/** \addtogroup <selectk_vec>
+ *  @{
+ *  @brief Function for selecting the k smallest elements of a vector.
+ *  @note **D** - all protection domains
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref xor_uint8 "xor_uint8" / \ref xor_uint16 "xor_uint16" / \ref xor_uint32 "xor_uint32" / \ref xor_uint64 "xor_uint64"
+ *  @note Requires that the input array's length is a power of two.
+ *  @note The algorithm behind this function is optimized for speed, accuracy is not guaranteed.
+ *  @param vector - a vector of supported type
+ *  @param k - the number of elements to be selected
+ *  @return returns a vector of k elements selected from the input vector
+ */
+
+/**
+ *\cond
+ */
+template <domain D : additive3pp>
+D uint8[[1]] selectK (D uint8[[1]] vector, uint k) {
+    D xor_uint8[[1]] in = reshare (vector);
+    D xor_uint8[[1]] out = selectK (in, k);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint16[[1]] selectK (D uint16[[1]] vector, uint k) {
+    D xor_uint16[[1]] in = reshare (vector);
+    D xor_uint16[[1]] out = selectK (in, k);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint32[[1]] selectK (D uint32[[1]] vector, uint k) {
+    D xor_uint32[[1]] in = reshare (vector);
+    D xor_uint32[[1]] out = selectK (in, k);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint64[[1]] selectK (D uint64[[1]] vector, uint k) {
+    D xor_uint64[[1]] in = reshare (vector);
+    D xor_uint64[[1]] out = selectK (in, k);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D int8[[1]] selectK (D int8[[1]] vector, uint k) {
+    D uint8[[1]] y = (uint8)vector + 128;
+    D xor_uint8[[1]] in = reshare (y);
+    D xor_uint8[[1]] out = selectK (in, k);
+    y = reshare (out) - 128;
+    return (int8)y;
+}
+
+template <domain D : additive3pp>
+D int16[[1]] selectK (D int16[[1]] vector, uint k) {
+    D uint16[[1]] y = (uint16)vector + 32768;
+    D xor_uint16[[1]] in = reshare (y);
+    D xor_uint16[[1]] out = selectK (in, k);
+    y = reshare(out) - 32768;
+    return (int16)y;
+}
+
+template <domain D : additive3pp>
+D int32[[1]] selectK (D int32[[1]] vector, uint k) {
+    D uint32[[1]] y = (uint32)vector + 2147483648;
+    D xor_uint32[[1]] in = reshare (y);
+    D xor_uint32[[1]] out = selectK (in, k);
+    y = reshare(out) - 2147483648;
+    return (int32)y;
+}
+
+template <domain D : additive3pp>
+D int64[[1]] selectK (D int64[[1]] vector, uint k) {
+    D uint64[[1]] y = (uint64)vector + 9223372036854775808;
+    D xor_uint64[[1]] in = reshare (y);
+    D xor_uint64[[1]] out = selectK (in, k);
+    y = reshare(out) - 9223372036854775808;
+    return (int64)y;
+}
+/**
+ *\endcond
+ */
+
+template <domain D, type T>
+D T[[1]] selectK (D T[[1]] vector, uint k) {
+    uint[[1]] sortnet = generateTopKSortingNetwork (size(vector), k);
+    uint offset = 0;
+    uint numOfStages = sortnet[offset++];
+
+    for (uint stage = 0; stage < numOfStages; stage++) {
+        uint sizeOfStage = sortnet[offset++];
+
+        D T[[1]] firstVector (sizeOfStage);
+        D T[[1]] secondVector (sizeOfStage);
+        D bool[[1]] exchangeFlagsVector (sizeOfStage);
+
+        for (uint i = 0; i < sizeOfStage; i++) {
+            firstVector[i] = vector[sortnet[offset]];
+            secondVector[i] = vector[sortnet[offset+1]];
+            offset += 2;
+        }
+
+        exchangeFlagsVector = firstVector <= secondVector;
+
+        D bool[[2]] expandedExchangeFlagsVector (2, sizeOfStage);
+        expandedExchangeFlagsVector[0,:] = exchangeFlagsVector;
+        expandedExchangeFlagsVector[1,:] = exchangeFlagsVector;
+
+        D T[[2]] firstFactor (2, sizeOfStage);
+        D T[[2]] secondFactor (2, sizeOfStage);
+
+        firstFactor[0, :] = firstVector;
+        firstFactor[1, :] = secondVector;
+        secondFactor[0, :] = secondVector;
+        secondFactor[1, :] = firstVector;
+
+        D T[[2]] choiceResults (2, sizeOfStage);
+
+        choiceResults = choose(expandedExchangeFlagsVector,firstFactor,secondFactor);
+
+        offset -= 2 * sizeOfStage;
+        for (uint i = 0; i < sizeOfStage; i++) {
+            vector[sortnet[offset++]] = choiceResults[0, i];
+            vector[sortnet[offset++]] = choiceResults[1, i];
+        }
+    }
+
+    return vector[:k];
+}
+/** @} */
+
+
+/** \addtogroup <selectk_mat>
+ *  @{
+ *  @brief Function for selecting k rows from a matrix ordered by a column
+ *  @note **D** - all protection domains
+ *  @note Supported types - \ref uint8 "uint8" / \ref uint16 "uint16" / \ref uint32 "uint32" / \ref uint64 "uint" / \ref int8 "int8" / \ref int16 "int16" / \ref int32 "int32" / \ref int64 "int" / \ref xor_uint8 "xor_uint8" / \ref xor_uint16 "xor_uint16" / \ref xor_uint32 "xor_uint32" / \ref xor_uint64 "xor_uint64"
+ *  @note The number of rows of the input matrix has to be a power of two.
+ *  @note The algorithm behind this function is optimized for speed, accuracy is not guaranteed.
+ *  @param matrix - a matrix of supported type
+ *  @param k - number of elements to select
+ *  @param column - column to select by
+ *  @return returns a matrix with k rows selected from the input vector according to the input column index
+ */
+
+/**
+ *\cond
+ */
+template <domain D : additive3pp>
+D uint8[[2]] selectK (D uint8[[2]] matrix, uint k, uint column) {
+    D xor_uint8[[2]] in = reshare (matrix);
+    D xor_uint8[[2]] out = selectK (in, k, column);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint16[[2]] selectK (D uint16[[2]] matrix, uint k, uint column) {
+    D xor_uint16[[2]] in = reshare (matrix);
+    D xor_uint16[[2]] out = selectK (in, k, column);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint32[[2]] selectK (D uint32[[2]] matrix, uint k, uint column) {
+    D xor_uint32[[2]] in = reshare (matrix);
+    D xor_uint32[[2]] out = selectK (in, k, column);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D uint64[[2]] selectK (D uint64[[2]] matrix, uint k, uint column) {
+    D xor_uint64[[2]] in = reshare (matrix);
+    D xor_uint64[[2]] out = selectK (in, k, column);
+    return reshare(out);
+}
+
+template <domain D : additive3pp>
+D int8[[2]] selectK (D int8[[2]] matrix, uint k, uint column) {
+    D uint8[[2]] y = (uint8)matrix + 128;
+    D xor_uint8[[2]] in = reshare (y);
+    D xor_uint8[[2]] out = selectK (in, k, column);
+    y = reshare (out) - 128;
+    return (int8)y;
+}
+
+template <domain D : additive3pp>
+D int16[[2]] selectK (D int16[[2]] matrix, uint k, uint column) {
+    D uint16[[2]] y = (uint16)matrix + 32768;
+    D xor_uint16[[2]] in = reshare (y);
+    D xor_uint16[[2]] out = selectK (in, k, column);
+    y = reshare(out) - 32768;
+    return (int16)y;
+}
+
+template <domain D : additive3pp>
+D int32[[2]] selectK (D int32[[2]] matrix, uint k, uint column) {
+    D uint32[[2]] y = (uint32)matrix + 2147483648;
+    D xor_uint32[[2]] in = reshare (y);
+    D xor_uint32[[2]] out = selectK (in, k, column);
+    y = reshare(out) - 2147483648;
+    return (int32)y;
+}
+
+template <domain D : additive3pp>
+D int64[[2]] selectK (D int64[[2]] matrix, uint k, uint column) {
+    D uint64[[2]] y = (uint64)matrix + 9223372036854775808;
+    D xor_uint64[[2]] in = reshare (y);
+    D xor_uint64[[2]] out = selectK (in, k, column);
+    y = reshare(out) - 9223372036854775808;
+    return (int64)y;
+}
+/**
+ *\endcond
+ */
+
+template <domain D, type T>
+D T[[2]] selectK (D T[[2]] matrix, uint k, uint column) {
+    uint[[1]] matShape = shape(matrix);
+    uint[[1]] sortnet = generateTopKSortingNetwork (matShape[0], k);
+    uint offset = 0;
+    uint numOfStages = sortnet[offset++];
+
+    for (uint stage = 0; stage < numOfStages; stage++) {
+        uint sizeOfStage = sortnet[offset++];
+        D T[[2]] firstVector (sizeOfStage, matShape[1]);
+        D T[[2]] secondVector (sizeOfStage, matShape[1]);
+        D bool[[1]] exchangeFlagsVector (sizeOfStage);
+
+        for (uint i = 0; i < sizeOfStage; ++i) {
+            firstVector[i, :] = matrix[sortnet[offset], :];
+            secondVector[i, :] = matrix[sortnet[offset+1], :];
+            offset += 2;
+        }
+
+        exchangeFlagsVector = firstVector[:, column] <= secondVector[:, column];
+
+        D bool[[2]] expandedExchangeFlagsVector (2 * sizeOfStage, matShape[1]);
+
+        uint counter = 0;
+        for(uint i = 0; i < 2 * sizeOfStage; i = i + 2){
+            expandedExchangeFlagsVector[i,:] = exchangeFlagsVector[counter];
+            expandedExchangeFlagsVector[i + 1,:] = exchangeFlagsVector[counter];
+            counter++;
+        }
+
+        D T[[2]] firstFactor (2 * sizeOfStage, matShape[1]);
+        D T[[2]] secondFactor (2 * sizeOfStage, matShape[1]);
+
+        counter = 0;
+        for (uint i = 0; i < 2 * sizeOfStage; i = i + 2) {
+            firstFactor[i, :] = firstVector[counter, :];
+            firstFactor[i + 1, :] = secondVector[counter, :];
+
+            secondFactor[i, :] = secondVector[counter, :];
+            secondFactor[i + 1, :] = firstVector[counter, :];
+            counter++;
+        }
+
+        D T[[2]] choiceResults (2 * sizeOfStage, matShape[1]);
+        choiceResults = choose(expandedExchangeFlagsVector, firstFactor, secondFactor);
+
+        offset -= 2 * sizeOfStage;
+        for (uint i = 0; i < 2 * sizeOfStage; i = i + 2) {
+            matrix[sortnet[offset++], :] = choiceResults[i, :];
+            matrix[sortnet[offset++], :] = choiceResults[i+1, :];
+        }
+    }
+
+    return matrix;
+}
+/** @} */
+/** @} */
 /** @}*/
 
