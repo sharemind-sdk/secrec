@@ -181,9 +181,52 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 }
 
 /*
+ * Lazy output.
+ */
+class Output {
+    Output(const Output&);
+    void operator= (const Output&);
+public: /* Methods: */
+    Output (const ProgramOptions& opts)
+        : m_os (cout.rdbuf ())
+        , m_fileBuf()
+        , m_opts (opts)
+        , m_fileOpened (false)
+    { }
+
+    std::ostream& getStream () {
+        if (!m_fileOpened && m_opts.output) {
+            ios_base::openmode mode = ios_base::out;
+            m_fileOpened = true;
+            if (! m_opts.assembleOnly) {
+                mode |= ios_base::binary;
+            }
+
+            m_fileBuf.open (m_opts.output.get (), mode);
+            if (! m_fileBuf.is_open ()) {
+                cerr << "Failed to open output file \""
+                     << m_opts.output.get () << "\"." << endl;
+                m_os.setstate(ios::failbit);
+                return m_os;
+            }
+
+            m_os.rdbuf (&m_fileBuf);
+        }
+
+        return m_os;
+    }
+
+private: /* Fields: */
+    std::ostream m_os;
+    io::stream_buffer<io::file_sink> m_fileBuf;
+    const ProgramOptions& m_opts;
+    bool m_fileOpened;
+};
+
+/*
  * Compile the actual bytecode executable.
  */
-bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
+bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
     fs::path p = fs::temp_directory_path () / fs::unique_path ();
 
     ScopedRemovePath scopedRemove (p);
@@ -200,7 +243,7 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
         fout << vmlu << flush;
 
         if (fout.bad ()) {
-            cerr << "Writing to a temporary file \"" << p << "\" failed!" << std::endl;
+            cerr << "Writing to a temporary file \"" << p << "\" failed!" << endl;
             return false;
         }
     }
@@ -248,6 +291,7 @@ bool compileExecutable (ostream& os, const VMLinkingUnit& vmlu) {
 
     size_t outputLength = 0;
     ScopedFree ptr (sharemind_assembler_link (0x0, &lus, &outputLength, 0));
+    std::ostream& os = output.getStream ();
     os.write (static_cast<const char*>(ptr.get ()), outputLength);
     if (os.bad ()) {
         cerr << "Writing bytecode to output failed." << endl;
@@ -269,24 +313,7 @@ int main (int argc, char *argv[]) {
     if (opts.showHelp)
         return EXIT_SUCCESS;
 
-    /* Get output stream: */
-    ostream os (cout.rdbuf ());
-    io::stream_buffer<io::file_sink> fileBuf;
-    if (opts.output) {
-        ios_base::openmode mode;
-        if (! opts.assembleOnly) {
-            mode |= ios_base::binary;
-        }
-
-        fileBuf.open (opts.output.get (), mode);
-        if (! fileBuf.is_open ()) {
-            cerr << "Failed to open the output file \"" << opts.output.get () << "\"." << endl;
-            return EXIT_FAILURE;
-        }
-
-        os.rdbuf (&fileBuf);
-    }
-
+    Output output (opts);
     SecreC::ICode icode;
 
     /* Parse the program: */
@@ -316,11 +343,12 @@ int main (int argc, char *argv[]) {
     Compiler compiler (icode);
     compiler.run (vmlu);
 
+    /* Output: */
     if (opts.assembleOnly) {
-        os << vmlu << endl;
+        output.getStream() << vmlu << endl;
     }
     else {
-        if (! compileExecutable (os, vmlu)) {
+        if (! compileExecutable (output, vmlu)) {
             return EXIT_FAILURE;
         }
     }
