@@ -271,7 +271,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprIndex * root) {
     SecrecDimType n = eType->secrecDimType();
 
     if (root->indices()->children().size() != n) {
-        m_log.fatalInProc(root) << "Incorrent number of indices at"
+        m_log.fatalInProc(root) << "Incorrent number of indices at "
             << e->location() << '.';
         return E_TYPE;
     }

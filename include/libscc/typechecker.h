@@ -121,7 +121,7 @@ public: /* Methods: */
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
 
-    /// Check if given idenfier is in scope. Logs error message
+    /// Check if given identifier is in scope. Logs error message
     /// and returns NULL if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
 

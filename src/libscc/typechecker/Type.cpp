@@ -88,7 +88,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeVarF* ty) {
     SymbolTypeVariable* symType = m_st->find<SYM_TYPE>(name);
     SymbolTypeVariable* symDomain = m_st->find<SYM_DOMAIN>(name);
     if (symType == 0 && symDomain == 0) {
-        m_log.fatalInProc(ty) << "Idenfier '" << name
+        m_log.fatalInProc(ty) << "Identifier '" << name
                               << "' at " << ty->identifier ()->location()
                               << " not in scope.";
         return E_TYPE;

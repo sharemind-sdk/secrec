@@ -37,7 +37,7 @@ bool TypeChecker::getForInstantiation (InstanceInfo& info) {
 Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (type, id->value ());
     if (s == 0) {
-        m_log.fatalInProc(id) << "Idenfier '" << id->value()
+        m_log.fatalInProc(id) << "Identifier '" << id->value()
                               << "' at " << id->location()
                               << " not in scope.";
     }
