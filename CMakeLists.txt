@@ -15,6 +15,21 @@ SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODUL
 
 INCLUDE("config.local" OPTIONAL)
 
+FOREACH(dir IN LISTS CMAKE_PREFIX_PATH)
+  INCLUDE_DIRECTORIES(BEFORE SYSTEM "${dir}/include")
+ENDFOREACH()
+
+MACRO(SHAREMIND_MINER_TARGETLIB libname)
+  IF(TARGET "lib${libname}")
+    SET(SHAREMIND_MINER_TARGETLIB_${libname} "lib${libname}")
+  ELSE()
+    FIND_LIBRARY(SHAREMIND_MINER_TARGETLIB_${libname} "sharemind_${libname}")
+    IF(NOT SHAREMIND_MINER_TARGETLIB_${libname})
+      MESSAGE(FATAL_ERROR "Required library \"sharemind_${libname}\" not found!")
+    ENDIF()
+  ENDIF()
+ENDMACRO()
+
 MACRO(SHAREMIND_ADD_EXT name pname)
     IF(NOT SHAREMIND_NO_BUILD_EXTS)
         SET(ID "${CMAKE_CURRENT_SOURCE_DIR}/ext/${name}/src")
