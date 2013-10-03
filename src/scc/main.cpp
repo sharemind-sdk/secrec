@@ -138,6 +138,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
             ("assemble,S", "Output assembly.")
             ("output,o", po::value<string>(), "Output file.")
             ("input", po::value<string>(), "Input file.")
+            ("no-stdlib", "Do not look for standard library imports.")
             ;
     po::positional_options_description p;
     p.add("input", -1);
@@ -174,7 +175,8 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
 #else
-        opts.includes.push_back (SHAREMIND_STDLIB_PATH);
+        if (!vm.count("no-stdlib"))
+            opts.includes.push_back (SHAREMIND_STDLIB_PATH);
 #endif
         return true;
     }

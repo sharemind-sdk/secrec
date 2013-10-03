@@ -86,7 +86,8 @@ struct Configuration {
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
 #else
-        m_includes.push_back (SHAREMIND_STDLIB_PATH);
+        if (!vm.count("no-stdlib"))
+            m_includes.push_back (SHAREMIND_STDLIB_PATH);
 #endif
 
         if (vm.count ("analysis")) {
@@ -232,6 +233,7 @@ int main(int argc, char *argv[]) {
             ("input",      po::value<string>(), "Input file")
             ("include,I",  po::value<vector<string > >(),
              "Directory for module search path.")
+            ("no-stdlib", "Do not look for standard library imports.")
             ("eval,e", "Evaluate the program")
             ("print-ast", "Print the abstract syntax tree")
             ("print-st",  "Print the symbol table")
