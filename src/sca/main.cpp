@@ -83,6 +83,12 @@ struct Configuration {
             m_includes = vm["include"].as<vector<string > >();
         }
 
+#ifndef SHAREMIND_STDLIB_PATH
+#error "SHAREMIND_STDLIB_PATH not defined"
+#else
+        m_includes.push_back (SHAREMIND_STDLIB_PATH);
+#endif
+
         if (vm.count ("analysis")) {
             const vector<string >& v = vm["analysis"].as<vector<string > > ();
             m_analysis.insert (v.begin (), v.end ());
@@ -151,7 +157,6 @@ int run (const Configuration& cfg) {
     }
 
     BOOST_FOREACH (const std::string& path, cfg.m_includes) {
-        std::cerr << path << std::endl;
         if (! icode.modules ().addSearchPath (path) && cfg.m_verbose) {
             cerr << "Invalid search path \"" << path << "\"." << endl;
         }

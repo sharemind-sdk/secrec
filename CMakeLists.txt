@@ -68,6 +68,8 @@ find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
 #find_package(Qt4 COMPONENTS qtcore qttest)
 
+add_definitions("-DSHAREMIND_STDLIB_PATH=\"${CMAKE_INSTALL_PREFIX}/lib/sharemind/stdlib\"")
+
 ADD_SUBDIRECTORY(src/libscc)
 ADD_SUBDIRECTORY(src/sca)
 ADD_SUBDIRECTORY(src/scc)

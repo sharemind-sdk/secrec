@@ -171,6 +171,11 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
         if (vm.count("include"))
             opts.includes = vm["include"].as<vector<string> >();
 
+#ifndef SHAREMIND_STDLIB_PATH
+#error "SHAREMIND_STDLIB_PATH not defined"
+#else
+        opts.includes.push_back (SHAREMIND_STDLIB_PATH);
+#endif
         return true;
     }
     catch (const std::exception & e) {
