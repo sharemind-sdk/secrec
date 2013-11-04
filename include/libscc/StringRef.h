@@ -12,6 +12,7 @@
 
 #include <boost/functional/hash_fwd.hpp>
 #include <cstring>
+#include <cstdlib>
 #include <iosfwd>
 #include <string>
 
