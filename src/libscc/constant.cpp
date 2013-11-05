@@ -90,7 +90,11 @@ bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr
 // TODO: don't rely on IEEE representation of float!
 uint32_t APFloat::ieee32bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
+    #if MPFR_VERSION >= 0x030000
     float float_result = mpfr_get_flt (m_value, SECREC_CONSTANT_MPFR_RNDN);
+    #else
+    float float_result = mpfr_get_ld (m_value, SECREC_CONSTANT_MPFR_RNDN);
+    #endif
     uint32_t* result = new (&float_result) uint32_t;
     return *result;
 }
