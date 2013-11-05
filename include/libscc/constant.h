@@ -9,6 +9,13 @@
 
 #include "symbol.h"
 
+
+#if MPFR_VERSION >= 0x020500
+#define SECREC_CONSTANT_MPFR_RNDN MPFR_RNDN
+#else
+#define SECREC_CONSTANT_MPFR_RNDN GMP_RNDN
+#endif
+
 namespace SecreC {
 
 class Context;
@@ -112,7 +119,7 @@ public: /* Methods: */
 
     APFloat (prec_t p, StringRef str) {
         mpfr_init2 (m_value, p);
-        if (mpfr_set_str (m_value, str.str ().c_str (), 10, MPFR_RNDN) != 0) {
+        if (mpfr_set_str (m_value, str.str ().c_str (), 10, SECREC_CONSTANT_MPFR_RNDN) != 0) {
             mpfr_clear (m_value);
             throw std::logic_error ("Invalid floating point string literal!");
         }
@@ -120,7 +127,7 @@ public: /* Methods: */
 
     APFloat (prec_t p, uint64_t value) {
         mpfr_init2 (m_value, p);
-        mpfr_set_ui (m_value, value, MPFR_RNDN);
+        mpfr_set_ui (m_value, value, SECREC_CONSTANT_MPFR_RNDN);
     }
 
     ~APFloat () {
@@ -129,11 +136,11 @@ public: /* Methods: */
 
     APFloat (const APFloat& apf) {
         mpfr_init2 (m_value, apf.getPrec ());
-        mpfr_set (m_value, apf.m_value, MPFR_RNDN);
+        mpfr_set (m_value, apf.m_value, SECREC_CONSTANT_MPFR_RNDN);
     }
 
     APFloat& operator = (const APFloat& apf) {
-        mpfr_set (m_value, apf.m_value, MPFR_RNDN);
+        mpfr_set (m_value, apf.m_value, SECREC_CONSTANT_MPFR_RNDN);
         return *this;
     }
 
