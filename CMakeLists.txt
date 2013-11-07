@@ -7,17 +7,25 @@
 # code is subject to the appropriate license agreement.
 #
 
-CMAKE_MINIMUM_REQUIRED(VERSION "2.8")
+CMAKE_MINIMUM_REQUIRED(VERSION "2.8.12")
 CMAKE_POLICY(SET CMP0015 NEW)
 PROJECT("SecreC framework" "CXX" "C")
-
-SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
-
-INCLUDE("config.local" OPTIONAL)
 
 FOREACH(dir IN LISTS CMAKE_PREFIX_PATH)
   INCLUDE_DIRECTORIES(BEFORE SYSTEM "${dir}/include")
 ENDFOREACH()
+
+ADD_COMPILE_OPTIONS(
+  "-O2"
+  "$<$<NOT:$<STREQUAL:$<CONFIGURATION>,Release>>:-ggdb>"
+  "$<$<NOT:$<STREQUAL:$<CONFIGURATION>,Release>>:-fno-omit-frame-pointer>"
+  "$<$<STREQUAL:$<CONFIGURATION>,Release>:-DNDEBUG>"
+  "$<$<STREQUAL:$<CONFIGURATION>,Release>:-fomit-frame-pointer>"
+)
+
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
+
+INCLUDE("config.local" OPTIONAL)
 
 MACRO(SHAREMIND_MINER_TARGETLIB libname)
   IF(TARGET "lib${libname}")
