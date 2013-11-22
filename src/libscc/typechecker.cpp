@@ -160,7 +160,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
             if (! eTy->isPublicUIntScalar ()) {
                 m_log.fatalInProc(node) << "Invalid type for index at "
                                         << e->location()
-                                        << ". Expected public integer scalar, got "
+                                        << ". Expecting 'uint', got "
                                         << *eTy << '.';
                 return E_TYPE;
             }

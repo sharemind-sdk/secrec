@@ -39,7 +39,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         if (checkAndLogIfVoid(&e))
             return E_TYPE;
         if (!e.resultType ()->isPublicUIntScalar()) {
-            m_log.fatalInProc(varInit) << "Expecting public unsigned integer scalar at "
+            m_log.fatalInProc(varInit) << "Expecting \'uint\' at "
                                        << e.location() << '.';
             return E_TYPE;
         }
@@ -64,7 +64,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
             m_log.fatalInProc(varInit) << "Illegal assignment at "
                                        << varInit->location() << '.';
             m_log.fatal() << "Got " << (*e->resultType())
-                          << " expected " << *ty << '.';
+                          << " expecting " << *ty << '.';
             return E_TYPE;
         }
 
@@ -277,7 +277,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
             m_log.fatalInProc(stmt) << "Invalid expression of type "
                                     << Type::PrettyPrint (e->resultType())
                                     << " passed to assert statement at " << e->location() << '.'
-                                    << " Expecting public boolean scalar.";
+                                    << " Expecting 'bool'.";
         }
 
         return E_TYPE;

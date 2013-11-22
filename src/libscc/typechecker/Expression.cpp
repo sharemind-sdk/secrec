@@ -474,7 +474,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
 
         TNV * dimType = static_cast<TNV *>(dim.resultType());
         if (! dimType->isPublicUIntScalar()) {
-            m_log.fatalInProc(root) << "Expecting public integer scalar at "
+            m_log.fatalInProc(root) << "Expecting 'uint' at "
                 << dim.location() << " got " << *dimType << '.';
             return E_TYPE;
         }
@@ -824,7 +824,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprInt * e) {
         if (e->haveContextDataType()) {
             dtype = dtypeDeclassify(e->contextDataType());
             if (! isNumericDataType(dtype)) {
-                m_log.fatalInProc(e) << "Expected numeric context at " << e->location() << '.';
+                m_log.fatalInProc(e) << "Expecting numeric context at " << e->location() << '.';
                 return E_TYPE;
             }
         }
