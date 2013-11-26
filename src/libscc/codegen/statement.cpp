@@ -857,6 +857,16 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
 
     Symbol* ret = 0;
 
+    // Release stuff that is returned by the syscall.
+    BOOST_FOREACH (const NodeSymbolPair & ts, results) {
+        switch (ts.first->type()) {
+        case NODE_SYSCALL_RETURN:
+            releaseResource (result, ts.second);
+        default:
+            continue;
+        }
+    }
+
     BOOST_FOREACH (const NodeSymbolPair & ts, results) {
         Imop::Type iType;
         switch (ts.first->type()) {
