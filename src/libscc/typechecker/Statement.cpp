@@ -244,6 +244,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
         e->instantiateDataType (getContext ());
 
+        if (param.type () == NODE_PUSH && e->type () == NODE_LITE_STRING) {
+            if (static_cast<TreeNodeExprString*>(e)->isConstant ()) {
+                m_log.fatalInProc(stmt) << "Passing string literal to syscall via stack at "
+                                        << param.location () << ". "
+                                        << "Try via __cref instead.";
+                return E_TYPE;
+            }
+        }
+
         if (param.type () != NODE_PUSH) {
             if (e->resultType ()->secrecSecType ()->isPrivate ()) {
                 m_log.fatalInProc(stmt) << "Passing reference to a private value at "
