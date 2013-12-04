@@ -77,7 +77,7 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Other:
     , { Imop::COMMENT,    0, 0, 0, 0,UD,UD }
     , { Imop::PRINT,      0, 0, 0, 0,UD,UD }
-    , { Imop::SYSCALL,    0, 0, 0, 0,UD, 1 }
+    , { Imop::SYSCALL,    1, 0, 0, 0,UD, 1 }
     , { Imop::PUSH,       0, 0, 0, 0,UD, 1 }
     , { Imop::PUSHREF,    0, 0, 0, 0,UD, 1 }
     , { Imop::PUSHCREF,   0, 0, 0, 0,UD, 1 }
@@ -393,6 +393,8 @@ void Imop::print(std::ostream & os) const {
     case SYSCALL:
         assert (arg1 () != 0);
         assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+        if (dest ())
+            os << dname << " = ";
         os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
         break;
     case PUSH:
