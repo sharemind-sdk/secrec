@@ -267,7 +267,7 @@ Imop::OperandConstRange Imop::defRange () const {
     }
 
     if (type () == SYSCALL) {
-        return dest () ? std::make_pair (i, e) : std::make_pair (e, e);
+        return dest () ? std::make_pair (i, i + 1) : std::make_pair (e, e);
     }
 
     if (type () == CALL) {
