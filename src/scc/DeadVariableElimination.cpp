@@ -16,7 +16,14 @@ namespace /* anonymous */ {
  * PARAM instructions can't be eliminated as it will mess up passed parameters
  */
 inline bool mayEliminate (const Imop& imop) {
-    return imop.isExpr () && imop.type () != Imop::CALL && imop.type () != Imop::PARAM;
+    switch (imop.type ()) {
+    case Imop::CALL:
+    case Imop::PARAM:
+    case Imop::SYSCALL:
+        return false;
+    default:
+        return imop.isExpr ();
+    }
 }
 
 } // namespace anonymous
