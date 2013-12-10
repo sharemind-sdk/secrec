@@ -1113,9 +1113,9 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     Imop * i = new Imop(e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
     pushImopAfter(result, i);
 
-    push_imop(new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1)));
-
-    push_imop(new Imop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym));
+    // XXX TODO: giant hack
+    push_imop(new Imop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym)); // allocates 1 byte more
+    push_imop(new Imop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0))); // initialize last byte to zero
 
     /**
      * Copy the data from array to the string:
