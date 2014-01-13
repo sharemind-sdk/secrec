@@ -27,7 +27,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
 {
     SecrecDimType shapeExpressions = 0;
 
-    if (m_st->findFromCurrentScope (SYM_SYMBOL, varInit->variableName ()).size () > 1) {
+    if (m_st->findFromCurrentScope (SYM_SYMBOL, varInit->variableName ()).size () > 0) {
         m_log.fatalInProc(varInit) << "Redeclaration of variable at "
                                    << varInit->location () << '.';
         return E_TYPE;
