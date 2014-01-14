@@ -994,7 +994,7 @@ void Compiler::cgError (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ERROR);
     pushString (block, imop.arg1 ());
     emitSyscall (block, "miner_log_string");
-    block.push_new () << "halt imm 0xff";
+    block.push_new () << "except imm 0xf00";
 }
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
