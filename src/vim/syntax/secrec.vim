@@ -12,10 +12,10 @@ let s:cpo_save = &cpo
 set cpo&vim
 
 syn keyword	scTypes		bool void string
-syn keyword	scTypes 	int int8 int16 int32 int64
-syn keyword	scTypes 	uint uint8 uint16 uint32 uint64
-syn keyword	scTypes 	xor_uint8 xor_uint16 xor_uint32 xor_uint64
-syn keyword	scTypes 	float float32 float64
+syn keyword	scTypes		int int8 int16 int32 int64
+syn keyword	scTypes		uint uint8 uint16 uint32 uint64
+syn keyword	scTypes		xor_uint8 xor_uint16 xor_uint32 xor_uint64
+syn keyword	scTypes		float float32 float64
 
 syn keyword	scStatement	break return continue
 syn keyword	scConditional	if else
@@ -23,14 +23,15 @@ syn keyword	scRepeat	while for do
 
 " TODO: [A-Z]([0-9]{0,1}) ?
 
-syn keyword	scModifier	template domain kind dim type module import public private
+syn keyword	scModifier	template domain kind dim type module import public operator
 
 syn keyword	scConstant	true false
 
 syn keyword	scSupport	cat size shape reshape tostring assert declassify
-syn match	scSupport	"__[A-Za-z]*"
+syn keyword	scSupport	__domainid __syscall __ref __cref __return __bytes_from_string __string_from_bytes
 
 syn match	scNumber	"\<\(0x\)\=\d\+\(\.\d\+\)\="
+syn match	scNumber	"\<0b[01]\+"
 
 syn match	scSpecial	contained "\\\(x\x\+\|\o\{1,3}\)"
 syn match	scSpecial	contained "\\\(u\x\{4}\|U\x\{8}\)"
