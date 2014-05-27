@@ -513,6 +513,31 @@ const char *TreeNodeExprBinary::operatorString() const {
     return "?";
 }
 
+const char *TreeNodeExprBinary::operatorLongString () const {
+    switch (getOperator()) {
+    case SCOP_BIN_ADD:  return "addition";
+    case SCOP_BIN_BAND: return "bitwise AND";
+    case SCOP_BIN_BOR:  return "bitwise OR";
+    case SCOP_BIN_DIV:  return "division";
+    case SCOP_BIN_EQ:   return "equality";
+    case SCOP_BIN_GE:   return "greater-than-or-equal";
+    case SCOP_BIN_GT:   return "greater-than";
+    case SCOP_BIN_LAND: return "conjunction";
+    case SCOP_BIN_LE:   return "less-than-or-equal";
+    case SCOP_BIN_LOR:  return "disjunction";
+    case SCOP_BIN_LT:   return "less-than";
+    case SCOP_BIN_MOD:  return "modulo";
+    case SCOP_BIN_MUL:  return "multiplication";
+    case SCOP_BIN_NE:   return "not-equals";
+    case SCOP_BIN_SUB:  return "subtraction";
+    case SCOP_BIN_XOR:  return "XOR";
+    default:
+        assert(false); // shouldn't happen
+    }
+
+    return "?";
+}
+
 SecrecOperator TreeNodeExprBinary::getOperatorV() const {
     switch (type()) {
     case NODE_EXPR_BINARY_ADD:  return SCOP_BIN_ADD;

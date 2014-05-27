@@ -1004,6 +1004,7 @@ public: /* Methods: */
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
     const char *operatorString() const;
+    const char *operatorLongString() const;
 
 protected:
 

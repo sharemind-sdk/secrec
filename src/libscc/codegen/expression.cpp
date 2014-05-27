@@ -739,7 +739,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     }
     else {
         std::stringstream ss;
-        ss << "Mismaching shapes in addition at " << e->location();
+        ss << "Mismaching shapes in " << e->operatorLongString () << " at " << e->location();
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
         dim_iterator dj = dim_begin(e2result);
