@@ -166,7 +166,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
             return E_TYPE;
 
         if (! canPrintValue (e.resultType ())) {
-            m_log.fatalInProc(stmt) << "Invalid argument to \"print\" statement."
+            m_log.fatalInProc(stmt) << "Invalid argument to \"print\" statement. "
                            << "Got " << *e.resultType() << " at " << stmt->location() << ". "
                            << "Expected public scalar or string.";
             return E_TYPE;
