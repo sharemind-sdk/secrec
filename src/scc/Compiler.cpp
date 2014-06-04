@@ -46,6 +46,11 @@ VMDataType representationType (TypeNonVoid* tnv) {
     return ty;
 }
 
+bool isSigned (SecreC::Symbol* sym) {
+    assert (sym != NULL);
+    return isSignedNumericDataType (sym->secrecType ()->secrecDataType ());
+}
+
 const char* imopToVMName (const Imop& imop) {
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
@@ -67,6 +72,8 @@ const char* imopToVMName (const Imop& imop) {
     case Imop::GE    : return "tge";
     case Imop::GT    : return "tgt";
     case Imop::XOR   : return "btxor";
+    case Imop::SHL   : return "tshl0";
+    case Imop::SHR   : return isSigned (imop.dest ()) ? "tshr" : "tshr0";
     default:
         assert (false && "Not an arithmetic instruction!");
         return 0;
@@ -148,6 +155,8 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::UNEG:       os << "not";         break;
     case Imop::UMINUS:     os << "neg";         break;
     case Imop::XOR:        os << "xor";         break;
+    case Imop::SHL:        os << "shl";         break;
+    case Imop::SHR:        os << "shr";         break;
     default:                                    break;
     }
 }
