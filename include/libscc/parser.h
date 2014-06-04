@@ -45,6 +45,8 @@ enum SecrecOperator {
     SCOP_BIN_NE   = 0x00e,
     SCOP_BIN_SUB  = 0x00f,
     SCOP_BIN_XOR  = 0x010,
+    SCOP_BIN_SHL  = 0x011,
+    SCOP_BIN_SHR  = 0x012,
     SCOP_UN_INV   = 0x100,
     SCOP_UN_NEG   = 0x200,
     SCOP_UN_MINUS = 0x300
@@ -110,6 +112,8 @@ enum SecrecTreeNodeType {
     NODE_EXPR_UMINUS            = 0x310, /* -expr                    */
     NODE_EXPR_UNEG              = 0x320, /* !expr                    */
     NODE_EXPR_ARRAY_CONSTRUCTOR = 0x330, /* { e1, e2, ..., en }      */
+    NODE_EXPR_BINARY_SHL        = 0x331, /* e1 << e2                 */
+    NODE_EXPR_BINARY_SHR        = 0x332, /* e1 >> e2                 */
         NODE_EXPR_MASK          = 0xfff, /* NB! Including literals.  */
 
     NODE_DECL                   = 0x01000,

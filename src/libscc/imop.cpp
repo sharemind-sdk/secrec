@@ -56,6 +56,8 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::BAND,       1, 0, 0, 1, 4, 1 }
     , { Imop::BOR,        1, 0, 0, 1, 4, 1 }
     , { Imop::XOR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::SHL,        1, 0, 0, 1, 4, 1 }
+    , { Imop::SHR,        1, 0, 0, 1, 4, 1 }
     // Array expressions:
     , { Imop::STORE,      0, 0, 0, 1,UD, 0 }
     , { Imop::LOAD,       1, 0, 0, 0,UD, 1 }
@@ -340,6 +342,8 @@ void Imop::print(std::ostream & os) const {
     case BAND: printBinaryArith (os, imop, "&"); break;
     case BOR: printBinaryArith (os, imop, "|"); break;
     case XOR: printBinaryArith (os, imop, "^"); break;
+    case SHL: printBinaryArith (os, imop, "<<"); break;
+    case SHR: printBinaryArith (os, imop, ">>"); break;
     case CALL:
     {
 

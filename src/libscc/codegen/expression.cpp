@@ -45,6 +45,8 @@ bool getBinImopType(SecrecTreeNodeType type, Imop::Type& iType) {
     case NODE_EXPR_BITWISE_AND: iType = Imop::BAND; break;
     case NODE_EXPR_BITWISE_OR:  iType = Imop::BOR;  break;
     case NODE_EXPR_BITWISE_XOR: iType = Imop::XOR;  break;
+    case NODE_EXPR_BINARY_SHL:  iType = Imop::SHL;  break;
+    case NODE_EXPR_BINARY_SHR:  iType = Imop::SHR;  break;
     default:
         return false;
     }

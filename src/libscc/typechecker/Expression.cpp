@@ -30,11 +30,16 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
         if (! isNumericDataType(d1) && d1 != DATATYPE_STRING)
             break;
         return d1;
+    case NODE_EXPR_BINARY_SHL:
+    case NODE_EXPR_BINARY_SHR:
+        if (isSignedNumericDataType (d1))
+            break;
     case NODE_EXPR_BINARY_SUB:
     case NODE_EXPR_BINARY_MUL:
     case NODE_EXPR_BINARY_MOD:
     case NODE_EXPR_BINARY_DIV:
         if (d1 != d2) break;
+        if (d1 == DATATYPE_STRING) break;
         if (d1 != DATATYPE_NUMERIC && ! isNumericDataType(d1))
             break;
         return d1;
@@ -557,6 +562,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
     case NODE_EXPR_BITWISE_AND:
     case NODE_EXPR_BITWISE_OR:
     case NODE_EXPR_BITWISE_XOR:
+    case NODE_EXPR_BINARY_SHL:
+    case NODE_EXPR_BINARY_SHR:
         e1->setContext(root);
         e2->setContext(root);
         break;

@@ -138,6 +138,7 @@
 %left '&'
 %nonassoc EQ_OP NE_OP
 %nonassoc '<' '>' LE_OP GE_OP
+%left SHL_OP SHR_OP
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc INC_OP
@@ -201,6 +202,7 @@
 %type <treenode> qualified_expression
 %type <treenode> qualified_type qualified_types
 %type <treenode> relational_expression
+%type <treenode> shift_expression
 %type <treenode> return_type_specifier
 %type <treenode> sectype_specifier
 %type <treenode> maybe_sectype_specifier
@@ -636,6 +638,8 @@ operator_definition
  |  return_type_specifier OPERATOR LE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_LE, &@$, $1, $4); }
  |  return_type_specifier OPERATOR LOR_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_LOR, &@$, $1, $4); }
  |  return_type_specifier OPERATOR NE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_NE, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR SHL_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_SHL, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR SHR_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_SHR, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '-' unop_def_helper      { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
  ;
@@ -1063,27 +1067,43 @@ equality_expression
  ;
 
 relational_expression
- : relational_expression LE_OP additive_expression
+ : relational_expression LE_OP shift_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
- | relational_expression GE_OP additive_expression
+ | relational_expression GE_OP shift_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_GE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
- | relational_expression '<' additive_expression
+ | relational_expression '<' shift_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_LT, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
- | relational_expression '>' additive_expression
+ | relational_expression '>' shift_expression
    {
      $$ = treenode_init(NODE_EXPR_BINARY_GT, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+   }
+ | shift_expression
+ ;
+
+shift_expression
+ : shift_expression SHL_OP additive_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BINARY_SHL, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+   }
+ | shift_expression SHR_OP additive_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BINARY_SHR, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }

@@ -506,6 +506,8 @@ const char *TreeNodeExprBinary::operatorString() const {
     case SCOP_BIN_NE:   return "!=";
     case SCOP_BIN_SUB:  return "-";
     case SCOP_BIN_XOR:  return "^";
+    case SCOP_BIN_SHL:  return "<<";
+    case SCOP_BIN_SHR:  return ">>";
     default:
         assert(false); // shouldn't happen
     }
@@ -531,6 +533,8 @@ const char *TreeNodeExprBinary::operatorLongString () const {
     case SCOP_BIN_NE:   return "not-equals";
     case SCOP_BIN_SUB:  return "subtraction";
     case SCOP_BIN_XOR:  return "XOR";
+    case SCOP_BIN_SHL:  return "shift-left";
+    case SCOP_BIN_SHR:  return "shift-right";
     default:
         assert(false); // shouldn't happen
     }
@@ -556,8 +560,10 @@ SecrecOperator TreeNodeExprBinary::getOperatorV() const {
     case NODE_EXPR_BITWISE_AND: return SCOP_BIN_BAND;
     case NODE_EXPR_BITWISE_OR:  return SCOP_BIN_BOR;
     case NODE_EXPR_BITWISE_XOR: return SCOP_BIN_XOR;
+    case NODE_EXPR_BINARY_SHL:  return SCOP_BIN_SHL;
+    case NODE_EXPR_BINARY_SHR:  return SCOP_BIN_SHR;
     default:
-        assert(false); // shouldn't happen
+        assert(false && "This code path should be unreachable.");
     }
 
     return SCOP_NONE;
@@ -1368,6 +1374,8 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTEXPRTYPE(BITWISE_AND, Binary);
     SELECTEXPRTYPE(BITWISE_OR, Binary);
     SELECTEXPRTYPE(BITWISE_XOR, Binary);
+    SELECTEXPRTYPE(BINARY_SHL, Binary);
+    SELECTEXPRTYPE(BINARY_SHR, Binary);
 
     SELECTEXPRTYPE(BINARY_ASSIGN_ADD, Assign);
     SELECTEXPRTYPE(BINARY_ASSIGN_AND, Assign);

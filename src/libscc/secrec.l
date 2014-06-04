@@ -184,6 +184,8 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "&&" { stepLen(yyget_lloc(yyscanner), 2); return LAND_OP; }
 "<=" { stepLen(yyget_lloc(yyscanner), 2); return LE_OP; }
 "||" { stepLen(yyget_lloc(yyscanner), 2); return LOR_OP; }
+">>" { stepLen(yyget_lloc(yyscanner), 2); return SHR_OP; }
+"<<" { stepLen(yyget_lloc(yyscanner), 2); return SHL_OP; }
 "%=" { stepLen(yyget_lloc(yyscanner), 2); return MOD_ASSIGN; }
 "*=" { stepLen(yyget_lloc(yyscanner), 2); return MUL_ASSIGN; }
 "!=" { stepLen(yyget_lloc(yyscanner), 2); return NE_OP; }

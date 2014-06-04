@@ -49,73 +49,75 @@ public: /* Types: */
         //-------------
         // Expressions:
         //-------------
-        ASSIGN = 0, /*   d = arg1 {arg2};                   */
-        CAST,       /*   d = arg1 {arg2};                   */
-        TOSTRING,   /*   d = toString arg1                  */
-        CLASSIFY,   /*   d = CLASSIFY(arg1 {, arg2});       */
-        DECLASSIFY, /*   d = DECLASSIFY(arg1 {, arg2});     */
-        UINV,       /*   d = ~arg1 {arg2};                  */
-        UNEG,       /*   d = !arg1 {arg2};                  */
-        UMINUS,     /*   d = -arg1 {arg2};                  */
-        MUL,        /*   d = arg1 *  arg2 {arg3};           */
-        DIV,        /*   d = arg1 /  arg2 {arg3};           */
-        MOD,        /*   d = arg1 %  arg2 {arg3};           */
-        ADD,        /*   d = arg1 +  arg2 {arg3};           */
-        SUB,        /*   d = arg1 -  arg2 {arg3};           */
-        EQ,         /*   d = arg1 == arg2 {arg3};           */
-        NE,         /*   d = arg1 != arg2 {arg3};           */
-        LE,         /*   d = arg1 <= arg2 {arg3};           */
-        LT,         /*   d = arg1 <  arg2 {arg3};           */
-        GE,         /*   d = arg1 >= arg2 {arg3};           */
-        GT,         /*   d = arg1 >  arg2 {arg3};           */
-        LAND,       /*   d = arg1 && arg2 {arg3};           */
-        LOR,        /*   d = arg1 || arg2 {arg3};           */
-        BAND,       /*   d = arg1 & arg2 {arg3};            */
-        BOR,        /*   d = arg1 | arg2 {arg3};            */
-        XOR,        /*   d = arg1 ^ arg2 {arg3};            */
+        ASSIGN = 0, //   d = arg1 {arg2}
+        CAST,       //   d = arg1 {arg2}
+        TOSTRING,   //   d = toString arg1
+        CLASSIFY,   //   d = CLASSIFY(arg1 {, arg2})
+        DECLASSIFY, //   d = DECLASSIFY(arg1 {, arg2})
+        UINV,       //   d = ~arg1 {arg2}
+        UNEG,       //   d = !arg1 {arg2}
+        UMINUS,     //   d = -arg1 {arg2}
+        MUL,        //   d = arg1 *  arg2 {arg3}
+        DIV,        //   d = arg1 /  arg2 {arg3}
+        MOD,        //   d = arg1 %  arg2 {arg3}
+        ADD,        //   d = arg1 +  arg2 {arg3}
+        SUB,        //   d = arg1 -  arg2 {arg3}
+        EQ,         //   d = arg1 == arg2 {arg3}
+        NE,         //   d = arg1 != arg2 {arg3}
+        LE,         //   d = arg1 <= arg2 {arg3}
+        LT,         //   d = arg1 <  arg2 {arg3}
+        GE,         //   d = arg1 >= arg2 {arg3}
+        GT,         //   d = arg1 >  arg2 {arg3}
+        LAND,       //   d = arg1 && arg2 {arg3}
+        LOR,        //   d = arg1 || arg2 {arg3}
+        BAND,       //   d = arg1 & arg2 {arg3}
+        BOR,        //   d = arg1 | arg2 {arg3}
+        XOR,        //   d = arg1 ^ arg2 {arg3}
+        SHL,        //   d = arg1 << arg2 {arg3}
+        SHR,        //   d = arg1 >> arg2 {arg3}
 
         //-------------------
         // Array expressions:
         //-------------------
-        STORE,     /*    d[arg1] = arg2;                    */
-        LOAD,      /*    d = arg1[arg2];                    */
-        ALLOC,     /*    d = ALLOC (arg1, arg2)             */
-        COPY,      /*    d = COPY arg1 arg2                 */
-        RELEASE,   /*    RELEASE arg1                       */
+        STORE,      //    d[arg1] = arg2;
+        LOAD,       //    d = arg1[arg2];
+        ALLOC,      //    d = ALLOC (arg1, arg2)
+        COPY,       //    d = COPY arg1 arg2
+        RELEASE,    //    RELEASE arg1
 
         //-------------------
         // Other expressions:
         //-------------------
-        PARAM,     /*    d = PARAM                          */
-        DOMAINID,  /*    d = DOMAINID((SymbolDomain*)arg1)  */
-        CALL,      /*  arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)  */
+        PARAM,      //    d = PARAM
+        DOMAINID,   //    d = DOMAINID((SymbolDomain*)arg1)
+        CALL,       //    arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)
 
         //-------
         // Jumps:
         //-------
-        JUMP,      /* GOTO d;                              */
-        JT,        /* if (arg1) GOTO d;                    */
-        JF,        /* if (!arg1) GOTO d;                   */
+        JUMP,       //    GOTO d
+        JT,         //    if (arg1) GOTO d
+        JF,         //    if (!arg1) GOTO d
 
         //-----------------------
         // Procedure terminating:
         //-----------------------
-        ERROR,      /* ERROR ((ConstantString*) arg1)      */
-        RETURN,     /* RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n */
-        END,        /* END PROGRAM                         */
+        ERROR,      //    ERROR ((ConstantString*) arg1)
+        RETURN,     //    RETURN ((SymbolLabel*) arg0), arg_1, ..., arg_n
+        END,        //    END PROGRAM
 
         //--------------------
         // Misc. instructions:
         //--------------------
-        COMMENT,    /* // (ConstantString*) arg1           */
-        PRINT,      /* PRINT arg1;                         */
-        SYSCALL,    /* d = __syscall arg1;                 */
-        PUSH,       /* __push arg1                         */
-        PUSHREF,    /* __pushref arg1                      */
-        PUSHCREF,   /* __pushcref arg1                     */
-        RETCLEAN,   /* RETCLEAN;             (Imop *arg2)  */
+        COMMENT,    //    // (ConstantString*) arg1
+        PRINT,      //    PRINT arg1
+        SYSCALL,    //    d = __syscall arg1
+        PUSH,       //    __push arg1
+        PUSHREF,    //    __pushref arg1
+        PUSHCREF,   //    __pushcref arg1
+        RETCLEAN,   //    RETCLEAN; (Imop *arg2)
 
-        _NUM_INSTR  /* Number of instructions. Do not add anything after this. */
+        _NUM_INSTR  // Number of instructions. Do not add anything after this.
     };
 
 public: /* Methods: */
