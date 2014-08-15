@@ -8,15 +8,13 @@
 #
 
 CMAKE_MINIMUM_REQUIRED(VERSION "2.8.12")
-CMAKE_POLICY(SET CMP0015 NEW)
 PROJECT("SecreC framework" "CXX" "C")
 
-FOREACH(dir IN LISTS CMAKE_PREFIX_PATH)
-  INCLUDE_DIRECTORIES(BEFORE SYSTEM "${dir}/include")
-ENDFOREACH()
+INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/config.local" OPTIONAL)
+INCLUDE("${CMAKE_CURRENT_BINARY_DIR}/config.local" OPTIONAL)
 
 ADD_COMPILE_OPTIONS(
-  "-O2"
+  "-O2" "-Wall" "-Wextra"
   "$<$<NOT:$<STREQUAL:$<CONFIGURATION>,Release>>:-ggdb>"
   "$<$<NOT:$<STREQUAL:$<CONFIGURATION>,Release>>:-fno-omit-frame-pointer>"
   "$<$<STREQUAL:$<CONFIGURATION>,Release>:-DNDEBUG>"
@@ -25,56 +23,11 @@ ADD_COMPILE_OPTIONS(
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
 
-INCLUDE("config.local" OPTIONAL)
-
-MACRO(SHAREMIND_MINER_TARGETLIB libname)
-  IF(TARGET "lib${libname}")
-    SET(SHAREMIND_MINER_TARGETLIB_${libname} "lib${libname}")
-  ELSE()
-    FIND_LIBRARY(SHAREMIND_MINER_TARGETLIB_${libname} "sharemind_${libname}")
-    IF(NOT SHAREMIND_MINER_TARGETLIB_${libname})
-      MESSAGE(FATAL_ERROR "Required library \"sharemind_${libname}\" not found!")
-    ENDIF()
-  ENDIF()
-ENDMACRO()
-
-MACRO(SHAREMIND_ADD_EXT name pname)
-    IF(NOT SHAREMIND_NO_BUILD_EXTS)
-        SET(ID "${CMAKE_CURRENT_SOURCE_DIR}/ext/${name}/src")
-        IF(NOT EXISTS "${ID}/sharemind/CMakeLists.txt")
-            MESSAGE(FATAL_ERROR "Sharemind extension ${name} not found!")
-        ELSE()
-            ADD_SUBDIRECTORY("${ID}/sharemind")
-            INCLUDE_DIRECTORIES(BEFORE SYSTEM
-                                "${${pname}_SOURCE_DIR}/.."
-                                "${${pname}_BINARY_DIR}/..")
-        ENDIF()
-    ENDIF(NOT SHAREMIND_NO_BUILD_EXTS)
-ENDMACRO(SHAREMIND_ADD_EXT)
-
-INCLUDE_DIRECTORIES(BEFORE SYSTEM
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-IF(STATIC_BUILD)
-    SET(SHAREMIND_LIBVM_LINKING_MODE STATIC)
-    SET(SHAREMIND_LIBEXECUTABLE_LINKING_MODE STATIC)
-    SET(SHAREMIND_LIBAS_LINKING_MODE STATIC)
-    SET(SHAREMIND_LIBSCC_LINKING_MODE STATIC)
-ENDIF(STATIC_BUILD)
-
-SHAREMIND_ADD_EXT(vm_globals SHAREMIND_VM_GLOBALS)
-SHAREMIND_ADD_EXT(vm_m4 SHAREMIND_VM_M4)
-SHAREMIND_ADD_EXT(libexecutable SHAREMIND_LIBEXECUTABLE)
-SHAREMIND_ADD_EXT(libvmi SHAREMIND_LIBVMI)
-SHAREMIND_ADD_EXT(libas SHAREMIND_LIBAS)
-
 find_package(Boost COMPONENTS thread system filesystem iostreams program_options REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
-#find_package(Qt4 COMPONENTS qtcore qttest)
+FIND_PACKAGE(SharemindLibas REQUIRED)
 
 add_definitions("-DSHAREMIND_STDLIB_PATH=\"${CMAKE_INSTALL_PREFIX}/lib/sharemind/stdlib\"")
 
