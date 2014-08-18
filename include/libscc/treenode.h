@@ -234,7 +234,6 @@ protected:
   TreeNodeDimensions
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeDimensions: public TreeNode {
 public: /* Methods: */
 
@@ -252,7 +251,6 @@ protected:
   TreeNodeLValue
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeLValue: public TreeNode {
 public: /* Methods: */
 
@@ -270,7 +268,6 @@ protected:
   TreeNodeSubscript
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeSubscript: public TreeNode {
 public: /* Methods: */
 
@@ -288,7 +285,6 @@ protected:
   TreeNodeIndex
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeIndex: public TreeNode {
 public: /* Methods: */
 
@@ -301,7 +297,6 @@ public: /* Methods: */
   TreeNodeIndexInt
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeIndexInt: public TreeNodeIndex {
 public: /* Methods: */
 
@@ -319,7 +314,6 @@ protected:
   TreeNodeIndexSlice
 ******************************************************************/
 
-// TODO: use this!
 class TreeNodeIndexSlice: public TreeNodeIndex {
 public: /* Methods: */
 
