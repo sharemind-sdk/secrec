@@ -1319,6 +1319,13 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(TYPEVAR, TypeVarF);
     SELECTNODE(LITE_STRING, ExprString);
 
+    SELECTNODE(INTERNAL_USE, InternalUse);
+    SELECTNODE(DIMENSIONS, Dimensions);
+    SELECTNODE(LVALUE, LValue);
+    SELECTNODE(SUBSCRIPT, Subscript);
+    SELECTNODE(INDEX_INT, IndexInt);
+    SELECTNODE(INDEX_SLICE, IndexSlice);
+
     SELECTNODETYPE(PUSH, SyscallParam);
     SELECTNODETYPE(PUSHCREF, SyscallParam);
     SELECTNODETYPE(PUSHREF, SyscallParam);
