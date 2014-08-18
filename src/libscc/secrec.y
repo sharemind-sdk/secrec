@@ -113,7 +113,7 @@
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
-%token SYSCALL_RETURN TYPE
+%token SYSCALL_RETURN TYPE STRUCT
 
  /* Identifiers: */
 %token <str> IDENTIFIER
@@ -226,6 +226,9 @@
 %type <treenode> variable_initializations
 %type <treenode> while_statement
 %type <treenode> string_part
+%type <treenode> structure_declaration
+%type <treenode> attribute_list
+%type <treenode> attribute
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -310,6 +313,7 @@ global_declaration
  | domain_declaration ';'
  | kind_declaration ';'
  | procedure_definition
+ | structure_declaration
  | template_declaration
  ;
 
@@ -331,7 +335,10 @@ domain_declaration
  ;
 
 maybe_dimensions
- : /* nothing */ { $$ = treenode_init(NODE_DIMENSIONS, &@$); }
+ : /* nothing */
+   {
+     $$ = treenode_init(NODE_DIMENSIONS, &@$);
+   }
  | dimensions
  ;
 
@@ -433,12 +440,18 @@ type_specifier
  ;
 
 maybe_sectype_specifier
- : /* nothing */ { $$ = treenode_init_publicSecTypeF (&@$); }
+ : /* nothing */
+   {
+     $$ = treenode_init_publicSecTypeF (&@$);
+   }
  | sectype_specifier
  ;
 
 maybe_dimtype_specifier
- : /* nothing */ { $$ = treenode_init_dimTypeConstF(0, &@$); }
+ : /* nothing */
+   {
+     $$ = treenode_init_dimTypeConstF(0, &@$);
+   }
  | dimtype_specifier
  ;
 
@@ -521,6 +534,12 @@ template_declaration
      treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
+ | TEMPLATE '<' template_quantifiers '>' structure_declaration
+   {
+     $$ = treenode_init(NODE_TEMPLATE_STRUCT, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $5);
+   }
  ;
 
 template_quantifiers
@@ -561,6 +580,42 @@ template_quantifier
  ;
 
  /*******************************************************************************
+  * Structures:                                                                 *
+  *******************************************************************************/
+
+structure_declaration
+ : STRUCT identifier '{' attribute_list '}'
+   {
+      $$ = treenode_init(NODE_STRUCT_DECL, &@$);
+      treenode_appendChild($$, $2);
+      treenode_moveChildren ($4, $$);
+      treenode_free($4);
+   }
+ ;
+
+attribute_list
+  : attribute_list attribute
+    {
+       $$ = $1;
+       treenode_setLocation($$, &@$);
+       treenode_appendChild($$, $2);
+    }
+  | /* empty */
+    {
+      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
+    }
+  ;
+
+attribute
+  : type_specifier identifier ';'
+    {
+      $$ = treenode_init(NODE_ATTRIBUTE, &@$);
+      treenode_appendChild($$, $1);
+      treenode_appendChild($$, $2);
+    }
+  ;
+
+ /*******************************************************************************
   * Procedures:                                                                 *
   *******************************************************************************/
 
@@ -591,7 +646,8 @@ procedure_definition
 
 procedure_parameter_list
  : procedure_parameter_list ',' procedure_parameter
-   { $$ = $1;
+   {
+     $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $3);
    }

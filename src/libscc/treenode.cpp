@@ -1318,6 +1318,9 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(DIMTYPE_VAR_F, DimTypeVarF);
     SELECTNODE(TYPEVAR, TypeVarF);
     SELECTNODE(LITE_STRING, ExprString);
+    SELECTNODE(STRUCT_DECL, StructDecl);
+    SELECTNODE(ATTRIBUTE, Attribute);
+    SELECTNODE(TEMPLATE_STRUCT, TemplateStruct);
 
     SELECTNODE(INTERNAL_USE, InternalUse);
     SELECTNODE(DIMENSIONS, Dimensions);

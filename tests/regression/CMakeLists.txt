@@ -159,4 +159,4 @@ add_test_secrec_execute("templates/17-simple")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
-add_test_secrec_execute("structs/00-simple-definition")
+add_test_secrec_execute("structs/01-simple-definition")

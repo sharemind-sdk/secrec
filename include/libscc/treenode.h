@@ -1520,6 +1520,80 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeAttribute
+******************************************************************/
+
+class TreeNodeAttribute: public TreeNode {
+public: /* Methods: */
+
+    explicit TreeNodeAttribute (const Location & loc)
+        :  TreeNode (NODE_ATTRIBUTE, loc)
+    { }
+
+    TreeNodeType* type () const;
+    TreeNodeIdentifier* identifier () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeAttribute (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeStructDecl
+******************************************************************/
+
+class TreeNodeStructDecl: public TreeNode {
+public: /* Methods: */
+
+    explicit TreeNodeStructDecl (const Location & loc)
+        : TreeNode (NODE_STRUCT_DECL, loc)
+    { }
+
+    TreeNodeIdentifier* identifier () const;
+    TreeNodeSeqView<TreeNodeAttribute> attributes () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeStructDecl (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeTemplateStruct
+******************************************************************/
+
+class TreeNodeTemplateStruct : public TreeNode {
+public: /* Methods: */
+    explicit inline TreeNodeTemplateStruct(const Location & loc)
+        : TreeNode(NODE_TEMPLATE_STRUCT, loc)
+        , m_containingModule (0)
+    { }
+
+    TreeNodeStructDecl* body () const;
+    TreeNodeSeqView<TreeNodeQuantifier> quantifiers() const;
+
+    ModuleInfo* containingModule () const {
+        return m_containingModule;
+    }
+
+    void setContainingModule (ModuleInfo& mod) {
+        m_containingModule = &mod;
+    }
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTemplateStruct (m_location);
+    }
+
+private: /* Fields: */
+    ModuleInfo* m_containingModule;
+};
+
+/******************************************************************
   TreeNodeProcDef
 ******************************************************************/
 

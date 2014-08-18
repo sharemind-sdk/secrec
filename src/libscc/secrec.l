@@ -140,6 +140,7 @@ SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "shape"      { stepLen(yyget_lloc(yyscanner), 5);  return SHAPE; }
 "size"       { stepLen(yyget_lloc(yyscanner), 4);  return SIZE; }
 "string"     { stepLen(yyget_lloc(yyscanner), 6);  return STRING; }
+"struct"     { stepLen(yyget_lloc(yyscanner), 6);  return STRUCT; }
 "template"   { stepLen(yyget_lloc(yyscanner), 8);  return TEMPLATE; }
 "tostring"   { stepLen(yyget_lloc(yyscanner), 8);  return TOSTRING; }
 "true"       { stepLen(yyget_lloc(yyscanner), 4);  return TRUE_B; }
