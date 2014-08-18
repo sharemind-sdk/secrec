@@ -144,6 +144,7 @@
 %nonassoc INC_OP
 %nonassoc DEC_OP
 %right UINV UNEG UMINUS
+%left '.'
 
 %type <treenode> additive_expression
 %type <treenode> assert_statement
@@ -229,6 +230,7 @@
 %type <treenode> structure_declaration
 %type <treenode> attribute_list
 %type <treenode> attribute
+%type <treenode> selection_expression
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -1231,6 +1233,16 @@ cast_expression
      treenode_appendChild(temp, $2);
      treenode_appendChild($$, temp);
      treenode_appendChild($$, $4);
+   }
+ | selection_expression
+ ;
+
+selection_expression
+ : selection_expression '.' identifier
+   {
+     $$ = treenode_init(NODE_EXPR_SELECTION, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | prefix_op
  ;

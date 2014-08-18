@@ -152,6 +152,19 @@ TypeChecker::Status TreeNodeExprNone::accept(TypeChecker&) {
 void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
 
 /*******************************************************************************
+  TreeNodeExprSelection
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeExprSelection::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit(this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection *) {
+    assert (false && "TODO: implement TreeNodeExprSelection type checking");
+    return E_TYPE;
+}
+
+/*******************************************************************************
   TreeNodeExprAssign
 *******************************************************************************/
 

@@ -752,6 +752,30 @@ private: /* Fields: */
 };
 
 /******************************************************************
+  TreeNodeExprSelection
+******************************************************************/
+
+class TreeNodeExprSelection: public TreeNodeExpr {
+public: /* Methods: */
+    explicit TreeNodeExprSelection (const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_SELECTION, loc)
+    { }
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg);
+    virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
+
+    TreeNodeExpr* expression () const;
+    TreeNodeIdentifier* identifier () const;
+
+protected:
+
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeExprSelection (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeExprAssign
 ******************************************************************/
 

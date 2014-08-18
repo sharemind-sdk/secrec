@@ -88,6 +88,7 @@ public: /* Methods: */
     Status visit(TreeNodeExprQualified * e);
     Status visit(TreeNodeExprBytesFromString * e);
     Status visit(TreeNodeExprStringFromBytes * e);
+    Status visit(TreeNodeExprSelection * e);
 
     Status visit(TreeNodeTypeF* ty);
     Status visit(TreeNodeTypeVarF* ty);

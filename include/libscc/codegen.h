@@ -230,6 +230,7 @@ public: /* Methods: */
     CGBranchResult cgBoolExprBool (TreeNodeExprBool* e);
     CGBranchResult cgBoolExprAssign (TreeNodeExprAssign* e);
     CGBranchResult cgBoolExprQualified (TreeNodeExprQualified* e);
+    CGBranchResult cgBoolExprSelection (TreeNodeExprSelection* e);
     /// \}
 
     /**
@@ -263,6 +264,7 @@ public: /* Methods: */
     CGResult cgExprPostfix (TreeNodeExprPostfix* e);
     CGResult cgExprSize (TreeNodeExprSize* e);
     CGResult cgExprAssign (TreeNodeExprAssign* e);
+    CGResult cgExprSelection (TreeNodeExprSelection* e);
     /// \}
 
     /// \{

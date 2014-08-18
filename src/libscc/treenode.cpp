@@ -147,6 +147,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(EXPR_UINV);
     CASE_NODE_NAME(EXPR_UMINUS);
     CASE_NODE_NAME(EXPR_UNEG);
+    CASE_NODE_NAME(EXPR_SELECTION);
     CASE_NODE_NAME(IDENTIFIER);
     CASE_NODE_NAME(IMPORT);
     CASE_NODE_NAME(INDEX_INT);
@@ -190,6 +191,9 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(DIMTYPE_VAR_F);
     CASE_NODE_NAME(STRING_PART_IDENTIFIER);
     CASE_NODE_NAME(STRING_PART_FRAGMENT);
+    CASE_NODE_NAME(STRUCT_DECL);
+    CASE_NODE_NAME(ATTRIBUTE);
+    CASE_NODE_NAME(TEMPLATE_STRUCT);
     default: return "UNKNOWN";
     }
 }
@@ -1277,6 +1281,62 @@ TreeNodeIdentifier* TreeNodeDomain::kindIdentifier () const {
     return childAt<TreeNodeIdentifier>(this, 1);
 }
 
+/*******************************************************************************
+  TreeNodeExprSelection
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprSelection::expression () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeExpr>(this, 0);
+}
+
+TreeNodeIdentifier* TreeNodeExprSelection::identifier () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeIdentifier>(this, 1);
+}
+
+/*******************************************************************************
+  TreeNodeAttribute
+*******************************************************************************/
+
+TreeNodeType* TreeNodeAttribute::type () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeType>(this, 0);
+}
+
+TreeNodeIdentifier* TreeNodeAttribute::identifier () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeIdentifier>(this, 1);
+}
+
+/*******************************************************************************
+  TreeNodeStructDecl
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeStructDecl::identifier () const {
+    assert (children ().size () > 0);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+TreeNodeSeqView<TreeNodeAttribute> TreeNodeStructDecl::attributes () const {
+    assert (children ().size () > 0);
+    return TreeNodeSeqView<TreeNodeAttribute>(children().begin() + 1, children().end());
+}
+
+/*******************************************************************************
+  TreeNodeTemplateStruct
+*******************************************************************************/
+
+TreeNodeStructDecl* TreeNodeTemplateStruct::body () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeStructDecl>(this, 1);
+}
+
+TreeNodeSeqView<TreeNodeQuantifier> TreeNodeTemplateStruct::quantifiers () const {
+    assert (children ().size () == 2);
+    return TreeNodeSeqView<TreeNodeQuantifier>(children ().at (0)->children ());
+}
+
 } // namespace SecreC
 
 /*******************************************************************************
@@ -1349,6 +1409,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTEXPR(DOMAINID, DomainID);
     SELECTEXPR(TYPE_QUAL, Qualified);
     SELECTEXPR(ARRAY_CONSTRUCTOR, ArrayConstructor);
+    SELECTEXPR(SELECTION, Selection);
 
     SELECTEXPR(TERNIF, Ternary);
     SELECTEXPRTYPE(UINV, Unary);
@@ -1405,7 +1466,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
 
     default:
 
-        // std::cerr << SecreC::TreeNode::typeName (type) << std::endl;
+        std::cerr << SecreC::TreeNode::typeName (type) << std::endl;
         assert (false && "Node of this type should not be initialized with treenode_init");
         return 0;
     }

@@ -73,7 +73,7 @@ HEXLIT          0x{HEXDIGIT}+
 SIMPLEFLOAT     {DECIMAL}{EXPONENT}
 SCIENTIFICFLOAT {DECIMAL}\.{DIGIT}*{EXPONENT}?
 NEWLINE         (\n\r|\r\n|\n|\r)
-SIMPLEOP        [\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
+SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 
 
 %x COMMENT_C

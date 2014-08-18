@@ -2130,4 +2130,27 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     return result;
 }
 
+/*******************************************************************************
+  TreeNodeExprSelection
+*******************************************************************************/
+
+CGResult TreeNodeExprSelection::codeGenWith(CodeGen & cg) {
+    // TODO: verify AST
+    return cg.cgExprSelection(this);
+}
+
+CGResult CodeGen::cgExprSelection(TreeNodeExprSelection *) {
+    assert (false && "TODO implement TreeNodeExprSelection code gen");
+    return CGResult::ERROR_CONTINUE;
+}
+
+CGBranchResult TreeNodeExprSelection::codeGenBoolWith(CodeGen & cg) {
+    assert(havePublicBoolType());
+    return cg.cgBoolExprSelection(this);
+}
+
+CGBranchResult CodeGen::cgBoolExprSelection(TreeNodeExprSelection* e) {
+    return cgBoolSimple(e);
+}
+
 } // namespace SecreC

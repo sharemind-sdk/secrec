@@ -114,6 +114,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_ARRAY_CONSTRUCTOR = 0x330, /* { e1, e2, ..., en }      */
     NODE_EXPR_BINARY_SHL        = 0x331, /* e1 << e2                 */
     NODE_EXPR_BINARY_SHR        = 0x332, /* e1 >> e2                 */
+    NODE_EXPR_SELECTION         = 0x333, /* e.name                   */
         NODE_EXPR_MASK          = 0xfff, /* NB! Including literals.  */
 
     NODE_DECL                   = 0x01000,
@@ -164,8 +165,8 @@ enum SecrecTreeNodeType {
     NODE_TYPEVAR                = 0x2000000,
     NODE_TEMPLATE_STRUCT        = 0x3000000,
 
-    NODE_STRING_PART_FRAGMENT   = 0x3000000,
-    NODE_STRING_PART_IDENTIFIER = 0x4000000
+    NODE_STRING_PART_FRAGMENT   = 0x4000000,
+    NODE_STRING_PART_IDENTIFIER = 0x5000000
 };
 
 enum SecrecDataType {
