@@ -214,6 +214,126 @@ inline typename TreeNodeSeqView<BaseClass>::iterator
 }
 
 /******************************************************************
+  TreeNodeInternalUse
+******************************************************************/
+
+class TreeNodeInternalUse: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeInternalUse(const Location & loc)
+        : TreeNode(NODE_INTERNAL_USE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeInternalUse (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeDimensions
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeDimensions: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeDimensions(const Location & loc)
+        : TreeNode(NODE_DIMENSIONS, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDimensions (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeLValue
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeLValue: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeLValue(const Location & loc)
+        : TreeNode(NODE_LVALUE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeLValue (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeSubscript
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeSubscript: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeSubscript(const Location & loc)
+        : TreeNode(NODE_SUBSCRIPT, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeSubscript (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeIndex
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeIndex: public TreeNode {
+public: /* Methods: */
+
+    inline TreeNodeIndex(SecrecTreeNodeType type, const Location & loc)
+        : TreeNode(type, loc)
+    { }
+};
+
+/******************************************************************
+  TreeNodeIndexInt
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeIndexInt: public TreeNodeIndex {
+public: /* Methods: */
+
+    inline TreeNodeIndexInt(const Location & loc)
+        : TreeNodeIndex(NODE_INDEX_INT, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeIndexInt (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeIndexSlice
+******************************************************************/
+
+// TODO: use this!
+class TreeNodeIndexSlice: public TreeNodeIndex {
+public: /* Methods: */
+
+    inline TreeNodeIndexSlice(const Location & loc)
+        : TreeNodeIndex(NODE_INDEX_SLICE, loc)
+    { }
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeIndexSlice (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeIdentifier
 ******************************************************************/
 
