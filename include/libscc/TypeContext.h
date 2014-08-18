@@ -144,7 +144,6 @@ public: /* Methods: */
     }
 
     bool matchDimType (SecrecDimType dimType) const {
-        assert (dimType >= 0);
         if (! haveContextDimType ()) {
             return true;
         }

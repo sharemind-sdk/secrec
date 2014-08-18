@@ -410,8 +410,6 @@ void Program::numberBlocks () {
 }
 
 std::ostream & Program::print(std::ostream & os) const {
-    typedef DataFlowAnalysis RD;
-
     os << "PROCEDURES:" << std::endl;
     BOOST_FOREACH (const Procedure& proc, *this) {
         if (proc.name ())

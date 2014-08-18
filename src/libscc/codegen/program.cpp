@@ -84,10 +84,6 @@ struct ScopedSetSymbolTable {
 
 CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
-    typedef TreeNodeIdentifier TNI;
-    typedef TypeNonVoid TNV;
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
     assert(def != 0);
 
     if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
@@ -189,8 +185,6 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
-    typedef std::map<const TreeNodeProcDef *, std::set<Imop *> > CallMap;
-
     const StringRef* name = getStringTable ().addString ("Module " + mod->body()->name().str());
 
     assert(mod->status() == ModuleInfo::CGNotStarted);

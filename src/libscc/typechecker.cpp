@@ -128,7 +128,6 @@ TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
 TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
                                               SecrecDimType & destDim)
 {
-    typedef TreeNode::ChildrenListConstIterator CLCI;
     assert (node->type() == NODE_SUBSCRIPT);
     destDim = 0;
     BOOST_FOREACH (TreeNode* tNode, node->children ()) {

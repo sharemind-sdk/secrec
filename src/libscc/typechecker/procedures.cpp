@@ -142,7 +142,6 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
 TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
                                        SymbolTable * localScope)
 {
-    typedef TypeNonVoid TNV;
     if (proc->m_cachedType != 0) {
         return OK;
     }
@@ -215,10 +214,6 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                                                SecreC::Type *& resultType,
                                                SymbolProcedure *& symProc)
 {
-    typedef TypeProc DTFV;
-    typedef TypeProc DTF;
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
     std::vector<TypeBasic*> argumentDataTypes;
 
     BOOST_FOREACH (TreeNodeExpr& arg, arguments) {

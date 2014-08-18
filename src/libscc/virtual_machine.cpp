@@ -125,7 +125,8 @@ public:
     }
 
     void push (int n) {
-        const Value val = { n };
+        Value val;
+        val.un_int32_val = n;
         TRACE("-> %d\n", n);
         push (val);
     }

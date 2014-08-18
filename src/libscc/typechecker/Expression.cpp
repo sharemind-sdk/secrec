@@ -323,8 +323,6 @@ TypeChecker::Status TreeNodeExprShape::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeExprShape * root) {
-    typedef TypeNonVoid TNV;
-
     if (! root->haveResultType()) {
         TreeNodeExpr * e = root->expression();
         TCGUARD (visitExpr(e));

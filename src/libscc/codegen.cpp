@@ -407,7 +407,6 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
 
 CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNode * node) {
     typedef SubscriptInfo::SPV SPV;
-    typedef TreeNode::ChildrenListConstIterator CLCI;
 
     assert(node != 0);
     assert(tmp != 0);

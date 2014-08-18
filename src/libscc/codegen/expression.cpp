@@ -138,7 +138,6 @@ CGResult TreeNodeExprIndex::codeGenWith(CodeGen & cg) {
 }
 
 CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
-    typedef TreeNode::ChildrenListConstIterator CLCI; // children list const iterator
     typedef std::vector<std::pair<Symbol *, Symbol *> > SPV; // symbol pair vector
 
     // Type check:
@@ -973,8 +972,6 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
 }
 
 CGResult CodeGen::cgExprProcCall(TreeNodeExprProcCall * e) {
-    typedef TreeNode::ChildrenListConstIterator CLCI;
-
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
