@@ -54,6 +54,7 @@ class TreeNodeExprUnary;
 class TreeNodeIdentifier;
 class TreeNodeImport;
 class TreeNodeKind;
+class TreeNodeLValue;
 class TreeNodeModule;
 class TreeNodeProcDef;
 class TreeNodeProgram;

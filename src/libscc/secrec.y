@@ -230,7 +230,6 @@
 %type <treenode> structure_declaration
 %type <treenode> attribute_list
 %type <treenode> attribute
-%type <treenode> selection_expression
 
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -938,16 +937,10 @@ index
   *******************************************************************************/
 
 lvalue
- : identifier
+ : postfix_expression
    {
-     $$ = treenode_init(NODE_LVALUE, &@$);
+     $$ = treenode_init (NODE_LVALUE, &@$);
      treenode_appendChild($$, $1);
-   }
- | identifier subscript
-   {
-     $$ = treenode_init(NODE_LVALUE, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $2);
    }
  ;
 
@@ -1234,16 +1227,6 @@ cast_expression
      treenode_appendChild($$, temp);
      treenode_appendChild($$, $4);
    }
- | selection_expression
- ;
-
-selection_expression
- : selection_expression '.' identifier
-   {
-     $$ = treenode_init(NODE_EXPR_SELECTION, &@$);
-     treenode_appendChild($$, $1);
-     treenode_appendChild($$, $3);
-   }
  | prefix_op
  ;
 
@@ -1370,6 +1353,12 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_INDEX, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
+   }
+ | postfix_expression '.' identifier
+   {
+     $$ = treenode_init(NODE_EXPR_SELECTION, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
    }
  | primary_expression
  ;

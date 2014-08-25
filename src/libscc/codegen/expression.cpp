@@ -1851,12 +1851,6 @@ CGBranchResult CodeGen::cgBoolExprUnary(TreeNodeExprUnary * e) {
 ******************************************************************/
 
 CGResult TreeNodeExprPrefix::codeGenWith(CodeGen & cg) {
-    assert(children().size() == 1);
-    TreeNode * c0 = children().at(0);
-    (void) c0;
-    assert(c0 != 0);
-    assert(1 <= c0->children().size() && c0->children().size() <= 2);
-    assert(dynamic_cast<TreeNodeIdentifier *>(c0->children().at(0)) != 0);
     return cg.cgExprPrefix(this);
 }
 
@@ -1872,10 +1866,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
     // Generate code for child expression:
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
-    TreeNode * lval = e->children().at(0);
-    TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
-    result.setResult(destSym);
+    TreeNodeLValue * lval = e->lvalue ();
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -1889,10 +1880,16 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     }
 
     // ++ x[e1,..,ek]
-    if (lval->children().size() == 2) {
-        assert(!e->resultType()->isScalar());
+    if (lval->isIndex ()) {
+        TreeNodeExprIndex * lvalIndex = lval->index ();
+        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
+        TreeNodeIdentifier * e1 =
+            static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
+        result.setResult(destSym);
+
         SubscriptInfo subInfo;
-        append(result, codeGenSubscript(subInfo, destSym, lval->children().at(1)));
+        append(result, codeGenSubscript(subInfo, destSym, lvalIndex->indices ()));
         if (result.isNotOk()) {
             return result;
         }
@@ -1912,7 +1909,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
                 e->resultType()->secrecDataType());
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
         Symbol * tmpElem = m_st->appendTemporary(elemType);
-        for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
+        for (SPV::const_iterator it = spv.begin(); it != spv.end(); ++ it) {
             Symbol * sym = m_st->appendTemporary(pubIntTy);
             loopInfo.push_index(sym);
         }
@@ -1961,23 +1958,34 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return result;
     }
 
-    if (!e->resultType()->isScalar()) {
-        SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
+    if (lval->isIdentifier ()) {
+        TreeNodeIdentifier * e1 = lval->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
+        result.setResult(destSym);
+
+        if (!e->resultType()->isScalar()) {
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
+            pushImopAfter(result, i);
+            one = t;
+        }
+        else if (e->resultType()->secrecSecType()->isPrivate()) {
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            Imop * i = new Imop(e, Imop::CLASSIFY, t, one);
+            pushImopAfter(result, i);
+            one = t;
+        }
+
+        // x = x `iType` 1
+        Imop * i = newBinary(e, iType, destSym, destSym, one);
         pushImopAfter(result, i);
-        one = t;
-    }
-    else if (e->resultType()->secrecSecType()->isPrivate()) {
-        SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::CLASSIFY, t, one);
-        pushImopAfter(result, i);
-        one = t;
+        releaseTemporary(result, one);
     }
 
-    // x = x `iType` 1
-    Imop * i = newBinary(e, iType, destSym, destSym, one);
-    pushImopAfter(result, i);
-    releaseTemporary(result, one);
+    if (lval->isSelection ()) {
+        assert (false && "TODO: implement cgExprPrefix for selection lvalue.");
+    }
+
     return result;
 }
 
@@ -1986,12 +1994,6 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 ******************************************************************/
 
 CGResult TreeNodeExprPostfix::codeGenWith(CodeGen & cg) {
-    assert(children().size() == 1);
-    TreeNode * c0 = children().at(0);
-    (void) c0;
-    assert(c0 != 0);
-    assert(1 <= c0->children().size() && c0->children().size() <= 2);
-    assert(dynamic_cast<TreeNodeIdentifier *>(c0->children().at(0)) != 0);
     return cg.cgExprPostfix(this);
 }
 
@@ -2004,12 +2006,26 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
     CGResult result;
     TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
-
-    // Generate code for child expression:
-    TreeNode * lval = e->children().at(0);
-    TreeNodeIdentifier * e1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
+    TreeNodeLValue * lval = e->lvalue ();
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
+
+    TreeNodeIdentifier * e1 = NULL; // static_cast<TreeNodeIdentifier *>(lval->children().at(0));
+    TreeNode* slice = lval->isIndex () ? lval->index ()->indices () : NULL;
+
+    if (lval->isIdentifier ()) {
+        e1 = lval->identifier ();
+    }
+
+    if (lval->isIndex ()) {
+        TreeNodeExprIndex* lvalIndex = lval->index ();
+        e1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+    }
+
+    if (lval->isSelection ()) {
+        assert (false && "TODO: implement cgExprPostfix for select.");
+    }
+
+    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
 
     // r = x
     SymbolSymbol * r = generateResultSymbol(result, e);
@@ -2035,10 +2051,10 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     }
 
     // x[e1,..,ek] ++
-    if (lval->children().size() == 2) {
+    if (lval->isIndex ()) {
         assert(!e->resultType()->isScalar());
         SubscriptInfo subInfo;
-        append(result, codeGenSubscript(subInfo, destSym, lval->children().at(1)));
+        append(result, codeGenSubscript(subInfo, destSym, slice));
         if (result.isNotOk()) {
             return result;
         }

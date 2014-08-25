@@ -118,6 +118,7 @@ public: /* Methods: */
 
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
+    Status visit(TreeNodeLValue* lvalue);
 
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);

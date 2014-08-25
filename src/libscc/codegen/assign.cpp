@@ -51,11 +51,8 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         return CGResult::ERROR_CONTINUE;
 
     // Generate code for child expressions:
-    TreeNode * lval = e->children().at(0);
-    assert(lval != 0);
-    assert(dynamic_cast<TreeNodeIdentifier *>(lval->children().at(0)) != 0);
-    TreeNodeIdentifier * eArg1 = static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
+    TreeNodeLValue* lval = e->leftHandSide ();
+
 
     // Generate code for righthand side:
     CGResult result;
@@ -72,11 +69,16 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     // x[e1,...,ek] = e
-    if (lval->children().size() == 2) {
+    if (lval->isIndex ()) {
+        // TODO: the following is ugly, we should have code generation for left hand side.
+        TreeNodeExprIndex* lvalIndex = lval->index ();
+        assert ((lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE) && "TODO: how do we index a field?");
+        TreeNodeIdentifier* eArg1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
 
         // 1. evaluate subscript
         SubscriptInfo cgSub;
-        append(result, codeGenSubscript(cgSub, destSym, lval->children().at(1)));
+        append(result, codeGenSubscript(cgSub, destSym, lvalIndex->indices ()));
         if (result.isNotOk()) {
             return result;
         }
@@ -227,87 +229,98 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         return result;
     }
 
-    // Generate code for regular x = e assignment
-    if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
-        if (!eArg2->resultType()->isScalar()) {
-            result.setResult (destSym); // hack!
-            copyShapeFrom(result, arg2Result.symbol());
-            result.setResult (arg2Result.symbol());
-            if (result.isNotOk()) {
-                return result;
-            }
-        }
+    // x = e
+    if (lval->isIdentifier ()) {
+        TreeNodeIdentifier* eArg1 = lval->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
 
-        Imop * i = 0;
-        if (destSym->isArray()) {
-            i = new Imop(e, Imop::RELEASE, 0, destSym);
-            pushImopAfter(result, i);
-
-            if (eArg2->resultType()->isScalar()) {
-                i = new Imop(e, Imop::ALLOC, destSym, arg2Result.symbol(), destSym->getSizeSym());
-            }
-            else {
-                i = new Imop(e, Imop::COPY, destSym, arg2Result.symbol(), destSym->getSizeSym());
+        // Generate code for regular x = e assignment
+        if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
+            if (!eArg2->resultType()->isScalar()) {
+                result.setResult (destSym); // hack!
+                copyShapeFrom(result, arg2Result.symbol());
+                result.setResult (arg2Result.symbol());
+                if (result.isNotOk()) {
+                    return result;
+                }
             }
 
-            pushImopAfter(result, i);
-        } else {
-            i = new Imop(e, Imop::ASSIGN, destSym, arg2Result.symbol());
-            pushImopAfter(result, i);
-        }
-    } else {
-        // Arithmetic assignments
-
-        Imop::Type iType;
-        if (! getAssignBinImopType(e->type(), iType)) {
-            assert(false);  // shouldn't happen
-            result |= CGResult::ERROR_FATAL;
-            return result;
-        }
-
-        Imop * i = 0;
-        if (destSym->isArray()) {
-            if (eArg2->resultType()->isScalar()) {
-                Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
-                i = new Imop(e, Imop::ALLOC, rhsSym, arg2Result.symbol(), destSym->getSizeSym());
+            Imop * i = 0;
+            if (destSym->isArray()) {
+                i = new Imop(e, Imop::RELEASE, 0, destSym);
                 pushImopAfter(result, i);
-                i = new Imop(e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
-                pushImopAfter(result, i);
-                releaseTemporary(result, rhsSym);
-            }
-            else {
-                std::stringstream ss;
-                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
-                Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
-                Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
-                SymbolLabel * errLabel = m_st->label(err);
-                SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
 
-                dim_iterator
-                    di = dim_begin(arg2ResultSymbol),
-                       dj = dim_begin(destSym),
-                       de = dim_end(arg2ResultSymbol);
-                for (; di != de; ++ di, ++ dj) {
-                    SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
-
-                    i = new Imop(e, Imop::NE, temp_bool, *di, *dj);
-                    push_imop(i);
-
-                    i = new Imop(e, Imop::JT, errLabel, temp_bool);
-                    push_imop(i);
+                if (eArg2->resultType()->isScalar()) {
+                    i = new Imop(e, Imop::ALLOC, destSym, arg2Result.symbol(), destSym->getSizeSym());
+                }
+                else {
+                    i = new Imop(e, Imop::COPY, destSym, arg2Result.symbol(), destSym->getSizeSym());
                 }
 
-                push_imop(jmp);
-                result.addToNextList(jmp);
-                push_imop(err);
-                i = new Imop(e, iType, destSym, destSym, arg2Result.symbol(), destSym->getSizeSym());
+                pushImopAfter(result, i);
+            } else {
+                i = new Imop(e, Imop::ASSIGN, destSym, arg2Result.symbol());
+                pushImopAfter(result, i);
+            }
+        } else {
+            // Arithmetic assignments
+
+            Imop::Type iType;
+            if (! getAssignBinImopType(e->type(), iType)) {
+                assert(false);  // shouldn't happen
+                result |= CGResult::ERROR_FATAL;
+                return result;
+            }
+
+            Imop * i = 0;
+            if (destSym->isArray()) {
+                if (eArg2->resultType()->isScalar()) {
+                    Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
+                    i = new Imop(e, Imop::ALLOC, rhsSym, arg2Result.symbol(), destSym->getSizeSym());
+                    pushImopAfter(result, i);
+                    i = new Imop(e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
+                    pushImopAfter(result, i);
+                    releaseTemporary(result, rhsSym);
+                }
+                else {
+                    std::stringstream ss;
+                    ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
+                    Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
+                    Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
+                    SymbolLabel * errLabel = m_st->label(err);
+                    SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
+
+                    dim_iterator
+                        di = dim_begin(arg2ResultSymbol),
+                           dj = dim_begin(destSym),
+                           de = dim_end(arg2ResultSymbol);
+                    for (; di != de; ++ di, ++ dj) {
+                        SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
+
+                        i = new Imop(e, Imop::NE, temp_bool, *di, *dj);
+                        push_imop(i);
+
+                        i = new Imop(e, Imop::JT, errLabel, temp_bool);
+                        push_imop(i);
+                    }
+
+                    push_imop(jmp);
+                    result.addToNextList(jmp);
+                    push_imop(err);
+                    i = new Imop(e, iType, destSym, destSym, arg2Result.symbol(), destSym->getSizeSym());
+                    pushImopAfter(result, i);
+                }
+            }
+            else {
+                i = new Imop(e, iType, destSym, destSym, arg2Result.symbol());
                 pushImopAfter(result, i);
             }
         }
-        else {
-            i = new Imop(e, iType, destSym, destSym, arg2Result.symbol());
-            pushImopAfter(result, i);
-        }
+    }
+
+    // x.field = e
+    if (lval->isSelection ()) {
+        assert (false && "TODO: implement code gen for selection assignments!");
     }
 
     return result;

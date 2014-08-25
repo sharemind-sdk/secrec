@@ -258,6 +258,14 @@ public: /* Methods: */
         : TreeNode(NODE_LVALUE, loc)
     { }
 
+    bool isIdentifier () const;
+    bool isSelection () const;
+    bool isIndex () const;
+
+    TreeNodeIdentifier* identifier () const;
+    TreeNodeExprSelection* selection () const;
+    TreeNodeExprIndex* index () const;
+
 protected:
     virtual TreeNode* cloneV () const {
         return new TreeNodeLValue (m_location);
@@ -788,9 +796,8 @@ public: /* Methods: */
     virtual CGResult codeGenWith (CodeGen& cg);
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
-    TreeNode* slice () const;
-    TreeNodeIdentifier* identifier () const;
     TreeNodeExpr* rightHandSide () const;
+    TreeNodeLValue* leftHandSide () const;
 
 protected:
 
@@ -1358,6 +1365,8 @@ public: /* Methods: */
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
 
+    TreeNodeLValue* lvalue () const;
+
 protected:
 
     virtual TreeNode* cloneV () const {
@@ -1379,6 +1388,8 @@ public: /* Methods: */
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
+
+    TreeNodeLValue* lvalue () const;
 
 protected:
 

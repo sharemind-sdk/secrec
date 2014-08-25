@@ -93,52 +93,83 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
 
     assert(root->children().size() == 1);
     assert((root->children().at(0)->type() == NODE_LVALUE) != 0x0);
-    TreeNode * lval = root->children().at(0);
-    assert(lval->children().size() <= 2);
-    assert(dynamic_cast<TreeNodeIdentifier * >(lval->children().at(0)) != 0);
-
-    TreeNodeIdentifier * e =
-        static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    SecreC::Type * eType = NULL;
-    if (SymbolSymbol* sym = getSymbol (e))
-        eType = sym->secrecType ();
-    else
-        return E_TYPE;
-
-    SecrecDimType destDim = eType->secrecDimType();
-    if (lval->children().size() == 2) {
-        TCGUARD (checkIndices(lval->children().at(1), destDim));
-    }
-
+    TreeNodeLValue * lval = static_cast<TreeNodeLValue*>(root->children().at(0));
     const char * m1 = isPrefix ? "Prefix " : "Postfix ";
     const char * m2 = isInc ? "increment" : "decrement";
 
-    // check that argument is a variable
-    if (e->type() == NODE_EXPR_RVARIABLE) {
-        m_log.fatalInProc(root) << m1 << m2
-            << " expects variable at " << root->location() << '.';
-        return E_TYPE;
+    if (lval->isIdentifier ()) {
+        TreeNodeIdentifier * e = lval->identifier ();
+        SecreC::Type * eType = NULL;
+        if (SymbolSymbol* sym = getSymbol (e))
+            eType = sym->secrecType ();
+        else
+            return E_TYPE;
+
+        // increment or decrement of void
+        if (eType->isVoid()) {
+            m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
+                << root->location() << '.';
+            return E_TYPE;
+        }
+
+        // check that we are operating on numeric types
+        if (!isNumericDataType(eType->secrecDataType())) {
+            m_log.fatalInProc(root) << m1 << m2
+                << " operator expects numeric type, given "
+                << *eType << " at " << root->location() << '.';
+            return E_TYPE;
+        }
+
+        root->setResultType(eType);
+        return OK;
     }
-    // increment or decrement of void
-    if (eType->isVoid()) {
-        m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
-            << root->location() << '.';
+
+    if (lval->isIndex ()) {
+        TreeNodeExprIndex* lvalIndex = lval->index ();
+        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
+        TreeNodeIdentifier * e =
+            static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+        SecreC::Type * eType = NULL;
+        if (SymbolSymbol* sym = getSymbol (e))
+            eType = sym->secrecType ();
+        else
+            return E_TYPE;
+
+        SecrecDimType destDim = eType->secrecDimType();
+        TCGUARD (checkIndices(lvalIndex->indices (), destDim));
+
+        // check that argument is a variable
+        if (e->type() == NODE_EXPR_RVARIABLE) {
+            m_log.fatalInProc(root) << m1 << m2
+                << " expects variable at " << root->location() << '.';
+            return E_TYPE;
+        }
+        // increment or decrement of void
+        if (eType->isVoid()) {
+            m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
+                << root->location() << '.';
+            return E_TYPE;
+        }
+
+        // check that we are operating on numeric types
+        if (!isNumericDataType(eType->secrecDataType())) {
+            m_log.fatalInProc(root) << m1 << m2
+                << " operator expects numeric type, given "
+                << *eType << " at " << root->location() << '.';
+            return E_TYPE;
+        }
+
+        root->setResultType(eType);
+        return OK;
+    }
+
+    if (lval->isSelection ()) {
+        assert (false && "TODO: implement checkPostfixPrefixIncDec for selection lval");
         return E_TYPE;
     }
 
-    // check that we are operating on numeric types
-    if (!isNumericDataType(eType->secrecDataType())) {
-        m_log.fatalInProc(root) << m1 << m2
-            << " operator expects numeric type, given "
-            << *eType << " at " << root->location() << '.';
-        return E_TYPE;
-    }
+    return E_TYPE;
 
-    root->setResultType(TypeBasic::get(m_context,
-                eType->secrecSecType(),
-                eType->secrecDataType(),
-                eType->secrecDimType()));
-    return OK;
 }
 
 /*******************************************************************************
@@ -177,27 +208,51 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
         return OK;
 
     // Get symbol for l-value:
-    TreeNodeIdentifier * id = e->identifier();
-    SymbolSymbol * dest = getSymbol(id);
-    if (dest == 0)
-        return E_TYPE;
+    TreeNodeLValue* lval = e->leftHandSide ();
+    TypeNonVoid * varType = 0;
+    SecrecDimType destDim = 0;
 
-    assert(dest->secrecType()->isVoid() == false);
-    assert(dynamic_cast<TypeNonVoid *>(dest->secrecType()) != 0);
-    TypeNonVoid * varType = static_cast<TypeNonVoid *>(dest->secrecType());
-    SecrecDimType destDim = varType->secrecDimType();
+    if (lval->isIdentifier ()) {
+        TreeNodeIdentifier * id = lval->identifier();
+        SymbolSymbol * dest = getSymbol(id);
+        if (dest == 0)
+            return E_TYPE;
 
+        assert(dest->secrecType()->isVoid() == false);
+        assert(dynamic_cast<TypeNonVoid *>(dest->secrecType()) != 0);
+        varType = static_cast<TypeNonVoid *>(dest->secrecType());
+        destDim = varType->secrecDimType();
+    }
 
-    // Check the slice:
-    if (e->slice()) {
-        if (e->slice()->children().size() != destDim) {
+    if (lval->isIndex ()) {
+        TreeNodeExprIndex* lvalIndex = lval->index ();
+        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
+        TreeNodeIdentifier* id = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+        SymbolSymbol * dest = getSymbol(id);
+        if (dest == 0)
+            return E_TYPE;
+
+        assert(dest->secrecType()->isVoid() == false);
+        assert(dynamic_cast<TypeNonVoid *>(dest->secrecType()) != 0);
+        varType = static_cast<TypeNonVoid *>(dest->secrecType());
+        destDim = varType->secrecDimType();
+
+        // Check the slice:
+        TreeNode* slice = lvalIndex->indices();
+        assert (slice != 0);
+        if (slice->children().size() != destDim) {
             m_log.fatalInProc(e) << "Incorrect number of indices at "
                                  << e->location()
                                  << ".";
             return E_TYPE;
         }
 
-        TCGUARD (checkIndices(e->slice(), destDim));
+        TCGUARD (checkIndices(slice, destDim));
+    }
+
+    if (lval->isSelection ()) {
+        assert (false && "TODO: implement type checking of selection assignment!");
+        return E_TYPE;
     }
 
     // Calculate type of r-value:

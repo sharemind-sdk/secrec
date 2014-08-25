@@ -447,6 +447,24 @@ TreeNodeSeqView<TreeNodeExpr> TreeNodeExprArrayConstructor::expressions () const
 }
 
 /*******************************************************************************
+  TreeNodeExprPrefix
+*******************************************************************************/
+
+TreeNodeLValue* TreeNodeExprPrefix::lvalue () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeLValue>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeExprPostfix
+*******************************************************************************/
+
+TreeNodeLValue* TreeNodeExprPostfix::lvalue () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeLValue>(this, 0);
+}
+
+/*******************************************************************************
   TreeNodeExprUnary
 *******************************************************************************/
 
@@ -703,26 +721,66 @@ TreeNodeExpr* TreeNodeExprTernary::falseBranch () const {
 }
 
 /*******************************************************************************
+  TreeNodeLValue
+*******************************************************************************/
+
+
+bool TreeNodeLValue::isIdentifier () const {
+    assert(children().size() == 1);
+    return children ().at (0)->type () == NODE_EXPR_RVARIABLE;
+}
+
+bool TreeNodeLValue::isSelection () const {
+    assert(children().size() == 1);
+    return children ().at (0)->type () == NODE_EXPR_SELECTION;
+}
+
+bool TreeNodeLValue::isIndex () const {
+    assert(children().size() == 1);
+    return children ().at (0)->type () == NODE_EXPR_INDEX;
+}
+
+TreeNodeIdentifier* TreeNodeLValue::identifier () const {
+    assert(children().size() == 1);
+    return childAt<TreeNodeExprRVariable>(this, 0)->identifier ();
+}
+
+TreeNodeExprSelection* TreeNodeLValue::selection () const {
+    assert(children().size() == 1);
+    return childAt<TreeNodeExprSelection>(this, 0);
+}
+
+TreeNodeExprIndex* TreeNodeLValue::index () const {
+    assert(children().size() == 1);
+    return childAt<TreeNodeExprIndex>(this, 0);
+}
+
+/*******************************************************************************
   TreeNodeExprAssign
 *******************************************************************************/
 
-TreeNode* TreeNodeExprAssign::slice () const {
-    assert (children ().size () == 2);
-    TreeNode *e1 = children().at(0);
-    if (e1->children().size() == 2) {
-        return e1->children ().at (1);
-    }
+//TreeNode* TreeNodeExprAssign::slice () const {
+//    assert (children ().size () == 2);
+//    TreeNode *e1 = children().at(0);
+//    if (e1->children().size() == 2) {
+//        return e1->children ().at (1);
+//    }
 
-    return 0;
-}
+//    return 0;
+//}
 
-TreeNodeIdentifier* TreeNodeExprAssign::identifier () const {
-    assert (children ().size () == 2);
-    TreeNode *e1 = children().at(0);
-    assert(e1 != 0);
-    assert(e1->type() == NODE_LVALUE);
-    assert(e1->children().size() > 0 && e1->children().size() <= 2);
-    return childAt<TreeNodeIdentifier>(e1, 0);
+//TreeNodeIdentifier* TreeNodeExprAssign::identifier () const {
+//    assert (children ().size () == 2);
+//    TreeNode *e1 = children().at(0);
+//    assert(e1 != 0);
+//    assert(e1->type() == NODE_LVALUE);
+//    assert(e1->children().size() > 0 && e1->children().size() <= 2);
+//    return childAt<TreeNodeIdentifier>(e1, 0);
+//}
+
+TreeNodeLValue* TreeNodeExprAssign::leftHandSide () const {
+    assert(children().size() == 2);
+    return childAt<TreeNodeLValue>(this, 0);
 }
 
 TreeNodeExpr* TreeNodeExprAssign::rightHandSide () const {
