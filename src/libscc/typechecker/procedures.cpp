@@ -434,12 +434,23 @@ bool TypeChecker::unify (Instantiation& inst,
         if (argNodeTy->dataType ()->isVariable ()) {
             TreeNodeDataTypeVarF* dataVar = static_cast<TreeNodeDataTypeVarF*>(argNodeTy->dataType ());
             StringRef styId = dataVar->identifier ()->value ();
-            if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
+            SymbolDataType* symDataType = m_st->find<SYM_TYPE> (styId);
+            if (symDataType != NULL) {
+                assert (false && "TODO: Fix me! Compare resulting and expected user-defined types!");
                 return false;
+            }
+            else {
+                DataType* expectedDataType = DataTypePrimitive::get (getContext (), expectedTy->secrecDataType ());
+                if (! mapVariable (varMap, styId, expectedDataType))
+                    return false;
+            }
         }
-        else
-        if (expectedTy->secrecDataType () != argNodeTy->dataType ()->cachedType ()) {
-            return false;
+        else {
+            TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(argNodeTy->dataType ());
+            SecrecDataType secrecDataType = argDataType->secrecDataType ();
+            if (expectedTy->secrecDataType () != secrecDataType) {
+                return false;
+            }
         }
 
         // Verify dimensionality type:
@@ -476,11 +487,14 @@ bool TypeChecker::unify (Instantiation& inst,
             TreeNodeDataTypeF* dataType = retNodeTy->dataType ();
             if (dataType->isVariable ()) {
                 StringRef styId = static_cast<TreeNodeDataTypeVarF*>(dataType)->identifier ()->value ();
-                if (! mapVariable (varMap, styId, tyCxt.contextDataType ()))
+                DataTypePrimitive* dataType = DataTypePrimitive::get (getContext (), tyCxt.contextDataType ());
+                if (! mapVariable (varMap, styId, dataType))
                     return false;
             }
             else {
-                if (dataType->cachedType () != tyCxt.contextDataType ())
+                TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(dataType);
+                SecrecDataType secrecDataType = argDataType->secrecDataType ();
+                if (secrecDataType != tyCxt.contextDataType ())
                     return false;
             }
         }

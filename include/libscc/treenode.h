@@ -443,14 +443,14 @@ public: /* Methods: */
     inline TreeNodeDataTypeF (SecrecTreeNodeType type,
                               const Location & loc)
         : TreeNodeTypeF(type, loc)
-        , m_dataType (DATATYPE_UNDEFINED) {}
+        , m_dataType (NULL) {}
 
-    inline SecrecDataType cachedType () const { return m_dataType; }
-    inline void setCachedType (SecrecDataType dataType) { m_dataType = dataType; }
+    inline DataType* cachedType () const { return m_dataType; }
+    inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
     virtual void setTypeContext (TypeContext& cxt) const;
 
 private: /* Fields: */
-    SecrecDataType m_dataType;
+    DataType* m_dataType;
 };
 
 /******************************************************************
@@ -461,16 +461,23 @@ class TreeNodeDataTypeConstF: public TreeNodeDataTypeF {
 public: /* Methods: */
     inline TreeNodeDataTypeConstF (SecrecDataType dataType, const Location & loc)
         : TreeNodeDataTypeF (NODE_DATATYPE_CONST_F, loc)
-    { setCachedType (dataType); }
+        , m_secrecDataType (dataType)
+    { }
 
     virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    SecrecDataType secrecDataType () const { return m_secrecDataType; }
 
 protected:
     virtual bool printHelper(std::ostream & os) const;
     virtual void printXmlHelper (std::ostream & os) const;
     virtual TreeNode* cloneV () const {
-        return new TreeNodeDataTypeConstF (cachedType (), m_location);
+        TreeNodeDataTypeConstF* result = new TreeNodeDataTypeConstF (m_secrecDataType, m_location);
+        result->setCachedType (cachedType ());
+        return result;
     }
+
+private: /* Fields: */
+    const SecrecDataType m_secrecDataType;
 };
 
 /******************************************************************

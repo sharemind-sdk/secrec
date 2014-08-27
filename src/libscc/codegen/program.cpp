@@ -64,6 +64,16 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 }
 
 /*******************************************************************************
+  TreeNodeStructDecl
+*******************************************************************************/
+
+CGStmtResult CodeGen::cgStructDecl (TreeNodeStructDecl* decl) {
+    if (m_tyChecker->visit (decl))
+        return CGResult::ERROR_CONTINUE;
+    return CGResult::OK;
+}
+
+/*******************************************************************************
   TreeNodeProcDef
 *******************************************************************************/
 
@@ -219,6 +229,9 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             break;
         case NODE_IMPORT:
             append(result, cgImport(static_cast<TreeNodeImport *>(decl), mod));
+            break;
+        case NODE_STRUCT_DECL:
+            append(result, cgStructDecl(static_cast<TreeNodeStructDecl*>(decl)));
             break;
         default:
             /* Intentionally empty */

@@ -37,6 +37,9 @@ public: /* Types: */
     typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;
     typedef std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp> FloatConstantMap;
 
+    typedef std::map<std::pair<StringRef, std::vector<TypeBasic*> >, DataTypeStruct*> StructTypeMap;
+    typedef std::map<SecrecDataType, DataTypePrimitive*> PrimitiveTypeMap;
+
 public: /* Methods: */
 
     ContextImpl () { }
@@ -60,6 +63,8 @@ public: /* Fields: */
     TypeBasicMap          m_basicTypes;
     PublicSecType         m_pubSecType;
     PrivateSecTypeMap     m_privSecTypes;
+    PrimitiveTypeMap      m_primitiveTypes;
+    StructTypeMap         m_structTypes;
 
     /* All constants: */
     ConstantStringMap     m_stringLiterals;

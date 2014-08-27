@@ -187,6 +187,26 @@ bool TypeChecker::canPrintValue (Type* ty) {
     return true;
 }
 
+/*******************************************************************************
+  TreeNodeStructDecl
+*******************************************************************************/
 
+// TODO: move to different file
+TypeChecker::Status TypeChecker::visit(TreeNodeStructDecl* decl) {
+    TreeNodeIdentifier* id = decl->identifier ();
+    BOOST_FOREACH (Symbol* s, m_st->findAll (SYM_TYPE, id->value ())) {
+        m_log.fatal () << "Redeclaration of type \'" << id->value () << "\' at " << decl->location () << ".";
+        if (s->location ()) {
+            m_log.fatal () << "Previous declaration at " << *s->location () << ".";
+        }
+
+        return E_TYPE;
+    }
+
+    assert (false && "TODO: construct appropriate symbol!");
+    // SymbolDataType* symDataType = new SymbolDataType(id->value (), DATATYPE_INT64);
+    // m_st->appendSymbol (symDataType);
+    return OK;
+}
 
 } // namespace SecreC

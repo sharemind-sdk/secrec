@@ -193,6 +193,7 @@ public: /* Methods: */
     CGStmtResult cgKind (TreeNodeKind* kind);
     CGStmtResult cgImport (TreeNodeImport* imp, ModuleInfo* modContext);
     CGStmtResult cgProcDef (TreeNodeProcDef* def, SymbolTable* localScope);
+    CGStmtResult cgStructDecl (TreeNodeStructDecl* decl);
     /// \}
 
     /**

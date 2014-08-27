@@ -281,12 +281,12 @@ bool TreeNodeSecTypeF::printHelper (std::ostream & os) const {
 *******************************************************************************/
 
 bool TreeNodeDataTypeConstF::printHelper (std::ostream & os) const {
-    os << cachedType ();
+    os << SecrecFundDataTypeToString (secrecDataType ());
     return true;
 }
 
 void TreeNodeDataTypeConstF::printXmlHelper (std::ostream & os) const {
-    os << " type=\"" << SecrecFundDataTypeToString (cachedType ()) << "\"";
+    os << " type=\"" << *cachedType () << "\"";
 }
 
 /*******************************************************************************
@@ -381,7 +381,8 @@ void TreeNodeType::typeString(std::ostream& os) const {
 
     // Data type:
     if (! dataType ()->isVariable ()) {
-        os << SecrecFundDataTypeToString(dataType()->cachedType ());
+        TreeNodeDataTypeConstF* constDataType = static_cast<TreeNodeDataTypeConstF*>(dataType ());
+        os << SecrecFundDataTypeToString (constDataType->secrecDataType ());
     }
     else {
         TreeNodeDataTypeVarF* varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());

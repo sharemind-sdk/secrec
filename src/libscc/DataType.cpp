@@ -1,10 +1,12 @@
 #include "DataType.h"
 
-#include <sstream>
 #include "context.h"
 #include "context_impl.h"
 #include "misc.h"
 #include "symbol.h"
+
+#include <sstream>
+#include <boost/foreach.hpp>
 
 
 namespace SecreC {
@@ -57,6 +59,10 @@ CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
 }
 
 } // namespace anonymous
+
+/*******************************************************************************
+ SecrecDataType related operations
+*******************************************************************************/
 
 SecrecDimType upperDimType(SecrecDimType n, SecrecDimType m) {
     assert (n == 0 || m == 0 || n == m);
@@ -167,6 +173,52 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
     case DATATYPE_XOR_UINT64: return DATATYPE_UINT64;
     default:                  return dtype;
     }
+}
+
+/*******************************************************************************
+  DataTypePrimitive
+*******************************************************************************/
+
+void DataTypePrimitive::print (std::ostream& os) const {
+    os << SecrecFundDataTypeToString (m_dataType);
+}
+
+DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
+    typedef ContextImpl::PrimitiveTypeMap Map;
+    Map& map = cxt.pImpl ()->m_primitiveTypes;
+    const Map::key_type index (dataType);
+    Map::iterator i = map.find (index);
+    if (i == map.end ()) {
+        i = map.insert (i, Map::value_type (index, new DataTypePrimitive (dataType)));
+    }
+
+    return i->second;
+}
+
+/*******************************************************************************
+  DataTypeStruct
+*******************************************************************************/
+
+void DataTypeStruct::print (std::ostream& os) const {
+    os << "struct " << m_name;
+}
+
+DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name, const std::vector<DataTypeStruct::Field>& fields) {
+    typedef ContextImpl::StructTypeMap Map;
+    Map& map = cxt.pImpl ()->m_structTypes;
+    std::vector<TypeBasic*> types;
+    types.reserve (fields.size ());
+    BOOST_FOREACH (DataTypeStruct::Field field, fields) {
+        types.push_back (field.type);
+    }
+
+    const Map::key_type index (name, types);
+    Map::iterator i = map.find (index);
+    if (i == map.end ()) {
+        i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, fields)));
+    }
+
+    return i->second;
 }
 
 } // namespace SecreC

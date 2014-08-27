@@ -9,6 +9,7 @@
 #include "treenode_fwd.h"
 #include "StringRef.h"
 #include "symbol_fwd.h"
+#include "DataType.h"
 
 namespace SecreC {
 
@@ -123,34 +124,19 @@ private: /* Fields: */
 class SymbolDataType : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDataType (StringRef name, SecrecDataType dataType)
+    SymbolDataType (StringRef name, DataType* dataType)
         : SymbolTypeVariable (SYM_TYPE, name)
         , m_dataType (dataType)
     { }
 
-    inline SecrecDataType dataType () const { return m_dataType; }
+    inline DataType* dataType () const { return m_dataType; }
 
 protected:
     void print(std::ostream & os) const;
     void setTypeContext (TypeContext& cxt) const;
 
 private: /* Fields: */
-    SecrecDataType const m_dataType;
-};
-
-/*******************************************************************************
-  SymbolKind
-*******************************************************************************/
-
-class SymbolKind : public Symbol {
-public: /* Methods: */
-
-    SymbolKind(StringRef name)
-        : Symbol (SYM_KIND, name)
-    { }
-
-protected:
-    void print(std::ostream & os) const;
+    DataType* const m_dataType;
 };
 
 /*******************************************************************************
@@ -171,9 +157,23 @@ protected:
     void print(std::ostream & os) const;
     void setTypeContext (TypeContext& cxt) const;
 
-private:
-
+private: /* Fields: */
     SecurityType* const m_secType;
+};
+
+/*******************************************************************************
+  SymbolKind
+*******************************************************************************/
+
+class SymbolKind : public Symbol {
+public: /* Methods: */
+
+    SymbolKind(StringRef name)
+        : Symbol (SYM_KIND, name)
+    { }
+
+protected:
+    void print(std::ostream & os) const;
 };
 
 /*******************************************************************************

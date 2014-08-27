@@ -116,6 +116,7 @@ public: /* Methods: */
     Status visit(TreeNodeStringPartFragment * p);
     Status visit(TreeNodeStringPartIdentifier * p);
 
+    Status visit(TreeNodeStructDecl* decl);
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
     Status visit(TreeNodeLValue* lvalue);

@@ -118,7 +118,8 @@ void SymbolDataType::print (std::ostream& os) const {
 }
 
 void SymbolDataType::setTypeContext (TypeContext& cxt) const {
-    cxt.setContextDataType (dataType ());
+    // TODO! fix this
+    cxt.setContextDataType (static_cast<DataTypePrimitive*>(dataType ())->secrecDataType ());
 }
 
 /*******************************************************************************

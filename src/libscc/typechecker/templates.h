@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "StringRef.h"
 #include "treenode_fwd.h"
+#include "DataType.h"
 
 /**
  * This file contains functionality for template instantiation
@@ -68,7 +69,7 @@ public: /* Methods: */
         , un_secType (secType)
     { }
 
-    TemplateParameter (SecrecDataType dataType)
+    TemplateParameter (DataType* dataType)
         : m_kind (TV_DATA)
         , un_dataType (dataType)
     { }
@@ -83,7 +84,7 @@ public: /* Methods: */
         return un_secType;
     }
 
-    SecrecDataType dataType () const {
+    DataType* dataType () const {
         assert (m_kind == TV_DATA);
         return un_dataType;
     }
@@ -96,9 +97,9 @@ public: /* Methods: */
 private: /* Fields: */
     TypeVariableKind m_kind;
     union {
-        SecrecDimType   un_dimType;
-        SecurityType*   un_secType;
-        SecrecDataType  un_dataType;
+        SecrecDimType  un_dimType;
+        SecurityType*  un_secType;
+        DataType*      un_dataType;
     };
 };
 

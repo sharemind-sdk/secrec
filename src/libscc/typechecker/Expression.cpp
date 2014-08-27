@@ -294,7 +294,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
 
     TCGUARD (visit (root->dataType ()));
 
-    SecrecDataType resultingDType = root->dataType()->cachedType ();
+    // TODO: Fix me!
+    DataType* dataType = root->dataType()->cachedType ();;
+    SecrecDataType resultingDType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     TreeNodeExpr * subExpr = root->expression();
     subExpr->setContextSecType(root->contextSecType());
     subExpr->setContextDimType(root->contextDimType());
@@ -1127,8 +1129,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
     }
     else
     if (symTy != 0) {
-        p->setValue (ConstantString::get (getContext (),
-            SecrecFundDataTypeToString (symTy->dataType ())));
+        std::ostringstream os;
+        os << *symTy->dataType ();
+        p->setValue (ConstantString::get (getContext (), os.str ()));
     }
     else
     if (symSym != 0) {
