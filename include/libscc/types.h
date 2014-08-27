@@ -137,13 +137,20 @@ class TypeBasic : public TypeNonVoid {
 public: /* Methods: */
 
     inline SecurityType* secrecSecType() const { return m_secType; }
-    inline SecrecDataType secrecDataType() const { return m_dataType; }
     inline SecrecDimType secrecDimType() const { return m_dimType; }
+
+    // TODO: change return type to DataType*
+    inline SecrecDataType secrecDataType() const {
+        return static_cast<DataTypePrimitive*>(m_dataType)->secrecDataType ();
+    }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* get (Context& cxt, SecurityType* secType,
                            SecrecDataType dataType,
+                           SecrecDimType dimType = 0);
+    static TypeBasic* get (Context& cxt, SecurityType* secType,
+                           DataType* dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* getIndexType (Context& cxt);
     static TypeBasic* getPublicBoolType (Context& cxt);
@@ -151,7 +158,7 @@ public: /* Methods: */
 protected: /* Methods: */
 
     TypeBasic(SecurityType* secType,
-              SecrecDataType dataType,
+              DataType* dataType,
               SecrecDimType dim = 0)
         : TypeNonVoid (BASIC)
         , m_secType (secType)
@@ -164,7 +171,7 @@ protected: /* Methods: */
 
 private: /* Fields: */
     SecurityType*   const m_secType;
-    SecrecDataType  const m_dataType;
+    DataType*       const m_dataType;
     SecrecDimType   const m_dimType;
 };
 

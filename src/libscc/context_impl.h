@@ -31,7 +31,7 @@ public: /* Types: */
 
     typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
     typedef std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*> TypeProcMap;
-    typedef std::map<boost::tuple<SecurityType*, SecrecDataType, SecrecDimType>, TypeBasic*> TypeBasicMap;
+    typedef std::map<boost::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*> TypeBasicMap;
 
     typedef std::map<StringRef, ConstantString*> ConstantStringMap;
     typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;

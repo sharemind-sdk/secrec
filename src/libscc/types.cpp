@@ -69,6 +69,13 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
                            SecrecDataType dataType,
                            SecrecDimType dimType)
 {
+    return TypeBasic::get (cxt, secType, DataTypePrimitive::get (cxt, dataType), dimType);
+}
+
+TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
+                           DataType* dataType,
+                           SecrecDimType dimType)
+{
     typedef ContextImpl::TypeBasicMap Map;
     Map& map = cxt.pImpl ()->m_basicTypes;
     const Map::key_type index (secType, dataType, dimType);
