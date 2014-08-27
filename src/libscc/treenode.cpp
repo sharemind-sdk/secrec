@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <boost/foreach.hpp>
+#include <iostream>
 #include <sstream>
 
 #include "context.h"
