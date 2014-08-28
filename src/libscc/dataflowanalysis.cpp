@@ -155,13 +155,13 @@ DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
     boost::thread_group threads;
     BOOST_FOREACH (DataFlowAnalysis* a, m_as) {
         if (a->isForward ()) {
-            assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != 0);
+            assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != NULL);
             ForwardDataFlowAnalysis& fa = *static_cast<ForwardDataFlowAnalysis*>(a);
             threads.create_thread (ForwardAnalysisRunner (fa, pr));
         }
 
         if (a->isBackward ()) {
-            assert (dynamic_cast<BackwardDataFlowAnalysis*>(a) != 0);
+            assert (dynamic_cast<BackwardDataFlowAnalysis*>(a) != NULL);
             BackwardDataFlowAnalysis& ba = *static_cast<BackwardDataFlowAnalysis*>(a);
             threads.create_thread (BackwardAnalysisRunner (ba, pr));
         }

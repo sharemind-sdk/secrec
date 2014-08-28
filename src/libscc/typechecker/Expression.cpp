@@ -220,7 +220,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     // Get symbol for l-value:
     TreeNodeLValue* lval = e->leftHandSide ();
     TypeNonVoid * varType = NULL;
-    SecrecDimType destDim = NULL;
+    SecrecDimType destDim = 0;
 
     if (lval->isIdentifier ()) {
         TreeNodeIdentifier * id = lval->identifier();
@@ -561,7 +561,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
         }
     }
 
-    if (resDim == NULL) {
+    if (resDim == 0) {
         m_log.fatalInProc(root) << "Conversion from non-scalar to scalar at "
             << root->location() << '.';
         return E_TYPE;
@@ -597,7 +597,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprToString * root) {
         return E_TYPE;
     e->instantiateDataType(getContext());
     TypeNonVoid * tnv = static_cast<TypeNonVoid *>(e->resultType());
-    if (tnv->secrecDimType() != NULL
+    if (tnv->secrecDimType() != 0
             || tnv->secrecSecType()->isPrivate()
             || tnv->secrecDataType()->isString ()) {
         m_log.fatalInProc(root) << "Invalid argument passed to \"tostring\" expression at "

@@ -101,7 +101,7 @@ public: /* Methods: */
     void unlink () {
         CFGBase::unlink ();
         auto_unlink_hook::unlink();
-        m_proc = 0;
+        m_proc = NULL;
         m_dfn = 0;
         m_reachable = false;
     }

@@ -186,7 +186,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     // r = ALLOC def size (r = def)
     {
         Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-        Imop * initImop = 0;
+        Imop * initImop = NULL;
         if (!isScalar) {
             initImop = new Imop(e, Imop::ALLOC, resSym, def, resSym->getSizeSym());
         }
@@ -584,7 +584,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
 
     if (!eArg->resultType()->isScalar()) {
         iType = Imop::COPY;
-        assert(dynamic_cast<SymbolSymbol *>(rhs) != 0);
+        assert(dynamic_cast<SymbolSymbol *>(rhs) != NULL);
         // Check that new and old sizes are equal:
         Symbol * sizeSymbol = static_cast<SymbolSymbol *>(rhs)->getSizeSym();
         SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
@@ -719,7 +719,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     Symbol * e2result = arg2Result.symbol();
 
     // Implicitly convert scalar to array if needed:
-    Imop * jmp = 0;
+    Imop * jmp = NULL;
     if (eArg1->resultType()->secrecDimType() > eArg2->resultType()->secrecDimType()) {
         SymbolSymbol * tmpe1 = static_cast<SymbolSymbol *>(e1result);
         SymbolSymbol * tmpe2 = m_st->appendTemporary(static_cast<TypeNonVoid *>(eArg1->resultType()));
@@ -802,7 +802,7 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
     case NODE_EXPR_BINARY_LAND: // fall through
     case NODE_EXPR_BINARY_LOR:
         assert(!eArg1->resultType()->isVoid());
-        assert(dynamic_cast<TNV *>(eArg1->resultType()) != 0);
+        assert(dynamic_cast<TNV *>(eArg1->resultType()) != NULL);
 
         /*
            If first sub-expression is public, then generate short-circuit
@@ -1038,11 +1038,11 @@ CGResult CodeGen::cgExprDomainID(TreeNodeExprDomainID * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    assert(dynamic_cast<TypeNonVoid *>(e->resultType()) != 0);
+    assert(dynamic_cast<TypeNonVoid *>(e->resultType()) != NULL);
     TypeNonVoid * resultType = static_cast<TypeNonVoid *>(e->resultType());
     SymbolSymbol * t = m_st->appendTemporary(resultType);
     Symbol * s = findIdentifier (SYM_DOMAIN, e->securityType()->identifier());
-    if (s == 0 || s->symbolType() != SYM_DOMAIN) {
+    if (s == NULL || s->symbolType() != SYM_DOMAIN) {
         assert(false && "ICE: Type checker must guarantee that!");
         return CGResult::ERROR_FATAL;
     }
@@ -1495,7 +1495,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         for (; di != de; ++ di, ++ dj, ++ dk) {
             SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
 
-            Imop * i = 0;
+            Imop * i = NULL;
 
             i = new Imop(e, Imop::NE, temp_bool, *di, *dj);
             pushImopAfter(result, i);

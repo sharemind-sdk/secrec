@@ -150,7 +150,7 @@ TypeProc* TypeProc::get (Context& cxt,
                          const std::vector<TypeBasic*>& params,
                          Type* returnType)
 {
-    if (returnType == 0)
+    if (returnType == NULL)
         return TypeProc::get (cxt, params, TypeVoid::get (cxt));
 
     typedef ContextImpl::TypeProcMap Map;

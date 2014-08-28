@@ -245,7 +245,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 }
             }
 
-            Imop * i = 0;
+            Imop * i = NULL;
             if (destSym->isArray()) {
                 i = new Imop(e, Imop::RELEASE, 0, destSym);
                 pushImopAfter(result, i);
@@ -272,7 +272,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 return result;
             }
 
-            Imop * i = 0;
+            Imop * i = NULL;
             if (destSym->isArray()) {
                 if (eArg2->resultType()->isScalar()) {
                     Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());

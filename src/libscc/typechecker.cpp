@@ -36,7 +36,7 @@ bool TypeChecker::getForInstantiation (InstanceInfo& info) {
 
 Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (type, id->value ());
-    if (s == 0) {
+    if (s == NULL) {
         m_log.fatalInProc(id) << "Identifier '" << id->value()
                               << "' at " << id->location()
                               << " not in scope.";
@@ -47,7 +47,7 @@ Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifi
 
 SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     SymbolSymbol *s = m_st->find<SYM_SYMBOL>(id->value ());
-    if (s == 0) {
+    if (s == NULL) {
         m_log.fatalInProc(id) << "Undeclared identifier '" << id->value ()
                               << "' at " << id->location() << '.';
         return 0;
@@ -60,7 +60,7 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
 TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
                                              SecurityType * need)
 {
-    if (need == 0)
+    if (need == NULL)
         return child;
 
     SecurityType * const haveSecType = child->resultType()->secrecSecType();
@@ -109,7 +109,7 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
 }
 
 TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
-    assert (e != 0);
+    assert (e != NULL);
     if (! e->haveResultType ()) {
         e->setContextSecType (PublicSecType::get (getContext ()));
         e->setContextDataType (DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
@@ -146,7 +146,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
                 continue;
             }
 
-            assert (dynamic_cast<TreeNodeExpr*>(j) != 0);
+            assert (dynamic_cast<TreeNodeExpr*>(j) != NULL);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
             e->setContextIndexType (getContext ());
             TCGUARD (visitExpr(e));

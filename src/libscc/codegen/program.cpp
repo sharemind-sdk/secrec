@@ -26,7 +26,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
     const TreeNodeIdentifier * id = kind->identifier ();
     SymbolTable * st = m_st->globalScope(); // kinds live in global scope
 
-    if (findIdentifier (SYM_KIND, id) != 0) {
+    if (findIdentifier (SYM_KIND, id) != NULL) {
         m_log.error() << "Redefinition of kind '" << id->value()
                       << "' at " << kind->location() << '.';
         return CGResult::ERROR_CONTINUE;
@@ -45,13 +45,13 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
     const TreeNodeIdentifier * idKind = dom->kindIdentifier ();
     SymbolTable * st = m_st->globalScope();
     SymbolKind * kind = static_cast<SymbolKind *>(findIdentifier (SYM_KIND, idKind));
-    if (kind == 0) {
+    if (kind == NULL) {
         m_log.error() << "Undefined domain kind '" << idKind->value ()
                       << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
-    if (findIdentifier (SYM_DOMAIN, idDomain) != 0) {
+    if (findIdentifier (SYM_DOMAIN, idDomain) != NULL) {
         m_log.error() << "Redeclaration of domain '" << idDomain->value()
                       << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
@@ -94,7 +94,7 @@ struct ScopedSetSymbolTable {
 
 CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
-    assert(def != 0);
+    assert(def != NULL);
 
     if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
@@ -133,7 +133,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     popScope();
 
     assert(bodyResult.flags() != 0x0);
-    assert((bodyResult.flags() & ~CGStmtResult::MASK) == 0);
+    assert((bodyResult.flags() & ~CGStmtResult::MASK) == 0x0);
     assert(bodyResult.breakList().empty());
     assert(bodyResult.continueList().empty());
 
@@ -256,7 +256,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             break;
         }
         case NODE_TEMPLATE_DECL: {
-            assert(dynamic_cast<TreeNodeTemplate *>(decl) != 0);
+            assert(dynamic_cast<TreeNodeTemplate *>(decl) != NULL);
             TreeNodeTemplate * templ = static_cast<TreeNodeTemplate *>(decl);
             templ->setContainingModule(*mod);
             if (m_tyChecker->visit(templ) != TypeChecker::OK) {
@@ -289,7 +289,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
             return CGResult::ERROR_FATAL;
         }
 
-        assert(newMod.get() == 0);
+        assert(newMod.get() == NULL);
     }
 
     pushComment("Start of globals:");
@@ -332,7 +332,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
     ScopedStateUse use(*this, cgState);  // we need to look in main module
     SymbolProcedure * mainProc = m_tyChecker->mainProcedure();
-    if (mainProc == 0) {
+    if (mainProc == NULL) {
         result |= CGResult::ERROR_CONTINUE;
         return result;
     }
@@ -349,7 +349,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
 CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext) {
     ModuleInfo * mod = m_modules.findModule(import->name().str ());
-    if (mod == 0) {
+    if (mod == NULL) {
         m_log.fatal() << "Module \"" << import->name() << "\" not found within search path.";
         m_log.fatal() << "Error at " << import->location() << '.';
         return CGResult::ERROR_CONTINUE;

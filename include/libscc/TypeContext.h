@@ -64,14 +64,14 @@ public: /* Methods: */
     }
 
     void setContext (const TypeContext* cxt) {
-        assert (cxt != 0);
+        assert (cxt != NULL);
         m_contextSecType = cxt->m_contextSecType;
         m_contextDataType = cxt->m_contextDataType;
         m_contextDimType = cxt->m_contextDimType;
     }
 
     void setContext (TypeNonVoid* ty) {
-        assert (ty != 0);
+        assert (ty != NULL);
         setContextDataType (ty->secrecDataType ());
         setContextSecType (ty->secrecSecType ());
         setContextDimType (ty->secrecDimType ());

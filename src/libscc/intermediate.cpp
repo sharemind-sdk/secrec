@@ -14,7 +14,7 @@ namespace SecreC {
 
 TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
     int errorCode = 1;
-    TreeNodeModule * parseTree = 0;
+    TreeNodeModule * parseTree = NULL;
     StringTable& table = stringTable ();
     m_status = OK;
 
@@ -43,7 +43,7 @@ TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
 }
 
 void ICode::compile (TreeNodeModule *mod) {
-    assert (mod != 0);
+    assert (mod != NULL);
     ICodeList code;
     CodeGen cg (code, *this);
     if (cg.cgMain(mod).status() != CGResult::OK) {

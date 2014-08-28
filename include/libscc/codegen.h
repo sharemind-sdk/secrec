@@ -96,7 +96,7 @@ protected:
         m_jumpStack.push_back (temp);
     }
 
-    bool isTopNop () const { return m_jumpStack.back ().test == 0; }
+    bool isTopNop () const { return m_jumpStack.back ().test == NULL; }
     bool empty () const { return m_jumpStack.empty (); }
     LoopCheck top () const { return m_jumpStack.back (); }
     void pop () { return m_jumpStack.pop_back (); }
@@ -276,12 +276,12 @@ public: /* Methods: */
 
     /// Memory management
     /// \{
-    void allocTemporaryResult (CGResult& result, Symbol* val = 0);
-    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = 0);
+    void allocTemporaryResult (CGResult& result, Symbol* val = NULL);
+    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = NULL);
     void releaseResource (CGResult& result, Symbol* sym);
     void releaseTemporary (CGResult& result, Symbol* sym);
     void releaseScopeVariables (CGResult& result);
-    void releaseProcVariables (CGResult& result, Symbol* ex = 0);
+    void releaseProcVariables (CGResult& result, Symbol* ex = NULL);
     void releaseAllVariables (CGResult& result);
     /// \}
 

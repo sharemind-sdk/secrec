@@ -61,7 +61,7 @@ void CodeGen::popScope() {
 }
 
 void CodeGen::pushImopAfter(CGResult & result, Imop * imop) {
-    assert(imop != 0);
+    assert(imop != NULL);
     result.patchFirstImop(imop);
     if (!result.nextList().empty())
         result.patchNextList(m_st->label(imop));
@@ -116,12 +116,12 @@ Imop * CodeGen::pushComment(StringRef comment) {
 }
 
 Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
-    assert(sym != 0);
+    assert(sym != NULL);
     Symbol * sizeSym = indexConstant(val);
     if (sym->symbolType() == SYM_SYMBOL) {
-        assert(dynamic_cast<SymbolSymbol *>(sym) != 0);
+        assert(dynamic_cast<SymbolSymbol *>(sym) != NULL);
         SymbolSymbol * symsym = static_cast<SymbolSymbol *>(sym);
-        if (symsym->getSizeSym() != 0) {
+        if (symsym->getSizeSym() != NULL) {
             sizeSym = symsym->getSizeSym();
         }
     }
@@ -143,9 +143,9 @@ void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
         return;
     }
 
-    assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != 0);
+    assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != NULL);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(result.symbol());
-    if (val == 0) {
+    if (val == NULL) {
         val = defaultConstant(getContext(), sym->secrecType()->secrecDataType());
     }
 
@@ -155,11 +155,11 @@ void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
 
 void CodeGen::initSymbol(CGResult & result, Symbol * sym, Symbol * def) {
     TypeNonVoid * tnv = sym->secrecType();
-    if (def == 0) {
+    if (def == NULL) {
         def = defaultConstant(getContext(), tnv->secrecDataType());
     }
 
-    Imop * i = 0;
+    Imop * i = NULL;
     if (tnv->secrecDimType() > 0)
         i = new Imop(m_node, Imop::ALLOC, sym, def, indexConstant(0));
     else if (tnv->secrecSecType()->isPrivate()) {
@@ -198,9 +198,9 @@ void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
 }
 
 void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
-    assert(sym != 0);
+    assert(sym != NULL);
     if (sym->symbolType() == SYM_SYMBOL) {
-        assert(dynamic_cast<SymbolSymbol *>(sym) != 0);
+        assert(dynamic_cast<SymbolSymbol *>(sym) != NULL);
         SymbolSymbol * ssym = static_cast<SymbolSymbol *>(sym);
         if (ssym->isTemporary()) {
             releaseResource(result, ssym);
@@ -209,9 +209,9 @@ void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
 }
 
 void CodeGen::codeGenSize(CGResult & result) {
-    assert(result.symbol() != 0);
-    SymbolSymbol * resSym = 0;
-    if ((resSym = dynamic_cast<SymbolSymbol *>(result.symbol())) != 0) {
+    assert(result.symbol() != NULL);
+    SymbolSymbol * resSym = NULL;
+    if ((resSym = dynamic_cast<SymbolSymbol *>(result.symbol())) != NULL) {
         Symbol * size = resSym->getSizeSym();
         if (size == 0) return;
         Symbol * one = indexConstant(1);
@@ -226,12 +226,12 @@ void CodeGen::codeGenSize(CGResult & result) {
 }
 
 void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
-    assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != 0);
-    assert(dynamic_cast<SymbolSymbol *>(tmp) != 0);
+    assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != NULL);
+    assert(dynamic_cast<SymbolSymbol *>(tmp) != NULL);
     SymbolSymbol * resSym = static_cast<SymbolSymbol *>(result.symbol());
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     dim_iterator dj = dim_begin(resSym);
-    Imop * i = 0;
+    Imop * i = NULL;
 
     for (dim_iterator di(dim_begin(sym)); di != dim_end(sym); ++ di, ++ dj) {
         assert(dj != dim_end(resSym));
@@ -239,7 +239,7 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
         pushImopAfter(result, i);
     }
 
-    if (sym->getSizeSym() != 0) {
+    if (sym->getSizeSym() != NULL) {
         i = new Imop(m_node, Imop::ASSIGN, resSym->getSizeSym(), sym->getSizeSym());
         pushImopAfter(result, i);
     }
@@ -280,7 +280,7 @@ CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
         return result;
     }
 
-    assert(dynamic_cast<SymbolSymbol *>(tmp) != 0);
+    assert(dynamic_cast<SymbolSymbol *>(tmp) != NULL);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     strideInfo.clear();
     strideInfo.reserve(n);
@@ -305,7 +305,7 @@ CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
 CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
     assert(loopInfo.empty());
     CGResult result;
-    assert(dynamic_cast<SymbolSymbol *>(tmp) != 0);
+    assert(dynamic_cast<SymbolSymbol *>(tmp) != NULL);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     Symbol * zero = indexConstant(0);
     TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
@@ -374,7 +374,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv)
 
 CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
     CGResult result;
-    Imop * prevJump = 0;
+    Imop * prevJump = NULL;
     Symbol * one = indexConstant(1);
 
     while (! loopInfo.empty ()) {
@@ -384,7 +384,7 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
             Imop * i = new Imop(m_node, Imop::ADD, check.index, check.index, one);
             push_imop(i);
             result.patchFirstImop(i);
-            if (prevJump != 0) {
+            if (prevJump != NULL) {
                 prevJump->setDest(m_st->label(i));
             }
 
@@ -398,7 +398,7 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
         loopInfo.pop ();
     }
 
-    if (prevJump != 0) {
+    if (prevJump != NULL) {
         result.addToNextList(prevJump);
     }
 
@@ -408,10 +408,10 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
 CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNode * node) {
     typedef SubscriptInfo::SPV SPV;
 
-    assert(node != 0);
-    assert(tmp != 0);
+    assert(node != NULL);
+    assert(tmp != NULL);
     assert(node->type() == NODE_SUBSCRIPT);
-    assert(dynamic_cast<SymbolSymbol *>(tmp) != 0);
+    assert(dynamic_cast<SymbolSymbol *>(tmp) != NULL);
 
     SubscriptInfo::SliceIndices & m_slices = subInfo.m_slices;
     SubscriptInfo::SPV & m_spv = subInfo.m_spv;
@@ -457,7 +457,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
             m_slices.push_back(count);
         }
         else {
-            r_hi = 0;
+            r_hi = NULL;
         }
 
         m_spv.push_back (std::make_pair (r_lo, r_hi));
@@ -482,9 +482,9 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
             Symbol * s_lo = it->first;
             Symbol * s_hi = it->second;
             Symbol * d = *dit;
-            Imop * i = 0;
+            Imop * i = NULL;
 
-            if (s_hi == 0) {
+            if (s_hi == NULL) {
                 i = new Imop(m_node, Imop::GE, temp_bool, s_lo, d);
                 pushImopAfter(result, i);
 

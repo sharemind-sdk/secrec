@@ -183,7 +183,7 @@ private:
      * Raises error if multiple matches are found. If no matches are found
      * returns \a OK, and sets \a symProc to \a NULL.
      *
-     * \pre argTypes != 0
+     * \pre argTypes != NULL
      * \param[in] name name of the procedure/template
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found

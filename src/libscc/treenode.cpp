@@ -20,7 +20,7 @@ namespace /* anonymous */ {
 template <class T >
 T * childAt(const TreeNode * node, size_t i) {
     assert(i < node->children().size());
-    assert(dynamic_cast<T *>(node->children().at(i)) != 0);
+    assert(dynamic_cast<T *>(node->children().at(i)) != NULL);
     return static_cast<T *>(node->children().at(i));
 }
 
@@ -49,7 +49,7 @@ TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
 
 TreeNode::~TreeNode() {
     BOOST_FOREACH (TreeNode * child, m_children) {
-        assert(child != 0);
+        assert(child != NULL);
         if (child->m_parent == this) {
             delete child; // that's kinda sad
         }
@@ -71,15 +71,15 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
 }
 
 TreeNodeProcDef * TreeNode::containingProcedure() const {
-    if (m_procedure != 0) return m_procedure;
-    if (m_parent != 0) {
+    if (m_procedure != NULL) return m_procedure;
+    if (m_parent != NULL) {
         return (m_procedure = m_parent->containingProcedure());
     }
     return 0;
 }
 
 void TreeNode::appendChild(TreeNode * child) {
-    assert(child != 0);
+    assert(child != NULL);
     m_children.push_back(child);
     child->resetParent(this);
 }
@@ -263,8 +263,8 @@ TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
 *******************************************************************************/
 
 void TreeNodeSecTypeF::setCachedType(SecurityType * ty) {
-    assert(m_cachedType == 0);
-    assert(ty != 0);
+    assert(m_cachedType == NULL);
+    assert(ty != NULL);
     m_cachedType = ty;
 }
 
@@ -333,7 +333,7 @@ void TreeNodeDimTypeVarF::printXmlHelper (std::ostream & os) const {
 *******************************************************************************/
 
 SecreC::Type * TreeNodeType::secrecType() const {
-    assert(m_cachedType != 0);
+    assert(m_cachedType != NULL);
     return m_cachedType;
 }
 
@@ -416,24 +416,24 @@ std::string OverloadableOperator::operatorName() const {
 *******************************************************************************/
 
 bool TreeNodeExpr::havePublicBoolType() const {
-    assert(m_resultType != 0);
+    assert(m_resultType != NULL);
     return sameDataTypes (m_resultType->secrecDataType(), DATATYPE_BOOL)
            && m_resultType->secrecSecType()->isPublic()
            && m_resultType->isScalar();
 }
 
 SecreC::Type * TreeNodeExpr::resultType() const {
-    assert(m_resultType != 0);
+    assert(m_resultType != NULL);
     return m_resultType;
 }
 
 void TreeNodeExpr::setResultType(SecreC::Type * type) {
-    assert(m_resultType == 0);
+    assert(m_resultType == NULL);
     m_resultType = type;
 }
 
 void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
-    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != 0);
+    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != NULL);
     m_resultType = TypeBasic::get(cxt,
             m_resultType->secrecSecType(),
             dType,
@@ -760,25 +760,6 @@ TreeNodeExprIndex* TreeNodeLValue::index () const {
 /*******************************************************************************
   TreeNodeExprAssign
 *******************************************************************************/
-
-//TreeNode* TreeNodeExprAssign::slice () const {
-//    assert (children ().size () == 2);
-//    TreeNode *e1 = children().at(0);
-//    if (e1->children().size() == 2) {
-//        return e1->children ().at (1);
-//    }
-
-//    return 0;
-//}
-
-//TreeNodeIdentifier* TreeNodeExprAssign::identifier () const {
-//    assert (children ().size () == 2);
-//    TreeNode *e1 = children().at(0);
-//    assert(e1 != 0);
-//    assert(e1->type() == NODE_LVALUE);
-//    assert(e1->children().size() > 0 && e1->children().size() <= 2);
-//    return childAt<TreeNodeIdentifier>(e1, 0);
-//}
 
 TreeNodeLValue* TreeNodeExprAssign::leftHandSide () const {
     assert(children().size() == 2);
@@ -1263,7 +1244,7 @@ TreeNodeSeqView<TreeNodeSyscallParam> TreeNodeStmtSyscall::params () const {
 *******************************************************************************/
 
 bool TreeNodeTypeType::printHelper (std::ostream & os) const {
-    if (m_cachedType != 0) {
+    if (m_cachedType != NULL) {
         os << *secrecType();
         return true;
     }

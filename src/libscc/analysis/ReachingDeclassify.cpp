@@ -100,7 +100,7 @@ void ReachingDeclassify::transferImop(const Imop & imop, PDefs & out) const {
 
     // Skip if private destination is not written to:
     const Symbol * dest = imop.dest();
-    assert(dest != 0);
+    assert(dest != NULL);
 
     if (dest->secrecType()->secrecSecType()->isPublic()) {
         return;
@@ -228,15 +228,15 @@ std::string ReachingDeclassify::toString(const Program &) const {
             switch (imop->type()) {
             case Imop::PARAM:
             case Imop::CALL:
-                if (dynamic_cast<TreeNodeVarInit *>(imop->creator()) != 0) {
+                if (dynamic_cast<TreeNodeVarInit *>(imop->creator()) != NULL) {
                     os << "parameter "
                        << static_cast<TreeNodeVarInit *>(imop->creator())->variableName()
                        << " declared at " << imop->creator()->location();
                 }
                 else {
-                    assert(dynamic_cast<TreeNodeExprProcCall *>(imop->creator()) != 0);
+                    assert(dynamic_cast<TreeNodeExprProcCall *>(imop->creator()) != NULL);
                     TreeNodeExprProcCall * c = static_cast<TreeNodeExprProcCall *>(imop->creator());
-                    assert(c->symbolProcedure() != 0);
+                    assert(c->symbolProcedure() != NULL);
                     os << "call to " << c->symbolProcedure()->procedureName()
                        << " at " << c->location();
                 }

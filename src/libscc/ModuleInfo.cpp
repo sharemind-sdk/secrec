@@ -36,16 +36,16 @@ void ModuleInfo::setCodeGenState (const CodeGenState& state) {
 
 bool ModuleInfo::read() {
     using namespace boost;
-    assert (m_body == 0);
+    assert (m_body == NULL);
     FILE* f = fopen (m_location.path ().c_str (), "r");
-    if (f == 0)
+    if (f == NULL)
         return false;
 
     ContextImpl* pImpl = m_cxt.pImpl ();
-    TreeNodeModule* treeNode = 0;
+    TreeNodeModule* treeNode = NULL;
     int parseResult = sccparse_file(&pImpl->stringTable (), m_location.path().c_str (), f, &treeNode);
     fclose (f);
-    if (parseResult != 0 || treeNode == 0)
+    if (parseResult != 0 || treeNode == NULL)
         return false;
 
     m_body = treeNode;

@@ -43,7 +43,7 @@ public: /* Methods: */
 
     TreeNodeProcDef* containingProcedure() const;
     inline TreeNode* parent() const { return m_parent; }
-    inline bool hasParent() const { return m_parent != 0; }
+    inline bool hasParent() const { return m_parent != NULL; }
     inline SecrecTreeNodeType type() const { return m_type; }
     inline ChildrenList &children() { return m_children; }
     inline const ChildrenList &children() const { return m_children; }
@@ -122,12 +122,12 @@ private: /* Types: */
             : m_iterator (iterator) { }
 
         typename base_type::reference operator * () const {
-            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != 0);
+            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != NULL);
             return *static_cast<typename base_type::pointer>(*m_iterator);
         }
 
         typename base_type::pointer operator -> () const {
-            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != 0);
+            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != NULL);
             return static_cast<typename base_type::pointer>(*m_iterator);
         }
 
@@ -170,13 +170,13 @@ public: /* Methods: */
 
     const_reference operator [] (size_type i) const {
         assert (i < size ());
-        assert (dynamic_cast<const_pointer>(*(m_begin + i)) != 0);
+        assert (dynamic_cast<const_pointer>(*(m_begin + i)) != NULL);
         return *static_cast<const_pointer>(*(m_begin + i));
     }
 
     reference operator [] (size_type i) {
         assert (i < size ());
-        assert (dynamic_cast<pointer>(*(m_begin + i)) != 0);
+        assert (dynamic_cast<pointer>(*(m_begin + i)) != NULL);
         return *static_cast<pointer>(*(m_begin + i));
     }
 
@@ -653,7 +653,7 @@ public: /* Methods: */
 
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
-        assert (resultType () != 0);
+        assert (resultType () != NULL);
         if ( ! resultType ()->isVoid ()
             && sameDataTypes (resultType ()->secrecDataType (), DATATYPE_NUMERIC)
             && dType != DATATYPE_NUMERIC) {
@@ -661,7 +661,7 @@ public: /* Methods: */
         }
     }
 
-    bool haveResultType() const { return m_resultType != 0; }
+    bool haveResultType() const { return m_resultType != NULL; }
     bool havePublicBoolType() const;
     Type* resultType() const;
 
@@ -1011,7 +1011,7 @@ public: /* Methods: */
         m_symbolProcedure = proc;
     }
 
-    bool isOverloaded () const { return procSymbol () != 0; }
+    bool isOverloaded () const { return procSymbol () != NULL; }
 
 protected:
 
@@ -1291,7 +1291,7 @@ public: /* Methods: */
     TypeNonVoid* secrecType () const { return m_secrecType; }
     void setSecrecType (TypeNonVoid* secrecType) { m_secrecType = secrecType; }
 
-    bool isConstant () const { return m_value != 0; }
+    bool isConstant () const { return m_value != NULL; }
     StringRef staticValue () const;
     TypeChecker::Status accept (TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
@@ -1674,7 +1674,7 @@ public:
     }
 
     void setSymbol (SymbolProcedure* sym) {
-        assert (sym != 0);
+        assert (sym != NULL);
         m_procSymbol = sym;
     }
 
@@ -1686,11 +1686,11 @@ public:
     const std::string printableSignature() const;
 
     inline bool haveProcedureType() const {
-        return m_cachedType != 0;
+        return m_cachedType != NULL;
     }
 
     TypeProc* procedureType() const {
-        assert(m_cachedType != 0);
+        assert(m_cachedType != NULL);
         return m_cachedType;
     }
 
@@ -2018,11 +2018,11 @@ public: /* Methods: */
     virtual CGStmtResult codeGenWith (CodeGen& cg);
 
     inline TypeNonVoid* resultType() const {
-        assert(m_type != 0);
+        assert(m_type != NULL);
         return m_type;
     }
 
-    inline bool haveResultType() const { return m_type != 0; }
+    inline bool haveResultType() const { return m_type != NULL; }
     void setResultType (TypeNonVoid* type) { m_type = type; }
 
     inline bool global() const { return m_global; }

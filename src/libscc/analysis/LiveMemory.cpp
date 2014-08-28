@@ -92,8 +92,8 @@ void visitImop(const Imop & imop, Visitor & visitor) {
 
 inline bool isRedundantCopy(LiveMemory::Domain dest, LiveMemory::Domain src) {
     if (src == LiveMemory::Dead) return true;
-    if ((dest & LiveMemory::Read) == 0) return true;
-    if (((dest & LiveMemory::Write) == 0) && ((src & LiveMemory::Write) == 0)) return true;
+    if ((dest & LiveMemory::Read) == 0x0) return true;
+    if (((dest & LiveMemory::Write) == 0x0) && ((src & LiveMemory::Write) == 0x0)) return true;
     return false;
 }
 
@@ -213,7 +213,7 @@ std::string LiveMemory::printDeadCopies(const Program & pr) const {
             if (imop.type() == Imop::COPY) {
                 ++ num_copies;
 
-                if ((after[imop.dest()] & Read) == 0) {
+                if ((after[imop.dest()] & Read) == 0x0) {
                     ss << imop.index() << ": " << imop << " (dest is never read)\n";
                     ++ num_eliminated;
                 }
@@ -221,8 +221,8 @@ std::string LiveMemory::printDeadCopies(const Program & pr) const {
                     ss << imop.index() << ": " << imop << '\n';
                     ++ num_eliminated;
                 }
-                else if (((after[imop.dest()] & Write) == 0) &&
-                         ((after[imop.arg1()] & Write) == 0)) {
+                else if (((after[imop.dest()] & Write) == 0x0) &&
+                         ((after[imop.arg1()] & Write) == 0x0)) {
                     ss << imop.index() << ": " << imop << " (src/dest are read-only)\n";
                     ++ num_eliminated;
                 }

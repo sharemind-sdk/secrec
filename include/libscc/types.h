@@ -195,7 +195,7 @@ public: /* Methods: */
 
     static TypeProc* get (Context& cxt,
                           const std::vector<TypeBasic*>& params,
-                          Type* returnType = 0);
+                          Type* returnType = NULL);
 
 protected: /* Methods: */
 
