@@ -227,26 +227,35 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
         TCGUARD (visit(secTyNode));
         TCGUARD (visit (tyNode->dimType ()));
         TCGUARD (visit (tyNode->dataType ()));
+
         SecurityType* secType = secTyNode->cachedType ();
-        // TODO: Fix me!
         DataType* dataType = tyNode->dataType ()->cachedType ();
-        SecrecDataType secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
-        if (secType->isPublic ()) {
-            switch (secrecDataType) {
-            case DATATYPE_XOR_UINT8:
-            case DATATYPE_XOR_UINT16:
-            case DATATYPE_XOR_UINT32:
-            case DATATYPE_XOR_UINT64:
-                m_log.fatalInProc(_ty) << "XOR types do not have public representation at "
-                                       << _ty->location () << '.';
+        SecrecDimType dimType = tyNode->dimType ()->cachedType ();
+
+        if (dataType->isPrimitive ()) {
+            SecrecDataType secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+            if (secType->isPublic ()) {
+                switch (secrecDataType) {
+                case DATATYPE_XOR_UINT8:
+                case DATATYPE_XOR_UINT16:
+                case DATATYPE_XOR_UINT32:
+                case DATATYPE_XOR_UINT64:
+                    m_log.fatalInProc(_ty) << "XOR types do not have public representation at "
+                                           << _ty->location () << '.';
+                    return E_TYPE;
+                default:
+                    break;
+                }
+            }
+        }
+        else {
+            if (secType->isPrivate () || dimType > 0) {
+                m_log.fatal () << "Non-primitive types may not be private or non-scalar. Error at " << _ty->location () << ".";
                 return E_TYPE;
-            default:
-                break;
             }
         }
 
-        tyNode->m_cachedType = TypeBasic::get (m_context,
-            secType, secrecDataType, tyNode->dimType ()->cachedType ());
+        tyNode->m_cachedType = TypeBasic::get (m_context, secType, secrecDataType, dimType);
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != NULL);
