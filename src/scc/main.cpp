@@ -268,13 +268,13 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
         size_t sl = 0u;
         size_t sc = 0u;
         ScopedAsmTokens ts (sharemind_assembler_tokenize (fin->data (), fin->size (), &sl, &sc));
-        if (ts.get () == 0) {
+        if (ts.get () == NULL) {
             cerr << "ICE: Tokenization failed at (" << sl << "," << sc << ")" << endl;
             return false;
         }
 
-        const SharemindAssemblerToken* errorToken = 0;
-        char* errorString = 0;
+        const SharemindAssemblerToken* errorToken = NULL;
+        char* errorString = NULL;
         SharemindAssemblerError r = sharemind_assembler_assemble (ts.get (), &lus, &errorToken, &errorString);
         if (r != SHAREMIND_ASSEMBLE_OK) {
             const char* smasErrorStr = SharemindAssemblerError_toString (r);

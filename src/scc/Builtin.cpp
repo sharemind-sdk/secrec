@@ -67,14 +67,14 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* rOffset = st.getStack (3);
     VMImm*   iSize = st.getImm (m_size);
 
-    VMLabel* lBack = 0;
+    VMLabel* lBack = NULL;
     {
         std::stringstream ss;
         ss << ":back_" << st.uniq ();
         lBack = st.getLabel (ss.str ());
     }
 
-    VMLabel* lOut = 0;
+    VMLabel* lOut = NULL;
     {
         std::stringstream ss;
         ss << ":out_" << st.uniq ();
@@ -137,13 +137,13 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         rTmp[i] = st.getStack (n + 3 + i);
 
 
-    VMLabel* lBack = 0;
+    VMLabel* lBack = NULL;
     { std::stringstream ss;
       ss << ":back_" << st.uniq ();
       lBack = st.getLabel (ss.str ());
     }
 
-    VMLabel* lOut = 0;
+    VMLabel* lOut = NULL;
     { std::stringstream ss;
       ss << ":out_" << st.uniq ();
       lOut = st.getLabel (ss.str ());
@@ -165,7 +165,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
     // perform operation on temporaries
     {
-        const char* name = 0;
+        const char* name = NULL;
         switch (imop.type ()) {
         case Imop::UMINUS: name = "bneg"; break;
         case Imop::UNEG  : name = "bnot"; break;

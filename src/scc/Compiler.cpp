@@ -102,24 +102,24 @@ VMLabel* getLabel (VMSymbolTable& st, const Block& block) {
 }
 
 VMLabel* getLabel (VMSymbolTable& st, const Symbol* sym) {
-    assert (sym != 0);
+    assert (sym != NULL);
     assert (sym->symbolType () == SYM_LABEL);
     VMValue* label = st.find (sym);
-    if (label == 0) {
+    if (label == NULL) {
         const SymbolLabel* symL = static_cast<const SymbolLabel*>(sym);
         label = getLabel (st, *symL->block ());
         st.store (sym, label);
     }
 
-    assert (dynamic_cast<VMLabel*>(label) != 0);
+    assert (dynamic_cast<VMLabel*>(label) != NULL);
     return static_cast<VMLabel*>(label);
 }
 
 VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
-    assert (sym != 0);
+    assert (sym != NULL);
     assert (sym->symbolType () == SYM_PROCEDURE);
     VMValue* label = st.find (sym);
-    if (label == 0) {
+    if (label == NULL) {
         std::stringstream ss;
         const SymbolProcedure* proc = static_cast<const SymbolProcedure*>(sym);
         ss << ':' << proc->procedureName () << '_' << st.uniq ();
@@ -127,7 +127,7 @@ VMLabel* getProc (VMSymbolTable& st, const Symbol* sym) {
         st.store (sym, label);
     }
 
-    assert (dynamic_cast<VMLabel*>(label) != 0);
+    assert (dynamic_cast<VMLabel*>(label) != NULL);
     return static_cast<VMLabel*>(label);
 }
 
@@ -194,7 +194,7 @@ void syscallMangleNamespace (std::ostream& os, TypeNonVoid* tnv) {
 
 bool isPrivate (const Imop& imop) {
     BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
-        if (sym == 0)
+        if (sym == NULL)
             continue;
 
         Type* ty = sym->secrecType ();
@@ -207,7 +207,7 @@ bool isPrivate (const Imop& imop) {
 
 bool isStringRelated (const Imop& imop) {
     BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
-        if (sym == 0)
+        if (sym == NULL)
             continue;
 
         Type* ty = sym->secrecType ();
@@ -219,7 +219,7 @@ bool isStringRelated (const Imop& imop) {
 }
 
 VMLabel* getPD (SyscallManager* scm, const Symbol* sym) {
-    assert (scm != 0 && sym != 0);
+    assert (scm != NULL && sym != NULL);
     SecreC::Type* ty = sym->secrecType ();
     assert (ty->secrecSecType ()->isPrivate ());
     PrivateSecType* pty = static_cast<PrivateSecType*>(ty->secrecSecType ());
@@ -391,12 +391,12 @@ void Compiler::run (VMLinkingUnit& vmlu) {
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {
     VMValue* const out = m_st.find (sym);
-    assert (out != 0);
+    assert (out != NULL);
     return out;
 }
 
 VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
-    VMValue* reg = 0; // this holds the value of symbol
+    VMValue* reg = NULL; // this holds the value of symbol
     if (symbol->symbolType () == SecreC::SYM_CONSTANT) {
         reg = m_ra->temporaryReg (); // temporary register
         block.push_new () << "mov" << find (symbol) << reg;
@@ -411,7 +411,7 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
 void Compiler::pushString (VMBlock& block, const Symbol* str) {
     assert (str->secrecType ()->secrecDataType ()->isString ());
     if (str->isConstant ()) {
-        assert (dynamic_cast<const ConstantString*>(str) != 0);
+        assert (dynamic_cast<const ConstantString*>(str) != NULL);
         const ConstantString* cstr = static_cast<const ConstantString*>(str);
         StringLiterals::LiteralInfo info = m_strLit->insert (cstr);
         VMLabel* offset = info.label;
@@ -433,14 +433,14 @@ void Compiler::paramString (VMBlock& block, const Symbol* dest) {
 }
 
 void Compiler::cgProcedure (const Procedure& blocks) {
-    VMLabel* name = 0;
-    if (blocks.name () == 0)
+    VMLabel* name = NULL;
+    if (blocks.name () == NULL)
         name = st ().getLabel (":start"); // NULL instead?
     else
         name = getProc (st (), blocks.name ());
     m_param = 0;
     VMFunction function (name);
-    if (blocks.name () == 0)
+    if (blocks.name () == NULL)
         function.setIsStart ();
 
     m_ra->enterFunction (function);
@@ -455,7 +455,7 @@ void Compiler::cgProcedure (const Procedure& blocks) {
 }
 
 void Compiler::cgBlock (VMFunction& function, const Block& block) {
-    VMLabel* name = 0;
+    VMLabel* name = NULL;
     if (block.hasIncomingJumps ()) {
         name = getLabel (st (), block);
     }
@@ -474,7 +474,7 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
     typedef Imop::OperandConstIterator OCI;
     assert (imop.isJump ());
 
-    const char* name = 0;
+    const char* name = NULL;
     switch (imop.type ()) {
         case Imop::JUMP: name = "jmp"; break;
         case Imop::JT  : name = "jnz"; break;
@@ -516,7 +516,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     block.push_new () << "push" << find (imop.arg1 ());
     block.push_new () << "push" << find (imop.arg2 ());
 
-    VMLabel* target = 0;
+    VMLabel* target = NULL;
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
     unsigned size = sizeInBytes (ty);
     {
@@ -531,7 +531,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgToString (VMBlock& block, const Imop& imop) {
-    VMLabel* target = 0;
+    VMLabel* target = NULL;
 
     DataType* dType = imop.arg1 ()->secrecType ()->secrecDataType ();
     if (dType->isBool ()) {
@@ -617,7 +617,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
     if (imop.isVectorized ()) {
         std::stringstream ss;
 
-        VMLabel* target = 0;
+        VMLabel* target = NULL;
         if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             block.push_new () << "push" << find (imop.dest ());
             block.push_new () << "push" << find (imop.arg1 ());
@@ -791,7 +791,7 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
     block.push_new () << "mov" << find (imop.arg2 ()) << rOffset;
     block.push_new () << "bmul" << VM_UINT64 << rOffset << m_st.getImm (size);
 
-    VMValue* rAddr = 0;
+    VMValue* rAddr = NULL;
     if (imop.arg1 ()->isConstant ()) {
         assert (imop.arg1 ()->secrecType ()->secrecDataType ()->isString ());
         rAddr = m_ra->temporaryReg ();
@@ -852,7 +852,7 @@ void Compiler::cgStringCmp (VMBlock& block, const Imop& imop) {
     VMValue* dest = find (imop.dest ());
     block.push_new () << "call" << target << dest;
 
-    const char* opname = 0;
+    const char* opname = NULL;
     switch (imop.type ()) {
     case Imop::EQ: opname = "beq"; break;
     case Imop::NE: opname = "bne"; break;
@@ -904,7 +904,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
             block.push_new () << "push" << find (sym);
         }
 
-        VMLabel* target = 0;
+        VMLabel* target = NULL;
         {
             std::stringstream ss;
             ss << ':' << imopToVMName (imop) << "_vec_" << ty;
@@ -931,9 +931,9 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgDomainID (VMBlock& block, const Imop& imop) {
-    assert (dynamic_cast<const SymbolDomain*>(imop.arg1 ()) != 0);
+    assert (dynamic_cast<const SymbolDomain*>(imop.arg1 ()) != NULL);
     const SymbolDomain* dom = static_cast<const SymbolDomain*>(imop.arg1 ());
-    assert (dynamic_cast<PrivateSecType*>(dom->securityType ()) != 0);
+    assert (dynamic_cast<PrivateSecType*>(dom->securityType ()) != NULL);
     PrivateSecType* secTy = static_cast<PrivateSecType*>(dom->securityType ());
     VMLabel* label = m_scm->getPD (secTy);
     block.push_new () << "mov" << label << find (imop.dest ());
@@ -958,7 +958,7 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgPush (VMBlock& block, const Imop& imop) {
-    assert (imop.arg1 () != 0);
+    assert (imop.arg1 () != NULL);
 
     const Symbol* arg = imop.arg1 ();
 
@@ -1012,7 +1012,7 @@ void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
 }
 
 void Compiler::cgComment(VMBlock & block, const Imop & imop) {
-    assert(dynamic_cast<const ConstantString*>(imop.arg1()) != 0);
+    assert(dynamic_cast<const ConstantString*>(imop.arg1()) != NULL);
     block.push_new() << "#" <<
         VMInstruction::str (static_cast<const ConstantString*>(imop.arg1())->value().str ());
 }
