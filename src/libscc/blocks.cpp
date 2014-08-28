@@ -24,7 +24,7 @@ inline bool fallsThru(const Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
 
-    const Imop* last = 0;
+    const Imop* last = NULL;
     BOOST_REVERSE_FOREACH (const Imop& imop, b) {
         last = &imop;
         if (imop.type () != Imop::COMMENT) {
@@ -32,7 +32,7 @@ inline bool fallsThru(const Block &b) {
         }
     }
 
-    assert (last != 0);
+    assert (last != NULL);
     switch (last->type ()) {
     case Imop::CALL:
     case Imop::JUMP:
@@ -143,7 +143,7 @@ void printNode (std::ostream& os, const Block& block) {
     }
 }
 
-void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = 0) {
+void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = NULL) {
     if (from.reachable () && to.reachable ()) {
         os << "node" << from.index () << " -> " << "node" << to.index ();
         if (style) os << style;
@@ -151,7 +151,7 @@ void printEdge (std::ostream& os, const Block& from, const Block& to, const char
     }
 }
 
-void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = 0) {
+void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = NULL) {
     bool foundAny = false;
     BOOST_FOREACH (const Block::edge_type& edge, from.succ_range ()) {
         if (edge.second & label) {
@@ -235,7 +235,7 @@ void Program::assignToBlocks (ICodeList& imops) {
 
         // destination of jump is leader
         if (imop.isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != 0);
+            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != NULL);
             SymbolLabel* dest = static_cast<SymbolLabel*>(imop.dest ());
             leaders[dest->target()].jumps.insert (dest);
         }
@@ -259,7 +259,7 @@ void Program::assignToBlocks (ICodeList& imops) {
 
     // Initialize the entry procedure.
     Procedure* curProc = new Procedure (0);
-    Block* curBlock = 0;
+    Block* curBlock = NULL;
     push_back(*curProc);
 
     while (! imops.empty ()) {
@@ -355,7 +355,7 @@ void Program::propagate () {
 
         // if last instruction is jump, link current block with its destination
         if (lastImop.isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != 0);
+            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != NULL);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
             Procedure::iterator next = procIterator (*jumpDest->block ());
             todo.insert (next);
@@ -429,13 +429,13 @@ std::ostream & Program::print(std::ostream & os) const {
             os << "    CODE:" << std::endl;
             BOOST_FOREACH (const Imop& imop, block) {
                 os << std::setw (10) << imop.index () << "  " << imop;
-                if (imop.creator() != 0) {
+                if (imop.creator() != NULL) {
                     os << " // Created by "
                        << TreeNode::typeName(imop.creator()->type())
                        << " at "
                        << imop.creator()->location();
                     if (imop.creator()->type() == NODE_EXPR_CLASSIFY) {
-                        assert(imop.creator()->parent() != 0);
+                        assert(imop.creator()->parent() != NULL);
                         os << " for "
                            << TreeNode::typeName(imop.creator()->parent()->type())
                            << " at "
@@ -529,11 +529,11 @@ Block::~Block () {
 }
 
 bool Block::isProgramEntry () const {
-    return isEntry () && (proc ()->name () == 0);
+    return isEntry () && (proc ()->name () == NULL);
 }
 
 bool Block::isProgramExit () const {
-    return isExit () && (proc ()->name () == 0);
+    return isExit () && (proc ()->name () == NULL);
 }
 
 bool Block::isEntry () const {

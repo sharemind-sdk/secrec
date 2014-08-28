@@ -262,7 +262,9 @@ void storeSym (VMSym sym, Value val) {
 
 // Quick and dirty solution.
 template <SecrecDataType fromTy >
-void castValueDyn (SecrecDataType toTy, Value& dest, const Value& from) {
+void castValueDyn (DataType* dataType, Value& dest, const Value& from) {
+    assert (dataType != NULL && dataType->isPrimitive ());
+    SecrecDataType toTy = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     switch (toTy) {
     case DATATYPE_BOOL:   castValue<DATATYPE_BOOL,fromTy>(dest, from); break;
     case DATATYPE_INT8:   castValue<DATATYPE_INT8,fromTy>(dest, from); break;
@@ -465,7 +467,7 @@ MKCALLBACK(COPY, 1, 1, 1, 0,
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
-    if (ip->args[0].un_sym->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+    if (sameDataTypes (ip->args[0].un_sym->secrecType ()->secrecDataType (), DATATYPE_STRING)) {
         assert (dest.un_str_val != 0);
         delete dest.un_str_val;
         dest.un_str_val = 0;
@@ -608,8 +610,11 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::CLASSIFY:
     case Imop::DECLASSIFY:
     case Imop::ASSIGN:
-    case Imop::LOAD:
-        ty = imop.arg1()->secrecType()->secrecDataType();
+    case Imop::LOAD: {
+        DataType* dataType = imop.arg1()->secrecType()->secrecDataType();
+        assert (dataType != NULL && dataType->isPrimitive ());
+        ty = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    }
     default:
         break;
     }
@@ -692,7 +697,9 @@ void storeConstantInt (Value& out, const Symbol* c) {
 }
 
 void storeConstant (VMSym sym, const Symbol* c) {
-    SecrecDataType dtype = c->secrecType ()->secrecDataType ();
+    DataType* dataType = c->secrecType ()->secrecDataType ();
+    assert (dataType != NULL && dataType->isPrimitive ());
+    SecrecDataType dtype = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     Value& out = store[sym.un_sym];
     switch (dtype) {

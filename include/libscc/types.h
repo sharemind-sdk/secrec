@@ -47,8 +47,8 @@ public: /* Methods: */
     inline bool isPublicUIntScalar () const;
 
     virtual SecurityType* secrecSecType() const = 0;
-    virtual SecrecDataType secrecDataType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
+    virtual DataType* secrecDataType() const = 0;
 
 protected: /* Methods: */
 
@@ -78,9 +78,9 @@ public: /* Methods: */
         return 0;
     }
 
-    inline SecrecDataType secrecDataType() const {
+    inline DataType* secrecDataType() const {
         assert (false && "TypeVoid::secrecDataType");
-        return DATATYPE_UNDEFINED;
+        return NULL;
     }
 
     inline SecrecDimType secrecDimType() const {
@@ -108,13 +108,13 @@ class TypeNonVoid: public Type {
 public: /* Methods: */
 
     // TODO: this is not pretty
-    inline bool latticeLEQ (const TypeNonVoid* other) const {
+    inline bool latticeLEQ (Context& cxt, const TypeNonVoid* other) const {
         if (kind () != other->kind ())
             return false;
 
-        SecrecDataType dataType = other->secrecDataType ();
+        DataType* dataType = other->secrecDataType ();
         if (other->secrecSecType ()->isPrivate () && secrecSecType ()->isPublic ()) {
-            dataType = dtypeDeclassify (dataType);
+            dataType = dtypeDeclassify (cxt, dataType);
         }
 
         return     latticeSecTypeLEQ (secrecSecType (), other->secrecSecType ())
@@ -140,11 +140,13 @@ public: /* Methods: */
     inline SecrecDimType secrecDimType() const { return m_dimType; }
 
     // TODO: change return type to DataType*
-    inline SecrecDataType secrecDataType() const {
-        return static_cast<DataTypePrimitive*>(m_dataType)->secrecDataType ();
+    inline DataType* secrecDataType() const {
+        return m_dataType;
     }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
+                           SecrecDimType dimType = 0);
+    static TypeBasic* get (Context& cxt, DataType* dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* get (Context& cxt, SecurityType* secType,
                            SecrecDataType dataType,
@@ -188,7 +190,7 @@ public: /* Methods: */
     std::string paramsToNormalString () const;
 
     inline SecurityType* secrecSecType() const { return returnType ()->secrecSecType (); }
-    inline SecrecDataType secrecDataType() const { return returnType ()->secrecDataType (); }
+    inline DataType* secrecDataType() const { return returnType ()->secrecDataType (); }
     inline SecrecDimType secrecDimType() const { return returnType ()->secrecDimType (); }
 
     static TypeProc* get (Context& cxt,
@@ -214,7 +216,7 @@ private: /* Fields: */
 
 
 inline bool Type::isPublicUIntScalar () const {
-    return secrecDataType () == DATATYPE_UINT64 &&
+    return sameDataTypes (secrecDataType (), DATATYPE_UINT64) &&
            secrecSecType ()->isPublic () &&
            secrecDimType () == 0;
 }

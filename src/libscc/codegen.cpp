@@ -17,7 +17,7 @@ namespace /* anonymous */ {
 bool isNontrivialResource (TypeNonVoid* tnv) {
     return tnv->secrecDimType () != 0
         || tnv->secrecSecType ()->isPrivate ()
-        || tnv->secrecDataType () == DATATYPE_STRING;
+        || sameDataTypes (tnv->secrecDataType (), DATATYPE_STRING);
 }
 
 } // namespace anonymous

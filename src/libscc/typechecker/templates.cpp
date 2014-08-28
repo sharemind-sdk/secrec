@@ -104,7 +104,7 @@ TypeChecker::Status checkTypeVariable (TypeVariableMap& map, SymbolTable* st, Co
     }
     else {
         Symbol* sym = st->find (symbolCategory (kind), name);
-        if (sym == 0) {
+        if (sym == NULL) {
             log.fatal () << "Unable to find " << kindAsString (kind) << " type variable \'" << name
                          << "\' at " << t.identifier ()->location () << ". ";
             return TypeChecker::E_TYPE;
@@ -251,9 +251,9 @@ bool TemplateInstantiator::getForInstantiation (InstanceInfo& info) {
         m_workList.pop_front ();
         if (! isInstantiated (i)) {
             info = m_instanceInfo[i];
-            assert (info.m_generatedBody != 0);
-            assert (info.m_moduleInfo != 0);
-            assert (info.m_localScope != 0);
+            assert (info.m_generatedBody != NULL);
+            assert (info.m_moduleInfo != NULL);
+            assert (info.m_localScope != NULL);
             m_generated.insert (i);
             return true;
         }

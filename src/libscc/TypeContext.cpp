@@ -32,7 +32,7 @@ void TypeContext::prettyPrint (std::ostream& os) const {
             foundAny = true;
         }
 
-        os << SecrecFundDataTypeToString(contextDataType());
+        os << *contextDataType();
     }
 
     if (haveContextDimType ()) {

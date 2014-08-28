@@ -23,6 +23,9 @@ class Context;
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty);
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
 
+SymbolConstant* defaultConstant (Context& cxt, DataType* ty);
+SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value);
+
 /******************************************************************
   APInt
 ******************************************************************/
@@ -187,6 +190,7 @@ private: /* Methods: */
 public:
 
     static ConstantInt* get (Context& cxt, SecrecDataType type, uint64_t value);
+    static ConstantInt* get (Context& cxt, DataType* type, uint64_t value);
     static ConstantInt* getBool (Context& cxt, bool value);
 
     const APInt& value () const { return m_value; }
@@ -212,9 +216,9 @@ private: /* Methods: */
 
 public:
 
-    static ConstantFloat* get (Context& cxt, SecrecDataType type, uint64_t value);
-    static ConstantFloat* get (Context& cxt, SecrecDataType type, StringRef str);
-    static ConstantFloat* get (Context& cxt, SecrecDataType type, const APFloat& value);
+    static ConstantFloat* get (Context& cxt, DataType* type, uint64_t value);
+    static ConstantFloat* get (Context& cxt, DataType* type, StringRef str);
+    static ConstantFloat* get (Context& cxt, DataType* type, const APFloat& value);
 
     const APFloat& value () const { return m_value; }
 

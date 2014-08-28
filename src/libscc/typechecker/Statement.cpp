@@ -54,13 +54,13 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         return E_TYPE;
     }
 
-    if (varInit->rightHandSide() != 0) {
+    if (varInit->rightHandSide() != NULL) {
         TreeNodeExpr * e = varInit->rightHandSide();
         e->setContext(ty);
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        if (!static_cast<TypeNonVoid*>(e->resultType())->latticeLEQ (ty)) {
+        if (!static_cast<TypeNonVoid*>(e->resultType())->latticeLEQ (getContext (), ty)) {
             m_log.fatalInProc(varInit) << "Illegal assignment at "
                                        << varInit->location() << '.';
             m_log.fatal() << "Got " << (*e->resultType())
@@ -134,16 +134,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
     TreeNodeType *type = decl->varType ();
     TCGUARD (visit(type));
     assert (! type->secrecType()->isVoid());
-    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != 0);
+    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != NULL);
     TypeNonVoid* justType = static_cast<TypeNonVoid*>(type->secrecType());
     decl->setResultType (justType);
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
         assert (decl->initializers ().size () == 1);
-        assert (decl->initializer () != 0);
+        assert (decl->initializer () != NULL);
         assert (decl->shape ().empty ());
-        assert (decl->initializer ()->rightHandSide () == 0);
+        assert (decl->initializer ()->rightHandSide () == NULL);
     }
 
     return OK;
@@ -203,7 +203,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
         e = classifyIfNeeded(e, procType->secrecSecType());
         TypeBasic* resultType = static_cast<TypeBasic*>(e->resultType ());
         TypeBasic* returnType = static_cast<TypeBasic*>(procType->returnType ());
-        if (! resultType->latticeLEQ (returnType) ||
+        if (! resultType->latticeLEQ (getContext (), returnType) ||
               resultType->secrecDimType () != returnType->secrecDimType ())
         {
             m_log.fatalInProc(stmt) << "Cannot return value of type "

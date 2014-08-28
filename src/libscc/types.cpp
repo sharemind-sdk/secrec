@@ -18,7 +18,7 @@ std::string mangleDataType (const Type* ty) {
     std::ostringstream os;
     os << '(';
     os << *ty->secrecSecType () << ',';
-    os << SecrecFundDataTypeToString (ty->secrecDataType()) << ',';
+    os << *ty->secrecDataType() << ',';
     os << ty->secrecDimType();
     os << ')';
     return os.str ();
@@ -54,7 +54,7 @@ void TypeBasic::print (std::ostream& os) const {
 void TypeBasic::prettyPrint (std::ostream& os) const {
     if (!secrecSecType ()->isPublic())
         os << *secrecSecType () << ' ';
-    os << SecrecFundDataTypeToString(secrecDataType ());
+    os << *secrecDataType ();
     if (secrecDimType () > 0)
         os << "[[" << secrecDimType () << "]]";
 }
@@ -62,6 +62,10 @@ void TypeBasic::prettyPrint (std::ostream& os) const {
 TypeBasic* TypeBasic::get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType)
 {
+    return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
+}
+
+TypeBasic* TypeBasic::get (Context& cxt, DataType* dataType, SecrecDimType dimType) {
     return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
 }
 

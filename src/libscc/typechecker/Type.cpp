@@ -99,7 +99,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeVarF* ty) {
 }
 
 void TreeNodeTypeVarF::setTypeContext (TypeContext& cxt) const {
-    assert (typeVariable () != 0);
+    assert (typeVariable () != NULL);
     typeVariable ()->setTypeContext (cxt);
 }
 
@@ -147,9 +147,7 @@ TypeChecker::Status TreeNodeDataTypeConstF::accept(TypeChecker& tyChecker) {
 }
 
 void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
-    // TODO: fix me!
-    const SecrecDataType secrecDataType = static_cast<DataTypePrimitive*>(cachedType ())->secrecDataType ();
-    cxt.setContextDataType (secrecDataType);
+    cxt.setContextDataType (cachedType ());
 }
 
 /*******************************************************************************
@@ -251,7 +249,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
             secType, secrecDataType, tyNode->dimType ()->cachedType ());
     }
     else {
-        assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != 0);
+        assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != NULL);
         _ty->m_cachedType = TypeVoid::get (getContext ());
     }
 

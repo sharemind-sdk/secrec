@@ -21,8 +21,8 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
     BOOST_FOREACH (TreeNodeQuantifier& quant, templ->quantifiers ()) {
         switch (quant.type ()) {
         case NODE_TEMPLATE_DOMAIN_QUANT:
-            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != 0);
-            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == 0)
+            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != NULL);
+            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == NULL)
                 ++ qualifiedTypeVariableCount;
         case NODE_TEMPLATE_DIM_QUANT:
             typeVariables.insert (quant.typeVariable ()->value ());
@@ -118,8 +118,7 @@ void SymbolDataType::print (std::ostream& os) const {
 }
 
 void SymbolDataType::setTypeContext (TypeContext& cxt) const {
-    // TODO! fix this
-    cxt.setContextDataType (static_cast<DataTypePrimitive*>(dataType ())->secrecDataType ());
+    cxt.setContextDataType (dataType ());
 }
 
 /*******************************************************************************
@@ -177,9 +176,9 @@ void SymbolSymbol::print(std::ostream & os) const {
 }
 
 void SymbolSymbol::inheritShape (Symbol* from) {
-    assert (from != 0);
+    assert (from != NULL);
     if (from->symbolType () == SYM_SYMBOL) {
-        assert (dynamic_cast<SymbolSymbol*>(from) != 0);
+        assert (dynamic_cast<SymbolSymbol*>(from) != NULL);
         SymbolSymbol* t = static_cast<SymbolSymbol*>(from);
         setSizeSym(t->getSizeSym());
         std::copy (t->m_dims.begin (), t->m_dims.end (), m_dims.begin ());
@@ -255,8 +254,8 @@ SymbolLabel::SymbolLabel (Block* block)
 { }
 
 const Imop* SymbolLabel::target () const {
-    if (m_block == 0) {
-        assert (m_target != 0);
+    if (m_block == NULL) {
+        assert (m_target != NULL);
         return m_target;
     }
 
@@ -265,8 +264,8 @@ const Imop* SymbolLabel::target () const {
 
 void SymbolLabel::print(std::ostream & os) const {
     os << "Lable to ";
-    assert (m_target != 0);
-    if (m_target->block () != 0) {
+    assert (m_target != NULL);
+    if (m_target->block () != NULL) {
         os << "block " << m_target->block()->index ();
     }
     else {

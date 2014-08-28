@@ -644,11 +644,18 @@ public: /* Methods: */
         , m_resultType (0)
     { }
 
+    void instantiateDataType (Context& cxt, DataType* dType) {
+        assert (dType != NULL);
+        if (dType->isPrimitive ()) {
+            instantiateDataType (cxt, static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+        }
+    }
+
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
         assert (resultType () != 0);
         if ( ! resultType ()->isVoid ()
-            && resultType ()->secrecDataType () == DATATYPE_NUMERIC
+            && sameDataTypes (resultType ()->secrecDataType (), DATATYPE_NUMERIC)
             && dType != DATATYPE_NUMERIC) {
             instantiateDataTypeV (cxt, dType);
         }

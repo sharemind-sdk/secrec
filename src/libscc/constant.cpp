@@ -47,6 +47,11 @@ APFloat::prec_t floatPrec (SecrecDataType type) {
     }
 }
 
+APFloat::prec_t floatPrec (DataType* type) {
+    assert (type != NULL && type->isPrimitive ());
+    return floatPrec (static_cast<DataTypePrimitive*>(type)->secrecDataType ());
+}
+
 } // anonymous namesace
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
@@ -63,7 +68,16 @@ SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
 }
 
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
-    assert (isNumericDataType (ty));
+    return numericConstant (cxt, DataTypePrimitive::get (cxt, ty), value);
+}
+
+SymbolConstant* defaultConstant (Context& cxt, DataType* ty) {
+    assert (ty != NULL && ! ty->isComposite ());
+    return defaultConstant (cxt, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+}
+
+SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
+    assert (ty != NULL && isNumericDataType (ty));
     if (isFloatingDataType (ty))
         return ConstantFloat::get (cxt, ty, value);
     else
@@ -111,6 +125,12 @@ uint64_t APFloat::ieee64bits () const {
   ConstantInt
 *******************************************************************************/
 
+ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
+    assert (type != NULL && type->isPrimitive ());
+    DataTypePrimitive* const primDataType = static_cast<DataTypePrimitive*>(type);
+    return ConstantInt::get (cxt, primDataType->secrecDataType (), value);
+}
+
 ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value) {
     typedef ContextImpl::NumericConstantMap IntMap;
     const APInt apvalue (widthInBits (type), value);
@@ -134,15 +154,15 @@ void ConstantInt::print (std::ostream &os) const { os << m_value; }
   ConstantFloat
 *******************************************************************************/
 
-ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, uint64_t value) {
+ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, uint64_t value) {
     return get (cxt, type, APFloat (floatPrec (type), value));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, StringRef str) {
+ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, StringRef str) {
     return get (cxt, type, APFloat (floatPrec (type), str));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, SecrecDataType type, const APFloat& value) {
+ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, const APFloat& value) {
     typedef ContextImpl::FloatConstantMap FloatMap;
     FloatMap& map = cxt.pImpl ()->m_floatConstants;
     FloatMap::iterator it = map.find (value);

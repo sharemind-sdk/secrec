@@ -20,6 +20,7 @@ namespace SecreC {
 
 class Context;
 class TypeBasic;
+class DataType;
 
 /*******************************************************************************
  SecrecDataType related operations
@@ -40,6 +41,24 @@ bool isUnsignedNumericDataType (SecrecDataType dType);
 
 SecrecDataType dtypeDeclassify (SecrecDataType dtype);
 
+bool latticeDataTypeLEQ (const DataType* a, const DataType* b);
+bool latticeExplicitLEQ (const DataType* a, const DataType* b);
+
+inline bool sameDataTypes (const DataType* a, const DataType* b) { return a == b; }
+inline bool sameDataTypes (SecrecDataType a, SecrecDataType b) { return a == b; }
+bool sameDataTypes (const DataType* a, SecrecDataType b);
+bool sameDataTypes (SecrecDataType a, const DataType* b);
+
+bool isFloatingDataType (const DataType* dType);
+bool isNumericDataType (const DataType* dType);
+bool isXorDataType (const DataType* dType);
+bool isSignedNumericDataType (const DataType* dType);
+bool isUnsignedNumericDataType (const DataType* dType);
+
+DataType* dtypeDeclassify (Context& cxt, DataType* dtype);
+DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
+
+
 /*******************************************************************************
   DataType
 *******************************************************************************/
@@ -49,24 +68,31 @@ private:
     DataType (const DataType&); // DO NOT IMPLEMENT
     void operator = (const DataType&); // DO NOT IMPLEMENT
 
+protected: /* Types: */
+
+    enum Kind { COMPOSITE, PRIMITIVE };
+
 public: /* Methods: */
 
     virtual ~DataType () { }
 
-    bool isComposite () const { return m_isComposite; }
-    bool isPrimitive () const { return !m_isComposite; }
+    bool isComposite () const { return m_kind == COMPOSITE; }
+    bool isPrimitive () const { return m_kind == PRIMITIVE; }
+
+    bool isString () const { return sameDataTypes (this, DATATYPE_STRING); }
+    bool isBool () const { return sameDataTypes (this, DATATYPE_BOOL); }
 
 protected:
 
     virtual void print (std::ostream& os) const = 0;
     friend std::ostream& operator<<(std::ostream &out, const DataType& type);
 
-    explicit DataType (bool isComposite)
-        : m_isComposite (isComposite)
+    explicit DataType (Kind kind)
+        : m_kind (kind)
     { }
 
 private: /* Fields: */
-    const bool m_isComposite;
+    const Kind m_kind;
 };
 
 inline std::ostream& operator<<(std::ostream &out, const DataType& type) {
@@ -82,7 +108,7 @@ class DataTypePrimitive : public DataType {
 public: /* Methods: */
 
     explicit DataTypePrimitive (SecrecDataType dataType)
-        : DataType (/* isComposite = */ false)
+        : DataType (PRIMITIVE)
         , m_dataType (dataType)
     { }
 
@@ -123,7 +149,7 @@ protected:
     void print (std::ostream& os) const;
 
     explicit DataTypeStruct (StringRef name, const std::vector<Field>& fields)
-        : DataType (/* isComposite = */ true)
+        : DataType (COMPOSITE)
         , m_name (name)
         , m_fields (fields)
     { }

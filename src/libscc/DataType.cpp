@@ -58,6 +58,11 @@ CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
     return dataTypeCasts[from][to];
 }
 
+SecrecDataType getSecrecDataType (const DataType* dType) {
+    assert (dynamic_cast<const DataTypePrimitive*>(dType) != NULL);
+    return static_cast<const DataTypePrimitive*>(dType)->secrecDataType ();
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -85,6 +90,19 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
     }
 
     return best;
+}
+
+DataType* upperDataType (Context& cxt, DataType* a, DataType* b) {
+    if (a == NULL || b == NULL)
+        return NULL;
+
+    if (a == b)
+        return a;
+
+    if (a->isPrimitive () && b->isPrimitive ())
+        return DataTypePrimitive::get (cxt, upperDataType (getSecrecDataType (a), getSecrecDataType (b)));
+
+    return NULL;
 }
 
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
@@ -173,6 +191,95 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
     case DATATYPE_XOR_UINT64: return DATATYPE_UINT64;
     default:                  return dtype;
     }
+}
+
+bool latticeDataTypeLEQ (const DataType* a, const DataType* b) {
+    assert (a != NULL && b != NULL);
+
+    if (a->isComposite () && b->isComposite ())
+        return a == b;
+
+    if (a->isComposite () != b->isComposite ())
+        return false;
+
+    return latticeDataTypeLEQ (getSecrecDataType (a), getSecrecDataType (b));
+}
+
+bool latticeExplicitLEQ (const DataType* a, const DataType* b) {
+    assert (a != NULL && b != NULL);
+
+    if (a->isComposite () && b->isComposite ())
+        return a == b;
+
+    if (a->isComposite () != b->isComposite ())
+        return false;
+
+    return latticeExplicitLEQ (getSecrecDataType (a), getSecrecDataType (b));
+}
+
+bool isFloatingDataType (const DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isComposite ())
+        return false;
+
+    return isFloatingDataType (getSecrecDataType (dType));
+}
+
+bool isNumericDataType (const DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isComposite ())
+        return false;
+
+    return isNumericDataType (getSecrecDataType (dType));
+}
+
+bool isXorDataType (const DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isComposite ())
+        return false;
+
+    return isXorDataType (getSecrecDataType (dType));
+}
+
+bool isSignedNumericDataType (const DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isComposite ())
+        return false;
+
+    return isSignedNumericDataType (getSecrecDataType (dType));
+}
+
+bool isUnsignedNumericDataType (const DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isComposite ())
+        return false;
+
+    return isUnsignedNumericDataType (getSecrecDataType (dType));
+}
+
+DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
+    assert (dType != NULL);
+    if (dType->isPrimitive ()) {
+        return DataTypePrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
+    }
+
+    return dType;
+}
+
+bool sameDataTypes (const DataType* a, SecrecDataType b) {
+    assert (a != NULL);
+    if (a->isComposite ())
+        return false;
+
+    return getSecrecDataType (a) == b;
+}
+
+bool sameDataTypes (SecrecDataType a, const DataType* b) {
+    assert (b != NULL);
+    if (b->isComposite ())
+        return false;
+
+    return a == getSecrecDataType (b);
 }
 
 /*******************************************************************************

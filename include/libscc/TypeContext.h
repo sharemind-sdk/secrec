@@ -40,7 +40,7 @@ public: /* Types: */
 public: /* Methods: */
 
     TypeContext (SecurityType* secType,
-                 SecrecDataType dataType,
+                 DataType* dataType,
                  SecrecDimType dimType)
         : m_contextSecType (secType)
         , m_contextDataType (dataType)
@@ -49,7 +49,7 @@ public: /* Methods: */
 
     TypeContext ()
         : m_contextSecType (0)
-        , m_contextDataType (DATATYPE_UNDEFINED)
+        , m_contextDataType (NULL)
         , m_contextDimType (~ SecrecDimType (0))
     { }
 
@@ -78,7 +78,7 @@ public: /* Methods: */
     }
 
     void setContextIndexType (Context& cxt) {
-        setContextDataType (DATATYPE_UINT64);
+        setContextDataType (DataTypePrimitive::get (cxt, DATATYPE_UINT64));
         setContextDimType (0);
         setContextSecType (PublicSecType::get (cxt));
     }
@@ -87,7 +87,7 @@ public: /* Methods: */
         m_contextSecType = secTy;
     }
 
-    void setContextDataType (SecrecDataType dataType) {
+    void setContextDataType (DataType* dataType) {
         m_contextDataType = dataType;
     }
 
@@ -99,7 +99,7 @@ public: /* Methods: */
         return m_contextSecType;
     }
 
-    SecrecDataType contextDataType () const {
+    DataType* contextDataType () const {
         return m_contextDataType;
     }
 
@@ -108,11 +108,11 @@ public: /* Methods: */
     }
 
     bool haveContextSecType () const {
-        return m_contextSecType != 0;
+        return m_contextSecType != NULL;
     }
 
     bool haveContextDataType () const {
-        return m_contextDataType != DATATYPE_UNDEFINED;
+        return m_contextDataType != NULL;
     }
 
     bool haveContextDimType () const {
@@ -126,7 +126,7 @@ public: /* Methods: */
     }
 
     bool matchSecType (SecurityType* secType) const {
-        assert (secType != 0);
+        assert (secType != NULL);
         if (! haveContextSecType ()) {
             return true;
         }
@@ -134,8 +134,8 @@ public: /* Methods: */
         return secType == contextSecType ();
     }
 
-    bool matchDataType (SecrecDataType dataType) const {
-        assert (dataType != DATATYPE_UNDEFINED);
+    bool matchDataType (DataType* dataType) const {
+        assert (dataType != NULL);
         if (! haveContextDataType ()) {
             return true;
         }
@@ -155,7 +155,7 @@ public: /* Methods: */
 
 protected: /* Fields: */
     SecurityType*    m_contextSecType;
-    SecrecDataType   m_contextDataType;
+    DataType*        m_contextDataType;
     SecrecDimType    m_contextDimType;
 };
 

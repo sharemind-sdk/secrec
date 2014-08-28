@@ -94,8 +94,8 @@ const ImopInfoBits& getImopInfoBits (Imop::Type type) {
 }
 
 SecreC::Symbol* getSizeSymbol (SecreC::Symbol* sym) {
-    assert (sym != 0);
-    assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != 0);
+    assert (sym != NULL);
+    assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != NULL);
     return static_cast<SecreC::SymbolSymbol*>(sym)->getSizeSym ();
 }
 
@@ -134,7 +134,7 @@ struct LabelOstreamWrapper : public SymbolWrapperBase  {
             return;
         }
 
-        assert (dynamic_cast<const SymbolLabel*>(m_symbol) != 0);
+        assert (dynamic_cast<const SymbolLabel*>(m_symbol) != NULL);
         os << static_cast<const SymbolLabel*>(m_symbol)->target()->index();
     }
 };
@@ -172,7 +172,7 @@ Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
 }
 
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, Symbol *arg2) {
-    Imop* i = 0;
+    Imop* i = NULL;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1, arg2);
     }
@@ -184,7 +184,7 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
 }
 
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
-    Imop* i = 0;
+    Imop* i = NULL;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1);
     }
@@ -201,8 +201,8 @@ Imop* newCall (TreeNode* node) {
 
 
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
-    assert (dest != 0);
-    Imop* i = 0;
+    assert (dest != NULL);
+    Imop* i = NULL;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest);
     }
@@ -255,7 +255,7 @@ Imop::OperandConstRange Imop::useRange () const {
 
     const OperandConstIterator i = m_args.begin () + off;
     OperandConstIterator e = i;
-    for (; e != m_args.end () && *e != 0; ++ e);
+    for (; e != m_args.end () && *e != NULL; ++ e);
     return std::make_pair (i, e);
 }
 
@@ -273,8 +273,8 @@ Imop::OperandConstRange Imop::defRange () const {
     }
 
     if (type () == CALL) {
-        for  (++ i ; *i != 0 && i != e; ++ i);
-        if (i != m_args.end () && *i == 0) ++ i;
+        for  (++ i ; *i != NULL && i != e; ++ i);
+        if (i != m_args.end () && *i == NULL) ++ i;
         return std::make_pair (i, e);
     }
 
@@ -284,14 +284,14 @@ Imop::OperandConstRange Imop::defRange () const {
 const Imop *Imop::callDest() const {
     assert(m_type == CALL);
     assert(dest()->symbolType() == SYM_PROCEDURE);
-    assert(dynamic_cast<const SymbolProcedure*>(dest()) != 0);
-    assert(static_cast<const SymbolProcedure*>(dest())->target () != 0);
+    assert(dynamic_cast<const SymbolProcedure*>(dest()) != NULL);
+    assert(static_cast<const SymbolProcedure*>(dest())->target () != NULL);
     return static_cast<const SymbolProcedure*>(dest())->target ();
 }
 
 SymbolLabel* Imop::jumpDest() const {
     Symbol* sym = dest ();
-    assert (dynamic_cast<SymbolLabel*>(sym) != 0);
+    assert (dynamic_cast<SymbolLabel*>(sym) != NULL);
     return static_cast<SymbolLabel*>(sym);
 }
 
@@ -388,8 +388,8 @@ void Imop::print(std::ostream & os) const {
         os << "if (!" << a1name << ") GOTO " << tname;
         break;
     case COMMENT:      /* // arg1                            */
-        assert (arg1 () != 0);
-        assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+        assert (arg1 () != NULL);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != NULL);
         os << "// " << static_cast<const ConstantString*>(arg1())->value ();
         break;
     case ERROR:        /* // arg1                            */
@@ -399,8 +399,8 @@ void Imop::print(std::ostream & os) const {
         os << "PRINT " << a1name;
         break;
     case SYSCALL:
-        assert (arg1 () != 0);
-        assert (dynamic_cast<const ConstantString*>(arg1()) != 0);
+        assert (arg1 () != NULL);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != NULL);
         if (dest ())
             os << dname << " = ";
         os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";

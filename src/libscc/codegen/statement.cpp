@@ -236,7 +236,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit,
         return CGResult::ERROR_CONTINUE;
 
     const bool isScalar = ty->isScalar();
-    const bool isString = ty->secrecDataType() == DATATYPE_STRING;
+    const bool isString = ty->secrecDataType()->isString ();
     const bool isPrivate = ty->secrecSecType()->isPrivate();
 
 
@@ -681,7 +681,8 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         CGResult eResult = codeGen(e);
         append(result, eResult);
         Symbol* resultSym = eResult.symbol ();
-        if (resultSym->isConstant () && resultSym->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+        if (resultSym->isConstant () && resultSym->secrecType ()->secrecDataType ()->isString ())
+        {
             Symbol* copy = m_st->appendTemporary (resultSym->secrecType ());
             Imop* i = new Imop (s, Imop::ASSIGN, copy, resultSym);
             pushImopAfter (result, i);
@@ -799,7 +800,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
         }
 
         Symbol * str = eResult.symbol();
-        if (e.resultType()->secrecDataType() != DATATYPE_STRING) {
+        if (! e.resultType()->secrecDataType()->isString ()) {
             str = m_st->appendTemporary(strTy);
             Imop * i = new Imop(s, Imop::TOSTRING, str, eResult.symbol());
             pushImopAfter(result, i);

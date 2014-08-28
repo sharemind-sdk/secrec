@@ -70,9 +70,9 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
         return child;
 
     TreeNode * const parent = child->parent();
-    SecrecDataType destDType = child->resultType()->secrecDataType();
+    DataType* destDType = child->resultType()->secrecDataType();
     if (child->haveContextDataType()) {
-        if (dtypeDeclassify (child->contextDataType()) == destDType)
+        if (dtypeDeclassify (getContext (), child->contextDataType()) == destDType)
             destDType = child->contextDataType();
     }
 
@@ -112,7 +112,7 @@ TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
     assert (e != 0);
     if (! e->haveResultType ()) {
         e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDataType (DATATYPE_BOOL);
+        e->setContextDataType (DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
         e->setContextDimType (0);
 
         if (visitExpr (e) != OK)
@@ -179,8 +179,11 @@ bool TypeChecker::canPrintValue (Type* ty) {
     if (! ty->isScalar ())
         return false;
 
-    SecrecDataType dType = ty->secrecDataType ();
-    if (dType != DATATYPE_STRING && dType != DATATYPE_BOOL && ! isNumericDataType (dType)) {
+    DataType* dType = ty->secrecDataType ();
+    if (! dType->isString () &&
+        ! dType->isBool () &&
+        ! isNumericDataType (dType))
+    {
         return false;
     }
 
