@@ -1371,7 +1371,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
 
     Type * ty = subExpr->resultType();
     if (ty->secrecSecType()->isPrivate() ||
-            sameDataTypes (ty->secrecDataType(), DATATYPE_UINT8) ||
+            ! sameDataTypes (ty->secrecDataType(), DATATYPE_UINT8) ||
             ty->secrecDimType() != 1)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "
