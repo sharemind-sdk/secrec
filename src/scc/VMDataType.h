@@ -11,6 +11,7 @@
 #define VM_DATA_TYPE_H
 
 #include <libscc/types.h>
+#include <libscc/DataType.h>
 
 namespace SecreCC {
 
@@ -51,6 +52,15 @@ inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     case DATATYPE_FLOAT32:    return VM_FLOAT32;
     case DATATYPE_FLOAT64:    return VM_FLOAT64;
     default:                  break;
+    }
+
+    return VM_INVALID;
+}
+
+inline VMDataType secrecDTypeToVMDType (SecreC::DataType* dtype) {
+    assert (dtype != NULL);
+    if (dtype->isPrimitive ()) {
+        return secrecDTypeToVMDType(static_cast<SecreC::DataTypePrimitive*>(dtype)->secrecDataType());
     }
 
     return VM_INVALID;

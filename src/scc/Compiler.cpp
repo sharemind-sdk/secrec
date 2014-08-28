@@ -38,7 +38,10 @@ namespace /* anonymous */ {
 
 VMDataType representationType (TypeNonVoid* tnv) {
     VMDataType ty = secrecDTypeToVMDType (tnv->secrecDataType ());
-    if (tnv->secrecDimType () > 0 || tnv->secrecSecType ()->isPrivate () || tnv->secrecDataType () == DATATYPE_STRING) {
+    if (tnv->secrecDimType () > 0 ||
+            tnv->secrecSecType ()->isPrivate () ||
+            tnv->secrecDataType ()->isString ())
+    {
         // arrays, and private values are represented by a handle
         ty = VM_UINT64;
     }
@@ -81,7 +84,7 @@ const char* imopToVMName (const Imop& imop) {
 }
 
 bool isString (const Symbol* sym) {
-    return sym->secrecType ()->secrecDataType () == DATATYPE_STRING;
+    return sym->secrecType ()->secrecDataType ()->isString ();
 }
 
 VMDataType getVMDataType (const Symbol* sym) {
@@ -208,7 +211,7 @@ bool isStringRelated (const Imop& imop) {
             continue;
 
         Type* ty = sym->secrecType ();
-        if (ty->secrecDataType () == DATATYPE_STRING)
+        if (ty->secrecDataType ()->isString ())
             return true;
     }
 
@@ -257,6 +260,14 @@ public: /* Methods: */
         return *this;
     }
 
+
+    SyscallName& operator << (DataType* ty) {
+        assert (ty != NULL);
+        assert (ty->isPrimitive ());
+        syscallMangleSecrecDataType (m_os, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+        return *this;
+    }
+
     std::string str () const {
         return m_os.str ();
     }
@@ -264,6 +275,7 @@ public: /* Methods: */
     static std::string arithm (TypeNonVoid* ty, Imop::Type iType);
     static std::string cast (TypeNonVoid* from, TypeNonVoid* to);
     static std::string tostring (SecrecDataType dType);
+    static std::string tostring (DataType* dType);
     static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true, bool needVec = true);
 
 private: /* Fields: */
@@ -274,6 +286,12 @@ std::string SyscallName::tostring (SecrecDataType dType) {
     SyscallName scname;
     scname << "miner_" << dType << "_to_string";
     return scname.str ();
+}
+
+std::string SyscallName::tostring (DataType* dType) {
+    assert (dType != NULL);
+    assert (dType->isPrimitive ());
+    return tostring (static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
 }
 
 
@@ -391,7 +409,7 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
 }
 
 void Compiler::pushString (VMBlock& block, const Symbol* str) {
-    assert (str->secrecType ()->secrecDataType () == DATATYPE_STRING);
+    assert (str->secrecType ()->secrecDataType ()->isString ());
     if (str->isConstant ()) {
         assert (dynamic_cast<const ConstantString*>(str) != 0);
         const ConstantString* cstr = static_cast<const ConstantString*>(str);
@@ -472,7 +490,7 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
 
     // type of arguments (if needed)
     if (imop.type () != Imop::JUMP) {
-        SecrecDataType scTy = imop.arg1 ()->secrecType ()->secrecDataType ();
+        DataType* scTy = imop.arg1 ()->secrecType ()->secrecDataType ();
         VMDataType ty = secrecDTypeToVMDType (scTy);
         assert (ty != VM_INVALID);
         instr << ty;
@@ -515,8 +533,8 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
 void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     VMLabel* target = 0;
 
-    SecrecDataType dType = imop.arg1 ()->secrecType ()->secrecDataType ();
-    if (dType == DATATYPE_BOOL) {
+    DataType* dType = imop.arg1 ()->secrecType ()->secrecDataType ();
+    if (dType->isBool ()) {
         target = m_st.getLabel (":bool_to_string__");
         m_funcs->insert (target, BuiltinBoolToString (m_strLit));
 
@@ -548,7 +566,7 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
 void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ASSIGN);
 
-    if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_STRING) {
+    if (imop.dest ()->secrecType ()->secrecDataType ()->isString ()) {
         pushString (block, imop.arg1 ());
         VMLabel* target = m_st.getLabel (":builtin_str_dup__");
         m_funcs->insert (target, BuiltinStrDup ());
@@ -600,7 +618,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         std::stringstream ss;
 
         VMLabel* target = 0;
-        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+        if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             block.push_new () << "push" << find (imop.dest ());
             block.push_new () << "push" << find (imop.arg1 ());
             block.push_new () << "push" << find (imop.arg2 ());
@@ -629,7 +647,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
     }
     else {
         VMInstruction instr;
-        if (imop.dest ()->secrecType ()->secrecDataType () == DATATYPE_BOOL) {
+        if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
             instr << "tgt" << destTy << find (imop.dest ())
                   << arg << m_st.getImm (0);
@@ -775,7 +793,7 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
 
     VMValue* rAddr = 0;
     if (imop.arg1 ()->isConstant ()) {
-        assert (imop.arg1 ()->secrecType ()->secrecDataType () == DATATYPE_STRING);
+        assert (imop.arg1 ()->secrecType ()->secrecDataType ()->isString ());
         rAddr = m_ra->temporaryReg ();
         block.push_new () << "mov imm :RODATA" << rAddr;
 
