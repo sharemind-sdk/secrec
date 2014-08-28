@@ -436,8 +436,8 @@ bool TypeChecker::unify (Instantiation& inst,
             StringRef styId = dataVar->identifier ()->value ();
             SymbolDataType* symDataType = m_st->find<SYM_TYPE> (styId);
             if (symDataType != NULL) {
-                assert (false && "TODO: Fix me! Compare resulting and expected user-defined types!");
-                return false;
+                if (expectedTy->secrecDataType () != symDataType->dataType ())
+                    return false;
             }
             else {
                 if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
