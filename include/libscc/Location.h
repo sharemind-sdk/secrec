@@ -10,13 +10,13 @@
 #ifndef SECREC_LOCATION_H
 #define SECREC_LOCATION_H
 
+#include "parser.h"
+
 #include <cassert>
 #include <iosfwd>
-#include <string>
-#include <map>
 #include <limits>
-
-#include "parser.h"
+#include <map>
+#include <string>
 
 namespace SecreC {
 

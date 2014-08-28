@@ -1,14 +1,14 @@
 #include "types.h"
 
-#include <cassert>
-#include <sstream>
-#include <iostream>
-#include <boost/foreach.hpp>
-
-#include "symbol.h"
 #include "context.h"
 #include "context_impl.h"
 #include "misc.h"
+#include "symbol.h"
+
+#include <boost/foreach.hpp>
+#include <cassert>
+#include <iostream>
+#include <sstream>
 
 namespace SecreC {
 

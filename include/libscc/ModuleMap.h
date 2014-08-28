@@ -10,8 +10,8 @@
 #ifndef SECREC_MODULE_MAP_H
 #define SECREC_MODULE_MAP_H
 
-#include <memory>
 #include <map>
+#include <memory>
 #include <string>
 
 namespace SecreC {

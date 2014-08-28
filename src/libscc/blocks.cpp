@@ -1,16 +1,16 @@
 #include "blocks.h"
 
-#include <algorithm>
-#include <boost/foreach.hpp>
-#include <iostream>
-#include <iomanip>
-#include <map>
-#include <sstream>
-
 #include "dataflowanalysis.h"
 #include "misc.h"
 #include "symbol.h"
 #include "treenode.h"
+
+#include <algorithm>
+#include <boost/foreach.hpp>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
 
 namespace SecreC {
 

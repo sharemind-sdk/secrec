@@ -13,8 +13,8 @@
 #include "treenode.h"
 #include "typechecker.h"
 
-#include <boost/range.hpp>
 #include <boost/foreach.hpp>
+#include <boost/range.hpp>
 
 namespace SecreC {
 

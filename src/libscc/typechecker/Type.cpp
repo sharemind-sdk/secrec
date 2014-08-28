@@ -7,11 +7,11 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "typechecker.h"
-#include "treenode.h"
+#include "log.h"
 #include "symbol.h"
 #include "symboltable.h"
-#include "log.h"
+#include "treenode.h"
+#include "typechecker.h"
 
 namespace SecreC {
 

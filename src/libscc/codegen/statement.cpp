@@ -1,15 +1,14 @@
-#include "treenode.h"
-
-#include <boost/foreach.hpp>
-
 #include "codegen.h"
 #include "constant.h"
 #include "log.h"
 #include "misc.h"
-#include "symboltable.h"
-#include "typechecker.h"
 #include "StringTable.h"
+#include "symboltable.h"
+#include "treenode.h"
+#include "typechecker.h"
 #include "types.h"
+
+#include <boost/foreach.hpp>
 
 /**
  * Code generation for statements.

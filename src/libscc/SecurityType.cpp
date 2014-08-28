@@ -1,8 +1,8 @@
 #include "SecurityType.h"
 
-#include "symbol.h"
 #include "context.h"
 #include "context_impl.h"
+#include "symbol.h"
 
 namespace SecreC {
 

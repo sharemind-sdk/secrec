@@ -11,8 +11,8 @@
 #define SECREC_ANALYSIS_DOMINATORS_H
 
 #include <iosfwd>
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace SecreC {
 

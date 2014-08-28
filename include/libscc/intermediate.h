@@ -1,16 +1,16 @@
 #ifndef INTERMEDIATE_H
 #define INTERMEDIATE_H
 
-#include <boost/optional/optional_fwd.hpp>
-#include <iosfwd>
-#include <string>
-
 #include "blocks.h"
 #include "context.h"
 #include "imop.h"
 #include "log.h"
 #include "ModuleMap.h"
 #include "symboltable.h"
+
+#include <boost/optional/optional_fwd.hpp>
+#include <iosfwd>
+#include <string>
 
 namespace SecreC {
 

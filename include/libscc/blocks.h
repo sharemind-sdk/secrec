@@ -1,12 +1,12 @@
 #ifndef SECREC_BLOCKS_H
 #define SECREC_BLOCKS_H
 
-#include <set>
+#include "CFG.h"
+#include "icodelist.h"
+
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
-
-#include "icodelist.h"
-#include "CFG.h"
+#include <set>
 
 #define FOREACH_BLOCK(IT,pr) \
     for (Program::const_iterator pit = pr.begin (); pit != pr.end (); ++ pit)\

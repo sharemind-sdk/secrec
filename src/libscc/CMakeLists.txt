@@ -54,6 +54,7 @@ SET(LIBSCC_SOURCES
     "typechecker/Expression.cpp"
     "typechecker/procedures.cpp"
     "typechecker/Statement.cpp"
+    "typechecker/Struct.cpp"
     "typechecker/templates.cpp"
     "typechecker/templates.h"
     "typechecker/Type.cpp"

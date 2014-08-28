@@ -1,17 +1,17 @@
 #include "treenode.h"
 
-#include <algorithm>
-#include <boost/foreach.hpp>
-#include <iostream>
-#include <sstream>
-
 #include "context.h"
 #include "misc.h"
+#include "StringTable.h"
 #include "symbol.h"
 #include "symboltable.h"
 #include "treenode_c.h"
 #include "typechecker.h"
-#include "StringTable.h"
+
+#include <algorithm>
+#include <boost/foreach.hpp>
+#include <iostream>
+#include <sstream>
 
 namespace SecreC {
 

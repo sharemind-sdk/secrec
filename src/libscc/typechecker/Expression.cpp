@@ -7,17 +7,17 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include <boost/range.hpp>
-#include <boost/foreach.hpp>
-
+#include "constant.h"
 #include "imop.h"
 #include "log.h"
 #include "symbol.h"
-#include "constant.h"
+#include "symboltable.h"
 #include "treenode.h"
 #include "typechecker.h"
-#include "symboltable.h"
 #include "types.h"
+
+#include <boost/foreach.hpp>
+#include <boost/range.hpp>
 
 namespace SecreC {
 

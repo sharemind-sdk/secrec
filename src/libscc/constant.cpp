@@ -1,13 +1,12 @@
 #include "constant.h"
 
-#include <string>
-#include <sstream>
-#include <cstring>
-
-#include <boost/foreach.hpp>
-
 #include "context.h"
 #include "context_impl.h"
+
+#include <boost/foreach.hpp>
+#include <cstring>
+#include <sstream>
+#include <string>
 
 namespace SecreC {
 

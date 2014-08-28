@@ -1,9 +1,9 @@
 #ifndef ICODELIST_H
 #define ICODELIST_H
 
-#include <boost/intrusive/list.hpp>
-
 #include "imop.h"
+
+#include <boost/intrusive/list.hpp>
 
 namespace SecreC {
 

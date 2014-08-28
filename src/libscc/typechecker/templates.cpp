@@ -9,13 +9,13 @@
 
 #include "typechecker/templates.h"
 
-#include <boost/foreach.hpp>
-
 #include "log.h"
 #include "ModuleInfo.h"
 #include "symbol.h"
 #include "symboltable.h"
 #include "treenode.h"
+
+#include <boost/foreach.hpp>
 
 namespace SecreC {
 

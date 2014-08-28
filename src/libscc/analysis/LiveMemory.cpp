@@ -1,9 +1,9 @@
 #include "analysis/LiveMemory.h"
 
+#include "symbol.h"
+
 #include <boost/foreach.hpp>
 #include <sstream>
-
-#include "symbol.h"
 
 namespace { /* anonymous */
 

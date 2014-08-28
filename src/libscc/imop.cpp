@@ -1,14 +1,14 @@
 #include "imop.h"
 
+#include "constant.h"
+#include "symboltable.h"
+#include "treenode.h"
+
 #include <algorithm>
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include <iostream>
 #include <sstream>
-
-#include "constant.h"
-#include "symboltable.h"
-#include "treenode.h"
 
 namespace SecreC {
 

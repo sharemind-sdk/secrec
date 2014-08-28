@@ -1,14 +1,14 @@
 #ifndef SECREC_CODE_GEN_H
 #define SECREC_CODE_GEN_H
 
-#include <map>
-#include <set>
-#include <vector>
-
 #include "CodeGenState.h"
 #include "icodelist.h"
 #include "symbol_fwd.h"
 #include "treenode_fwd.h"
+
+#include <map>
+#include <set>
+#include <vector>
 
 namespace SecreC {
 

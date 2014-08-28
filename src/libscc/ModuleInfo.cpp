@@ -8,9 +8,10 @@
  */
 
 #include "ModuleInfo.h"
-#include "treenode.h"
+
 #include "context.h"
 #include "context_impl.h"
+#include "treenode.h"
 
 #include <boost/filesystem.hpp>
 

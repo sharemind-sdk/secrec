@@ -9,11 +9,11 @@
 
 #include "dataflowanalysis.h"
 
-#include <boost/foreach.hpp>
-#include <boost/thread.hpp>
-#include <boost/ref.hpp>
-
 #include "intermediate.h"
+
+#include <boost/foreach.hpp>
+#include <boost/ref.hpp>
+#include <boost/thread.hpp>
 
 namespace SecreC {
 

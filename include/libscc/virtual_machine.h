@@ -1,8 +1,6 @@
 #ifndef SECREC_VIRTUAL_MACHINE_H
 #define SECREC_VIRTUAL_MACHINE_H
 
-#include <string>
-
 namespace SecreC {
 
 class Program;

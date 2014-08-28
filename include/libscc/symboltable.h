@@ -1,10 +1,11 @@
 #ifndef SECREC_SYMBOLTABLE_H
 #define SECREC_SYMBOLTABLE_H
 
-#include <vector>
 #include "StringRef.h"
 #include "symbol_fwd.h"
 #include "treenode_fwd.h"
+
+#include <vector>
 
 namespace SecreC {
 

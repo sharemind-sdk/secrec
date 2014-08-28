@@ -9,10 +9,10 @@
 
 #include "ModuleMap.h"
 
+#include "ModuleInfo.h"
+
 #include <boost/foreach.hpp>
 #include <boost/range/adaptors.hpp>
-
-#include "ModuleInfo.h"
 
 using namespace boost;
 

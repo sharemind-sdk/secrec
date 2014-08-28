@@ -9,19 +9,19 @@
 
 #include "typechecker.h"
 
-#include <vector>
-#include <sstream>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/foreach.hpp>
-#include <boost/range.hpp>
-
 #include "log.h"
 #include "ModuleInfo.h"
 #include "symbol.h"
 #include "symboltable.h"
 #include "templates.h"
 #include "treenode.h"
+
+#include <boost/foreach.hpp>
+#include <boost/range.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <sstream>
+#include <vector>
 
 namespace SecreC {
 

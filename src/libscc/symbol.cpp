@@ -1,11 +1,11 @@
 #include "symbol.h"
 
-#include <string>
-#include <boost/foreach.hpp>
-
 #include "blocks.h"
 #include "imop.h"
 #include "treenode.h"
+
+#include <boost/foreach.hpp>
+#include <string>
 
 namespace SecreC {
 

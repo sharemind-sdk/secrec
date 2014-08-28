@@ -1,13 +1,13 @@
 #ifndef SECREC_CONSTANT_H
 #define SECREC_CONSTANT_H
 
-#include <cassert>
-#include <stdint.h>
-#include <mpfr.h>
-#include <iostream>
-#include <stdexcept>
-
 #include "symbol.h"
+
+#include <cassert>
+#include <iostream>
+#include <mpfr.h>
+#include <stdexcept>
+#include <stdint.h>
 
 
 #if MPFR_VERSION >= 0x030000

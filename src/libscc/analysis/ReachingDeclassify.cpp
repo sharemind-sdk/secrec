@@ -9,12 +9,12 @@
 
 #include "analysis/ReachingDeclassify.h"
 
-#include <boost/foreach.hpp>
-#include <sstream>
-
 #include "misc.h"
 #include "symbol.h"
 #include "treenode.h"
+
+#include <boost/foreach.hpp>
+#include <sstream>
 
 namespace SecreC {
 

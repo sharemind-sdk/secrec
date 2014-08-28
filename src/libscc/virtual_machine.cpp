@@ -1,21 +1,21 @@
 #include "virtual_machine.h"
 
-#include <string>
-#include <sstream>
-#include <map>
-#include <stack>
-#include <iostream>
+#include "blocks.h"
+#include "constant.h"
+#include "symboltable.h"
+#include "treenode.h"
+
+#include <boost/foreach.hpp>
+#include <boost/preprocessor/control/if.hpp>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <stack>
 #include <stdint.h>
-#include <boost/preprocessor/control/if.hpp>
-#include <boost/foreach.hpp>
-
-#include "symboltable.h"
-#include "blocks.h"
-#include "constant.h"
-#include "treenode.h"
+#include <string>
 
 #define LEAVETRACE 0
 #define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)

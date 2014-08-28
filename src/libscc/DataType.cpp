@@ -5,8 +5,8 @@
 #include "misc.h"
 #include "symbol.h"
 
-#include <sstream>
 #include <boost/foreach.hpp>
+#include <sstream>
 
 
 namespace SecreC {

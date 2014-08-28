@@ -10,8 +10,9 @@
 #ifndef SECREC_SECURITYTYPE_H
 #define SECREC_SECURITYTYPE_H
 
-#include <iosfwd>
 #include "StringRef.h"
+
+#include <iosfwd>
 
 namespace SecreC {
 

@@ -1,15 +1,15 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
+#include "DataType.h"
+#include "parser.h"
+#include "StringRef.h"
+#include "symbol_fwd.h"
+#include "treenode_fwd.h"
+
 #include <cassert>
 #include <iterator>
 #include <vector>
-
-#include "parser.h"
-#include "treenode_fwd.h"
-#include "StringRef.h"
-#include "symbol_fwd.h"
-#include "DataType.h"
 
 namespace SecreC {
 

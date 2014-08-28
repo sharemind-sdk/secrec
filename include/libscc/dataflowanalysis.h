@@ -1,10 +1,10 @@
 #ifndef SECREC_DATAFLOW_ANALYSIS_H
 #define SECREC_DATAFLOW_ANALYSIS_H
 
+#include "blocks.h"
+
 #include <set>
 #include <string>
-
-#include "blocks.h"
 
 template <class T, class U>
 inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {

@@ -1,16 +1,16 @@
-#include <boost/foreach.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 #include "codegen.h"
 #include "log.h"
 #include "misc.h"
 #include "ModuleInfo.h"
 #include "ModuleMap.h"
+#include "StringTable.h"
 #include "symbol.h"
 #include "symboltable.h"
-#include "StringTable.h"
 #include "treenode.h"
 #include "typechecker/templates.h"
+
+#include <boost/filesystem/fstream.hpp>
+#include <boost/foreach.hpp>
 
 /**
  * Code generation for top level statements.

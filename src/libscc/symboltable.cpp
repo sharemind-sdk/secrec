@@ -1,14 +1,14 @@
 #include "symboltable.h"
 
+#include "symbol.h"
+#include "treenode.h"
+
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <boost/foreach.hpp>
-
-#include "symbol.h"
-#include "treenode.h"
 
 namespace SecreC {
 

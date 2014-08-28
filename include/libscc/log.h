@@ -1,11 +1,12 @@
 #ifndef SECREC_LOG_H
 #define SECREC_LOG_H
 
+#include "misc.h"
+#include "types.h"
+
 #include <cassert>
 #include <deque>
 #include <sstream>
-#include "misc.h"
-#include "types.h"
 
 /**
  * \todo Refactor this and ninja everything from sharemind logging facilities (low priority).

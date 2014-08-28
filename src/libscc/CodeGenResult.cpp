@@ -9,9 +9,10 @@
 
 #include "codegenResult.h"
 
-#include <boost/foreach.hpp>
 #include "intermediate.h"
 #include "symbol.h"
+
+#include <boost/foreach.hpp>
 
 namespace SecreC {
 

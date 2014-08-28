@@ -9,13 +9,13 @@
 
 #include "context_impl.h"
 
-#include <map>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/foreach.hpp>
-
-#include "types.h"
 #include "misc.h"
+#include "types.h"
+
+#include <boost/foreach.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <map>
 
 namespace /* anonymous */ {
 template <typename Key, typename T, typename Cmp >

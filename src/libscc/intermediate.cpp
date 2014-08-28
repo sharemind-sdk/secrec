@@ -1,14 +1,14 @@
 #include "intermediate.h"
 
-#include <boost/optional/optional.hpp>
-#include <iostream>
-
 #include "codegen.h"
 #include "context.h"
+#include "context_impl.h"
+#include "symboltable.h"
 #include "treenode.h"
 #include "virtual_machine.h"
-#include "symboltable.h"
-#include "context_impl.h"
+
+#include <boost/optional/optional.hpp>
+#include <iostream>
 
 namespace SecreC {
 

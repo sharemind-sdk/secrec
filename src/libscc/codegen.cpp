@@ -1,14 +1,14 @@
 #include "codegen.h"
 
-#include <boost/foreach.hpp>
-
+#include "constant.h"
+#include "context_impl.h"
 #include "intermediate.h"
 #include "misc.h"
-#include "constant.h"
 #include "symboltable.h"
 #include "treenode.h"
 #include "typechecker.h"
-#include "context_impl.h"
+
+#include <boost/foreach.hpp>
 
 namespace SecreC {
 

@@ -1,15 +1,12 @@
 #include "codegen.h"
-#include "treenode.h"
-
-#include <stack>
-
-#include <boost/foreach.hpp>
-
-#include "log.h"
-#include "symboltable.h"
 #include "constant.h"
+#include "log.h"
 #include "misc.h"
 #include "ModuleInfo.h"
+#include "symboltable.h"
+#include "treenode.h"
+
+#include <boost/foreach.hpp>
 
 
 /**

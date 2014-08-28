@@ -9,8 +9,9 @@
 
 #include "TypeContext.h"
 
-#include <ostream>
 #include "misc.h"
+
+#include <ostream>
 
 namespace SecreC {
 

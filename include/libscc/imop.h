@@ -1,11 +1,11 @@
 #ifndef SECREC_IMOP_H
 #define SECREC_IMOP_H
 
+#include "parser.h"
+
+#include <boost/intrusive/list.hpp>
 #include <cassert>
 #include <vector>
-#include <boost/intrusive/list.hpp>
-
-#include "parser.h"
 
 namespace SecreC {
 

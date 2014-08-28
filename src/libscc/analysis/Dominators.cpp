@@ -9,11 +9,11 @@
 
 #include "analysis/Dominators.h"
 
-#include <boost/foreach.hpp>
-
-#include "symbol.h"
 #include "blocks.h"
+#include "symbol.h"
 #include "treenode.h"
+
+#include <boost/foreach.hpp>
 
 namespace SecreC {
 

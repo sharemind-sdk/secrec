@@ -11,8 +11,8 @@
 #define SECREC_STRINGREF_H
 
 #include <boost/functional/hash_fwd.hpp>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <iosfwd>
 #include <string>
 

@@ -10,14 +10,14 @@
 #ifndef CONTEXT_IMPL_H
 #define CONTEXT_IMPL_H
 
-#include <map>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include "parser.h"
 #include "types.h"
 #include "constant.h"
 #include "StringTable.h"
+
+#include <map>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 namespace SecreC {
 

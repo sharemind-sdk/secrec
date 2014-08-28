@@ -1,9 +1,10 @@
 #ifndef SECREC_MISC_H
 #define SECREC_MISC_H
 
+#include "parser.h"
+
 #include <cassert>
 #include <string>
-#include "parser.h"
 
 std::string strEscape (const std::string& input);
 

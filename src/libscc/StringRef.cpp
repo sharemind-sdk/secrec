@@ -8,6 +8,7 @@
  */
 
 #include "StringRef.h"
+
 #include "StringTable.h"
 
 #include <ostream>
