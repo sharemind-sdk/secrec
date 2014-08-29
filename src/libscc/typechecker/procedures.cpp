@@ -434,15 +434,8 @@ bool TypeChecker::unify (Instantiation& inst,
         if (argNodeTy->dataType ()->isVariable ()) {
             TreeNodeDataTypeVarF* dataVar = static_cast<TreeNodeDataTypeVarF*>(argNodeTy->dataType ());
             StringRef styId = dataVar->identifier ()->value ();
-            SymbolDataType* symDataType = m_st->find<SYM_TYPE> (styId);
-            if (symDataType != NULL) {
-                if (expectedTy->secrecDataType () != symDataType->dataType ())
-                    return false;
-            }
-            else {
-                if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
-                    return false;
-            }
+            if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
+                return false;
         }
         else {
             TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(argNodeTy->dataType ());
@@ -520,6 +513,7 @@ bool TypeChecker::unify (Instantiation& inst,
 
     BOOST_FOREACH (TreeNodeQuantifier& quant, t->quantifiers ()) {
         StringRef typeVar = quant.typeVariable ()->value ();
+        assert (varMap.find (typeVar) != varMap.end ());
         const TemplateParameter& param = varMap.find (typeVar)->second;
         if (quant.type () == NODE_TEMPLATE_DOMAIN_QUANT) {
             TreeNodeDomainQuantifier* domain = static_cast<TreeNodeDomainQuantifier*>(&quant);

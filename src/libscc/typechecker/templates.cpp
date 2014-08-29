@@ -207,10 +207,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
 
 SymbolTypeVariable* TemplateParameter::bind (StringRef name) const {
     switch (m_kind) {
+    case TV_UNDEF: return NULL;
     case TV_SEC:   return new SymbolDomain (name, secType ());
-    case TV_DIM:   return new SymbolDimensionality (name, dimType ());
     case TV_DATA:  return new SymbolDataType (name, dataType ());
-    case TV_UNDEF: return 0;
+    case TV_DIM:   return new SymbolDimensionality (name, dimType ());
     }
 }
 
