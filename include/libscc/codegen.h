@@ -161,6 +161,7 @@ class CodeGen : public CodeGenState {
     friend class ScopedStateUse;
     friend class ScopedScope;
     friend class ScopedLoop;
+    friend class ScopedSetNode;
     friend struct ScopedSetSymbolTable;
 private:
 
@@ -342,10 +343,34 @@ private:
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
 
+    /**
+     * @brief CodeGen::cgProcParam Expect the given symbol as procedure parameter.
+     * @param sym Expected procedure parameter (it's subsymbols are also expected as parameters).
+     * @return Code generation result.
+     */
     CGResult cgProcParam (SymbolSymbol* sym);
+
+    /**
+     * @brief CodeGen::cgInitalizeToDefaultValue Initialize the given symbol to the default value.
+     * @param sym The symbol that need to be initialized.
+     * @param hasShape If the shape of the array has already been computed.
+     * @return Code generation result.
+     */
+    CGResult cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape = false);
+
+    /**
+     * @brief cgInitializeToSymbol Initialize the lhs to the value of rhs.
+     * @param lhs The left hand side symbol.
+     * @param rhs The right hand side symbol.
+     * @param hasShape If the left hand side has fixed shape.
+     * @return Code generation result.
+     */
+    CGResult cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape = false);
+
     CGResult cgProcCall (SymbolProcedure* symProc,
                          SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);
+
 
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
@@ -353,7 +378,6 @@ private:
     /// generate symbol for given type
     SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
 
-    CGResult cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape);
 
     CGStmtResult cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
@@ -382,6 +406,29 @@ private: /* Fields: */
     STList        m_loops;
     TypeChecker*  m_tyChecker;    ///< Instance of the type checker.
     CallMap       m_callsTo;      ///< Unpatched procedure calls.
+};
+
+
+/*******************************************************************************
+  ScopedSetNode
+*******************************************************************************/
+
+class ScopedSetNode {
+public:
+    ScopedSetNode (CodeGen& codeGen, TreeNode* node)
+        : m_codeGen (codeGen)
+        , m_node (node)
+    {
+        std::swap (m_codeGen.m_node, m_node);
+    }
+
+    ~ScopedSetNode () {
+        std::swap (m_codeGen.m_node, m_node);
+    }
+
+private:
+    CodeGen&   m_codeGen;
+    TreeNode*  m_node;
 };
 
 

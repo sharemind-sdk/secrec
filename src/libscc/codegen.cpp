@@ -528,11 +528,6 @@ SymbolTable * CodeGen::loopST() const {
     return m_loops.empty() ? 0 : m_loops.back();
 }
 
-/**
- * @brief CodeGen::cgProcParam Expect the given symbol as procedure parameter.
- * @param sym Expected procedure parameter (it's subsymbols are also expected as parameters).
- * @return Code generation result.
- */
 CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     assert (sym != NULL && sym->secrecType () != NULL);
 
@@ -570,12 +565,6 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     return result;
 }
 
-/**
- * @brief CodeGen::cgInitalizeToDefaultValue Initialize the given symbol to the default value.
- * @param sym The symbol that need to be initialized.
- * @param hasShape If the shape of the array has already been computed.
- * @return Code generation status.
- */
 CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     assert (sym != NULL && sym->secrecType () != NULL);
 
@@ -608,6 +597,89 @@ CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     }
     else {
         pushImopAfter(result, new Imop(m_node, Imop::ALLOC, sym, def, getSizeOr(sym, 0)));
+    }
+
+    return result;
+}
+
+CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape) {
+    assert (lhs != NULL && lhs->secrecType () != NULL);
+    assert (rhs != NULL && rhs->secrecType () != NULL);
+    assert (m_node != NULL);
+
+    TypeNonVoid* ty = lhs->secrecType ();
+    TypeBasic* pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    CGResult result;
+    result.setResult (lhs);
+
+    if (ty->secrecDataType ()->isComposite ()) {
+        assert (ty == rhs->secrecType ());
+        for (size_t i = 0; i < lhs->fields ().size (); ++ i) {
+            SymbolSymbol* lhsField = lhs->fields ().at (i);
+            SymbolSymbol* rhsField = static_cast<SymbolSymbol*>(rhs)->fields ().at (i);
+            append (result, cgInitializeToSymbol (lhsField, rhsField, false));
+            if (result.isNotOk ())
+                return result;
+        }
+
+        return result;
+    }
+
+    if (hasShape) { // type[[n>0]] x(i_1,...,i_n) = foo;
+        if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
+            // fill lhs with constant value
+            pushImopAfter(result, new Imop(m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym()));
+            releaseTemporary(result, rhs);
+        }
+        else {
+            // check that shapes match and assign
+            std::stringstream ss;
+            ss << "Shape mismatch at " << m_node->location();
+            Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
+            SymbolLabel * const errLabel = m_st->label(err);
+            dim_iterator lhsDimIter = dim_begin(lhs);
+            BOOST_FOREACH (Symbol * rhsDim, dim_range(rhs)) {
+                SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
+                pushImopAfter(result, new Imop(m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter));
+                push_imop(new Imop(m_node, Imop::JT, errLabel, temp_bool));
+
+                ++lhsDimIter;
+            }
+
+            Imop * const jmp = new Imop(m_node, Imop::JUMP, NULL);
+            Imop * const i = new Imop(m_node, Imop::COPY, lhs, rhs, lhs->getSizeSym());
+            jmp->setDest(m_st->label(i));
+            pushImopAfter(result, jmp);
+            push_imop(err);
+            push_imop(i);
+            releaseTemporary(result, rhs);
+        }
+    } else {
+        if (ty->secrecDimType() > 0) { // type[[>0]] x = foo;
+            if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
+                pushImopAfter(result, new Imop(m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym()));
+                releaseTemporary(result, rhs);
+            } else {
+                assert(ty->secrecDimType() == rhs->secrecType()->secrecDimType());
+
+                dim_iterator srcIter = dim_begin(rhs);
+                BOOST_FOREACH (Symbol * const destSym, dim_range(lhs)) {
+                    assert(srcIter != dim_end(rhs));
+                    pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, destSym, *srcIter));
+                    ++srcIter;
+                }
+
+                // The type checker should ensure that the symbol is a symbol (and not a constant):
+                assert(rhs->symbolType() == SYM_SYMBOL);
+                SymbolSymbol * const s = static_cast<SymbolSymbol *>(rhs);
+                pushImopAfter(result, newAssign(m_node,  lhs->getSizeSym(), s->getSizeSym()));
+                pushImopAfter(result, new Imop(m_node, Imop::COPY, lhs, s, lhs->getSizeSym()));
+                releaseTemporary(result, rhs);
+            }
+        } else { // scalar_type x = scalar;
+            pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, lhs, rhs));
+            releaseTemporary(result, rhs);
+        }
     }
 
     return result;

@@ -16,6 +16,7 @@ namespace SecreC {
 
 class SymbolTable;
 class TreeNode;
+class ScopedSetNode;
 
 /*******************************************************************************
   CodeGenState
@@ -31,6 +32,7 @@ struct ScopedSetSymbolTable;
  */
 class CodeGenState {
     friend class CodeGen;
+    friend class ScopedSetNode;
     friend struct ScopedSetSymbolTable;
 protected: /* Types: */
 

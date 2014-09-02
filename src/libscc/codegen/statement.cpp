@@ -266,11 +266,11 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     if (m_tyChecker->checkVarInit(ty, varInit) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
+    ScopedSetNode scopedSetNode (*this, varInit);
+
     const bool isScalar = ty->isScalar();
     const bool isString = ty->secrecDataType()->isString ();
     const bool isStruct = ty->secrecDataType ()->isComposite ();
-
-    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
     m_st->appendSymbol(ns);
@@ -338,65 +338,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
         if (result.isNotOk())
             return result;
 
-        Symbol * const eResultSymbol = eResult.symbol();
-
-        if (shapeExpressions != 0) { // type[[n>0]] x(i_1,...,i_n) = foo;
-            if (ty->secrecDimType() > eResultSymbol->secrecType()->secrecDimType()) {
-                // fill lhs with constant value
-                pushImopAfter(result, new Imop(varInit, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym()));
-                releaseTemporary(result, eResultSymbol);
-            }
-            else {
-                // check that shapes match and assign
-                std::stringstream ss;
-                ss << "Shape mismatch at " << varInit->location();
-                Imop * err = newError(varInit, ConstantString::get(getContext(), ss.str()));
-                SymbolLabel * const errLabel = m_st->label(err);
-                dim_iterator lhsDimIter = dim_begin(ns);
-                BOOST_FOREACH (Symbol * rhsDim, dim_range(eResultSymbol)) {
-                    SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
-                    pushImopAfter(result, new Imop(varInit, Imop::NE, temp_bool, rhsDim, *lhsDimIter));
-                    push_imop(new Imop(varInit, Imop::JT, errLabel, temp_bool));
-
-                    ++lhsDimIter;
-                }
-
-                Imop * const jmp = new Imop(varInit, Imop::JUMP, NULL);
-                Imop * const i = new Imop(varInit, Imop::COPY, ns, eResultSymbol, ns->getSizeSym());
-                jmp->setDest(m_st->label(i));
-                pushImopAfter(result, jmp);
-                push_imop(err);
-                push_imop(i);
-                releaseTemporary(result, eResultSymbol);
-            }
-        } else {
-            if (ty->secrecDimType() > 0) { // type[[>0]] x = foo;
-                if (ty->secrecDimType() > eResultSymbol->secrecType()->secrecDimType()) {
-                    pushImopAfter(result, new Imop(varInit, Imop::ALLOC, ns, eResultSymbol, ns->getSizeSym()));
-                    releaseTemporary(result, eResultSymbol);
-                } else {
-                    assert(ty->secrecDimType() == eResultSymbol->secrecType()->secrecDimType());
-
-                    dim_iterator srcIter = dim_begin(eResultSymbol);
-                    BOOST_FOREACH (Symbol * const destSym, dim_range(ns)) {
-                        assert(srcIter != dim_end(eResultSymbol));
-                        pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, destSym, *srcIter));
-                        ++srcIter;
-                    }
-
-                    // The type checker should ensure that the symbol is a symbol (and not a constant):
-                    assert(eResultSymbol->symbolType() == SYM_SYMBOL);
-                    SymbolSymbol * const s = static_cast<SymbolSymbol *>(eResultSymbol);
-                    pushImopAfter(result, newAssign(varInit,  ns->getSizeSym(), s->getSizeSym()));
-                    pushImopAfter(result, new Imop(varInit, Imop::COPY, ns, s, ns->getSizeSym()));
-                    releaseTemporary(result, eResultSymbol);
-                }
-            } else { // scalar_type x = scalar;
-                pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns, eResultSymbol));
-                releaseTemporary(result, eResultSymbol);
-            }
-        }
-
+        append (result, cgInitializeToSymbol (ns, eResult.symbol (), shapeExpressions != 0));
         return result;
     }
     else {
