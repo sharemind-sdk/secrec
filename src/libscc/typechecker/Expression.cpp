@@ -200,8 +200,40 @@ TypeChecker::Status TreeNodeExprSelection::accept(TypeChecker & tyChecker) {
     return tyChecker.visit(this);
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection *) {
-    assert (false && "TODO: implement TreeNodeExprSelection type checking");
+TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
+    if (e->haveResultType())
+        return OK;
+
+    // Check subexpression:
+    TreeNodeExpr* structExpr = e->expression ();
+    TCGUARD (visitExpr (structExpr));
+    if (structExpr->resultType()->kind () != Type::BASIC ||
+            ! structExpr->resultType()->secrecDataType ()->isComposite ())
+    {
+        m_log.fatal () << "Expecting structure, got" << *structExpr->resultType() << ". "
+                       << "Error at " << structExpr->location () << ".";
+        return TypeChecker::E_TYPE;
+    }
+
+    // Verify attribute access:
+    DataTypeStruct* structType = static_cast<DataTypeStruct*>(structExpr->resultType()->secrecDataType ());
+    StringRef fieldName = e->identifier ()->value ();
+    TypeBasic* matchingFieldType = NULL;
+    typedef DataTypeStruct::Field Field;
+    BOOST_FOREACH (const Field& field, structType->fields ()) {
+        if (fieldName == field.name) {
+            matchingFieldType = field.type;
+            break;
+        }
+    }
+
+    if (matchingFieldType == NULL) {
+        m_log.fatal () << "Invalid attribute \'" << fieldName << "\'. "
+                       << "Error at " << e->identifier ()->location () << ".";
+        return E_TYPE;
+    }
+
+    e->setResultType (matchingFieldType);
     return E_TYPE;
 }
 
