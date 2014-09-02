@@ -151,7 +151,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType())
-    , m_size (0)
+    , m_size (NULL)
     , m_isTemporary (false)
 {
     setName(name);
@@ -161,7 +161,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType ())
-    , m_size (0)
+    , m_size (NULL)
     , m_isTemporary (true)
 {
     setName(name);
@@ -192,7 +192,7 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 SymbolProcedure::SymbolProcedure(StringRef name,
                                  TypeProc* type)
     : Symbol(SYM_PROCEDURE, type)
-    , m_target(0)
+    , m_target(NULL)
 {
     setName(name);
 }
@@ -244,12 +244,12 @@ void SymbolUserProcedure::print(std::ostream & os) const {
 SymbolLabel::SymbolLabel (Imop* target)
     : Symbol (SYM_LABEL)
     , m_target (target)
-    , m_block (0)
+    , m_block (NULL)
 { }
 
 SymbolLabel::SymbolLabel (Block* block)
     : Symbol (SYM_LABEL)
-    , m_target (0)
+    , m_target (NULL)
     , m_block (block)
 { }
 

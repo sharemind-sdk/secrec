@@ -266,20 +266,15 @@ DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
     return dType;
 }
 
-bool sameDataTypes (const DataType* a, SecrecDataType b) {
-    assert (a != NULL);
-    if (a->isComposite ())
+/*******************************************************************************
+  DataType
+*******************************************************************************/
+
+bool DataType::equals (SecrecDataType other) const {
+    if (! isPrimitive ())
         return false;
 
-    return getSecrecDataType (a) == b;
-}
-
-bool sameDataTypes (SecrecDataType a, const DataType* b) {
-    assert (b != NULL);
-    if (b->isComposite ())
-        return false;
-
-    return a == getSecrecDataType (b);
+    return getSecrecDataType (this) == other;
 }
 
 /*******************************************************************************

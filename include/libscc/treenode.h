@@ -386,7 +386,7 @@ class TreeNodeTypeVarF: public TreeNodeTypeF {
 public: /* Methods: */
     inline TreeNodeTypeVarF (const Location & loc)
         : TreeNodeTypeF (NODE_TYPEVAR, loc)
-        , m_typeVariable (0)
+        , m_typeVariable (NULL)
     { }
 
     SymbolTypeVariable* typeVariable () const { return m_typeVariable; }
@@ -413,7 +413,7 @@ class TreeNodeSecTypeF: public TreeNodeTypeF {
 public: /* Methods: */
     inline TreeNodeSecTypeF(SecrecTreeNodeType type, const Location & loc)
         : TreeNodeTypeF (type, loc)
-        , m_cachedType (0)
+        , m_cachedType (NULL)
     { }
 
     inline bool isPublic () const { return m_type == NODE_SECTYPE_PUBLIC_F; }
@@ -443,7 +443,8 @@ public: /* Methods: */
     inline TreeNodeDataTypeF (SecrecTreeNodeType type,
                               const Location & loc)
         : TreeNodeTypeF(type, loc)
-        , m_dataType (NULL) {}
+        , m_dataType (NULL)
+    { }
 
     inline DataType* cachedType () const { return m_dataType; }
     inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
@@ -570,7 +571,7 @@ public: /* Methods: */
     inline TreeNodeType(SecrecTreeNodeType type,
                         const Location & loc)
         : TreeNode(type, loc)
-        , m_cachedType (0)
+        , m_cachedType (NULL)
     { }
 
     Type* secrecType () const;
@@ -641,7 +642,7 @@ public: /* Methods: */
     inline TreeNodeExpr(SecrecTreeNodeType type,
                         const Location & loc)
         : TreeNode (type, loc)
-        , m_resultType (0)
+        , m_resultType (NULL)
     { }
 
     void instantiateDataType (Context& cxt, DataType* dType) {
@@ -655,7 +656,7 @@ public: /* Methods: */
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
         assert (resultType () != NULL);
         if ( ! resultType ()->isVoid ()
-            && sameDataTypes (resultType ()->secrecDataType (), DATATYPE_NUMERIC)
+            && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
             && dType != DATATYPE_NUMERIC) {
             instantiateDataTypeV (cxt, dType);
         }
@@ -994,7 +995,7 @@ public: /* Methods: */
 
     OverloadableOperator ()
         : m_operator (SCOP_NONE)
-        , m_symbolProcedure (0)
+        , m_symbolProcedure (NULL)
     { }
 
     virtual ~OverloadableOperator() { }
@@ -1143,7 +1144,7 @@ class TreeNodeExprProcCall: public TreeNodeExpr {
 public: /* Methods: */
     explicit inline TreeNodeExprProcCall(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_PROCCALL, loc)
-        , m_procedure (0)
+        , m_procedure (NULL)
     { }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
@@ -1180,7 +1181,8 @@ class TreeNodeExprRVariable: public TreeNodeExpr {
 public: /* Methods: */
     explicit inline TreeNodeExprRVariable(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_RVARIABLE, loc)
-        , m_valueSymbol (0) { }
+        , m_valueSymbol (NULL)
+    { }
 
     virtual TypeChecker::Status accept(TypeChecker & tyChecker);
     virtual CGResult codeGenWith (CodeGen& cg);
@@ -1281,8 +1283,8 @@ public: /* Methods: */
     TreeNodeStringPartIdentifier (StringRef name, const Location& loc)
         : TreeNodeStringPart (NODE_STRING_PART_IDENTIFIER, loc)
         , m_name (name)
-        , m_value (0)
-        , m_secrecType (0)
+        , m_value (NULL)
+        , m_secrecType (NULL)
     { }
 
     StringRef name () const { return m_name; }
@@ -1618,7 +1620,7 @@ class TreeNodeTemplateStruct : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeTemplateStruct(const Location & loc)
         : TreeNode(NODE_TEMPLATE_STRUCT, loc)
-        , m_containingModule (0)
+        , m_containingModule (NULL)
     { }
 
     TreeNodeStructDecl* body () const;
@@ -1653,8 +1655,8 @@ protected: /* Methods: */
     explicit inline TreeNodeProcDef(SecrecTreeNodeType type,
                                     const Location & loc)
         : TreeNode (type, loc)
-        , m_cachedType(0)
-        , m_procSymbol (0)
+        , m_cachedType(NULL)
+        , m_procSymbol (NULL)
     {
         setContainingProcedureDirectly(this);
     }
@@ -1663,8 +1665,8 @@ public:
 
     explicit inline TreeNodeProcDef(const Location & loc)
         : TreeNode(NODE_PROCDEF, loc)
-        , m_cachedType(0)
-        , m_procSymbol (0)
+        , m_cachedType(NULL)
+        , m_procSymbol (NULL)
     {
         setContainingProcedureDirectly(this);
     }
@@ -1828,7 +1830,7 @@ class TreeNodeTemplate : public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeTemplate(const Location & loc)
         : TreeNode(NODE_TEMPLATE_DECL, loc)
-        , m_containingModule (0)
+        , m_containingModule (NULL)
     { }
 
     TreeNodeProcDef* body () const;
@@ -2010,7 +2012,7 @@ public: /* Methods: */
 
     explicit TreeNodeStmtDecl (const Location & loc, bool global = false, bool procParam = false)
         : TreeNodeStmt (NODE_DECL, loc)
-        , m_type (0)
+        , m_type (NULL)
         , m_global (global)
         , m_procParam (procParam)
     { }

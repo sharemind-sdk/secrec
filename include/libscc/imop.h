@@ -241,7 +241,7 @@ Imop* newReturn (TreeNode* node, Iter begin, Iter end) {
 
 inline
 Imop* newReturn (TreeNode* node) {
-    return new Imop (node, Imop::RETURN, 0);
+    return new Imop (node, Imop::RETURN, NULL);
 }
 
 Imop* newCall (TreeNode *node);

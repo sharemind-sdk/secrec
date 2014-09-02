@@ -342,6 +342,7 @@ private:
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
 
+    CGResult cgProcParam (SymbolSymbol* sym);
     CGResult cgProcCall (SymbolProcedure* symProc,
                          SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);

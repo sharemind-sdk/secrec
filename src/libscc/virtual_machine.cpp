@@ -467,7 +467,7 @@ MKCALLBACK(COPY, 1, 1, 1, 0,
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
-    if (sameDataTypes (ip->args[0].un_sym->secrecType ()->secrecDataType (), DATATYPE_STRING)) {
+    if (ip->args[0].un_sym->secrecType ()->secrecDataType ()->equals(DATATYPE_STRING)) {
         assert (dest.un_str_val != NULL);
         delete dest.un_str_val;
         dest.un_str_val = NULL;

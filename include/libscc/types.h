@@ -85,7 +85,7 @@ public: /* Methods: */
 
     inline SecurityType* secrecSecType() const {
         assert (false && "TypeVoid::secrecSecType");
-        return 0;
+        return NULL;
     }
 
     inline DataType* secrecDataType() const {
@@ -148,11 +148,7 @@ public: /* Methods: */
 
     inline SecurityType* secrecSecType() const { return m_secType; }
     inline SecrecDimType secrecDimType() const { return m_dimType; }
-
-    // TODO: change return type to DataType*
-    inline DataType* secrecDataType() const {
-        return m_dataType;
-    }
+    inline DataType* secrecDataType() const { return m_dataType; }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType = 0);
@@ -226,7 +222,7 @@ private: /* Fields: */
 
 
 inline bool Type::isPublicUIntScalar () const {
-    return sameDataTypes (secrecDataType (), DATATYPE_UINT64) &&
+    return secrecDataType ()->equals (DATATYPE_UINT64) &&
            secrecSecType ()->isPublic () &&
            secrecDimType () == 0;
 }

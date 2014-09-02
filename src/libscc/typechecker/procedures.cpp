@@ -440,7 +440,7 @@ bool TypeChecker::unify (Instantiation& inst,
         else {
             TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(argNodeTy->dataType ());
             SecrecDataType secrecDataType = argDataType->secrecDataType ();
-            if (! sameDataTypes (expectedTy->secrecDataType (), secrecDataType)) {
+            if (! expectedTy->secrecDataType ()->equals (secrecDataType)) {
                 return false;
             }
         }
@@ -485,7 +485,7 @@ bool TypeChecker::unify (Instantiation& inst,
             else {
                 TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(dataType);
                 SecrecDataType secrecDataType = argDataType->secrecDataType ();
-                if (! sameDataTypes (secrecDataType, tyCxt.contextDataType ()))
+                if (! tyCxt.contextDataType ()->equals (secrecDataType))
                     return false;
             }
         }

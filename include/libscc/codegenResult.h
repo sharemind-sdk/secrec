@@ -1,6 +1,7 @@
 #ifndef SECREC_CODE_GEN_RESULT_H
 #define SECREC_CODE_GEN_RESULT_H
 
+#include <cstddef>
 #include <vector>
 
 namespace SecreC {
@@ -44,8 +45,8 @@ public: /* Types: */
 public: /* Methods: */
 
     inline CGResult(const Status s = OK)
-        : m_result (0)
-        , m_firstImop (0)
+        : m_result (NULL)
+        , m_firstImop (NULL)
         , m_status (s)
     { }
 
@@ -80,7 +81,7 @@ public: /* Methods: */
     void patchNextList (SymbolLabel* dest);
 
     void patchFirstImop (Imop* imop) {
-        if (m_firstImop == 0) {
+        if (m_firstImop == NULL) {
             m_firstImop = imop;
         }
     }
@@ -241,7 +242,7 @@ public:
     }
 
     inline bool mayFallThrough () const {
-        return (m_resultFlags & FALLTHRU) != 0;
+        return (m_resultFlags & FALLTHRU) != 0x0;
     }
 
     inline void setFlags (int flags) {

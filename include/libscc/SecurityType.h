@@ -103,7 +103,7 @@ inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
     if (a->isPublic ()) return b;
     if (b->isPublic ()) return a;
     if (a == b) return a;
-    return 0;
+    return NULL;
 }
 
 } // namespace SecreC

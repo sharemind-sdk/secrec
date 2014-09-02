@@ -44,11 +44,6 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype);
 bool latticeDataTypeLEQ (const DataType* a, const DataType* b);
 bool latticeExplicitLEQ (const DataType* a, const DataType* b);
 
-inline bool sameDataTypes (const DataType* a, const DataType* b) { return a == b; }
-inline bool sameDataTypes (SecrecDataType a, SecrecDataType b) { return a == b; }
-bool sameDataTypes (const DataType* a, SecrecDataType b);
-bool sameDataTypes (SecrecDataType a, const DataType* b);
-
 bool isFloatingDataType (const DataType* dType);
 bool isNumericDataType (const DataType* dType);
 bool isXorDataType (const DataType* dType);
@@ -79,8 +74,11 @@ public: /* Methods: */
     bool isComposite () const { return m_kind == COMPOSITE; }
     bool isPrimitive () const { return m_kind == PRIMITIVE; }
 
-    bool isString () const { return sameDataTypes (this, DATATYPE_STRING); }
-    bool isBool () const { return sameDataTypes (this, DATATYPE_BOOL); }
+    bool isString () const { return equals (DATATYPE_STRING); }
+    bool isBool () const { return equals (DATATYPE_BOOL); }
+
+    bool equals (const DataType* other) const { return this == other; }
+    bool equals (SecrecDataType other) const;
 
 protected:
 

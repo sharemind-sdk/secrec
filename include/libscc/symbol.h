@@ -39,12 +39,12 @@ public: /* Methods: */
 
     explicit inline Symbol (Type symbolType)
         : m_symbolType (symbolType)
-        , m_type (0)
+        , m_type (NULL)
     { }
 
     explicit inline Symbol (Type symbolType, StringRef name)
         : m_symbolType (symbolType)
-        , m_type (0)
+        , m_type (NULL)
         , m_name (name.str ())
     { }
 
@@ -195,11 +195,14 @@ public: /* Methods: */
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
     inline bool isTemporary () const { return m_isTemporary; }
 
-    inline Symbol* getDim (SecrecDimType i) { return m_dims[i]; }
-    inline void setDim (SecrecDimType i, Symbol* sym) { m_dims[i] = sym; }
-    Symbol* getSizeSym () { return m_size; }
-    void setSizeSym (Symbol* sym) { m_size = sym; }
+    inline SymbolSymbol* getDim (SecrecDimType i) { return m_dims[i]; }
+    inline void setDim (SecrecDimType i, SymbolSymbol* sym) { m_dims[i] = sym; }
+    SymbolSymbol* getSizeSym () { return m_size; }
+    void setSizeSym (SymbolSymbol* sym) { m_size = sym; }
     void inheritShape (Symbol* from);
+
+    const std::vector<SymbolSymbol*>& fields () const { return m_fields; }
+    void appendField (SymbolSymbol* sym) { m_fields.push_back (sym); }
 
     virtual const Location * location() const;
 
@@ -213,10 +216,11 @@ protected:
 
 private: /* Fields: */
 
-    ScopeType              m_scopeType;
-    std::vector<Symbol* >  m_dims;
-    Symbol*                m_size;
-    const bool             m_isTemporary;
+    ScopeType                   m_scopeType;
+    std::vector<SymbolSymbol*>  m_dims;
+    SymbolSymbol*               m_size;
+    std::vector<SymbolSymbol*>  m_fields;
+    const bool                  m_isTemporary;
 };
 
 typedef SymbolSymbol SymbolTemporary;
@@ -263,8 +267,8 @@ private: /* Methods: */
 };
 
 /// \{
-typedef DimIterator<SymbolSymbol*, Symbol> dim_iterator;
-typedef DimIterator<const SymbolSymbol*, Symbol> dim_const_iterator;
+typedef DimIterator<SymbolSymbol*, SymbolSymbol> dim_iterator;
+typedef DimIterator<const SymbolSymbol*, SymbolSymbol> dim_const_iterator;
 inline dim_iterator dim_begin (SymbolSymbol* symbol) { return dim_iterator (symbol); }
 inline dim_iterator dim_end (SymbolSymbol* symbol) { return dim_iterator (symbol, true); }
 inline dim_const_iterator dim_begin (const SymbolSymbol* symbol) { return dim_const_iterator (symbol); }
@@ -413,7 +417,7 @@ public: /* Methods: */
     inline Block* block () const { return m_block; }
 
     void setBlock (Block* block) {
-        m_target = 0;
+        m_target = NULL;
         m_block = block;
     }
 

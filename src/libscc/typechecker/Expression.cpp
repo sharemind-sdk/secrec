@@ -781,7 +781,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
         if (root->type() == NODE_EXPR_UINV) {
             if (isNumericDataType(et->secrecDataType ())
                     || isXorDataType(et->secrecDataType ())
-                    || sameDataTypes (et->secrecDataType (), DATATYPE_NUMERIC)
+                    || et->secrecDataType ()->equals (DATATYPE_NUMERIC)
                     || et->secrecDataType ()->isBool ())
             {
                 root->setResultType (et);
@@ -795,7 +795,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
         }
         else if (root->type() == NODE_EXPR_UMINUS) {
             if (isNumericDataType(et->secrecDataType())
-                    || sameDataTypes (et->secrecDataType(), DATATYPE_NUMERIC)) {
+                    || et->secrecDataType()->equals (DATATYPE_NUMERIC)) {
                 root->setResultType (et);
                 return OK;
             }
@@ -935,7 +935,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprFloat * e) {
         DataType* dType = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
             dType = dtypeDeclassify(getContext (), e->contextDataType());
-            if (! (isFloatingDataType (dType) || sameDataTypes (dType, DATATYPE_NUMERIC))) {
+            if (! (isFloatingDataType (dType) || dType->equals (DATATYPE_NUMERIC))) {
                 m_log.fatalInProc(e) << "Expecting floating point, got "
                     << dType << " at " << e->location() << '.';
                 return E_TYPE;
@@ -1371,7 +1371,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
 
     Type * ty = subExpr->resultType();
     if (ty->secrecSecType()->isPrivate() ||
-            ! sameDataTypes (ty->secrecDataType(), DATATYPE_UINT8) ||
+            ! ty->secrecDataType()->equals (DATATYPE_UINT8) ||
             ty->secrecDimType() != 1)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "

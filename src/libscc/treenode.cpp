@@ -417,7 +417,7 @@ std::string OverloadableOperator::operatorName() const {
 
 bool TreeNodeExpr::havePublicBoolType() const {
     assert(m_resultType != NULL);
-    return sameDataTypes (m_resultType->secrecDataType(), DATATYPE_BOOL)
+    return    m_resultType->secrecDataType()->equals (DATATYPE_BOOL)
            && m_resultType->secrecSecType()->isPublic()
            && m_resultType->isScalar();
 }

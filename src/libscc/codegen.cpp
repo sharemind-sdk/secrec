@@ -17,7 +17,7 @@ namespace /* anonymous */ {
 bool isNontrivialResource (TypeNonVoid* tnv) {
     return tnv->secrecDimType () != 0
         || tnv->secrecSecType ()->isPrivate ()
-        || sameDataTypes (tnv->secrecDataType (), DATATYPE_STRING);
+        || tnv->secrecDataType ()->isString ();
 }
 
 } // namespace anonymous
@@ -32,7 +32,7 @@ CodeGen::CodeGen(ICodeList& code, ICode& icode)
     , m_log(icode.compileLog())
     , m_modules(icode.modules())
     , m_context(icode.context())
-    , m_tyChecker(0)
+    , m_tyChecker(NULL)
 {
     m_tyChecker = new TypeChecker(icode.symbols(), m_log, m_context);
 }
@@ -526,6 +526,48 @@ void CodeGen::endLoop() {
 
 SymbolTable * CodeGen::loopST() const {
     return m_loops.empty() ? 0 : m_loops.back();
+}
+
+/**
+ * @brief CodeGen::cgProcParam Expect the given symbol as procedure parameter.
+ * @param sym Expected procedure parameter (it's subsymbols are also expected as parameters).
+ * @return Code generation result.
+ */
+CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
+    assert (sym != NULL && sym->secrecType () != NULL);
+
+    TypeNonVoid* ty = sym->secrecType ();
+    CGResult result;
+
+    if (ty->secrecDataType ()->isComposite ()) {
+        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+            append (result, cgProcParam (field));
+            if (result.isNotOk ())
+                return result;
+        }
+
+        return result;
+    }
+    else
+    if (ty->isScalar ()) {
+        pushImopAfter(result, new Imop(m_node, Imop::PARAM, sym));
+    }
+    else {
+        SymbolSymbol * const tns = m_st->appendTemporary(sym->secrecType());
+        pushImopAfter(result, new Imop(m_node, Imop::PARAM, tns));
+
+        for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
+            push_imop(new Imop(m_node, Imop::PARAM, *di));
+
+        push_imop(new Imop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1)));
+
+        for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
+            push_imop(new Imop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), *di));
+
+        push_imop(new Imop(m_node, Imop::COPY, sym, tns, sym->getSizeSym()));
+    }
+
+    return result;
 }
 
 
