@@ -428,21 +428,27 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     }
     else {
 
-        // This is a regular definition without an initializer expression:
-        if (!isScalar && shapeExpressions == 0) {
-            pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0)));
+        if (true) {
+            append (result, cgInitalizeToDefaultValue (ns, shapeExpressions > 0));
+        }
+        else {
+            // This is a regular definition without an initializer expression:
+            if (!isScalar && shapeExpressions == 0) {
+                pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0)));
 
-            for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
-                push_imop(new Imop(varInit, Imop::ASSIGN, ns->getDim(it), indexConstant(0)));
+                for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
+                    push_imop(new Imop(varInit, Imop::ASSIGN, ns->getDim(it), indexConstant(0)));
+            }
+
+            Symbol * const def = defaultConstant(getContext(),  ty->secrecDataType());
+            if (isScalar) {
+                Imop::Type iType = isPrivate ? Imop::CLASSIFY : Imop::ASSIGN;
+                pushImopAfter(result, new Imop(varInit, iType, ns, def));
+            } else {
+                pushImopAfter(result, new Imop(varInit, Imop::ALLOC, ns, def, getSizeOr(ns, 0)));
+            }
         }
 
-        Symbol * const def = defaultConstant(getContext(),  ty->secrecDataType());
-        if (isScalar) {
-            Imop::Type iType = isPrivate ? Imop::CLASSIFY : Imop::ASSIGN;
-            pushImopAfter(result, new Imop(varInit, iType, ns, def));
-        } else {
-            pushImopAfter(result, new Imop(varInit, Imop::ALLOC, ns, def, getSizeOr(ns, 0)));
-        }
         return result;
     }
 }

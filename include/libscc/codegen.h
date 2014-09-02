@@ -353,13 +353,15 @@ private:
     /// generate symbol for given type
     SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
 
+    CGResult cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape);
+
     CGStmtResult cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
-    Symbol* indexConstant (uint64_t value);
+    SymbolConstant* indexConstant (uint64_t value);
 
     Symbol* findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const;
 

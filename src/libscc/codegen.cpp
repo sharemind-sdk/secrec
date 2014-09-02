@@ -129,7 +129,7 @@ Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
     return sizeSym;
 }
 
-Symbol * CodeGen::indexConstant(uint64_t value) {
+SymbolConstant * CodeGen::indexConstant(uint64_t value) {
     return ConstantInt::get(getContext(), DATATYPE_UINT64, value);
 }
 
@@ -570,5 +570,47 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     return result;
 }
 
+/**
+ * @brief CodeGen::cgInitalizeToDefaultValue Initialize the given symbol to the default value.
+ * @param sym The symbol that need to be initialized.
+ * @param hasShape If the shape of the array has already been computed.
+ * @return Code generation status.
+ */
+CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
+    assert (sym != NULL && sym->secrecType () != NULL);
+
+    TypeNonVoid* ty = sym->secrecType ();
+    CGResult result;
+
+    if (ty->secrecDataType ()->isComposite ()) {
+        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+            append (result, cgInitalizeToDefaultValue (field, false));
+            if (result.isNotOk ())
+                return result;
+        }
+
+        return result;
+    }
+
+    // Initialize the value of the shape (and size) if need be.
+    if (! ty->isScalar () && ! hasShape) {
+        SymbolConstant* defIdx = indexConstant (0);
+        pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, sym->getSizeSym(), defIdx));
+        for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
+            push_imop(new Imop(m_node, Imop::ASSIGN, sym->getDim(it), defIdx));
+
+    }
+
+    SymbolConstant* def = defaultConstant (getContext (), ty->secrecDataType ());
+    if (ty->isScalar ()) {
+        Imop::Type iType = ty->secrecSecType ()->isPrivate () ? Imop::CLASSIFY : Imop::ASSIGN;
+        pushImopAfter(result, new Imop(m_node, iType, sym, def));
+    }
+    else {
+        pushImopAfter(result, new Imop(m_node, Imop::ALLOC, sym, def, getSizeOr(sym, 0)));
+    }
+
+    return result;
+}
 
 } // namespace SecreC
