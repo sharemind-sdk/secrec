@@ -163,6 +163,7 @@ add_test_secrec_execute("structs/01-simple-definition")
 add_test_secrec_execute("structs/02-set-get")
 add_test_secrec_execute("structs/03-template")
 add_test_secrec_execute("structs/04-redeclaration")
+add_test_secrec_execute("structs/05-trivial-get")
 
 SET_TESTS_PROPERTIES("structs/04-redeclaration"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,1\\)\\(4,15\\)")
