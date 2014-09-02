@@ -197,34 +197,9 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
     push_imop (skip);
 
     SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
-    if (true) {
-        initShapeSymbols (getContext (), m_st, ns);
-        setSymbolGlobalScope (ns);
-        m_st->appendSymbol (ns);
-    }
-    else {
-        // Initialize the result symbol:
-        TypeBasic * const dimType = TypeBasic::getIndexType(getContext());
-        for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
-            std::stringstream ss;
-            ss << varInit->variableName() << "{d" << i << "}";
-            SymbolSymbol * sym = new SymbolSymbol(ss.str(), dimType);
-            sym->setScopeType(SymbolSymbol::GLOBAL);
-            m_st->appendSymbol(sym);
-            ns->setDim(i, sym);
-        }
-
-        if (!ty->isScalar ()) { // set size symbol
-            std::stringstream ss;
-            ss << varInit->variableName() << "{size}";
-            SymbolSymbol * const sizeSym = new SymbolSymbol(ss.str(), dimType);
-            sizeSym->setScopeType(SymbolSymbol::GLOBAL);
-            m_st->appendSymbol(sizeSym);
-            ns->setSizeSym(sizeSym);
-        }
-
-        m_st->appendSymbol (ns);
-    }
+    initShapeSymbols (getContext (), m_st, ns);
+    setSymbolGlobalScope (ns);
+    m_st->appendSymbol (ns);
 
     // <initialization function>
     SymbolProcedure* procSym = NULL;
@@ -293,9 +268,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
 
     const bool isScalar = ty->isScalar();
     const bool isString = ty->secrecDataType()->isString ();
-    const bool isPrivate = ty->secrecSecType()->isPrivate();
     const bool isStruct = ty->secrecDataType ()->isComposite ();
-
 
     TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
@@ -427,28 +400,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
         return result;
     }
     else {
-
-        if (true) {
-            append (result, cgInitalizeToDefaultValue (ns, shapeExpressions > 0));
-        }
-        else {
-            // This is a regular definition without an initializer expression:
-            if (!isScalar && shapeExpressions == 0) {
-                pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0)));
-
-                for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
-                    push_imop(new Imop(varInit, Imop::ASSIGN, ns->getDim(it), indexConstant(0)));
-            }
-
-            Symbol * const def = defaultConstant(getContext(),  ty->secrecDataType());
-            if (isScalar) {
-                Imop::Type iType = isPrivate ? Imop::CLASSIFY : Imop::ASSIGN;
-                pushImopAfter(result, new Imop(varInit, iType, ns, def));
-            } else {
-                pushImopAfter(result, new Imop(varInit, Imop::ALLOC, ns, def, getSizeOr(ns, 0)));
-            }
-        }
-
+        append (result, cgInitalizeToDefaultValue (ns, shapeExpressions > 0));
         return result;
     }
 }
