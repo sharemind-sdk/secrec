@@ -15,7 +15,7 @@ void main () {
     u.x = 1;
     assert (u.x == 1);
 
-    weird x;
+    weird w;
     assert (w.u.x == 0);
     w.u.x = 1;
     assert (w.u.x == 1);
