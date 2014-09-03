@@ -2162,16 +2162,13 @@ CGResult CodeGen::cgExprSelection(TreeNodeExprSelection* root) {
         return result;
 
     // Pick the proper field:
-    StringRef fieldName = root->identifier ()->value ();
     assert (dynamic_cast<SymbolSymbol*>(exprResult.symbol ()) != NULL);
     SymbolSymbol* exprValue = static_cast<SymbolSymbol*>(exprResult.symbol ());
-    const std::vector<DataTypeStruct::Field>& fields = static_cast<DataTypeStruct*>(e->resultType ()->secrecDataType ())->fields ();
-    for (size_t i = 0; i < fields.size (); ++ i) {
-        if (fields.at (i).name == fieldName) {
-            result.setResult (exprValue->fields ().at (i));
-            // TODO: Remove temporaries?
-            return result;
-        }
+    StringRef fieldName = root->identifier ()->value ();
+    if (SymbolSymbol* fieldValue = lookupField (exprValue, fieldName)) {
+        result.setResult (fieldValue);
+        // TODO: Remove temporaries?
+        return result;
     }
 
     // The following should have been rules out by the type checker:

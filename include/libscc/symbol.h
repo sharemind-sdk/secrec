@@ -223,6 +223,8 @@ private: /* Fields: */
     const bool                  m_isTemporary;
 };
 
+SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName);
+
 typedef SymbolSymbol SymbolTemporary;
 
 template <typename BaseTy, typename ElemTy >

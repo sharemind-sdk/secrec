@@ -185,6 +185,22 @@ void SymbolSymbol::inheritShape (Symbol* from) {
     }
 }
 
+SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
+    assert (val != NULL && val->secrecType () != NULL);
+
+    TypeNonVoid* ty = val->secrecType ();
+    if (ty->secrecDataType ()->isComposite ()) {
+        const std::vector<DataTypeStruct::Field>& fields = static_cast<DataTypeStruct*>(ty->secrecDataType ())->fields ();
+        for (size_t i = 0; i < fields.size (); ++ i) {
+            if (fields[i].name == fieldName) {
+                return val->fields ().at (i);
+            }
+        }
+    }
+
+    return NULL;
+}
+
 /*******************************************************************************
   SymbolProcedure
 *******************************************************************************/
