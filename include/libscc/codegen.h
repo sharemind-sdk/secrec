@@ -367,6 +367,8 @@ private:
      */
     CGResult cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape = false);
 
+    CGResult cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed);
+
     CGResult cgProcCall (SymbolProcedure* symProc,
                          SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);

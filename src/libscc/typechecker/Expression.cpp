@@ -293,8 +293,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     if (lval->isSelection ()) {
-        assert (false && "TODO: implement type checking of selection assignment!");
-        return E_TYPE;
+        TreeNodeExprSelection* select = lval->selection ();
+        TCGUARD (visit (select));
+        varType = static_cast<TypeNonVoid*>(select->resultType ());
+        destDim = varType->secrecDimType ();
     }
 
     // Calculate type of r-value:

@@ -39,6 +39,40 @@ bool getAssignBinImopType(SecrecTreeNodeType type, Imop::Type& iType) {
   TreeNodeExprAssign
 *******************************************************************************/
 
+CGResult CodeGen::cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed) {
+    assert (lval != NULL);
+
+    if (lval->isIndex ()) {
+        TreeNodeExprIndex* lvalIndex = lval->index ();
+        assert ((lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE) && "TODO: how do we index a field?");
+        TreeNodeIdentifier* eArg1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
+
+        isIndexed = true;
+        CGResult result;
+        result.setResult (destSym);
+        append(result, codeGenSubscript(subInfo, destSym, lvalIndex->indices ()));
+        return result;
+    }
+
+    if (lval->isIdentifier ()) {
+        TreeNodeIdentifier* ident = lval->identifier ();
+        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(ident->value());
+
+        isIndexed = false;
+        CGResult result;
+        result.setResult (destSym);
+        return result;
+    }
+
+    if (lval->isSelection ()) {
+        isIndexed = false;
+        return codeGen (lval->selection ());
+    }
+
+    return CGResult::ERROR_CONTINUE;
+}
+
 CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
     return cg.cgExprAssign (this);
 }
@@ -50,12 +84,9 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    // Generate code for child expressions:
-    TreeNodeLValue* lval = e->leftHandSide ();
-
-
-    // Generate code for righthand side:
     CGResult result;
+
+    // Generate code for the righthand side:
     TreeNodeExpr * eArg2 = e->rightHandSide();
     const CGResult & arg2Result = codeGen(eArg2);
     append(result, arg2Result);
@@ -65,24 +96,22 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
     result.setResult (arg2Result.symbol ());
 
+    // Generate code for the left hand side;
+    TreeNodeLValue* lval = e->leftHandSide ();
+    SubscriptInfo cgSub;
+    bool isIndexed = false;
+    const CGResult & lvalResult = cgLValue (lval, cgSub, isIndexed);
+    append (result, lvalResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
     TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
     TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     // x[e1,...,ek] = e
-    if (lval->isIndex ()) {
-        // TODO: the following is ugly, we should have code generation for left hand side.
-        TreeNodeExprIndex* lvalIndex = lval->index ();
-        assert ((lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE) && "TODO: how do we index a field?");
-        TreeNodeIdentifier* eArg1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
-
-        // 1. evaluate subscript
-        SubscriptInfo cgSub;
-        append(result, codeGenSubscript(cgSub, destSym, lvalIndex->indices ()));
-        if (result.isNotOk()) {
-            return result;
-        }
-
+    if (isIndexed) {
         const SPV & spv = cgSub.spv();
         const SubscriptInfo::SliceIndices & slices = cgSub.slices();
 
@@ -228,12 +257,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         return result;
     }
-
-    // x = e
-    if (lval->isIdentifier ()) {
-        TreeNodeIdentifier* eArg1 = lval->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
-
+    else {
         // Generate code for regular x = e assignment
         if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
             if (!eArg2->resultType()->isScalar()) {
@@ -316,11 +340,6 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 pushImopAfter(result, i);
             }
         }
-    }
-
-    // x.field = e
-    if (lval->isSelection ()) {
-        assert (false && "TODO: implement code gen for selection assignments!");
     }
 
     return result;
