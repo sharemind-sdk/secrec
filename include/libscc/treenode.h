@@ -251,6 +251,7 @@ protected:
   TreeNodeLValue
 ******************************************************************/
 
+// TODO: add the type of the left-hand-side!
 class TreeNodeLValue: public TreeNode {
 public: /* Methods: */
 
@@ -271,6 +272,14 @@ protected:
         return new TreeNodeLValue (m_location);
     }
 };
+
+/*
+ * We need to introduce the following classes:
+ *
+ * class TreeNodeLVariable: public TreeNodeLValue { };
+ * class TreeNodeLIndex: public TreeNodeLValue { };
+ * class TreeNodeLSelect: public TreeNodeLValue { };
+ */
 
 /******************************************************************
   TreeNodeSubscript
