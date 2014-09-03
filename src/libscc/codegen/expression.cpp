@@ -2148,12 +2148,34 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 *******************************************************************************/
 
 CGResult TreeNodeExprSelection::codeGenWith(CodeGen & cg) {
-    // TODO: verify AST
     return cg.cgExprSelection(this);
 }
 
-CGResult CodeGen::cgExprSelection(TreeNodeExprSelection *) {
-    assert (false && "TODO implement TreeNodeExprSelection code gen");
+CGResult CodeGen::cgExprSelection(TreeNodeExprSelection* root) {
+    TreeNodeExpr* e = root->expression ();
+    CGResult result;
+
+    // Generate code for the subexpression:
+    CGResult exprResult = codeGen (e);
+    append (result, exprResult);
+    if (result.isNotOk ())
+        return result;
+
+    // Pick the proper field:
+    StringRef fieldName = root->identifier ()->value ();
+    assert (dynamic_cast<SymbolSymbol*>(exprResult.symbol ()) != NULL);
+    SymbolSymbol* exprValue = static_cast<SymbolSymbol*>(exprResult.symbol ());
+    const std::vector<DataTypeStruct::Field>& fields = static_cast<DataTypeStruct*>(e->resultType ()->secrecDataType ())->fields ();
+    for (size_t i = 0; i < fields.size (); ++ i) {
+        if (fields.at (i).name == fieldName) {
+            result.setResult (exprValue->fields ().at (i));
+            // TODO: Remove temporaries?
+            return result;
+        }
+    }
+
+    // The following should have been rules out by the type checker:
+    m_log.fatal () << "ICE: invalid code generation for attribute selection expression at " << root->location () << ".";
     return CGResult::ERROR_CONTINUE;
 }
 

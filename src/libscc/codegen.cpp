@@ -14,6 +14,11 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
+/**
+ * @brief isNontrivialResource Check if the given type is an array, a private variable, or a string.
+ * @param tnv The type of the resource.
+ * @return Wether a resource of the given type requires memory allocation to store.
+ */
 bool isNontrivialResource (TypeNonVoid* tnv) {
     return tnv->secrecDimType () != 0
         || tnv->secrecSecType ()->isPrivate ()
@@ -44,7 +49,6 @@ CodeGen::~CodeGen() {
 StringTable& CodeGen::getStringTable () const {
     return m_context.pImpl ()->m_stringTable;
 }
-
 
 void CodeGen::updateTypeChecker() {
     m_tyChecker->setScope(*m_st);
@@ -105,7 +109,7 @@ CGStmtResult CodeGen::codeGenStmt(TreeNodeStmt * s) {
 
 Imop * CodeGen::newComment(StringRef comment) const {
     ConstantString * str = ConstantString::get(getContext(), comment.str ());
-    Imop * c = new Imop(0, Imop::COMMENT, 0, str);
+    Imop * c = new Imop(m_node, Imop::COMMENT, NULL, str);
     return c;
 }
 
@@ -136,7 +140,6 @@ SymbolConstant * CodeGen::indexConstant(uint64_t value) {
 Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     return m_st->find (type, id->value ());
 }
-
 
 void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
     if (result.symbol()->secrecType()->isScalar()) {
@@ -186,14 +189,14 @@ void CodeGen::releaseProcVariables(CGResult & result, Symbol * ex) {
 }
 
 void CodeGen::releaseAllVariables(CGResult & result) {
-    BOOST_FOREACH (Symbol * var, m_st->variablesUpTo(0)) {
+    BOOST_FOREACH (Symbol * var, m_st->variablesUpTo(NULL)) {
         releaseResource(result, var);
     }
 }
 
 void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
     if (isNontrivialResource(sym->secrecType())) {
-        pushImopAfter(result, new Imop(m_node, Imop::RELEASE, 0, sym));
+        pushImopAfter(result, new Imop(m_node, Imop::RELEASE, NULL, sym));
     }
 }
 
@@ -202,8 +205,15 @@ void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
     if (sym->symbolType() == SYM_SYMBOL) {
         assert(dynamic_cast<SymbolSymbol *>(sym) != NULL);
         SymbolSymbol * ssym = static_cast<SymbolSymbol *>(sym);
-        if (ssym->isTemporary()) {
-            releaseResource(result, ssym);
+        if (ssym->secrecType ()->secrecDataType ()->isComposite ()) {
+            BOOST_FOREACH (SymbolSymbol* field, ssym->fields ()) {
+                releaseTemporary (result, field);
+            }
+        }
+        else {
+            if (ssym->isTemporary()) {
+                releaseResource(result, ssym);
+            }
         }
     }
 }
