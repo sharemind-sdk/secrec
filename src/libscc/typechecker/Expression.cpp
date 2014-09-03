@@ -234,7 +234,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
     }
 
     e->setResultType (matchingFieldType);
-    return E_TYPE;
+    return OK;
 }
 
 /*******************************************************************************
