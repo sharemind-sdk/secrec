@@ -4,6 +4,7 @@ struct weird {
 
 void main () {
     weird w;
-    w.a;
-    w.a;
+    int[[1]] r;
+    r = w.a;
+    r = w.a;
 }
