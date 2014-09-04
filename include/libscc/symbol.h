@@ -196,13 +196,30 @@ public: /* Methods: */
     inline bool isTemporary () const { return m_isTemporary; }
 
     inline SymbolSymbol* getDim (SecrecDimType i) { return m_dims[i]; }
-    inline void setDim (SecrecDimType i, SymbolSymbol* sym) { m_dims[i] = sym; }
+    inline void setDim (SecrecDimType i, SymbolSymbol* sym) {
+        if (sym != NULL) {
+            sym->setParent (this);
+            m_dims[i] = sym;
+        }
+    }
     SymbolSymbol* getSizeSym () { return m_size; }
-    void setSizeSym (SymbolSymbol* sym) { m_size = sym; }
+    void setSizeSym (SymbolSymbol* sym) {
+        if (sym) {
+            sym->setParent (this);
+            m_size = sym;
+        }
+    }
+
     void inheritShape (Symbol* from);
 
     const std::vector<SymbolSymbol*>& fields () const { return m_fields; }
-    void appendField (SymbolSymbol* sym) { m_fields.push_back (sym); }
+    void appendField (SymbolSymbol* sym) {
+        sym->m_parent = this;
+        m_fields.push_back (sym);
+    }
+
+    void setParent (SymbolSymbol* parent) { m_parent = parent; }
+    SymbolSymbol* parent () const { return m_parent; }
 
     virtual const Location * location() const;
 
@@ -221,6 +238,7 @@ private: /* Fields: */
     SymbolSymbol*               m_size;
     std::vector<SymbolSymbol*>  m_fields;
     const bool                  m_isTemporary;
+    SymbolSymbol*               m_parent; // TODO: this is a HUGE hack!
 };
 
 SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName);

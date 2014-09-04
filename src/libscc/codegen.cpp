@@ -56,6 +56,42 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, Type* ty) {
         return generateSymbol(cxt, st, static_cast<TypeNonVoid*>(ty));
 }
 
+void collectTemporariesLoop (std::vector<SymbolSymbol*>& acc, SymbolSymbol* sym) {
+    assert (sym != NULL);
+    if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
+        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+            collectTemporariesLoop (acc, field);
+        }
+    }
+    else {
+        // TODO: enormous hack!
+        if (sym->isTemporary()) {
+            if (sym->parent ()) {
+                SymbolSymbol* root = sym;
+                while (root->parent () != NULL)
+                    root = root->parent ();
+
+                if (root->isTemporary ())
+                    acc.push_back (sym);
+            }
+            else {
+                acc.push_back (sym);
+            }
+        }
+    }
+}
+
+std::vector<SymbolSymbol*> collectTemporaries (Symbol* sym) {
+    assert (sym != NULL);
+    std::vector<SymbolSymbol*> temporaries;
+    if (sym->symbolType () == SYM_SYMBOL) {
+        assert(dynamic_cast<SymbolSymbol *>(sym) != NULL);
+        collectTemporariesLoop (temporaries, static_cast<SymbolSymbol *>(sym));
+    }
+
+    return temporaries;
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -110,7 +146,6 @@ void CodeGen::append(CGResult & result, const CGResult & other) {
         result.patchNextList(m_st->label(other.firstImop()));
     }
 
-    result.markSymbol (other.symbols ());
     result.addToNextList(other.nextList());
     result |= other.status();
 }
@@ -234,19 +269,8 @@ void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
 
 void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
     assert(sym != NULL);
-    if (sym->symbolType() == SYM_SYMBOL) {
-        assert(dynamic_cast<SymbolSymbol *>(sym) != NULL);
-        SymbolSymbol * ssym = static_cast<SymbolSymbol *>(sym);
-        if (ssym->secrecType ()->secrecDataType ()->isComposite ()) {
-            BOOST_FOREACH (SymbolSymbol* field, ssym->fields ()) {
-                releaseTemporary (result, field);
-            }
-        }
-        else {
-            if (ssym->isTemporary()) {
-                releaseResource(result, ssym);
-            }
-        }
+    BOOST_FOREACH (SymbolSymbol* temp, collectTemporaries (sym)) {
+        releaseResource(result, temp);
     }
 }
 

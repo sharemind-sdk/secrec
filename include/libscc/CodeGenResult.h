@@ -119,19 +119,6 @@ public: /* Methods: */
         return m_symbols;
     }
 
-    void markSymbol (Symbol* sym) {
-        m_symbols.push_back (sym);
-    }
-
-    void markSymbol (const std::vector<Symbol*>& syms) {
-        markSymbol (syms.begin (), syms.end ());
-    }
-
-    template <typename Iter>
-    void markSymbol (Iter begin, Iter end) {
-        m_symbols.insert (m_symbols.end (), begin, end);
-    }
-
 private: /* Fields: */
     PatchList            m_nextList;  ///< unpatched jumps to next imop
     Symbol*              m_result;    ///< symbol the result is stored in

@@ -339,8 +339,8 @@ private:
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
-    void codeGenSize (CGResult &result, Symbol* sym);
-    void codeGenSize (CGResult &result, SymbolSymbol* sym);
+    void codeGenSize (CGResult& result, Symbol* sym);
+    void codeGenSize (CGResult& result, SymbolSymbol* sym);
 
 
     /// Copy shape from another symbol

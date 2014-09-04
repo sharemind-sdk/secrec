@@ -164,9 +164,10 @@ void SymbolDomain::setTypeContext (TypeContext& cxt) const {
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
-    , m_dims (valueType->secrecDimType())
+    , m_dims (valueType->secrecDimType(), NULL)
     , m_size (NULL)
     , m_isTemporary (false)
+    , m_parent (NULL)
 {
     setName(name);
 }
@@ -174,9 +175,10 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
-    , m_dims (valueType->secrecDimType ())
+    , m_dims (valueType->secrecDimType (), NULL)
     , m_size (NULL)
     , m_isTemporary (true)
+    , m_parent (NULL)
 {
     setName(name);
 }
@@ -194,8 +196,10 @@ void SymbolSymbol::inheritShape (Symbol* from) {
     if (from->symbolType () == SYM_SYMBOL) {
         assert (dynamic_cast<SymbolSymbol*>(from) != NULL);
         SymbolSymbol* t = static_cast<SymbolSymbol*>(from);
-        setSizeSym(t->getSizeSym());
-        std::copy (t->m_dims.begin (), t->m_dims.end (), m_dims.begin ());
+        setSizeSym (t->getSizeSym());
+        for (size_t i = 0; i < m_dims.size (); ++ i) {
+            setDim (i, t->getDim (i));
+        }
     }
 }
 
