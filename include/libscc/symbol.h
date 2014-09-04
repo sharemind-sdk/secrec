@@ -225,6 +225,15 @@ private: /* Fields: */
 
 SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName);
 
+/**
+ * @brief flattenSymbol Flatten the given symbol for returning it.
+ * Flattening is performed from leftmost field to right, depth first.
+ * Dimensionalities are passed before the symbol itself.
+ * @param sym The symbol to be flattened.
+ * @return All relevant compontents of the input symbol.
+ */
+std::vector<Symbol*> flattenSymbol (Symbol* sym);
+
 typedef SymbolSymbol SymbolTemporary;
 
 template <typename BaseTy, typename ElemTy >

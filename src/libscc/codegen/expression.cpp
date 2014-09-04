@@ -940,18 +940,17 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
         }
 
         Symbol * sym = argResult.symbol();
-        argList.push_back(sym);
-        argList.insert(argList.end(), dim_begin(sym), dim_end(sym));
+        std::vector<Symbol*> temp = flattenSymbol (sym);
+        argList.insert (argList.end (), temp.begin (), temp.end ());
     }
 
     // prep return values:
     if (!returnType->isVoid ()) {
-        retList.insert (retList.end (), dim_begin (r), dim_end (r));
-        retList.push_back (r);
+        retList = flattenSymbol (r);
     }
 
     Imop* i = newCall (m_node, retList.begin (), retList.end (), argList.begin (), argList.end ());
-    Imop* c = new Imop (m_node, Imop::RETCLEAN, (Symbol*) 0, (Symbol*) 0, (Symbol*) 0);
+    Imop* c = new Imop (m_node, Imop::RETCLEAN, NULL, NULL, NULL);
     m_callsTo[symProc].insert (i);
 
     c->setArg2 (m_st->label (i));

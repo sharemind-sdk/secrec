@@ -67,6 +67,20 @@ void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
     os << ')';
 }
 
+void flattenSymbolLoop (std::vector<Symbol*>& acc, Symbol* sym) {
+    assert (sym != NULL && sym->secrecType () != NULL);
+
+    if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
+        BOOST_FOREACH (SymbolSymbol* field, static_cast<SymbolSymbol*>(sym)->fields ()) {
+            flattenSymbolLoop (acc, field);
+        }
+    }
+    else {
+        acc.insert (acc.end (), dim_begin (sym), dim_end (sym));
+        acc.push_back (sym);
+    }
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -199,6 +213,12 @@ SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
     }
 
     return NULL;
+}
+
+std::vector<Symbol*> flattenSymbol (Symbol* sym) {
+    std::vector<Symbol*> result;
+    flattenSymbolLoop (result, sym);
+    return result;
 }
 
 /*******************************************************************************

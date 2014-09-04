@@ -25,6 +25,37 @@ bool isNontrivialResource (TypeNonVoid* tnv) {
         || tnv->secrecDataType ()->isString ();
 }
 
+// TODO: this is not quite correct place for this function.
+SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
+    assert (st != NULL && ty != NULL);
+
+    SymbolSymbol * sym = st->appendTemporary(ty);
+
+    if (ty->secrecDimType() != 0) {
+        TypeBasic * intTy = TypeBasic::getIndexType(cxt);
+        for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i)
+            sym->setDim(i, st->appendTemporary(intTy));
+        sym->setSizeSym(st->appendTemporary(intTy));
+    }
+
+    if (ty->secrecDataType ()->isComposite ()) {
+        typedef DataTypeStruct::Field Field;
+        DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+        BOOST_FOREACH (const Field& field, structType->fields ()) {
+            sym->appendField (generateSymbol (cxt, st, field.type));
+        }
+    }
+
+    return sym;
+}
+
+SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, Type* ty) {
+    if (ty->isVoid())
+        return NULL;
+    else
+        return generateSymbol(cxt, st, static_cast<TypeNonVoid*>(ty));
+}
+
 } // namespace anonymous
 
 /*******************************************************************************
@@ -255,25 +286,13 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
     }
 }
 
-SymbolSymbol * CodeGen::generateResultSymbol(CGResult & result, SecreC::Type * _ty) {
-    if (! _ty->isVoid()) {
-        TypeNonVoid * ty = static_cast<TypeNonVoid *>(_ty);
-        TypeBasic * intTy = TypeBasic::getIndexType(getContext());
-        SymbolSymbol * sym = m_st->appendTemporary(ty);
+SymbolSymbol * CodeGen::generateResultSymbol(CGResult& result, SecreC::Type* ty) {
+    SymbolSymbol* sym = generateSymbol (getContext (), m_st, ty);
+    if (sym != NULL) {
         result.setResult(sym);
-
-        for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
-            sym->setDim(i, m_st->appendTemporary(intTy));
-        }
-
-        if (ty->secrecDimType() != 0) {
-            sym->setSizeSym(m_st->appendTemporary(intTy));
-        }
-
-        return sym;
     }
 
-    return 0;
+    return sym;
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
@@ -559,16 +578,16 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     }
     else {
         SymbolSymbol * const tns = m_st->appendTemporary(sym->secrecType());
-        pushImopAfter(result, new Imop(m_node, Imop::PARAM, tns));
 
+        // Pop parameters:
         for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
             push_imop(new Imop(m_node, Imop::PARAM, *di));
+        pushImopAfter(result, new Imop(m_node, Imop::PARAM, tns));
 
+        // Update size:
         push_imop(new Imop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1)));
-
         for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
             push_imop(new Imop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), *di));
-
         push_imop(new Imop(m_node, Imop::COPY, sym, tns, sym->getSizeSym()));
     }
 

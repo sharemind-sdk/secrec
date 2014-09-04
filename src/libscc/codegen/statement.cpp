@@ -627,8 +627,7 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
             return result;
         }
 
-        std::vector<Symbol * > rets(dim_begin(eResult.symbol()), dim_end(eResult.symbol()));
-        rets.push_back(eResult.symbol());
+        std::vector<Symbol*> rets = flattenSymbol (eResult.symbol ());
         Imop * i = newReturn(s, rets.begin(), rets.end());
         i->setDest(m_st->label(s->containingProcedure()->symbol()->target()));
         pushImopAfter(result, i);
