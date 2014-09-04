@@ -115,11 +115,29 @@ public: /* Methods: */
         return *this;
     }
 
+    const std::vector<Symbol*>& symbols () const {
+        return m_symbols;
+    }
+
+    void markSymbol (Symbol* sym) {
+        m_symbols.push_back (sym);
+    }
+
+    void markSymbol (const std::vector<Symbol*>& syms) {
+        markSymbol (syms.begin (), syms.end ());
+    }
+
+    template <typename Iter>
+    void markSymbol (Iter begin, Iter end) {
+        m_symbols.insert (m_symbols.end (), begin, end);
+    }
+
 private: /* Fields: */
-    PatchList   m_nextList;     ///< unpatched jumps to next imop
-    Symbol*     m_result;       ///< symbol the result is stored in
-    Imop*       m_firstImop;    ///< pointer to the first instruction
-    Status      m_status;       ///< status of the code generation
+    PatchList            m_nextList;  ///< unpatched jumps to next imop
+    Symbol*              m_result;    ///< symbol the result is stored in
+    Imop*                m_firstImop; ///< pointer to the first instruction
+    Status               m_status;    ///< status of the code generation
+    std::vector<Symbol*> m_symbols;   ///< generated symbols
 };
 
 /*******************************************************************************

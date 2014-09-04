@@ -1,7 +1,7 @@
 #ifndef SECREC_TREENODE_H
 #define SECREC_TREENODE_H
 
-#include "codegenResult.h"
+#include "CodeGenResult.h"
 #include "Location.h"
 #include "parser.h"
 #include "StringRef.h"

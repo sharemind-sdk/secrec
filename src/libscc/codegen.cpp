@@ -110,6 +110,7 @@ void CodeGen::append(CGResult & result, const CGResult & other) {
         result.patchNextList(m_st->label(other.firstImop()));
     }
 
+    result.markSymbol (other.symbols ());
     result.addToNextList(other.nextList());
     result |= other.status();
 }
@@ -249,21 +250,35 @@ void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
     }
 }
 
-void CodeGen::codeGenSize(CGResult & result) {
-    assert(result.symbol() != NULL);
-    SymbolSymbol * resSym = NULL;
-    if ((resSym = dynamic_cast<SymbolSymbol *>(result.symbol())) != NULL) {
-        Symbol * size = resSym->getSizeSym();
-        if (size == 0) return;
-        Symbol * one = indexConstant(1);
-        Imop * i = new Imop(m_node, Imop::ASSIGN, size, one);
-        pushImopAfter(result, i);
+void CodeGen::codeGenSize (CGResult &result, Symbol* sym) {
+    assert(sym != NULL);
+    if (SymbolSymbol* resSym = dynamic_cast<SymbolSymbol *>(sym)) {
+        codeGenSize (result, resSym);
+    }
+}
 
-        for (dim_iterator it = dim_begin(resSym), e = dim_end(resSym); it != e; ++ it) {
-            i = new Imop(m_node, Imop::MUL, size, size, *it);
-            push_imop(i);
+void CodeGen::codeGenSize (CGResult &result, SymbolSymbol* sym) {
+    assert(sym != NULL);
+    if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
+        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+            codeGenSize (result, field);
         }
     }
+    else {
+        Symbol * size = sym->getSizeSym();
+        if (size == NULL)
+            return;
+        Symbol * one = indexConstant(1);
+        pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, size, one));
+
+        for (dim_iterator it = dim_begin(sym), e = dim_end(sym); it != e; ++ it) {
+            push_imop(new Imop(m_node, Imop::MUL, size, size, *it));
+        }
+    }
+}
+
+void CodeGen::codeGenSize(CGResult & result) {
+    codeGenSize (result, result.symbol ());
 }
 
 void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {

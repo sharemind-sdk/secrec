@@ -331,14 +331,17 @@ private:
      */
     void pushImopAfter (CGResult& result, Imop* imop);
 
-
     /**
      * Useful to chain many expressions together if the control flow is linear.
      * Care must be taken when using this to chain branching code together.
      */
     void append (CGResult& result, const CGResult& other);
+
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
+    void codeGenSize (CGResult &result, Symbol* sym);
+    void codeGenSize (CGResult &result, SymbolSymbol* sym);
+
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);

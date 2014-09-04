@@ -7,7 +7,7 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "codegenResult.h"
+#include "CodeGenResult.h"
 
 #include "intermediate.h"
 #include "symbol.h"
