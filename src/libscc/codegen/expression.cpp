@@ -1864,6 +1864,18 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     TreeNodeLValue * lval = e->lvalue ();
 
+    // Generate code for the lvalue:
+    SubscriptInfo subInfo;
+    bool isIndexed = false;
+    const CGResult& lvalResult = cgLValue (lval, subInfo, isIndexed);
+    append (result, lvalResult);
+    if (result.isNotOk ()) {
+        return result;
+    }
+
+    SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
+    result.setResult(destSym);
+
     // either use ADD or SUB
     Imop::Type iType;
     switch (e->type()) {
@@ -1875,21 +1887,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return result;
     }
 
-    // ++ x[e1,..,ek]
-    if (lval->isIndex ()) {
-        TreeNodeExprIndex * lvalIndex = lval->index ();
-        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
-        TreeNodeIdentifier * e1 =
-            static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
-        result.setResult(destSym);
-
-        SubscriptInfo subInfo;
-        append(result, codeGenSubscript(subInfo, destSym, lvalIndex->indices ()));
-        if (result.isNotOk()) {
-            return result;
-        }
-
+    if (isIndexed) {
         const SubscriptInfo::SPV & spv = subInfo.spv();
         ArrayStrideInfo stride(destSym);
         append(result, codeGenStride(stride));
@@ -1953,12 +1951,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         releaseTemporary(result, one);
         return result;
     }
-
-    if (lval->isIdentifier ()) {
-        TreeNodeIdentifier * e1 = lval->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
-        result.setResult(destSym);
-
+    else {
         if (!e->resultType()->isScalar()) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
             Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
@@ -1976,13 +1969,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         Imop * i = newBinary(e, iType, destSym, destSym, one);
         pushImopAfter(result, i);
         releaseTemporary(result, one);
+        return result;
     }
-
-    if (lval->isSelection ()) {
-        assert (false && "TODO: implement cgExprPrefix for selection lvalue.");
-    }
-
-    return result;
 }
 
 /******************************************************************
@@ -2005,25 +1993,17 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     TreeNodeLValue * lval = e->lvalue ();
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
 
-    TreeNodeIdentifier * e1 = NULL; // static_cast<TreeNodeIdentifier *>(lval->children().at(0));
-    TreeNode* slice = lval->isIndex () ? lval->index ()->indices () : NULL;
-
-    if (lval->isIdentifier ()) {
-        e1 = lval->identifier ();
+    // Generate code for the lvalue:
+    SubscriptInfo subInfo;
+    bool isIndexed = false;
+    const CGResult& lvalResult = cgLValue (lval, subInfo, isIndexed);
+    append (result, lvalResult);
+    if (result.isNotOk ()) {
+        return result;
     }
 
-    if (lval->isIndex ()) {
-        TreeNodeExprIndex* lvalIndex = lval->index ();
-        e1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-    }
-
-    if (lval->isSelection ()) {
-        assert (false && "TODO: implement cgExprPostfix for select.");
-    }
-
-    SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(e1->value());
-
-    // r = x
+    // make copy: r = x
+    SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
     SymbolSymbol * r = generateResultSymbol(result, e);
     if (! destSym->secrecType()->isScalar()) {
         copyShapeFrom(result, destSym);
@@ -2046,15 +2026,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         return result;
     }
 
-    // x[e1,..,ek] ++
-    if (lval->isIndex ()) {
-        assert(!e->resultType()->isScalar());
-        SubscriptInfo subInfo;
-        append(result, codeGenSubscript(subInfo, destSym, slice));
-        if (result.isNotOk()) {
-            return result;
-        }
-
+    if (isIndexed) {
         const SPV & spv = subInfo.spv();
         ArrayStrideInfo stride(destSym);
         append(result, codeGenStride(stride));
@@ -2118,28 +2090,29 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         releaseTemporary(result, one);
         return result;
     }
+    else {
+        // x ++
 
-    // x ++
+        if (!e->resultType()->isScalar()) {
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
+            pushImopAfter(result, i);
+            one = t;
+        }
+        else if (e->resultType()->secrecSecType()->isPrivate()) {
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            Imop * i = new Imop(e, Imop::CLASSIFY, t, one);
+            pushImopAfter(result, i);
+            one = t;
+        }
 
-    if (!e->resultType()->isScalar()) {
-        SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::ALLOC, t, one, destSym->getSizeSym());
-        pushImopAfter(result, i);
-        one = t;
+        // x = x `iType` 1
+        Imop * i = newBinary(e, iType, destSym, destSym, one);
+        push_imop(i);
+        releaseTemporary(result, one);
+
+        return result;
     }
-    else if (e->resultType()->secrecSecType()->isPrivate()) {
-        SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-        Imop * i = new Imop(e, Imop::CLASSIFY, t, one);
-        pushImopAfter(result, i);
-        one = t;
-    }
-
-    // x = x `iType` 1
-    Imop * i = newBinary(e, iType, destSym, destSym, one);
-    push_imop(i);
-    releaseTemporary(result, one);
-
-    return result;
 }
 
 /*******************************************************************************
