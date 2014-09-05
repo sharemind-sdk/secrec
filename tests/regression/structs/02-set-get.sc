@@ -22,4 +22,7 @@ void main () {
     assert (size (w.a) == 1);
     assert (w.a[0] == 1);
     assert (w.u.x == 1);
+
+    w.a[0] = 42;
+    assert (w.a[0] == 42);
 }
