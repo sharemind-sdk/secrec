@@ -107,31 +107,14 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
     const char * m1 = isPrefix ? "Prefix " : "Postfix ";
     const char * m2 = isInc ? "increment" : "decrement";
 
+    SecreC::Type * eType = NULL;
+
     if (lval->isIdentifier ()) {
         TreeNodeIdentifier * e = lval->identifier ();
-        SecreC::Type * eType = NULL;
         if (SymbolSymbol* sym = getSymbol (e))
             eType = sym->secrecType ();
         else
             return E_TYPE;
-
-        // increment or decrement of void
-        if (eType->isVoid()) {
-            m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
-                << root->location() << '.';
-            return E_TYPE;
-        }
-
-        // check that we are operating on numeric types
-        if (!isNumericDataType(eType->secrecDataType())) {
-            m_log.fatalInProc(root) << m1 << m2
-                << " operator expects numeric type, given "
-                << *eType << " at " << root->location() << '.';
-            return E_TYPE;
-        }
-
-        root->setResultType(eType);
-        return OK;
     }
 
     if (lval->isIndex ()) {
@@ -139,7 +122,6 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
         assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
         TreeNodeIdentifier * e =
             static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        SecreC::Type * eType = NULL;
         if (SymbolSymbol* sym = getSymbol (e))
             eType = sym->secrecType ();
         else
@@ -154,32 +136,31 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
                 << " expects variable at " << root->location() << '.';
             return E_TYPE;
         }
-        // increment or decrement of void
-        if (eType->isVoid()) {
-            m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
-                << root->location() << '.';
-            return E_TYPE;
-        }
-
-        // check that we are operating on numeric types
-        if (!isNumericDataType(eType->secrecDataType())) {
-            m_log.fatalInProc(root) << m1 << m2
-                << " operator expects numeric type, given "
-                << *eType << " at " << root->location() << '.';
-            return E_TYPE;
-        }
-
-        root->setResultType(eType);
-        return OK;
     }
 
     if (lval->isSelection ()) {
-        assert (false && "TODO: implement checkPostfixPrefixIncDec for selection lval");
+        TreeNodeExprSelection* select = lval->selection ();
+        TCGUARD (visit (select));
+        eType = select->resultType ();
+    }
+
+    // increment or decrement of void
+    if (eType->isVoid()) {
+        m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
+            << root->location() << '.';
         return E_TYPE;
     }
 
-    return E_TYPE;
+    // check that we are operating on numeric types
+    if (!isNumericDataType(eType->secrecDataType())) {
+        m_log.fatalInProc(root) << m1 << m2
+            << " operator expects numeric type, given "
+            << *eType << " at " << root->location() << '.';
+        return E_TYPE;
+    }
 
+    root->setResultType(eType);
+    return OK;
 }
 
 /*******************************************************************************
