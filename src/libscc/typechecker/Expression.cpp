@@ -102,54 +102,14 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
         return OK;
 
     assert(root->children().size() == 1);
-    assert((root->children().at(0)->type() == NODE_LVALUE) != 0x0);
+    // TODO: a bit of a hack
     TreeNodeLValue * lval = static_cast<TreeNodeLValue*>(root->children().at(0));
     const char * m1 = isPrefix ? "Prefix " : "Postfix ";
     const char * m2 = isInc ? "increment" : "decrement";
 
-    SecreC::Type * eType = NULL;
+    TCGUARD (visit (lval));
 
-    if (lval->isIdentifier ()) {
-        TreeNodeIdentifier * e = lval->identifier ();
-        if (SymbolSymbol* sym = getSymbol (e))
-            eType = sym->secrecType ();
-        else
-            return E_TYPE;
-    }
-
-    if (lval->isIndex ()) {
-        TreeNodeExprIndex* lvalIndex = lval->index ();
-        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
-        TreeNodeIdentifier * e =
-            static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        if (SymbolSymbol* sym = getSymbol (e))
-            eType = sym->secrecType ();
-        else
-            return E_TYPE;
-
-        SecrecDimType destDim = eType->secrecDimType();
-        TCGUARD (checkIndices(lvalIndex->indices (), destDim));
-
-        // check that argument is a variable
-        if (e->type() == NODE_EXPR_RVARIABLE) {
-            m_log.fatalInProc(root) << m1 << m2
-                << " expects variable at " << root->location() << '.';
-            return E_TYPE;
-        }
-    }
-
-    if (lval->isSelection ()) {
-        TreeNodeExprSelection* select = lval->selection ();
-        TCGUARD (visit (select));
-        eType = select->resultType ();
-    }
-
-    // increment or decrement of void
-    if (eType->isVoid()) {
-        m_log.fatalInProc(root) << m1 << m2 << " of void type expression at "
-            << root->location() << '.';
-        return E_TYPE;
-    }
+    TypeNonVoid* eType = lval->secrecType ();
 
     // check that we are operating on numeric types
     if (!isNumericDataType(eType->secrecDataType())) {
@@ -177,28 +137,20 @@ void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
   TreeNodeExprSelection
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprSelection::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
+TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
+                                       TreeNodeIdentifier* id)
+{
+    assert (ty != NULL);
 
-TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
-    if (e->haveResultType())
-        return OK;
-
-    // Check subexpression:
-    TreeNodeExpr* structExpr = e->expression ();
-    TCGUARD (visitExpr (structExpr));
-    if (structExpr->resultType()->kind () != Type::BASIC ||
-            ! structExpr->resultType()->secrecDataType ()->isComposite ())
-    {
-        m_log.fatal () << "Expecting structure, got" << *structExpr->resultType() << ". "
-                       << "Error at " << structExpr->location () << ".";
-        return TypeChecker::E_TYPE;
+    if (ty->kind () != Type::BASIC || ! ty->secrecDataType ()->isComposite ()) {
+        m_log.fatal () << "Expecting structure, got" << *ty << ". "
+                       << "Error at " << loc << ".";
+        return NULL;
     }
 
     // Verify attribute access:
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(structExpr->resultType()->secrecDataType ());
-    StringRef fieldName = e->identifier ()->value ();
+    DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+    StringRef fieldName = id->value ();
     TypeBasic* matchingFieldType = NULL;
     typedef DataTypeStruct::Field Field;
     BOOST_FOREACH (const Field& field, structType->fields ()) {
@@ -210,12 +162,31 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
 
     if (matchingFieldType == NULL) {
         m_log.fatal () << "Invalid attribute \'" << fieldName << "\'. "
-                       << "Error at " << e->identifier ()->location () << ".";
-        return E_TYPE;
+                       << "Error at " << id->location () << ".";
+        return NULL;
     }
 
-    e->setResultType (matchingFieldType);
-    return OK;
+    return matchingFieldType;
+}
+
+TypeChecker::Status TreeNodeExprSelection::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit(this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
+    if (e->haveResultType())
+        return OK;
+
+    // Check subexpression:
+    TreeNodeExpr* structExpr = e->expression ();
+    TCGUARD (visitExpr (structExpr));
+    TypeNonVoid* fieldType = checkSelect (structExpr->location (), structExpr->resultType (), e->identifier ());
+    if (fieldType != NULL) {
+        e->setResultType (fieldType);
+        return OK;
+    }
+
+    return E_TYPE;
 }
 
 /*******************************************************************************
@@ -232,58 +203,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
 
     // Get symbol for l-value:
     TreeNodeLValue* lval = e->leftHandSide ();
-    TypeNonVoid * varType = NULL;
-    SecrecDimType destDim = 0;
 
-    if (lval->isIdentifier ()) {
-        TreeNodeIdentifier * id = lval->identifier();
-        SymbolSymbol * dest = getSymbol(id);
-        if (dest == NULL)
-            return E_TYPE;
-
-        assert(dest->secrecType()->isVoid() == false);
-        assert(dynamic_cast<TypeNonVoid *>(dest->secrecType()) != NULL);
-        varType = static_cast<TypeNonVoid *>(dest->secrecType());
-        destDim = varType->secrecDimType();
-    }
-
-    if (lval->isIndex ()) {
-        TreeNodeExprIndex* lvalIndex = lval->index ();
-        assert (lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE);
-        TreeNodeIdentifier* id = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        SymbolSymbol * dest = getSymbol(id);
-        if (dest == NULL)
-            return E_TYPE;
-
-        assert(dest->secrecType()->isVoid() == false);
-        assert(dynamic_cast<TypeNonVoid *>(dest->secrecType()) != NULL);
-        varType = static_cast<TypeNonVoid *>(dest->secrecType());
-        destDim = varType->secrecDimType();
-
-        // Check the slice:
-        TreeNode* slice = lvalIndex->indices();
-        assert (slice != NULL);
-        if (slice->children().size() != destDim) {
-            m_log.fatalInProc(e) << "Incorrect number of indices at "
-                                 << e->location()
-                                 << ".";
-            return E_TYPE;
-        }
-
-        TCGUARD (checkIndices(slice, destDim));
-    }
-
-    if (lval->isSelection ()) {
-        TreeNodeExprSelection* select = lval->selection ();
-        TCGUARD (visit (select));
-        varType = static_cast<TypeNonVoid*>(select->resultType ());
-        destDim = varType->secrecDimType ();
-    }
+    TCGUARD (visit (lval));
+    TypeNonVoid * lhsType = lval->secrecType ();
 
     // Calculate type of r-value:
     TreeNodeExpr * src = e->rightHandSide ();
-    TypeNonVoid * lhsType = TypeBasic::get(getContext(),
-            varType->secrecSecType(), varType->secrecDataType(), destDim);
     src->setContext(lhsType);
 
     TCGUARD (visitExpr(src));
@@ -300,7 +225,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
     }
 
     // Add implicit classify node if needed:
-    src = classifyIfNeeded(src, varType->secrecSecType());
+    src = classifyIfNeeded(src, lhsType->secrecSecType());
     e->setResultType(src->resultType ());
     return OK;
 }

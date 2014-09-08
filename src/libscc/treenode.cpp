@@ -39,8 +39,8 @@ TreeNodeExpr * expressionAt(const TreeNode * node, size_t i) {
 *******************************************************************************/
 
 TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
-    : m_parent(0)
-    , m_procedure(0)
+    : m_parent(NULL)
+    , m_procedure(NULL)
     , m_type(type)
     , m_location(loc)
 {
@@ -158,7 +158,9 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(LITE_FLOAT);
     CASE_NODE_NAME(LITE_INT);
     CASE_NODE_NAME(LITE_STRING);
-    CASE_NODE_NAME(LVALUE);
+    CASE_NODE_NAME(LVALUE_VARIABLE);
+    CASE_NODE_NAME(LVALUE_INDEX);
+    CASE_NODE_NAME(LVALUE_SELECT);
     CASE_NODE_NAME(MODULE);
     CASE_NODE_NAME(PROCDEF);
     CASE_NODE_NAME(PROGRAM);
@@ -723,38 +725,40 @@ TreeNodeExpr* TreeNodeExprTernary::falseBranch () const {
 }
 
 /*******************************************************************************
-  TreeNodeLValue
+  TreeNodeLVariable
 *******************************************************************************/
 
-
-bool TreeNodeLValue::isIdentifier () const {
-    assert(children().size() == 1);
-    return children ().at (0)->type () == NODE_EXPR_RVARIABLE;
+TreeNodeIdentifier* TreeNodeLVariable::identifier () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
 }
 
-bool TreeNodeLValue::isSelection () const {
-    assert(children().size() == 1);
-    return children ().at (0)->type () == NODE_EXPR_SELECTION;
+/*******************************************************************************
+  TreeNodeLIndex
+*******************************************************************************/
+
+TreeNodeLValue* TreeNodeLIndex::lvalue () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeLValue>(this, 0);
 }
 
-bool TreeNodeLValue::isIndex () const {
-    assert(children().size() == 1);
-    return children ().at (0)->type () == NODE_EXPR_INDEX;
+TreeNodeSubscript* TreeNodeLIndex::indices () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeSubscript>(this, 1);
 }
 
-TreeNodeIdentifier* TreeNodeLValue::identifier () const {
-    assert(children().size() == 1);
-    return childAt<TreeNodeExprRVariable>(this, 0)->identifier ();
+/*******************************************************************************
+  TreeNodeLSelect
+*******************************************************************************/
+
+TreeNodeLValue* TreeNodeLSelect::lvalue () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeLValue>(this, 0);
 }
 
-TreeNodeExprSelection* TreeNodeLValue::selection () const {
-    assert(children().size() == 1);
-    return childAt<TreeNodeExprSelection>(this, 0);
-}
-
-TreeNodeExprIndex* TreeNodeLValue::index () const {
-    assert(children().size() == 1);
-    return childAt<TreeNodeExprIndex>(this, 0);
+TreeNodeIdentifier* TreeNodeLSelect::identifier () const {
+    assert (children ().size () == 2);
+    return childAt<TreeNodeIdentifier>(this, 1);
 }
 
 /*******************************************************************************
@@ -794,9 +798,9 @@ TreeNodeExpr* TreeNodeExprIndex::expression () const {
     return expressionAt (this, 0);
 }
 
-TreeNode* TreeNodeExprIndex::indices () const {
+TreeNodeSubscript* TreeNodeExprIndex::indices () const {
     assert (children().size() == 2);
-    return children ().at (1);
+    return childAt<TreeNodeSubscript>(this, 1);
 }
 
 /*******************************************************************************
@@ -1425,7 +1429,9 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
 
     SELECTNODE(INTERNAL_USE, InternalUse);
     SELECTNODE(DIMENSIONS, Dimensions);
-    SELECTNODE(LVALUE, LValue);
+    SELECTNODE(LVALUE_VARIABLE, LVariable);
+    SELECTNODE(LVALUE_INDEX, LIndex);
+    SELECTNODE(LVALUE_SELECT, LSelect);
     SELECTNODE(SUBSCRIPT, Subscript);
     SELECTNODE(INDEX_INT, IndexInt);
     SELECTNODE(INDEX_SLICE, IndexSlice);
@@ -1601,4 +1607,12 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
     os << "__operator" << op;
     treenode_appendChild(node, treenode_init_identifier(table->addString (os.str()), loc));
     return node;
+}
+
+TreeNode* treenode_init_lvalue(TreeNode *node, YYLTYPE* loc) {
+    assert (node != NULL && loc != NULL);
+    SecreC::Location secrecLoc (*loc);
+    TreeNode* result = (TreeNode*) ((const SecreC::TreeNode*) node)->makeLValue (secrecLoc);
+    *loc = secrecLoc.toYYLTYPE ();
+    return result;
 }

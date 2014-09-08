@@ -275,6 +275,13 @@ public: /* Methods: */
     CGResult cgStringPartFragment (TreeNodeStringPartFragment* p);
     /// \}
 
+    /// \{
+    CGResult cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed);
+    CGResult cgLVariable (TreeNodeLVariable* lvar, SubscriptInfo& subInfo, bool& isIndexed);
+    CGResult cgLIndex (TreeNodeLIndex* lindex, SubscriptInfo& subInfo, bool& isIndexed);
+    CGResult cgLSelect (TreeNodeLSelect* lselect, SubscriptInfo& subInfo, bool& isIndexed);
+    /// \}
+
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = NULL);
@@ -342,9 +349,10 @@ private:
     void codeGenSize (CGResult& result, Symbol* sym);
     void codeGenSize (CGResult& result, SymbolSymbol* sym);
 
-
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
+
+    LoopInfo prepareLoopInfo (const SubscriptInfo& subscript);
 
     /**
      * @brief CodeGen::cgProcParam Expect the given symbol as procedure parameter.
@@ -369,8 +377,6 @@ private:
      * @return Code generation result.
      */
     CGResult cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape = false);
-
-    CGResult cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed);
 
     CGResult cgProcCall (SymbolProcedure* symProc,
                          SecreC::Type* returnType,

@@ -145,6 +145,9 @@ enum SecrecTreeNodeType {
     NODE_SYSCALL_RETURN         = 0x1c000,
     NODE_STRUCT_DECL            = 0x1d000,
     NODE_ATTRIBUTE              = 0x1e000,
+    NODE_LVALUE_VARIABLE        = 0x1f000,
+    NODE_LVALUE_SELECT          = 0x20000,
+    NODE_LVALUE_INDEX           = 0x21000,
 
     NODE_DATATYPE_CONST_F       = 0x0100000,
     NODE_DATATYPE_VAR_F         = 0x0200000,

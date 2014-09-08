@@ -39,40 +39,6 @@ bool getAssignBinImopType(SecrecTreeNodeType type, Imop::Type& iType) {
   TreeNodeExprAssign
 *******************************************************************************/
 
-CGResult CodeGen::cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed) {
-    assert (lval != NULL);
-
-    if (lval->isIndex ()) {
-        TreeNodeExprIndex* lvalIndex = lval->index ();
-        assert ((lvalIndex->expression ()->type () == NODE_EXPR_RVARIABLE) && "TODO: how do we index a field?");
-        TreeNodeIdentifier* eArg1 = static_cast<TreeNodeExprRVariable*>(lvalIndex->expression ())->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(eArg1->value());
-
-        isIndexed = true;
-        CGResult result;
-        result.setResult (destSym);
-        append(result, codeGenSubscript(subInfo, destSym, lvalIndex->indices ()));
-        return result;
-    }
-
-    if (lval->isIdentifier ()) {
-        TreeNodeIdentifier* ident = lval->identifier ();
-        SymbolSymbol * destSym = m_st->find<SYM_SYMBOL>(ident->value());
-
-        isIndexed = false;
-        CGResult result;
-        result.setResult (destSym);
-        return result;
-    }
-
-    if (lval->isSelection ()) {
-        isIndexed = false;
-        return codeGen (lval->selection ());
-    }
-
-    return CGResult::ERROR_CONTINUE;
-}
-
 CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
     return cg.cgExprAssign (this);
 }

@@ -47,6 +47,7 @@ TreeNode *treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * l
 TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType, YYLTYPE *loc);
 TreeNode *treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE *loc);
 TreeNode *treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE *loc);
+TreeNode *treenode_init_lvalue (TreeNode* node, YYLTYPE *loc);
 
 #ifdef __cplusplus
 } /* namespace SecreC */

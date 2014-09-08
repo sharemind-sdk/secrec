@@ -22,14 +22,21 @@ class TreeNodeProcDef;
 class TreeNode;
 class SymbolTypeVariable;
 class ConstantString;
+class TreeNodeSubscript;
+class SubscriptInfo;
 
 /******************************************************************
   TreeNode
 ******************************************************************/
 
 /**
- * \class TreeNode
- * Abstract representation of the SecreC code.
+ * @brief Abstract representation of the SecreC code.
+ *
+ * TODO: This is not a type-safe representation. We should
+ * always store properly typed subtrees. To achieve something
+ * comparable the syntactic elements have accessors that return
+ * subtrees of proper types. Internally the accessors verify
+ * (using assert) that the proper type is provides.
  */
 class TreeNode {
 public: /* Types: */
@@ -64,7 +71,22 @@ public: /* Methods: */
 
     TreeNode* clone (TreeNode* parent) const;
 
+    /**
+     * @brief makeLValue Try to construct a lvalue out of the given tree node.
+     * This function is needed as the parser it unfortunately not powerful enough
+     * to distinguish them wihout major reduce-reduce conflicts.
+     * @note Does not perform any type checking.
+     * @param loc Location where the error happens.
+     * @return NULL if the given tree node is not a lvalue and otherwise a newly constructed lvalue.
+     */
+    TreeNodeLValue* makeLValue (Location& loc) const { return makeLValueV (loc); }
+
 protected: /* Methods: */
+
+    virtual TreeNodeLValue* makeLValueV (Location& loc) const {
+        loc = location ();
+        return NULL;
+    }
 
     virtual inline bool printHelper (std::ostream&) const { return false; }
 
@@ -255,31 +277,93 @@ protected:
 class TreeNodeLValue: public TreeNode {
 public: /* Methods: */
 
-    inline TreeNodeLValue(const Location & loc)
-        : TreeNode(NODE_LVALUE, loc)
+    TreeNodeLValue(SecrecTreeNodeType type, const Location & loc)
+        : TreeNode(type, loc)
+        , m_secrecType (NULL)
     { }
 
-    bool isIdentifier () const;
-    bool isSelection () const;
-    bool isIndex () const;
+    TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (TypeNonVoid* type) {
+        assert (type != NULL);
+        m_secrecType = type;
+    }
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
+    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                                  bool& isIndexed) = 0;
+
+private: /* Fields: */
+    TypeNonVoid* m_secrecType;
+};
+
+/******************************************************************
+  TreeNodeLVariable
+******************************************************************/
+
+class TreeNodeLVariable: public TreeNodeLValue {
+public: /* Methods: */
+    explicit TreeNodeLVariable (const Location& loc)
+        : TreeNodeLValue (NODE_LVALUE_VARIABLE, loc)
+    { }
 
     TreeNodeIdentifier* identifier () const;
-    TreeNodeExprSelection* selection () const;
-    TreeNodeExprIndex* index () const;
+
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                                  bool& isIndexed);
 
 protected:
     virtual TreeNode* cloneV () const {
-        return new TreeNodeLValue (m_location);
+        return new TreeNodeLVariable (m_location);
     }
 };
 
-/*
- * We need to introduce the following classes:
- *
- * class TreeNodeLVariable: public TreeNodeLValue { };
- * class TreeNodeLIndex: public TreeNodeLValue { };
- * class TreeNodeLSelect: public TreeNodeLValue { };
- */
+/******************************************************************
+  TreeNodeLIndex
+******************************************************************/
+
+class TreeNodeLIndex: public TreeNodeLValue {
+public: /* Methods: */
+    explicit TreeNodeLIndex (const Location& loc)
+        : TreeNodeLValue (NODE_LVALUE_INDEX, loc)
+    { }
+
+    TreeNodeLValue* lvalue () const;
+    TreeNodeSubscript* indices () const;
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                                  bool& isIndexed);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeLIndex (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeLSelect
+******************************************************************/
+
+class TreeNodeLSelect: public TreeNodeLValue {
+public: /* Methods: */
+    explicit TreeNodeLSelect (const Location& loc)
+        : TreeNodeLValue (NODE_LVALUE_SELECT, loc)
+    { }
+
+    TreeNodeLValue* lvalue () const;
+    TreeNodeIdentifier* identifier () const;
+
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker);
+    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                                  bool& isIndexed);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeLSelect (m_location);
+    }
+};
 
 /******************************************************************
   TreeNodeSubscript
@@ -805,6 +889,8 @@ protected:
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprSelection (m_location);
     }
+
+    virtual TreeNodeLValue* makeLValueV (Location& loc) const;
 };
 
 /******************************************************************
@@ -871,7 +957,7 @@ public:
     virtual CGBranchResult codeGenBoolWith (CodeGen& cg);
 
     TreeNodeExpr* expression () const;
-    TreeNode* indices () const;
+    TreeNodeSubscript* indices () const;
 
 protected:
 
@@ -880,6 +966,8 @@ protected:
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprIndex (m_location);
     }
+
+    virtual TreeNodeLValue* makeLValueV (Location& loc) const;
 };
 
 /******************************************************************
@@ -1206,6 +1294,8 @@ protected:
     virtual TreeNode* cloneV () const {
         return new TreeNodeExprRVariable (m_location);
     }
+
+    virtual TreeNodeLValue* makeLValueV (Location& loc) const;
 
 private: /* Fields: */
     Symbol* m_valueSymbol;

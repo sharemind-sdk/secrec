@@ -22,6 +22,7 @@ class Type;
 class TypeContext;
 class TypeNonVoid;
 struct InstanceInfo;
+class Location;
 
 #ifndef TCGUARD
 #define TCGUARD(expr) \
@@ -119,7 +120,11 @@ public: /* Methods: */
     Status visit(TreeNodeStructDecl* decl);
     Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
     Status visit(TreeNodeTemplate * templ);
+
     Status visit(TreeNodeLValue* lvalue);
+    Status visit(TreeNodeLIndex* lindex);
+    Status visit(TreeNodeLVariable* lvar);
+    Status visit(TreeNodeLSelect* lselect);
 
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
@@ -135,6 +140,8 @@ public: /* Methods: */
 
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
 private:
+
+    TypeNonVoid* checkSelect (const Location& loc, Type* ty, TreeNodeIdentifier* id);
 
     TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
 

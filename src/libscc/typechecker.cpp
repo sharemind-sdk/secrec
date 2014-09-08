@@ -62,7 +62,7 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
         return 0;
     }
 
-    return static_cast<SymbolSymbol*>(s);
+    return s;
 }
 
 // Potentially replaces the child in parent list. Does not invalidate iterators.

@@ -325,6 +325,19 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
     }
 }
 
+LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
+    LoopInfo loopInfo;
+    const SubscriptInfo::SPV & spv = subscript.spv();
+    TypeBasic* const pubIntTy = TypeBasic::getIndexType(getContext ());
+    for (SubscriptInfo::SPV::const_iterator it = spv.begin(); it != spv.end(); ++ it) {
+        Symbol * sym = m_st->appendTemporary(pubIntTy);
+        loopInfo.push_index(sym);
+    }
+
+    return loopInfo;
+}
+
+
 SymbolSymbol * CodeGen::generateResultSymbol(CGResult& result, SecreC::Type* ty) {
     SymbolSymbol* sym = generateSymbol (getContext (), m_st, ty);
     if (sym != NULL) {

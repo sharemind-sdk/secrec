@@ -939,8 +939,14 @@ index
 lvalue
  : postfix_expression
    {
-     $$ = treenode_init (NODE_LVALUE, &@$);
-     treenode_appendChild($$, $1);
+     YYLTYPE loc = @$;
+     if (($$ = treenode_init_lvalue($1, &loc)) == NULL) {
+        yyerror(&loc, yyscanner, $1, loc.filename, table, "Invalid lvalue.");
+        YYERROR;
+     }
+     else {
+        treenode_free ($1);
+     }
    }
  ;
 
