@@ -126,6 +126,7 @@ add_test_secrec_execute("arrays/48-private-index-bug")
 add_test_secrec_execute("arrays/49-private-concat-bug")
 add_test_secrec_execute("arrays/50-slice-assign-bug")
 add_test_secrec_execute("arrays/51-seq-assign-bug")
+add_test_secrec_execute("arrays/52-inc-bug-3")
 
 # Tests for templates:
 add_test_secrec_execute("templates/00-trivial")
