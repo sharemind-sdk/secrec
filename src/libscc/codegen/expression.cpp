@@ -1957,6 +1957,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
             // t = x[offset]
             push_imop(new Imop(e, Imop::LOAD, tmpElem, x, offset));
 
+            // t = t + 1
+            push_imop(new Imop(e, iType, tmpElem, tmpElem, one));
+
             if (isScalar) {
                 // r = t
                 push_imop(new Imop(e, Imop::ASSIGN, r, tmpElem));
@@ -1965,9 +1968,6 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
                 // r[resultOffset] = t
                 push_imop(new Imop(e, Imop::STORE, r, resultOffset, tmpElem));
             }
-
-            // t = t + 1
-            push_imop(new Imop(e, iType, tmpElem, tmpElem, one));
 
             // x[offset] = t
             push_imop(new Imop(e, Imop::STORE, x, offset, tmpElem));
