@@ -1295,7 +1295,7 @@ protected:
         return new TreeNodeExprRVariable (m_location);
     }
 
-    virtual TreeNodeLValue* makeLValueV (Location& loc) const;
+    virtual TreeNodeLValue* makeLValueV (Location&) const;
 
 private: /* Fields: */
     Symbol* m_valueSymbol;

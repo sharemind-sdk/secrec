@@ -47,7 +47,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeLVariable* lvar) {
     return E_TYPE;
 }
 
-TreeNodeLValue* TreeNodeExprRVariable::makeLValueV (Location& loc) const {
+TreeNodeLValue* TreeNodeExprRVariable::makeLValueV (Location&) const {
     TreeNode* id = identifier ()->clone (parent ());
     TreeNodeLValue* result = new TreeNodeLVariable (location ());
     result->appendChild (id);
