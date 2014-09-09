@@ -303,34 +303,13 @@ public: /* Methods: */
     CGResult exitLoop (LoopInfo& loopInfo);
     /// \}
 
-private:
-
-    Context& getContext () const {
-        return m_context;
-    }
-
-    StringTable& getStringTable () const;
-
-    void swap (CodeGenState& state) {
-        swapState (state);
-        updateTypeChecker ();
-    }
-
-    void setScope (SymbolTable* st) {
-        m_st = st;
-        updateTypeChecker ();
-    }
+    Context& getContext () const { return m_context; }
+    SymbolTable* symbolTable () const { return m_st; }
+    TreeNode* treeNode () const { return m_node; }
 
     inline void push_imop (Imop* imop) {
         m_code.insert (m_insertPoint, imop);
     }
-
-    void updateTypeChecker ();
-    void newScope ();
-    void popScope ();
-
-    Imop* newComment (StringRef commnet) const;
-    Imop* pushComment (StringRef comment);
 
     /**
      * \brief Used to push instruction right after code block.
@@ -344,6 +323,27 @@ private:
      * Care must be taken when using this to chain branching code together.
      */
     void append (CGResult& result, const CGResult& other);
+
+private:
+
+    StringTable& getStringTable () const;
+
+    void swap (CodeGenState& state) {
+        swapState (state);
+        updateTypeChecker ();
+    }
+
+    void setScope (SymbolTable* st) {
+        m_st = st;
+        updateTypeChecker ();
+    }
+
+    void updateTypeChecker ();
+    void newScope ();
+    void popScope ();
+
+    Imop* newComment (StringRef commnet) const;
+    Imop* pushComment (StringRef comment);
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);
