@@ -23,11 +23,11 @@ namespace /* anonymous */ {
 
 struct TemplateTypeVariable {
     TreeNodeIdentifier*  id;
-    TypeVariableKind     kind;
+    TypeArgumentKind     kind;
     bool                 bound;
     bool                 ret;
 
-    TemplateTypeVariable (TreeNodeIdentifier* id, TypeVariableKind kind)
+    TemplateTypeVariable (TreeNodeIdentifier* id, TypeArgumentKind kind)
         : id (id)
         , kind (kind)
         , bound (false)
@@ -37,47 +37,47 @@ struct TemplateTypeVariable {
 
 typedef std::map<StringRef, TemplateTypeVariable, StringRef::FastCmp> TypeVariableMap;
 
-TypeVariableKind typeFragmentKind (const TreeNodeTypeF& ty) {
+TypeArgumentKind typeFragmentKind (const TreeNodeTypeF& ty) {
     switch (ty.type ()) {
     case NODE_DATATYPE_VAR_F:
     case NODE_DATATYPE_CONST_F:
-        return TV_DATA;
+        return TA_DATA;
     case NODE_DIMTYPE_VAR_F:
     case NODE_DIMTYPE_CONST_F:
-        return TV_DIM;
+        return TA_DIM;
     case NODE_SECTYPE_PRIVATE_F:
     case NODE_SECTYPE_PUBLIC_F:
-        return TV_SEC;
+        return TA_SEC;
     default:
         assert (false && "Invalid tree node.");
-        return TV_UNDEF;
+        return TA_UNDEF;
     }
 }
 
-SymbolCategory symbolCategory (TypeVariableKind kind) {
+SymbolCategory symbolCategory (TypeArgumentKind kind) {
     switch (kind) {
-    case TV_SEC: return SYM_DOMAIN;
-    case TV_DATA: return SYM_TYPE;
-    case TV_DIM: return SYM_DIM;
-    case TV_UNDEF: return SYM_UNDEFINED;
+    case TA_SEC: return SYM_DOMAIN;
+    case TA_DATA: return SYM_TYPE;
+    case TA_DIM: return SYM_DIM;
+    case TA_UNDEF: return SYM_UNDEFINED;
     }
 }
 
-TypeVariableKind quantifierKind (const TreeNodeQuantifier& quant) {
+TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
     switch (quant.type ()) {
-    case NODE_TEMPLATE_DOMAIN_QUANT: return TV_SEC;
-    case NODE_TEMPLATE_DATA_QUANT: return TV_DATA;
-    case NODE_TEMPLATE_DIM_QUANT: return TV_DIM;
-    default: return TV_UNDEF;
+    case NODE_TEMPLATE_DOMAIN_QUANT: return TA_SEC;
+    case NODE_TEMPLATE_DATA_QUANT: return TA_DATA;
+    case NODE_TEMPLATE_DIM_QUANT: return TA_DIM;
+    default: return TA_UNDEF;
     }
 }
 
-const char* kindAsString (TypeVariableKind kind) {
+const char* kindAsString (TypeArgumentKind kind) {
     switch (kind) {
-    case TV_SEC: return "domain";
-    case TV_DATA: return "data";
-    case TV_DIM: return "dimensionality";
-    case TV_UNDEF:
+    case TA_SEC: return "domain";
+    case TA_DATA: return "data";
+    case TA_DIM: return "dimensionality";
+    case TA_UNDEF:
         assert (false && "Invalid type variable kind.");
         return "undefined";
     }
@@ -88,7 +88,7 @@ TypeChecker::Status checkTypeVariable (TypeVariableMap& map, SymbolTable* st, Co
         return TypeChecker::OK;
 
     const StringRef name = t.identifier ()->value ();
-    const TypeVariableKind kind = typeFragmentKind (t);
+    const TypeArgumentKind kind = typeFragmentKind (t);
     const TypeVariableMap::iterator it = map.find (name);
     if (it != map.end ()) {
         TemplateTypeVariable& tv = it->second;
@@ -176,9 +176,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
             continue;
         }
 
-        if (tv.kind == TV_SEC) expectsSecType = true;
-        if (tv.kind == TV_DATA) expectsDataType = true;
-        if (tv.kind == TV_DIM) expectsDimType = true;
+        if (tv.kind == TA_SEC) expectsSecType = true;
+        if (tv.kind == TA_DATA) expectsDataType = true;
+        if (tv.kind == TA_DIM) expectsDimType = true;
     }
 
     if (! unboundTV.empty()) {
@@ -202,19 +202,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
 }
 
 /*******************************************************************************
-  TemplateParameter
-*******************************************************************************/
-
-SymbolTypeVariable* TemplateParameter::bind (StringRef name) const {
-    switch (m_kind) {
-    case TV_UNDEF: return NULL;
-    case TV_SEC:   return new SymbolDomain (name, secType ());
-    case TV_DATA:  return new SymbolDataType (name, dataType ());
-    case TV_DIM:   return new SymbolDimensionality (name, dimType ());
-    }
-}
-
-/*******************************************************************************
   TemplateInstantiator
 *******************************************************************************/
 
@@ -234,7 +221,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         info.m_localScope = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
-        std::vector<TemplateParameter>::const_iterator it = i.getParams ().begin ();
+        std::vector<TypeArgument>::const_iterator it = i.getParams ().begin ();
         BOOST_FOREACH (TreeNodeQuantifier& quant, i.getTemplate ()->decl ()->quantifiers ()) {
             StringRef qname = quant.typeVariable ()->value ();
             local->appendSymbol (it->bind (qname));

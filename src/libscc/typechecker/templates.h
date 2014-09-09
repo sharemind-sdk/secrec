@@ -22,6 +22,7 @@
 #include "StringRef.h"
 #include "treenode_fwd.h"
 #include "DataType.h"
+#include "TypeArgument.h"
 
 /**
  * This file contains functionality for template instantiation
@@ -40,97 +41,8 @@ class SecurityType;
 class Symbol;
 class SymbolTypeVariable;
 
-/*******************************************************************************
-  TypeVariableKind
-*******************************************************************************/
 
-enum TypeVariableKind {
-    TV_UNDEF,
-    TV_SEC,
-    TV_DATA,
-    TV_DIM
-};
-
-/*******************************************************************************
-  TemplateParameter
-*******************************************************************************/
-
-// Algebraic data types would be nice...
-class TemplateParameter {
-public: /* Methods: */
-
-    TemplateParameter (SecrecDimType dimType)
-        : m_kind (TV_DIM)
-        , un_dimType (dimType)
-    { }
-
-    TemplateParameter (SecurityType* secType)
-        : m_kind (TV_SEC)
-        , un_secType (secType)
-    { }
-
-    TemplateParameter (DataType* dataType)
-        : m_kind (TV_DATA)
-        , un_dataType (dataType)
-    { }
-
-    SecrecDimType dimType () const {
-        assert (m_kind == TV_DIM);
-        return un_dimType;
-    }
-
-    SecurityType* secType () const {
-        assert (m_kind == TV_SEC);
-        return un_secType;
-    }
-
-    DataType* dataType () const {
-        assert (m_kind == TV_DATA);
-        return un_dataType;
-    }
-
-    SymbolTypeVariable* bind (StringRef name) const;
-
-    friend bool operator == (const TemplateParameter& a, const TemplateParameter& b);
-    friend bool operator < (const TemplateParameter& a, const TemplateParameter& b);
-
-private: /* Fields: */
-    TypeVariableKind m_kind;
-    union {
-        SecrecDimType  un_dimType;
-        SecurityType*  un_secType;
-        DataType*      un_dataType;
-    };
-};
-
-inline bool operator == (const TemplateParameter& a, const TemplateParameter& b) {
-    if (a.m_kind != b.m_kind)
-        return false;
-
-    switch (a.m_kind) {
-    case TV_DIM:  return a.un_dimType  == b.un_dimType;
-    case TV_SEC:  return a.un_secType  == b.un_secType;
-    case TV_DATA: return a.un_dataType == b.un_dataType;
-    case TV_UNDEF: return false;
-    }
-}
-
-inline bool operator != (const TemplateParameter& a, const TemplateParameter& b) {
-    return !(a == b);
-}
-
-inline bool operator < (const TemplateParameter& a, const TemplateParameter& b) {
-    if (a.m_kind < b.m_kind) return true;
-    if (a.m_kind > b.m_kind) return false;
-    switch (a.m_kind) {
-    case TV_DIM:  return a.un_dimType  < b.un_dimType;
-    case TV_SEC:  return a.un_secType  < b.un_secType;
-    case TV_DATA: return a.un_dataType < b.un_dataType;
-    case TV_UNDEF: return false;
-    }
-}
-
-typedef std::map<StringRef, TemplateParameter, StringRef::FastCmp>
+typedef std::map<StringRef, TypeArgument, StringRef::FastCmp>
     TemplateVarMap;
 
 /*******************************************************************************
@@ -154,15 +66,15 @@ public: /* Methods: */
     }
 
     SymbolTemplate* getTemplate () const { return m_templ; }
-    std::vector<TemplateParameter>& getParams () { return m_params; }
-    const std::vector<TemplateParameter>& getParams () const { return m_params; }
+    std::vector<TypeArgument>& getParams () { return m_params; }
+    const std::vector<TypeArgument>& getParams () const { return m_params; }
 
     friend bool operator == (const Instantiation& a, const Instantiation& b);
     friend bool operator <  (const Instantiation& a, const Instantiation& b);
 
 private: /* Fields: */
-    SymbolTemplate*                m_templ;
-    std::vector<TemplateParameter> m_params;
+    SymbolTemplate*           m_templ;
+    std::vector<TypeArgument> m_params;
 };
 
 inline bool operator == (const Instantiation& a, const Instantiation& b) {
