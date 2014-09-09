@@ -1527,7 +1527,7 @@ enum SecrecTreeNodeType treenode_type(TreeNode * node) {
     return ((const SecreC::TreeNode *) node)->type();
 }
 
-const YYLTYPE treenode_location(const TreeNode * node) {
+YYLTYPE treenode_location(const TreeNode * node) {
     return ((const SecreC::TreeNode *) node)->location().toYYLTYPE();
 }
 
