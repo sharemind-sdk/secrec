@@ -746,16 +746,17 @@ protected:
   TreeNodeTypeArg
 ******************************************************************/
 
-class TreeNodeTypeArg: public TreeNodeType {
+class TreeNodeTypeArg: public TreeNode {
 public: /* Methods: */
     explicit inline TreeNodeTypeArg(SecrecTreeNodeType type,
                                     const Location & loc)
-        : TreeNodeType(type, loc)
+        : TreeNode(type, loc)
         , m_typeArgument (NULL)
     { }
 
     ~TreeNodeTypeArg ();
 
+    bool hasTypeArgument () const { return m_typeArgument != NULL; }
     const TypeArgument& typeArgument () const;
     void setTypeArgument (const TypeArgument& typeArgument);
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
