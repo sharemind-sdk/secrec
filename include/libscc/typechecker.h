@@ -1,7 +1,7 @@
 #ifndef SECREC_TYPE_CHECKER_H
 #define SECREC_TYPE_CHECKER_H
 
-#include "parser.h"
+#include "ParserEnums.h"
 #include "symbol_fwd.h"
 #include "treenode_fwd.h"
 

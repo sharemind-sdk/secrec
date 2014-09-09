@@ -2,7 +2,7 @@
 #define SECREC_SYMBOL_H
 
 #include "DataType.h"
-#include "parser.h"
+#include "ParserEnums.h"
 #include "StringRef.h"
 #include "symbol_fwd.h"
 #include "treenode_fwd.h"

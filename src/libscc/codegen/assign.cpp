@@ -87,7 +87,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
             std::stringstream ss;
             ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << '.';
-            Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
+            Imop * jmp = new Imop(e, Imop::JUMP, NULL);
             Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * errLabel = m_st->label(err);
             SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());

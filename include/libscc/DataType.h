@@ -10,7 +10,7 @@
 #ifndef SECREC_DATATYPE_H
 #define SECREC_DATATYPE_H
 
-#include "parser.h"
+#include "ParserEnums.h"
 #include "StringRef.h"
 
 #include <iosfwd>

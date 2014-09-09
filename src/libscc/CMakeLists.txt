@@ -92,6 +92,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/misc.h"
     "${LIBSCC_INCLUDE_DIR}/ModuleMap.h"
     "${LIBSCC_INCLUDE_DIR}/parser.h"
+    "${LIBSCC_INCLUDE_DIR}/ParserEnums.h"
     "${LIBSCC_INCLUDE_DIR}/SecurityType.h"
     "${LIBSCC_INCLUDE_DIR}/StringTable.h"
     "${LIBSCC_INCLUDE_DIR}/StringRef.h"

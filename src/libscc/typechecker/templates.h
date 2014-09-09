@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "parser.h"
+#include "ParserEnums.h"
 #include "StringRef.h"
 #include "treenode_fwd.h"
 #include "DataType.h"

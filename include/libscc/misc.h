@@ -1,7 +1,7 @@
 #ifndef SECREC_MISC_H
 #define SECREC_MISC_H
 
-#include "parser.h"
+#include "ParserEnums.h"
 
 #include <cassert>
 #include <string>

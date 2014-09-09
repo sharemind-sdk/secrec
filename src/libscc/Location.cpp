@@ -9,6 +9,8 @@
 
 #include "Location.h"
 
+#include "parser.h"
+
 #include <ostream>
 
 namespace SecreC {
@@ -24,5 +26,37 @@ std::ostream & operator<<(std::ostream & os, const Location & loc) {
        << ',' << loc.lastColumn() << ')';
     return os;
 }
+
+Location::Location(const YYLTYPE & loc)
+    : m_firstLine(loc.first_line)
+    , m_firstColumn(loc.first_column)
+    , m_lastLine(loc.last_line)
+    , m_lastColumn(loc.last_column)
+{
+    assert(loc.filename);
+    init(loc.filename);
+}
+
+Location & Location::operator=(const YYLTYPE & loc) {
+    assert(loc.filename);
+    deinit();
+    m_firstLine = loc.first_line;
+    m_firstColumn = loc.first_column;
+    m_lastLine = loc.last_line;
+    m_lastColumn = loc.last_column;
+    init(loc.filename);
+    return *this;
+}
+
+YYLTYPE Location::toYYLTYPE() const {
+    YYLTYPE r;
+    r.first_line = m_firstLine;
+    r.first_column = m_firstColumn;
+    r.last_line = m_lastLine;
+    r.last_column = m_lastColumn;
+    r.filename = filename().c_str();
+    return r;
+}
+
 
 }

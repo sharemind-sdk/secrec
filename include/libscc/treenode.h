@@ -3,7 +3,7 @@
 
 #include "CodeGenResult.h"
 #include "Location.h"
-#include "parser.h"
+#include "ParserEnums.h"
 #include "StringRef.h"
 #include "typechecker.h"
 #include "TypeContext.h"
@@ -12,6 +12,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 namespace SecreC {
 

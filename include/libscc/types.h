@@ -11,7 +11,7 @@
 #define SECREC_TYPES_H
 
 #include "DataType.h"
-#include "parser.h"
+#include "ParserEnums.h"
 #include "SecurityType.h"
 
 #include <cassert>

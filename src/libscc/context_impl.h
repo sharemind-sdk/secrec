@@ -10,7 +10,7 @@
 #ifndef CONTEXT_IMPL_H
 #define CONTEXT_IMPL_H
 
-#include "parser.h"
+#include "ParserEnums.h"
 #include "types.h"
 #include "constant.h"
 #include "StringTable.h"

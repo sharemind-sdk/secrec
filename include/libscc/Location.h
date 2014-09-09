@@ -10,13 +10,13 @@
 #ifndef SECREC_LOCATION_H
 #define SECREC_LOCATION_H
 
-#include "parser.h"
-
 #include <cassert>
 #include <iosfwd>
 #include <limits>
 #include <map>
 #include <string>
+
+struct YYLTYPE;
 
 namespace SecreC {
 
@@ -46,15 +46,7 @@ public: /* Methods: */
         init(filename);
     }
 
-    inline Location(const YYLTYPE & loc)
-        : m_firstLine(loc.first_line)
-        , m_firstColumn(loc.first_column)
-        , m_lastLine(loc.last_line)
-        , m_lastColumn(loc.last_column)
-    {
-        assert(loc.filename);
-        init(loc.filename);
-    }
+    Location(const YYLTYPE & loc);
 
     inline Location(const Location & loc)
         : m_firstLine(loc.m_firstLine)
@@ -72,16 +64,7 @@ public: /* Methods: */
         deinit();
     }
 
-    Location & operator=(const YYLTYPE & loc) {
-        assert(loc.filename);
-        deinit();
-        m_firstLine = loc.first_line;
-        m_firstColumn = loc.first_column;
-        m_lastLine = loc.last_line;
-        m_lastColumn = loc.last_column;
-        init(loc.filename);
-        return *this;
-    }
+    Location & operator=(const YYLTYPE & loc);
 
     Location & operator=(const Location & loc) {
         if (m_filenameItem != loc.m_filenameItem)
@@ -108,11 +91,7 @@ public: /* Methods: */
     }
 
     bool operator!=(const Location & rhs) const {
-        return m_firstLine != rhs.m_firstLine
-               || m_firstColumn != rhs.m_firstColumn
-               || m_lastLine != rhs.m_lastLine
-               || m_lastColumn != rhs.m_lastColumn
-               || m_filenameItem != rhs.m_filenameItem;
+        return !(*this == rhs);
     }
 
     inline int firstLine() const { return m_firstLine; }
@@ -123,15 +102,7 @@ public: /* Methods: */
         return m_filenameItem->filename;
     }
 
-    inline YYLTYPE toYYLTYPE() const {
-        YYLTYPE r;
-        r.first_line = m_firstLine;
-        r.first_column = m_firstColumn;
-        r.last_line = m_lastLine;
-        r.last_column = m_lastColumn;
-        r.filename = filename().c_str();
-        return r;
-    }
+    YYLTYPE toYYLTYPE() const;
 
 private: /* Methods: */
 

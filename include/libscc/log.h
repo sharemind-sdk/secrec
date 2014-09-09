@@ -25,6 +25,7 @@ struct CompileLogMessage {
 };
 
 class CompileLog;
+class TreeNode;
 
 class CompileLogStream {
 public: /* Methods: */

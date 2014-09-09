@@ -24,6 +24,7 @@ class Imop;
 class ModuleInfo;
 class ModuleMap;
 class StringRef;
+class StringTable;
 class SymbolProcedure;
 class SymbolSymbol;
 class SymbolTable;

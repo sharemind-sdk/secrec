@@ -12,6 +12,7 @@
 #include "context.h"
 #include "context_impl.h"
 #include "treenode.h"
+#include "parser.h"
 
 #include <boost/filesystem.hpp>
 

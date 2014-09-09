@@ -1,7 +1,7 @@
 #ifndef SECREC_IMOP_H
 #define SECREC_IMOP_H
 
-#include "parser.h"
+#include "ParserEnums.h"
 
 #include <boost/intrusive/list.hpp>
 #include <cassert>

@@ -1,5 +1,6 @@
 #include "intermediate.h"
 
+#include "parser.h"
 #include "codegen.h"
 #include "context.h"
 #include "context_impl.h"
