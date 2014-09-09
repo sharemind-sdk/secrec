@@ -99,6 +99,13 @@ public: /* Methods: */
     Status visit(TreeNodeDataTypeVarF * ty);
     Status visit(TreeNodeType * _ty);
 
+    Status visit(TreeNodeTypeArg* t);
+    Status visit(TreeNodeTypeArgVar* t);
+    Status visit(TreeNodeTypeArgTemplate* t);
+    Status visit(TreeNodeTypeArgDataTypeConst* t);
+    Status visit(TreeNodeTypeArgDimTypeConst* t);
+    Status visit(TreeNodeTypeArgPublic* t);
+
     Status visit(TreeNodeQuantifier* q);
     Status visit(TreeNodeDimQuantifier*);
     Status visit(TreeNodeDomainQuantifier* q);

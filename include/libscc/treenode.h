@@ -747,6 +747,7 @@ protected:
 ******************************************************************/
 
 class TreeNodeTypeArg: public TreeNode {
+    friend class TypeChecker;
 public: /* Methods: */
     explicit inline TreeNodeTypeArg(SecrecTreeNodeType type,
                                     const Location & loc)
@@ -759,6 +760,8 @@ public: /* Methods: */
     bool hasTypeArgument () const { return m_typeArgument != NULL; }
     const TypeArgument& typeArgument () const;
     void setTypeArgument (const TypeArgument& typeArgument);
+
+private:
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
 
 private: /* Types: */
@@ -776,6 +779,8 @@ public: /* Methods: */
     { }
 
     TreeNodeIdentifier* identifier () const;
+
+private:
     TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:
@@ -796,6 +801,8 @@ public: /* Methods: */
 
     TreeNodeIdentifier* identifier () const;
     TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
+
+private:
     TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:
@@ -817,6 +824,8 @@ public: /* Methods: */
     { }
 
     SecrecDataType secrecDataType () const { return m_secrecDataType; }
+
+private:
     TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:
@@ -841,6 +850,8 @@ public: /* Methods: */
     { }
 
     SecrecDimType secrecDimType () const { return m_secrecDimType; }
+
+private:
     TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:
@@ -862,6 +873,7 @@ public: /* Methods: */
         : TreeNodeTypeArg(NODE_TYPE_ARG_PUBLIC, loc)
     { }
 
+private:
     TypeChecker::Status accept(TypeChecker & tyChecker);
 
 protected:

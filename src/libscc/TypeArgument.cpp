@@ -13,6 +13,8 @@
 #include "symbol.h"
 #include "treenode.h"
 #include "typechecker.h"
+#include "symboltable.h"
+#include "log.h"
 
 namespace SecreC {
 
@@ -30,13 +32,55 @@ SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
     }
 }
 
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArg* t) {
+    assert (t != NULL);
+    if (t->hasTypeArgument ())
+        return OK;
+
+    return t->accept (*this);
+}
+
 /*******************************************************************************
   TreeNodeTypeArgVar
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeTypeArgVar::accept(TypeChecker & tyChecker) {
-    assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
+    assert (t != NULL);
+
+    TreeNodeIdentifier* id = t->identifier ();
+    const StringRef name = id->value ();
+    SymbolDomain* symDom = m_st->find<SYM_DOMAIN>(name);
+    SymbolDataType* symTy = m_st->find<SYM_TYPE>(name);
+    SymbolDimensionality* symDim = m_st->find<SYM_DIM>(name);
+
+    // If the name is not symbol, type or dimensionality type variable:
+    if (symDom == NULL && symTy == NULL && symDim == NULL) {
+        m_log.fatalInProc (id) << "Type variable \'" << name
+                               << "\' at " << id->location () << " not in scope.";
+        return E_TYPE;
+    }
+
+    // If more than one type variable is defined:
+    if ((!!symDom + !!symTy + !!symDim) != 1) {
+        m_log.fatalInProc (id) << "Ambiguous use of a type variable \'" << name
+                               << "\' at " << id->location () << ".";
+        return E_TYPE;
+    }
+
+    if (symDom != NULL)
+        t->setTypeArgument (symDom->securityType ());
+    else
+    if (symTy != NULL)
+        t->setTypeArgument (symTy->dataType ());
+    else
+    if (symDim != NULL)
+        t->setTypeArgument (symDim->dimType ());
+
+    return OK;
 }
 
 /*******************************************************************************
@@ -44,8 +88,12 @@ TypeChecker::Status TreeNodeTypeArgVar::accept(TypeChecker & tyChecker) {
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeTypeArgTemplate::accept(TypeChecker & tyChecker) {
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgTemplate* t) {
     assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return E_TYPE;
 }
 
 /*******************************************************************************
@@ -53,8 +101,13 @@ TypeChecker::Status TreeNodeTypeArgTemplate::accept(TypeChecker & tyChecker) {
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeTypeArgDataTypeConst::accept(TypeChecker & tyChecker) {
-    assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDataTypeConst* t) {
+    assert (t != NULL);
+    t->setTypeArgument (DataTypePrimitive::get (getContext (), t->secrecDataType ()));
+    return OK;
 }
 
 /*******************************************************************************
@@ -62,8 +115,13 @@ TypeChecker::Status TreeNodeTypeArgDataTypeConst::accept(TypeChecker & tyChecker
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeTypeArgDimTypeConst::accept(TypeChecker & tyChecker) {
-    assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return tyChecker.visit (this);
+}
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDimTypeConst* t) {
+    assert (t != NULL);
+    t->setTypeArgument (t->secrecDimType ());
+    return OK;
 }
 
 /*******************************************************************************
@@ -71,8 +129,14 @@ TypeChecker::Status TreeNodeTypeArgDimTypeConst::accept(TypeChecker & tyChecker)
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeTypeArgPublic::accept(TypeChecker & tyChecker) {
-    assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return tyChecker.visit (this);
 }
+
+TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgPublic* t) {
+    assert (t != NULL);
+    t->setTypeArgument (PublicSecType::get (getContext ()));
+    return OK;
+}
+
 
 } // namespace SecreC
