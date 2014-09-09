@@ -231,6 +231,10 @@
 %type <treenode> attribute_list
 %type <treenode> attribute
 
+%type <treenode> template_struct_datatype_specifier
+%type <treenode> type_arguments type_argument
+
+%type <secrec_datatype> primitive_datatype
 %type <integer_literal> int_literal_helper
 %type <nothing> module
 
@@ -478,36 +482,94 @@ private_sectype_specifier
 
 datatype_specifier
  : primitive_datatype_specifier
+ | template_struct_datatype_specifier
  | variable_datatype_specifier
  ;
 
+primitive_datatype
+ : BOOL       { $$ = DATATYPE_BOOL;       }
+ | INT        { $$ = DATATYPE_INT64;      }
+ | UINT       { $$ = DATATYPE_UINT64;     }
+ | INT8       { $$ = DATATYPE_INT8;       }
+ | UINT8      { $$ = DATATYPE_UINT8;      }
+ | INT16      { $$ = DATATYPE_INT16;      }
+ | UINT16     { $$ = DATATYPE_UINT16;     }
+ | INT32      { $$ = DATATYPE_INT32;      }
+ | UINT32     { $$ = DATATYPE_UINT32;     }
+ | INT64      { $$ = DATATYPE_INT64;      }
+ | UINT64     { $$ = DATATYPE_UINT64;     }
+ | STRING     { $$ = DATATYPE_STRING;     }
+ | XOR_UINT8  { $$ = DATATYPE_XOR_UINT8;  }
+ | XOR_UINT16 { $$ = DATATYPE_XOR_UINT16; }
+ | XOR_UINT32 { $$ = DATATYPE_XOR_UINT32; }
+ | XOR_UINT64 { $$ = DATATYPE_XOR_UINT64; }
+ | XOR_UINT   { $$ = DATATYPE_XOR_UINT64; }
+ | FLOAT      { $$ = DATATYPE_FLOAT32;    }
+ | FLOAT32    { $$ = DATATYPE_FLOAT32;    }
+ | FLOAT64    { $$ = DATATYPE_FLOAT64;    }
+ ;
+
 primitive_datatype_specifier
- : BOOL        { $$ = treenode_init_dataTypeConstF(DATATYPE_BOOL,       &@$); }
- | INT         { $$ = treenode_init_dataTypeConstF(DATATYPE_INT64,      &@$); }
- | UINT        { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT64,     &@$); }
- | INT8        { $$ = treenode_init_dataTypeConstF(DATATYPE_INT8,       &@$); }
- | UINT8       { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT8,      &@$); }
- | INT16       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT16,      &@$); }
- | UINT16      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT16,     &@$); }
- | INT32       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT32,      &@$); }
- | UINT32      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT32,     &@$); }
- | INT64       { $$ = treenode_init_dataTypeConstF(DATATYPE_INT64,      &@$); }
- | UINT64      { $$ = treenode_init_dataTypeConstF(DATATYPE_UINT64,     &@$); }
- | STRING      { $$ = treenode_init_dataTypeConstF(DATATYPE_STRING,     &@$); }
- | XOR_UINT8   { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT8,  &@$); }
- | XOR_UINT16  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT16, &@$); }
- | XOR_UINT32  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT32, &@$); }
- | XOR_UINT64  { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT64, &@$); }
- | XOR_UINT    { $$ = treenode_init_dataTypeConstF(DATATYPE_XOR_UINT64, &@$); }
- | FLOAT       { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT32,    &@$); }
- | FLOAT32     { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT32,    &@$); }
- | FLOAT64     { $$ = treenode_init_dataTypeConstF(DATATYPE_FLOAT64,    &@$); }
+ : primitive_datatype
+   {
+      $$ = treenode_init_dataTypeConstF($1, &@$);
+   }
  ;
 
 variable_datatype_specifier
  : identifier
    {
      $$ = treenode_init_dataTypeVarF(&@$);
+     treenode_appendChild($$, $1);
+   }
+ ;
+
+template_struct_datatype_specifier
+ : identifier '<' type_arguments '>'
+   {
+      $$ = treenode_init(NODE_DATATYPE_TEMPLATE_F, &@$);
+      treenode_appendChild($$, $1);
+      treenode_moveChildren($3, $$);
+      treenode_free($3);
+   }
+ ;
+
+type_argument
+ : identifier
+   {
+     $$ = treenode_init(NODE_TYPE_ARG_VAR, &@$);
+     treenode_appendChild($$, $1);
+   }
+ | identifier '<' type_arguments '>'
+   {
+     $$ = treenode_init(NODE_TYPE_ARG_TEMPLATE, &@$);
+     treenode_appendChild($$, $1);
+     treenode_moveChildren($3, $$);
+     treenode_free($3);
+   }
+ | primitive_datatype
+   {
+     $$ = treenode_init_typeArgDataTypeConst($1, &@$);
+   }
+ | int_literal_helper
+   {
+     $$ = treenode_init_typeArgDimTypeConst($1, &@$);
+   }
+ | PUBLIC
+   {
+     $$ = treenode_init(NODE_TYPE_ARG_PUBLIC, &@$);
+   }
+ ;
+
+type_arguments
+ : type_arguments ',' type_argument
+   {
+     $$ = $1;
+     treenode_appendChild($$, $3);
+   }
+ | type_argument
+   {
+     $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
    }
  ;
@@ -621,7 +683,10 @@ attribute
   *******************************************************************************/
 
 return_type_specifier
- : VOID { $$ = treenode_init(NODE_TYPEVOID, &@$); }
+ : VOID
+   {
+     $$ = treenode_init(NODE_TYPEVOID, &@$);
+   }
  | type_specifier
  ;
 
@@ -706,12 +771,23 @@ operator_definition
   *******************************************************************************/
 
 compound_statement
- : '{' '}' { $$ = treenode_init(NODE_STMT_COMPOUND, &@$); }
- | '{' statement_list '}' { $$ = treenode_init_compound ($2, &@$); }
+ : '{' '}'
+   {
+     $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
+   }
+ | '{' statement_list '}'
+   {
+     $$ = treenode_init_compound ($2, &@$);
+   }
  ;
 
 statement_list
- : statement_list statement { $$ = $1; treenode_add_stmt ($$, $2); treenode_setLocation($$, &@$); }
+ : statement_list statement
+   {
+     $$ = $1;
+     treenode_add_stmt ($$, $2);
+     treenode_setLocation($$, &@$);
+   }
  | statement
    {
      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
@@ -792,7 +868,10 @@ for_statement
  ;
 
 maybe_expression
- : /* empty */ { $$ = treenode_init(NODE_EXPR_NONE, &@$); }
+ : /* empty */
+   {
+     $$ = treenode_init(NODE_EXPR_NONE, &@$);
+   }
  | expression
  ;
 
@@ -1424,13 +1503,25 @@ string_literal
  ;
 
 string_part
- : STR_IDENTIFIER { $$ = treenode_init_str_ident ($1, &@$); }
- | STR_FRAGMENT { $$ = treenode_init_str_fragment ($1, &@$); }
+ : STR_IDENTIFIER
+   {
+     $$ = treenode_init_str_ident ($1, &@$);
+   }
+ | STR_FRAGMENT
+   {
+     $$ = treenode_init_str_fragment ($1, &@$);
+   }
  ;
 
 bool_literal
- : TRUE_B   { $$ = treenode_init_bool(0 == 0, &@$); }
- | FALSE_B  { $$ = treenode_init_bool(1 != 1, &@$); }
+ : TRUE_B
+   {
+     $$ = treenode_init_bool(0 == 0, &@$);
+   }
+ | FALSE_B
+   {
+     $$ = treenode_init_bool(1 != 1, &@$);
+   }
  ;
 
 literal

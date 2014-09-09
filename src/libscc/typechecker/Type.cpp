@@ -265,4 +265,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
     return OK;
 }
 
+/*******************************************************************************
+  TreeNodeDataTypeTemplateF
+*******************************************************************************/
+
+TypeChecker::Status TreeNodeDataTypeTemplateF::accept(TypeChecker& tyChecker) {
+    assert (false && "TODO");
+    return TypeChecker::E_TYPE;
+}
+
+
 } // namespace SecreC

@@ -6,6 +6,7 @@
 #include "symbol.h"
 #include "symboltable.h"
 #include "treenode_c.h"
+#include "TypeArgument.h"
 #include "typechecker.h"
 
 #include <algorithm>
@@ -197,6 +198,12 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(STRUCT_DECL);
     CASE_NODE_NAME(ATTRIBUTE);
     CASE_NODE_NAME(TEMPLATE_STRUCT);
+    CASE_NODE_NAME(TYPE_ARG_VAR);
+    CASE_NODE_NAME(TYPE_ARG_TEMPLATE);
+    CASE_NODE_NAME(TYPE_ARG_DATA_TYPE_CONST);
+    CASE_NODE_NAME(TYPE_ARG_DIM_TYPE_CONST);
+    CASE_NODE_NAME(TYPE_ARG_PUBLIC);
+    CASE_NODE_NAME(DATATYPE_TEMPLATE_F);
     default: return "UNKNOWN";
     }
 }
@@ -302,6 +309,20 @@ bool TreeNodeDataTypeVarF::printHelper (std::ostream & os) const {
 
 void TreeNodeDataTypeVarF::printXmlHelper (std::ostream & os) const {
     os << " type=\"" << identifier ()->value () << "\"";
+}
+
+/******************************************************************
+  TreeNodeDataTypeTemplateF
+******************************************************************/
+
+TreeNodeIdentifier* TreeNodeDataTypeTemplateF::identifier () const {
+    assert (children ().size () > 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+TreeNodeSeqView<TreeNodeTypeArg> TreeNodeDataTypeTemplateF::arguments () const {
+    assert (children ().size () > 1);
+    return TreeNodeSeqView<TreeNodeTypeArg>(children().begin() + 1, children().end());
 }
 
 /*******************************************************************************
@@ -1382,6 +1403,47 @@ TreeNodeSeqView<TreeNodeQuantifier> TreeNodeTemplateStruct::quantifiers () const
     return TreeNodeSeqView<TreeNodeQuantifier>(children ().at (0)->children ());
 }
 
+/*******************************************************************************
+  TreeNodeTypeArg
+*******************************************************************************/
+
+TreeNodeTypeArg::~TreeNodeTypeArg () {
+    delete m_typeArgument;
+}
+
+const TypeArgument& TreeNodeTypeArg::typeArgument () const {
+    assert (m_typeArgument != NULL);
+    return *m_typeArgument;
+}
+
+void TreeNodeTypeArg::setTypeArgument (const TypeArgument& typeArgument) {
+    assert (m_typeArgument == NULL);
+    m_typeArgument = new TypeArgument (typeArgument);
+}
+
+/*******************************************************************************
+  TreeNodeTypeArgVar
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeTypeArgVar::identifier () const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeTypeArgTemplate
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeTypeArgTemplate::identifier () const {
+    assert (children ().size () > 1);
+    return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+TreeNodeSeqView<TreeNodeTypeArg> TreeNodeTypeArgTemplate::arguments () const {
+    assert (children ().size () > 1);
+    return TreeNodeSeqView<TreeNodeTypeArg>(children().begin() + 1, children().end());
+}
+
 } // namespace SecreC
 
 /*******************************************************************************
@@ -1435,6 +1497,11 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(SUBSCRIPT, Subscript);
     SELECTNODE(INDEX_INT, IndexInt);
     SELECTNODE(INDEX_SLICE, IndexSlice);
+
+    SELECTNODE(TYPE_ARG_VAR, TypeArgVar);
+    SELECTNODE(TYPE_ARG_TEMPLATE, TypeArgTemplate);
+    SELECTNODE(TYPE_ARG_PUBLIC, TypeArgPublic);
+    SELECTNODE(DATATYPE_TEMPLATE_F, DataTypeTemplateF);
 
     SELECTNODETYPE(PUSH, SyscallParam);
     SELECTNODETYPE(PUSHCREF, SyscallParam);
@@ -1615,4 +1682,12 @@ TreeNode* treenode_init_lvalue(TreeNode *node, YYLTYPE* loc) {
     TreeNode* result = (TreeNode*) ((const SecreC::TreeNode*) node)->makeLValue (secrecLoc);
     *loc = secrecLoc.toYYLTYPE ();
     return result;
+}
+
+TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeTypeArgDataTypeConst(dataType, *loc);
+}
+
+TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc) {
+    return (TreeNode *) new SecreC::TreeNodeTypeArgDimTypeConst(dimType, *loc);
 }

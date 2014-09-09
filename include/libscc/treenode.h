@@ -17,6 +17,7 @@
 namespace SecreC {
 
 class CodeGen;
+class TypeArgument;
 class TypeChecker;
 class ModuleInfo;
 class TreeNodeProcDef;
@@ -37,7 +38,7 @@ class SubscriptInfo;
  * always store properly typed subtrees. To achieve something
  * comparable the syntactic elements have accessors that return
  * subtrees of proper types. Internally the accessors verify
- * (using assert) that the proper type is provides.
+ * (using assert) that the proper type is provided.
  */
 class TreeNode {
 public: /* Types: */
@@ -596,6 +597,26 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeDataTypeTemplateF
+******************************************************************/
+
+class TreeNodeDataTypeTemplateF: public TreeNodeDataTypeF {
+public: /* Methods: */
+    inline TreeNodeDataTypeTemplateF (const Location & loc)
+        : TreeNodeDataTypeF (NODE_DATATYPE_TEMPLATE_F, loc)
+    { }
+
+    virtual TypeChecker::Status accept(TypeChecker& tyChecker);
+    TreeNodeIdentifier* identifier () const;
+    TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeDataTypeTemplateF (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeDimTypeF
 ******************************************************************/
 
@@ -718,6 +739,133 @@ protected:
 
     virtual TreeNode* cloneV () const {
         return new TreeNodeTypeVoid (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeTypeArg
+******************************************************************/
+
+class TreeNodeTypeArg: public TreeNodeType {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArg(SecrecTreeNodeType type,
+                                    const Location & loc)
+        : TreeNodeType(type, loc)
+        , m_typeArgument (NULL)
+    { }
+
+    ~TreeNodeTypeArg ();
+
+    const TypeArgument& typeArgument () const;
+    void setTypeArgument (const TypeArgument& typeArgument);
+    virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
+
+private: /* Types: */
+    TypeArgument* m_typeArgument;
+};
+
+/******************************************************************
+  TreeNodeTypeArgVar
+******************************************************************/
+
+class TreeNodeTypeArgVar: public TreeNodeTypeArg {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArgVar(const Location & loc)
+        : TreeNodeTypeArg(NODE_TYPE_ARG_VAR, loc)
+    { }
+
+    TreeNodeIdentifier* identifier () const;
+    TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeArgVar (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeTypeArgTemplate
+******************************************************************/
+
+class TreeNodeTypeArgTemplate: public TreeNodeTypeArg {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArgTemplate(const Location & loc)
+        : TreeNodeTypeArg(NODE_TYPE_ARG_TEMPLATE, loc)
+    { }
+
+    TreeNodeIdentifier* identifier () const;
+    TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
+    TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeArgTemplate (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeTypeArgDataTypeConst
+******************************************************************/
+
+class TreeNodeTypeArgDataTypeConst: public TreeNodeTypeArg {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArgDataTypeConst(SecrecDataType dataType,
+                                                 const Location & loc)
+        : TreeNodeTypeArg(NODE_TYPE_ARG_DATA_TYPE_CONST, loc)
+        , m_secrecDataType (dataType)
+    { }
+
+    SecrecDataType secrecDataType () const { return m_secrecDataType; }
+    TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeArgDataTypeConst (m_secrecDataType, m_location);
+    }
+
+private: /* Fields: */
+    const SecrecDataType m_secrecDataType;
+};
+
+/******************************************************************
+  TreeNodeTypeArgDimTypeConst
+******************************************************************/
+
+class TreeNodeTypeArgDimTypeConst: public TreeNodeTypeArg {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArgDimTypeConst(SecrecDimType dimType,
+                                                const Location & loc)
+        : TreeNodeTypeArg(NODE_TYPE_ARG_DIM_TYPE_CONST, loc)
+        , m_secrecDimType (dimType)
+    { }
+
+    SecrecDimType secrecDimType () const { return m_secrecDimType; }
+    TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeArgDimTypeConst (m_secrecDimType, m_location);
+    }
+
+private: /* Fields: */
+    const SecrecDimType m_secrecDimType;
+};
+
+/******************************************************************
+  TreeNodeTypeArgPublic
+******************************************************************/
+
+class TreeNodeTypeArgPublic: public TreeNodeTypeArg {
+public: /* Methods: */
+    explicit inline TreeNodeTypeArgPublic(const Location & loc)
+        : TreeNodeTypeArg(NODE_TYPE_ARG_PUBLIC, loc)
+    { }
+
+    TypeChecker::Status accept(TypeChecker & tyChecker);
+
+protected:
+    virtual TreeNode* cloneV () const {
+        return new TreeNodeTypeArgPublic (m_location);
     }
 };
 

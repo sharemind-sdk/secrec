@@ -67,10 +67,11 @@ extern size_t stringref_length (TYPE_STRINGREF ref);
 extern const char* stringref_begin (TYPE_STRINGREF ref);
 
 union YYSTYPE {
-    TYPE_TREENODE treenode;
-    void * nothing;
-    TYPE_STRINGREF str;
-    uint64_t integer_literal;
+    TYPE_TREENODE        treenode;
+    void *               nothing;
+    TYPE_STRINGREF       str;
+    uint64_t             integer_literal;
+    enum SecrecDataType  secrec_datatype;
 };
 typedef union YYSTYPE YYSTYPE;
 
