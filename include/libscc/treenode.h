@@ -1861,31 +1861,16 @@ public: /* Methods: */
 
     explicit TreeNodeStructDecl (const Location & loc)
         : TreeNode (NODE_STRUCT_DECL, loc)
-    { }
-
-    TreeNodeIdentifier* identifier () const;
-    TreeNodeSeqView<TreeNodeAttribute> attributes () const;
-
-protected:
-
-    virtual TreeNode* cloneV () const {
-        return new TreeNodeStructDecl (m_location);
-    }
-};
-
-/******************************************************************
-  TreeNodeTemplateStruct
-******************************************************************/
-
-class TreeNodeTemplateStruct : public TreeNode {
-public: /* Methods: */
-    explicit inline TreeNodeTemplateStruct(const Location & loc)
-        : TreeNode(NODE_TEMPLATE_STRUCT, loc)
         , m_containingModule (NULL)
     { }
 
-    TreeNodeStructDecl* body () const;
     TreeNodeSeqView<TreeNodeQuantifier> quantifiers() const;
+    TreeNodeIdentifier* identifier () const;
+    TreeNodeSeqView<TreeNodeAttribute> attributes () const;
+
+    bool isQuantified () const {
+        return !quantifiers ().empty ();
+    }
 
     ModuleInfo* containingModule () const {
         return m_containingModule;
@@ -1898,7 +1883,7 @@ public: /* Methods: */
 protected:
 
     virtual TreeNode* cloneV () const {
-        return new TreeNodeTemplateStruct (m_location);
+        return new TreeNodeStructDecl (m_location);
     }
 
 private: /* Fields: */

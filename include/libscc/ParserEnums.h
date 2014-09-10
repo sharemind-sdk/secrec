@@ -159,7 +159,6 @@ enum SecrecTreeNodeType {
     NODE_TYPETYPE               = 0x0f00000,
     NODE_TYPEVOID               = 0x1000000,
     NODE_TYPEVAR                = 0x2000000,
-    NODE_TEMPLATE_STRUCT        = 0x3000000,
     NODE_STRING_PART_FRAGMENT   = 0x4000000,
     NODE_STRING_PART_IDENTIFIER = 0x5000000,
 

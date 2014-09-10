@@ -197,7 +197,6 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(STRING_PART_FRAGMENT);
     CASE_NODE_NAME(STRUCT_DECL);
     CASE_NODE_NAME(ATTRIBUTE);
-    CASE_NODE_NAME(TEMPLATE_STRUCT);
     CASE_NODE_NAME(TYPE_ARG_VAR);
     CASE_NODE_NAME(TYPE_ARG_TEMPLATE);
     CASE_NODE_NAME(TYPE_ARG_DATA_TYPE_CONST);
@@ -1379,28 +1378,19 @@ TreeNodeIdentifier* TreeNodeAttribute::identifier () const {
   TreeNodeStructDecl
 *******************************************************************************/
 
+TreeNodeSeqView<TreeNodeQuantifier> TreeNodeStructDecl::quantifiers() const {
+    assert (children ().size () == 3);
+    return TreeNodeSeqView<TreeNodeQuantifier>(children ().at (0)->children ());
+}
+
 TreeNodeIdentifier* TreeNodeStructDecl::identifier () const {
-    assert (children ().size () > 0);
-    return childAt<TreeNodeIdentifier>(this, 0);
+    assert (children ().size () == 3);
+    return childAt<TreeNodeIdentifier>(this, 1);
 }
 
 TreeNodeSeqView<TreeNodeAttribute> TreeNodeStructDecl::attributes () const {
-    assert (children ().size () > 0);
-    return TreeNodeSeqView<TreeNodeAttribute>(children().begin() + 1, children().end());
-}
-
-/*******************************************************************************
-  TreeNodeTemplateStruct
-*******************************************************************************/
-
-TreeNodeStructDecl* TreeNodeTemplateStruct::body () const {
-    assert (children ().size () == 2);
-    return childAt<TreeNodeStructDecl>(this, 1);
-}
-
-TreeNodeSeqView<TreeNodeQuantifier> TreeNodeTemplateStruct::quantifiers () const {
-    assert (children ().size () == 2);
-    return TreeNodeSeqView<TreeNodeQuantifier>(children ().at (0)->children ());
+    assert (children ().size () == 3);
+    return TreeNodeSeqView<TreeNodeAttribute>(children ().at (2)->children ());
 }
 
 /*******************************************************************************
@@ -1487,7 +1477,6 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(LITE_STRING, ExprString);
     SELECTNODE(STRUCT_DECL, StructDecl);
     SELECTNODE(ATTRIBUTE, Attribute);
-    SELECTNODE(TEMPLATE_STRUCT, TemplateStruct);
 
     SELECTNODE(INTERNAL_USE, InternalUse);
     SELECTNODE(DIMENSIONS, Dimensions);

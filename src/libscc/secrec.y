@@ -234,6 +234,7 @@
 %type <treenode> template_struct_datatype_specifier
 %type <treenode> type_arguments type_argument
 
+%type <secrec_operator> binop unop
 %type <secrec_datatype> primitive_datatype
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -597,12 +598,6 @@ template_declaration
      treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
    }
- | TEMPLATE '<' template_quantifiers '>' structure_declaration
-   {
-     $$ = treenode_init(NODE_TEMPLATE_STRUCT, &@$);
-     treenode_appendChild($$, $3);
-     treenode_appendChild($$, $5);
-   }
  ;
 
 template_quantifiers
@@ -650,9 +645,16 @@ structure_declaration
  : STRUCT identifier '{' attribute_list '}'
    {
       $$ = treenode_init(NODE_STRUCT_DECL, &@$);
+      treenode_appendChild($$, treenode_init(NODE_INTERNAL_USE, &@$));
       treenode_appendChild($$, $2);
-      treenode_moveChildren ($4, $$);
-      treenode_free($4);
+      treenode_appendChild($$, $4);
+   }
+ | TEMPLATE '<' template_quantifiers '>' STRUCT identifier '{' attribute_list '}'
+   {
+     $$ = treenode_init(NODE_STRUCT_DECL, &@$);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $6);
+     treenode_appendChild($$, $8);
    }
  ;
 
@@ -743,27 +745,31 @@ unop_def_helper
    }
  ;
 
+binop
+ : '+'     { $$ = SCOP_BIN_ADD;  }
+ | '&'     { $$ = SCOP_BIN_BAND; }
+ | '|'     { $$ = SCOP_BIN_BOR;  }
+ | '/'     { $$ = SCOP_BIN_DIV;  }
+ | '>'     { $$ = SCOP_BIN_GT;   }
+ | '<'     { $$ = SCOP_BIN_LT;   }
+ | '%'     { $$ = SCOP_BIN_MOD;  }
+ | '*'     { $$ = SCOP_BIN_MUL;  }
+ | '-'     { $$ = SCOP_BIN_SUB;  }
+ | '^'     { $$ = SCOP_BIN_XOR;  }
+ | EQ_OP   { $$ = SCOP_BIN_EQ;   }
+ | GE_OP   { $$ = SCOP_BIN_GE;   }
+ | LAND_OP { $$ = SCOP_BIN_LAND; }
+ | LE_OP   { $$ = SCOP_BIN_LE;   }
+ | LOR_OP  { $$ = SCOP_BIN_LOR;  }
+ | NE_OP   { $$ = SCOP_BIN_NE;   }
+ | SHL_OP  { $$ = SCOP_BIN_SHL;  }
+ | SHR_OP  { $$ = SCOP_BIN_SHR;  }
+ ;
+
 operator_definition
- :  return_type_specifier OPERATOR '+' binop_def_helper     { $$ = init_op(table, SCOP_BIN_ADD, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '&' binop_def_helper     { $$ = init_op(table, SCOP_BIN_BAND, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '|' binop_def_helper     { $$ = init_op(table, SCOP_BIN_BOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '/' binop_def_helper     { $$ = init_op(table, SCOP_BIN_DIV, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '>' binop_def_helper     { $$ = init_op(table, SCOP_BIN_GT, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '<' binop_def_helper     { $$ = init_op(table, SCOP_BIN_LT, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '%' binop_def_helper     { $$ = init_op(table, SCOP_BIN_MOD, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '*' binop_def_helper     { $$ = init_op(table, SCOP_BIN_MUL, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '-' binop_def_helper     { $$ = init_op(table, SCOP_BIN_SUB, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '^' binop_def_helper     { $$ = init_op(table, SCOP_BIN_XOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR EQ_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_EQ, &@$, $1, $4); }
- |  return_type_specifier OPERATOR GE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_GE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LAND_OP binop_def_helper { $$ = init_op(table, SCOP_BIN_LAND, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_LE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR LOR_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_LOR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR NE_OP binop_def_helper   { $$ = init_op(table, SCOP_BIN_NE, &@$, $1, $4); }
- |  return_type_specifier OPERATOR SHL_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_SHL, &@$, $1, $4); }
- |  return_type_specifier OPERATOR SHR_OP binop_def_helper  { $$ = init_op(table, SCOP_BIN_SHR, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '-' unop_def_helper      { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
- |  return_type_specifier OPERATOR '!' unop_def_helper      { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
+ :  return_type_specifier OPERATOR binop binop_def_helper { $$ = init_op(table, $3, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '-' unop_def_helper    { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '!' unop_def_helper    { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
  ;
 
  /*******************************************************************************

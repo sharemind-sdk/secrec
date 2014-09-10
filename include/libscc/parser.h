@@ -72,6 +72,7 @@ union YYSTYPE {
     TYPE_STRINGREF       str;
     uint64_t             integer_literal;
     enum SecrecDataType  secrec_datatype;
+    enum SecrecOperator  secrec_operator;
 };
 typedef union YYSTYPE YYSTYPE;
 
