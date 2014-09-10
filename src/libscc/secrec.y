@@ -234,7 +234,7 @@
 %type <treenode> template_struct_datatype_specifier
 %type <treenode> type_arguments type_argument
 
-%type <secrec_operator> binop unop
+%type <secrec_operator> binop
 %type <secrec_datatype> primitive_datatype
 %type <integer_literal> int_literal_helper
 %type <nothing> module
@@ -766,6 +766,10 @@ binop
  | SHR_OP  { $$ = SCOP_BIN_SHR;  }
  ;
 
+ /*
+  * We can not split 'unop' to make this even nicer. We get reduce/reduce conflict for some reason.
+  * I think this is, again, limitation of the parser generator.
+  */
 operator_definition
  :  return_type_specifier OPERATOR binop binop_def_helper { $$ = init_op(table, $3, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '-' unop_def_helper    { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
