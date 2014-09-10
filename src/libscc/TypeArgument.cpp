@@ -100,8 +100,12 @@ TypeChecker::Status TreeNodeTypeArgTemplate::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgTemplate* t) {
-    assert (false && "TODO");
-    return E_TYPE;
+    assert (t != NULL);
+    DataTypeStruct* structType = NULL;
+    TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
+    assert (structType != NULL);
+    t->setTypeArgument (structType);
+    return OK;
 }
 
 /*******************************************************************************

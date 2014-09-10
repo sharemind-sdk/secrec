@@ -276,21 +276,35 @@ TypeChecker::Status TreeNodeDataTypeTemplateF::accept(TypeChecker& tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeDataTypeTemplateF* t) {
+    assert (t != NULL);
     if (t->cachedType () != NULL)
         return OK;
 
-    TreeNodeIdentifier* id = t->identifier ();
+    DataTypeStruct* structType = NULL;
+    TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
+    assert (structType != NULL);
+    t->setCachedType (structType);
+    return OK;
+}
+
+TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
+                                                       TreeNodeSeqView<TreeNodeTypeArg> args,
+                                                       const Location& loc,
+                                                       DataTypeStruct*& result)
+{
+    assert (id != NULL);
+
     SymbolStruct* sym = m_st->find<SYM_STRUCT>(id->value ());
     if (sym == NULL) {
-        m_log.fatal () << "Structure name \'" << id->value () << "\' not in scope at " << id->location () << ".";
+        m_log.fatal () << "Structure name \'" << id->value () << "\' not in scope at "
+                       << id->location () << ".";
         return E_TYPE;
     }
 
     TreeNodeStructDecl* structDecl = sym->decl ();
-    TreeNodeSeqView<TreeNodeTypeArg> args = t->arguments ();
     TreeNodeSeqView<TreeNodeQuantifier> quants = structDecl->quantifiers ();
     if (quants.size () != args.size ()) {
-        m_log.fatal () << "Mismatching number of type arguments at " << t->location () << ".";
+        m_log.fatal () << "Mismatching number of type arguments at " << loc << ".";
         m_log.fatal () << "Expected " << quants.size () << " got " << args.size () << ".";
         return E_TYPE;
     }
@@ -311,11 +325,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeDataTypeTemplateF* t) {
         typeArgs.push_back (typeArg);
     }
 
-    DataTypeStruct* structType = NULL;
-    TCGUARD (checkStruct (structDecl, t->location (), structType, typeArgs));
-    assert (structType != NULL);
-    t->setCachedType (structType);
-    return OK;
+    return checkStruct (structDecl, loc, result, typeArgs);
 }
 
 } // namespace SecreC

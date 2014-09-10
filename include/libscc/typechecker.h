@@ -151,6 +151,11 @@ public: /* Methods: */
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
 private:
 
+    Status checkTypeApplication (TreeNodeIdentifier* id,
+                                 TreeNodeSeqView<TreeNodeTypeArg> args,
+                                 const Location& loc,
+                                 DataTypeStruct*& result);
+
     Status checkStruct (TreeNodeStructDecl* decl,
                         const Location& loc,
                         DataTypeStruct*& result,
