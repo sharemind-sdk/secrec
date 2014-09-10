@@ -12,6 +12,7 @@
 
 #include "ParserEnums.h"
 #include "StringRef.h"
+#include "TypeArgument.h"
 
 #include <iosfwd>
 #include <vector>
@@ -137,10 +138,17 @@ public: /* Types: */
         { }
     };
 
+    typedef std::vector<Field> FieldList;
+    typedef std::vector<TypeArgument> TypeArgumentList;
+
 public: /* Methods: */
 
     StringRef name () const { return m_name; }
-    static DataTypeStruct* get (Context& cxt, StringRef name, const std::vector<Field>& fields);
+    static DataTypeStruct* find (Context& cxt, StringRef name,
+        const TypeArgumentList& typeArgs = TypeArgumentList());
+    static DataTypeStruct* get (Context& cxt, StringRef name,
+        const FieldList& fields,
+        const TypeArgumentList& typeArgs = TypeArgumentList());
     const std::vector<DataTypeStruct::Field>& fields () const { return m_fields; }
 
 protected:

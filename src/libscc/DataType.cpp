@@ -305,16 +305,23 @@ void DataTypeStruct::print (std::ostream& os) const {
     os << "struct " << m_name;
 }
 
-DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name, const std::vector<DataTypeStruct::Field>& fields) {
+DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
+                                      const DataTypeStruct::TypeArgumentList& args)
+{
     typedef ContextImpl::StructTypeMap Map;
     Map& map = cxt.pImpl ()->m_structTypes;
-    std::vector<TypeBasic*> types;
-    types.reserve (fields.size ());
-    BOOST_FOREACH (DataTypeStruct::Field field, fields) {
-        types.push_back (field.type);
-    }
+    const Map::key_type index (name, args);
+    const Map::iterator i = map.find (index);
+    return i == map.end () ? NULL : i->second;
+}
 
-    const Map::key_type index (name, types);
+DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
+                                     const DataTypeStruct::FieldList& fields,
+                                     const DataTypeStruct::TypeArgumentList& args)
+{
+    typedef ContextImpl::StructTypeMap Map;
+    Map& map = cxt.pImpl ()->m_structTypes;
+    const Map::key_type index (name, args);
     Map::iterator i = map.find (index);
     if (i == map.end ()) {
         i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, fields)));

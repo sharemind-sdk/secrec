@@ -331,7 +331,7 @@ protected:
     void print(std::ostream & os) const;
 
 private: /* Fields: */
-    Imop*                          m_target;
+    Imop* m_target;
 };
 
 /*******************************************************************************
@@ -357,6 +357,21 @@ protected:
 private: /* Fields: */
     const TreeNodeProcDef * const  m_decl;
     SymbolProcedure *              m_shortOf;
+};
+
+/*******************************************************************************
+  SymbolStruct
+*******************************************************************************/
+
+class SymbolStruct: public Symbol {
+public: /* Methods: */
+    explicit SymbolStruct (StringRef name, TreeNodeStructDecl* structDecl);
+    TreeNodeStructDecl* decl () const { return m_structDecl; }
+    const Location* location () const;
+protected:
+    void print(std::ostream & os) const;
+private: /* Fields: */
+    TreeNodeStructDecl* const m_structDecl;
 };
 
 /*******************************************************************************

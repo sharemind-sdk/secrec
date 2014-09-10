@@ -20,6 +20,7 @@ class DataType;
 class SecurityType;
 class StringRef;
 class SymbolTypeVariable;
+class TreeNodeQuantifier;
 
 /*******************************************************************************
   TypeArgumentKind
@@ -70,6 +71,8 @@ public: /* Methods: */
         return un_dataType;
     }
 
+    TypeArgumentKind kind () const { return m_kind; }
+
     SymbolTypeVariable* bind (StringRef name) const;
 
     friend bool operator == (const TypeArgument& a, const TypeArgument& b);
@@ -116,6 +119,8 @@ inline bool operator < (const TypeArgument& a, const TypeArgument& b) {
     case TA_UNDEF: return false;
     }
 }
+
+TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant);
 
 } // namespace SecreC;
 

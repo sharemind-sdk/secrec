@@ -40,6 +40,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArg* t) {
     return t->accept (*this);
 }
 
+TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
+    switch (quant.type ()) {
+    case NODE_TEMPLATE_DOMAIN_QUANT: return TA_SEC;
+    case NODE_TEMPLATE_DATA_QUANT: return TA_DATA;
+    case NODE_TEMPLATE_DIM_QUANT: return TA_DIM;
+    default: return TA_UNDEF;
+    }
+}
+
 /*******************************************************************************
   TreeNodeTypeArgVar
 *******************************************************************************/

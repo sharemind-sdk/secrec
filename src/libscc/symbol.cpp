@@ -314,6 +314,23 @@ void SymbolLabel::print(std::ostream & os) const {
 }
 
 /*******************************************************************************
+  SymbolStruct
+*******************************************************************************/
+
+SymbolStruct::SymbolStruct(StringRef name, TreeNodeStructDecl *structDecl)
+    : Symbol (SYM_STRUCT, name)
+    , m_structDecl (structDecl)
+{ }
+
+const Location* SymbolStruct::location () const {
+    return &m_structDecl->location ();
+}
+
+void SymbolStruct::print (std::ostream &os) const {
+    os << "TODO";
+}
+
+/*******************************************************************************
   SymbolTemplate
 *******************************************************************************/
 

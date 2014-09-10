@@ -15,6 +15,7 @@ namespace SecreC {
 enum SymbolCategory {
     SYM_UNDEFINED,
     SYM_PROCEDURE,
+    SYM_STRUCT,
     SYM_TEMPLATE,
     SYM_CONSTANT,
     SYM_LABEL,
@@ -27,6 +28,7 @@ enum SymbolCategory {
 
 class Symbol;
 class SymbolProcedure;
+class SymbolStruct;
 class SymbolTemplate;
 class SymbolConstant;
 class SymbolLabel;
@@ -38,6 +40,7 @@ class SymbolDataType;
 
 template <SymbolCategory type> struct SymbolTraits;
 template <> struct SymbolTraits<SYM_PROCEDURE> { typedef SymbolProcedure Type; };
+template <> struct SymbolTraits<SYM_STRUCT> { typedef SymbolStruct Type; };
 template <> struct SymbolTraits<SYM_TEMPLATE> { typedef SymbolTemplate Type; };
 template <> struct SymbolTraits<SYM_CONSTANT> { typedef SymbolConstant Type; };
 template <> struct SymbolTraits<SYM_LABEL> { typedef SymbolLabel Type; };
@@ -46,7 +49,6 @@ template <> struct SymbolTraits<SYM_KIND> { typedef SymbolKind Type; };
 template <> struct SymbolTraits<SYM_DOMAIN> { typedef SymbolDomain Type; };
 template <> struct SymbolTraits<SYM_DIM> { typedef SymbolDimensionality Type; };
 template <> struct SymbolTraits<SYM_TYPE> { typedef SymbolDataType Type; };
-
 } // namespace SecreC
 
 #endif // SECREC_SYMBOL_FWD_H

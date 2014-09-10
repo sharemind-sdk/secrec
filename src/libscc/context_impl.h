@@ -14,6 +14,7 @@
 #include "types.h"
 #include "constant.h"
 #include "StringTable.h"
+#include "TypeArgument.h"
 
 #include <map>
 #include <boost/tuple/tuple.hpp>
@@ -37,7 +38,7 @@ public: /* Types: */
     typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;
     typedef std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp> FloatConstantMap;
 
-    typedef std::map<std::pair<StringRef, std::vector<TypeBasic*> >, DataTypeStruct*> StructTypeMap;
+    typedef std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*> StructTypeMap;
     typedef std::map<SecrecDataType, DataTypePrimitive*> PrimitiveTypeMap;
 
 public: /* Methods: */

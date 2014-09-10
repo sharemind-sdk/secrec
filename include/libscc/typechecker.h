@@ -12,6 +12,7 @@ namespace SecreC {
 class StringRef;
 class CompileLog;
 class Context;
+class TypeArgument;
 class TypeBasic;
 class TypeProc;
 class Instantiation;
@@ -23,6 +24,7 @@ class TypeContext;
 class TypeNonVoid;
 struct InstanceInfo;
 class Location;
+class DataTypeStruct;
 
 #ifndef TCGUARD
 #define TCGUARD(expr) \
@@ -97,6 +99,7 @@ public: /* Methods: */
     Status visit(TreeNodeDimTypeF* ty);
     Status visit(TreeNodeDimTypeVarF * ty);
     Status visit(TreeNodeDataTypeVarF * ty);
+    Status visit(TreeNodeDataTypeTemplateF* t);
     Status visit(TreeNodeType * _ty);
 
     Status visit(TreeNodeTypeArg* t);
@@ -148,7 +151,14 @@ public: /* Methods: */
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
 private:
 
+    Status checkStruct (TreeNodeStructDecl* decl,
+                        const Location& loc,
+                        DataTypeStruct*& result,
+                        const std::vector<TypeArgument>& args
+                            = std::vector<TypeArgument>());
+
     TypeNonVoid* checkSelect (const Location& loc, Type* ty, TreeNodeIdentifier* id);
+
 
     TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
 

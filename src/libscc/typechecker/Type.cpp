@@ -13,6 +13,8 @@
 #include "treenode.h"
 #include "typechecker.h"
 
+#include <boost/foreach.hpp>
+
 namespace SecreC {
 
 /*******************************************************************************
@@ -270,9 +272,50 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
 *******************************************************************************/
 
 TypeChecker::Status TreeNodeDataTypeTemplateF::accept(TypeChecker& tyChecker) {
-    assert (false && "TODO");
-    return TypeChecker::E_TYPE;
+    return tyChecker.visit (this);
 }
 
+TypeChecker::Status TypeChecker::visit(TreeNodeDataTypeTemplateF* t) {
+    if (t->cachedType () != NULL)
+        return OK;
+
+    TreeNodeIdentifier* id = t->identifier ();
+    SymbolStruct* sym = m_st->find<SYM_STRUCT>(id->value ());
+    if (sym == NULL) {
+        m_log.fatal () << "Structure name \'" << id->value () << "\' not in scope at " << id->location () << ".";
+        return E_TYPE;
+    }
+
+    TreeNodeStructDecl* structDecl = sym->decl ();
+    TreeNodeSeqView<TreeNodeTypeArg> args = t->arguments ();
+    TreeNodeSeqView<TreeNodeQuantifier> quants = structDecl->quantifiers ();
+    if (quants.size () != args.size ()) {
+        m_log.fatal () << "Mismatching number of type arguments at " << t->location () << ".";
+        m_log.fatal () << "Expected " << quants.size () << " got " << args.size () << ".";
+        return E_TYPE;
+    }
+
+    std::vector<TypeArgument> typeArgs;
+    typeArgs.reserve (args.size ());
+    for (size_t i = 0; i < args.size (); ++ i) {
+        TreeNodeTypeArg& arg = args[i];
+        TCGUARD (visit (&arg));
+        TreeNodeQuantifier& quant = quants[i];
+        const TypeArgument& typeArg = arg.typeArgument ();
+        if (typeArg.kind () != quantifierKind (quant)) {
+            m_log.fatal () << "Mismatching type argument at " << arg.location () << ".";
+            m_log.fatal () << "Respective quantifier defined at " << quant.location () << ".";
+            return E_TYPE;
+        }
+
+        typeArgs.push_back (typeArg);
+    }
+
+    DataTypeStruct* structType = NULL;
+    TCGUARD (checkStruct (structDecl, t->location (), structType, typeArgs));
+    assert (structType != NULL);
+    t->setCachedType (structType);
+    return OK;
+}
 
 } // namespace SecreC
