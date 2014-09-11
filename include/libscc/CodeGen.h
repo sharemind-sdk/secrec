@@ -166,8 +166,8 @@ class CodeGen : public CodeGenState {
     friend struct ScopedSetSymbolTable;
 private:
 
-    void operator = (const CodeGen&); // DO NOT IMPLEMENT
-    CodeGen (const CodeGen&); // DO NOT IMPLEMENT
+    CodeGen& operator = (const CodeGen&) = delete;
+    CodeGen (const CodeGen&) = delete;
 
 private: /* Types: */
 

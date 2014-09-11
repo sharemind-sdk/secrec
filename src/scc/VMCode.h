@@ -203,8 +203,8 @@ private: /* Fields: */
 
 class VMDataSection : public VMSection {
 private:
-    VMDataSection (const VMDataSection&); // DO NOT IMPLEMENT
-    void operator = (const VMDataSection&); // DO NOT IMPLEMENT
+    VMDataSection (const VMDataSection&) = delete;
+    VMDataSection& operator = (const VMDataSection&) = delete;
 public: /* Types: */
 
     enum Type {
@@ -214,7 +214,7 @@ public: /* Types: */
 
     struct Record {
     private:
-        void operator = (const Record&); // DO NOT IMPLEMENT
+        Record& operator = (const Record&) = delete;
     public:
         Record (VMLabel* label, const char* type, const std::string& value)
             : m_label (label)
@@ -304,8 +304,8 @@ private: /* Fields: */
 class VMLinkingUnit {
 private:
 
-    VMLinkingUnit (const VMLinkingUnit&); // DO NOT IMPLEMENT
-    void operator = (const VMLinkingUnit&); // DO NOT IMPPLEMENT
+    VMLinkingUnit (const VMLinkingUnit&) = delete;
+    VMLinkingUnit& operator = (const VMLinkingUnit&) = delete;
 
 public: /* Types: */
 

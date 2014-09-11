@@ -26,8 +26,8 @@ class VMDataSection;
 
 class StringLiterals {
 private:
-    StringLiterals (const StringLiterals&); // DO NOT IMPLEMENT
-    void operator = (const StringLiterals&); // DO NOT IMPLEMENT
+    StringLiterals (const StringLiterals&) = delete;
+    StringLiterals& operator = (const StringLiterals&) = delete;
 
 public:  /* Types: */
 

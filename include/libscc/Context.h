@@ -21,8 +21,8 @@ class ContextImpl;
 class Context {
 private:
 
-    Context (const Context&); // DO NOT IMPLEMENT
-    void operator = (const Context&); // DO NOT IMPLEMENT
+    Context (const Context&) = delete;
+    Context& operator = (const Context&) = delete;
 
 public: /* Fields: */
 

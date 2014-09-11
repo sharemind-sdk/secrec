@@ -25,8 +25,8 @@ class SymbolKind;
 
 class SecurityType {
 private:
-    SecurityType (const SecurityType&); // DO NOT IMPLEMENT
-    void operator = (const SecurityType&); // DO NOT IMPLEMENT
+    SecurityType (const SecurityType&) = delete;
+    SecurityType& operator = (const SecurityType&) = delete;
 
 public: /* Methods: */
     virtual ~SecurityType () { }

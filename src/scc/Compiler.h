@@ -39,8 +39,8 @@ class StringLiterals;
 class Compiler {
 private:
 
-    Compiler (const Compiler&); // DO NOT IMPLEMENT
-    void operator = (const Compiler&); // DO NOT IMPLEMENT
+    Compiler (const Compiler&) = delete;
+    Compiler& operator = (const Compiler&) = delete;
 
 public: /* Methods: */
 

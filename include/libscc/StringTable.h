@@ -24,8 +24,8 @@ class StringRef;
  * Extremly simple implementation of string table.
  */
 class StringTable {
-    StringTable (const StringTable&); // DO NOT IMPLEMENT
-    void operator = (const StringTable&); // DO NOT IMPLEMENT
+    StringTable (const StringTable&) = delete;
+    StringTable& operator = (const StringTable&) = delete;
 private: /* Types: */
 
     typedef boost::unordered_set<StringRef> impl_t;

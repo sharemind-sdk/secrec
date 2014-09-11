@@ -61,8 +61,8 @@ DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
 
 class DataType {
 private:
-    DataType (const DataType&); // DO NOT IMPLEMENT
-    void operator = (const DataType&); // DO NOT IMPLEMENT
+    DataType (const DataType&) = delete;
+    DataType& operator = (const DataType&) = delete;
 
 protected: /* Types: */
 

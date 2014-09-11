@@ -43,8 +43,8 @@ class DataTypeStruct;
 class TypeChecker {
 private:
 
-    TypeChecker (const TypeChecker&); // DO NOT IMPLEMENT
-    void operator = (const TypeChecker&); // DO NOT IMPLEMENT
+    TypeChecker (const TypeChecker&) = delete;
+    TypeChecker& operator = (const TypeChecker&) = delete;
 
 public: /* Types: */
 

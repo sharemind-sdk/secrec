@@ -27,8 +27,8 @@ class Context;
 
 class Type {
 private:
-    Type (const Type&); // DO NOT IMPLEMENT
-    void operator = (const Type&); // DO NOT IMPLEMENT
+    Type (const Type&) = delete;
+    Type& operator = (const Type&) = delete;
 public: /* Types: */
 
     enum Kind {

@@ -24,8 +24,8 @@ class Context;
 *******************************************************************************/
 
 class ModuleMap {
-    ModuleMap (ModuleMap&); // DO NOT IMPLEMENT
-    void operator = (ModuleMap&); // DO NOT IMPLEMENT
+    ModuleMap (ModuleMap&) = delete;
+    ModuleMap& operator = (const ModuleMap&) = delete;
 private: /* Types: */
     typedef std::map<std::string, ModuleInfo*> MapType;
 public: /* Methods: */

@@ -35,8 +35,8 @@ class VMSymbolTable {
 
 private: /* Not copyable/assignable: */
 
-    VMSymbolTable (const VMSymbolTable&); // DO NOT IMPLEMENT
-    void operator = (const VMSymbolTable&); // DO NOT IMPLEMENT
+    VMSymbolTable (const VMSymbolTable&) = delete;
+    VMSymbolTable& operator = (const VMSymbolTable&) = delete;
 
 public: /* Methods: */
 
