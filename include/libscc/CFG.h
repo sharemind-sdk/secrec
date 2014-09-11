@@ -37,15 +37,14 @@ public:
     neighbour_iterator pred_end () { return m_predecessors.end (); }
     neighbour_const_iterator pred_begin () const { return m_predecessors.begin (); }
     neighbour_const_iterator pred_end () const { return m_predecessors.end (); }
-    neighbour_range pred_range () { return std::make_pair (pred_begin (), pred_end ()); }
-    neighbour_const_range pred_range () const { return std::make_pair (pred_begin (), pred_end ()); }
-
+    neighbour_range pred_range () { return {pred_begin (), pred_end ()}; }
+    neighbour_const_range pred_range () const { return {pred_begin (), pred_end ()}; }
     neighbour_iterator succ_begin () { return m_successors.begin (); }
     neighbour_iterator succ_end () { return m_successors.end (); }
     neighbour_const_iterator succ_begin () const { return m_successors.begin (); }
     neighbour_const_iterator succ_end () const { return m_successors.end (); }
-    neighbour_range succ_range () { return std::make_pair (succ_begin (), succ_end ()); }
-    neighbour_const_range succ_range () const { return std::make_pair (succ_begin (), succ_end ()); }
+    neighbour_range succ_range () { return {succ_begin (), succ_end ()}; }
+    neighbour_const_range succ_range () const { return {succ_begin (), succ_end ()}; }
 
     NeighbourMap& successors () { return m_successors; }
     const NeighbourMap& successors () const { return m_successors; }

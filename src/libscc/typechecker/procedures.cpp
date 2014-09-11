@@ -17,8 +17,6 @@
 #include "TreeNode.h"
 
 #include <boost/range.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
 #include <vector>

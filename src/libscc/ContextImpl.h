@@ -17,22 +17,21 @@
 #include "TypeArgument.h"
 
 #include <map>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
+#include <tuple>
 
 namespace SecreC {
 
 class ContextImpl {
 private:
 
-    ContextImpl (const ContextImpl&); // DO NOT IMPLEMENT
-    void operator = (const ContextImpl&); // DO NOT IMPLEMENT
+    ContextImpl (const ContextImpl&) = delete;
+    ContextImpl& operator = (const ContextImpl&) = delete;
 
 public: /* Types: */
 
     typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
     typedef std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*> TypeProcMap;
-    typedef std::map<boost::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*> TypeBasicMap;
+    typedef std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*> TypeBasicMap;
 
     typedef std::map<StringRef, ConstantString*> ConstantStringMap;
     typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;

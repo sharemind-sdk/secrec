@@ -28,8 +28,8 @@ class Context;
 
 class ModuleInfo {
 private:
-    ModuleInfo (ModuleInfo&); // DO NOT IMPLEMENT
-    void operator = (ModuleInfo&); // DO NOT IMPLEMENT
+    ModuleInfo (ModuleInfo&) = delete;
+    ModuleInfo& operator = (const ModuleInfo&) = delete;
 
 private: /* Types: */
     typedef boost::filesystem::directory_entry directory_entry;

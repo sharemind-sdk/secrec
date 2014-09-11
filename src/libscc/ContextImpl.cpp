@@ -12,8 +12,6 @@
 #include "Misc.h"
 #include "Types.h"
 
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <map>
 
 namespace /* anonymous */ {
