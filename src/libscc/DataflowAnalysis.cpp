@@ -11,8 +11,9 @@
 
 #include "Intermediate.h"
 
-#include <boost/ref.hpp>
-#include <boost/thread.hpp>
+#include <functional>
+#include <thread>
+#include <vector>
 
 namespace SecreC {
 
@@ -31,7 +32,7 @@ public: /* Methods: */
         FOREACH_BLOCK (blockIt, m_program) {
             const Block& block = *blockIt;
             if (block.reachable ()) {
-                list.insert (boost::cref (block));
+                list.insert (std::cref (block));
             }
         }
     }
@@ -55,7 +56,7 @@ private: /* Types: */
         }
     };
 
-    typedef std::set<boost::reference_wrapper<const Block>, BlockCmp> WorkList;
+    typedef std::set<std::reference_wrapper<const Block>, BlockCmp> WorkList;
     typedef AnalysisRunner<ForwardDataFlowAnalysis> Base;
 
 public: /* Methods: */
@@ -81,7 +82,7 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 for (const auto& edge : cur.successors ()) {
-                    next.insert (boost::cref (*edge.first));
+                    next.insert (std::cref (*edge.first));
                 }
             }
 
@@ -107,7 +108,7 @@ private: /* Types: */
         }
     };
 
-    typedef std::set<boost::reference_wrapper<const Block>, BlockCmp> WorkList;
+    typedef std::set<std::reference_wrapper<const Block>, BlockCmp> WorkList;
     typedef AnalysisRunner<BackwardDataFlowAnalysis> Base;
 
 public: /* Methods: */
@@ -133,7 +134,7 @@ public: /* Methods: */
 
             if (m_analysis.finishBlock (cur)) {
                 for (const auto& edge : cur.predecessors ()) {
-                    next.insert (boost::cref (*edge.first));
+                    next.insert (std::cref (*edge.first));
                 }
             }
 
@@ -151,22 +152,26 @@ public: /* Methods: */
 *******************************************************************************/
 
 DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
-    boost::thread_group threads;
+    std::vector<std::thread> threads;
+    threads.reserve (m_as.size ());
     for (DataFlowAnalysis* a : m_as) {
         if (a->isForward ()) {
             assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != NULL);
             ForwardDataFlowAnalysis& fa = *static_cast<ForwardDataFlowAnalysis*>(a);
-            threads.create_thread (ForwardAnalysisRunner (fa, pr));
+            threads.emplace_back (ForwardAnalysisRunner (fa, pr));
         }
 
         if (a->isBackward ()) {
             assert (dynamic_cast<BackwardDataFlowAnalysis*>(a) != NULL);
             BackwardDataFlowAnalysis& ba = *static_cast<BackwardDataFlowAnalysis*>(a);
-            threads.create_thread (BackwardAnalysisRunner (ba, pr));
+            threads.emplace_back (BackwardAnalysisRunner (ba, pr));
         }
     }
 
-    threads.join_all ();
+    for (auto& thread : threads) {
+        thread.join ();
+    }
+
     return *this;
 }
 
