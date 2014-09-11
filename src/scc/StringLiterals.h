@@ -12,7 +12,7 @@
 
 #include <map>
 
-#include <libscc/constant.h>
+#include <libscc/Constant.h>
 
 namespace SecreCC {
 

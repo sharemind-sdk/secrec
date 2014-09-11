@@ -12,13 +12,13 @@
 #include <iostream>
 #include <boost/foreach.hpp>
 
-#include <libscc/treenode.h>
-#include <libscc/dataflowanalysis.h>
+#include <libscc/TreeNode.h>
+#include <libscc/DataflowAnalysis.h>
 #include <libscc/analysis/LiveVariables.h>
-#include <libscc/intermediate.h>
-#include <libscc/blocks.h>
-#include <libscc/constant.h>
-#include <libscc/types.h>
+#include <libscc/Intermediate.h>
+#include <libscc/Blocks.h>
+#include <libscc/Constant.h>
+#include <libscc/Types.h>
 
 #include "DeadVariableElimination.h"
 #include "ScalarAllocPlacement.h"

@@ -9,9 +9,9 @@
 
 #include "analysis/Dominators.h"
 
-#include "blocks.h"
-#include "symbol.h"
-#include "treenode.h"
+#include "Blocks.h"
+#include "Symbol.h"
+#include "TreeNode.h"
 
 #include <boost/foreach.hpp>
 

@@ -10,7 +10,7 @@
 #ifndef SECREC_LIVE_VARIABLES_H
 #define SECREC_LIVE_VARIABLES_H
 
-#include "../dataflowanalysis.h"
+#include "../DataflowAnalysis.h"
 
 #include <boost/interprocess/containers/flat_set.hpp>
 

@@ -10,11 +10,11 @@
 #include "TypeArgument.h"
 
 #include "StringRef.h"
-#include "symbol.h"
-#include "treenode.h"
-#include "typechecker.h"
-#include "symboltable.h"
-#include "log.h"
+#include "Symbol.h"
+#include "TreeNode.h"
+#include "TypeChecker.h"
+#include "SymbolTable.h"
+#include "Log.h"
 
 namespace SecreC {
 

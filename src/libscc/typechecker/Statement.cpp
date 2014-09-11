@@ -7,11 +7,11 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "log.h"
-#include "misc.h"
-#include "symboltable.h"
-#include "treenode.h"
-#include "typechecker.h"
+#include "Log.h"
+#include "Misc.h"
+#include "SymbolTable.h"
+#include "TreeNode.h"
+#include "TypeChecker.h"
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>

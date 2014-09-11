@@ -10,7 +10,7 @@
 #ifndef SECREC_CODEGENSTATE_H
 #define SECREC_CODEGENSTATE_H
 
-#include "icodelist.h"
+#include "ICodeList.h"
 
 namespace SecreC {
 

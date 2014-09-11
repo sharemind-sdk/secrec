@@ -10,7 +10,7 @@
 #ifndef SECREC_ANALYSIS_REACHING_JUMPS_H
 #define SECREC_ANALYSIS_REACHING_JUMPS_H
 
-#include "../dataflowanalysis.h"
+#include "../DataflowAnalysis.h"
 
 namespace SecreC {
 

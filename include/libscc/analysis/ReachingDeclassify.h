@@ -10,7 +10,7 @@
 #ifndef SECREC_REACHING_DECLASSIFY_H
 #define SECREC_REACHING_DECLASSIFY_H
 
-#include "../dataflowanalysis.h"
+#include "../DataflowAnalysis.h"
 
 namespace SecreC {
 

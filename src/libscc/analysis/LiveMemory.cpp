@@ -1,6 +1,6 @@
 #include "analysis/LiveMemory.h"
 
-#include "symbol.h"
+#include "Symbol.h"
 
 #include <boost/foreach.hpp>
 #include <sstream>

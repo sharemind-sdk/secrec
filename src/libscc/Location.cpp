@@ -9,7 +9,7 @@
 
 #include "Location.h"
 
-#include "parser.h"
+#include "Parser.h"
 
 #include <ostream>
 

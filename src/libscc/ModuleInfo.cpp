@@ -9,10 +9,10 @@
 
 #include "ModuleInfo.h"
 
-#include "context.h"
-#include "context_impl.h"
-#include "treenode.h"
-#include "parser.h"
+#include "Context.h"
+#include "ContextImpl.h"
+#include "TreeNode.h"
+#include "Parser.h"
 
 #include <boost/filesystem.hpp>
 

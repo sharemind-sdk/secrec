@@ -10,13 +10,13 @@
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/iostreams/device/file.hpp>
 
-#include <libscc/context.h>
-#include <libscc/blocks.h>
-#include <libscc/dataflowanalysis.h>
-#include <libscc/intermediate.h>
-#include <libscc/parser.h>
-#include <libscc/treenode.h>
-#include <libscc/virtual_machine.h>
+#include <libscc/Context.h>
+#include <libscc/Blocks.h>
+#include <libscc/DataflowAnalysis.h>
+#include <libscc/Intermediate.h>
+#include <libscc/Parser.h>
+#include <libscc/TreeNode.h>
+#include <libscc/VirtualMachine.h>
 #include <libscc/analysis/ReachingDeclassify.h>
 #include <libscc/analysis/ReachingDefinitions.h>
 #include <libscc/analysis/ReachingJumps.h>

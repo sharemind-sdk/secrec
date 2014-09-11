@@ -1,11 +1,11 @@
 #include "CopyElimination.h"
 
 #include <boost/foreach.hpp>
-#include <libscc/intermediate.h>
+#include <libscc/Intermediate.h>
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/ReachableReleases.h>
-#include <libscc/dataflowanalysis.h>
-#include <libscc/symbol.h>
+#include <libscc/DataflowAnalysis.h>
+#include <libscc/Symbol.h>
 
 namespace SecreCC {
 

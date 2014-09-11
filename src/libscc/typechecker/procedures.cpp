@@ -7,14 +7,14 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "typechecker.h"
+#include "TypeChecker.h"
 
-#include "log.h"
+#include "Log.h"
 #include "ModuleInfo.h"
-#include "symbol.h"
-#include "symboltable.h"
-#include "templates.h"
-#include "treenode.h"
+#include "Symbol.h"
+#include "SymbolTable.h"
+#include "Templates.h"
+#include "TreeNode.h"
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>

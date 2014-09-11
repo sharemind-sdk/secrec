@@ -1,9 +1,9 @@
 #include "DataType.h"
 
-#include "context.h"
-#include "context_impl.h"
-#include "misc.h"
-#include "symbol.h"
+#include "Context.h"
+#include "ContextImpl.h"
+#include "Misc.h"
+#include "Symbol.h"
 
 #include <boost/foreach.hpp>
 #include <sstream>

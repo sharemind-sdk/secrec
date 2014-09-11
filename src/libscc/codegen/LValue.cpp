@@ -7,12 +7,12 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "codegen.h"
+#include "CodeGen.h"
 
-#include "treenode.h"
-#include "symboltable.h"
-#include "symbol.h"
-#include "log.h"
+#include "TreeNode.h"
+#include "SymbolTable.h"
+#include "Symbol.h"
+#include "Log.h"
 
 namespace SecreC {
 

@@ -1,7 +1,7 @@
 #include "RemoveUnreachableBlocks.h"
 
 #include <boost/foreach.hpp>
-#include <libscc/intermediate.h>
+#include <libscc/Intermediate.h>
 
 namespace SecreCC {
 

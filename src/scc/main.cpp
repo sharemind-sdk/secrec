@@ -23,10 +23,10 @@
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
 
-#include <libscc/context.h>
-#include <libscc/intermediate.h>
-#include <libscc/treenode.h>
-#include <libscc/blocks.h>
+#include <libscc/Context.h>
+#include <libscc/Intermediate.h>
+#include <libscc/TreeNode.h>
+#include <libscc/Blocks.h>
 #include <libscc/StringTable.h>
 
 #include <sharemind/libas/assemble.h>

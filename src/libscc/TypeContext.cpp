@@ -9,7 +9,7 @@
 
 #include "TypeContext.h"
 
-#include "misc.h"
+#include "Misc.h"
 
 #include <ostream>
 

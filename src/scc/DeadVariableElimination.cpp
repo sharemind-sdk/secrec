@@ -1,9 +1,9 @@
 #include "DeadVariableElimination.h"
 
 #include <boost/foreach.hpp>
-#include <libscc/intermediate.h>
+#include <libscc/Intermediate.h>
 #include <libscc/analysis/LiveVariables.h>
-#include <libscc/dataflowanalysis.h>
+#include <libscc/DataflowAnalysis.h>
 
 namespace SecreCC {
 

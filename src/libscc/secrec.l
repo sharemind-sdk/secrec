@@ -1,5 +1,5 @@
 %{
-#include "parser.h"
+#include "Parser.h"
 #include "yacc_secrec.h"
 
 #define step(loc) {\

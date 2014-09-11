@@ -12,8 +12,8 @@
 
 #include <map>
 
-#include <libscc/parser.h>
-#include <libscc/constant.h>
+#include <libscc/Parser.h>
+#include <libscc/Constant.h>
 
 namespace SecreC {
     class PrivateSecType;

@@ -10,7 +10,7 @@
 #include "VMSymbolTable.h"
 
 #include <cassert>
-#include <libscc/symbol.h>
+#include <libscc/Symbol.h>
 #include <map>
 #include <set>
 #include <sstream>

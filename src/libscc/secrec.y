@@ -4,9 +4,9 @@
   #include <stdio.h>
   #include <stdint.h>
 
-  #include "parser.h"
+  #include "Parser.h"
   #include "lex_secrec.h"
-  #include "treenode_c.h"
+  #include "TreeNodeC.h"
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, TYPE_STRINGTABLE table, const char *s);
 

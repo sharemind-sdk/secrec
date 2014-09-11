@@ -7,14 +7,14 @@
  * code is subject to the appropriate license agreement.
  */
 
-#include "constant.h"
-#include "imop.h"
-#include "log.h"
-#include "symbol.h"
-#include "symboltable.h"
-#include "treenode.h"
-#include "typechecker.h"
-#include "types.h"
+#include "Constant.h"
+#include "Imop.h"
+#include "Log.h"
+#include "Symbol.h"
+#include "SymbolTable.h"
+#include "TreeNode.h"
+#include "TypeChecker.h"
+#include "Types.h"
 
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>

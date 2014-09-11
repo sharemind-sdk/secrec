@@ -10,7 +10,7 @@
 #ifndef VM_DATA_TYPE_H
 #define VM_DATA_TYPE_H
 
-#include <libscc/types.h>
+#include <libscc/Types.h>
 #include <libscc/DataType.h>
 
 namespace SecreCC {

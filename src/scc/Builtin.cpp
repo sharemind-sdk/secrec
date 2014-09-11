@@ -12,8 +12,8 @@
 #include <sstream>
 #include <boost/foreach.hpp>
 
-#include <libscc/imop.h>
-#include <libscc/symbol.h>
+#include <libscc/Imop.h>
+#include <libscc/Symbol.h>
 
 #include "VMDataType.h"
 #include "StringLiterals.h"

@@ -10,7 +10,7 @@
 #ifndef SECREC_REACHABLE_RELEASES_H
 #define SECREC_REACHABLE_RELEASES_H
 
-#include "../dataflowanalysis.h"
+#include "../DataflowAnalysis.h"
 
 namespace SecreC {
 

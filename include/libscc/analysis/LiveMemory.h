@@ -10,7 +10,7 @@
 #ifndef SECREC_LIVE_MEMORY_H
 #define SECREC_LIVE_MEMORY_H
 
-#include "../dataflowanalysis.h"
+#include "../DataflowAnalysis.h"
 
 namespace SecreC {
 

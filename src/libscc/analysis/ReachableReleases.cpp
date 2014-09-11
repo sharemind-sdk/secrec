@@ -1,8 +1,8 @@
 #include "analysis/ReachableReleases.h"
 
-#include "misc.h"
-#include "symbol.h"
-#include "treenode.h"
+#include "Misc.h"
+#include "Symbol.h"
+#include "TreeNode.h"
 
 #include <boost/foreach.hpp>
 #include <sstream>

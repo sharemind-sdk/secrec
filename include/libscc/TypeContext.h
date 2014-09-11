@@ -11,7 +11,7 @@
 #define SECREC_TYPECONTEXT_H
 
 #include "ParserEnums.h"
-#include "types.h"
+#include "Types.h"
 
 namespace SecreC {
 

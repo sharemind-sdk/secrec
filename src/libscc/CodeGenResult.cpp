@@ -9,8 +9,8 @@
 
 #include "CodeGenResult.h"
 
-#include "intermediate.h"
-#include "symbol.h"
+#include "Intermediate.h"
+#include "Symbol.h"
 
 #include <boost/foreach.hpp>
 

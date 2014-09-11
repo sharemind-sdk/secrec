@@ -14,9 +14,9 @@
 #include <boost/foreach.hpp>
 #include <boost/interprocess/containers/flat_set.hpp>
 
-#include <libscc/symbol.h>
-#include <libscc/constant.h>
-#include <libscc/dataflowanalysis.h>
+#include <libscc/Symbol.h>
+#include <libscc/Constant.h>
+#include <libscc/DataflowAnalysis.h>
 #include <libscc/analysis/LiveVariables.h>
 
 #include "VMCode.h"
