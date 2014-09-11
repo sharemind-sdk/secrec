@@ -10,7 +10,7 @@
 #ifndef SECREC_STRINGTABLE_H
 #define SECREC_STRINGTABLE_H
 
-#include <boost/unordered/unordered_set.hpp>
+#include <unordered_set>
 
 namespace SecreC {
 
@@ -28,7 +28,7 @@ class StringTable {
     StringTable& operator = (const StringTable&) = delete;
 private: /* Types: */
 
-    typedef boost::unordered_set<StringRef> impl_t;
+    typedef std::unordered_set<StringRef> impl_t;
 
 public: /* Types: */
 

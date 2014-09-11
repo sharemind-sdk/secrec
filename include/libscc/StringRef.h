@@ -10,7 +10,6 @@
 #ifndef SECREC_STRINGREF_H
 #define SECREC_STRINGREF_H
 
-#include <boost/functional/hash_fwd.hpp>
 #include <cstdlib>
 #include <cstring>
 #include <iosfwd>
@@ -110,12 +109,19 @@ inline bool operator < (StringRef r1, StringRef r2) {
 
 } // namespace SecreC
 
-namespace boost {
+namespace std {
     template<>
-    struct hash<SecreC::StringRef> : public std::unary_function<SecreC::StringRef, std::size_t> {
-      std::size_t operator()(SecreC::StringRef sref) const {
-          return boost::hash_range (sref.begin(), sref.end());
-      }
+    struct hash<SecreC::StringRef> {
+      std::size_t operator()(SecreC::StringRef sref) const
+      {
+          std::size_t seed = 0;
+          std::hash<char> hasher;
+          for (char c : sref) {
+              seed ^= hasher(c) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+          }
+
+          return seed;
+       }
     };
 } // namespace boost
 
