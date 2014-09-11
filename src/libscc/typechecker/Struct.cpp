@@ -82,19 +82,22 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     std::vector<DataTypeStruct::Field> fields;
     fields.reserve (decl->attributes ().size ());
     BOOST_FOREACH (TreeNodeAttribute& attr, decl->attributes ()) {
-        TreeNodeType* type = attr.type ();
+        // TODO: This is incredibly ugly workaround! We are cloning in order to avoid using cache-d type.
+        TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (NULL));
         TCGUARD (visit (type));
         if (type->secrecType ()->kind () != Type::BASIC) {
             m_log.fatal () << "Invalid structure field at " << type->location () << '.';
+            delete type;
             return E_TYPE;
         }
 
         TypeBasic* fieldType = static_cast<TypeBasic*>(type->secrecType ());
         StringRef name = attr.identifier ()->value ();
         fields.push_back (make_field (fieldType, name));
+        delete type;
     }
 
-    result = DataTypeStruct::get (getContext (), id->value (), fields);
+    result = DataTypeStruct::get (getContext (), id->value (), fields, args);
     return OK;
 }
 

@@ -13,6 +13,7 @@
 #include "ParserEnums.h"
 
 #include <cassert>
+#include <iosfwd>
 
 namespace SecreC {
 
@@ -77,6 +78,7 @@ public: /* Methods: */
 
     friend bool operator == (const TypeArgument& a, const TypeArgument& b);
     friend bool operator < (const TypeArgument& a, const TypeArgument& b);
+    friend std::ostream& operator << (std::ostream& os, const TypeArgument& a);
 
 private: /* Fields: */
     TypeArgumentKind m_kind;
@@ -119,6 +121,8 @@ inline bool operator < (const TypeArgument& a, const TypeArgument& b) {
     case TA_UNDEF: return false;
     }
 }
+
+std::ostream& operator << (std::ostream& os, const TypeArgument& a);
 
 TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant);
 

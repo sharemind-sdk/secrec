@@ -40,6 +40,18 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArg* t) {
     return t->accept (*this);
 }
 
+std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
+    switch (a.m_kind) {
+    case TA_UNDEF: os << "TA_UNDEF"; break;
+    case TA_SEC:   os << *a.secType (); break;
+    case TA_DATA:  os << *a.dataType (); break;
+    case TA_DIM:   os <<  a.dimType (); break;
+    }
+
+    return os;
+}
+
+
 TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
     switch (quant.type ()) {
     case NODE_TEMPLATE_DOMAIN_QUANT: return TA_SEC;

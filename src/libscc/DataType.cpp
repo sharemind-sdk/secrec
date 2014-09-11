@@ -302,7 +302,12 @@ DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType
 *******************************************************************************/
 
 void DataTypeStruct::print (std::ostream& os) const {
-    os << "struct " << m_name;
+    os << "struct " << m_name << " { ";
+    for (FieldList::const_iterator i = m_fields.begin (); i != m_fields.end (); ++ i) {
+        os << *i->type << " " << i->name << "; ";
+    }
+
+    os << "}";
 }
 
 DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
