@@ -1,9 +1,11 @@
 #include "DeadVariableElimination.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <libscc/Intermediate.h>
 #include <libscc/analysis/LiveVariables.h>
 #include <libscc/DataflowAnalysis.h>
+
+using boost::adaptors::reverse;
 
 namespace SecreCC {
 
@@ -45,7 +47,7 @@ void eliminateDeadVariables (ICode& code) {
         FOREACH_BLOCK (bi, program) {
             const Block& block = *bi;
             LiveVariables::Symbols live = lva.liveOnExit (block);
-            BOOST_REVERSE_FOREACH (const Imop& imop, block) {
+            for (const Imop& imop : reverse (block)) {
                 if (mayEliminate (imop) && live.count (imop.dest ()) == 0) {
                     deadInstructions.push_back (&imop);
                 }
@@ -56,7 +58,7 @@ void eliminateDeadVariables (ICode& code) {
         }
 
         changed = deadInstructions.size () > 0;
-        BOOST_FOREACH (const Imop* imop, deadInstructions) {
+        for (const Imop* imop : deadInstructions) {
             delete imop;
         }
     }

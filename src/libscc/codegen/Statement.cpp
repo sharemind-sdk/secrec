@@ -8,8 +8,6 @@
 #include "TypeChecker.h"
 #include "Types.h"
 
-#include <boost/foreach.hpp>
-
 /**
  * Code generation for statements.
  */
@@ -36,7 +34,7 @@ void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
 void initFieldSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
     DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
     typedef DataTypeStruct::Field Field;
-    BOOST_FOREACH (const Field& field, structType->fields ()) {
+    for (const Field& field : structType->fields ()) {
         TypeBasic* fieldType = field.type;
         SymbolSymbol* fieldSymbol = st->appendTemporary (fieldType);
         initShapeSymbols (cxt, st, fieldSymbol);
@@ -61,7 +59,7 @@ void setSymbolGlobalScope (SymbolSymbol* sym) {
     }
 
     if (ty->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+        for (SymbolSymbol* field : sym->fields ()) {
             setSymbolGlobalScope (field);
         }
     }
@@ -83,7 +81,7 @@ CGStmtResult CodeGen::cgStmtCompound(TreeNodeStmtCompound * s) {
 
     newScope();
 
-    BOOST_FOREACH (TreeNode * c_, s->children()) {
+    for (TreeNode * c_ : s->children()) {
         assert(dynamic_cast<TreeNodeStmt *>(c_) != NULL);
         TreeNodeStmt * c = static_cast<TreeNodeStmt *>(c_);
         const CGStmtResult & cResult = codeGenStmt(c);
@@ -138,7 +136,7 @@ CGStmtResult CodeGen::cgStmtBreak(TreeNodeStmtBreak * s) {
 
     CGStmtResult result;
     assert(loopST() != NULL);
-    BOOST_FOREACH (SymbolSymbol * var, m_st->variablesUpTo(loopST())) {
+    for (SymbolSymbol * var : m_st->variablesUpTo(loopST())) {
         releaseResource(result, var);
     }
 
@@ -165,7 +163,7 @@ CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
     }
 
     CGStmtResult result;
-    BOOST_FOREACH (SymbolSymbol * var, m_st->variablesUpTo(loopST())) {
+    for (SymbolSymbol * var : m_st->variablesUpTo(loopST())) {
         releaseResource(result, var);
     }
 
@@ -295,7 +293,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
             pushImopAfter(result, new Imop(varInit, Imop::ASSIGN,
                                            ns->getSizeSym(), indexConstant(1)));
 
-        BOOST_FOREACH (TreeNodeExpr& e, varInit->shape()) {
+        for (TreeNodeExpr& e : varInit->shape()) {
 
             // Evaluate shape expression:
             const CGResult & eResult = codeGen(&e);
@@ -367,7 +365,7 @@ CGStmtResult CodeGen::cgStmtDecl(TreeNodeStmtDecl * s) {
         isGlobal    ? &CodeGen::cgGlobalVarInit :
                       &CodeGen::cgLocalVarInit;
 
-    BOOST_FOREACH (TreeNodeVarInit& varInit, s->initializers()) {
+    for (TreeNodeVarInit& varInit : s->initializers()) {
         append(result, (this->*cgInit) (s->resultType(), &varInit));
         if (result.isNotOk()) {
             return result;
@@ -723,7 +721,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
 
     CGStmtResult result;
     Symbol * accum = NULL;
-    BOOST_FOREACH (TreeNodeExpr& e, s->expressions()) {
+    for (TreeNodeExpr& e : s->expressions()) {
         const CGResult & eResult = codeGen(&e);
         append(result, eResult);
         if (result.isNotOk()) {
@@ -770,7 +768,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     CGStmtResult result;
     typedef std::pair<TreeNodeSyscallParam *, Symbol *> NodeSymbolPair;
     std::vector<NodeSymbolPair> results;
-    BOOST_FOREACH (TreeNodeSyscallParam& param, s->params()) {
+    for (TreeNodeSyscallParam& param : s->params()) {
         TreeNodeExpr * e = param.expression ();
         const CGResult & eResult = codeGen(e);
         append(result, eResult);
@@ -790,7 +788,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     Symbol* ret = NULL;
 
     // Release stuff that is returned by the syscall.
-    BOOST_FOREACH (const NodeSymbolPair & ts, results) {
+    for (const NodeSymbolPair & ts : results) {
         switch (ts.first->type()) {
         case NODE_SYSCALL_RETURN:
             releaseResource (result, ts.second);
@@ -799,7 +797,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
         }
     }
 
-    BOOST_FOREACH (const NodeSymbolPair & ts, results) {
+    for (const NodeSymbolPair & ts : results) {
         Imop::Type iType;
         switch (ts.first->type()) {
         case NODE_SYSCALL_RETURN: ret = ts.second;  continue;
@@ -823,7 +821,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     pushImopAfter(result, newComment(syscallName->value()));
     pushImopAfter(result, i);
 
-    BOOST_FOREACH (const NodeSymbolPair & ts, results) {
+    for (const NodeSymbolPair & ts : results) {
         releaseTemporary(result, ts.second);
     }
 

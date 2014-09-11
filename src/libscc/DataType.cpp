@@ -5,7 +5,6 @@
 #include "Misc.h"
 #include "Symbol.h"
 
-#include <boost/foreach.hpp>
 #include <sstream>
 
 

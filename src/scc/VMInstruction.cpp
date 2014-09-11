@@ -9,7 +9,6 @@
 
 #include "VMInstruction.h"
 #include "VMValue.h"
-#include <boost/foreach.hpp>
 
 #include <cassert>
 #include <ostream>
@@ -48,7 +47,7 @@ VMInstruction& VMInstruction::arg (const char* cstr) {
 
 void VMInstruction::print (std::ostream& os) const {
     bool first = true;
-    BOOST_FOREACH (const Operand& op, m_operands) {
+    for (const Operand& op : m_operands) {
         if (! first)
             os << ' ';
         else

@@ -1,6 +1,5 @@
 #include "RemoveUnreachableBlocks.h"
 
-#include <boost/foreach.hpp>
 #include <libscc/Intermediate.h>
 
 namespace SecreCC {
@@ -17,7 +16,7 @@ void removeUnreachableBlocks (ICode& code) {
         }
     }
 
-    BOOST_FOREACH (const Block* block, unreachableBlocks) {
+    for (const Block* block : unreachableBlocks) {
         delete block;
     }
 }

@@ -3,7 +3,6 @@
 #include "Context.h"
 #include "ContextImpl.h"
 
-#include <boost/foreach.hpp>
 #include <cstring>
 #include <sstream>
 #include <string>

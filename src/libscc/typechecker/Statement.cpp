@@ -13,7 +13,6 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
 namespace SecreC {
@@ -33,7 +32,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         return E_TYPE;
     }
 
-    BOOST_FOREACH (TreeNodeExpr& e, varInit->shape()) {
+    for (TreeNodeExpr& e : varInit->shape()) {
         e.setContextIndexType(getContext());
         TCGUARD (visitExpr(&e));
         if (checkAndLogIfVoid(&e))
@@ -154,7 +153,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
-    BOOST_FOREACH (TreeNodeExpr& e, stmt->expressions ()) {
+    for (TreeNodeExpr& e : stmt->expressions ()) {
         e.setContextSecType (PublicSecType::get (getContext ()));
         e.setContextDimType (0);
 
@@ -234,7 +233,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
 
     bool hasReturn = false;
 
-    BOOST_FOREACH (TreeNodeSyscallParam& param, stmt->params ()) {
+    for (TreeNodeSyscallParam& param : stmt->params ()) {
         TreeNodeExpr* e = param.expression ();
         if (param.type () != NODE_PUSH) {
             e->setContextSecType (PublicSecType::get (getContext ()));

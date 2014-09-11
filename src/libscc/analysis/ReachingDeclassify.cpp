@@ -13,7 +13,6 @@
 #include "Symbol.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <sstream>
 
 namespace SecreC {
@@ -60,7 +59,7 @@ void ReachingDeclassify::inFrom(const Block & from, Edge::Label label, const Blo
         return;
     }
 
-    BOOST_FOREACH (const PDefs::value_type & pdef, m_outs[&from]) {
+    for (const auto& pdef : m_outs[&from]) {
         PDefs & in = m_ins[&to];
         in[pdef.first].nonsensitive += pdef.second.nonsensitive;
         in[pdef.first].sensitive += pdef.second.sensitive;
@@ -84,7 +83,7 @@ void ReachingDeclassify::transferImop(const Imop & imop, PDefs & out) const {
     switch (imop.type()) {
     case Imop::PARAM:
     case Imop::CALL:
-        BOOST_FOREACH (const Symbol * dest, imop.defRange()) {
+        for (const Symbol * dest : imop.defRange()) {
             if (dest->secrecType()->secrecSecType()->isPublic()) {
                 continue;
             }
@@ -200,7 +199,7 @@ void ReachingDeclassify::finish() {
 
     DD oldDs(m_ds);
     m_ds.clear();
-    BOOST_FOREACH (DD::value_type & def, oldDs) {
+    for (DD::value_type & def : oldDs) {
         if (!def.second.trivial && !def.second.sensitive.empty()) {
             m_ds.insert(def);
         }
@@ -217,12 +216,12 @@ std::string ReachingDeclassify::toString(const Program &) const {
         return os.str();
     }
 
-    BOOST_FOREACH (const DD::value_type & defs, m_ds) {
+    for (const DD::value_type & defs : m_ds) {
         os << "    declassify at "
            << defs.first->creator()->location()
            << (defs.second.nonsensitive.empty() ? " leaks the value from:" : " might fully leak the value from:")
            << std::endl;
-        BOOST_FOREACH (const Imop * imop, defs.second.sensitive) {
+        for (const Imop * imop : defs.second.sensitive) {
             os << "        ";
 
             switch (imop->type()) {

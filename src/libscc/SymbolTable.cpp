@@ -4,11 +4,13 @@
 #include "TreeNode.h"
 
 #include <algorithm>
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <sstream>
+
+using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -58,11 +60,11 @@ public: /* Methods: */
     { }
 
     ~OtherSymbols () {
-        BOOST_FOREACH (LabelMap::value_type& v, m_labels) {
+        for (LabelMap::value_type& v : m_labels) {
             delete v.second;
         }
 
-        BOOST_FOREACH (SymbolSymbol* s, m_temporaries) {
+        for (SymbolSymbol* s : m_temporaries) {
             delete s;
         }
     }
@@ -93,7 +95,7 @@ public: /* Methods: */
 
     void print (std::ostream& os) const {
         os << "Temporaries:\n";
-        BOOST_FOREACH (SymbolSymbol* s, m_temporaries)
+        for (SymbolSymbol* s : m_temporaries)
             os << '\t' << *s << '\n';
     }
 
@@ -129,10 +131,10 @@ SymbolTable::SymbolTable (SymbolTable *parent, StringRef name)
 }
 
 SymbolTable::~SymbolTable() {
-    BOOST_FOREACH (Symbol* sym, m_table)
+    for (Symbol* sym : m_table)
         delete sym;
 
-    BOOST_FOREACH (SymbolTable* table, m_scopes)
+    for (SymbolTable* table : m_scopes)
         delete table;
 
     if (m_parent == 0)
@@ -152,8 +154,8 @@ bool SymbolTable::addImport (SymbolTable* st) {
 std::vector<Symbol *>
 SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
     std::vector<Symbol *> r;
-    BOOST_REVERSE_FOREACH (SymbolTable* import, m_imports)
-        BOOST_REVERSE_FOREACH (Symbol* s, import->m_table)
+    for (SymbolTable* import : reverse (m_imports))
+        for (Symbol* s : reverse (import->m_table))
             if (s->symbolType () == type && s->name () == name)
                 r.push_back (s);
     return r;
@@ -162,8 +164,8 @@ SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
 std::vector<Symbol *>
 SymbolTable::findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
-    BOOST_REVERSE_FOREACH(SymbolTable * import, m_imports)
-        BOOST_REVERSE_FOREACH(Symbol * s, import->m_table)
+    for (SymbolTable * import : reverse (m_imports))
+        for(Symbol * s : reverse (import->m_table))
             if (s->symbolType () == type && prefix.isPrefixOf(s->name()))
                 r.push_back(s);
     return r;
@@ -171,7 +173,7 @@ SymbolTable::findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix)
 
 std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
-    BOOST_REVERSE_FOREACH (Symbol* sym, m_table) {
+    for (Symbol* sym : reverse (m_table)) {
         if (sym->symbolType () == SYM_SYMBOL) {
             assert (dynamic_cast<SymbolSymbol*>(sym) != NULL);
             SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
@@ -223,9 +225,9 @@ SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
     const SymbolTable * c = this;
     while (c != NULL) {
-        BOOST_FOREACH(Symbol * s2, c->findPrefixedFromCurrentScope(type, prefix)) {
+        for (Symbol * s2 : c->findPrefixedFromCurrentScope(type, prefix)) {
             bool overridden = false;
-            BOOST_FOREACH(Symbol * s, r)
+            for (Symbol * s : r)
                 if (s2->name() != s->name()) {
                     overridden = true;
                     break;
@@ -264,7 +266,7 @@ void SymbolTable::print (std::ostream& os, unsigned level, unsigned indent) cons
 
     printIndent(os, level, indent);
     os << "==  " << m_name << " (";
-    BOOST_FOREACH (SymbolTable* import, m_imports) {
+    for (SymbolTable* import : m_imports) {
         if (import != this) {
             os << ", ";
         }
@@ -275,12 +277,12 @@ void SymbolTable::print (std::ostream& os, unsigned level, unsigned indent) cons
     os << ") ==" << std::endl;
 
 
-    BOOST_FOREACH (Symbol* sym, m_table) {
+    for (Symbol* sym : m_table) {
         printIndent(os, level, indent);
         os << ' ' << sym->name () << ": " << *sym << std::endl;
     }
 
-    BOOST_FOREACH (SymbolTable* table, m_scopes) {
+    for (SymbolTable* table : m_scopes) {
         table->print (os, level + 1, indent);
     }
 }

@@ -5,8 +5,10 @@
 #include "Symbol.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
+using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -50,13 +52,13 @@ private: /* Fields: */
 template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
 
-    BOOST_FOREACH(const Symbol * sym, imop.defRange()) {
+    for (const Symbol * sym : imop.defRange()) {
         if (sym->symbolType() == SYM_SYMBOL) {
             visitor.kill(sym);
         }
     }
 
-    BOOST_FOREACH(const Symbol * sym, imop.useRange()) {
+    for (const Symbol * sym : imop.useRange()) {
         if (sym->symbolType() == SYM_SYMBOL) {
             visitor.gen(sym);
         }
@@ -75,16 +77,14 @@ struct SimpleInterferenceGraph {
     }
 
     void drawNodes(std::ostream & os) {
-        typedef std::pair<const Symbol *, unsigned> Node;
-        BOOST_FOREACH (const Node & n, m_numbers) {
+        for (const auto & n : m_numbers) {
             os << "    node_" << n.second
                << " [label=\"" << n.first->name() << "\"];\n";
         }
     }
 
     void drawEdges(std::ostream & os) {
-        typedef std::pair<unsigned, unsigned> Edge;
-        BOOST_FOREACH (const Edge & edge, m_edges) {
+        for (const auto& edge : m_edges) {
             const unsigned n = edge.first;
             const unsigned m = edge.second;
             os << "    node_" << n << " -- node_" << m << ";\n";
@@ -107,7 +107,7 @@ struct SimpleInterferenceGraph {
 
     inline void kill(const Symbol * sym) {
         m_live.erase(sym);
-        BOOST_FOREACH (const Symbol * other, m_live) {
+        for (const Symbol * other : m_live) {
             addEdge(sym, other);
         }
     }
@@ -149,7 +149,7 @@ inline void operator += (LiveVariables::Symbols& out, LiveVariables::Symbols& ar
 }
 
 inline void operator -= (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
-    BOOST_FOREACH (const Symbol* sym, arg) {
+    for (const Symbol* sym : arg) {
         out.erase(sym);
     }
 }
@@ -171,7 +171,7 @@ void LiveVariables::start(const Program & pr) {
         const Block & block = *bi;
         BlockInfo & blockInfo = m_blocks[&block];
         CollectGenKill collector (blockInfo.gen, blockInfo.kill);
-        BOOST_REVERSE_FOREACH (const Imop & imop, block) {
+        for (const Imop & imop : reverse (block)) {
             visitImop(imop, collector);
         }
     }
@@ -187,7 +187,7 @@ void LiveVariables::outToLocal(const Block & from, const Block & to) {
 
 void LiveVariables::outToGlobal(const Block & from, const Block & to) {
     Symbols & out = findBlock (to).out;
-    BOOST_FOREACH (const Symbol * symbol, findBlock (from).in) {
+    for (const Symbol * symbol : findBlock (from).in) {
         if (symbol->isGlobal()) {
             out.insert(symbol);
         }
@@ -213,11 +213,11 @@ std::string LiveVariables::toString(const Program & pr) const {
 
     std::stringstream ss;
     ss << "graph InferenceGraph {\n";
-    BOOST_FOREACH (const Procedure & proc, pr) {
+    for (const Procedure & proc : pr) {
         ss << "  " << "subgraph cluster_" << index ++ << " {\n";
         ss << "    " << "label=\"" << (proc.name() ? proc.name()->name() : "GLOBAL") << "\"\n";
         visitor.clear();
-        BOOST_FOREACH (const Block & block, proc) {
+        for (const Block & block : proc) {
             BlockInfoMap::const_iterator it = m_blocks.find (&block);
 
             if (it == m_blocks.end()) {
@@ -225,7 +225,7 @@ std::string LiveVariables::toString(const Program & pr) const {
             }
 
             visitor.updateLiveness (it->second.out);
-            BOOST_REVERSE_FOREACH (const Imop & imop, block) {
+            for (const Imop & imop : reverse (block)) {
                 visitImop(imop, visitor);
             }
         }

@@ -16,10 +16,10 @@
 #include "Templates.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
 #include <vector>
 
@@ -38,7 +38,7 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
 {
     TypeProc* dt = procdef.procedureType();
     const std::string actualName = mangleProcedure (procdef.procedureName ().str(), dt);
-    BOOST_FOREACH (Symbol* _proc, st->findAll (SYM_PROCEDURE, actualName)) {
+    for (Symbol* _proc : st->findAll (SYM_PROCEDURE, actualName)) {
         SymbolProcedure* proc = static_cast<SymbolProcedure*>(_proc);
         if (proc->secrecType () == dt)
             return proc;
@@ -60,7 +60,7 @@ findProcedures (SymbolTable* st, StringRef name, TypeProc* dt)
 {
     std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name.str(), dt);
-    BOOST_FOREACH (Symbol* _procSym, st->findAll (SYM_PROCEDURE, actualName)) {
+    for (Symbol* _procSym : st->findAll (SYM_PROCEDURE, actualName)) {
         assert (dynamic_cast<SymbolProcedure*>(_procSym) != NULL);
         SymbolProcedure* procSym = static_cast<SymbolProcedure*>(_procSym);
         out.push_back (procSym);
@@ -74,7 +74,7 @@ findTemplates (SymbolTable* st, StringRef name)
 {
     std::vector<SymbolTemplate*> out;
     const std::string actualName = name.str();
-    BOOST_FOREACH (Symbol* _symTempl, st->findAll (SYM_TEMPLATE, actualName)) {
+    for (Symbol* _symTempl : st->findAll (SYM_TEMPLATE, actualName)) {
         assert (dynamic_cast<SymbolTemplate*>(_symTempl) != NULL);
         SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
         out.push_back (symTempl);
@@ -128,7 +128,7 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
 {
     params.clear ();
     params.reserve (proc->params ().size ());
-    BOOST_FOREACH (TreeNodeStmtDecl& decl, proc->params ()) {
+    for (TreeNodeStmtDecl& decl : proc->params ()) {
         TCGUARD (visit (&decl));
         assert (dynamic_cast<TypeBasic*>(decl.resultType()) != NULL);
         params.push_back (static_cast<TypeBasic*>(decl.resultType()));
@@ -170,7 +170,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
     proc->setSymbol (procSym);
 
     const std::string& shortName = proc->identifier ()->value ().str();
-    BOOST_FOREACH (Symbol* sym, m_st->findAll (SYM_PROCEDURE, shortName)) {
+    for (Symbol* sym : m_st->findAll (SYM_PROCEDURE, shortName)) {
         if (sym->symbolType () == SYM_PROCEDURE) {
             SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
             if (t->decl ()->m_cachedType == proc->m_cachedType) {
@@ -216,7 +216,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 {
     std::vector<TypeBasic*> argumentDataTypes;
 
-    BOOST_FOREACH (TreeNodeExpr& arg, arguments) {
+    for (TreeNodeExpr& arg : arguments) {
         TCGUARD (visitExpr(&arg));
         if (checkAndLogIfVoid(&arg))
             return E_TYPE;
@@ -247,7 +247,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             if (!cps.empty()) {
                 m_log.info() << "Candidates are:";
                 haveCandidatesLabel = true;
-                BOOST_FOREACH(SymbolProcedure * c, cps) {
+                for (SymbolProcedure * c : cps) {
                     if (c->location()) {
                         m_log.info() << '\t' << *c << " at " << *(c->location());
                     } else {
@@ -260,7 +260,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         if (!cs.empty()) {
             if (!haveCandidatesLabel)
                 m_log.info() << "Candidates are:";
-            BOOST_REVERSE_FOREACH(Symbol * c, cs) {
+            for (Symbol * c : boost::adaptors::reverse (cs)) {
                 assert(dynamic_cast<SymbolTemplate *>(c) != NULL);
                 if (c->location()) {
                     m_log.info() << '\t' << *c << " at " << *(c->location());
@@ -325,7 +325,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     // Look for regular procedures:
     assert (argTypes != NULL);
     SymbolProcedure* procTempSymbol = NULL;
-    BOOST_FOREACH (SymbolProcedure* s, findProcedures (m_st, name, argTypes)) {
+    for (SymbolProcedure* s : findProcedures (m_st, name, argTypes)) {
         SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
         if (! _ty->isVoid ()) { // and procedure is non-void...
             assert (dynamic_cast<TypeNonVoid*>(_ty) != NULL);
@@ -358,7 +358,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     // Look for templates:
     SymbolTemplate::Weight best;
     std::vector<Instantiation> bestMatches;
-    BOOST_FOREACH (SymbolTemplate* s, findTemplates (m_st, name)) {
+    for (SymbolTemplate* s : findTemplates (m_st, name)) {
         assert (s->decl ()->containingModule () != NULL);
         Instantiation inst (s);
         if (unify (inst, tyCxt, argTypes)) {
@@ -379,7 +379,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     if (bestMatches.size () > 1) {
         std::ostringstream os;
         os << "Multiple matching templates: ";
-        BOOST_FOREACH (const Instantiation& i, bestMatches) {
+        for (const Instantiation& i : bestMatches) {
             os << i.getTemplate ()->decl ()->location () << ' ';
         }
 
@@ -415,7 +415,7 @@ bool TypeChecker::unify (Instantiation& inst,
         return false;
 
     unsigned i = 0;
-    BOOST_FOREACH (TreeNodeStmtDecl& decl, t->body ()->params ()) {
+    for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
 
@@ -511,7 +511,7 @@ bool TypeChecker::unify (Instantiation& inst,
         }
     }
 
-    BOOST_FOREACH (TreeNodeQuantifier& quant, t->quantifiers ()) {
+    for (TreeNodeQuantifier& quant : t->quantifiers ()) {
         StringRef typeVar = quant.typeVariable ()->value ();
         assert (varMap.find (typeVar) != varMap.end ());
         const TypeArgument& param = varMap.find (typeVar)->second;

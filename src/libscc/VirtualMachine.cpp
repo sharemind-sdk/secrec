@@ -5,7 +5,6 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <boost/preprocessor/control/if.hpp>
 #include <cstdlib>
 #include <cstring>
@@ -809,12 +808,12 @@ private:
             dest = static_cast<const SymbolLabel*>(arg)->target ();
         }
         else {
-            BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
+            for (const Symbol* sym : imop.defRange ()) {
                 i.args[nArgs ++] = toVMSym (sym);
             }
         }
 
-        BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
+        for (const Symbol* sym : imop.useRange ()) {
             i.args[nArgs ++] = toVMSym (sym);
         }
 

@@ -13,7 +13,6 @@
 #include "Symbol.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <sstream>
 
 namespace SecreC {
@@ -23,7 +22,7 @@ namespace SecreC {
 *******************************************************************************/
 
 void ReachingDefinitions::updateSDefs(const Imop & imop, ReachingDefinitions::SDefs & defs) {
-    BOOST_FOREACH (const Symbol * symbol, imop.defRange()) {
+    for (const Symbol * symbol : imop.defRange()) {
         ReachingDefinitions::Defs & d = defs[symbol];
         d.clear();
         d.insert(&imop);
@@ -32,7 +31,7 @@ void ReachingDefinitions::updateSDefs(const Imop & imop, ReachingDefinitions::SD
 
 void ReachingDefinitions::inFrom(const Block & from, const Block & to, bool globalOnly) {
     if (globalOnly) {
-        BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
+        for (SDefs::const_reference r : m_outs[&from]) {
             const Symbol * s = r.first;
 
             if ((s->symbolType() == SYM_SYMBOL)
@@ -43,7 +42,7 @@ void ReachingDefinitions::inFrom(const Block & from, const Block & to, bool glob
         }
     }
     else {
-        BOOST_FOREACH (SDefs::const_reference r, m_outs[&from]) {
+        for (SDefs::const_reference r : m_outs[&from]) {
             const Symbol * s = r.first;
             m_ins[&to][s] += r.second;
         }
@@ -53,7 +52,7 @@ void ReachingDefinitions::inFrom(const Block & from, const Block & to, bool glob
 bool ReachingDefinitions::makeOuts(const Block & b, const SDefs & in, SDefs & out) {
     SDefs old = out;
     out = in;
-    BOOST_FOREACH (const Imop& imop, b) {
+    for (const Imop& imop : b) {
         updateSDefs(imop, out);
     }
 
@@ -80,7 +79,7 @@ std::string ReachingDefinitions::toString(const Program & pr) const {
         }
         else {
             os << std::endl;
-            BOOST_FOREACH (SDefs::const_reference sdef, si->second) {
+            for (SDefs::const_reference sdef : si->second) {
                 os << "      " << *sdef.first << ": ";
                 const Defs & ds = sdef.second;
 

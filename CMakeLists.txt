@@ -20,6 +20,10 @@ ADD_COMPILE_OPTIONS(
   "$<$<STREQUAL:$<CONFIGURATION>,Release>:-DNDEBUG>"
   "$<$<STREQUAL:$<CONFIGURATION>,Release>:-fomit-frame-pointer>"
 )
+	
+# We can't add c++11 flag with ADD_COMPILE_OPTIONS because it
+# also adds the flag to the C compiler.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
 

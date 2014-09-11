@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/interprocess/containers/flat_set.hpp>
 
 #include <libscc/Symbol.h>
@@ -166,14 +165,14 @@ public: /* Methods: */
         ColorSet usedRegisters;
         ColorGraph neighbours; // colors of neighbours
         unsigned count = 0;
-        BOOST_FOREACH (unsigned v, vertices) {
+        for (unsigned v : vertices) {
             ColorSet candidates = usedRegisters;
-            BOOST_FOREACH (unsigned u, neighbours[v])
+            for (unsigned u : neighbours[v])
                 candidates.erase(u);
             const Color color = candidates.empty () ? (count ++) : *candidates.begin ();
             usedRegisters.insert (color);
             setColor (m_vertices[v], color);
-            BOOST_FOREACH (Vertex u, m_adjacencyList[v]) {
+            for (Vertex u : m_adjacencyList[v]) {
                 neighbours[u].insert (color);
             }
         }
@@ -277,7 +276,7 @@ VMVReg* RegisterAllocator::temporaryReg () {
     VMVReg* reg = m_st->getVReg (m_isGlobal);
     m_temporaries.push_back (reg);
     m_inferenceGraph->addNode (reg);
-    BOOST_FOREACH (VMVReg* other, m_live) {
+    for (VMVReg* other : m_live) {
         m_inferenceGraph->addEdge (reg, other);
     }
 
@@ -303,7 +302,7 @@ unsigned RegisterAllocator::globalCount () {
 void RegisterAllocator::enterBlock (VMBlock& block) {
     const LiveVariables::Symbols& in = m_lv->ins (*block.secrecBlock ());
     m_live.clear ();
-    BOOST_FOREACH (const Symbol* sym, in) {
+    for (const Symbol* sym : in) {
         VMValue* reg = m_st->find (sym);
         if (reg == NULL) {
             reg = m_st->getVReg (sym->isGlobal ());
@@ -318,13 +317,13 @@ void RegisterAllocator::enterBlock (VMBlock& block) {
 void RegisterAllocator::exitBlock (VMBlock &) { }
 
 void RegisterAllocator::getReg (const SecreC::Imop& imop) {
-    BOOST_FOREACH (VMVReg* temp, m_temporaries) {
+    for (VMVReg* temp : m_temporaries) {
         m_live.erase (temp);
     }
 
     m_temporaries.clear ();
 
-    BOOST_FOREACH (const Symbol* symbol, imop.useRange ()) {
+    for (const Symbol* symbol : imop.useRange ()) {
         switch (symbol->symbolType ()) {
         case SYM_SYMBOL:
             assert (m_st->find (symbol) != NULL);
@@ -336,7 +335,7 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
         }
     }
 
-    BOOST_FOREACH (const Symbol* symbol, imop.defRange ()) {
+    for (const Symbol* symbol : imop.defRange ()) {
         defSymbol (symbol);
     }
 }
@@ -351,7 +350,7 @@ void RegisterAllocator::defSymbol (const Symbol* symbol) {
     assert (dynamic_cast<VMVReg*>(reg) != NULL);
     VMVReg* vreg = static_cast<VMVReg*>(reg);
     m_inferenceGraph->addNode (vreg);
-    BOOST_FOREACH (VMVReg* other, m_live) {
+    for (VMVReg* other : m_live) {
         m_inferenceGraph->addEdge (vreg, other);
     }
 

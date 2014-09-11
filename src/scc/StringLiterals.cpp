@@ -1,7 +1,6 @@
 #include "StringLiterals.h"
 
 #include <sstream>
-#include <boost/foreach.hpp>
 
 #include "VMSymbolTable.h"
 #include "VMCode.h"
@@ -13,7 +12,7 @@ std::string escape (const std::string& str) {
     std::ostringstream os;
 
     os << '\"';
-    BOOST_FOREACH (char c, str) {
+    for (char c : str) {
         switch (c) {
         case '\'': os << "\\\'"; break;
         case '\"': os << "\\\""; break;

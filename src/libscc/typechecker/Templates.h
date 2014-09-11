@@ -10,7 +10,6 @@
 #ifndef SECREC_TEMPLATES_H
 #define SECREC_TEMPLATES_H
 
-#include <boost/foreach.hpp>
 #include <cassert>
 #include <deque>
 #include <map>

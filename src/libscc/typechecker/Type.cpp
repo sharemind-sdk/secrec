@@ -13,8 +13,6 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 
-#include <boost/foreach.hpp>
-
 namespace SecreC {
 
 /*******************************************************************************

@@ -16,7 +16,6 @@
 #include "TypeChecker.h"
 #include "Types.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
 namespace SecreC {
@@ -153,7 +152,7 @@ TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
     StringRef fieldName = id->value ();
     TypeBasic* matchingFieldType = NULL;
     typedef DataTypeStruct::Field Field;
-    BOOST_FOREACH (const Field& field, structType->fields ()) {
+    for (const Field& field : structType->fields ()) {
         if (fieldName == field.name) {
             matchingFieldType = field.type;
             break;
@@ -486,7 +485,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
         return E_TYPE;
 
     TNV * eType = static_cast<TNV *>(e->resultType());
-    BOOST_FOREACH (TreeNodeExpr& dim, root->dimensions()) {
+    for (TreeNodeExpr& dim : root->dimensions()) {
         dim.setContextIndexType (getContext());
         TCGUARD (visitExpr(&dim));
 
@@ -788,7 +787,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
     }
 
     TypeNonVoid* elemType = NULL;
-    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+    for (TreeNodeExpr& child : e->expressions ()) {
         child.setContextSecType (e->contextSecType ());
         child.setContextDataType (e->contextDataType ());
         child.setContextDimType (0);
@@ -817,7 +816,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
         }
     }
 
-    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+    for (TreeNodeExpr& child : e->expressions ()) {
         classifyIfNeeded (&child, elemType->secrecSecType ());
     }
 
@@ -828,7 +827,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
 
 void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
     resetDataType (cxt, dType);
-    BOOST_FOREACH (TreeNodeExpr& child, expressions ()) {
+    for (TreeNodeExpr& child : expressions ()) {
         child.instantiateDataType (cxt, dType);
     }
 }
@@ -981,7 +980,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
 *******************************************************************************/
 
 bool TreeNodeExprString::isConstant () const {
-    BOOST_FOREACH (TreeNodeStringPart& part, parts ()) {
+    for (TreeNodeStringPart& part : parts ()) {
         if (! part.isConstant ())
             return false;
     }
@@ -997,7 +996,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprString * e) {
     if (e->haveResultType())
         return OK;
 
-    BOOST_FOREACH (TreeNodeStringPart& part, e->parts ()) {
+    for (TreeNodeStringPart& part : e->parts ()) {
         TCGUARD (visit (&part));
     }
 
@@ -1241,7 +1240,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     TypeContext suppliedContext;
     TreeNodeExpr * subExpr = e->expression();
     subExpr->setContext(e);
-    BOOST_FOREACH (TreeNodeTypeF& node, e->types()) {
+    for (TreeNodeTypeF& node : e->types()) {
         TCGUARD (visit (&node));
         node.setTypeContext (suppliedContext);
         node.setTypeContext (*subExpr); // not the nicest solution

@@ -8,8 +8,6 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 
-#include <boost/foreach.hpp>
-
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -41,7 +39,7 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
     if (ty->secrecDataType ()->isComposite ()) {
         typedef DataTypeStruct::Field Field;
         DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
-        BOOST_FOREACH (const Field& field, structType->fields ()) {
+        for (const Field& field : structType->fields ()) {
             sym->appendField (generateSymbol (cxt, st, field.type));
         }
     }
@@ -59,7 +57,7 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, Type* ty) {
 void collectTemporariesLoop (std::vector<SymbolSymbol*>& acc, SymbolSymbol* sym) {
     assert (sym != NULL);
     if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+        for (SymbolSymbol* field : sym->fields ()) {
             collectTemporariesLoop (acc, field);
         }
     }
@@ -242,13 +240,13 @@ void CodeGen::initSymbol(CGResult & result, Symbol * sym, Symbol * def) {
 }
 
 void CodeGen::releaseScopeVariables (CGResult& result) {
-    BOOST_FOREACH (Symbol * var, m_st->variables()) {
+    for (Symbol * var : m_st->variables()) {
         releaseResource(result, var);
     }
 }
 
 void CodeGen::releaseProcVariables(CGResult & result, Symbol * ex) {
-    BOOST_FOREACH (Symbol * var, m_st->variablesUpTo(m_st->globalScope())) {
+    for (Symbol * var : m_st->variablesUpTo(m_st->globalScope())) {
         if (var != ex) {
             releaseResource(result, var);
         }
@@ -256,7 +254,7 @@ void CodeGen::releaseProcVariables(CGResult & result, Symbol * ex) {
 }
 
 void CodeGen::releaseAllVariables(CGResult & result) {
-    BOOST_FOREACH (Symbol * var, m_st->variablesUpTo(NULL)) {
+    for (Symbol * var : m_st->variablesUpTo(NULL)) {
         releaseResource(result, var);
     }
 }
@@ -269,7 +267,7 @@ void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
 
 void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
     assert(sym != NULL);
-    BOOST_FOREACH (SymbolSymbol* temp, collectTemporaries (sym)) {
+    for (SymbolSymbol* temp : collectTemporaries (sym)) {
         releaseResource(result, temp);
     }
 }
@@ -284,7 +282,7 @@ void CodeGen::codeGenSize (CGResult &result, Symbol* sym) {
 void CodeGen::codeGenSize (CGResult &result, SymbolSymbol* sym) {
     assert(sym != NULL);
     if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+        for (SymbolSymbol* field : sym->fields ()) {
             codeGenSize (result, field);
         }
     }
@@ -391,7 +389,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
     Symbol * zero = indexConstant(0);
     TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
     unsigned count = 0;
-    BOOST_FOREACH (Symbol * idx, loopInfo) {
+    for (Symbol * idx : loopInfo) {
         Imop * i = new Imop(m_node, Imop::ASSIGN, idx, zero);
         push_imop(i);
         result.patchFirstImop(i);
@@ -417,7 +415,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv)
     LoopInfo::const_iterator idxIt;
 
     idxIt = loopInfo.begin();
-    BOOST_FOREACH (const SPV::value_type & v, spv) {
+    for (const SPV::value_type & v : spv) {
         if (! v.second) {
             Symbol * idx  = *idxIt;
             Imop * i = new Imop(m_node, Imop::ASSIGN, idx, v.first);
@@ -430,7 +428,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv)
     }
 
     idxIt = loopInfo.begin();
-    BOOST_FOREACH (const SPV::value_type & v, spv) {
+    for (const SPV::value_type & v : spv) {
         Symbol * idx  = *idxIt;
         if (v.second) {
             Imop * i = new Imop(m_node, Imop::ASSIGN, idx, v.first);
@@ -504,7 +502,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
     SymbolSymbol * x = static_cast<SymbolSymbol *>(tmp);
 
     // 1. evaluate the indices and manage the syntactic suggar
-    BOOST_FOREACH (TreeNode * t, node->children()) {
+    for (TreeNode * t : node->children()) {
         Symbol * r_lo = indexConstant(0);
         Symbol * r_hi = x->getDim(count);
 
@@ -616,7 +614,7 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     CGResult result;
 
     if (ty->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+        for (SymbolSymbol* field : sym->fields ()) {
             append (result, cgProcParam (field));
             if (result.isNotOk ())
                 return result;
@@ -653,7 +651,7 @@ CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     CGResult result;
 
     if (ty->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, sym->fields ()) {
+        for (SymbolSymbol* field : sym->fields ()) {
             append (result, cgInitalizeToDefaultValue (field, false));
             if (result.isNotOk ())
                 return result;
@@ -719,7 +717,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
             Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * const errLabel = m_st->label(err);
             dim_iterator lhsDimIter = dim_begin(lhs);
-            BOOST_FOREACH (Symbol * rhsDim, dim_range(rhs)) {
+            for (Symbol * rhsDim : dim_range(rhs)) {
                 SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
                 pushImopAfter(result, new Imop(m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter));
                 push_imop(new Imop(m_node, Imop::JT, errLabel, temp_bool));
@@ -744,7 +742,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
                 assert(ty->secrecDimType() == rhs->secrecType()->secrecDimType());
 
                 dim_iterator srcIter = dim_begin(rhs);
-                BOOST_FOREACH (Symbol * const destSym, dim_range(lhs)) {
+                for (Symbol * const destSym : dim_range(lhs)) {
                     assert(srcIter != dim_end(rhs));
                     pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, destSym, *srcIter));
                     ++srcIter;

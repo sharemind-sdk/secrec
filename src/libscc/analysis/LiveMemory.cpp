@@ -2,8 +2,10 @@
 
 #include "Symbol.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
+using boost::adaptors::reverse;
 
 namespace { /* anonymous */
 
@@ -55,7 +57,7 @@ template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
 
     if (imop.isVectorized()) {
-        BOOST_FOREACH (const Symbol * arg, imop.useRange()) {
+        for (const Symbol * arg : imop.useRange()) {
             visitor.gen(arg, LiveMemory::Read);
         }
 
@@ -75,11 +77,11 @@ void visitImop(const Imop & imop, Visitor & visitor) {
     case Imop::PARAM:    /* intentionally empty */
     case Imop::SYSCALL:  visitor.kill(imop.dest());                   break;
     case Imop::CALL:
-        BOOST_FOREACH (const Symbol* arg, imop.useRange()) {
+        for (const Symbol* arg : imop.useRange()) {
             visitor.gen(arg, LiveMemory::Read);
         }
 
-        BOOST_FOREACH (const Symbol* dest, imop.defRange()) {
+        for (const Symbol* dest : imop.defRange()) {
             visitor.kill(dest);
         }
 
@@ -113,7 +115,7 @@ void LiveMemory::update(const Imop & imop, Values & vals) {
 void LiveMemory::start(const Program & pr) {
     FOREACH_BLOCK (bi, pr) {
         CollectGenKill collector(m_gen[&*bi], m_kill[&*bi]);
-        BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
+        for (const Imop & imop : reverse (*bi)) {
             visitImop(imop, collector);
         }
     }
@@ -126,7 +128,7 @@ void LiveMemory::startBlock(const Block & b) {
 void LiveMemory::outToLocal(const Block & from, const Block & to) {
     Values & dest = m_outs[&to];
     const Values & src = m_ins[&from];
-    BOOST_FOREACH (Values::const_reference sv, src) {
+    for (Values::const_reference sv : src) {
         dest[sv.first] |= sv.second;
     }
 }
@@ -134,7 +136,7 @@ void LiveMemory::outToLocal(const Block & from, const Block & to) {
 void LiveMemory::outToGlobal(const Block & from, const Block & to) {
     Values & dest = m_outs[&to];
     const Values & src = m_ins[&from];
-    BOOST_FOREACH (Values::const_reference sv, src) {
+    for (Values::const_reference sv : src) {
         if (sv.first->isGlobal()) {
             dest[sv.first] |= sv.second;
         }
@@ -146,11 +148,11 @@ bool LiveMemory::finishBlock(const Block & b) {
     const Values old = in;
     const Values & out = m_outs[&b];
     in = out;
-    BOOST_FOREACH (Symbols::const_reference sym, m_kill[&b]) {
+    for (Symbols::const_reference sym : m_kill[&b]) {
         in.erase(sym);
     }
 
-    BOOST_FOREACH (Values::const_reference sv, m_gen[&b]) {
+    for (Values::const_reference sv : m_gen[&b]) {
         in[sv.first] |= sv.second;
     }
 
@@ -173,7 +175,7 @@ std::set<const Imop *> LiveMemory::deadCopies(const Program & pr) const {
             after = i->second;
         }
 
-        BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
+        for (const Imop & imop : reverse (*bi)) {
             if (imop.type() == Imop::COPY) {
                 if (isRedundantCopy(after[imop.dest()], after[imop.arg1()])) {
                     out.insert(&imop);
@@ -203,8 +205,8 @@ std::string LiveMemory::printDeadCopies(const Program & pr) const {
             after = i->second;
         }
 
-        BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
-            BOOST_FOREACH (const Symbol * dest, imop.defRange()) {
+        for (const Imop & imop : reverse (*bi)) {
+            for (const Symbol * dest : imop.defRange()) {
                 if (dest->isArray() && after[dest] == Dead) {
                     ss << imop.index() << ": " << imop << " redundant value " << *dest << "\n";
                 }
@@ -257,7 +259,7 @@ std::string LiveMemory::toString(const Program & pr) const {
         }
 
         ss << "[Block " << block->index() << "] (size = " << vals.size() << ")\n";
-        BOOST_FOREACH (Values::const_reference val, vals) {
+        for (Values::const_reference val : vals) {
             switch (val.second) {
             case Live:  ss << "LIVE";  break;
             case Read:  ss << "READ";  break;

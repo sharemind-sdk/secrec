@@ -6,8 +6,6 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
-
 
 /**
  * Code generation for expressions.
@@ -170,7 +168,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     {
         pushComment("Computing shape:");
         unsigned count = 0;
-        BOOST_FOREACH(unsigned k, slices) {
+        for (unsigned k : slices) {
             Symbol * sym = resSym->getDim(count);
             Imop * i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
             pushImopAfter(result, i);
@@ -251,7 +249,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
             i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
             push_imop(i);
             unsigned count = 0;
-            BOOST_FOREACH(unsigned k, slices) {
+            for (unsigned k : slices) {
                 Symbol * idx = loopInfo.at(k);
 
                 i = new Imop(e, Imop::SUB, tmp_result2, idx, spv[k].first);
@@ -337,7 +335,7 @@ CGResult CodeGen::cgExprShape(TreeNodeExprShape * e) {
     push_imop(i);
 
     unsigned count = 0;
-    BOOST_FOREACH(Symbol* sizeSym, dim_range(argResult.symbol())) {
+    for (Symbol* sizeSym : dim_range(argResult.symbol())) {
         Symbol * indexSym = indexConstant(count);
         Imop * i = new Imop(e, Imop::STORE, resSym, indexSym, sizeSym);
         push_imop(i);
@@ -556,7 +554,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
 
     {   // Eval subexpressions and copy dimensionalities:
         dim_iterator dimIt = dim_begin(resSym);
-        BOOST_FOREACH (TreeNodeExpr& dim, e->dimensions()) {
+        for (TreeNodeExpr& dim : e->dimensions()) {
             assert(dimIt != dim_end(resSym));
             const CGResult & argResult = codeGen(&dim);
             append(result, argResult);
@@ -736,7 +734,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
         dim_iterator dj = dim_begin(e2result);
-        BOOST_FOREACH(Symbol* dim, dim_range(e1result)) {
+        for (Symbol* dim : dim_range(e1result)) {
             SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
 
             Imop * i = new Imop(e, Imop::NE, temp_bool, dim, *dj);
@@ -927,7 +925,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     std::vector<Symbol*> argList, retList;
 
     // Initialize arguments:
-    BOOST_FOREACH(TreeNodeExpr * arg, args) {
+    for (TreeNodeExpr * arg : args) {
         const CGResult & argResult(codeGen(arg));
         append(result, argResult);
         if (result.isNotOk()) {
@@ -951,7 +949,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     c->setArg2 (m_st->label (i));
     pushImopAfter (result, i);
     push_imop (c);
-    BOOST_FOREACH (Symbol* sym, argList) {
+    for (Symbol* sym : argList) {
         releaseTemporary (result, sym);
     }
 
@@ -968,7 +966,7 @@ CGResult CodeGen::cgExprProcCall(TreeNodeExprProcCall * e) {
         return CGResult::ERROR_CONTINUE;
 
     std::vector<TreeNodeExpr * > args;
-    BOOST_FOREACH(TreeNodeExpr& param, e->params ()) {
+    for (TreeNodeExpr& param : e->params ()) {
         args.push_back (&param);
     }
 
@@ -1282,7 +1280,7 @@ CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
 
     CGResult result;
     std::vector<Symbol*> partResults;
-    BOOST_FOREACH (TreeNodeStringPart& part, e->parts ()) {
+    for (TreeNodeStringPart& part : e->parts ()) {
         const CGResult& partResult = cgStringPart (&part);
         append (result, partResult);
         if (result.isNotOk ())
@@ -1334,7 +1332,7 @@ CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
         partResults.push_back (ConstantString::get (getContext (), ""));
     }
 
-    BOOST_FOREACH (Symbol* sym, allocs) {
+    for (Symbol* sym : allocs) {
         releaseTemporary (result, sym);
     }
 
@@ -1628,7 +1626,7 @@ CGResult CodeGen::cgExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
     allocTemporaryResult (result);
 
     unsigned index = 0;
-    BOOST_FOREACH (TreeNodeExpr& child, e->expressions ()) {
+    for (TreeNodeExpr& child : e->expressions ()) {
         const CGResult& exprResult = codeGen (&child);
         append (result, exprResult);
         if (result.isNotOk ())
@@ -1906,7 +1904,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // compute the shape and the size of the result symbol "r"
         {
             unsigned count = 0;
-            BOOST_FOREACH (unsigned k, subscript.slices()) {
+            for (unsigned k : subscript.slices()) {
                 Symbol * sym = r->getDim(count);
                 Imop * i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
                 pushImopAfter(result, i);
@@ -2085,7 +2083,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         // compute the shape and the size of the result symbol "r"
         {
             unsigned count = 0;
-            BOOST_FOREACH (unsigned k, subscript.slices()) {
+            for (unsigned k : subscript.slices()) {
                 Symbol * sym = r->getDim(count);
                 Imop * i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
                 pushImopAfter(result, i);

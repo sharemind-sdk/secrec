@@ -15,7 +15,6 @@
 #include <fstream>
 
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -331,7 +330,7 @@ int main (int argc, char *argv[]) {
     }
 
     /* Collect possible include files: */
-    BOOST_FOREACH (const string& name, opts.includes) {
+    for (const string& name : opts.includes) {
         if (! icode.modules ().addSearchPath (name) && opts.verbose) {
             cerr << "Invalid search path \"" << name << "\"." << endl;
         }

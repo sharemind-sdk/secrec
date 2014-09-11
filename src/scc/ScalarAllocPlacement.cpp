@@ -1,10 +1,12 @@
 #include "ScalarAllocPlacement.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <libscc/Intermediate.h>
 #include <libscc/analysis/LiveVariables.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Symbol.h>
+
+using boost::adaptors::reverse;
 
 namespace SecreCC {
 
@@ -46,11 +48,11 @@ AllocMap placePrivateScalarAllocs (SecreC::ICode& code) {
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
         LiveVariables::Symbols live = lva.liveOnExit (block);
-        BOOST_REVERSE_FOREACH (const Imop& imop, block) {
+        for (const Imop& imop : reverse (block)) {
 
             // if symbol is dead before its use:
             if (imop.type () != Imop::RELEASE && imop.type () != Imop::RETURN) {
-                BOOST_FOREACH (Symbol* sym, imop.useRange ()) {
+                for (Symbol* sym : imop.useRange ()) {
                     if (isCandidate (sym) && isDead (live, sym)) {
                         releases[sym].insert (&imop);
                     }
@@ -64,7 +66,7 @@ AllocMap placePrivateScalarAllocs (SecreC::ICode& code) {
             case Imop::CALL:
                 break;
             default:
-                BOOST_FOREACH (Symbol* sym, imop.defRange ()) {
+                for (Symbol* sym : imop.defRange ()) {
                     if (isCandidate (sym) && isDead (live, sym)) {
                         allocs[&imop].insert (sym);
                     }
@@ -75,8 +77,8 @@ AllocMap placePrivateScalarAllocs (SecreC::ICode& code) {
         }
     }
 
-    BOOST_FOREACH (const LocMap::value_type& v, releases) {
-        BOOST_FOREACH (const Imop* imop, v.second) {
+    for (const auto& v : releases) {
+        for (const Imop* imop : v.second) {
             releaseAfter (imop, v.first);
         }
     }

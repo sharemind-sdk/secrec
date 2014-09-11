@@ -47,6 +47,11 @@ public:
     neighbour_range succ_range () { return std::make_pair (succ_begin (), succ_end ()); }
     neighbour_const_range succ_range () const { return std::make_pair (succ_begin (), succ_end ()); }
 
+    NeighbourMap& successors () { return m_successors; }
+    const NeighbourMap& successors () const { return m_successors; }
+    NeighbourMap& predecessors () { return m_predecessors; }
+    const NeighbourMap& predecessors () const { return m_predecessors; }
+
     static void addEdge (NodeType& from, LabelType label, NodeType& to) {
         from.addSucc (to, label);
         to.addPred (from, label);

@@ -10,8 +10,6 @@
 #include "Builtin.h"
 
 #include <sstream>
-#include <boost/foreach.hpp>
-
 #include <libscc/Imop.h>
 #include <libscc/Symbol.h>
 
@@ -39,7 +37,7 @@ void BuiltinFunctions::insert (VMLabel* label, const BuiltinFunction& func) {
 }
 
 void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
-    BOOST_FOREACH (Map::value_type& v, m_funtions) {
+    for (Map::value_type& v : m_funtions) {
         VMFunction function (v.first);
         v.second->generate (function, st);
         code.push_back (function);
@@ -49,7 +47,7 @@ void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
 }
 
 void BuiltinFunctions::eraseAll () {
-    BOOST_FOREACH (Map::value_type& v, m_funtions) {
+    for (Map::value_type& v : m_funtions) {
         delete v.second;
     }
 

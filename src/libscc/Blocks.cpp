@@ -6,7 +6,7 @@
 #include "TreeNode.h"
 
 #include <algorithm>
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -25,7 +25,7 @@ inline bool fallsThru(const Block &b) {
             "Empty basic block.");
 
     const Imop* last = NULL;
-    BOOST_REVERSE_FOREACH (const Imop& imop, b) {
+    for (const Imop& imop : boost::adaptors::reverse (b)) {
         last = &imop;
         if (imop.type () != Imop::COMMENT) {
             break;
@@ -153,7 +153,7 @@ void printEdge (std::ostream& os, const Block& from, const Block& to, const char
 
 void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = NULL) {
     bool foundAny = false;
-    BOOST_FOREACH (const Block::edge_type& edge, from.succ_range ()) {
+    for (const auto& edge : from.successors ()) {
         if (edge.second & label) {
             if (! foundAny) {
                 os << "    ";
@@ -227,7 +227,7 @@ void Program::assignToBlocks (ICodeList& imops) {
     std::map<const Imop*, LeaderInfo> leaders;
 
     bool nextIsLeader = true;  // first instruction is leader
-    BOOST_FOREACH (Imop& imop, imops) {
+    for (Imop& imop : imops) {
         if (nextIsLeader) {
             leaders[&imop];
             nextIsLeader = false;
@@ -277,7 +277,7 @@ void Program::assignToBlocks (ICodeList& imops) {
 
             curBlock = new Block ();
             curProc->push_back (*curBlock);
-            BOOST_FOREACH (SymbolLabel* incoming, jumps) {
+            for (SymbolLabel* incoming : jumps) {
                 incoming->setBlock (curBlock);
             }
         }
@@ -326,7 +326,7 @@ void Program::propagate () {
             todo.insert (cleanBlock);
             Block::addEdge (*cur, Edge::CallPass, *cleanBlock);
 
-            BOOST_FOREACH (Block* exitBlock, callTarget->exitBlocks ()) {
+            for (Block* exitBlock : callTarget->exitBlocks ()) {
                 switch (exitBlock->back ().type ()) {
                 case Imop::RETURN:
                     Block::addEdge (*exitBlock, Edge::Ret, *cleanBlock);
@@ -379,7 +379,7 @@ void Program::numberBlocks () {
     std::vector<Block::neighbour_const_range> stack;
     size_t number = 0;
 
-    BOOST_FOREACH (Procedure& proc, *this) {
+    for (Procedure& proc : *this) {
         Block* entry = proc.entry ();
         if (visited.insert (entry).second) {
             entry->setDfn (++ number);
@@ -411,13 +411,13 @@ void Program::numberBlocks () {
 
 std::ostream & Program::print(std::ostream & os) const {
     os << "PROCEDURES:" << std::endl;
-    BOOST_FOREACH (const Procedure& proc, *this) {
+    for (const Procedure& proc : *this) {
         if (proc.name ())
             os << "  " << *proc.name () << std::endl;
         printBlockList(os, "  .. From: ", proc.callFrom ());
         printBlockList(os, "  .... To: ", proc.returnTo ());
         os << "  BLOCKS:" << std::endl;
-        BOOST_FOREACH (const Block& block, proc) {
+        for (const Block& block : proc) {
             os << "    Block " << block.index ();
             if (!block.reachable ()) os << " [REMOVED]";
             if (block.isExit ()) os << " [EXIT]";
@@ -427,7 +427,7 @@ std::ostream & Program::print(std::ostream & os) const {
 
             // Print code:
             os << "    CODE:" << std::endl;
-            BOOST_FOREACH (const Imop& imop, block) {
+            for (const Imop& imop : block) {
                 os << std::setw (10) << imop.index () << "  " << imop;
                 if (imop.creator() != NULL) {
                     os << " // Created by "
@@ -456,13 +456,13 @@ void Program::toDotty (std::ostream& os) const {
     uint64_t uniq = 0;
 
     os << "digraph CFG {\n";
-    BOOST_FOREACH (const Procedure& proc, *this) {
+    for (const Procedure& proc : *this) {
         os << "  subgraph cluster" << uniq ++ << " {\n";
-        BOOST_FOREACH (const Block& block, proc) {
+        for (const Block& block : proc) {
             printNode (os, block);
         }
 
-        BOOST_FOREACH (const Block& block, proc) {
+        for (const Block& block : proc) {
             printEdges (os, block, Edge::Jump);
             printEdges (os, block, Edge::False, "[label=\"-\"]");
             printEdges (os, block, Edge::True,  "[label=\"+\"]");
@@ -473,8 +473,8 @@ void Program::toDotty (std::ostream& os) const {
         os << "  }\n\n";
     }
 
-    BOOST_FOREACH (const Procedure& proc, *this) {
-        BOOST_FOREACH (const Block& block, proc) {
+    for (const Procedure& proc : *this) {
+        for (const Block& block : proc) {
             printEdges (os, block, Edge::Call, "[style = \"dotted\"]");
             printEdges (os, block, Edge::Ret,  "[style = \"dotted\"]");
         }
@@ -497,7 +497,7 @@ Procedure::~Procedure () {
 *******************************************************************************/
 
 bool Block::hasIncomingJumps () const {
-    BOOST_FOREACH (edge_type edge, pred_range ()) {
+    for (edge_type edge : predecessors ()) {
         const Block& from = *edge.first;
         if (from.empty ()) {
             if (from.hasIncomingJumps ())

@@ -4,6 +4,7 @@
 #include "ParserEnums.h"
 
 #include <boost/intrusive/list.hpp>
+#include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <vector>
 
@@ -39,11 +40,11 @@ typedef boost::intrusive::list_base_hook<
  */
 class Imop : public auto_unlink_hook {
 public: /* Types: */
-    typedef std::vector<Symbol* > OperandList;
-    typedef OperandList::iterator OperandIterator;
-    typedef OperandList::const_iterator OperandConstIterator;
-    typedef std::pair<OperandIterator, OperandIterator> OperandRange;
-    typedef std::pair<OperandConstIterator, OperandConstIterator> OperandConstRange;
+    using OperandList = std::vector<Symbol* >;
+    using OperandIterator = OperandList::iterator;
+    using OperandConstIterator = OperandList::const_iterator;
+    using OperandRange = boost::iterator_range<OperandIterator>;
+    using OperandConstRange = boost::iterator_range<OperandConstIterator>;
 
     enum Type {
         //-------------

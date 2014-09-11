@@ -13,7 +13,8 @@
 #include "Symbol.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -42,7 +43,7 @@ size_t intersect(const std::vector<DomInfo> & info, size_t a, size_t b) {
 
 void calculateIDoms(std::vector<DomInfo> & info, size_t startNode) {
     const size_t undef = info.size();
-    BOOST_FOREACH (DomInfo & node, info) {
+    for (DomInfo & node : info) {
         node.idom = undef;
     }
 
@@ -52,13 +53,13 @@ void calculateIDoms(std::vector<DomInfo> & info, size_t startNode) {
 
     while (changed) {
         changed = false;
-        BOOST_REVERSE_FOREACH (DomInfo & node, info) {
+        for (DomInfo & node : reverse (info)) {
             if (node.block == startNodeBlock) {
                 continue;
             }
 
             size_t newIDom = undef;
-            BOOST_FOREACH (size_t pred, node.preds) {
+            for (size_t pred : node.preds) {
                 if (info[pred].idom != undef) {
                     if (newIDom == undef) {
                         newIDom = pred;
@@ -93,7 +94,7 @@ void printTree(std::ostream & os, DominanceNode * node) {
     while (! todo.empty()) {
         DominanceNode * parent = todo.back();
         todo.pop_back();
-        BOOST_FOREACH (DominanceNode* child, parent->children()) {
+        for (DominanceNode* child : parent->children()) {
             printEdge(os, parent, child);
             todo.push_back(child);
         }
@@ -109,7 +110,7 @@ void printTree(std::ostream & os, DominanceNode * node) {
 *******************************************************************************/
 
 DominanceNode::~DominanceNode() {
-    BOOST_FOREACH (DominanceNode * child, m_children) {
+    for (DominanceNode * child : m_children) {
         delete child;
     }
 
@@ -122,13 +123,13 @@ DominanceNode::~DominanceNode() {
 *******************************************************************************/
 
 Dominators::~Dominators() {
-    BOOST_FOREACH (DominanceNode * root, m_roots) {
+    for (DominanceNode * root : m_roots) {
         delete root;
     }
 }
 
 void Dominators::calculate(Program * prog) {
-    BOOST_FOREACH (Procedure & proc, *prog) {
+    for (Procedure & proc : *prog) {
         calculate(&proc);
     }
 }
@@ -173,10 +174,9 @@ void Dominators::calculate(Block * root) {
     }
 
     // Cache predcessors:
-    typedef std::map<Block *, size_t> MapType;
-    BOOST_FOREACH (MapType::value_type v, pon) {
+    for (auto v : pon) {
         Block * block = v.first;
-        BOOST_FOREACH (Block::edge_type e, block->pred_range()) {
+        for (Block::edge_type e : block->predecessors ()) {
             if (Edge::isLocal(e.second)) {
                 info[v.second].preds.push_back(pon[e.first]);
             }
@@ -187,7 +187,7 @@ void Dominators::calculate(Block * root) {
     calculateIDoms(info, pon[root]);
 
     // Build dominator tree, and add it to forest:
-    BOOST_FOREACH (const DomInfo & i, info) {
+    for (const DomInfo & i : info) {
         DominanceNode * child = findNode(i.block);
         assert(i.idom < info.size());
 
@@ -207,7 +207,7 @@ void Dominators::calculate(Block * root) {
 
 void Dominators::dumpToDot(std::ostream & os) {
     os << "digraph IDOM {\n";
-    BOOST_FOREACH (DominanceNode* root, m_roots) {
+    for (DominanceNode* root : m_roots) {
         printTree(os, root);
     }
 

@@ -12,7 +12,6 @@
 #include <cassert>
 #include <ostream>
 #include <iterator>
-#include <boost/foreach.hpp>
 
 #include "VMValue.h"
 
@@ -121,7 +120,7 @@ std::ostream& VMCodeSection::printBodyV (std::ostream& os) const {
 *******************************************************************************/
 
 VMLinkingUnit::~VMLinkingUnit () {
-    BOOST_FOREACH (VMSection* section, m_sections) {
+    for (VMSection* section : m_sections) {
         delete section;
     }
 }
@@ -132,7 +131,7 @@ void VMLinkingUnit::addSection (VMSection *section) {
 }
 
 std::ostream& operator << (std::ostream& os, const VMLinkingUnit& vmlu) {
-    BOOST_FOREACH (VMSection* section, vmlu.m_sections) {
+    for (VMSection* section : vmlu.m_sections) {
         os << *section;
     }
 

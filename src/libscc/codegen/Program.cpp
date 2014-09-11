@@ -10,7 +10,6 @@
 #include "typechecker/Templates.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <boost/foreach.hpp>
 
 /**
  * Code generation for top level statements.
@@ -112,7 +111,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     ScopedSetSymbolTable s(*this, localScope);
 
     if (def->children().size() > 3) {
-        BOOST_FOREACH (TreeNodeStmtDecl& paramDecl, def->params()) {
+        for (TreeNodeStmtDecl& paramDecl : def->params()) {
             paramDecl.setProcParam(true);
             append(result, codeGenStmt(&paramDecl));
         }
@@ -215,7 +214,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
 
     CGStmtResult result;
     // Generate globals to global scope:
-    BOOST_FOREACH(TreeNode* decl, prog->children()) {
+    for (TreeNode* decl : prog->children()) {
         switch (decl->type()) {
         case NODE_DECL:
             static_cast<TreeNodeStmtDecl *>(decl)->setGlobal(true);
@@ -244,7 +243,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
 
     // Generate module local stuff:
     ScopedStateUse use(*this, mod->codeGenState());
-    BOOST_FOREACH(TreeNode* decl, prog->children()) {
+    for (TreeNode* decl : prog->children()) {
         switch (decl->type()) {
         case NODE_PROCDEF:
         case NODE_OPDEF: {
@@ -315,8 +314,8 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     }
 
     // Patch up calls to template instances:
-    BOOST_FOREACH (const CallMap::value_type& v, m_callsTo) {
-        BOOST_FOREACH (Imop * imop, v.second) {
+    for (const CallMap::value_type& v : m_callsTo) {
+        for (Imop * imop : v.second) {
             imop->setDest(v.first);
         }
     }

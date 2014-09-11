@@ -14,7 +14,6 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <set>
 
 namespace SecreC {
@@ -60,7 +59,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
 
     {
         std::set<StringRef> seen;
-        BOOST_FOREACH (TreeNodeQuantifier& q, quants) {
+        for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visit (&q));
             const StringRef name = q.typeVariable ()->value ();
             if (! seen.insert (name).second) {
@@ -81,7 +80,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
 
     std::vector<DataTypeStruct::Field> fields;
     fields.reserve (decl->attributes ().size ());
-    BOOST_FOREACH (TreeNodeAttribute& attr, decl->attributes ()) {
+    for (TreeNodeAttribute& attr : decl->attributes ()) {
         // TODO: This is incredibly ugly workaround! We are cloning in order to avoid using cache-d type.
         TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (NULL));
         TCGUARD (visit (type));
@@ -128,7 +127,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStructDecl* decl) {
         // Verify that there are not duplicate quantifiers.
         TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
         std::set<StringRef> seen;
-        BOOST_FOREACH (TreeNodeQuantifier& q, quants) {
+        for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visit (&q));
             const StringRef name = q.typeVariable ()->value ();
             if (! seen.insert (name).second) {

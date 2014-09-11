@@ -12,14 +12,12 @@
 #include "Intermediate.h"
 #include "Symbol.h"
 
-#include <boost/foreach.hpp>
-
 namespace SecreC {
 
 namespace /* anonymous */ {
 
 inline void patchList(PatchList & list, SymbolLabel * dest) {
-    BOOST_FOREACH (Imop * imop, list) {
+    for (Imop * imop : list) {
         imop->setDest(dest);
     }
 

@@ -15,7 +15,6 @@
 #include "TreeNode.h"
 #include "typechecker/Templates.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range.hpp>
 
 namespace SecreC {
@@ -91,7 +90,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
     ec->appendChild(child);
     ec->resetParent(parent);
     ec->setResultType(newTy);
-    BOOST_FOREACH (TreeNode *& n, parent->children()) {
+    for (TreeNode *& n : parent->children()) {
         if (n == child) {
             n = ec;
             break;
@@ -139,7 +138,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
 {
     assert (node->type() == NODE_SUBSCRIPT);
     destDim = 0;
-    BOOST_FOREACH (TreeNode* tNode, node->children ()) {
+    for (TreeNode* tNode : node->children ()) {
         switch (tNode->type()) {
         case NODE_INDEX_SLICE:
             ++ destDim;
@@ -150,7 +149,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
             return E_TYPE;
         }
 
-        BOOST_FOREACH (TreeNode* j, tNode->children ()) {
+        for (TreeNode* j : tNode->children ()) {
             if (j->type() == NODE_EXPR_NONE) {
                 continue;
             }

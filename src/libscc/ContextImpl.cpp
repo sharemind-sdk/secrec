@@ -12,7 +12,6 @@
 #include "Misc.h"
 #include "Types.h"
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <map>
@@ -20,8 +19,7 @@
 namespace /* anonymous */ {
 template <typename Key, typename T, typename Cmp >
 void deleteValues (const std::map<Key, T*, Cmp>& m) {
-    typedef const typename std::map<Key, T*, Cmp>::value_type value_type;
-    BOOST_FOREACH (const value_type& p, m) {
+    for (const auto& p : m) {
         delete p.second;
     }
 }

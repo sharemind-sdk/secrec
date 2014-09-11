@@ -11,8 +11,8 @@
 
 #include "ModuleInfo.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptors.hpp>
+#include <boost/range/iterator_range.hpp>
 
 using namespace boost;
 
@@ -23,7 +23,7 @@ namespace SecreC {
 *******************************************************************************/
 
 ModuleMap::~ModuleMap () {
-    BOOST_FOREACH (ModuleInfo* modInfo, adaptors::values (m_modules)) {
+    for (ModuleInfo* modInfo : adaptors::values (m_modules)) {
         delete modInfo;
     }
 }
@@ -40,13 +40,12 @@ bool ModuleMap::addModule (const std::string& name, std::auto_ptr<ModuleInfo> in
 
 bool ModuleMap::addSearchPath (const std::string& pathName) {
     using namespace boost::filesystem;
-    typedef std::pair<directory_iterator, directory_iterator > directory_range;
 
     const path p (pathName);
     if (! exists (p)) return true;
     if (! is_directory (p)) return true;
-    const directory_range& range = std::make_pair (directory_iterator (p), directory_iterator ());
-    BOOST_FOREACH (const directory_entry& f, range) {
+    const auto& range = iterator_range<directory_iterator>(directory_iterator (p), directory_iterator ());
+    for (const directory_entry& f : range) {
         if (! is_regular_file (f)) continue;
         if (f.path ().extension () != ".sc") continue;
         std::auto_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));

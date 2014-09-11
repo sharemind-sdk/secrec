@@ -15,8 +15,6 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
-
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -123,7 +121,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
 
     // Collect quantifiers:
     TypeVariableMap typeVariables;
-    BOOST_FOREACH (TreeNodeQuantifier& quant, templ->quantifiers ()) {
+    for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         const StringRef name = quant.typeVariable ()->value ();
         TypeVariableMap::iterator it = typeVariables.find (name);
         if (it != typeVariables.end ()) {
@@ -140,13 +138,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     }
 
     if (body->returnType ()->isNonVoid ()) {
-        BOOST_FOREACH (TreeNodeTypeF& t, body->returnType ()->types ()) {
+        for (TreeNodeTypeF& t : body->returnType ()->types ()) {
             TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, true));
         }
     }
 
-    BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
-        BOOST_FOREACH (TreeNodeTypeF& t, decl.varType ()->types ()) {
+    for (TreeNodeStmtDecl& decl : body->params ()) {
+        for (TreeNodeTypeF& t : decl.varType ()->types ()) {
             TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, false));
         }
     }
@@ -156,7 +154,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     bool expectsDimType = false;
 
     std::vector<TreeNodeIdentifier*> unboundTV;
-    BOOST_FOREACH (const TypeVariableMap::value_type& v, typeVariables) {
+    for (const auto& v : typeVariables) {
         const TemplateTypeVariable& tv = v.second;
         if (! tv.bound) {
             unboundTV.push_back (tv.id);
@@ -175,7 +173,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     if (! unboundTV.empty()) {
         bool first = true;
         std::stringstream ss;
-        BOOST_FOREACH (TreeNodeIdentifier* id, unboundTV) {
+        for (TreeNodeIdentifier* id : unboundTV) {
             if (! first)
                 ss << ",";
             ss << " \'" << id->value () << "\' at " << id->location();
@@ -213,7 +211,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
         std::vector<TypeArgument>::const_iterator it = i.getParams ().begin ();
-        BOOST_FOREACH (TreeNodeQuantifier& quant, i.getTemplate ()->decl ()->quantifiers ()) {
+        for (TreeNodeQuantifier& quant : i.getTemplate ()->decl ()->quantifiers ()) {
             StringRef qname = quant.typeVariable ()->value ();
             local->appendSymbol (it->bind (qname));
             ++ it;

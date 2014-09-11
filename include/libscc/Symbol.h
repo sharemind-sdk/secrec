@@ -7,6 +7,7 @@
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 
+#include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <iterator>
 #include <vector>
@@ -306,8 +307,8 @@ inline dim_iterator dim_begin (Symbol* symbol) { return dim_begin (dynamic_cast<
 inline dim_iterator dim_end (Symbol* symbol) { return dim_end (dynamic_cast<SymbolSymbol*>(symbol)); }
 inline dim_const_iterator dim_begin (const Symbol* symbol) { return dim_begin (dynamic_cast<const SymbolSymbol*>(symbol)); }
 inline dim_const_iterator dim_end (const Symbol* symbol) { return dim_end (dynamic_cast<const SymbolSymbol*>(symbol)); }
-inline std::pair<dim_iterator, dim_iterator> dim_range (Symbol* symbol) { return std::make_pair (dim_begin (symbol), dim_end (symbol)); }
-inline std::pair<dim_const_iterator, dim_const_iterator> dim_range (const Symbol* symbol) { return std::make_pair (dim_begin (symbol), dim_end (symbol)); }
+inline boost::iterator_range<dim_iterator> dim_range (Symbol* symbol) { return {dim_begin (symbol), dim_end (symbol)}; }
+inline boost::iterator_range<dim_const_iterator> dim_range (const Symbol* symbol) { return {dim_begin (symbol), dim_end (symbol)}; }
 /// \}
 
 /*******************************************************************************

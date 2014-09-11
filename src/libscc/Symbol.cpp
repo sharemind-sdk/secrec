@@ -4,7 +4,6 @@
 #include "Imop.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
 #include <string>
 
 namespace SecreC {
@@ -18,7 +17,7 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
     unsigned qualifiedTypeVariableCount = 0;
     unsigned quantifiedParamCount = 0;
 
-    BOOST_FOREACH (TreeNodeQuantifier& quant, templ->quantifiers ()) {
+    for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         switch (quant.type ()) {
         case NODE_TEMPLATE_DOMAIN_QUANT:
             assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != NULL);
@@ -32,7 +31,7 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
     }
 
     TreeNodeProcDef* body = templ->body ();
-    BOOST_FOREACH (TreeNodeStmtDecl& decl, body->params ()) {
+    for (TreeNodeStmtDecl& decl : body->params ()) {
         TreeNodeType* t = decl.varType ();
         if (! t->secType ()->isPublic ()) {
             TreeNodeIdentifier* id = t->secType ()->identifier ();
@@ -56,7 +55,7 @@ void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
     os << ' ' << procDef->identifier()->value() << '(';
 
     bool first = true;
-    BOOST_FOREACH (const TreeNodeStmtDecl& decl, procDef->params ()) {
+    for (const TreeNodeStmtDecl& decl : procDef->params ()) {
         if (! first)
             os << ", ";
         first = false;
@@ -71,7 +70,7 @@ void flattenSymbolLoop (std::vector<Symbol*>& acc, Symbol* sym) {
     assert (sym != NULL && sym->secrecType () != NULL);
 
     if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
-        BOOST_FOREACH (SymbolSymbol* field, static_cast<SymbolSymbol*>(sym)->fields ()) {
+        for (SymbolSymbol* field : static_cast<SymbolSymbol*>(sym)->fields ()) {
             flattenSymbolLoop (acc, field);
         }
     }
@@ -243,7 +242,7 @@ void SymbolProcedure::print(std::ostream & os) const {
     os << PrettyPrint (procType->returnType ());
     os << ' ' << name () << '(';
     bool first = true;
-    BOOST_FOREACH (const TypeBasic* argType, procType->paramTypes ()) {
+    for (const TypeBasic* argType : procType->paramTypes ()) {
         if (! first)
             os << ", ";
         first = false;
@@ -351,7 +350,7 @@ void SymbolTemplate::print(std::ostream & os) const {
     os << "template <";
 
     bool first = true;
-    BOOST_FOREACH (TreeNodeQuantifier& q, m_templ->quantifiers ()) {
+    for (TreeNodeQuantifier& q : m_templ->quantifiers ()) {
         if (! first)
             os << ", ";
         first = false;

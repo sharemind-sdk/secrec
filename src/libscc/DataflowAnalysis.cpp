@@ -11,7 +11,6 @@
 
 #include "Intermediate.h"
 
-#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <boost/thread.hpp>
 
@@ -76,12 +75,12 @@ public: /* Methods: */
             if (! cur.reachable ()) continue;
             if (cur.isProgramEntry ()) continue;
             m_analysis.startBlock (cur);
-            BOOST_FOREACH (const Block::edge_type& edge, cur.pred_range ()) {
+            for (const auto& edge : cur.predecessors ()) {
                 m_analysis.inFrom (*edge.first, edge.second, cur);
             }
 
             if (m_analysis.finishBlock (cur)) {
-                BOOST_FOREACH (const Block::edge_type& edge, cur.succ_range ()) {
+                for (const auto& edge : cur.successors ()) {
                     next.insert (boost::cref (*edge.first));
                 }
             }
@@ -128,12 +127,12 @@ public: /* Methods: */
             if (! cur.reachable ()) continue;
             if (cur.isProgramExit ()) continue;
             m_analysis.startBlock (cur);
-            BOOST_FOREACH (const Block::edge_type& edge, cur.succ_range ()) {
+            for (const auto& edge : cur.successors ()) {
                 m_analysis.outTo (*edge.first, edge.second, cur);
             }
 
             if (m_analysis.finishBlock (cur)) {
-                BOOST_FOREACH (const Block::edge_type& edge, cur.pred_range ()) {
+                for (const auto& edge : cur.predecessors ()) {
                     next.insert (boost::cref (*edge.first));
                 }
             }
@@ -153,7 +152,7 @@ public: /* Methods: */
 
 DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
     boost::thread_group threads;
-    BOOST_FOREACH (DataFlowAnalysis* a, m_as) {
+    for (DataFlowAnalysis* a : m_as) {
         if (a->isForward ()) {
             assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != NULL);
             ForwardDataFlowAnalysis& fa = *static_cast<ForwardDataFlowAnalysis*>(a);
@@ -173,7 +172,7 @@ DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
 
 std::string DataFlowAnalysisRunner::toString (const Program& program) {
     std::ostringstream os;
-    BOOST_FOREACH (DataFlowAnalysis* a, m_as) {
+    for (DataFlowAnalysis* a : m_as) {
         os << a->toString (program);
     }
 

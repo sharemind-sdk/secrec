@@ -4,8 +4,10 @@
 #include "Symbol.h"
 #include "TreeNode.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
+using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -49,7 +51,7 @@ struct UpdateValues {
 
 template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
-    BOOST_FOREACH (const Symbol * dest, imop.defRange()) {
+    for (const Symbol * dest : imop.defRange()) {
         visitor.kill(dest);
     }
 
@@ -58,7 +60,7 @@ void visitImop(const Imop & imop, Visitor & visitor) {
     }
 
     if (imop.type() == Imop::RETURN) {
-        BOOST_FOREACH (const Symbol * arg, imop.useRange()) {
+        for (const Symbol * arg : imop.useRange()) {
             if (arg->isArray()) {
                 visitor.gen(arg, imop);
             }
@@ -80,7 +82,7 @@ void ReachableReleases::update(const Imop & imop, Values & vals) {
 void ReachableReleases::start(const Program & pr) {
     FOREACH_BLOCK (bi, pr) {
         CollectGenKill collector(m_gen[&*bi], m_kill[&*bi]);
-        BOOST_REVERSE_FOREACH (const Imop& imop, *bi) {
+        for (const Imop& imop : reverse (*bi)) {
             visitImop(imop, collector);
         }
     }
@@ -90,7 +92,7 @@ void ReachableReleases::outToLocal(const Block & from, const Block & to) {
     Values & dest = m_outs[&to];
     const Values & src = m_ins[&from];
 
-    BOOST_FOREACH (Values::const_reference sv, src) {
+    for (Values::const_reference sv : src) {
         dest[sv.first] += sv.second;
     }
 }
@@ -99,7 +101,7 @@ void ReachableReleases::outToGlobal(const Block & from, const Block & to) {
     Values & dest = m_outs[&to];
     const Values & src = m_ins[&from];
 
-    BOOST_FOREACH (Values::const_reference sv, src) {
+    for (Values::const_reference sv : src) {
         if (sv.first->isGlobal()) {
             dest[sv.first] += sv.second;
         }
@@ -116,11 +118,11 @@ bool ReachableReleases::finishBlock(const Block & b) {
     const Values & out = m_outs[&b];
     in = out;
 
-    BOOST_FOREACH (Symbols::const_reference sym, m_kill[&b]) {
+    for (Symbols::const_reference sym : m_kill[&b]) {
         in.erase(sym);
     }
 
-    BOOST_FOREACH (Values::const_reference sv, m_gen[&b]) {
+    for (Values::const_reference sv : m_gen[&b]) {
         in[sv.first] += sv.second;
     }
 
@@ -139,14 +141,14 @@ std::string ReachableReleases::toString(const Program & pr) const {
             after = i->second;
         }
 
-        BOOST_REVERSE_FOREACH (const Imop & imop, *bi) {
-            BOOST_FOREACH (const Symbol * dest, imop.defRange()) {
+        for (const Imop & imop : reverse (*bi)) {
+            for (const Symbol * dest : imop.defRange()) {
                 if (! dest->isArray()) {
                     continue;
                 }
 
                 ss << imop.index() << ": " << imop << " // " << imop.creator()->location() << "\n";
-                BOOST_FOREACH (const Imop * release, after[dest]) {
+                for (const Imop * release : after[dest]) {
                     ss << '\t' << release->index() << ": " << *release << '\n';
                 }
             }

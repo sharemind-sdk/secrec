@@ -10,7 +10,6 @@
 #include "TypeChecker.h"
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -49,7 +48,7 @@ TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
 }
 
 TreeNode::~TreeNode() {
-    BOOST_FOREACH (TreeNode * child, m_children) {
+    for (TreeNode * child : m_children) {
         assert(child != NULL);
         if (child->m_parent == this) {
             delete child; // that's kinda sad
@@ -64,7 +63,7 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
         out->resetParent(parent);
     }
 
-    BOOST_FOREACH(const TreeNode * n, m_children) {
+    for (const TreeNode * n : m_children) {
         out->m_children.push_back(n->clone(out));
     }
 
@@ -218,7 +217,7 @@ void TreeNode::print (std::ostream& os, unsigned indent, unsigned startIndent) c
 
     os << "at " << location();
 
-    BOOST_FOREACH(TreeNode* child, m_children) {
+    for (TreeNode* child : m_children) {
         os << std::endl;
         assert(child->parent() == this);
         child->print (os, indent, startIndent + indent);
@@ -237,7 +236,7 @@ void TreeNode::printXml (std::ostream & os, bool full) const {
         os << "/>";
     } else {
         os << '>';
-        BOOST_FOREACH (TreeNode * child, m_children) {
+        for (TreeNode * child : m_children) {
             assert(child->parent() == this);
             child->printXml (os, false);
         }
@@ -936,7 +935,7 @@ const std::string TreeNodeProcDef::printableSignature() const {
         returnType()->typeString(oss);
         oss << ' ' << procedureName() << '(';
         bool first = true;
-        BOOST_FOREACH (const TreeNodeStmtDecl& decl, params ()) {
+        for (const TreeNodeStmtDecl& decl : params ()) {
             if (! first)
                 oss << ", ";
             first = false;
@@ -1281,7 +1280,7 @@ bool TreeNodeTypeType::printHelper (std::ostream & os) const {
 *******************************************************************************/
 
 TreeNodeModule::~TreeNodeModule() {
-    BOOST_FOREACH (TreeNodeProcDef* instance, m_generatedInstances) {
+    for (TreeNodeProcDef* instance : m_generatedInstances) {
         delete instance;
     }
 }
@@ -1606,7 +1605,7 @@ void treenode_setLocation(TreeNode * node, YYLTYPE * loc) {
 void treenode_moveChildren(TreeNode * cfrom, TreeNode * cto) {
     SecreC::TreeNode * from = (SecreC::TreeNode *) cfrom;
     SecreC::TreeNode * to = (SecreC::TreeNode *) cto;
-    BOOST_FOREACH (SecreC::TreeNode * child, from->children()) {
+    for (SecreC::TreeNode * child : from->children()) {
         to->appendChild(child);
     }
 

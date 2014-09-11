@@ -10,7 +10,6 @@
 #include "Compiler.h"
 
 #include <iostream>
-#include <boost/foreach.hpp>
 
 #include <libscc/TreeNode.h>
 #include <libscc/DataflowAnalysis.h>
@@ -193,7 +192,7 @@ void syscallMangleNamespace (std::ostream& os, TypeNonVoid* tnv) {
 }
 
 bool isPrivate (const Imop& imop) {
-    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+    for (const Symbol* sym : imop.operands ()) {
         if (sym == NULL)
             continue;
 
@@ -206,7 +205,7 @@ bool isPrivate (const Imop& imop) {
 }
 
 bool isStringRelated (const Imop& imop) {
-    BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+    for (const Symbol* sym : imop.operands ()) {
         if (sym == NULL)
             continue;
 
@@ -381,7 +380,7 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     m_strLit->init (m_st, rodataSec);
 
     // Finally generate code:
-    BOOST_FOREACH (const Procedure& proc, m_code.program ()) {
+    for (const Procedure& proc : m_code.program ()) {
         cgProcedure (proc);
     }
 
@@ -444,7 +443,7 @@ void Compiler::cgProcedure (const Procedure& blocks) {
         function.setIsStart ();
 
     m_ra->enterFunction (function);
-    BOOST_FOREACH (const Block& block, blocks) {
+    for (const Block& block : blocks) {
         if (block.reachable ()) {
             cgBlock (function, block);
         }
@@ -462,7 +461,7 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
 
     VMBlock vmBlock (name, &block);
     m_ra->enterBlock (vmBlock);
-    BOOST_FOREACH (const Imop& imop, block) {
+    for (const Imop& imop : block) {
         cgImop (vmBlock, imop);
     }
 
@@ -700,14 +699,14 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     const Symbol* dest = imop.dest ();
 
     // push arguments
-    BOOST_FOREACH (const Symbol* sym, imop.useRange ()) {
+    for (const Symbol* sym : imop.useRange ()) {
         if (isString (sym))
             pushString (block, sym);
         else
             block.push_new () << "pushcref" << find (sym);
     }
 
-    BOOST_FOREACH (const Symbol* sym, imop.defRange ()) {
+    for (const Symbol* sym : imop.defRange ()) {
         block.push_new () << "pushref" << find (sym);
     }
 
@@ -900,7 +899,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
     }
 
     if (imop.isVectorized ()) {
-        BOOST_FOREACH (const Symbol* sym, imop.operands ()) {
+        for (const Symbol* sym : imop.operands ()) {
             block.push_new () << "push" << find (sym);
         }
 
@@ -1030,7 +1029,7 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
     AllocMap::iterator it = m_allocs.find (&imop);
     if (it != m_allocs.end ()) {
-        BOOST_FOREACH (const Symbol* dest, it->second) {
+        for (const Symbol* dest : it->second) {
             cgNewPrivateScalar (block, dest);
         }
 

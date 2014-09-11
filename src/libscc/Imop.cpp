@@ -5,7 +5,6 @@
 #include "TreeNode.h"
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include <iostream>
 #include <sstream>
@@ -256,7 +255,7 @@ Imop::OperandConstRange Imop::useRange () const {
     const OperandConstIterator i = m_args.begin () + off;
     OperandConstIterator e = i;
     for (; e != m_args.end () && *e != NULL; ++ e);
-    return std::make_pair (i, e);
+    return OperandConstRange (i, e);
 }
 
 Imop::OperandConstRange Imop::defRange () const {
@@ -265,20 +264,20 @@ Imop::OperandConstRange Imop::defRange () const {
 
     // vectorised operations don't DEF any operands.
     if (isVectorized () || ! getImopInfoBits (m_type).isExpr) {
-        return std::make_pair (e, e);
+        return OperandConstRange (e, e);
     }
 
     if (type () == SYSCALL) {
-        return dest () ? std::make_pair (i, i + 1) : std::make_pair (e, e);
+        return dest () ? OperandConstRange (i, i + 1) : OperandConstRange (e, e);
     }
 
     if (type () == CALL) {
         for  (++ i ; *i != NULL && i != e; ++ i);
         if (i != m_args.end () && *i == NULL) ++ i;
-        return std::make_pair (i, e);
+        return OperandConstRange (i, e);
     }
 
-    return std::make_pair (i, i + 1);
+    return OperandConstRange (i, i + 1);
 }
 
 const Imop *Imop::callDest() const {
@@ -348,7 +347,7 @@ void Imop::print(std::ostream & os) const {
     {
 
         bool isFirst = true;
-        BOOST_FOREACH (const Symbol* sym, defRange ()) {
+        for (const Symbol* sym : defRange ()) {
             if (! isFirst) {
                 os << ", ";
             }
@@ -362,7 +361,7 @@ void Imop::print(std::ostream & os) const {
 
         os << "CALL \"" << m_args[0]->name () << "\" ";
         isFirst = true;
-        BOOST_FOREACH (const Symbol* sym, useRange ()) {
+        for (const Symbol* sym : useRange ()) {
             if (! isFirst) {
                 os << " ";
             }

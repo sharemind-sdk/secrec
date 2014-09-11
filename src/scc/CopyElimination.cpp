@@ -1,11 +1,13 @@
 #include "CopyElimination.h"
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <libscc/Intermediate.h>
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/ReachableReleases.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Symbol.h>
+
+using boost::adaptors::reverse;
 
 namespace SecreCC {
 
@@ -16,7 +18,7 @@ namespace /* anonymous */ {
 ReachableReleases::Values getReleases (const Imop* i, ReachableReleases& rr) {
     const Block& block = *i->block ();
     ReachableReleases::Values after = rr.releasedOnExit (block);
-    BOOST_REVERSE_FOREACH (const Imop& imop, block) {
+    for (const Imop& imop : reverse (block)) {
         if (&imop == i) {
             break;
         }
@@ -34,7 +36,7 @@ void print_graph (std::ostream& os, const std::set<const Imop*>& deadCopies) {
     std::map<const Symbol*, unsigned> labels;
 
     os << "digraph DeadCopies {\n";
-    BOOST_FOREACH (const Imop* imop, deadCopies) {
+    for (const Imop* imop : deadCopies) {
         unsigned& dest = labels[imop->dest ()];
         unsigned& src = labels[imop->arg1 ()];
 
@@ -76,18 +78,18 @@ void eliminateRedundantCopies (ICode& code) {
 
     // print_graph (std::cerr, copies);
 
-    BOOST_FOREACH (const Imop* copy, copies) {
+    for (const Imop* copy : copies) {
         ReachableReleases::Values after = getReleases (copy, reachableReleases);
         releases += after[copy->dest ()];
         releases += after[copy->arg1 ()];
     }
 
-    BOOST_FOREACH (const Imop* imop, releases) {
+    for (const Imop* imop : releases) {
         if (imop->type () == Imop::RELEASE)
             delete imop;
     }
 
-    BOOST_FOREACH (const Imop* imop, copies) {
+    for (const Imop* imop : copies) {
         Imop* assign = new Imop (imop->creator (), Imop::ASSIGN, imop->dest (), imop->arg1 ());
         const_cast<Imop*>(imop)->replaceWith (*assign);
         delete imop;

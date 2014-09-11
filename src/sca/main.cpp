@@ -5,7 +5,6 @@
 
 #include <boost/optional/optional.hpp>
 #include <boost/program_options.hpp>
-#include <boost/foreach.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/iostreams/device/file.hpp>
@@ -157,7 +156,7 @@ int run (const Configuration& cfg) {
         return EXIT_SUCCESS;
     }
 
-    BOOST_FOREACH (const std::string& path, cfg.m_includes) {
+    for (const std::string& path : cfg.m_includes) {
         if (! icode.modules ().addSearchPath (path) && cfg.m_verbose) {
             cerr << "Invalid search path \"" << path << "\"." << endl;
         }
@@ -204,7 +203,7 @@ int run (const Configuration& cfg) {
     if (! cfg.m_analysis.empty ()) {
         SecreC::DataFlowAnalysisRunner runner;
         boost::ptr_vector<SecreC::DataFlowAnalysis> analysis;
-        BOOST_FOREACH (const std::string& name, cfg.m_analysis) {
+        for (const std::string& name : cfg.m_analysis) {
             SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
             if (a != NULL) {
                 analysis.push_back (a);
