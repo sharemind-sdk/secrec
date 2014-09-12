@@ -76,7 +76,7 @@ public: /* Types: */
 public: /* Methods: */
 
     Block ()
-        : m_proc (NULL)
+        : m_proc (nullptr)
         , m_dfn (0)
         , m_reachable (false)
     { }
@@ -101,7 +101,7 @@ public: /* Methods: */
     void unlink () {
         CFGBase::unlink ();
         auto_unlink_hook::unlink();
-        m_proc = NULL;
+        m_proc = nullptr;
         m_dfn = 0;
         m_reachable = false;
     }
@@ -204,7 +204,7 @@ inline Procedure::iterator procIterator (Block& block) {
 }
 
 inline Procedure::const_iterator procIterator (const Block& block) {
-    return  BlockList::s_iterator_to (block);
+    return BlockList::s_iterator_to (block);
 }
 
 /*******************************************************************************

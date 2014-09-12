@@ -93,8 +93,8 @@ const ImopInfoBits& getImopInfoBits (Imop::Type type) {
 }
 
 SecreC::Symbol* getSizeSymbol (SecreC::Symbol* sym) {
-    assert (sym != NULL);
-    assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != NULL);
+    assert (sym != nullptr);
+    assert (dynamic_cast<SecreC::SymbolSymbol* >(sym) != nullptr);
     return static_cast<SecreC::SymbolSymbol*>(sym)->getSizeSym ();
 }
 
@@ -133,7 +133,7 @@ struct LabelOstreamWrapper : public SymbolWrapperBase  {
             return;
         }
 
-        assert (dynamic_cast<const SymbolLabel*>(m_symbol) != NULL);
+        assert (dynamic_cast<const SymbolLabel*>(m_symbol) != nullptr);
         os << static_cast<const SymbolLabel*>(m_symbol)->target()->index();
     }
 };
@@ -163,7 +163,7 @@ void printUnaryArith (std::ostream& os, const Imop& imop, const char* opname) {
 
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
-    return new Imop (node, Imop::ERROR, (Symbol*) 0, msg);
+    return new Imop (node, Imop::ERROR, (Symbol*) nullptr, msg);
 }
 
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
@@ -171,7 +171,7 @@ Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
 }
 
 Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, Symbol *arg2) {
-    Imop* i = NULL;
+    Imop* i = nullptr;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1, arg2);
     }
@@ -183,7 +183,7 @@ Imop* newBinary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1, S
 }
 
 Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
-    Imop* i = NULL;
+    Imop* i = nullptr;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest, arg1);
     }
@@ -195,13 +195,13 @@ Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
 }
 
 Imop* newCall (TreeNode* node) {
-   return new Imop (node, Imop::CALL, (Symbol*) 0, (Symbol*) 0);
+   return new Imop (node, Imop::CALL, (Symbol*) nullptr, (Symbol*) nullptr);
 }
 
 
 Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol *dest) {
-    assert (dest != NULL);
-    Imop* i = NULL;
+    assert (dest != nullptr);
+    Imop* i = nullptr;
     if (dest->secrecType ()->isScalar ()) {
         i = new Imop (node, iType, dest);
     }
@@ -254,12 +254,12 @@ Imop::OperandConstRange Imop::useRange () const {
 
     const OperandConstIterator i = m_args.begin () + off;
     OperandConstIterator e = i;
-    for (; e != m_args.end () && *e != NULL; ++ e);
+    for (; e != m_args.end () && *e != nullptr; ++ e);
     return OperandConstRange (i, e);
 }
 
 Imop::OperandConstRange Imop::defRange () const {
-    OperandConstIterator i = operandsBegin ();
+    auto i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
 
     // vectorised operations don't DEF any operands.
@@ -272,8 +272,8 @@ Imop::OperandConstRange Imop::defRange () const {
     }
 
     if (type () == CALL) {
-        for  (++ i ; *i != NULL && i != e; ++ i);
-        if (i != m_args.end () && *i == NULL) ++ i;
+        for  (++ i ; *i != nullptr && i != e; ++ i);
+        if (i != m_args.end () && *i == nullptr) ++ i;
         return OperandConstRange (i, e);
     }
 
@@ -283,14 +283,14 @@ Imop::OperandConstRange Imop::defRange () const {
 const Imop *Imop::callDest() const {
     assert(m_type == CALL);
     assert(dest()->symbolType() == SYM_PROCEDURE);
-    assert(dynamic_cast<const SymbolProcedure*>(dest()) != NULL);
-    assert(static_cast<const SymbolProcedure*>(dest())->target () != NULL);
+    assert(dynamic_cast<const SymbolProcedure*>(dest()) != nullptr);
+    assert(static_cast<const SymbolProcedure*>(dest())->target () != nullptr);
     return static_cast<const SymbolProcedure*>(dest())->target ();
 }
 
 SymbolLabel* Imop::jumpDest() const {
     Symbol* sym = dest ();
-    assert (dynamic_cast<SymbolLabel*>(sym) != NULL);
+    assert (dynamic_cast<SymbolLabel*>(sym) != nullptr);
     return static_cast<SymbolLabel*>(sym);
 }
 
@@ -387,8 +387,8 @@ void Imop::print(std::ostream & os) const {
         os << "if (!" << a1name << ") GOTO " << tname;
         break;
     case COMMENT:      /* // arg1                            */
-        assert (arg1 () != NULL);
-        assert (dynamic_cast<const ConstantString*>(arg1()) != NULL);
+        assert (arg1 () != nullptr);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != nullptr);
         os << "// " << static_cast<const ConstantString*>(arg1())->value ();
         break;
     case ERROR:        /* // arg1                            */
@@ -398,8 +398,8 @@ void Imop::print(std::ostream & os) const {
         os << "PRINT " << a1name;
         break;
     case SYSCALL:
-        assert (arg1 () != NULL);
-        assert (dynamic_cast<const ConstantString*>(arg1()) != NULL);
+        assert (arg1 () != nullptr);
+        assert (dynamic_cast<const ConstantString*>(arg1()) != nullptr);
         if (dest ())
             os << dname << " = ";
         os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";

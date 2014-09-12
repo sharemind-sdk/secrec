@@ -33,21 +33,21 @@ public: /* Methods: */
         return m_ins[&b];
     }
 
-    std::string toString(const Program &program) const;
+    std::string toString(const Program &program) const override;
 
 protected:
 
-    virtual void start(const Program &pr) {
+    virtual void start(const Program &pr) override {
         makeOuts(*pr.entryBlock(), m_ins[pr.entryBlock()], m_outs[pr.entryBlock()]);
     }
 
-    virtual void startBlock(const Block &b) { m_ins[&b].clear(); }
-    virtual void inFrom (const Block &from, Edge::Label label, const Block &to) {
+    virtual void startBlock(const Block &b) override { m_ins[&b].clear(); }
+    virtual void inFrom (const Block &from, Edge::Label label, const Block &to) override {
         return inFrom (from, to, Edge::isGlobal (label));
     }
 
-    virtual inline bool finishBlock(const Block &b) { return makeOuts(b, m_ins[&b], m_outs[&b]); }
-    virtual inline void finish() { m_outs.clear(); }
+    virtual inline bool finishBlock(const Block &b) override { return makeOuts(b, m_ins[&b], m_outs[&b]); }
+    virtual inline void finish() override { m_outs.clear(); }
 
 private:
 

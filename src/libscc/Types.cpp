@@ -82,7 +82,7 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
     typedef ContextImpl::TypeBasicMap Map;
     Map& map = cxt.pImpl ()->m_basicTypes;
     const Map::key_type index (secType, dataType, dimType);
-    Map::iterator i = map.find (index);
+    auto i = map.find (index);
     if (i == map.end ()) {
         i = map.insert (i, Map::value_type (index,
             new TypeBasic (secType, dataType, dimType)));
@@ -121,7 +121,7 @@ std::string TypeProc::paramsToNormalString () const {
     if (m_params.size() > 0) {
         oss << PrettyPrint (m_params.at(0));
         if (m_params.size() > 1)
-            for (TVCI it = ++ m_params.begin(); it != m_params.end(); ++ it)
+            for (auto it = ++ m_params.begin(); it != m_params.end(); ++ it)
                 oss << ", " << PrettyPrint (*it);
     }
     oss << ')';
@@ -136,7 +136,7 @@ std::string TypeProc::mangle () const {
     if (m_params.size() > 0) {
         os << mangleDataType (m_params.at (0));
         if (m_params.size() > 1) {
-            for (TVCI it = ++ m_params.begin(); it != m_params.end(); ++ it) {
+            for (auto it = ++ m_params.begin(); it != m_params.end(); ++ it) {
                 os << ", " << mangleDataType (*it);
             }
         }
@@ -149,13 +149,13 @@ TypeProc* TypeProc::get (Context& cxt,
                          const std::vector<TypeBasic*>& params,
                          Type* returnType)
 {
-    if (returnType == NULL)
+    if (returnType == nullptr)
         return TypeProc::get (cxt, params, TypeVoid::get (cxt));
 
     typedef ContextImpl::TypeProcMap Map;
     Map& map = cxt.pImpl ()->m_procTypes;
     const Map::key_type index (returnType, params);
-    Map::iterator i = map.find (index);
+    auto i = map.find (index);
     if (i == map.end ()) {
         i = map.insert (i, Map::value_type (index,
             new TypeProc (params, returnType)));

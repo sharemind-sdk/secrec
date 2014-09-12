@@ -48,8 +48,8 @@ public: /* Methods: */
     { }
 
     TypeContext ()
-        : m_contextSecType (0)
-        , m_contextDataType (NULL)
+        : m_contextSecType (nullptr)
+        , m_contextDataType (nullptr)
         , m_contextDimType (~ SecrecDimType (0))
     { }
 
@@ -64,14 +64,14 @@ public: /* Methods: */
     }
 
     void setContext (const TypeContext* cxt) {
-        assert (cxt != NULL);
+        assert (cxt != nullptr);
         m_contextSecType = cxt->m_contextSecType;
         m_contextDataType = cxt->m_contextDataType;
         m_contextDimType = cxt->m_contextDimType;
     }
 
     void setContext (TypeNonVoid* ty) {
-        assert (ty != NULL);
+        assert (ty != nullptr);
         setContextDataType (ty->secrecDataType ());
         setContextSecType (ty->secrecSecType ());
         setContextDimType (ty->secrecDimType ());
@@ -108,11 +108,11 @@ public: /* Methods: */
     }
 
     bool haveContextSecType () const {
-        return m_contextSecType != NULL;
+        return m_contextSecType != nullptr;
     }
 
     bool haveContextDataType () const {
-        return m_contextDataType != NULL;
+        return m_contextDataType != nullptr;
     }
 
     bool haveContextDimType () const {
@@ -126,7 +126,7 @@ public: /* Methods: */
     }
 
     bool matchSecType (SecurityType* secType) const {
-        assert (secType != NULL);
+        assert (secType != nullptr);
         if (! haveContextSecType ()) {
             return true;
         }
@@ -135,7 +135,7 @@ public: /* Methods: */
     }
 
     bool matchDataType (DataType* dataType) const {
-        assert (dataType != NULL);
+        assert (dataType != nullptr);
         if (! haveContextDataType ()) {
             return true;
         }

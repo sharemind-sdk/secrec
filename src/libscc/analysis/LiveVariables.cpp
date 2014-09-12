@@ -92,7 +92,7 @@ struct SimpleInterferenceGraph {
     }
 
     unsigned getNumber(const Symbol * sym) {
-        std::map<const Symbol *, unsigned>::iterator i = m_numbers.find(sym);
+        auto i = m_numbers.find(sym);
 
         if (i == m_numbers.end()) {
             i = m_numbers.insert(i, std::make_pair(sym, m_count ++));
@@ -129,7 +129,7 @@ struct SimpleInterferenceGraph {
 private:
 
     unsigned num(const Symbol * sym) {
-        std::map<const Symbol *, unsigned>::iterator it = m_numbers.find(sym);
+        auto it = m_numbers.find(sym);
 
         if (it == m_numbers.end()) {
             it = m_numbers.insert(it, std::make_pair(sym, m_count ++));
@@ -218,7 +218,7 @@ std::string LiveVariables::toString(const Program & pr) const {
         ss << "    " << "label=\"" << (proc.name() ? proc.name()->name() : "GLOBAL") << "\"\n";
         visitor.clear();
         for (const Block & block : proc) {
-            BlockInfoMap::const_iterator it = m_blocks.find (&block);
+            auto it = m_blocks.find (&block);
 
             if (it == m_blocks.end()) {
                 continue;

@@ -54,19 +54,19 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    std::string toString (const Program& bs) const;
+    std::string toString (const Program& bs) const override;
 
 protected:
 
-    virtual void start (const Program& pr) {
+    virtual void start (const Program& pr) override {
         // Initialize the OUT set of the entry block:
         makeOuts (*pr.entryBlock (), m_ins[pr.entryBlock ()], m_outs[pr.entryBlock ()]);
     }
 
-    virtual void startBlock (const Block& b) { m_ins[&b].clear (); }
-    virtual void inFrom (const Block& from, Edge::Label label, const Block& to);
-    virtual bool finishBlock (const Block& b) { return makeOuts (b, m_ins[&b], m_outs[&b]); }
-    virtual void finish ();
+    virtual void startBlock (const Block& b) override { m_ins[&b].clear (); }
+    virtual void inFrom (const Block& from, Edge::Label label, const Block& to) override;
+    virtual bool finishBlock (const Block& b) override { return makeOuts (b, m_ins[&b], m_outs[&b]); }
+    virtual void finish () override;
 
 private:
 

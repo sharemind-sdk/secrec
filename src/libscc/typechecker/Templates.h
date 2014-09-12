@@ -94,9 +94,9 @@ struct InstanceInfo {
     ModuleInfo*       m_moduleInfo;
 
     InstanceInfo ()
-        : m_generatedBody (NULL)
-        , m_localScope (NULL)
-        , m_moduleInfo (NULL)
+        : m_generatedBody (nullptr)
+        , m_localScope (nullptr)
+        , m_moduleInfo (nullptr)
     { }
 };
 

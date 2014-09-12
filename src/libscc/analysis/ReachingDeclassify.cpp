@@ -99,7 +99,7 @@ void ReachingDeclassify::transferImop(const Imop & imop, PDefs & out) const {
 
     // Skip if private destination is not written to:
     const Symbol * dest = imop.dest();
-    assert(dest != NULL);
+    assert(dest != nullptr);
 
     if (dest->secrecType()->secrecSecType()->isPublic()) {
         return;
@@ -181,13 +181,13 @@ bool ReachingDeclassify::makeOuts(const Block & b, const PDefs & in, PDefs & out
     PDefs old = out;
     out = in;
 
-    for (Block::const_iterator it = b.begin(), e = b.end(); it != e; ++ it) {
-        if (it->type() == Imop::DECLASSIFY) {
-            m_ds[&*it] = out[it->arg1()];
+    for (const auto & imop : b) {
+        if (imop.type() == Imop::DECLASSIFY) {
+            m_ds[&imop] = out[imop.arg1()];
             continue;
         }
 
-        transferImop(*it, out);
+        transferImop(imop, out);
     }
 
     return old != out;
@@ -227,15 +227,15 @@ std::string ReachingDeclassify::toString(const Program &) const {
             switch (imop->type()) {
             case Imop::PARAM:
             case Imop::CALL:
-                if (dynamic_cast<TreeNodeVarInit *>(imop->creator()) != NULL) {
+                if (dynamic_cast<TreeNodeVarInit *>(imop->creator()) != nullptr) {
                     os << "parameter "
                        << static_cast<TreeNodeVarInit *>(imop->creator())->variableName()
                        << " declared at " << imop->creator()->location();
                 }
                 else {
-                    assert(dynamic_cast<TreeNodeExprProcCall *>(imop->creator()) != NULL);
+                    assert(dynamic_cast<TreeNodeExprProcCall *>(imop->creator()) != nullptr);
                     TreeNodeExprProcCall * c = static_cast<TreeNodeExprProcCall *>(imop->creator());
-                    assert(c->symbolProcedure() != NULL);
+                    assert(c->symbolProcedure() != nullptr);
                     os << "call to " << c->symbolProcedure()->procedureName()
                        << " at " << c->location();
                 }

@@ -45,7 +45,7 @@ PublicSecType* ContextImpl::publicType () {
 PrivateSecType* ContextImpl::privateType (StringRef name,
                                           SymbolKind* kind)
 {
-    PrivateSecTypeMap::iterator i = m_privSecTypes.find (name);
+    auto i = m_privSecTypes.find (name);
     if (i == m_privSecTypes.end ()) {
         i = m_privSecTypes.insert (i,
             PrivateSecTypeMap::value_type (name, new PrivateSecType (name, kind)));

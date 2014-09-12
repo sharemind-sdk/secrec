@@ -58,7 +58,7 @@ CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
 }
 
 SecrecDataType getSecrecDataType (const DataType* dType) {
-    assert (dynamic_cast<const DataTypePrimitive*>(dType) != NULL);
+    assert (dynamic_cast<const DataTypePrimitive*>(dType) != nullptr);
     return static_cast<const DataTypePrimitive*>(dType)->secrecDataType ();
 }
 
@@ -92,8 +92,8 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
 }
 
 DataType* upperDataType (Context& cxt, DataType* a, DataType* b) {
-    if (a == NULL || b == NULL)
-        return NULL;
+    if (a == nullptr || b == nullptr)
+        return nullptr;
 
     if (a == b)
         return a;
@@ -101,7 +101,7 @@ DataType* upperDataType (Context& cxt, DataType* a, DataType* b) {
     if (a->isPrimitive () && b->isPrimitive ())
         return DataTypePrimitive::get (cxt, upperDataType (getSecrecDataType (a), getSecrecDataType (b)));
 
-    return NULL;
+    return nullptr;
 }
 
 bool latticeDimTypeLEQ (SecrecDimType n, SecrecDimType m) {
@@ -193,7 +193,7 @@ SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
 }
 
 bool latticeDataTypeLEQ (const DataType* a, const DataType* b) {
-    assert (a != NULL && b != NULL);
+    assert (a != nullptr && b != nullptr);
 
     if (a->isComposite () && b->isComposite ())
         return a == b;
@@ -205,7 +205,7 @@ bool latticeDataTypeLEQ (const DataType* a, const DataType* b) {
 }
 
 bool latticeExplicitLEQ (const DataType* a, const DataType* b) {
-    assert (a != NULL && b != NULL);
+    assert (a != nullptr && b != nullptr);
 
     if (a->isComposite () && b->isComposite ())
         return a == b;
@@ -217,7 +217,7 @@ bool latticeExplicitLEQ (const DataType* a, const DataType* b) {
 }
 
 bool isFloatingDataType (const DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isComposite ())
         return false;
 
@@ -225,7 +225,7 @@ bool isFloatingDataType (const DataType* dType) {
 }
 
 bool isNumericDataType (const DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isComposite ())
         return false;
 
@@ -233,7 +233,7 @@ bool isNumericDataType (const DataType* dType) {
 }
 
 bool isXorDataType (const DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isComposite ())
         return false;
 
@@ -241,7 +241,7 @@ bool isXorDataType (const DataType* dType) {
 }
 
 bool isSignedNumericDataType (const DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isComposite ())
         return false;
 
@@ -249,7 +249,7 @@ bool isSignedNumericDataType (const DataType* dType) {
 }
 
 bool isUnsignedNumericDataType (const DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isComposite ())
         return false;
 
@@ -257,7 +257,7 @@ bool isUnsignedNumericDataType (const DataType* dType) {
 }
 
 DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
-    assert (dType != NULL);
+    assert (dType != nullptr);
     if (dType->isPrimitive ()) {
         return DataTypePrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
     }
@@ -288,7 +288,7 @@ DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType
     typedef ContextImpl::PrimitiveTypeMap Map;
     Map& map = cxt.pImpl ()->m_primitiveTypes;
     const Map::key_type index (dataType);
-    Map::iterator i = map.find (index);
+    auto i = map.find (index);
     if (i == map.end ()) {
         i = map.insert (i, Map::value_type (index, new DataTypePrimitive (dataType)));
     }
@@ -302,8 +302,8 @@ DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType
 
 void DataTypeStruct::print (std::ostream& os) const {
     os << "struct " << m_name << " { ";
-    for (FieldList::const_iterator i = m_fields.begin (); i != m_fields.end (); ++ i) {
-        os << *i->type << " " << i->name << "; ";
+    for (const auto & elem : m_fields) {
+        os << *elem.type << " " << elem.name << "; ";
     }
 
     os << "}";
@@ -316,7 +316,7 @@ DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
     Map& map = cxt.pImpl ()->m_structTypes;
     const Map::key_type index (name, args);
     const Map::iterator i = map.find (index);
-    return i == map.end () ? NULL : i->second;
+    return i == map.end () ? nullptr : i->second;
 }
 
 DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
@@ -326,7 +326,7 @@ DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
     typedef ContextImpl::StructTypeMap Map;
     Map& map = cxt.pImpl ()->m_structTypes;
     const Map::key_type index (name, args);
-    Map::iterator i = map.find (index);
+    auto i = map.find (index);
     if (i == map.end ()) {
         i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, fields)));
     }

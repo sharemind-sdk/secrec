@@ -70,7 +70,7 @@ public: /* Methods: */
         Base::populateWorkList (current);
         m_analysis.start (m_program);
         while (! current.empty ()) {
-            WorkList::const_iterator i = current.begin ();
+            auto i = current.begin ();
             const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
@@ -122,7 +122,7 @@ public: /* Methods: */
         Base::populateWorkList (current);
         m_analysis.start (m_program);
         while (! current.empty ()) {
-            WorkList::const_iterator i = current.begin ();
+            auto i = current.begin ();
             const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
@@ -156,13 +156,13 @@ DataFlowAnalysisRunner& DataFlowAnalysisRunner::run (const Program &pr) {
     threads.reserve (m_as.size ());
     for (DataFlowAnalysis* a : m_as) {
         if (a->isForward ()) {
-            assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != NULL);
+            assert (dynamic_cast<ForwardDataFlowAnalysis*>(a) != nullptr);
             ForwardDataFlowAnalysis& fa = *static_cast<ForwardDataFlowAnalysis*>(a);
             threads.emplace_back (ForwardAnalysisRunner (fa, pr));
         }
 
         if (a->isBackward ()) {
-            assert (dynamic_cast<BackwardDataFlowAnalysis*>(a) != NULL);
+            assert (dynamic_cast<BackwardDataFlowAnalysis*>(a) != nullptr);
             BackwardDataFlowAnalysis& ba = *static_cast<BackwardDataFlowAnalysis*>(a);
             threads.emplace_back (BackwardAnalysisRunner (ba, pr));
         }

@@ -76,7 +76,7 @@ class ForwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */
     inline ForwardDataFlowAnalysis() : DataFlowAnalysis(true, false) {}
 
-    void outTo (const Block&, Edge::Label, const Block&) { }
+    void outTo (const Block&, Edge::Label, const Block&) override { }
 };
 
 /*******************************************************************************
@@ -87,7 +87,7 @@ class BackwardDataFlowAnalysis: public DataFlowAnalysis {
 public: /* Methods: */
     inline BackwardDataFlowAnalysis() : DataFlowAnalysis(false, true) {}
 
-    void inFrom (const Block&, Edge::Label, const Block&) { }
+    void inFrom (const Block&, Edge::Label, const Block&) override { }
 };
 
 /*******************************************************************************

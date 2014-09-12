@@ -81,8 +81,8 @@ TypeNonVoid* upperTypeNonVoid (Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
     SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
     SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
     DataType* dataType = upperDataType (cxt, a->secrecDataType (), b->secrecDataType ());
-    if (secType == NULL || dimType == (~ SecrecDimType(0)) || dataType == NULL)
-        return 0;
+    if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
+        return nullptr;
 
     return TypeBasic::get (cxt, secType, dataType, dimType);
 }
@@ -139,18 +139,18 @@ void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
 TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
                                        TreeNodeIdentifier* id)
 {
-    assert (ty != NULL);
+    assert (ty != nullptr);
 
     if (ty->kind () != Type::BASIC || ! ty->secrecDataType ()->isComposite ()) {
         m_log.fatal () << "Expecting structure, got" << *ty << ". "
                        << "Error at " << loc << ".";
-        return NULL;
+        return nullptr;
     }
 
     // Verify attribute access:
     DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
     StringRef fieldName = id->value ();
-    TypeBasic* matchingFieldType = NULL;
+    TypeBasic* matchingFieldType = nullptr;
     typedef DataTypeStruct::Field Field;
     for (const Field& field : structType->fields ()) {
         if (fieldName == field.name) {
@@ -159,10 +159,10 @@ TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
         }
     }
 
-    if (matchingFieldType == NULL) {
+    if (matchingFieldType == nullptr) {
         m_log.fatal () << "Invalid attribute \'" << fieldName << "\'. "
                        << "Error at " << id->location () << ".";
-        return NULL;
+        return nullptr;
     }
 
     return matchingFieldType;
@@ -180,7 +180,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
     TreeNodeExpr* structExpr = e->expression ();
     TCGUARD (visitExpr (structExpr));
     TypeNonVoid* fieldType = checkSelect (structExpr->location (), structExpr->resultType (), e->identifier ());
-    if (fieldType != NULL) {
+    if (fieldType != nullptr) {
         e->setResultType (fieldType);
         return OK;
     }
@@ -367,7 +367,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
         return OK;
 
     // missing argument is interpreted as 0
-    if (root->dimensionality() == NULL) {
+    if (root->dimensionality() == nullptr) {
         TreeNode * e = new TreeNodeExprInt(0, root->location());
         root->appendChild(e);
     }
@@ -376,7 +376,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
     for (int i = 0; i < 2; ++ i) {
-        assert(dynamic_cast<TreeNodeExpr *>(root->children().at(i)) != NULL);
+        assert(dynamic_cast<TreeNodeExpr *>(root->children().at(i)) != nullptr);
         TreeNodeExpr * e = static_cast<TreeNodeExpr *>(root->children().at(i));
         e->setContext(root->typeContext());
         TCGUARD (visitExpr(e));
@@ -407,7 +407,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
 
     SecurityType * resSecType = upperSecType(eTypes[0]->secrecSecType(),
             eTypes[1]->secrecSecType());
-    if (resSecType == NULL) {
+    if (resSecType == nullptr) {
         m_log.fatalInProc(root) << "Concatenating arrays of incompatable security types at "
                                 << root->location() << '.';
         return E_TYPE;
@@ -563,7 +563,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
 
     TreeNodeExpr * e1 = root->leftExpression ();
     TreeNodeExpr * e2 = root->rightExpression ();
-    TypeBasic * eType1 = NULL, *eType2 = NULL;
+    TypeBasic * eType1 = nullptr, *eType2 = nullptr;
 
     //set context data type
     switch (root->type()) {
@@ -605,15 +605,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         e1->instantiateDataType(getContext(), uDType);
         e2->instantiateDataType(getContext(), uDType);
 
-        assert(dynamic_cast<TypeBasic *>(e1->resultType()) != NULL);
+        assert(dynamic_cast<TypeBasic *>(e1->resultType()) != nullptr);
         eType1 = static_cast<TypeBasic *>(e1->resultType());
 
-        assert(dynamic_cast<TypeBasic *>(e2->resultType()) != NULL);
+        assert(dynamic_cast<TypeBasic *>(e2->resultType()) != nullptr);
         eType2 = static_cast<TypeBasic *>(e2->resultType());
     }
 
     {   // check if operator is overloaded
-        SymbolProcedure * match = NULL;
+        SymbolProcedure * match = nullptr;
         std::vector<TypeBasic*> argumentDataTypes;
         argumentDataTypes.push_back (eType1);
         argumentDataTypes.push_back (eType2);
@@ -621,7 +621,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
         TCGUARD (findBestMatchingProc(match, root->operatorName(),
                                       *root, argTypes, root));
 
-        if (match != NULL) { // overloaded operator
+        if (match != nullptr) { // overloaded operator
             SecreC::Type* resultType = match->decl()->procedureType()->returnType ();
             root->setResultType(resultType);
             root->setProcSymbol(match);
@@ -703,13 +703,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
         TypeBasic * et = static_cast<TypeBasic *>(eType);
 
         {   // check if operator is overloaded
-            SymbolProcedure * match = NULL;
+            SymbolProcedure * match = nullptr;
             std::vector<TypeBasic *> argumentDataTypes;
             argumentDataTypes.push_back (et);
             TypeProc* argTypes = TypeProc::get (getContext(), argumentDataTypes);
             TCGUARD (findBestMatchingProc(match, root->operatorName(),
                                           *root, argTypes, root));
-            if (match != NULL) { // overloaded operator
+            if (match != nullptr) { // overloaded operator
                 SecreC::Type * resultType = match->decl()->procedureType()->returnType ();
                 root->setResultType (resultType);
                 root->setProcSymbol (match);
@@ -752,7 +752,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
     return E_TYPE;
 }
 
-void  TreeNodeExprUnary::instantiateDataTypeV (Context &cxt, SecrecDataType dType) {
+void TreeNodeExprUnary::instantiateDataTypeV (Context &cxt, SecrecDataType dType) {
     resetDataType (cxt, dType);
     expression ()->instantiateDataType (cxt, dType);
 }
@@ -786,7 +786,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
         return OK;
     }
 
-    TypeNonVoid* elemType = NULL;
+    TypeNonVoid* elemType = nullptr;
     for (TreeNodeExpr& child : e->expressions ()) {
         child.setContextSecType (e->contextSecType ());
         child.setContextDataType (e->contextDataType ());
@@ -803,13 +803,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
             return E_TYPE;
         }
 
-        assert (childType != NULL);
-        if (elemType == NULL) {
+        assert (childType != nullptr);
+        if (elemType == nullptr) {
             elemType = childType;
         }
         else {
             elemType = upperTypeNonVoid (getContext (), childType, elemType);
-            if (elemType == NULL) {
+            if (elemType == nullptr) {
                 m_log.fatalInProc (e) << "Array element of invalid type at " << child.location () << ".";
                 return E_TYPE;
             }
@@ -961,10 +961,10 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
     TreeNodeIdentifier * id = e->identifier();
     Symbol * s = findIdentifier (SYM_SYMBOL, id);
 
-    if (s == NULL) {
+    if (s == nullptr) {
         // TODO: this is not the prettiest solution
         SymbolDimensionality* symDim = findIdentifier<SYM_DIM>(id);
-        if (symDim == NULL)
+        if (symDim == nullptr)
             return E_TYPE;
 
         s = ConstantInt::get (getContext (), DATATYPE_UINT64, symDim->dimType ());
@@ -1047,7 +1047,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
     SymbolDataType* symTy = m_st->find<SYM_TYPE>(name);
     SymbolSymbol* symSym = m_st->find<SYM_SYMBOL>(name);
 
-    if (symDom == NULL && symTy == NULL && symSym == NULL) {
+    if (symDom == nullptr && symTy == nullptr && symSym == nullptr) {
         m_log.fatalInProc (p) << "Identifier \'" << name <<
                                  "\' at " << p->location () << " not in scope.";
         return E_TYPE;
@@ -1059,7 +1059,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
         return E_TYPE;
     }
 
-    if (symDom != NULL) {
+    if (symDom != nullptr) {
         SecurityType* secTy = symDom->securityType ();
         if (secTy->isPublic ()) {
             p->setValue (ConstantString::get (getContext (), "public"));
@@ -1070,13 +1070,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
         }
     }
     else
-    if (symTy != NULL) {
+    if (symTy != nullptr) {
         std::ostringstream os;
         os << *symTy->dataType ();
         p->setValue (ConstantString::get (getContext (), os.str ()));
     }
     else
-    if (symSym != NULL) {
+    if (symSym != nullptr) {
         TypeNonVoid* ty = symSym->secrecType ();
         if (! canPrintValue (ty)) {
             m_log.fatalInProc(p)
@@ -1123,7 +1123,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
     SecreC::Type * eType2 = e2->resultType();
     SecreC::Type * eType3 = e3->resultType();
 
-    assert(dynamic_cast<TypeNonVoid *>(eType1) != NULL);
+    assert(dynamic_cast<TypeNonVoid *>(eType1) != nullptr);
     TypeNonVoid * cType = static_cast<TypeNonVoid *>(eType1);
 
     // check if conditional expression is of public boolean type
@@ -1152,7 +1152,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
 
         SecurityType * s0 = upperSecType(e2->resultType()->secrecSecType(),
                 e3->resultType()->secrecSecType());
-        if (s0 == NULL) {
+        if (s0 == nullptr) {
             m_log.fatalInProc(root) << "Incompatible security types in ternary expression at "
                 << e2->location() << " and " << e3->location() << '.';
             m_log.fatal() << "Unable to match "

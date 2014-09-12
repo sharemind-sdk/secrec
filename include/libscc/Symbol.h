@@ -40,12 +40,12 @@ public: /* Methods: */
 
     explicit inline Symbol (Type symbolType)
         : m_symbolType (symbolType)
-        , m_type (NULL)
+        , m_type (nullptr)
     { }
 
     explicit inline Symbol (Type symbolType, StringRef name)
         : m_symbolType (symbolType)
-        , m_type (NULL)
+        , m_type (nullptr)
         , m_name (name.str ())
     { }
 
@@ -60,7 +60,7 @@ public: /* Methods: */
     bool isGlobal () const;
     bool isArray () const;
 
-    virtual const Location * location() const { return NULL; }
+    virtual const Location * location() const { return nullptr; }
 
 protected:
     friend std::ostream& operator << (std::ostream& os, const Symbol& s);
@@ -111,8 +111,8 @@ public: /* Methods: */
     inline SecrecDimType dimType () const { return m_dimType; }
 
 protected:
-    void print(std::ostream & os) const;
-    void setTypeContext (TypeContext& cxt) const;
+    void print(std::ostream & os) const override;
+    void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
     SecrecDimType const m_dimType;
@@ -133,8 +133,8 @@ public: /* Methods: */
     inline DataType* dataType () const { return m_dataType; }
 
 protected:
-    void print(std::ostream & os) const;
-    void setTypeContext (TypeContext& cxt) const;
+    void print(std::ostream & os) const override;
+    void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
     DataType* const m_dataType;
@@ -155,8 +155,8 @@ public: /* Methods: */
     inline SecurityType* securityType () const { return m_secType; }
 
 protected:
-    void print(std::ostream & os) const;
-    void setTypeContext (TypeContext& cxt) const;
+    void print(std::ostream & os) const override;
+    void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
     SecurityType* const m_secType;
@@ -174,7 +174,7 @@ public: /* Methods: */
     { }
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 };
 
 /*******************************************************************************
@@ -198,7 +198,7 @@ public: /* Methods: */
 
     inline SymbolSymbol* getDim (SecrecDimType i) { return m_dims[i]; }
     inline void setDim (SecrecDimType i, SymbolSymbol* sym) {
-        if (sym != NULL) {
+        if (sym != nullptr) {
             sym->setParent (this);
             m_dims[i] = sym;
         }
@@ -222,10 +222,10 @@ public: /* Methods: */
     void setParent (SymbolSymbol* parent) { m_parent = parent; }
     SymbolSymbol* parent () const { return m_parent; }
 
-    virtual const Location * location() const;
+    virtual const Location * location() const override;
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 
 protected:
 
@@ -324,12 +324,12 @@ public: /* Methods: */
     inline void setTarget(Imop *target) { m_target = target; }
 
     virtual StringRef procedureName () const { return name (); }
-    virtual const TreeNodeProcDef * decl () const { assert (false); return NULL; }
-    virtual const Location * location () const { return NULL; }
-    virtual SymbolProcedure* shortOf () const { return NULL; }
+    virtual const TreeNodeProcDef * decl () const { assert (false); return nullptr; }
+    virtual const Location * location () const override { return nullptr; }
+    virtual SymbolProcedure* shortOf () const { return nullptr; }
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 
 private: /* Fields: */
     Imop* m_target;
@@ -345,15 +345,15 @@ public: /* Methods: */
 
     SymbolUserProcedure (StringRef name,
                          const TreeNodeProcDef * decl,
-                         SymbolProcedure * shortOf = NULL);
+                         SymbolProcedure * shortOf = nullptr);
 
-    StringRef procedureName () const;
-    virtual const TreeNodeProcDef * decl () const { return m_decl; }
-    virtual const Location * location() const;
-    virtual SymbolProcedure* shortOf () const { return m_shortOf; }
+    StringRef procedureName () const override;
+    virtual const TreeNodeProcDef * decl () const override { return m_decl; }
+    virtual const Location * location() const override;
+    virtual SymbolProcedure* shortOf () const override { return m_shortOf; }
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 
 private: /* Fields: */
     const TreeNodeProcDef * const  m_decl;
@@ -368,9 +368,9 @@ class SymbolStruct: public Symbol {
 public: /* Methods: */
     explicit SymbolStruct (StringRef name, TreeNodeStructDecl* structDecl);
     TreeNodeStructDecl* decl () const { return m_structDecl; }
-    const Location* location () const;
+    const Location* location () const override;
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 private: /* Fields: */
     TreeNodeStructDecl* const m_structDecl;
 };
@@ -431,14 +431,14 @@ public: /* Methods: */
 
     inline TreeNodeTemplate *decl() const { return m_templ; }
 
-    virtual const Location * location() const;
+    virtual const Location * location() const override;
     inline bool expectsSecType () const { return m_expectsSecType; }
     inline bool expectsDimType () const { return m_expectsDimType; }
     inline bool expectsDataType () const { return m_expectsDataType; }
     const Weight& weight () const  { return m_weight; }
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 
 private: /* Fields: */
     TreeNodeTemplate*  const  m_templ;
@@ -462,12 +462,12 @@ public: /* Methods: */
     inline Block* block () const { return m_block; }
 
     void setBlock (Block* block) {
-        m_target = NULL;
+        m_target = nullptr;
         m_block = block;
     }
 
 protected:
-    void print(std::ostream & os) const;
+    void print(std::ostream & os) const override;
 
 private: /* Fields: */
     Imop*   m_target;

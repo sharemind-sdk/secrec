@@ -93,11 +93,11 @@ protected:
     }
 
     void pushNop (Symbol* index) {
-        LoopCheck temp = { index, 0, 0 };
+        LoopCheck temp = { index, nullptr, nullptr };
         m_jumpStack.push_back (temp);
     }
 
-    bool isTopNop () const { return m_jumpStack.back ().test == NULL; }
+    bool isTopNop () const { return m_jumpStack.back ().test == nullptr; }
     bool empty () const { return m_jumpStack.empty (); }
     LoopCheck top () const { return m_jumpStack.back (); }
     void pop () { return m_jumpStack.pop_back (); }
@@ -285,12 +285,12 @@ public: /* Methods: */
 
     /// Memory management
     /// \{
-    void allocTemporaryResult (CGResult& result, Symbol* val = NULL);
-    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = NULL);
+    void allocTemporaryResult (CGResult& result, Symbol* val = nullptr);
+    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = nullptr);
     void releaseResource (CGResult& result, Symbol* sym);
     void releaseTemporary (CGResult& result, Symbol* sym);
     void releaseScopeVariables (CGResult& result);
-    void releaseProcVariables (CGResult& result, Symbol* ex = NULL);
+    void releaseProcVariables (CGResult& result, Symbol* ex = nullptr);
     void releaseAllVariables (CGResult& result);
     /// \}
 

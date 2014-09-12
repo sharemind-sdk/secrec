@@ -82,7 +82,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     fields.reserve (decl->attributes ().size ());
     for (TreeNodeAttribute& attr : decl->attributes ()) {
         // TODO: This is incredibly ugly workaround! We are cloning in order to avoid using cache-d type.
-        TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (NULL));
+        TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (nullptr));
         TCGUARD (visit (type));
         if (type->secrecType ()->kind () != Type::BASIC) {
             m_log.fatal () << "Invalid structure field at " << type->location () << '.';
@@ -138,7 +138,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStructDecl* decl) {
     }
     else {
         // In case of monomorphic structures we also directly add the data type to symbol table:
-        DataTypeStruct* structType = NULL;
+        DataTypeStruct* structType = nullptr;
         TCGUARD (checkStruct (decl, decl->location (), structType));
         m_st->appendSymbol (new SymbolDataType (id->value (), structType));
     }

@@ -41,7 +41,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    std::string toString (const Program &pr) const;
+    std::string toString (const Program &pr) const override;
 
     /**
      * @brief liveOnExit returns abstract values after the given basic block
@@ -60,9 +60,9 @@ public: /* Methods: */
 
 protected:
 
-    virtual void start (const Program &bs);
-    virtual void startBlock(const Block& b);
-    virtual void outTo(const Block &from, Edge::Label label, const Block &to) {
+    virtual void start (const Program &bs) override;
+    virtual void startBlock(const Block& b) override;
+    virtual void outTo(const Block &from, Edge::Label label, const Block &to) override {
         if (Edge::isGlobal (label)) {
             outToGlobal (from, to);
         }
@@ -71,8 +71,8 @@ protected:
         }
     }
 
-    virtual bool finishBlock(const Block &b);
-    virtual void finish();
+    virtual bool finishBlock(const Block &b) override;
+    virtual void finish() override;
 
 
 private:
@@ -85,7 +85,7 @@ private:
     }
 
     const BlockInfo & findBlock (const Block & block) const {
-        BlockInfoMap::const_iterator it = m_blocks.find (&block);
+        auto it = m_blocks.find (&block);
         assert (it != m_blocks.end ());
         return it->second;
     }

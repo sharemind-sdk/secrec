@@ -45,14 +45,14 @@ public: /* Methods: */
 
     explicit ModuleInfo (Context& cxt)
         : m_status (CGNotStarted)
-        , m_body (0)
+        , m_body (nullptr)
         , m_cxt (cxt)
     { }
 
-    explicit ModuleInfo (const directory_entry& location, Context& cxt)
-        : m_location (location)
+    explicit ModuleInfo (directory_entry location, Context& cxt)
+        : m_location (std::move(location))
         , m_status (CGNotStarted)
-        , m_body (0)
+        , m_body (nullptr)
         , m_cxt (cxt)
     { }
 

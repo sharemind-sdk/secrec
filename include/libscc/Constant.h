@@ -182,9 +182,9 @@ inline std::ostream& operator << (std::ostream& os, const APFloat& apf) {
 
 class ConstantInt : public SymbolConstant {
 private: /* Methods: */
-    ConstantInt (TypeNonVoid* type, const APInt& value)
+    ConstantInt (TypeNonVoid* type, APInt value)
         : SymbolConstant (type)
-        , m_value (value)
+        , m_value (std::move(value))
     { }
 
 public:
@@ -196,7 +196,7 @@ public:
     const APInt& value () const { return m_value; }
 
 protected:
-    void print (std::ostream& os) const;
+    void print (std::ostream& os) const override;
 
 private: /* Fields: */
     const APInt m_value;
@@ -223,7 +223,7 @@ public:
     const APFloat& value () const { return m_value; }
 
 protected:
-    void print (std::ostream& os) const;
+    void print (std::ostream& os) const override;
 
 private: /* Fields: */
     const APFloat m_value;
@@ -238,7 +238,7 @@ private: /* Methods: */
 
     ConstantString (TypeNonVoid* type, StringRef value)
         : SymbolConstant (type)
-        , m_value (value)
+        , m_value (std::move(value))
     { }
 
 public:
@@ -247,7 +247,7 @@ public:
     StringRef value () const { return m_value; }
 
 protected:
-    void print (std::ostream& os) const;
+    void print (std::ostream& os) const override;
 
 private: /* Fields: */
     const StringRef m_value;

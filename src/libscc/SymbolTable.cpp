@@ -70,14 +70,14 @@ public: /* Methods: */
     }
 
     SymbolLabel* label (Imop* imop) {
-        assert (imop != 0);
-        std::map<const Imop*, SymbolLabel*>::iterator
+        assert (imop != nullptr);
+        auto
                 it = m_labels.find (imop);
         if (it != m_labels.end ()) {
             return it->second;
         }
 
-        SymbolLabel* label = new SymbolLabel (imop);
+        auto label = new SymbolLabel (imop);
         std::ostringstream os;
         os << "{label}" << imop;
         label->setName (os.str ());
@@ -111,11 +111,11 @@ private: /* Fields: */
 *******************************************************************************/
 
 SymbolTable::SymbolTable (StringRef name)
-    : m_parent (NULL)
+    : m_parent (nullptr)
     , m_global (this)
     , m_other (new OtherSymbols ())
     , m_imports (1, this)
-    , m_name (name)
+    , m_name (std::move(name))
 {
     // Intentionally empty
 }
@@ -125,7 +125,7 @@ SymbolTable::SymbolTable (SymbolTable *parent, StringRef name)
     , m_global (parent->m_global)
     , m_other (parent->m_other)
     , m_imports (1, this)
-    , m_name (name)
+    , m_name (std::move(name))
 {
     // Intentionally empty
 }
@@ -137,12 +137,12 @@ SymbolTable::~SymbolTable() {
     for (SymbolTable* table : m_scopes)
         delete table;
 
-    if (m_parent == 0)
+    if (m_parent == nullptr)
         delete m_other;
 }
 
 bool SymbolTable::addImport (SymbolTable* st) {
-    assert (st != 0);
+    assert (st != nullptr);
     if (std::find (m_imports.begin (), m_imports.end (), st) == m_imports.end ()) {
         m_imports.push_back (st);
         return true;
@@ -175,7 +175,7 @@ std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
     for (Symbol* sym : reverse (m_table)) {
         if (sym->symbolType () == SYM_SYMBOL) {
-            assert (dynamic_cast<SymbolSymbol*>(sym) != NULL);
+            assert (dynamic_cast<SymbolSymbol*>(sym) != nullptr);
             SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
             assert (! ssym->isTemporary ());
             out.push_back (ssym);
@@ -187,7 +187,7 @@ std::vector<SymbolSymbol*> SymbolTable::variables () const {
 
 std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) const {
     std::vector<SymbolSymbol*> out;
-    for (const SymbolTable* st = this; st != NULL && st != end; st = st->parent ()) {
+    for (const SymbolTable* st = this; st != nullptr && st != end; st = st->parent ()) {
         const std::vector<SymbolSymbol*>& local = st->variables ();
         out.insert (out.end (), local.begin (), local.end ());
     }
@@ -196,12 +196,12 @@ std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) c
 }
 
 void SymbolTable::appendSymbol (Symbol* symbol) {
-    assert (symbol != NULL);
+    assert (symbol != nullptr);
     m_table.push_back (symbol);
 }
 
 SymbolLabel* SymbolTable::label (Imop* imop) {
-    assert (imop != NULL);
+    assert (imop != nullptr);
     return m_other->label (imop);
 }
 
@@ -210,21 +210,21 @@ SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
 }
 
 Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
-    for (const SymbolTable* c = this; c != NULL; c = c->m_parent) {
+    for (const SymbolTable* c = this; c != nullptr; c = c->m_parent) {
         const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
         if (syms.empty ()) continue;
-        if (syms.size () > 1) return 0;
+        if (syms.size () > 1) return nullptr;
         return syms.front ();
     }
 
-    return 0;
+    return nullptr;
 }
 
 std::vector<Symbol *>
 SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
     const SymbolTable * c = this;
-    while (c != NULL) {
+    while (c != nullptr) {
         for (Symbol * s2 : c->findPrefixedFromCurrentScope(type, prefix)) {
             bool overridden = false;
             for (Symbol * s : r)
@@ -244,7 +244,7 @@ SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
 
 std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
     std::vector<Symbol* > out;
-    for (const SymbolTable* c = this; c != NULL; c = c->m_parent) {
+    for (const SymbolTable* c = this; c != nullptr; c = c->m_parent) {
         const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
         out.insert (out.end (), syms.begin (), syms.end ());
     }
@@ -253,13 +253,13 @@ std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name)
 }
 
 SymbolTable *SymbolTable::newScope () {
-    SymbolTable *scope = new SymbolTable (this);
+    auto scope = new SymbolTable (this);
     m_scopes.push_back (scope);
     return scope;
 }
 
 void SymbolTable::print (std::ostream& os, unsigned level, unsigned indent) const {
-    if (m_parent == 0) {
+    if (m_parent == nullptr) {
         os << "--- Other Symbols ---" << std::endl;
         m_other->print (os);
     }

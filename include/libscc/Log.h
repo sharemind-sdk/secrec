@@ -7,6 +7,7 @@
 #include <cassert>
 #include <deque>
 #include <sstream>
+#include <utility>
 
 /**
  * \todo Refactor this and ninja everything from sharemind logging facilities (low priority).
@@ -17,8 +18,8 @@ namespace SecreC {
 struct CompileLogMessage {
     enum Type { Fatal, Error, Warning, Info, Debug };
 
-    inline CompileLogMessage(Type messageType, const std::string &msg)
-        : type(messageType), message(msg) {}
+    inline CompileLogMessage(Type messageType, std::string msg)
+        : type(messageType), message(std::move(msg)) {}
 
     Type        const type;
     std::string const message;
@@ -81,8 +82,8 @@ inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
 {
     typedef CompileLogMessage CLM;
     typedef std::deque<CompileLogMessage>::const_iterator const_iter;
-    for (const_iter i = log.messages ().begin (), e = log.messages ().end (); i != e; ++ i) {
-        switch (i->type) {
+    for (const auto & elem : log.messages ()) {
+        switch (elem.type) {
         case CLM::Fatal:   out << "[FATAL] "; break;
         case CLM::Error:   out << "[ERROR] "; break;
         case CLM::Warning: out << "[WARN ] "; break;
@@ -90,7 +91,7 @@ inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
         case CLM::Debug:   out << "[DEBUG] "; break;
         }
 
-        out << i->message << std::endl;
+        out << elem.message << std::endl;
     }
     return out;
 }

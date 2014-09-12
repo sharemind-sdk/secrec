@@ -53,7 +53,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         return E_TYPE;
     }
 
-    if (varInit->rightHandSide() != NULL) {
+    if (varInit->rightHandSide() != nullptr) {
         TreeNodeExpr * e = varInit->rightHandSide();
         e->setContext(ty);
         TCGUARD (visitExpr(e));
@@ -133,16 +133,16 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
     TreeNodeType *type = decl->varType ();
     TCGUARD (visit(type));
     assert (! type->secrecType()->isVoid());
-    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != NULL);
+    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != nullptr);
     TypeNonVoid* justType = static_cast<TypeNonVoid*>(type->secrecType());
     decl->setResultType (justType);
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
         assert (decl->initializers ().size () == 1);
-        assert (decl->initializer () != NULL);
+        assert (decl->initializer () != nullptr);
         assert (decl->shape ().empty ());
-        assert (decl->initializer ()->rightHandSide () == NULL);
+        assert (decl->initializer ()->rightHandSide () == nullptr);
     }
 
     return OK;

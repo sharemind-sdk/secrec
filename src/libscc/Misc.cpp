@@ -71,5 +71,5 @@ const char * SecrecFundDataTypeToString(SecrecDataType dataType) {
             break;
     }
 
-    return NULL;
+    return nullptr;
 }

@@ -169,7 +169,7 @@ std::set<const Imop *> LiveMemory::deadCopies(const Program & pr) const {
         }
 
         after.clear();
-        BV::const_iterator i = m_outs.find(&*bi);
+        auto i = m_outs.find(&*bi);
 
         if (i != m_outs.end()) {
             after = i->second;
@@ -199,7 +199,7 @@ std::string LiveMemory::printDeadCopies(const Program & pr) const {
         Values after;
         UpdateValues visitor(after);
 
-        BV::const_iterator i = m_outs.find(&*bi);
+        auto i = m_outs.find(&*bi);
 
         if (i != m_outs.end()) {
             after = i->second;
@@ -246,7 +246,7 @@ std::string LiveMemory::toString(const Program & pr) const {
     ss << "Memory liveness:\n";
     FOREACH_BLOCK (bi, pr) {
         const Block * block = &*bi;
-        BV::const_iterator valsIt = m_outs.find(block);
+        auto valsIt = m_outs.find(block);
 
         if (valsIt == m_outs.end()) {
             continue;

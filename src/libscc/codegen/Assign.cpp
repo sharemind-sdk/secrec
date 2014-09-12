@@ -87,7 +87,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
             std::stringstream ss;
             ss << "Shape of RHS doesnt match shape of LHS in assignment at " << e->location() << '.';
-            Imop * jmp = new Imop(e, Imop::JUMP, NULL);
+            auto jmp = new Imop(e, Imop::JUMP, nullptr);
             Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * errLabel = m_st->label(err);
             SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
@@ -95,7 +95,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             for (SecrecDimType k = 0; k < eArg2->resultType()->secrecDimType(); ++ k) {
                 Symbol * tsym = m_st->appendTemporary(pubIntTy);
                 Symbol * bsym = m_st->appendTemporary(pubBoolTy);
-                Imop * i = new Imop(e, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
+                auto i = new Imop(e, Imop::SUB, tsym, spv[slices[k]].second, spv[slices[k]].first);
                 pushImopAfter(result, i);
 
                 i = new Imop(e, Imop::NE, bsym, tsym, arg2ResultSymbol->getDim(k));
@@ -119,7 +119,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // 4. initialze running indices
         LoopInfo loopInfo;
-        for (SPV::const_iterator it(spv.begin()); it != spv.end(); ++ it) {
+        for (const auto & elem : spv) {
             Symbol * sym = m_st->appendTemporary(pubIntTy);
             loopInfo.push_index(sym);
         }
@@ -130,7 +130,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
 
         // offset = 0
-        Imop * i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
+        auto i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
         pushImopAfter(result, i);
 
         // 7. start
@@ -142,12 +142,12 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         // 8. compute offset for RHS
         {
             // old_ffset = 0
-            Imop * i = new Imop(e, Imop::ASSIGN, old_offset, indexConstant(0));
+            auto i = new Imop(e, Imop::ASSIGN, old_offset, indexConstant(0));
             pushImopAfter(result, i);
 
             unsigned count = 0;
-            LoopInfo::iterator itIt = loopInfo.begin();
-            LoopInfo::iterator itEnd = loopInfo.end();
+            auto itIt = loopInfo.begin();
+            auto itEnd = loopInfo.end();
             for (; itIt != itEnd; ++ count, ++ itIt) {
                 // tmp_result2 = s[k] * idx[k]
                 i = new Imop(e, Imop::MUL, tmp_result2, stride.at(count), *itIt);
@@ -167,14 +167,14 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 if (!eArg2->resultType()->isScalar()) {
                     Symbol * t1 = m_st->appendTemporary(ty);
 
-                    Imop * i = new Imop(e, Imop::LOAD, t1, arg2Result.symbol(), offset);
+                    auto i = new Imop(e, Imop::LOAD, t1, arg2Result.symbol(), offset);
                     push_imop(i);
 
                     i = new Imop(e, Imop::STORE, destSym, old_offset, t1);
                     push_imop(i);
                 }
                 else {
-                    Imop * i = new Imop(e, Imop::STORE, destSym, old_offset, arg2Result.symbol());
+                    auto i = new Imop(e, Imop::STORE, destSym, old_offset, arg2Result.symbol());
                     push_imop(i);
                 }
             }
@@ -188,7 +188,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                     return result;
                 }
 
-                Imop * i = new Imop(e, Imop::LOAD, t1, destSym, old_offset);
+                auto i = new Imop(e, Imop::LOAD, t1, destSym, old_offset);
                 push_imop(i);
 
                 if (!eArg2->resultType()->isScalar()) {
@@ -211,7 +211,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
 
             // offset = offset + 1
-            Imop * i = new Imop(e, Imop::ADD, offset, offset, indexConstant(1));
+            auto i = new Imop(e, Imop::ADD, offset, offset, indexConstant(1));
             push_imop(i);
         }
 
@@ -235,9 +235,9 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 }
             }
 
-            Imop * i = NULL;
+            Imop * i = nullptr;
             if (destSym->isArray()) {
-                i = new Imop(e, Imop::RELEASE, 0, destSym);
+                i = new Imop(e, Imop::RELEASE, nullptr, destSym);
                 pushImopAfter(result, i);
 
                 if (eArg2->resultType()->isScalar()) {
@@ -262,7 +262,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 return result;
             }
 
-            Imop * i = NULL;
+            Imop * i = nullptr;
             if (destSym->isArray()) {
                 if (eArg2->resultType()->isScalar()) {
                     Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
@@ -275,7 +275,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 else {
                     std::stringstream ss;
                     ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
-                    Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) 0);
+                    auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
                     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
                     SymbolLabel * errLabel = m_st->label(err);
                     SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
@@ -322,11 +322,11 @@ CGBranchResult CodeGen::cgBoolExprAssign(TreeNodeExprAssign * e) {
         return result;
     }
 
-    Imop * i = new Imop(e, Imop::JT, 0, result.symbol());
+    auto i = new Imop(e, Imop::JT, nullptr, result.symbol());
     pushImopAfter(result, i);
     result.addToTrueList(i);
 
-    i = new Imop(e, Imop::JUMP, 0);
+    i = new Imop(e, Imop::JUMP, nullptr);
     push_imop(i);
     result.addToFalseList(i);
 

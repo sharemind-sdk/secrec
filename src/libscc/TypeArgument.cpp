@@ -25,7 +25,7 @@ namespace SecreC {
 
 SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
     switch (m_kind) {
-    case TA_UNDEF: return NULL;
+    case TA_UNDEF: return nullptr;
     case TA_SEC:   return new SymbolDomain (name, secType ());
     case TA_DATA:  return new SymbolDataType (name, dataType ());
     case TA_DIM:   return new SymbolDimensionality (name, dimType ());
@@ -33,7 +33,7 @@ SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArg* t) {
-    assert (t != NULL);
+    assert (t != nullptr);
     if (t->hasTypeArgument ())
         return OK;
 
@@ -70,7 +70,7 @@ TypeChecker::Status TreeNodeTypeArgVar::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
-    assert (t != NULL);
+    assert (t != nullptr);
 
     const StringRef name = t->identifier ()->value ();
     SymbolDomain* symDom = m_st->find<SYM_DOMAIN>(name);
@@ -78,7 +78,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
     SymbolDimensionality* symDim = m_st->find<SYM_DIM>(name);
 
     // If the name is not symbol, type or dimensionality type variable:
-    if (symDom == NULL && symTy == NULL && symDim == NULL) {
+    if (symDom == nullptr && symTy == nullptr && symDim == nullptr) {
         m_log.fatalInProc (t) << "Type variable \'" << name
                               << "\' at " << t->location () << " not in scope.";
         return E_TYPE;
@@ -91,13 +91,13 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
         return E_TYPE;
     }
 
-    if (symDom != NULL)
+    if (symDom != nullptr)
         t->setTypeArgument (symDom->securityType ());
     else
-    if (symTy != NULL)
+    if (symTy != nullptr)
         t->setTypeArgument (symTy->dataType ());
     else
-    if (symDim != NULL)
+    if (symDim != nullptr)
         t->setTypeArgument (symDim->dimType ());
 
     return OK;
@@ -112,10 +112,10 @@ TypeChecker::Status TreeNodeTypeArgTemplate::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgTemplate* t) {
-    assert (t != NULL);
-    DataTypeStruct* structType = NULL;
+    assert (t != nullptr);
+    DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
-    assert (structType != NULL);
+    assert (structType != nullptr);
     t->setTypeArgument (structType);
     return OK;
 }
@@ -129,7 +129,7 @@ TypeChecker::Status TreeNodeTypeArgDataTypeConst::accept(TypeChecker & tyChecker
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDataTypeConst* t) {
-    assert (t != NULL);
+    assert (t != nullptr);
     t->setTypeArgument (DataTypePrimitive::get (getContext (), t->secrecDataType ()));
     return OK;
 }
@@ -143,7 +143,7 @@ TypeChecker::Status TreeNodeTypeArgDimTypeConst::accept(TypeChecker & tyChecker)
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDimTypeConst* t) {
-    assert (t != NULL);
+    assert (t != nullptr);
     t->setTypeArgument (t->secrecDimType ());
     return OK;
 }
@@ -157,7 +157,7 @@ TypeChecker::Status TreeNodeTypeArgPublic::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgPublic* t) {
-    assert (t != NULL);
+    assert (t != nullptr);
     t->setTypeArgument (PublicSecType::get (getContext ()));
     return OK;
 }

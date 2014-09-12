@@ -17,7 +17,7 @@
 namespace SecreC {
 
 CGResult CodeGen::cgLValue (TreeNodeLValue* lval, SubscriptInfo& subInfo, bool& isIndexed) {
-    assert (lval != NULL);
+    assert (lval != nullptr);
     return lval->codeGenWith (*this, subInfo, isIndexed);
 }
 
@@ -89,7 +89,7 @@ CGResult CodeGen::cgLSelect (TreeNodeLSelect* lselect, SubscriptInfo& subInfo,
         return result;
 
     // Pick the proper field:
-    assert (dynamic_cast<SymbolSymbol*>(lvalResult.symbol ()) != NULL);
+    assert (dynamic_cast<SymbolSymbol*>(lvalResult.symbol ()) != nullptr);
     SymbolSymbol* exprValue = static_cast<SymbolSymbol*>(lvalResult.symbol ());
     StringRef fieldName = lselect->identifier ()->value ();
     if (SymbolSymbol* fieldValue = lookupField (exprValue, fieldName)) {

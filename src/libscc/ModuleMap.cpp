@@ -28,9 +28,9 @@ ModuleMap::~ModuleMap () {
     }
 }
 
-bool ModuleMap::addModule (const std::string& name, std::auto_ptr<ModuleInfo> info) {
-    assert (info.get () != 0);
-    MapType::iterator it = m_modules.find (name);
+bool ModuleMap::addModule (const std::string& name, std::unique_ptr<ModuleInfo> info) {
+    assert (info.get () != nullptr);
+    auto it = m_modules.find (name);
     if (it != m_modules.end ())
         return false;
     m_modules.insert (it, std::make_pair (name, info.get ()));
@@ -48,8 +48,8 @@ bool ModuleMap::addSearchPath (const std::string& pathName) {
     for (const directory_entry& f : range) {
         if (! is_regular_file (f)) continue;
         if (f.path ().extension () != ".sc") continue;
-        std::auto_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
-        if (! addModule (f.path ().stem ().string (), newModule)) {
+        std::unique_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
+        if (! addModule (f.path ().stem ().string (), std::move(newModule))) {
             return false;
         }
     }
@@ -58,9 +58,9 @@ bool ModuleMap::addSearchPath (const std::string& pathName) {
 }
 
 ModuleInfo* ModuleMap::findModule (const std::string& name) const {
-    MapType::const_iterator i = m_modules.find (name);
+    auto i = m_modules.find (name);
     if (i == m_modules.end ())
-        return 0;
+        return nullptr;
     return i->second;
 }
 

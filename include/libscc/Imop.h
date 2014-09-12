@@ -143,10 +143,10 @@ public: /* Methods: */
         : m_creator(creator), m_type(type), m_args(4)
     { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
 
-    explicit inline Imop(TreeNode* creator, Type type, const OperandList& args)
+    explicit inline Imop(TreeNode* creator, Type type, OperandList args)
         : m_creator (creator)
         , m_type (type)
-        , m_args (args)
+        , m_args (std::move(args))
     { }
 
     inline TreeNode *creator() const { return m_creator; }
@@ -240,26 +240,26 @@ Imop* newNullary (TreeNode* node, Imop::Type iType, Symbol* dest);
 
 template <typename Iter >
 Imop* newReturn (TreeNode* node, Iter begin, Iter end) {
-    Imop* out = new Imop (node, Imop::RETURN);
-    out->m_args.push_back (0);
+    auto out = new Imop (node, Imop::RETURN);
+    out->m_args.push_back (nullptr);
     out->m_args.insert(out->m_args.end(), begin, end);
     return out;
 }
 
 inline
 Imop* newReturn (TreeNode* node) {
-    return new Imop (node, Imop::RETURN, NULL);
+    return new Imop (node, Imop::RETURN, nullptr);
 }
 
 Imop* newCall (TreeNode *node);
 
 template <typename Iter >
 Imop* newCall (TreeNode* node, Iter beginRet, Iter endRet, Iter beginArg, Iter endArg) {
-    Imop* out = new Imop (node, Imop::CALL);
+    auto out = new Imop (node, Imop::CALL);
 
-    out->m_args.push_back (0); // call destination
+    out->m_args.push_back (nullptr); // call destination
     out->m_args.insert (out->m_args.end(), beginArg, endArg); // arguments
-    out->m_args.push_back (0); // marker
+    out->m_args.push_back (nullptr); // marker
     out->m_args.insert (out->m_args.end(), beginRet, endRet); // return values
 
     return out;

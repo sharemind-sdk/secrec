@@ -25,18 +25,18 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    std::string toString(const Program &pr) const;
+    std::string toString(const Program &pr) const override;
 
     inline const BJM &getPosJumps() const { return m_inPos; }
     inline const BJM &getNegJumps() const { return m_inNeg; }
 
 protected:
 
-    virtual void start(const Program &bs);
-    virtual void startBlock(const Block &b);
-    virtual void inFrom(const Block &from, Edge::Label label, const Block &to);
-    virtual bool finishBlock(const Block &b);
-    virtual inline void finish() { m_outPos.clear(); m_outNeg.clear(); }
+    virtual void start(const Program &bs) override;
+    virtual void startBlock(const Block &b) override;
+    virtual void inFrom(const Block &from, Edge::Label label, const Block &to) override;
+    virtual bool finishBlock(const Block &b) override;
+    virtual inline void finish() override { m_outPos.clear(); m_outNeg.clear(); }
 
 private: /* Fields: */
     BJM m_inPos;

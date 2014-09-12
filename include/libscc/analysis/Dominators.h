@@ -34,7 +34,7 @@ public: /* Methods: */
     explicit
     DominanceNode (Block* block)
         : m_block (block)
-        , m_parent (NULL)
+        , m_parent (nullptr)
     { }
 
     ~DominanceNode ();
@@ -73,7 +73,7 @@ private:
 
     DominanceNode* findNode (Block* block) {
         DominanceNode*& node = m_nodes[block];
-        if (node == NULL) {
+        if (node == nullptr) {
             node = new DominanceNode (block);
         }
 

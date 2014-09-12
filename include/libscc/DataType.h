@@ -16,6 +16,7 @@
 
 #include <iosfwd>
 #include <vector>
+#include <utility>
 
 namespace SecreC {
 
@@ -115,7 +116,7 @@ public: /* Methods: */
     SecrecDataType secrecDataType () const { return m_dataType; }
 
 protected:
-    void print (std::ostream& os) const;
+    void print (std::ostream& os) const override;
 
 private: /* Fields: */
     const SecrecDataType m_dataType;
@@ -134,7 +135,7 @@ public: /* Types: */
 
         Field (TypeBasic* type, StringRef name)
             : type (type)
-            , name (name)
+            , name (std::move(name))
         { }
     };
 
@@ -152,12 +153,12 @@ public: /* Methods: */
     const std::vector<DataTypeStruct::Field>& fields () const { return m_fields; }
 
 protected:
-    void print (std::ostream& os) const;
+    void print (std::ostream& os) const override;
 
-    explicit DataTypeStruct (StringRef name, const std::vector<Field>& fields)
+    explicit DataTypeStruct (StringRef name, std::vector<Field>  fields)
         : DataType (COMPOSITE)
-        , m_name (name)
-        , m_fields (fields)
+        , m_name (std::move(name))
+        , m_fields (std::move(fields))
     { }
 
 private: /* Fields: */

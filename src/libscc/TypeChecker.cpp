@@ -44,7 +44,7 @@ bool TypeChecker::getForInstantiation (InstanceInfo& info) {
 
 Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
     Symbol* s = m_st->find (type, id->value ());
-    if (s == NULL) {
+    if (s == nullptr) {
         m_log.fatalInProc(id) << "Identifier '" << id->value()
                               << "' at " << id->location()
                               << " not in scope.";
@@ -55,10 +55,10 @@ Symbol* TypeChecker::findIdentifier (SymbolCategory type, const TreeNodeIdentifi
 
 SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
     SymbolSymbol *s = m_st->find<SYM_SYMBOL>(id->value ());
-    if (s == NULL) {
+    if (s == nullptr) {
         m_log.fatalInProc(id) << "Undeclared identifier '" << id->value ()
                               << "' at " << id->location() << '.';
-        return 0;
+        return nullptr;
     }
 
     return s;
@@ -68,7 +68,7 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
 TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
                                              SecurityType * need)
 {
-    if (need == NULL)
+    if (need == nullptr)
         return child;
 
     SecurityType * const haveSecType = child->resultType()->secrecSecType();
@@ -86,7 +86,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
     TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
-    TreeNodeExprClassify * const ec = new TreeNodeExprClassify(need, child->location());
+    const auto ec = new TreeNodeExprClassify(need, child->location());
     ec->appendChild(child);
     ec->resetParent(parent);
     ec->setResultType(newTy);
@@ -117,7 +117,7 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
 }
 
 TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
-    assert (e != NULL);
+    assert (e != nullptr);
     if (! e->haveResultType ()) {
         e->setContextSecType (PublicSecType::get (getContext ()));
         e->setContextDataType (DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
@@ -154,7 +154,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
                 continue;
             }
 
-            assert (dynamic_cast<TreeNodeExpr*>(j) != NULL);
+            assert (dynamic_cast<TreeNodeExpr*>(j) != nullptr);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
             e->setContextIndexType (getContext ());
             TCGUARD (visitExpr(e));

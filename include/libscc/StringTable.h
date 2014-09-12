@@ -40,8 +40,8 @@ public: /* Methods: */
     StringTable () { }
 
     ~StringTable () {
-        for (iterator i = begin (), e = end (); i != e; ++ i) {
-            StringRef::free (*i);
+        for (const auto & strRef : *this) {
+            StringRef::free (strRef);
         }
     }
 
@@ -54,7 +54,7 @@ public: /* Methods: */
     }
 
     const StringRef* addString (const char* str, size_t size) {
-        iterator i = m_impl.find (StringRef (str, size));
+        auto i = m_impl.find (StringRef (str, size));
         if (i == end ()) {
             const char* copy = strndup (str, size);
             i = m_impl.insert (i, StringRef (copy, size));

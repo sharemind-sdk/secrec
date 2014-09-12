@@ -72,7 +72,7 @@ std::string ReachingDefinitions::toString(const Program & pr) const {
 
         os << "  Block " << bi->index() << ": ";
 
-        BDM::const_iterator si = m_ins.find(&*bi);
+        auto si = m_ins.find(&*bi);
 
         if (si == m_ins.end() || (*si).second.empty()) {
             os << " NONE" << std::endl;
@@ -83,7 +83,7 @@ std::string ReachingDefinitions::toString(const Program & pr) const {
                 os << "      " << *sdef.first << ": ";
                 const Defs & ds = sdef.second;
 
-                for (DCI jt = ds.begin(); jt != ds.end(); ++ jt) {
+                for (auto jt = ds.begin(); jt != ds.end(); ++ jt) {
                     if (jt != ds.begin()) {
                         os << ", ";
                     }

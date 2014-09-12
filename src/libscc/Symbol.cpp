@@ -20,8 +20,8 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         switch (quant.type ()) {
         case NODE_TEMPLATE_DOMAIN_QUANT:
-            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != NULL);
-            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == NULL)
+            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != nullptr);
+            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == nullptr)
                 ++ qualifiedTypeVariableCount;
         case NODE_TEMPLATE_DIM_QUANT:
             typeVariables.insert (quant.typeVariable ()->value ());
@@ -67,7 +67,7 @@ void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
 }
 
 void flattenSymbolLoop (std::vector<Symbol*>& acc, Symbol* sym) {
-    assert (sym != NULL && sym->secrecType () != NULL);
+    assert (sym != nullptr && sym->secrecType () != nullptr);
 
     if (sym->secrecType ()->secrecDataType ()->isComposite ()) {
         for (SymbolSymbol* field : static_cast<SymbolSymbol*>(sym)->fields ()) {
@@ -163,10 +163,10 @@ void SymbolDomain::setTypeContext (TypeContext& cxt) const {
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
-    , m_dims (valueType->secrecDimType(), NULL)
-    , m_size (NULL)
+    , m_dims (valueType->secrecDimType(), nullptr)
+    , m_size (nullptr)
     , m_isTemporary (false)
-    , m_parent (NULL)
+    , m_parent (nullptr)
 {
     setName(name);
 }
@@ -174,16 +174,16 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
 SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
-    , m_dims (valueType->secrecDimType (), NULL)
-    , m_size (NULL)
+    , m_dims (valueType->secrecDimType (), nullptr)
+    , m_size (nullptr)
     , m_isTemporary (true)
-    , m_parent (NULL)
+    , m_parent (nullptr)
 {
     setName(name);
 }
 
 const Location * SymbolSymbol::location() const {
-    return NULL; // TODO
+    return nullptr; // TODO
 }
 
 void SymbolSymbol::print(std::ostream & os) const {
@@ -191,9 +191,9 @@ void SymbolSymbol::print(std::ostream & os) const {
 }
 
 void SymbolSymbol::inheritShape (Symbol* from) {
-    assert (from != NULL);
+    assert (from != nullptr);
     if (from->symbolType () == SYM_SYMBOL) {
-        assert (dynamic_cast<SymbolSymbol*>(from) != NULL);
+        assert (dynamic_cast<SymbolSymbol*>(from) != nullptr);
         SymbolSymbol* t = static_cast<SymbolSymbol*>(from);
         setSizeSym (t->getSizeSym());
         for (size_t i = 0; i < m_dims.size (); ++ i) {
@@ -203,7 +203,7 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 }
 
 SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
-    assert (val != NULL && val->secrecType () != NULL);
+    assert (val != nullptr && val->secrecType () != nullptr);
 
     TypeNonVoid* ty = val->secrecType ();
     if (ty->secrecDataType ()->isComposite ()) {
@@ -215,7 +215,7 @@ SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 std::vector<Symbol*> flattenSymbol (Symbol* sym) {
@@ -231,7 +231,7 @@ std::vector<Symbol*> flattenSymbol (Symbol* sym) {
 SymbolProcedure::SymbolProcedure(StringRef name,
                                  TypeProc* type)
     : Symbol(SYM_PROCEDURE, type)
-    , m_target(NULL)
+    , m_target(nullptr)
 {
     setName(name);
 }
@@ -283,18 +283,18 @@ void SymbolUserProcedure::print(std::ostream & os) const {
 SymbolLabel::SymbolLabel (Imop* target)
     : Symbol (SYM_LABEL)
     , m_target (target)
-    , m_block (NULL)
+    , m_block (nullptr)
 { }
 
 SymbolLabel::SymbolLabel (Block* block)
     : Symbol (SYM_LABEL)
-    , m_target (NULL)
+    , m_target (nullptr)
     , m_block (block)
 { }
 
 const Imop* SymbolLabel::target () const {
-    if (m_block == NULL) {
-        assert (m_target != NULL);
+    if (m_block == nullptr) {
+        assert (m_target != nullptr);
         return m_target;
     }
 
@@ -303,8 +303,8 @@ const Imop* SymbolLabel::target () const {
 
 void SymbolLabel::print(std::ostream & os) const {
     os << "Lable to ";
-    assert (m_target != NULL);
-    if (m_target->block () != NULL) {
+    assert (m_target != nullptr);
+    if (m_target->block () != nullptr) {
         os << "block " << m_target->block()->index ();
     }
     else {

@@ -46,7 +46,7 @@ APFloat::prec_t floatPrec (SecrecDataType type) {
 }
 
 APFloat::prec_t floatPrec (DataType* type) {
-    assert (type != NULL && type->isPrimitive ());
+    assert (type != nullptr && type->isPrimitive ());
     return floatPrec (static_cast<DataTypePrimitive*>(type)->secrecDataType ());
 }
 
@@ -62,7 +62,7 @@ SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
         }
     }
 
-    return 0;
+    return nullptr;
 }
 
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
@@ -70,12 +70,12 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
 }
 
 SymbolConstant* defaultConstant (Context& cxt, DataType* ty) {
-    assert (ty != NULL && ! ty->isComposite ());
+    assert (ty != nullptr && ! ty->isComposite ());
     return defaultConstant (cxt, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
 }
 
 SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
-    assert (ty != NULL && isNumericDataType (ty));
+    assert (ty != nullptr && isNumericDataType (ty));
     if (isFloatingDataType (ty))
         return ConstantFloat::get (cxt, ty, value);
     else
@@ -107,7 +107,7 @@ uint32_t APFloat::ieee32bits () const {
     #else
     float float_result = mpfr_get_ld (m_value, SECREC_CONSTANT_MPFR_RNDN);
     #endif
-    uint32_t* result = new (&float_result) uint32_t;
+    auto result = new (&float_result) uint32_t;
     return *result;
 }
 
@@ -115,7 +115,7 @@ uint32_t APFloat::ieee32bits () const {
 uint64_t APFloat::ieee64bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT64));
     double double_result = mpfr_get_d (m_value, SECREC_CONSTANT_MPFR_RNDN);
-    uint64_t* result = new (&double_result) uint64_t;
+    auto result = new (&double_result) uint64_t;
     return *result;
 }
 
@@ -124,7 +124,7 @@ uint64_t APFloat::ieee64bits () const {
 *******************************************************************************/
 
 ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
-    assert (type != NULL && type->isPrimitive ());
+    assert (type != nullptr && type->isPrimitive ());
     DataTypePrimitive* const primDataType = static_cast<DataTypePrimitive*>(type);
     return ConstantInt::get (cxt, primDataType->secrecDataType (), value);
 }
@@ -133,9 +133,9 @@ ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value
     typedef ContextImpl::NumericConstantMap IntMap;
     const APInt apvalue (widthInBits (type), value);
     IntMap& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
-    IntMap::iterator it = map.find (apvalue);
+    auto it = map.find (apvalue);
     if (it == map.end ()) {
-        ConstantInt* cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
+        auto cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
         it = map.insert (it, std::make_pair (apvalue, cvalue));
     }
 
@@ -163,9 +163,9 @@ ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, StringRef str) 
 ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, const APFloat& value) {
     typedef ContextImpl::FloatConstantMap FloatMap;
     FloatMap& map = cxt.pImpl ()->m_floatConstants;
-    FloatMap::iterator it = map.find (value);
+    auto it = map.find (value);
     if (it == map.end ()) {
-        ConstantFloat* cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
+        auto cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
         it = map.insert (it, std::make_pair (value, cfloat));
     }
 
@@ -181,11 +181,11 @@ void ConstantFloat::print (std::ostream &os) const { os << m_value; }
 ConstantString* ConstantString::get (Context& cxt, StringRef str) {
     typedef ContextImpl::ConstantStringMap StringMap;
     StringMap& map = cxt.pImpl ()->m_stringLiterals;
-    StringMap::iterator it = map.find (str);
+    auto it = map.find (str);
     if (it == map.end ()) {
         // Make sure that the string is allocated in the table
         StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
-        ConstantString* cstr = new ConstantString (TypeBasic::get (cxt, DATATYPE_STRING), val);
+        auto cstr = new ConstantString (TypeBasic::get (cxt, DATATYPE_STRING), val);
         it = map.insert (it, std::make_pair (val, cstr));
     }
 

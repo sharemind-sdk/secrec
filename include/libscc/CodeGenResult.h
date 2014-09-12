@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <utility>
 
 namespace SecreC {
 
@@ -45,8 +46,8 @@ public: /* Types: */
 public: /* Methods: */
 
     inline CGResult(const Status s = OK)
-        : m_result (NULL)
-        , m_firstImop (NULL)
+        : m_result (nullptr)
+        , m_firstImop (nullptr)
         , m_status (s)
     { }
 
@@ -81,7 +82,7 @@ public: /* Methods: */
     void patchNextList (SymbolLabel* dest);
 
     void patchFirstImop (Imop* imop) {
-        if (m_firstImop == NULL) {
+        if (m_firstImop == nullptr) {
             m_firstImop = imop;
         }
     }
@@ -139,8 +140,8 @@ public: /* Methods: */
         : CGResult (status)
     { }
 
-    inline CGBranchResult (const CGResult& result)
-        : CGResult (result)
+    inline CGBranchResult (CGResult result)
+        : CGResult (std::move(result))
     { }
 
     void swapTrueFalse () {
@@ -208,8 +209,8 @@ public:
         , m_resultFlags (FALLTHRU)
     { }
 
-    inline CGStmtResult (const CGResult& result)
-        : CGResult (result)
+    inline CGStmtResult (CGResult result)
+        : CGResult (std::move(result))
         , m_resultFlags (FALLTHRU)
     { }
 

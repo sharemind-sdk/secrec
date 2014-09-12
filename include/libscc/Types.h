@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <vector>
+#include <utility>
 
 namespace SecreC {
 
@@ -83,17 +84,17 @@ public: /* Methods: */
     static TypeVoid* get (Context& cxt);
 
 
-    inline SecurityType* secrecSecType() const {
+    inline SecurityType* secrecSecType() const override {
         assert (false && "TypeVoid::secrecSecType");
-        return NULL;
+        return nullptr;
     }
 
-    inline DataType* secrecDataType() const {
+    inline DataType* secrecDataType() const override {
         assert (false && "TypeVoid::secrecDataType");
-        return NULL;
+        return nullptr;
     }
 
-    inline SecrecDimType secrecDimType() const {
+    inline SecrecDimType secrecDimType() const override {
         assert (false && "TypeVoid::secrecDimType");
         return (~ SecrecDimType(0));
     }
@@ -106,8 +107,8 @@ protected: /* Methods: */
         : Type (VOID)
     { }
 
-    void print (std::ostream& os) const;
-    void prettyPrint (std::ostream& os) const;
+    void print (std::ostream& os) const override;
+    void prettyPrint (std::ostream& os) const override;
 };
 
 /*******************************************************************************
@@ -146,9 +147,9 @@ protected: /* Methods: */
 class TypeBasic : public TypeNonVoid {
 public: /* Methods: */
 
-    inline SecurityType* secrecSecType() const { return m_secType; }
-    inline SecrecDimType secrecDimType() const { return m_dimType; }
-    inline DataType* secrecDataType() const { return m_dataType; }
+    inline SecurityType* secrecSecType() const override { return m_secType; }
+    inline SecrecDimType secrecDimType() const override { return m_dimType; }
+    inline DataType* secrecDataType() const override { return m_dataType; }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType = 0);
@@ -174,8 +175,8 @@ protected: /* Methods: */
         , m_dimType (dim)
     { }
 
-    void print (std::ostream& os) const;
-    void prettyPrint (std::ostream& os) const;
+    void print (std::ostream& os) const override;
+    void prettyPrint (std::ostream& os) const override;
 
 private: /* Fields: */
     SecurityType*   const m_secType;
@@ -195,25 +196,25 @@ public: /* Methods: */
     std::string mangle () const;
     std::string paramsToNormalString () const;
 
-    inline SecurityType* secrecSecType() const { return returnType ()->secrecSecType (); }
-    inline DataType* secrecDataType() const { return returnType ()->secrecDataType (); }
-    inline SecrecDimType secrecDimType() const { return returnType ()->secrecDimType (); }
+    inline SecurityType* secrecSecType() const override { return returnType ()->secrecSecType (); }
+    inline DataType* secrecDataType() const override { return returnType ()->secrecDataType (); }
+    inline SecrecDimType secrecDimType() const override { return returnType ()->secrecDimType (); }
 
     static TypeProc* get (Context& cxt,
                           const std::vector<TypeBasic*>& params,
-                          Type* returnType = NULL);
+                          Type* returnType = nullptr);
 
 protected: /* Methods: */
 
-    explicit TypeProc (const std::vector<TypeBasic*>& params,
+    explicit TypeProc (std::vector<TypeBasic*> params,
                        Type* returnType)
         : TypeNonVoid (PROCEDURE)
-        , m_params (params)
+        , m_params (std::move(params))
         , m_returnType (returnType)
     { }
 
-    void print (std::ostream& os) const;
-    void prettyPrint (std::ostream& os) const;
+    void print (std::ostream& os) const override;
+    void prettyPrint (std::ostream& os) const override;
 
 private: /* Fields: */
     std::vector<TypeBasic*> const m_params;

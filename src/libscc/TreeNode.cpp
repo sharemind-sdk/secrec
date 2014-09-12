@@ -20,7 +20,7 @@ namespace /* anonymous */ {
 template <class T >
 T * childAt(const TreeNode * node, size_t i) {
     assert(i < node->children().size());
-    assert(dynamic_cast<T *>(node->children().at(i)) != NULL);
+    assert(dynamic_cast<T *>(node->children().at(i)) != nullptr);
     return static_cast<T *>(node->children().at(i));
 }
 
@@ -39,8 +39,8 @@ TreeNodeExpr * expressionAt(const TreeNode * node, size_t i) {
 *******************************************************************************/
 
 TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
-    : m_parent(NULL)
-    , m_procedure(NULL)
+    : m_parent(nullptr)
+    , m_procedure(nullptr)
     , m_type(type)
     , m_location(loc)
 {
@@ -49,7 +49,7 @@ TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
 
 TreeNode::~TreeNode() {
     for (TreeNode * child : m_children) {
-        assert(child != NULL);
+        assert(child != nullptr);
         if (child->m_parent == this) {
             delete child; // that's kinda sad
         }
@@ -71,15 +71,15 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
 }
 
 TreeNodeProcDef * TreeNode::containingProcedure() const {
-    if (m_procedure != NULL) return m_procedure;
-    if (m_parent != NULL) {
+    if (m_procedure != nullptr) return m_procedure;
+    if (m_parent != nullptr) {
         return (m_procedure = m_parent->containingProcedure());
     }
-    return 0;
+    return nullptr;
 }
 
 void TreeNode::appendChild(TreeNode * child) {
-    assert(child != NULL);
+    assert(child != nullptr);
     m_children.push_back(child);
     child->resetParent(this);
 }
@@ -270,8 +270,8 @@ TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
 *******************************************************************************/
 
 void TreeNodeSecTypeF::setCachedType(SecurityType * ty) {
-    assert(m_cachedType == NULL);
-    assert(ty != NULL);
+    assert(m_cachedType == nullptr);
+    assert(ty != nullptr);
     m_cachedType = ty;
 }
 
@@ -354,7 +354,7 @@ void TreeNodeDimTypeVarF::printXmlHelper (std::ostream & os) const {
 *******************************************************************************/
 
 SecreC::Type * TreeNodeType::secrecType() const {
-    assert(m_cachedType != NULL);
+    assert(m_cachedType != nullptr);
     return m_cachedType;
 }
 
@@ -437,24 +437,24 @@ std::string OverloadableOperator::operatorName() const {
 *******************************************************************************/
 
 bool TreeNodeExpr::havePublicBoolType() const {
-    assert(m_resultType != NULL);
+    assert(m_resultType != nullptr);
     return    m_resultType->secrecDataType()->equals (DATATYPE_BOOL)
            && m_resultType->secrecSecType()->isPublic()
            && m_resultType->isScalar();
 }
 
 SecreC::Type * TreeNodeExpr::resultType() const {
-    assert(m_resultType != NULL);
+    assert(m_resultType != nullptr);
     return m_resultType;
 }
 
 void TreeNodeExpr::setResultType(SecreC::Type * type) {
-    assert(m_resultType == NULL);
+    assert(m_resultType == nullptr);
     m_resultType = type;
 }
 
 void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
-    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != NULL);
+    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != nullptr);
     m_resultType = TypeBasic::get(cxt,
             m_resultType->secrecSecType(),
             dType,
@@ -882,7 +882,7 @@ TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
         return childAt<TreeNodeExprInt>(this, 2);
     }
 
-    return 0;
+    return nullptr;
 }
 
 
@@ -967,7 +967,7 @@ TreeNodeIdentifier* TreeNodeDomainQuantifier::kind () const {
         return childAt<TreeNodeIdentifier>(this, 1);
     }
 
-    return 0;
+    return nullptr;
 }
 
 void TreeNodeDomainQuantifier::printQuantifier (std::ostream &os) const {
@@ -1110,7 +1110,7 @@ TreeNodeExpr* TreeNodeVarInit::rightHandSide () const {
         return expressionAt (this, 2);
     }
 
-    return 0;
+    return nullptr;
 }
 
 StringRef TreeNodeVarInit::variableName() const {
@@ -1160,7 +1160,7 @@ TreeNode* TreeNodeStmtFor::initializer () const {
         return children ().at (0);
     }
 
-    return 0;
+    return nullptr;
 }
 
 TreeNodeExpr* TreeNodeStmtFor::conditional () const {
@@ -1169,7 +1169,7 @@ TreeNodeExpr* TreeNodeStmtFor::conditional () const {
         return expressionAt (this, 1);
     }
 
-    return 0;
+    return nullptr;
 }
 
 TreeNodeExpr* TreeNodeStmtFor::iteratorExpr () const {
@@ -1178,7 +1178,7 @@ TreeNodeExpr* TreeNodeStmtFor::iteratorExpr () const {
         return expressionAt (this, 2);
     }
 
-    return 0;
+    return nullptr;
 }
 
 TreeNodeStmt* TreeNodeStmtFor::body () const {
@@ -1206,7 +1206,7 @@ TreeNodeStmt* TreeNodeStmtIf::falseBranch () const {
         return statementAt (this, 2);
     }
 
-    return 0;
+    return nullptr;
 }
 
 /*******************************************************************************
@@ -1218,7 +1218,7 @@ TreeNodeExpr* TreeNodeStmtReturn::expression () const {
         return expressionAt (this, 0);
     }
 
-    return 0;
+    return nullptr;
 }
 
 bool TreeNodeStmtReturn::hasExpression() const {
@@ -1267,7 +1267,7 @@ TreeNodeSeqView<TreeNodeSyscallParam> TreeNodeStmtSyscall::params () const {
 *******************************************************************************/
 
 bool TreeNodeTypeType::printHelper (std::ostream & os) const {
-    if (m_cachedType != NULL) {
+    if (m_cachedType != nullptr) {
         os << *secrecType();
         return true;
     }
@@ -1401,12 +1401,12 @@ TreeNodeTypeArg::~TreeNodeTypeArg () {
 }
 
 const TypeArgument& TreeNodeTypeArg::typeArgument () const {
-    assert (m_typeArgument != NULL);
+    assert (m_typeArgument != nullptr);
     return *m_typeArgument;
 }
 
 void TreeNodeTypeArg::setTypeArgument (const TypeArgument& typeArgument) {
-    assert (m_typeArgument == NULL);
+    assert (m_typeArgument == nullptr);
     m_typeArgument = new TypeArgument (typeArgument);
 }
 
@@ -1570,7 +1570,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
 
         std::cerr << SecreC::TreeNode::typeName (type) << std::endl;
         assert (false && "Node of this type should not be initialized with treenode_init");
-        return 0;
+        return nullptr;
     }
 }
 
@@ -1665,7 +1665,7 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
 }
 
 TreeNode* treenode_init_lvalue(TreeNode *node, YYLTYPE* loc) {
-    assert (node != NULL && loc != NULL);
+    assert (node != nullptr && loc != nullptr);
     SecreC::Location secrecLoc (*loc);
     TreeNode* result = (TreeNode*) ((const SecreC::TreeNode*) node)->makeLValue (secrecLoc);
     *loc = secrecLoc.toYYLTYPE ();

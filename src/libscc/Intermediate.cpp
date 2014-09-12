@@ -15,14 +15,14 @@ namespace SecreC {
 
 TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
     int errorCode = 1;
-    TreeNodeModule * parseTree = NULL;
+    TreeNodeModule * parseTree = nullptr;
     StringTable& table = stringTable ();
     m_status = OK;
 
     if (mfile) {
         const char* name = mfile.get ().c_str ();
         FILE* h = fopen(name, "r");
-        if (h != NULL) {
+        if (h != nullptr) {
             errorCode = sccparse_file(&table, name, h, &parseTree);
             fclose (h);
         }
@@ -44,7 +44,7 @@ TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
 }
 
 void ICode::compile (TreeNodeModule *mod) {
-    assert (mod != NULL);
+    assert (mod != nullptr);
     ICodeList code;
     CodeGen cg (code, *this);
     if (cg.cgMain(mod).status() != CGResult::OK) {

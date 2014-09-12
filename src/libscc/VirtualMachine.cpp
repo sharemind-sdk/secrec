@@ -98,7 +98,7 @@ class ValueStack {
     ValueStack& operator = (const ValueStack&); // not assignable
 public:
 
-    ValueStack () : m_bptr (0), m_offset (0), m_size (0) { }
+    ValueStack () : m_bptr (nullptr), m_offset (0), m_size (0) { }
     ~ValueStack () { free (m_bptr); }
 
     void top (Value& out) const {
@@ -139,7 +139,7 @@ private:
         m_size = ((m_size + 1) * 3) / 2;
         TRACE("RESIZE STACK TO %u\n", m_size);
         Value* newBPtr = (Value*) realloc (m_bptr, m_size * sizeof (Value));
-        if (newBPtr != NULL) {
+        if (newBPtr != nullptr) {
             m_bptr = newBPtr;
         }
     }
@@ -181,7 +181,7 @@ struct Instruction {
     VMSym args[4];
 
     Instruction ()
-        : callback (0)
+        : callback (nullptr)
     { }
 
     explicit Instruction (CallbackTy cb)
@@ -199,7 +199,7 @@ struct Frame {
 
     Frame(const Instruction* old_ip)
         : m_old_ip (old_ip)
-        , m_prev_frame(0)
+        , m_prev_frame(nullptr)
     { }
 
 private:
@@ -218,7 +218,7 @@ private:
  */
 
 ValueStack m_stack;
-Frame* m_frames = NULL;
+Frame* m_frames = nullptr;
 Store m_global;
 
 void free_store (Store& store) {
@@ -229,13 +229,13 @@ void free_store (Store& store) {
 }
 
 inline void push_frame (const Instruction* old_ip) {
-    Frame* new_frame = new (std::nothrow) Frame (old_ip);
+    auto new_frame = new (std::nothrow) Frame (old_ip);
     new_frame->m_prev_frame = m_frames;
     m_frames = new_frame;
 }
 
 inline void pop_frame (void) {
-    assert (m_frames != NULL && "No frames to pop!");
+    assert (m_frames != nullptr && "No frames to pop!");
     Frame* temp = m_frames;
     m_frames = temp->m_prev_frame;
     free_store (temp->m_local);
@@ -247,7 +247,7 @@ Value& lookup (VMSym sym) __attribute__ ((noinline));
 Value& lookup (VMSym sym)  {
     TRACE ("%s ", (sym.isLocal ? "LOCAL" : "GLOBAL"));
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
-    assert (sym.un_sym != NULL);
+    assert (sym.un_sym != nullptr);
     return store[sym.un_sym];
 }
 
@@ -255,14 +255,14 @@ Value& lookup (VMSym sym)  {
 void storeSym (VMSym sym, Value val) __attribute__ ((noinline));
 void storeSym (VMSym sym, Value val) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
-    assert (sym.un_sym != NULL);
+    assert (sym.un_sym != nullptr);
     store[sym.un_sym] = val;
 }
 
 // Quick and dirty solution.
 template <SecrecDataType fromTy >
 void castValueDyn (DataType* dataType, Value& dest, const Value& from) {
-    assert (dataType != NULL && dataType->isPrimitive ());
+    assert (dataType != nullptr && dataType->isPrimitive ());
     SecrecDataType toTy = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     switch (toTy) {
     case DATATYPE_BOOL:   castValue<DATATYPE_BOOL,fromTy>(dest, from); break;
@@ -418,7 +418,7 @@ MKCALLBACK(CALL, 0, 0, 0, 0,
 MKCALLBACK(RETCLEAN, 0, 0, 0, 0, { })
 
 MKCALLBACK(RETVOID, 0, 0, 0, 0,
-    assert (m_frames != NULL);
+    assert (m_frames != nullptr);
     const Instruction* new_i = m_frames->m_old_ip;
     pop_frame();
     ip = new_i;
@@ -467,15 +467,15 @@ MKCALLBACK(COPY, 1, 1, 1, 0,
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
     if (ip->args[0].un_sym->secrecType ()->secrecDataType ()->equals(DATATYPE_STRING)) {
-        assert (dest.un_str_val != NULL);
+        assert (dest.un_str_val != nullptr);
         delete dest.un_str_val;
-        dest.un_str_val = NULL;
+        dest.un_str_val = nullptr;
     }
     else
     if (ip->args[0].un_sym->secrecType ()->secrecSecType ()->isPublic ()) {
-        assert (dest.un_ptr != NULL);
+        assert (dest.un_ptr != nullptr);
         free (dest.un_ptr);
-        dest.un_ptr = NULL;
+        dest.un_ptr = nullptr;
     }
 )
 
@@ -568,9 +568,9 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     }} while (0)
 
 bool matchTypes (Type* ty1, Type* ty2) {
-    return  ty1->secrecDataType () == ty2->secrecDataType () &&
-            ty1->secrecDimType () == ty2->secrecDimType () &&
-            ty1->secrecSecType () == ty2->secrecSecType ();
+    return ty1->secrecDataType () == ty2->secrecDataType () &&
+           ty1->secrecDimType () == ty2->secrecDimType () &&
+           ty1->secrecSecType () == ty2->secrecSecType ();
 }
 
 /**
@@ -578,7 +578,7 @@ bool matchTypes (Type* ty1, Type* ty2) {
  * Does not handle multi-callback operators.
  */
 CallbackTy getCallback (const Imop& imop) {
-    CallbackTy callback = NULL;
+    CallbackTy callback = nullptr;
     SecrecDataType ty = DATATYPE_UNDEFINED;
     const bool isVec = imop.isVectorized ();
 
@@ -611,7 +611,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::ASSIGN:
     case Imop::LOAD: {
         DataType* dataType = imop.arg1()->secrecType()->secrecDataType();
-        assert (dataType != NULL && dataType->isPrimitive ());
+        assert (dataType != nullptr && dataType->isPrimitive ());
         ty = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     }
     default:
@@ -697,7 +697,7 @@ void storeConstantInt (Value& out, const Symbol* c) {
 
 void storeConstant (VMSym sym, const Symbol* c) {
     DataType* dataType = c->secrecType ()->secrecDataType ();
-    assert (dataType != NULL && dataType->isPrimitive ());
+    assert (dataType != nullptr && dataType->isPrimitive ());
     SecrecDataType dtype = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     Value& out = store[sym.un_sym];
@@ -736,13 +736,12 @@ public: /* Methods: */
     ~Compiler () { }
 
     Instruction* runOn (const Program& pr) {
-        Instruction* out = NULL;
+        Instruction* out = nullptr;
         assert (! pr.empty ());
-        for (Program::const_iterator pi = pr.begin (); pi != pr.end (); ++ pi) {
-            for (Procedure::const_iterator bi = pi->begin (); bi != pi->end (); ++ bi) {
-                assert (! bi->empty ());
-                for (ImopList::const_iterator it = bi->begin (); it != bi->end (); ++ it) {
-                    const Imop& imop = *it;
+        for (const auto & func : pr) {
+            for (const auto & block : func) {
+                assert (! block.empty ());
+                for (const auto & imop : block) {
                     compileInstruction (imop);
                 }
             }
@@ -752,7 +751,7 @@ public: /* Methods: */
         for (size_t i = 0; i != m_codeSize; ++ i) {
             out[i] = m_code[i].first;
             const Imop* dest = m_code[i].second;
-            if (dest != NULL) {
+            if (dest != nullptr) {
                 out[i].args[0].un_inst = &out[m_addrs[dest]];
             }
         }
@@ -767,7 +766,7 @@ public: /* Methods: */
 private:
 
     VMSym toVMSym (const Symbol* sym) {
-        assert (sym != NULL);
+        assert (sym != nullptr);
         VMSym out (true, sym );
 
         switch (sym->symbolType()) {
@@ -799,12 +798,12 @@ private:
 
         unsigned nArgs = 0;
         Instruction i;
-        const Imop* dest = NULL;
+        const Imop* dest = nullptr;
 
         if (imop.isJump ()) {
             const Symbol* arg = imop.dest ();
             i.args[nArgs ++] = toVMSym (arg);
-            assert (dynamic_cast<const SymbolLabel*>(arg) != NULL);
+            assert (dynamic_cast<const SymbolLabel*>(arg) != nullptr);
             dest = static_cast<const SymbolLabel*>(arg)->target ();
         }
         else {
@@ -843,13 +842,13 @@ private:
 
         // compute destinations for calls
         const Symbol* dest = *itBegin;
-        assert (dynamic_cast<const SymbolProcedure*>(dest) != NULL);
+        assert (dynamic_cast<const SymbolProcedure*>(dest) != nullptr);
         const SymbolProcedure* proc = static_cast<const SymbolProcedure*> (dest);
         const Imop* targetImop = proc->target();
 
         // push arguments
         std::stack<const Symbol*> argList;
-        for (++ it; it != itEnd && *it != NULL; ++ it) {
+        for (++ it; it != itEnd && *it != nullptr; ++ it) {
             argList.push (*it);
         }
 
@@ -861,7 +860,7 @@ private:
             emitInstruction (i);
         }
 
-        assert (it != itEnd && *it == NULL &&
+        assert (it != itEnd && *it == nullptr &&
             "Malformed CALL instruction!");
 
         // CALL
@@ -887,7 +886,7 @@ private:
                 "Malformed RETURN instruction!");
 
         std::stack<const Symbol* > rev;
-        OCI it = imop.operandsBegin (),
+        auto it = imop.operandsBegin (),
             itEnd = imop.operandsEnd ();
         for (++ it; it != itEnd; ++ it)
             rev.push (*it);
@@ -902,7 +901,7 @@ private:
         emitInstruction (i);
     }
 
-    void emitInstruction (Instruction i, const Imop* tar = NULL) {
+    void emitInstruction (Instruction i, const Imop* tar = nullptr) {
         m_code.push_back (std::make_pair (i, tar));
         ++ m_codeSize;
     }
@@ -922,12 +921,12 @@ int VirtualMachine::run (const Program& pr) {
     Instruction* code = comp.runOn (pr);
 
     // execute
-    push_frame (0);
+    push_frame (nullptr);
     int status = code->callback (code);
 
     // Program might exit from within a procedure, and if that
     // happens we nee to unwind all the frames to clear the memory.
-    while (m_frames != NULL) {
+    while (m_frames != nullptr) {
         pop_frame ();
     }
 

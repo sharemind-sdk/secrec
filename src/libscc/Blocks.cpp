@@ -24,7 +24,7 @@ inline bool fallsThru(const Block &b) {
     assert (!b.empty () &&
             "Empty basic block.");
 
-    const Imop* last = NULL;
+    const Imop* last = nullptr;
     for (const Imop& imop : boost::adaptors::reverse (b)) {
         last = &imop;
         if (imop.type () != Imop::COMMENT) {
@@ -32,7 +32,7 @@ inline bool fallsThru(const Block &b) {
         }
     }
 
-    assert (last != NULL);
+    assert (last != nullptr);
     switch (last->type ()) {
     case Imop::CALL:
     case Imop::JUMP:
@@ -61,14 +61,14 @@ void printBlocks(std::ostream &os, const char *prefix, Iter begin, Iter end)
                 unreachables.insert((*jt)->index ());
             }
         }
-        for (std::set<unsigned long>::const_iterator jt = reachables.begin(); jt != reachables.end(); ++ jt) {
+        for (auto jt = reachables.begin(); jt != reachables.end(); ++ jt) {
             if (jt != reachables.begin()) os << ", ";
             os << (*jt);
         }
         if (!reachables.empty() && !unreachables.empty()) os << " ";
         if (!unreachables.empty()) {
             os << "(";
-            for (std::set<unsigned long>::const_iterator jt = unreachables.begin(); jt != unreachables.end(); ++ jt) {
+            for (auto jt = unreachables.begin(); jt != unreachables.end(); ++ jt) {
                 if (jt != unreachables.begin()) os << ", ";
                 os << (*jt);
             }
@@ -117,11 +117,11 @@ void printLabel (std::ostream& os, const Block& block) {
     os << "      ";
     os << "label = <<TABLE BORDER=\"0\">";
     os << "<TR><TD COLSPAN=\"2\" BORDER=\"1\" ALIGN=\"CENTER\">Block " << block.index () << "</TD></TR>";
-    for (Block::const_iterator i = block.begin (), e = block.end (); i != e; ++ i) {
+    for (const auto & elem : block) {
         os << "<TR>";
-        os << "<TD ALIGN=\"LEFT\">" << i->index () << "</TD>";
+        os << "<TD ALIGN=\"LEFT\">" << elem.index () << "</TD>";
         std::stringstream ss;
-        ss << *i;
+        ss << elem;
         os << "<TD ALIGN=\"LEFT\">" << xmlEncode (ss.str ()) << "</TD>";
         os << "</TR>";
     }
@@ -143,7 +143,7 @@ void printNode (std::ostream& os, const Block& block) {
     }
 }
 
-void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = NULL) {
+void printEdge (std::ostream& os, const Block& from, const Block& to, const char* style = nullptr) {
     if (from.reachable () && to.reachable ()) {
         os << "node" << from.index () << " -> " << "node" << to.index ();
         if (style) os << style;
@@ -151,7 +151,7 @@ void printEdge (std::ostream& os, const Block& from, const Block& to, const char
     }
 }
 
-void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = NULL) {
+void printEdges (std::ostream& os, const Block& from, Edge::Label label, const char* style = nullptr) {
     bool foundAny = false;
     for (const auto& edge : from.successors ()) {
         if (edge.second & label) {
@@ -187,7 +187,7 @@ struct LeaderInfo {
     const SymbolProcedure*  procedure;
 
     LeaderInfo ()
-        : procedure (0)
+        : procedure (nullptr)
     { }
 };
 
@@ -235,7 +235,7 @@ void Program::assignToBlocks (ICodeList& imops) {
 
         // destination of jump is leader
         if (imop.isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != NULL);
+            assert (dynamic_cast<const SymbolLabel*>(imop.dest ()) != nullptr);
             SymbolLabel* dest = static_cast<SymbolLabel*>(imop.dest ());
             leaders[dest->target()].jumps.insert (dest);
         }
@@ -258,8 +258,8 @@ void Program::assignToBlocks (ICodeList& imops) {
     std::map<const Imop*, LeaderInfo>::iterator it;
 
     // Initialize the entry procedure.
-    Procedure* curProc = new Procedure (0);
-    Block* curBlock = NULL;
+    auto curProc = new Procedure (nullptr);
+    Block* curBlock = nullptr;
     push_back(*curProc);
 
     while (! imops.empty ()) {
@@ -270,7 +270,7 @@ void Program::assignToBlocks (ICodeList& imops) {
             const std::set<SymbolLabel*>& jumps = it->second.jumps;
             const SymbolProcedure* proc = it->second.procedure;
 
-            if (proc != NULL) {
+            if (proc != nullptr) {
                 curProc = new Procedure (proc);
                 push_back (*curProc);
             }
@@ -355,7 +355,7 @@ void Program::propagate () {
 
         // if last instruction is jump, link current block with its destination
         if (lastImop.isJump ()) {
-            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != NULL);
+            assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != nullptr);
             const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
             Procedure::iterator next = procIterator (*jumpDest->block ());
             todo.insert (next);
@@ -429,13 +429,13 @@ std::ostream & Program::print(std::ostream & os) const {
             os << "    CODE:" << std::endl;
             for (const Imop& imop : block) {
                 os << std::setw (10) << imop.index () << "  " << imop;
-                if (imop.creator() != NULL) {
+                if (imop.creator() != nullptr) {
                     os << " // Created by "
                        << TreeNode::typeName(imop.creator()->type())
                        << " at "
                        << imop.creator()->location();
                     if (imop.creator()->type() == NODE_EXPR_CLASSIFY) {
-                        assert(imop.creator()->parent() != NULL);
+                        assert(imop.creator()->parent() != nullptr);
                         os << " for "
                            << TreeNode::typeName(imop.creator()->parent()->type())
                            << " at "
@@ -529,11 +529,11 @@ Block::~Block () {
 }
 
 bool Block::isProgramEntry () const {
-    return isEntry () && (proc ()->name () == NULL);
+    return isEntry () && (proc ()->name () == nullptr);
 }
 
 bool Block::isProgramExit () const {
-    return isExit () && (proc ()->name () == NULL);
+    return isExit () && (proc ()->name () == nullptr);
 }
 
 bool Block::isEntry () const {

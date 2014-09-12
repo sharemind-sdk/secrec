@@ -135,7 +135,7 @@ std::string ReachableReleases::toString(const Program & pr) const {
     ss << "Reachable releases:\n";
     FOREACH_BLOCK (bi, pr) {
         Values after;
-        BV::const_iterator i = m_outs.find(&*bi);
+        auto i = m_outs.find(&*bi);
 
         if (i != m_outs.end()) {
             after = i->second;

@@ -25,7 +25,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
     const TreeNodeIdentifier * id = kind->identifier ();
     SymbolTable * st = m_st->globalScope(); // kinds live in global scope
 
-    if (findIdentifier (SYM_KIND, id) != NULL) {
+    if (findIdentifier (SYM_KIND, id) != nullptr) {
         m_log.error() << "Redefinition of kind '" << id->value()
                       << "' at " << kind->location() << '.';
         return CGResult::ERROR_CONTINUE;
@@ -44,13 +44,13 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
     const TreeNodeIdentifier * idKind = dom->kindIdentifier ();
     SymbolTable * st = m_st->globalScope();
     SymbolKind * kind = static_cast<SymbolKind *>(findIdentifier (SYM_KIND, idKind));
-    if (kind == NULL) {
+    if (kind == nullptr) {
         m_log.error() << "Undefined domain kind '" << idKind->value ()
                       << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
-    if (findIdentifier (SYM_DOMAIN, idDomain) != NULL) {
+    if (findIdentifier (SYM_DOMAIN, idDomain) != nullptr) {
         m_log.error() << "Redeclaration of domain '" << idDomain->value()
                       << "' at " << dom->location() << '.';
         return CGResult::ERROR_CONTINUE;
@@ -93,7 +93,7 @@ struct ScopedSetSymbolTable {
 
 CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
-    assert(def != NULL);
+    assert(def != nullptr);
 
     if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
@@ -255,7 +255,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             break;
         }
         case NODE_TEMPLATE_DECL: {
-            assert(dynamic_cast<TreeNodeTemplate *>(decl) != NULL);
+            assert(dynamic_cast<TreeNodeTemplate *>(decl) != nullptr);
             TreeNodeTemplate * templ = static_cast<TreeNodeTemplate *>(decl);
             templ->setContainingModule(*mod);
             if (m_tyChecker->visit(templ) != TypeChecker::OK) {
@@ -279,16 +279,16 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
 
 CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
-    ModuleInfo * modInfo = new ModuleInfo(getContext ());
+    auto modInfo = new ModuleInfo(getContext ());
     {
-        std::auto_ptr<ModuleInfo> newMod(modInfo);
-        if (! m_modules.addModule("__main", newMod)) {
+        std::unique_ptr<ModuleInfo> newMod(modInfo);
+        if (! m_modules.addModule("__main", std::move(newMod))) {
             m_log.fatal() << "Error creating main module at "
                 << mainModule->location() << '.';
             return CGResult::ERROR_FATAL;
         }
 
-        assert(newMod.get() == NULL);
+        assert(newMod.get() == nullptr);
     }
 
     pushComment("Start of globals:");
@@ -323,7 +323,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
     // Insert main call after globals have been instantiated:
     TreeNodeProgram * prog = mainModule->program();
     Imop * mainCall = newCall(prog);
-    Imop * retClean = new Imop(prog, Imop::RETCLEAN, 0, 0, 0);
+    auto retClean = new Imop(prog, Imop::RETCLEAN, nullptr, nullptr, nullptr);
     pushImopAfter(result, mainCall);
     push_imop(retClean);
     releaseAllVariables(result);
@@ -331,7 +331,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
     ScopedStateUse use(*this, cgState);  // we need to look in main module
     SymbolProcedure * mainProc = m_tyChecker->mainProcedure();
-    if (mainProc == NULL) {
+    if (mainProc == nullptr) {
         result |= CGResult::ERROR_CONTINUE;
         return result;
     }
@@ -348,7 +348,7 @@ CGStmtResult CodeGen::cgMain(TreeNodeModule * mainModule) {
 
 CGStmtResult CodeGen::cgImport(TreeNodeImport * import, ModuleInfo * modContext) {
     ModuleInfo * mod = m_modules.findModule(import->name().str ());
-    if (mod == NULL) {
+    if (mod == nullptr) {
         m_log.fatal() << "Module \"" << import->name() << "\" not found within search path.";
         m_log.fatal() << "Error at " << import->location() << '.';
         return CGResult::ERROR_CONTINUE;

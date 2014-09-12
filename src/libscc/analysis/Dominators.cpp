@@ -115,7 +115,7 @@ DominanceNode::~DominanceNode() {
     }
 
     m_children.clear();
-    m_parent = NULL;
+    m_parent = nullptr;
 }
 
 /*******************************************************************************
@@ -166,7 +166,7 @@ void Dominators::calculate(Block * root) {
         }
 
         Block * next = (it ++)->first;
-        assert(next != NULL);
+        assert(next != nullptr);
 
         if (visited.insert(next).second) {
             workList.push_back(std::make_pair(next, next->succ_begin()));

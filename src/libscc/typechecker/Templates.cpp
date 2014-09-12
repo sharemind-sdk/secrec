@@ -93,7 +93,7 @@ TypeChecker::Status checkTypeVariable (TypeVariableMap& map, SymbolTable* st, Co
     }
     else {
         Symbol* sym = st->find (symbolCategory (kind), name);
-        if (sym == NULL) {
+        if (sym == nullptr) {
             log.fatal () << "Unable to find " << kindAsString (kind) << " type variable \'" << name
                          << "\' at " << t.identifier ()->location () << ". ";
             return TypeChecker::E_TYPE;
@@ -123,7 +123,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
     TypeVariableMap typeVariables;
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         const StringRef name = quant.typeVariable ()->value ();
-        TypeVariableMap::iterator it = typeVariables.find (name);
+        auto it = typeVariables.find (name);
         if (it != typeVariables.end ()) {
             m_log.fatal ()
                     << "Redeclaration of a type variable \'" << name << '\''
@@ -184,7 +184,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         return E_TYPE;
     }
 
-    SymbolTemplate* s = new SymbolTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
+    auto s = new SymbolTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
     s->setName (id->value ());
     m_st->appendSymbol (s);
     return OK;
@@ -197,9 +197,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
 /// \todo figure out how to delay copying of procedures even more (or completeley avoid
 /// if possible).
 const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInfo& mod) {
-    InstanceInfoMap::iterator it = m_instanceInfo.find (i);
+    auto it = m_instanceInfo.find (i);
     if (it == m_instanceInfo.end ()) {
-        TreeNodeProcDef* cloned = static_cast<TreeNodeProcDef*>(i.getTemplate ()->decl ()->body ()->clone (0));
+        TreeNodeProcDef* cloned = static_cast<TreeNodeProcDef*>(i.getTemplate ()->decl ()->body ()->clone (nullptr));
         mod.body()->addGeneratedInstance(cloned);
         InstanceInfo info;
         SymbolTable* local = mod.codeGenState ().st ()->newScope ();
@@ -210,7 +210,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         info.m_localScope = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
-        std::vector<TypeArgument>::const_iterator it = i.getParams ().begin ();
+        auto it = i.getParams ().begin ();
         for (TreeNodeQuantifier& quant : i.getTemplate ()->decl ()->quantifiers ()) {
             StringRef qname = quant.typeVariable ()->value ();
             local->appendSymbol (it->bind (qname));
@@ -227,9 +227,9 @@ bool TemplateInstantiator::getForInstantiation (InstanceInfo& info) {
         m_workList.pop_front ();
         if (! isInstantiated (i)) {
             info = m_instanceInfo[i];
-            assert (info.m_generatedBody != NULL);
-            assert (info.m_moduleInfo != NULL);
-            assert (info.m_localScope != NULL);
+            assert (info.m_generatedBody != nullptr);
+            assert (info.m_moduleInfo != nullptr);
+            assert (info.m_localScope != nullptr);
             m_generated.insert (i);
             return true;
         }

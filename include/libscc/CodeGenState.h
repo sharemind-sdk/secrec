@@ -41,14 +41,14 @@ protected: /* Types: */
 public: /* Methods: */
 
     CodeGenState ()
-        : m_st (0)
-        , m_node (0)
+        : m_st (nullptr)
+        , m_node (nullptr)
     { }
 
     CodeGenState (InsertPoint it, SymbolTable* st)
-        : m_insertPoint (it)
+        : m_insertPoint (std::move(it))
         , m_st (st)
-        , m_node (0)
+        , m_node (nullptr)
     { }
 
     CodeGenState& operator = (CodeGenState state) {

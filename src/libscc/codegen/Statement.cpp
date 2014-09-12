@@ -82,14 +82,14 @@ CGStmtResult CodeGen::cgStmtCompound(TreeNodeStmtCompound * s) {
     newScope();
 
     for (TreeNode * c_ : s->children()) {
-        assert(dynamic_cast<TreeNodeStmt *>(c_) != NULL);
+        assert(dynamic_cast<TreeNodeStmt *>(c_) != nullptr);
         TreeNodeStmt * c = static_cast<TreeNodeStmt *>(c_);
         const CGStmtResult & cResult = codeGenStmt(c);
         append(result, cResult);
         if (result.isFatal()) break;
         if (result.isNotOk()) continue;
 
-        if (cResult.firstImop() == NULL) {
+        if (cResult.firstImop() == nullptr) {
             if (c->type() != NODE_DECL) {
                 m_log.fatalInProc(s) << "Statement with no effect at " << c->location() << '.';
                 result |= CGResult::ERROR_CONTINUE;
@@ -129,18 +129,18 @@ CGStmtResult TreeNodeStmtBreak::codeGenWith(CodeGen & cg) {
 }
 
 CGStmtResult CodeGen::cgStmtBreak(TreeNodeStmtBreak * s) {
-    if (loopST() == NULL) {
+    if (loopST() == nullptr) {
         m_log.fatalInProc(s) << "Break statement not embedded in loop at " << s->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
 
     CGStmtResult result;
-    assert(loopST() != NULL);
+    assert(loopST() != nullptr);
     for (SymbolSymbol * var : m_st->variablesUpTo(loopST())) {
         releaseResource(result, var);
     }
 
-    Imop * i = new Imop(s, Imop::JUMP, 0);
+    auto i = new Imop(s, Imop::JUMP, nullptr);
     pushImopAfter(result, i);
     result.setFirstImop(i);
     result.addToBreakList(i);
@@ -157,7 +157,7 @@ CGStmtResult TreeNodeStmtContinue::codeGenWith(CodeGen & cg) {
 }
 
 CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
-    if (loopST() == NULL) {
+    if (loopST() == nullptr) {
         m_log.fatalInProc(s) << "Continue statement not embedded in loop at " << s->location() << '.';
         return CGResult::ERROR_CONTINUE;
     }
@@ -167,7 +167,7 @@ CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
         releaseResource(result, var);
     }
 
-    Imop * i = new Imop(s, Imop::JUMP, 0);
+    auto i = new Imop(s, Imop::JUMP, nullptr);
     pushImopAfter(result, i);
     result.setFirstImop(i);
     result.addToContinueList(i);
@@ -186,21 +186,21 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
 
     CGStmtResult result;
 
-    Imop* i = NULL;
+    Imop* i = nullptr;
 
     // JUMP SKIP;
     i = pushComment ("Global variable initialization:");
     result.setFirstImop (i);
-    Imop* skip = new Imop (varInit, Imop::JUMP, (Symbol*) 0);
+    auto skip = new Imop (varInit, Imop::JUMP, (Symbol*) nullptr);
     push_imop (skip);
 
-    SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
+    const auto ns = new SymbolSymbol(varInit->variableName(), ty);
     initShapeSymbols (getContext (), m_st, ns);
     setSymbolGlobalScope (ns);
     m_st->appendSymbol (ns);
 
     // <initialization function>
-    SymbolProcedure* procSym = NULL;
+    SymbolProcedure* procSym = nullptr;
     {
         ScopedScope localScope (*this);
         std::stringstream ss;
@@ -238,7 +238,7 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
     retList.push_back (ns);
 
     Imop* callImop = newCall (varInit, retList.begin (), retList.end (), argList.begin (), argList.end ());
-    Imop* cleanImop = new Imop (varInit, Imop::RETCLEAN, NULL, NULL, NULL);
+    auto cleanImop = new Imop (varInit, Imop::RETCLEAN, nullptr, nullptr, nullptr);
     cleanImop->setArg2 (m_st->label (callImop));
     skip->setDest (m_st->label (callImop));
     callImop->setDest (procSym);
@@ -270,7 +270,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     const bool isString = ty->secrecDataType()->isString ();
     const bool isStruct = ty->secrecDataType ()->isComposite ();
 
-    SymbolSymbol * const ns = new SymbolSymbol(varInit->variableName(), ty);
+    const auto ns = new SymbolSymbol(varInit->variableName(), ty);
     m_st->appendSymbol(ns);
 
     SecrecDimType shapeExpressions = 0;
@@ -328,7 +328,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
         return result;
     }
 
-    if (varInit->rightHandSide() != NULL) { // This is a regular definition with an initializer expression
+    if (varInit->rightHandSide() != nullptr) { // This is a regular definition with an initializer expression
 
         // Evaluate rhs:
         const CGResult & eResult = codeGen(varInit->rightHandSide());
@@ -386,18 +386,18 @@ CGStmtResult TreeNodeStmtFor::codeGenWith (CodeGen& cg) {
 CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     CGStmtResult result;
     bool createdScope = false;
-    Symbol * temp = NULL;
+    Symbol * temp = nullptr;
 
     // Initialization expression:
-    if (s->initializer() != NULL) {
-        if (dynamic_cast<TreeNodeExpr *>(s->initializer()) != NULL) {
+    if (s->initializer() != nullptr) {
+        if (dynamic_cast<TreeNodeExpr *>(s->initializer()) != nullptr) {
             TreeNodeExpr * initE = static_cast<TreeNodeExpr *>(s->initializer());
             const CGResult & initResult = codeGen(initE);
             append(result, initResult);
             temp = initResult.symbol();
         }
         else
-        if (dynamic_cast<TreeNodeStmtDecl *>(s->initializer()) != NULL) {
+        if (dynamic_cast<TreeNodeStmtDecl *>(s->initializer()) != nullptr) {
             newScope();
             createdScope = true;
             append(result, codeGenStmt(static_cast<TreeNodeStmtDecl *>(s->initializer())));
@@ -410,7 +410,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
 
     // Conditional expression:
     CGBranchResult condResult;
-    if (s->conditional() != NULL) {
+    if (s->conditional() != nullptr) {
         TreeNodeExpr * e1 = s->conditional();
         if (m_tyChecker->checkPublicBooleanScalar(e1) != TypeChecker::OK) {
             m_log.fatalInProc(s) << "Conditional expression in if statement "
@@ -448,7 +448,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
     }
 
     // Next iteration jump:
-    Imop * j = new Imop(s, Imop::JUMP, 0);
+    auto j = new Imop(s, Imop::JUMP, nullptr);
     pushImopAfter(iterResult, j);
 
     bodyResult.patchFirstImop(iterResult.firstImop());
@@ -470,7 +470,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
         popScope();
     }
     else {
-        if (temp != NULL)
+        if (temp != nullptr)
             releaseTemporary(result, temp);
     }
 
@@ -483,7 +483,7 @@ CGStmtResult CodeGen::cgStmtFor(TreeNodeStmtFor * s) {
         result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
     }
-    if (condResult.firstImop() == NULL && ((bodyResult.flags()
+    if (condResult.firstImop() == nullptr && ((bodyResult.flags()
                     & (CGStmtResult::BREAK | CGStmtResult::RETURN)) == 0x0))
     {
         m_log.fatalInProc(s) << "For loop at " << s->location() << " is clearly infinite!";
@@ -522,7 +522,7 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
     }
 
 
-    assert(result.firstImop() != NULL);
+    assert(result.firstImop() != nullptr);
 
     // Generate code for first branch:
     newScope();
@@ -535,7 +535,7 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
 
     popScope();
 
-    if (trueResult.firstImop() != NULL) {
+    if (trueResult.firstImop() != nullptr) {
         eResult.patchTrueList(m_st->label(trueResult.firstImop()));
         result.addToNextList(trueResult.nextList());
         result.addToBreakList(trueResult.breakList());
@@ -545,13 +545,13 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
         result.addToNextList(eResult.trueList());
     }
 
-    if (s->falseBranch() == NULL) {
+    if (s->falseBranch() == nullptr) {
         result.addToNextList(eResult.falseList());
         result.setFlags(trueResult.flags() | CGStmtResult::FALLTHRU);
     } else {
         // Generate jump out of first branch, if needed:
         if ((trueResult.flags() & CGStmtResult::FALLTHRU) != 0x0) {
-            Imop * i = new Imop(s, Imop::JUMP, 0);
+            auto i = new Imop(s, Imop::JUMP, nullptr);
             push_imop(i);
             result.addToNextList(i);
         }
@@ -567,7 +567,7 @@ CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
 
         popScope();
 
-        if (falseResult.firstImop() == NULL) {
+        if (falseResult.firstImop() == nullptr) {
             result.addToNextList(eResult.falseList());
             result.setFlags(trueResult.flags() | CGStmtResult::FALLTHRU);
         }
@@ -598,7 +598,7 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         return CGResult::ERROR_CONTINUE;
 
     CGStmtResult result;
-    if (s->expression() == NULL) {
+    if (s->expression() == nullptr) {
         releaseProcVariables(result);
 
         Imop * i = newReturn(s);
@@ -614,7 +614,7 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         if (resultSym->isConstant () && resultSym->secrecType ()->secrecDataType ()->isString ())
         {
             Symbol* copy = m_st->appendTemporary (resultSym->secrecType ());
-            Imop* i = new Imop (s, Imop::ASSIGN, copy, resultSym);
+            auto i = new Imop (s, Imop::ASSIGN, copy, resultSym);
             pushImopAfter (result, i);
             resultSym = copy;
             eResult.setResult (resultSym);
@@ -673,7 +673,7 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
     }
 
     // Link the conditional and body together:
-    assert(result.firstImop() != NULL);
+    assert(result.firstImop() != nullptr);
     assert(result.nextList().empty());
 
     SymbolLabel * jumpDest = m_st->label(result.firstImop());
@@ -691,7 +691,7 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
                 & ~(CGStmtResult::BREAK | CGStmtResult::CONTINUE))
             | CGStmtResult::FALLTHRU);
 
-    Imop * i = new Imop(s, Imop::JUMP, 0);
+    auto i = new Imop(s, Imop::JUMP, nullptr);
     pushImopAfter(bodyResult, i);
     i->setDest(jumpDest);
 
@@ -720,7 +720,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
     TypeBasic * strTy = TypeBasic::get(getContext(), DATATYPE_STRING);
 
     CGStmtResult result;
-    Symbol * accum = NULL;
+    Symbol * accum = nullptr;
     for (TreeNodeExpr& e : s->expressions()) {
         const CGResult & eResult = codeGen(&e);
         append(result, eResult);
@@ -731,11 +731,11 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
         Symbol * str = eResult.symbol();
         if (! e.resultType()->secrecDataType()->isString ()) {
             str = m_st->appendTemporary(strTy);
-            Imop * i = new Imop(s, Imop::TOSTRING, str, eResult.symbol());
+            auto i = new Imop(s, Imop::TOSTRING, str, eResult.symbol());
             pushImopAfter(result, i);
         }
 
-        if (accum == NULL) {
+        if (accum == nullptr) {
             accum = str;
         }
         else {
@@ -747,7 +747,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
         }
     }
 
-    pushImopAfter(result, new Imop(s, Imop::PRINT, NULL, accum));
+    pushImopAfter(result, new Imop(s, Imop::PRINT, nullptr, accum));
     releaseTemporary(result, accum);
     return result;
 }
@@ -785,7 +785,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
         return result;
     }
 
-    Symbol* ret = NULL;
+    Symbol* ret = nullptr;
 
     // Release stuff that is returned by the syscall.
     for (const NodeSymbolPair & ts : results) {
@@ -810,14 +810,14 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
             return result;
         }
 
-        Imop * i = new Imop(ts.first, iType, NULL, ts.second);
+        auto i = new Imop(ts.first, iType, nullptr, ts.second);
         pushImopAfter(result, i);
     }
 
-    assert (dynamic_cast<ConstantString*>(nameResult.symbol ()) != NULL);
+    assert (dynamic_cast<ConstantString*>(nameResult.symbol ()) != nullptr);
     ConstantString* syscallName = static_cast<ConstantString*>(nameResult.symbol ());
 
-    Imop * i = new Imop(s, Imop::SYSCALL, ret, syscallName);
+    auto i = new Imop(s, Imop::SYSCALL, ret, syscallName);
     pushImopAfter(result, newComment(syscallName->value()));
     pushImopAfter(result, i);
 
@@ -855,7 +855,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
     popScope();  // end of loop body
 
     // Static checking:
-    if (result.firstImop() == NULL) {
+    if (result.firstImop() == nullptr) {
         m_log.fatalInProc(s) << "Empty loop body at " << body->location() << '.';
         result.setStatus(CGResult::ERROR_CONTINUE);
         return result;
@@ -883,7 +883,7 @@ CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
         return result;
     }
 
-    assert(eResult.firstImop() != NULL);
+    assert(eResult.firstImop() != nullptr);
 
     // Patch jump lists:
 
@@ -910,7 +910,7 @@ CGStmtResult CodeGen::cgStmtExpr(TreeNodeStmtExpr * s) {
 
     s->expression ()->instantiateDataType (getContext ());
     CGStmtResult result = codeGen(s->expression());
-    if (result.symbol() != NULL) {
+    if (result.symbol() != nullptr) {
         releaseTemporary(result, result.symbol());
     }
 
@@ -931,7 +931,7 @@ CGStmtResult CodeGen::cgStmtAssert(TreeNodeStmtAssert * s) {
 
     TreeNodeExpr * e = s->expression();
     CGBranchResult eResult(codeGenBranch(e));
-    assert(eResult.firstImop() != NULL);
+    assert(eResult.firstImop() != nullptr);
     if (eResult.isNotOk()) {
         return eResult;
     }

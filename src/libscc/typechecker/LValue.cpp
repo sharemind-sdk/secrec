@@ -35,7 +35,7 @@ TypeChecker::Status TreeNodeLVariable::accept(TypeChecker & tyChecker) {
 }
 
 TypeChecker::Status TypeChecker::visit(TreeNodeLVariable* lvar) {
-    if (lvar->secrecType () != NULL)
+    if (lvar->secrecType () != nullptr)
         return OK;
 
     if (SymbolSymbol* sym = getSymbol (lvar->identifier ())) {
@@ -70,7 +70,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeLSelect* lselect) {
     TreeNodeLValue* lval = lselect->lvalue ();
     TCGUARD (visit (lval));
     TypeNonVoid* fieldType = checkSelect (lval->location (), lval->secrecType (), lselect->identifier ());
-    if (fieldType != NULL) {
+    if (fieldType != nullptr) {
         lselect->setSecrecType (fieldType);
         return OK;
     }
@@ -87,7 +87,7 @@ TreeNodeLValue* TreeNodeExprSelection::makeLValueV (Location& loc) const {
         return result;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /*******************************************************************************
@@ -121,7 +121,7 @@ TreeNodeLValue* TreeNodeExprIndex::makeLValueV (Location& loc) const {
         return result;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 } // namespace SecreC

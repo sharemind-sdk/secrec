@@ -59,7 +59,7 @@ findProcedures (SymbolTable* st, StringRef name, TypeProc* dt)
     std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name.str(), dt);
     for (Symbol* _procSym : st->findAll (SYM_PROCEDURE, actualName)) {
-        assert (dynamic_cast<SymbolProcedure*>(_procSym) != NULL);
+        assert (dynamic_cast<SymbolProcedure*>(_procSym) != nullptr);
         SymbolProcedure* procSym = static_cast<SymbolProcedure*>(_procSym);
         out.push_back (procSym);
     }
@@ -73,7 +73,7 @@ findTemplates (SymbolTable* st, StringRef name)
     std::vector<SymbolTemplate*> out;
     const std::string actualName = name.str();
     for (Symbol* _symTempl : st->findAll (SYM_TEMPLATE, actualName)) {
-        assert (dynamic_cast<SymbolTemplate*>(_symTempl) != NULL);
+        assert (dynamic_cast<SymbolTemplate*>(_symTempl) != nullptr);
         SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
         out.push_back (symTempl);
     }
@@ -83,7 +83,7 @@ findTemplates (SymbolTable* st, StringRef name)
 
 bool mapVariable (TemplateVarMap& varMap, StringRef id, const TypeArgument& param)
 {
-    TemplateVarMap::iterator it = varMap.find (id);
+    auto it = varMap.find (id);
     if (it != varMap.end () && it->second != param)
         return false;
 
@@ -113,10 +113,10 @@ SymbolProcedure* TypeChecker::mainProcedure ()
     std::vector<SymbolProcedure *> ms = findProcedures (m_st, "main", ty);
     if (ms.size() > 1u) {
         m_log.fatal() << "Multiple definitions of main found!";
-        return NULL;
+        return nullptr;
     } else if (ms.empty()) {
         m_log.fatal() << "No procedure \"void main()\" found!";
-        return NULL;
+        return nullptr;
     }
     return ms.at(0u);
 }
@@ -128,7 +128,7 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
     params.reserve (proc->params ().size ());
     for (TreeNodeStmtDecl& decl : proc->params ()) {
         TCGUARD (visit (&decl));
-        assert (dynamic_cast<TypeBasic*>(decl.resultType()) != NULL);
+        assert (dynamic_cast<TypeBasic*>(decl.resultType()) != nullptr);
         params.push_back (static_cast<TypeBasic*>(decl.resultType()));
     }
 
@@ -140,7 +140,7 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
 TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
                                        SymbolTable * localScope)
 {
-    if (proc->m_cachedType != NULL) {
+    if (proc->m_cachedType != nullptr) {
         return OK;
     }
 
@@ -226,7 +226,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     TypeProc* argTypes = TypeProc::get (getContext (), argumentDataTypes);
     TCGUARD (findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt));
 
-    if (symProc == NULL) {
+    if (symProc == nullptr) {
         m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
         m_log.fatal () << '\t' << name->value() << argTypes->paramsToNormalString();
         m_log.fatal () << "In context " << TypeContext::PrettyPrint (tyCxt) << " at " << tyCxt.location() << '.';
@@ -236,9 +236,9 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         if (!cs.empty()) {
             std::vector<SymbolProcedure *> cps;
             do {
-                assert(dynamic_cast<SymbolProcedure *>(cs.back()) != NULL);
+                assert(dynamic_cast<SymbolProcedure *>(cs.back()) != nullptr);
                 SymbolProcedure * const p = static_cast<SymbolProcedure *>(cs.back());
-                if (p->shortOf() == NULL)
+                if (p->shortOf() == nullptr)
                     cps.push_back(p);
                 cs.pop_back();
             } while (!cs.empty());
@@ -259,7 +259,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             if (!haveCandidatesLabel)
                 m_log.info() << "Candidates are:";
             for (Symbol * c : boost::adaptors::reverse (cs)) {
-                assert(dynamic_cast<SymbolTemplate *>(c) != NULL);
+                assert(dynamic_cast<SymbolTemplate *>(c) != nullptr);
                 if (c->location()) {
                     m_log.info() << '\t' << *c << " at " << *(c->location());
                 } else {
@@ -303,8 +303,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
     if (root->haveResultType())
         return OK;
 
-    Type* resultType = NULL;
-    SymbolProcedure* symProc = NULL;
+    Type* resultType = nullptr;
+    SymbolProcedure* symProc = nullptr;
     TreeNodeIdentifier *id = root->procName ();
     TCGUARD (checkProcCall(id, *root, root->params (), resultType, symProc));
     root->setProcedure (symProc);
@@ -321,12 +321,12 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     assert(errorCxt);
 
     // Look for regular procedures:
-    assert (argTypes != NULL);
-    SymbolProcedure* procTempSymbol = NULL;
+    assert (argTypes != nullptr);
+    SymbolProcedure* procTempSymbol = nullptr;
     for (SymbolProcedure* s : findProcedures (m_st, name, argTypes)) {
         SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
         if (! _ty->isVoid ()) { // and procedure is non-void...
-            assert (dynamic_cast<TypeNonVoid*>(_ty) != NULL);
+            assert (dynamic_cast<TypeNonVoid*>(_ty) != nullptr);
             TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
             if (! tyCxt.matchSecType (ty->secrecSecType ()))   continue;
             if (! tyCxt.matchDataType (ty->secrecDataType ())) continue;
@@ -339,7 +339,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
             if (tyCxt.haveContextDimType ())  continue;
         }
 
-        if (procTempSymbol != NULL) {
+        if (procTempSymbol != nullptr) {
             m_log.fatalInProc(errorCxt) << "Multiple matching procedures at "
                                         << errorCxt->location() << '.';
             return E_TYPE;
@@ -348,7 +348,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
         procTempSymbol = s;
     }
 
-    if (procTempSymbol != NULL) {
+    if (procTempSymbol != nullptr) {
         symProc = procTempSymbol;
         return OK;
     }
@@ -357,7 +357,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     SymbolTemplate::Weight best;
     std::vector<Instantiation> bestMatches;
     for (SymbolTemplate* s : findTemplates (m_st, name)) {
-        assert (s->decl ()->containingModule () != NULL);
+        assert (s->decl ()->containingModule () != nullptr);
         Instantiation inst (s);
         if (unify (inst, tyCxt, argTypes)) {
             const SymbolTemplate::Weight& w = s->weight ();
@@ -515,7 +515,7 @@ bool TypeChecker::unify (Instantiation& inst,
         const TypeArgument& param = varMap.find (typeVar)->second;
         if (quant.type () == NODE_TEMPLATE_DOMAIN_QUANT) {
             TreeNodeDomainQuantifier* domain = static_cast<TreeNodeDomainQuantifier*>(&quant);
-            if (domain->kind () != NULL) {
+            if (domain->kind () != nullptr) {
                 if (param.secType ()->isPublic ())
                     return false;
                 else {
@@ -547,7 +547,7 @@ TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
     TCGUARD (visit(body, localST));
 
     proc = findProcedure (m_st, body->procedureName (), body->procedureType ());
-    if (proc == NULL) {
+    if (proc == nullptr) {
         proc = appendProcedure (m_st, *body);
     }
 

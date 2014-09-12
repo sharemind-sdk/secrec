@@ -34,7 +34,7 @@ public: /* Methods: */
     ~ModuleMap ();
 
     bool addSearchPath (const std::string& pathName);
-    bool addModule (const std::string& name, std::auto_ptr<ModuleInfo> info);
+    bool addModule (const std::string& name, std::unique_ptr<ModuleInfo> info);
     ModuleInfo* findModule (const std::string& name) const;
 
 private: /* Fields: */

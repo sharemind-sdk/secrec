@@ -13,6 +13,7 @@
 #include "StringRef.h"
 
 #include <iosfwd>
+#include <utility>
 
 namespace SecreC {
 
@@ -63,7 +64,7 @@ public: /* Methods: */
     static PublicSecType* get (Context& cxt);
 
 protected:
-    void print (std::ostream & os) const;
+    void print (std::ostream & os) const override;
 };
 
 /*******************************************************************************
@@ -75,7 +76,7 @@ public: /* Methods: */
     PrivateSecType (StringRef name,
                     SymbolKind* kind)
         : SecurityType (false)
-        , m_name (name)
+        , m_name (std::move(name))
         , m_kind (kind)
     { }
 
@@ -85,7 +86,7 @@ public: /* Methods: */
     static PrivateSecType* get (Context& cxt, StringRef name, SymbolKind* kind);
 
 protected:
-    void print (std::ostream & os) const;
+    void print (std::ostream & os) const override;
 
 private: /* Fields: */
     StringRef   const m_name;
@@ -103,7 +104,7 @@ inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
     if (a->isPublic ()) return b;
     if (b->isPublic ()) return a;
     if (a == b) return a;
-    return NULL;
+    return nullptr;
 }
 
 } // namespace SecreC

@@ -68,11 +68,6 @@ bool ReachingJumps::finishBlock(const Block & b) {
 }
 
 std::string ReachingJumps::toString(const Program & pr) const {
-    typedef std::set<const Imop *>::const_iterator ISCI;
-    typedef std::map<unsigned long, char>::iterator       LCMI;
-    typedef std::map<unsigned long, char>::const_iterator LCMCI;
-    typedef BJM::const_iterator BJMCI;
-
     std::ostringstream os;
 
     os << "Reaching jumps analysis results:" << std::endl;
@@ -83,32 +78,32 @@ std::string ReachingJumps::toString(const Program & pr) const {
 
         os << "  Block " << bi->index() << ": ";
 
-        BJMCI posi = m_inPos.find(&*bi);
-        BJMCI negi = m_inNeg.find(&*bi);
+        auto posi = m_inPos.find(&*bi);
+        auto negi = m_inNeg.find(&*bi);
 
         std::map<unsigned long, char> jumps;
 
         if (posi != m_inPos.end()) {
-            for (ISCI jt = (*posi).second.begin(); jt != (*posi).second.end(); ++ jt) {
-                jumps.insert(std::make_pair((*jt)->index(), '+'));
+            for (const auto & elem : posi->second) {
+                jumps.insert(std::make_pair(elem->index(), '+'));
             }
 
             if (negi != m_inNeg.end()) {
-                for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); ++ jt) {
-                    LCMI kt = jumps.find((*jt)->index());
+                for (const auto & elem : negi->second) {
+                    auto kt = jumps.find(elem->index());
 
                     if (kt != jumps.end()) {
                         (*kt).second = '*';
                     }
                     else {
-                        jumps.insert(std::make_pair((*jt)->index(), '-'));
+                        jumps.insert(std::make_pair(elem->index(), '-'));
                     }
                 }
             }
         }
         else if (negi != m_inNeg.end()) {
-            for (ISCI jt = (*negi).second.begin(); jt != (*negi).second.end(); ++ jt) {
-                jumps.insert(std::make_pair((*jt)->index(), '-'));
+            for (const auto & elem : negi->second) {
+                jumps.insert(std::make_pair(elem->index(), '-'));
             }
         }
 
@@ -116,7 +111,7 @@ std::string ReachingJumps::toString(const Program & pr) const {
             os << "NONE";
         }
         else {
-            for (LCMCI jt = jumps.begin(); jt != jumps.end(); ++ jt) {
+            for (auto jt = jumps.begin(); jt != jumps.end(); ++ jt) {
                 if (jt != jumps.begin()) {
                     os << ", ";
                 }

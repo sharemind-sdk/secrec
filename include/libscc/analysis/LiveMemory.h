@@ -35,7 +35,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    std::string toString(const Program &pr) const;
+    std::string toString(const Program &pr) const override;
 
     std::set<const Imop*> deadCopies (const Program& pr) const;
 
@@ -57,17 +57,17 @@ public: /* Methods: */
 
 protected:
 
-    virtual void start (const Program& pr);
-    virtual void startBlock(const Block& b);
-    virtual void outTo(const Block &from, Edge::Label label, const Block &to) {
+    virtual void start (const Program& pr) override;
+    virtual void startBlock(const Block& b) override;
+    virtual void outTo(const Block &from, Edge::Label label, const Block &to) override {
         if (Edge::isGlobal (label))
             outToGlobal (from, to);
         else
             outToLocal (from, to);
     }
 
-    virtual bool finishBlock(const Block &b);
-    virtual void finish () { }
+    virtual bool finishBlock(const Block &b) override;
+    virtual void finish () override { }
 
 private:
 
