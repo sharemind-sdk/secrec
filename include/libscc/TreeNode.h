@@ -249,7 +249,7 @@ public: /* Methods: */
     { }
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeInternalUse (m_location);
     }
 };
@@ -266,7 +266,7 @@ public: /* Methods: */
     { }
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDimensions (m_location);
     }
 };
@@ -311,12 +311,12 @@ public: /* Methods: */
     TreeNodeIdentifier* identifier () const;
 
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
-                                  bool& isIndexed) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                          bool& isIndexed) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeLVariable (m_location);
     }
 };
@@ -334,12 +334,12 @@ public: /* Methods: */
     TreeNodeLValue* lvalue () const;
     TreeNodeSubscript* indices () const;
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
-                                  bool& isIndexed) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                          bool& isIndexed) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeLIndex (m_location);
     }
 };
@@ -357,12 +357,12 @@ public: /* Methods: */
     TreeNodeLValue* lvalue () const;
     TreeNodeIdentifier* identifier () const;
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
-                                  bool& isIndexed) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg, SubscriptInfo& subInfo,
+                          bool& isIndexed) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    virtual TreeNode* cloneV () const override final {
         return new TreeNodeLSelect (m_location);
     }
 };
@@ -379,7 +379,7 @@ public: /* Methods: */
     { }
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeSubscript (m_location);
     }
 };
@@ -408,7 +408,7 @@ public: /* Methods: */
     { }
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeIndexInt (m_location);
     }
 };
@@ -425,7 +425,7 @@ public: /* Methods: */
     { }
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeIndexSlice (m_location);
     }
 };
@@ -446,9 +446,9 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeIdentifier (m_value, m_location);
     }
 
@@ -486,12 +486,12 @@ public: /* Methods: */
 
     SymbolTypeVariable* typeVariable () const { return m_typeVariable; }
     void setTypeVariable (SymbolTypeVariable* tv) { m_typeVariable = tv; }
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker) override;
-    virtual void setTypeContext (TypeContext& cxt) const override;
+    TypeChecker::Status accept(TypeChecker& tyChecker) override final;
+    void setTypeContext (TypeContext& cxt) const override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeVarF (m_location);
     }
 
@@ -515,13 +515,13 @@ public: /* Methods: */
     SecurityType* cachedType () const { return m_cachedType; }
     void setCachedType (SecurityType* ty);
 
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker) override;
-    virtual void setTypeContext (TypeContext& cxt) const override;
+    TypeChecker::Status accept(TypeChecker& tyChecker) override final;
+    void setTypeContext (TypeContext& cxt) const override final;
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeSecTypeF (m_type, m_location);
     }
 
@@ -543,7 +543,7 @@ public: /* Methods: */
 
     inline DataType* cachedType () const { return m_dataType; }
     inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
-    virtual void setTypeContext (TypeContext& cxt) const override;
+    void setTypeContext (TypeContext& cxt) const override final;
 
 private: /* Fields: */
     DataType* m_dataType;
@@ -560,13 +560,13 @@ public: /* Methods: */
         , m_secrecDataType (dataType)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker) override;
+    TypeChecker::Status accept(TypeChecker& tyChecker) override final;
     SecrecDataType secrecDataType () const { return m_secrecDataType; }
 
 protected:
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         auto result = new TreeNodeDataTypeConstF (m_secrecDataType, m_location);
         result->setCachedType (cachedType ());
         return result;
@@ -586,12 +586,12 @@ public: /* Methods: */
         : TreeNodeDataTypeF (NODE_DATATYPE_VAR_F, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker) override;
+    TypeChecker::Status accept(TypeChecker& tyChecker) override final;
 
 protected:
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeDataTypeVarF (m_location);
     }
 };
@@ -606,12 +606,12 @@ public: /* Methods: */
         : TreeNodeDataTypeF (NODE_DATATYPE_TEMPLATE_F, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker& tyChecker) override;
+    TypeChecker::Status accept(TypeChecker& tyChecker) override final;
     TreeNodeIdentifier* identifier () const;
     TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDataTypeTemplateF (m_location);
     }
 };
@@ -630,7 +630,7 @@ public: /* Methods: */
 
     inline SecrecDimType cachedType () const { return m_dimType; }
     inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
-    virtual void setTypeContext (TypeContext& cxt) const override;
+    void setTypeContext (TypeContext& cxt) const override final;
 
 private: /* Fields: */
     SecrecDimType m_dimType;
@@ -647,12 +647,12 @@ public: /* Methods: */
         : TreeNodeDimTypeF (NODE_DIMTYPE_CONST_F, loc)
     { setCachedType (dimType); }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeDimTypeConstF (cachedType (), m_location);
     }
 };
@@ -667,12 +667,12 @@ public: /* Methods: */
         : TreeNodeDimTypeF (NODE_DIMTYPE_VAR_F, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeDimTypeVarF (m_location);
     }
 };
@@ -719,8 +719,8 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeType (m_location);
     }
 };
@@ -737,7 +737,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeVoid (m_location);
     }
 };
@@ -781,10 +781,10 @@ public: /* Methods: */
     TreeNodeIdentifier* identifier () const;
 
 private:
-    TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeArgVar (m_location);
     }
 };
@@ -803,10 +803,10 @@ public: /* Methods: */
     TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
 
 private:
-    TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeArgTemplate (m_location);
     }
 };
@@ -826,10 +826,10 @@ public: /* Methods: */
     SecrecDataType secrecDataType () const { return m_secrecDataType; }
 
 private:
-    TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeArgDataTypeConst (m_secrecDataType, m_location);
     }
 
@@ -852,10 +852,10 @@ public: /* Methods: */
     SecrecDimType secrecDimType () const { return m_secrecDimType; }
 
 private:
-    TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeArgDimTypeConst (m_secrecDimType, m_location);
     }
 
@@ -874,10 +874,10 @@ public: /* Methods: */
     { }
 
 private:
-    TypeChecker::Status accept(TypeChecker & tyChecker) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
 
 protected:
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTypeArgPublic (m_location);
     }
 };
@@ -953,12 +953,12 @@ public: /* Methods: */
         : TreeNodeExpr(NODE_EXPR_NONE, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
-    virtual TreeNode* cloneV () const override {
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprNone (m_location);
     }
 };
@@ -987,18 +987,18 @@ public: /* Methods: */
     inline explicit TreeNodeExprArrayConstructor(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_ARRAY_CONSTRUCTOR, loc) { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeSeqView<TreeNodeExpr> expressions () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprArrayConstructor (m_location);
     }
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 };
 
 /******************************************************************
@@ -1012,18 +1012,18 @@ public: /* Methods: */
 
     inline uint64_t value() const { return m_value; }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprInt (m_value, m_location);
     }
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
 private: /* Fields: */
     uint64_t m_value;
@@ -1039,20 +1039,20 @@ public: /* Methods: */
         : TreeNodeExpr(NODE_EXPR_SELECTION, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
     TreeNodeIdentifier* identifier () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprSelection (m_location);
     }
 
-    virtual TreeNodeLValue* makeLValueV (Location& loc) const override;
+    TreeNodeLValue* makeLValueV (Location& loc) const override final;
 };
 
 /******************************************************************
@@ -1064,16 +1064,16 @@ public: /* Methods: */
     inline TreeNodeExprAssign(SecrecTreeNodeType type, const Location & loc)
         : TreeNodeExpr(type, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* rightHandSide () const;
     TreeNodeLValue* leftHandSide () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprAssign (m_type, m_location);
     }
 };
@@ -1091,16 +1091,16 @@ public: /* Methods: */
     inline TreeNodeExprCast (const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
     TreeNodeDataTypeF* dataType () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprCast (m_location);
     }
 };
@@ -1114,22 +1114,22 @@ public:
     inline TreeNodeExprIndex(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_INDEX, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
     TreeNodeSubscript* indices () const;
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprIndex (m_location);
     }
 
-    virtual TreeNodeLValue* makeLValueV (Location& loc) const override;
+    TreeNodeLValue* makeLValueV (Location& loc) const override final;
 };
 
 /******************************************************************
@@ -1141,14 +1141,14 @@ public:
     inline TreeNodeExprSize(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_SIZE, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprSize (m_location);
     }
 };
@@ -1162,14 +1162,14 @@ public:
     inline TreeNodeExprShape(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_SHAPE, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprShape (m_location);
     }
 };
@@ -1183,8 +1183,8 @@ public:
     inline TreeNodeExprCat(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CAT, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
@@ -1192,9 +1192,9 @@ public:
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprCat (m_location);
     }
 };
@@ -1208,8 +1208,8 @@ public:
     inline TreeNodeExprReshape(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_RESHAPE, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* reshapee () const;
 
@@ -1217,9 +1217,9 @@ public:
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprReshape (m_location);
     }
 };
@@ -1233,14 +1233,14 @@ public:
     inline TreeNodeExprToString(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TOSTRING, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprToString (m_location);
     }
 };
@@ -1296,9 +1296,9 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* leftExpression () const;
     TreeNodeExpr* rightExpression () const;
@@ -1307,11 +1307,11 @@ public: /* Methods: */
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual SecrecOperator getOperatorV () const override;
+    SecrecOperator getOperatorV () const override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprBinary (m_type, m_location);
     }
 };
@@ -1327,15 +1327,15 @@ public: /* Methods: */
 
     inline bool value() const { return m_value; }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    void printXmlHelper (std::ostream & os) const override final;
+    bool printHelper(std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprBool (m_value, m_location);
     }
 
@@ -1361,14 +1361,14 @@ public: /* Methods: */
         m_contextSecType = ty;
     }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override;
+    TreeNode* cloneV () const override final;
 };
 
 /******************************************************************
@@ -1380,17 +1380,17 @@ public: /* Methods: */
     inline TreeNodeExprDeclassify(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_DECLASSIFY, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprDeclassify (m_location);
     }
 };
@@ -1406,9 +1406,9 @@ public: /* Methods: */
         , m_procedure (nullptr)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeIdentifier* procName () const;
     TreeNodeSeqView<TreeNodeExpr> params () const;
@@ -1423,7 +1423,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprProcCall (m_location);
     }
 
@@ -1443,9 +1443,9 @@ public: /* Methods: */
         , m_valueSymbol (nullptr)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeIdentifier* identifier () const;
     void setValueSymbol (Symbol* sym) { m_valueSymbol = sym; }
@@ -1453,11 +1453,11 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprRVariable (m_location);
     }
 
-    virtual TreeNodeLValue* makeLValueV (Location&) const override;
+    TreeNodeLValue* makeLValueV (Location&) const override final;
 
 private: /* Fields: */
     Symbol* m_valueSymbol;
@@ -1477,12 +1477,12 @@ public: /* Methods: */
     TreeNodeSeqView<TreeNodeStringPart> parts () const;
 
     bool isConstant () const;
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprString (m_location);
     }
 };
@@ -1517,16 +1517,16 @@ public: /* Methods: */
         , m_value (std::move(value))
     { }
 
-    bool isConstant () const override { return true; }
-    StringRef staticValue () const override { return m_value; }
-    TypeChecker::Status accept (TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    bool isConstant () const override final { return true; }
+    StringRef staticValue () const override final { return m_value; }
+    TypeChecker::Status accept (TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeStringPartFragment (m_value, m_location);
     }
 
@@ -1554,16 +1554,16 @@ public: /* Methods: */
     TypeNonVoid* secrecType () const { return m_secrecType; }
     void setSecrecType (TypeNonVoid* secrecType) { m_secrecType = secrecType; }
 
-    bool isConstant () const override { return m_value != nullptr; }
-    StringRef staticValue () const override;
-    TypeChecker::Status accept (TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    bool isConstant () const override final { return m_value != nullptr; }
+    StringRef staticValue () const override final;
+    TypeChecker::Status accept (TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode* cloneV () const override {
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
         return new TreeNodeStringPartIdentifier (m_name, m_location);
     }
 
@@ -1586,14 +1586,14 @@ public: /* Methods: */
     { }
 
     inline StringRef value () const { return m_value; }
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen & cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen & cg) override final;
 
 protected:
-    virtual void instantiateDataTypeV(Context & cxt, SecrecDataType dType) override;
-    virtual bool printHelper(std::ostream & os) const override;
-    virtual void printXmlHelper (std::ostream & os) const override;
-    virtual TreeNode * cloneV () const override {
+    void instantiateDataTypeV(Context & cxt, SecrecDataType dType) override final;
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode * cloneV () const override final {
         return new TreeNodeExprFloat (m_value, m_location);
     }
 
@@ -1610,9 +1610,9 @@ public: /* Methods: */
     explicit inline TreeNodeExprTernary(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TERNIF, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* conditional () const;
     TreeNodeExpr* trueBranch () const;
@@ -1620,9 +1620,9 @@ public: /* Methods: */
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprTernary (m_location);
     }
 };
@@ -1639,14 +1639,14 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeLValue* lvalue () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprPrefix (m_type, m_location);
     }
 };
@@ -1663,14 +1663,14 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeLValue* lvalue () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprPostfix (m_type, m_location);
     }
 };
@@ -1688,19 +1688,19 @@ public: /* Methods: */
         : TreeNodeExpr(type, loc)
     { }
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual SecrecOperator getOperatorV () const override;
+    SecrecOperator getOperatorV () const override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprUnary (m_type, m_location);
     }
 };
@@ -1715,14 +1715,14 @@ public: /* Methods: */
     inline TreeNodeExprDomainID(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_DOMAINID, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeSecTypeF* securityType () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprDomainID (m_location);
     }
 };
@@ -1736,18 +1736,18 @@ public: /* Methods: */
     inline TreeNodeExprQualified(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_TYPE_QUAL, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
-    virtual CGBranchResult codeGenBoolWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
     TreeNodeSeqView<TreeNodeTypeF> types () const;
 
 protected:
 
-    virtual void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override;
+    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprQualified (m_location);
     }
 };
@@ -1761,14 +1761,14 @@ public: /* Methods: */
     inline TreeNodeExprStringFromBytes(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprStringFromBytes (m_location);
     }
 };
@@ -1782,14 +1782,14 @@ public: /* Methods: */
     inline TreeNodeExprBytesFromString(const Location & loc)
         : TreeNodeExpr(NODE_EXPR_STRING_FROM_BYTES, loc) {}
 
-    virtual TypeChecker::Status accept(TypeChecker & tyChecker) override;
-    virtual CGResult codeGenWith (CodeGen& cg) override;
+    TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    CGResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeExprBytesFromString (m_location);
     }
 };
@@ -1807,7 +1807,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeKind (m_location);
     }
 };
@@ -1826,7 +1826,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDomain (m_location);
     }
 };
@@ -1847,7 +1847,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeAttribute (m_location);
     }
 };
@@ -1882,7 +1882,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStructDecl (m_location);
     }
 
@@ -1917,7 +1917,7 @@ public:
         setContainingProcedureDirectly(this);
     }
 
-    virtual inline void resetParent(TreeNode *parent) override {
+    inline void resetParent(TreeNode *parent) override final {
         setParentDirectly(parent);
     }
 
@@ -1981,7 +1981,7 @@ protected: /* Methods: */
 
     friend class TypeChecker;
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeOpDef (m_operator, m_location);
     }
 
@@ -2020,12 +2020,12 @@ public: /* Methods: */
     // will equal to zero, if kind not specified
     TreeNodeIdentifier* kind () const;
 
-    virtual void printQuantifier (std::ostream & os) const override;
-    virtual TypeChecker::Status accept (TypeChecker & typeChecker) override;
+    void printQuantifier (std::ostream & os) const override final;
+    TypeChecker::Status accept (TypeChecker & typeChecker) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDomainQuantifier (m_location);
     }
 };
@@ -2039,12 +2039,12 @@ public: /* Methods: */
     explicit inline TreeNodeDimQuantifier (const Location & loc)
         : TreeNodeQuantifier(NODE_TEMPLATE_DIM_QUANT, loc) {}
 
-    void printQuantifier (std::ostream & os) const override;
-    virtual TypeChecker::Status accept (TypeChecker & typeChecker) override;
+    void printQuantifier (std::ostream & os) const override final;
+    TypeChecker::Status accept (TypeChecker & typeChecker) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDimQuantifier (m_location);
     }
 };
@@ -2058,12 +2058,12 @@ public: /* Methods: */
     explicit inline TreeNodeDataQuantifier (const Location & loc)
         : TreeNodeQuantifier(NODE_TEMPLATE_DATA_QUANT, loc) {}
 
-    void printQuantifier (std::ostream & os) const override;
-    virtual TypeChecker::Status accept (TypeChecker & typeChecker) override;
+    void printQuantifier (std::ostream & os) const override final;
+    TypeChecker::Status accept (TypeChecker & typeChecker) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeDataQuantifier (m_location);
     }
 };
@@ -2093,7 +2093,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeTemplate (m_location);
     }
 
@@ -2113,7 +2113,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeProgram (m_location);
     }
 };
@@ -2132,7 +2132,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeImport (m_location);
     }
 };
@@ -2159,7 +2159,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         assert (false && "ICE: cloning TreeNodeModule!");
         return new TreeNodeModule (m_location);
     }
@@ -2177,12 +2177,11 @@ public: /* Methods: */
     explicit inline TreeNodeStmtBreak(const Location & loc)
         : TreeNodeStmt(NODE_STMT_BREAK, loc) {}
 
-
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtBreak (m_location);
     }
 };
@@ -2197,11 +2196,11 @@ public: /* Methods: */
     explicit inline TreeNodeStmtCompound(const Location & loc)
         : TreeNodeStmt(NODE_STMT_COMPOUND, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtCompound (m_location);
     }
 };
@@ -2216,12 +2215,11 @@ public: /* Methods: */
     explicit inline TreeNodeStmtContinue(const Location & loc)
         : TreeNodeStmt(NODE_STMT_CONTINUE, loc) {}
 
-
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtContinue (m_location);
     }
 };
@@ -2243,7 +2241,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeVarInit (m_location);
     }
 };
@@ -2263,7 +2261,7 @@ public: /* Methods: */
         , m_procParam (procParam)
     { }
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     inline TypeNonVoid* resultType() const {
         assert(m_type != nullptr);
@@ -2292,7 +2290,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtDecl (m_location, m_global, m_procParam);
     }
 
@@ -2312,14 +2310,14 @@ public: /* Methods: */
     explicit inline TreeNodeStmtDoWhile(const Location & loc)
         : TreeNodeStmt(NODE_STMT_DOWHILE, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* conditional () const;
     TreeNodeStmt* body () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtDoWhile (m_location);
     }
 };
@@ -2334,13 +2332,13 @@ public: /* Methods: */
     explicit inline TreeNodeStmtExpr(const Location & loc)
         : TreeNodeStmt(NODE_STMT_EXPR, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtExpr (m_location);
     }
 };
@@ -2355,13 +2353,13 @@ public: /* Methods: */
     explicit TreeNodeStmtAssert(const Location & loc)
         : TreeNodeStmt(NODE_STMT_ASSERT, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtAssert (m_location);
     }
 };
@@ -2376,7 +2374,7 @@ public: /* Methods: */
     explicit inline TreeNodeStmtFor(const Location & loc)
         : TreeNodeStmt(NODE_STMT_FOR, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNode* initializer () const;
     TreeNodeExpr* conditional () const;
@@ -2385,7 +2383,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtFor (m_location);
     }
 };
@@ -2400,7 +2398,7 @@ public: /* Methods: */
     explicit inline TreeNodeStmtIf(const Location & loc)
         : TreeNodeStmt(NODE_STMT_IF, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* conditional () const;
     TreeNodeStmt* trueBranch () const;
@@ -2408,7 +2406,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtIf (m_location);
     }
 };
@@ -2423,14 +2421,14 @@ public: /* Methods: */
     explicit inline TreeNodeStmtReturn(const Location & loc)
         : TreeNodeStmt(NODE_STMT_RETURN, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     bool hasExpression() const;
     TreeNodeExpr* expression () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtReturn (m_location);
     }
 };
@@ -2445,14 +2443,14 @@ public: /* Methods: */
     explicit inline TreeNodeStmtWhile(const Location & loc)
         : TreeNodeStmt(NODE_STMT_WHILE, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExpr* conditional () const;
     TreeNodeStmt* body () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtWhile (m_location);
     }
 };
@@ -2466,13 +2464,13 @@ public: /* Methods: */
     explicit inline TreeNodeStmtPrint(const Location & loc)
         : TreeNodeStmt(NODE_STMT_PRINT, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeSeqView<TreeNodeExpr> expressions ();
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtPrint (m_location);
     }
 };
@@ -2490,7 +2488,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeSyscallParam  (m_type, m_location);
     }
 };
@@ -2504,14 +2502,14 @@ public: /* Methods: */
     explicit inline TreeNodeStmtSyscall(const Location & loc)
         : TreeNodeStmt(NODE_STMT_SYSCALL, loc) {}
 
-    virtual CGStmtResult codeGenWith (CodeGen& cg) override;
+    CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     TreeNodeExprString* name () const;
     TreeNodeSeqView<TreeNodeSyscallParam> params () const;
 
 protected:
 
-    virtual TreeNode* cloneV () const override {
+    TreeNode* cloneV () const override final {
         return new TreeNodeStmtSyscall  (m_location);
     }
 };
