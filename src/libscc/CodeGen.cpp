@@ -325,13 +325,10 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
 
 LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
     LoopInfo loopInfo;
-    const SubscriptInfo::SPV & spv = subscript.spv();
-    TypeBasic* const pubIntTy = TypeBasic::getIndexType(getContext ());
-    for (const auto & elem : spv) {
-        Symbol * sym = m_st->appendTemporary(pubIntTy);
-        loopInfo.push_index(sym);
-    }
-
+    const auto& spv = subscript.spv();
+    const auto pubIntTy = TypeBasic::getIndexType(getContext ());
+    for (size_t i = 0; i < spv.size (); ++ i)
+        loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     return loopInfo;
 }
 
@@ -485,8 +482,6 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
 }
 
 CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNode * node) {
-    typedef SubscriptInfo::SPV SPV;
-
     assert(node != nullptr);
     assert(tmp != nullptr);
     assert(node->type() == NODE_SUBSCRIPT);

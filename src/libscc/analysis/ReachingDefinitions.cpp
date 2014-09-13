@@ -60,8 +60,6 @@ bool ReachingDefinitions::makeOuts(const Block & b, const SDefs & in, SDefs & ou
 }
 
 std::string ReachingDefinitions::toString(const Program & pr) const {
-    typedef Defs::const_iterator DCI;
-
     std::ostringstream os;
 
     os << "Reaching definitions analysis results:" << std::endl;

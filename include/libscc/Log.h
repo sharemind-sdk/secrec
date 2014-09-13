@@ -80,10 +80,9 @@ inline CompileLogStream::~CompileLogStream() {
 
 inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
 {
-    typedef CompileLogMessage CLM;
-    typedef std::deque<CompileLogMessage>::const_iterator const_iter;
-    for (const auto & elem : log.messages ()) {
-        switch (elem.type) {
+    using CLM = CompileLogMessage::Type;
+    for (const auto & logMessage: log.messages ()) {
+        switch (logMessage.type) {
         case CLM::Fatal:   out << "[FATAL] "; break;
         case CLM::Error:   out << "[ERROR] "; break;
         case CLM::Warning: out << "[WARN ] "; break;
@@ -91,7 +90,7 @@ inline std::ostream &operator<<(std::ostream &out, const CompileLog &log)
         case CLM::Debug:   out << "[DEBUG] "; break;
         }
 
-        out << elem.message << std::endl;
+        out << logMessage.message << std::endl;
     }
     return out;
 }

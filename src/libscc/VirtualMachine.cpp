@@ -880,14 +880,12 @@ private:
     void compileReturn (const Imop& imop) {
         assert (imop.type () == Imop::RETURN);
 
-        typedef Imop::OperandConstIterator OCI;
-
         assert (imop.operandsBegin () != imop.operandsEnd () &&
                 "Malformed RETURN instruction!");
 
         std::stack<const Symbol* > rev;
         auto it = imop.operandsBegin (),
-            itEnd = imop.operandsEnd ();
+             itEnd = imop.operandsEnd ();
         for (++ it; it != itEnd; ++ it)
             rev.push (*it);
         while (!rev.empty ()) {

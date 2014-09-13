@@ -114,32 +114,24 @@ void TypeProc::prettyPrint (std::ostream& os) const {
 }
 
 std::string TypeProc::paramsToNormalString () const {
-    typedef std::vector<TypeBasic*>::const_iterator TVCI;
-
     std::ostringstream oss;
     oss << '(';
-    if (m_params.size() > 0) {
-        oss << PrettyPrint (m_params.at(0));
-        if (m_params.size() > 1)
-            for (auto it = ++ m_params.begin(); it != m_params.end(); ++ it)
-                oss << ", " << PrettyPrint (*it);
+    for (auto it = m_params.begin (); it != m_params.end (); ++ it) {
+        if (it != m_params.begin ())
+            oss << ", ";
+        oss << PrettyPrint (*it);
     }
     oss << ')';
     return oss.str();
 }
 
 std::string TypeProc::mangle () const {
-    typedef std::vector<TypeBasic*>::const_iterator TVCI;
-
     std::ostringstream os;
     os << "(";
-    if (m_params.size() > 0) {
-        os << mangleDataType (m_params.at (0));
-        if (m_params.size() > 1) {
-            for (auto it = ++ m_params.begin(); it != m_params.end(); ++ it) {
-                os << ", " << mangleDataType (*it);
-            }
-        }
+    for (auto it = m_params.begin (); it != m_params.end (); ++ it) {
+        if (it != m_params.begin ())
+            os << ", ";
+        os << mangleDataType (*it);
     }
     os << ")";
     return os.str();

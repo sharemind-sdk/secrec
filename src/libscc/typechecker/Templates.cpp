@@ -72,7 +72,12 @@ const char* kindAsString (TypeArgumentKind kind) {
     }
 }
 
-TypeChecker::Status checkTypeVariable (TypeVariableMap& map, SymbolTable* st, CompileLog& log, const TreeNodeTypeF& t, bool isReturn) {
+TypeChecker::Status checkTypeVariable (TypeVariableMap& map,
+                                       SymbolTable* st,
+                                       CompileLog& log,
+                                       const TreeNodeTypeF& t,
+                                       bool isReturn)
+{
     if (! t.isVariable ())
         return TypeChecker::OK;
 

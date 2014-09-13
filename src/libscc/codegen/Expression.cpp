@@ -133,8 +133,6 @@ CGResult TreeNodeExprIndex::codeGenWith(CodeGen & cg) {
 }
 
 CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
-    typedef std::vector<std::pair<Symbol *, Symbol *> > SPV; // symbol pair vector
-
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
@@ -1844,8 +1842,6 @@ CGResult TreeNodeExprPrefix::codeGenWith(CodeGen & cg) {
 }
 
 CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
-    typedef std::vector<std::pair<Symbol *, Symbol *> > SPV;
-
     // Type check:
     if (m_tyChecker->visit(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;

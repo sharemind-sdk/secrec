@@ -118,11 +118,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         }
 
         // 4. initialze running indices
-        LoopInfo loopInfo;
-        for (const auto & elem : spv) {
-            Symbol * sym = m_st->appendTemporary(pubIntTy);
-            loopInfo.push_index(sym);
-        }
+        LoopInfo loopInfo = prepareLoopInfo (cgSub);
 
         // 6. initialze symbols for offsets and temporary results
         Symbol * offset = m_st->appendTemporary(pubIntTy);
