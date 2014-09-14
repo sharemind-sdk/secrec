@@ -15,6 +15,7 @@ namespace SecreC {
 class TreeNode;
 class TreeNodeAttribute;
 class TreeNodeDataQuantifier;
+class TreeNodeDataTypeF;
 class TreeNodeDataTypeConstF;
 class TreeNodeDataTypeTemplateF;
 class TreeNodeDataTypeVarF;

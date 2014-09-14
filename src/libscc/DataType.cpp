@@ -328,7 +328,7 @@ DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
     const Map::key_type index (name, args);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, fields)));
+        i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, args, fields)));
     }
 
     return i->second;

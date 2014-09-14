@@ -139,8 +139,8 @@ public: /* Types: */
         { }
     };
 
-    typedef std::vector<Field> FieldList;
-    typedef std::vector<TypeArgument> TypeArgumentList;
+    using FieldList = std::vector<Field>;
+    using TypeArgumentList = std::vector<TypeArgument>;
 
 public: /* Methods: */
 
@@ -150,20 +150,23 @@ public: /* Methods: */
     static DataTypeStruct* get (Context& cxt, StringRef name,
         const FieldList& fields,
         const TypeArgumentList& typeArgs = TypeArgumentList());
-    const std::vector<DataTypeStruct::Field>& fields () const { return m_fields; }
+    const FieldList& fields () const { return m_fields; }
+    const TypeArgumentList& typeArgs () const { return m_typeArgs; }
 
 protected:
     void print (std::ostream& os) const override;
 
-    explicit DataTypeStruct (StringRef name, std::vector<Field>  fields)
+    explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)
         : DataType (COMPOSITE)
         , m_name (std::move(name))
+        , m_typeArgs (std::move (typeArgs))
         , m_fields (std::move(fields))
     { }
 
 private: /* Fields: */
-    const StringRef          m_name;
-    const std::vector<Field> m_fields;
+    const StringRef        m_name;
+    const TypeArgumentList m_typeArgs;
+    const FieldList        m_fields;
 };
 
 inline DataTypeStruct::Field make_field (TypeBasic* type, StringRef name) {
