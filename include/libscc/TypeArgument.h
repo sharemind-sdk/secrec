@@ -72,6 +72,34 @@ public: /* Methods: */
         return un_dataType;
     }
 
+    // I am aware that we can actually just directly compare against the union
+    // without bothering to check the kinds. For the sake of not horribly
+    // violating the C++ standard I'm going for the current implementation.
+
+    bool equals (SecrecDimType dimType) const {
+        if (m_kind != TA_DIM)
+            return false;
+        return un_dimType == dimType;
+    }
+
+    bool equlas (SecurityType* secType) const {
+        if (m_kind != TA_SEC)
+            return false;
+        return un_secType == secType;
+    }
+
+    bool equals (SecrecDataType dataType) const;
+
+    bool equals (DataType* dataType) const {
+        if (m_kind != TA_DATA)
+            return false;
+        return un_dataType == dataType;
+    }
+
+    bool isDataType () const { return m_kind == TA_DATA; }
+    bool isDimType () const { return m_kind == TA_DIM; }
+    bool isSecType () const { return m_kind == TA_SEC; }
+
     TypeArgumentKind kind () const { return m_kind; }
 
     SymbolTypeVariable* bind (StringRef name) const;

@@ -61,6 +61,12 @@ TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
     }
 }
 
+bool TypeArgument::equals (SecrecDataType dataType) const {
+    if (m_kind != TA_DATA)
+        return false;
+    return un_dataType->equals (dataType);
+}
+
 /*******************************************************************************
   TreeNodeTypeArgVar
 *******************************************************************************/
