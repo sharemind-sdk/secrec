@@ -82,16 +82,6 @@ findTemplates (SymbolTable* st, StringRef name)
     return out;
 }
 
-bool mapVariable (TemplateVarMap& varMap, StringRef id, const TypeArgument& param)
-{
-    auto it = varMap.find (id);
-    if (it != varMap.end () && it->second != param)
-        return false;
-
-    varMap.insert (it, std::make_pair (id, param));
-    return true;
-}
-
 bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt) {
     if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
         return false;
@@ -451,10 +441,7 @@ bool TypeChecker::unify (Instantiation& inst,
     const auto& varMap = typeUnifier.typeVars ();
     for (TreeNodeQuantifier& quant : t->quantifiers ()) {
         StringRef typeVar = quant.typeVariable ()->value ();
-        if (varMap.find (typeVar) == varMap.end ()) {
-            std::cerr << typeVar << std::endl;
-            assert (false);
-        }
+        assert (varMap.find (typeVar) != varMap.end ());
         const TypeArgument& param = varMap.find (typeVar)->second;
         if (quant.type () == NODE_TEMPLATE_DOMAIN_QUANT) {
             TreeNodeDomainQuantifier* domain = static_cast<TreeNodeDomainQuantifier*>(&quant);
