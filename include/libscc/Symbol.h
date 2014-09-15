@@ -147,12 +147,14 @@ private: /* Fields: */
 class SymbolDomain : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDomain(StringRef name, SecurityType * secType)
+    SymbolDomain(StringRef name, SecurityType * secType, const Location* loc = nullptr)
         : SymbolTypeVariable (SYM_DOMAIN, name)
         , m_secType (secType)
+        , m_location (loc)
     { }
 
-    inline SecurityType* securityType () const { return m_secType; }
+    SecurityType* securityType () const { return m_secType; }
+    const Location* location() const override final { return m_location; }
 
 protected:
     void print(std::ostream & os) const override;
@@ -160,6 +162,7 @@ protected:
 
 private: /* Fields: */
     SecurityType* const m_secType;
+    const Location* m_location;
 };
 
 /*******************************************************************************

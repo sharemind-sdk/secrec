@@ -26,6 +26,7 @@ class SymbolTypeVariable;
 class ConstantString;
 class TreeNodeSubscript;
 class SubscriptInfo;
+class TypeUnifier;
 
 /******************************************************************
   TreeNode
@@ -544,6 +545,7 @@ public: /* Methods: */
     inline DataType* cachedType () const { return m_dataType; }
     inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
     void setTypeContext (TypeContext& cxt) const override final;
+    virtual bool acceptUnifier (TypeUnifier& tu, DataType* dataType) = 0;
 
 private: /* Fields: */
     DataType* m_dataType;
@@ -561,6 +563,7 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
     SecrecDataType secrecDataType () const { return m_secrecDataType; }
 
 protected:
@@ -587,6 +590,7 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -607,6 +611,7 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
     TreeNodeIdentifier* identifier () const;
     TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
 
@@ -631,6 +636,7 @@ public: /* Methods: */
     inline SecrecDimType cachedType () const { return m_dimType; }
     inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
     void setTypeContext (TypeContext& cxt) const override final;
+    virtual bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) = 0;
 
 private: /* Fields: */
     SecrecDimType m_dimType;
@@ -648,6 +654,7 @@ public: /* Methods: */
     { setCachedType (dimType); }
 
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -668,6 +675,7 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -760,6 +768,7 @@ public: /* Methods: */
     bool hasTypeArgument () const { return m_typeArgument != nullptr; }
     const TypeArgument& typeArgument () const;
     void setTypeArgument (const TypeArgument& typeArgument);
+    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) = 0;
 
 private:
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
@@ -782,6 +791,7 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -804,6 +814,7 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -827,6 +838,7 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -853,6 +865,7 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -875,6 +888,7 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
+    bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {

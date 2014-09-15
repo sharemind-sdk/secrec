@@ -58,7 +58,8 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 
     st->appendSymbol(new SymbolDomain(
                          idDomain->value(),
-                         PrivateSecType::get(getContext(), idDomain->value(), kind)));
+                         PrivateSecType::get(getContext(), idDomain->value(), kind),
+                         &idDomain->location ()));
     return CGStmtResult();
 }
 

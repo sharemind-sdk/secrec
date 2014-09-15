@@ -51,7 +51,6 @@ std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
     return os;
 }
 
-
 TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
     switch (quant.type ()) {
     case NODE_TEMPLATE_DOMAIN_QUANT: return TA_SEC;

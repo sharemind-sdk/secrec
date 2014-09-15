@@ -62,6 +62,7 @@ SET(LIBSCC_SOURCES
     "typechecker/Templates.h"
     "typechecker/Type.cpp"
     "TypeContext.cpp"
+    "TypeUnifier.cpp"
     "Types.cpp"
     "VirtualMachine.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c"
@@ -106,6 +107,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/TypeArgument.h"
     "${LIBSCC_INCLUDE_DIR}/TypeChecker.h"
     "${LIBSCC_INCLUDE_DIR}/TypeContext.h"
+    "${LIBSCC_INCLUDE_DIR}/TypeUnifier.h"
     "${LIBSCC_INCLUDE_DIR}/Types.h"
     "${LIBSCC_INCLUDE_DIR}/VirtualMachine.h")
 

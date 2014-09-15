@@ -15,6 +15,7 @@
 #include "SymbolTable.h"
 #include "Templates.h"
 #include "TreeNode.h"
+#include "TypeUnifier.h"
 
 #include <boost/range.hpp>
 #include <boost/range/adaptor/reversed.hpp>
@@ -389,12 +390,6 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     return getInstance (symProc, bestMatches.front ());
 }
 
-//
-// Following is little strange as the type AST nodes have not
-// yet been visited by the type checker and thus don't have the
-// cached type. There probably is much nicer solution to what im doing
-// but ill stick to what works for now.
-//
 bool TypeChecker::unify (Instantiation& inst,
                          const TypeContext& tyCxt,
                          TypeProc* argTypes) const
@@ -402,7 +397,8 @@ bool TypeChecker::unify (Instantiation& inst,
     SymbolTemplate* sym = inst.getTemplate ();
     std::vector<TypeArgument>& params = inst.getParams ();
     const TreeNodeTemplate* t = sym->decl ();
-    TemplateVarMap varMap;
+
+
 
     params.clear ();
 
@@ -412,94 +408,36 @@ bool TypeChecker::unify (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
+    TypeUnifier typeUnifier {m_st};
+
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
-
-        // Verify security type:
-        if (argNodeTy->secType ()->isPublic ()) {
-            if (! expectedTy->secrecSecType ()->isPublic ())
-                return false;
-        }
-        else {
-            StringRef styId = argNodeTy->secType ()->identifier ()->value ();
-            if (! mapVariable (varMap, styId, expectedTy->secrecSecType ()))
-                return false;
-        }
-
-        // Verify data type:
-        if (argNodeTy->dataType ()->isVariable ()) {
-            TreeNodeDataTypeVarF* dataVar = static_cast<TreeNodeDataTypeVarF*>(argNodeTy->dataType ());
-            StringRef styId = dataVar->identifier ()->value ();
-            if (! mapVariable (varMap, styId, expectedTy->secrecDataType ()))
-                return false;
-        }
-        else {
-            TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(argNodeTy->dataType ());
-            SecrecDataType secrecDataType = argDataType->secrecDataType ();
-            if (! expectedTy->secrecDataType ()->equals (secrecDataType)) {
-                return false;
-            }
-        }
-
-        // Verify dimensionality type:
-        if (argNodeTy->dimType ()->isVariable ()) {
-            TreeNodeDimTypeVarF* dimVar = static_cast<TreeNodeDimTypeVarF*>(argNodeTy->dimType ());
-            StringRef styId = dimVar->identifier ()->value ();
-            if (! mapVariable (varMap, styId, expectedTy->secrecDimType ()))
-                return false;
-        }
-        else
-        if (expectedTy->secrecDimType () != argNodeTy->dimType ()->cachedType ()) {
+        if (! typeUnifier.unifyType (argNodeTy, expectedTy)) {
             return false;
         }
     }
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();
     if (retNodeTy->isNonVoid ()) {
-
-        // Verify security type:
         if (tyCxt.haveContextSecType ()) {
-            if (retNodeTy->secType ()->isPublic ()) {
-                if (! tyCxt.contextSecType ()->isPublic ())
-                    return false;
-            }
-            else {
-                StringRef styId = retNodeTy->secType ()->identifier ()->value ();
-                if (! mapVariable (varMap, styId, tyCxt.contextSecType ()))
-                    return false;
-            }
+            const auto secType = retNodeTy->secType ();
+            if (! typeUnifier.unifyType (secType, tyCxt.contextSecType ()))
+                return false;
         }
 
-        // Verify data type:
         if (tyCxt.haveContextDataType ()) {
-            TreeNodeDataTypeF* dataType = retNodeTy->dataType ();
-            if (dataType->isVariable ()) {
-                StringRef styId = static_cast<TreeNodeDataTypeVarF*>(dataType)->identifier ()->value ();
-                if (! mapVariable (varMap, styId, tyCxt.contextDataType ()))
-                    return false;
-            }
-            else {
-                TreeNodeDataTypeConstF* argDataType = static_cast<TreeNodeDataTypeConstF*>(dataType);
-                SecrecDataType secrecDataType = argDataType->secrecDataType ();
-                if (! tyCxt.contextDataType ()->equals (secrecDataType))
-                    return false;
-            }
+            const auto dataType = retNodeTy->dataType ();
+            if (! typeUnifier.unifyType (dataType, tyCxt.contextDataType ()))
+                return false;
         }
 
         // Verify dimensionality type:
         if (tyCxt.haveContextDimType ()) {
-            TreeNodeDimTypeF* dimType = retNodeTy->dimType ();
-            if (dimType->isVariable ()) {
-                StringRef styId = static_cast<TreeNodeDimTypeVarF*>(dimType)->identifier ()->value ();
-                if (! mapVariable (varMap, styId, tyCxt.contextDimType ()))
-                    return false;
-            }
-            else {
-                if (dimType->cachedType () != tyCxt.contextDimType ())
-                    return false;
-            }
+            const auto dimType = retNodeTy->dimType ();
+            if (! typeUnifier.unifyType (dimType, tyCxt.contextDimType ()))
+                return false;
         }
     }
     else {
@@ -509,9 +447,14 @@ bool TypeChecker::unify (Instantiation& inst,
         }
     }
 
+
+    const auto& varMap = typeUnifier.typeVars ();
     for (TreeNodeQuantifier& quant : t->quantifiers ()) {
         StringRef typeVar = quant.typeVariable ()->value ();
-        assert (varMap.find (typeVar) != varMap.end ());
+        if (varMap.find (typeVar) == varMap.end ()) {
+            std::cerr << typeVar << std::endl;
+            assert (false);
+        }
         const TypeArgument& param = varMap.find (typeVar)->second;
         if (quant.type () == NODE_TEMPLATE_DOMAIN_QUANT) {
             TreeNodeDomainQuantifier* domain = static_cast<TreeNodeDomainQuantifier*>(&quant);
