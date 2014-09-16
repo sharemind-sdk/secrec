@@ -8,7 +8,6 @@
 #include "TypeChecker.h"
 #include "TypeContext.h"
 
-#include <boost/range.hpp>
 #include <cassert>
 #include <string>
 #include <vector>
@@ -2529,19 +2528,5 @@ protected:
 };
 
 } /* namespace SecreC */
-
-namespace boost {
-
-template<class BaseClass>
-struct range_mutable_iterator<SecreC::TreeNodeSeqView<BaseClass> > {
-    typedef typename SecreC::TreeNodeSeqView<BaseClass>::iterator type;
-};
-
-template<class BaseClass>
-struct range_const_iterator<SecreC::TreeNodeSeqView<BaseClass> > {
-    typedef typename SecreC::TreeNodeSeqView<BaseClass>::iterator type;
-};
-
-} // namespace boost
 
 #endif /* TREENODE_H */
