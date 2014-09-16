@@ -42,9 +42,9 @@ class TypeUnifier;
  */
 class TreeNode {
 public: /* Types: */
-    typedef std::vector<TreeNode*> ChildrenList;
-    typedef ChildrenList::iterator ChildrenListIterator;
-    typedef ChildrenList::const_iterator ChildrenListConstIterator;
+    using ChildrenList = std::vector<TreeNode*>;
+    using ChildrenListIterator = ChildrenList::iterator;
+    using ChildrenListConstIterator = ChildrenList::const_iterator;
 
 public: /* Methods: */
     TreeNode(SecrecTreeNodeType type, const Location & loc);
@@ -128,8 +128,8 @@ template <class SubClass>
 class TreeNodeSeqView {
 private: /* Types: */
 
-    typedef TreeNode::ChildrenList::iterator        CLI;
-    typedef TreeNode::ChildrenList::const_iterator  CLCI;
+    using CLI  = TreeNode::ChildrenList::iterator;
+    using CLCI = TreeNode::ChildrenList::const_iterator;
 
     template <class value_type, class other_iterator>
     class iterator_base :
@@ -139,8 +139,10 @@ private: /* Types: */
             >
     {
     private: /* Types: */
-        typedef iterator_base<value_type, other_iterator> self_type;
-        typedef std::iterator<typename std::iterator_traits<other_iterator>::iterator_category, value_type> base_type;
+        using base_type = std::iterator<
+                typename std::iterator_traits<other_iterator>::iterator_category,
+                value_type
+            >;
     public: /* Methods: */
         explicit iterator_base (other_iterator iterator)
             : m_iterator (std::move(iterator)) { }
@@ -151,14 +153,14 @@ private: /* Types: */
         }
 
         typename base_type::pointer operator -> () const {
-            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != NULL);
+            assert (dynamic_cast<typename base_type::pointer>(*m_iterator) != nullptr);
             return static_cast<typename base_type::pointer>(*m_iterator);
         }
 
-        bool operator == (const self_type i) const { return m_iterator == i.m_iterator; }
-        bool operator != (const self_type i) const { return m_iterator != i.m_iterator; }
-        self_type& operator ++ () {  ++ m_iterator; return *this; }
-        self_type operator ++ (int) { const self_type t = *this; ++ m_iterator; return t; }
+        bool operator == (const iterator_base i) const { return m_iterator == i.m_iterator; }
+        bool operator != (const iterator_base i) const { return m_iterator != i.m_iterator; }
+        iterator_base& operator ++ () {  ++ m_iterator; return *this; }
+        iterator_base operator ++ (int) { const iterator_base t = *this; ++ m_iterator; return t; }
 
     private: /* Fields: */
         other_iterator m_iterator;
@@ -212,30 +214,6 @@ public: /* Methods: */
 private: /* Fields: */
     CLCI m_begin, m_end;
 };
-
-template <class BaseClass>
-inline typename TreeNodeSeqView<BaseClass>::iterator
-        range_begin (TreeNodeSeqView<BaseClass>& x) {
-    return x.begin ();
-}
-
-template <class BaseClass>
-inline typename TreeNodeSeqView<BaseClass>::iterator
-        range_begin (const TreeNodeSeqView<BaseClass>& x) {
-    return x.begin ();
-}
-
-template <class BaseClass>
-inline typename TreeNodeSeqView<BaseClass>::iterator
-        range_end (TreeNodeSeqView<BaseClass>& x) {
-    return x.end ();
-}
-
-template <class BaseClass>
-inline typename TreeNodeSeqView<BaseClass>::iterator
-        range_end (const TreeNodeSeqView<BaseClass>& x) {
-    return x.end ();
-}
 
 /******************************************************************
   TreeNodeInternalUse
@@ -544,7 +522,6 @@ public: /* Methods: */
     inline DataType* cachedType () const { return m_dataType; }
     inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
     void setTypeContext (TypeContext& cxt) const override final;
-    virtual bool acceptUnifier (TypeUnifier& tu, DataType* dataType) = 0;
 
 private: /* Fields: */
     DataType* m_dataType;
@@ -562,7 +539,6 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
     SecrecDataType secrecDataType () const { return m_secrecDataType; }
 
 protected:
@@ -589,7 +565,6 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -610,7 +585,6 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker& tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, DataType* dataType) override final;
     TreeNodeIdentifier* identifier () const;
     TreeNodeSeqView<TreeNodeTypeArg> arguments () const;
 
@@ -635,7 +609,6 @@ public: /* Methods: */
     inline SecrecDimType cachedType () const { return m_dimType; }
     inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
     void setTypeContext (TypeContext& cxt) const override final;
-    virtual bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) = 0;
 
 private: /* Fields: */
     SecrecDimType m_dimType;
@@ -653,7 +626,6 @@ public: /* Methods: */
     { setCachedType (dimType); }
 
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -674,7 +646,6 @@ public: /* Methods: */
     { }
 
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) override final;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
@@ -767,7 +738,6 @@ public: /* Methods: */
     bool hasTypeArgument () const { return m_typeArgument != nullptr; }
     const TypeArgument& typeArgument () const;
     void setTypeArgument (const TypeArgument& typeArgument);
-    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) = 0;
 
 private:
     virtual TypeChecker::Status accept(TypeChecker & tyChecker) = 0;
@@ -790,7 +760,6 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -813,7 +782,6 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -837,7 +805,6 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    virtual bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -864,7 +831,6 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {
@@ -887,7 +853,6 @@ public: /* Methods: */
 
 private:
     TypeChecker::Status accept(TypeChecker & tyChecker) override final;
-    bool acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) override final;
 
 protected:
     TreeNode* cloneV () const override final {

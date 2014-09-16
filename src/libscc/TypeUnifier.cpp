@@ -12,6 +12,7 @@
 #include "TreeNode.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
+#include "Visitor.h"
 
 #define TUGUARD(expr) \
     do { \
@@ -46,18 +47,17 @@ bool TypeUnifier::findName (StringRef name, TypeArgument& arg) const {
   TreeNodeType
 *******************************************************************************/
 
-bool TypeUnifier::unifyType (TreeNodeType* t, Type* type) {
+bool TypeUnifier::visitType (TreeNodeType* t, Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
-
 
     TUGUARD (t->isNonVoid () != type->isVoid ());
 
     if (t->isNonVoid ()) {
         const auto tnv = static_cast<TypeNonVoid*>(type);
-        TUGUARD (unifyType (t->secType (), tnv->secrecSecType ()));
-        TUGUARD (unifyType (t->dataType (), tnv->secrecDataType ()));
-        TUGUARD (unifyType (t->dimType (), tnv->secrecDimType ()));
+        TUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
+        TUGUARD (visitDataTypeF (t->dataType (), tnv->secrecDataType ()));
+        TUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
     }
 
     return true;
@@ -69,7 +69,7 @@ bool TypeUnifier::unifyType (TreeNodeType* t, Type* type) {
 
 // TODO: figure out why we have retained a domain symbols in the current
 // scope. This should definitely not happen.
-bool TypeUnifier::unifyType (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
     assert (t != nullptr);
     assert (secType != nullptr);
 
@@ -89,34 +89,16 @@ bool TypeUnifier::unifyType (TreeNodeSecTypeF* t, SecurityType* secType) {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-bool TypeUnifier::unifyType (TreeNodeDataTypeF* t, DataType* dataType) {
-    return t->acceptUnifier (*this, dataType);
+bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, DataType* dataType) {
+    return dispatchDataTypeF (*this, t, dataType);
 }
 
-/*******************************************************************************
-  TreeNodeDataTypeConstF
-*******************************************************************************/
-
-bool TreeNodeDataTypeConstF::acceptUnifier (TypeUnifier& tu, DataType* dataType) {
-    return tu.unifyType (this, dataType);
-}
-
-bool TypeUnifier::unifyType (TreeNodeDataTypeConstF* t, DataType* dataType) {
-    assert (t != nullptr);
+bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* dataType) {
     assert (dataType != nullptr);
     return dataType->equals (t->secrecDataType ());
 }
 
-/*******************************************************************************
-  TreeNodeDataTypeVarF
-*******************************************************************************/
-
-bool TreeNodeDataTypeVarF::acceptUnifier (TypeUnifier& tu, DataType* dataType) {
-    return tu.unifyType (this, dataType);
-}
-
-bool TypeUnifier::unifyType (TreeNodeDataTypeVarF* t, DataType* dataType) {
-    assert (t != nullptr);
+bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType) {
     assert (dataType != nullptr);
     const StringRef name = t->identifier ()->value ();
 //    if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
@@ -126,16 +108,7 @@ bool TypeUnifier::unifyType (TreeNodeDataTypeVarF* t, DataType* dataType) {
     return bind (name, dataType);
 }
 
-/*******************************************************************************
-  TreeNodeDataTypeTemplateF
-*******************************************************************************/
-
-bool TreeNodeDataTypeTemplateF::acceptUnifier (TypeUnifier& tu, DataType* dataType) {
-    return tu.unifyType (this, dataType);
-}
-
-bool TypeUnifier::unifyType (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
-    assert (t != nullptr);
+bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
     assert (dataType != nullptr);
 
     TUGUARD (dataType->isComposite ());
@@ -150,7 +123,7 @@ bool TypeUnifier::unifyType (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
     for (size_t i = 0; i < args.size (); ++ i) {
         TreeNodeTypeArg& arg = args[i];
         TypeArgument expectedArg = expectedArgs[i];
-        TUGUARD (unifyType (&arg, expectedArg));
+        TUGUARD (visitTypeArg (&arg, expectedArg));
     }
 
     return true;
@@ -160,31 +133,15 @@ bool TypeUnifier::unifyType (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
   TreeNodeDimTypeF
 *******************************************************************************/
 
-bool TypeUnifier::unifyType (TreeNodeDimTypeF* t, SecrecDimType dimType) {
-    return t->acceptUnifier (*this, dimType);
+bool TypeUnifier::visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType) {
+    return dispatchDimTypeF (*this, t, dimType);
 }
 
-/*******************************************************************************
-  TreeNodeDimTypeConstF
-*******************************************************************************/
-
-bool TreeNodeDimTypeConstF::acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) {
-    return tu.unifyType (this, dimType);
-}
-
-bool TypeUnifier::unifyType (TreeNodeDimTypeConstF* t, SecrecDimType dimType) {
+bool TypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) {
     return t->cachedType () == dimType;
 }
 
-/*******************************************************************************
-  TreeNodeDimTypeVarF
-*******************************************************************************/
-
-bool TreeNodeDimTypeVarF::acceptUnifier (TypeUnifier& tu, SecrecDimType dimType) {
-    return tu.unifyType (this, dimType);
-}
-
-bool TypeUnifier::unifyType (TreeNodeDimTypeVarF* t, SecrecDimType dimType) {
+bool TypeUnifier::visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType) {
     assert (t != nullptr);
     const StringRef name = t->identifier ()->value ();
 //    if (SymbolDimensionality* sym = m_st->find<SYM_DIM>(name)) {
@@ -198,73 +155,46 @@ bool TypeUnifier::unifyType (TreeNodeDimTypeVarF* t, SecrecDimType dimType) {
   TreeNodeTypeArg
 *******************************************************************************/
 
-bool TypeUnifier::unifyType (TreeNodeTypeArg* t, const TypeArgument& arg) {
-    assert (t != nullptr);
-    return t->acceptUnifier (*this, arg);
+bool TypeUnifier::visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg) {
+    return dispatchTypeArg (*this, t, arg);
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgVar
-*******************************************************************************/
-
-bool TreeNodeTypeArgVar::acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) {
-    return tu.unifyType (this, arg);
-}
-
-bool TypeUnifier::unifyType (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
-    assert (t != nullptr);
+bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
     return bind (t->identifier ()->value (), arg);
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgTemplate
-*******************************************************************************/
-
-bool TreeNodeTypeArgTemplate::acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) {
-    return tu.unifyType (this, arg);
-}
-
-bool TypeUnifier::unifyType (TreeNodeTypeArgTemplate* t, const TypeArgument& arg) {
-    assert (t != nullptr);
+bool TypeUnifier::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, const TypeArgument& arg) {
     TUGUARD (arg.isDataType ());
-    return unifyType (t, arg.dataType ());
+    TUGUARD (arg.dataType ()->isComposite ());
+
+    const auto structType = static_cast<DataTypeStruct*>(arg.dataType ());
+    auto args = t->arguments ();
+    const auto& expectedArgs = structType->typeArgs ();
+    TUGUARD (structType->name () == t->identifier ()->value ());
+
+    // we don't have to verify the number of arguments because this
+    // is already guaranteed to be correct by the type checking of the argument.
+    assert (args.size () == expectedArgs.size () &&
+            "ICE: This should have bee guaranteed by the type checker!");
+
+    for (size_t i = 0; i < args.size (); ++ i) {
+        TreeNodeTypeArg& arg = args[i];
+        TypeArgument expectedArg = expectedArgs[i];
+        TUGUARD (visitTypeArg (&arg, expectedArg));
+    }
+
+    return true;
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgDataTypeConst
-*******************************************************************************/
-
-bool TreeNodeTypeArgDataTypeConst::acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) {
-    return tu.unifyType (this, arg);
-}
-
-bool TypeUnifier::unifyType (TreeNodeTypeArgDataTypeConst* t, const TypeArgument& arg) {
-    assert (t != nullptr);
+bool TypeUnifier::visitTypeArgDataTypeConst (TreeNodeTypeArgDataTypeConst* t, const TypeArgument& arg) {
     return arg.equals (t->secrecDataType ());
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgDimTypeConst
-*******************************************************************************/
-
-bool TreeNodeTypeArgDimTypeConst::acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) {
-    return tu.unifyType (this, arg);
-}
-
-bool TypeUnifier::unifyType (TreeNodeTypeArgDimTypeConst* t, const TypeArgument& arg) {
-    assert (t != nullptr);
+bool TypeUnifier::visitTypeArgDimTypeConst (TreeNodeTypeArgDimTypeConst* t, const TypeArgument& arg) {
     return arg.equals (t->secrecDimType ());
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgPublic
-*******************************************************************************/
-
-bool TreeNodeTypeArgPublic::acceptUnifier (TypeUnifier& tu, const TypeArgument& arg) {
-    return tu.unifyType (this, arg);
-}
-
-bool TypeUnifier::unifyType (TreeNodeTypeArgPublic*, const TypeArgument& arg) {
+bool TypeUnifier::visitTypeArgPublic (TreeNodeTypeArgPublic*, const TypeArgument& arg) {
     TUGUARD (arg.kind () == TA_SEC);
     return arg.secType ()->isPublic ();
 }

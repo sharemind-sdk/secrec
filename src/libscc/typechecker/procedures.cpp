@@ -388,8 +388,6 @@ bool TypeChecker::unify (Instantiation& inst,
     std::vector<TypeArgument>& params = inst.getParams ();
     const TreeNodeTemplate* t = sym->decl ();
 
-
-
     params.clear ();
 
     if (! providesExpectedTypeContext (sym, tyCxt))
@@ -398,13 +396,13 @@ bool TypeChecker::unify (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
-    TypeUnifier typeUnifier {m_st};
+    TypeUnifier typeUnifier;
 
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
-        if (! typeUnifier.unifyType (argNodeTy, expectedTy)) {
+        if (! typeUnifier.visitType (argNodeTy, expectedTy)) {
             return false;
         }
     }
@@ -413,20 +411,20 @@ bool TypeChecker::unify (Instantiation& inst,
     if (retNodeTy->isNonVoid ()) {
         if (tyCxt.haveContextSecType ()) {
             const auto secType = retNodeTy->secType ();
-            if (! typeUnifier.unifyType (secType, tyCxt.contextSecType ()))
+            if (! typeUnifier.visitSecTypeF (secType, tyCxt.contextSecType ()))
                 return false;
         }
 
         if (tyCxt.haveContextDataType ()) {
             const auto dataType = retNodeTy->dataType ();
-            if (! typeUnifier.unifyType (dataType, tyCxt.contextDataType ()))
+            if (! typeUnifier.visitDataTypeF (dataType, tyCxt.contextDataType ()))
                 return false;
         }
 
         // Verify dimensionality type:
         if (tyCxt.haveContextDimType ()) {
             const auto dimType = retNodeTy->dimType ();
-            if (! typeUnifier.unifyType (dimType, tyCxt.contextDimType ()))
+            if (! typeUnifier.visitDimTypeF (dimType, tyCxt.contextDimType ()))
                 return false;
         }
     }

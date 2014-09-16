@@ -109,7 +109,8 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/TypeContext.h"
     "${LIBSCC_INCLUDE_DIR}/TypeUnifier.h"
     "${LIBSCC_INCLUDE_DIR}/Types.h"
-    "${LIBSCC_INCLUDE_DIR}/VirtualMachine.h")
+    "${LIBSCC_INCLUDE_DIR}/VirtualMachine.h"
+    "${LIBSCC_INCLUDE_DIR}/Visitor.h")
 
 SET_SOURCE_FILES_PROPERTIES("libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
