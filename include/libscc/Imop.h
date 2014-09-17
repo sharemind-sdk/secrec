@@ -1,9 +1,7 @@
 #ifndef SECREC_IMOP_H
 #define SECREC_IMOP_H
 
-#include "ParserEnums.h"
-
-#include <boost/intrusive/list.hpp>
+#include <boost/intrusive/list_hook.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <vector>
@@ -17,9 +15,10 @@ class SymbolLabel;
 class ConstantString;
 class TreeNode;
 
-typedef boost::intrusive::list_base_hook<
-            boost::intrusive::link_mode<
-                boost::intrusive::auto_unlink> > auto_unlink_hook;
+using imop_auto_unlink_hook =
+    boost::intrusive::list_base_hook<
+        boost::intrusive::link_mode<
+            boost::intrusive::auto_unlink> > ;
 
 /**
  * Intermediated code instructions.
@@ -38,7 +37,7 @@ typedef boost::intrusive::list_base_hook<
  *       For example:
  *       static Imop* newJump (TreeNode* node, SymbolLabel* target) { ... }
  */
-class Imop : public auto_unlink_hook {
+class Imop : public imop_auto_unlink_hook {
 public: /* Types: */
     using OperandList = std::vector<Symbol* >;
     using OperandIterator = OperandList::iterator;
