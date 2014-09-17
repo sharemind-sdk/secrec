@@ -3,6 +3,7 @@
 #include "CodeGenResult.h"
 #include "Constant.h"
 #include "ContextImpl.h"
+#include "DataType.h"
 #include "Intermediate.h"
 #include "Misc.h"
 #include "SymbolTable.h"

@@ -7,6 +7,7 @@
  * code is subject to the appropriate license agreement.
  */
 
+#include "DataType.h"
 #include "Log.h"
 #include "Symbol.h"
 #include "SymbolTable.h"

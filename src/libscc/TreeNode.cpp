@@ -2,6 +2,7 @@
 
 #include "CodeGenResult.h"
 #include "Context.h"
+#include "DataType.h"
 #include "Misc.h"
 #include "StringTable.h"
 #include "Symbol.h"

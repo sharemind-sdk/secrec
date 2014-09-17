@@ -9,6 +9,7 @@
 
 #include "TypeChecker.h"
 
+#include "DataType.h"
 #include "Log.h"
 #include "Symbol.h"
 #include "SymbolTable.h"

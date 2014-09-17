@@ -2,6 +2,7 @@
 
 #include "Context.h"
 #include "ContextImpl.h"
+#include "DataType.h"
 
 #include <cstring>
 #include <sstream>

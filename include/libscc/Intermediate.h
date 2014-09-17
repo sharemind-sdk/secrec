@@ -14,7 +14,6 @@
 
 namespace SecreC {
 
-class TreeNodeModule;
 class StringTable;
 
 class ICode {
@@ -53,7 +52,6 @@ private: /* Fields: */
     SymbolTable     m_symbols;
     ModuleMap       m_modules;
     Program         m_program;
-    TreeNodeModule* m_ast;
     CompileLog      m_log;
 };
 

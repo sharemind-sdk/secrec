@@ -9,11 +9,12 @@
 
 #include "analysis/ReachingDeclassify.h"
 
+#include "DataType.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "TreeNode.h"
 #include "Types.h"
-#include "SecurityType.h"
 
 #include <sstream>
 

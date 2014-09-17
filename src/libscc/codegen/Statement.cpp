@@ -1,6 +1,7 @@
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "Constant.h"
+#include "DataType.h"
 #include "Log.h"
 #include "Misc.h"
 #include "StringTable.h"

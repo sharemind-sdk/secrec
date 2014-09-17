@@ -22,6 +22,9 @@
 
 namespace SecreC {
 
+class DataType;
+class DataTypePrimitive;
+class DataTypeStruct;
 class PrivateSecType;
 class PublicSecType;
 

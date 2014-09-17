@@ -8,6 +8,7 @@
  */
 
 #include "Constant.h"
+#include "DataType.h"
 #include "Imop.h"
 #include "Log.h"
 #include "Symbol.h"

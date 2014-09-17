@@ -61,16 +61,14 @@ DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
 *******************************************************************************/
 
 class DataType {
-private:
-    DataType (const DataType&) = delete;
-    DataType& operator = (const DataType&) = delete;
-
 protected: /* Types: */
 
     enum Kind { COMPOSITE, PRIMITIVE };
 
 public: /* Methods: */
 
+    DataType (const DataType&) = delete;
+    DataType& operator = (const DataType&) = delete;
     virtual ~DataType () { }
 
     bool isComposite () const { return m_kind == COMPOSITE; }
@@ -116,7 +114,7 @@ public: /* Methods: */
     SecrecDataType secrecDataType () const { return m_dataType; }
 
 protected:
-    void print (std::ostream& os) const override;
+    void print (std::ostream& os) const override final;
 
 private: /* Fields: */
     const SecrecDataType m_dataType;
@@ -154,7 +152,7 @@ public: /* Methods: */
     const TypeArgumentList& typeArgs () const { return m_typeArgs; }
 
 protected:
-    void print (std::ostream& os) const override;
+    void print (std::ostream& os) const override final;
 
     explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)
         : DataType (COMPOSITE)

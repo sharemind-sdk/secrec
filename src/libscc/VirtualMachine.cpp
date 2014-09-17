@@ -2,6 +2,7 @@
 
 #include "Blocks.h"
 #include "Constant.h"
+#include "DataType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "SecurityType.h"

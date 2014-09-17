@@ -1,7 +1,6 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
-#include "DataType.h"
 #include "ParserEnums.h"
 #include "StringRef.h"
 #include "SymbolFwd.h"
@@ -15,6 +14,7 @@
 namespace SecreC {
 
 class Block;
+class DataType;
 class Imop;
 class SecurityType;
 class TypeNonVoid;

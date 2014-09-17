@@ -9,6 +9,7 @@
 
 #include "TypeUnifier.h"
 
+#include "DataType.h"
 #include "TreeNode.h"
 #include "Symbol.h"
 #include "SymbolTable.h"

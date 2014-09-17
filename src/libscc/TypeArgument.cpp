@@ -9,14 +9,15 @@
 
 #include "TypeArgument.h"
 
+#include "DataType.h"
+#include "Log.h"
+#include "SecurityType.h"
 #include "StringRef.h"
 #include "Symbol.h"
+#include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
-#include "SymbolTable.h"
-#include "Log.h"
 #include "Visitor.h"
-#include "SecurityType.h"
 
 namespace SecreC {
 
