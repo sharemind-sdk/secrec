@@ -210,6 +210,7 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
         const StringRef procName = *getStringTable ().addString (ss.str ());
         TypeProc* procType = TypeProc::get (getContext (), std::vector<TypeBasic*>(), ty);
         procSym = new SymbolProcedure (procName, procType);
+        m_st->appendSymbol (procSym);
 
         // header
         Imop* funcStart = pushComment ("Global variable initialization function:");

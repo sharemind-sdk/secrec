@@ -1131,6 +1131,7 @@ qualified_expression
      $$ = treenode_init(NODE_EXPR_TYPE_QUAL, &@$);
      treenode_appendChild($$, $1);
      treenode_moveChildren($3, $$);
+     treenode_free($3);
    }
  | conditional_expression
  ;

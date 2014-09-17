@@ -18,18 +18,19 @@ class TreeNodeModule;
 class StringTable;
 
 class ICode {
-    ICode (const ICode&); // do not implement
-    ICode& operator = (const ICode&); // do not implement
 public: /* Types: */
 
     enum Status { NOT_READY, OK, ERROR };
 
 public: /* Methods: */
+
     ICode ()
         : m_status (NOT_READY)
         , m_modules (m_context)
     { }
 
+    ICode (const ICode&) = delete;
+    ICode& operator = (const ICode&) = delete;
 
     TreeNodeModule* parseMain (const boost::optional<std::string>& mfile);
     void compile (TreeNodeModule *mod);

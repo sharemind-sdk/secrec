@@ -39,7 +39,6 @@ Location::Location(const YYLTYPE & loc)
 
 Location & Location::operator=(const YYLTYPE & loc) {
     assert(loc.filename);
-    deinit();
     m_firstLine = loc.first_line;
     m_firstColumn = loc.first_column;
     m_lastLine = loc.last_line;

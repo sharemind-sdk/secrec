@@ -35,6 +35,7 @@ ContextImpl::~ContextImpl () {
     deleteValues (m_numericConstants[1]);
     deleteValues (m_primitiveTypes);
     deleteValues (m_structTypes);
+    deleteValues (m_floatConstants);
 }
 
 /* Security types: */
