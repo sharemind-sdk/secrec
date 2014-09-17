@@ -1,9 +1,10 @@
 #include "Imop.h"
 
 #include "Constant.h"
+#include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
-#include "SecurityType.h"
+#include "Types.h"
 
 #include <algorithm>
 #include <boost/range.hpp>

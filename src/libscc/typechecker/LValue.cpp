@@ -9,8 +9,9 @@
 
 #include "TypeChecker.h"
 
-#include "TreeNode.h"
 #include "Symbol.h"
+#include "TreeNode.h"
+#include "Types.h"
 #include "Visitor.h"
 
 namespace SecreC {

@@ -5,6 +5,7 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+#include "Types.h"
 
 #include <sstream>
 #include <vector>

@@ -1,9 +1,6 @@
 #ifndef SECREC_LOG_H
 #define SECREC_LOG_H
 
-#include "Misc.h"
-#include "Types.h"
-
 #include <cassert>
 #include <deque>
 #include <sstream>

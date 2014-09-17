@@ -9,9 +9,10 @@
 
 #include "TypeContext.h"
 
-#include "Misc.h"
 #include "DataType.h"
+#include "Misc.h"
 #include "SecurityType.h"
+#include "Types.h"
 
 #include <ostream>
 
@@ -57,5 +58,35 @@ void TypeContext::setContextIndexType (Context& cxt) {
     setContextSecType (PublicSecType::get (cxt));
 }
 
+void TypeContext::setContext (TypeNonVoid* ty) {
+    assert (ty != nullptr);
+    setContextDataType (ty->secrecDataType ());
+    setContextSecType (ty->secrecSecType ());
+    setContextDimType (ty->secrecDimType ());
+}
+
+bool TypeContext::matchType (TypeNonVoid* type) const {
+    return matchSecType (type->secrecSecType ()) &&
+           matchDataType (type->secrecDataType ()) &&
+           matchDimType (type->secrecDimType ());
+}
+
+bool TypeContext::matchSecType (SecurityType* secType) const {
+    assert (secType != nullptr);
+    if (! haveContextSecType ()) {
+        return true;
+    }
+
+    return secType == contextSecType ();
+}
+
+bool TypeContext::matchDataType (DataType* dataType) const {
+    assert (dataType != nullptr);
+    if (! haveContextDataType ()) {
+        return true;
+    }
+
+    return dataType == m_contextDataType;
+}
 
 } // namespace SecreC

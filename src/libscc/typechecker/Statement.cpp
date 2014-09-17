@@ -9,10 +9,11 @@
 
 #include "Log.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
-#include "SecurityType.h"
+#include "Types.h"
 
 #include <boost/range.hpp>
 

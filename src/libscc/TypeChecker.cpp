@@ -10,11 +10,12 @@
 #include "TypeChecker.h"
 
 #include "Log.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "Types.h"
 #include "typechecker/Templates.h"
-#include "SecurityType.h"
 
 #include <boost/range.hpp>
 

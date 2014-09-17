@@ -6,6 +6,7 @@
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Symbol.h>
 #include <libscc/SecurityType.h>
+#include <libscc/Types.h>
 
 using boost::adaptors::reverse;
 

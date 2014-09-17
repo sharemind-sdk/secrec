@@ -10,11 +10,12 @@
 #include "TypeUnifier.h"
 
 #include "DataType.h"
-#include "TreeNode.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
+#include "TreeNode.h"
+#include "Types.h"
 #include "Visitor.h"
-#include "SecurityType.h"
 
 #define TUGUARD(expr) \
     do { \

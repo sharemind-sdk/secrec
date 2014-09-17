@@ -11,12 +11,13 @@
 
 #include "Log.h"
 #include "ModuleInfo.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "Templates.h"
 #include "TreeNode.h"
 #include "TypeUnifier.h"
-#include "SecurityType.h"
+#include "Types.h"
 
 #include <boost/range.hpp>
 #include <boost/range/adaptor/reversed.hpp>

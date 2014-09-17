@@ -11,9 +11,17 @@
 #define SECREC_TYPECONTEXT_H
 
 #include "ParserEnums.h"
-#include "Types.h"
+
+#include <cassert>
+#include <iosfwd>
 
 namespace SecreC {
+
+class Context;
+class DataType;
+class SecurityType;
+class Type;
+class TypeNonVoid;
 
 /*******************************************************************************
   TypeContext
@@ -70,12 +78,7 @@ public: /* Methods: */
         m_contextDimType = cxt->m_contextDimType;
     }
 
-    void setContext (TypeNonVoid* ty) {
-        assert (ty != nullptr);
-        setContextDataType (ty->secrecDataType ());
-        setContextSecType (ty->secrecSecType ());
-        setContextDimType (ty->secrecDimType ());
-    }
+    void setContext (TypeNonVoid* ty);
 
     void setContextIndexType (Context& cxt);
 
@@ -115,29 +118,9 @@ public: /* Methods: */
         return m_contextDimType != ~ SecrecDimType (0);
     }
 
-    bool matchType (TypeNonVoid* type) const {
-        return matchSecType (type->secrecSecType ()) &&
-            matchDataType (type->secrecDataType ()) &&
-            matchDimType (type->secrecDimType ());
-    }
-
-    bool matchSecType (SecurityType* secType) const {
-        assert (secType != nullptr);
-        if (! haveContextSecType ()) {
-            return true;
-        }
-
-        return secType == contextSecType ();
-    }
-
-    bool matchDataType (DataType* dataType) const {
-        assert (dataType != nullptr);
-        if (! haveContextDataType ()) {
-            return true;
-        }
-
-        return dataType == m_contextDataType;
-    }
+    bool matchType (TypeNonVoid* type) const;
+    bool matchSecType (SecurityType* secType) const;
+    bool matchDataType (DataType* dataType) const;
 
     bool matchDimType (SecrecDimType dimType) const {
         if (! haveContextDimType ()) {

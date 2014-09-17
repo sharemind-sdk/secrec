@@ -14,18 +14,19 @@
 
 namespace SecreC {
 
-class CodeGen;
-class TypeArgument;
-class ModuleInfo;
-class SymbolTypeVariable;
-class ConstantString;
-class SubscriptInfo;
-class TypeUnifier;
-class CGResult;
 class CGBranchResult;
+class CGResult;
 class CGStmtResult;
-class SymbolProcedure;
+class CodeGen;
+class ConstantString;
+class ModuleInfo;
+class SubscriptInfo;
 class Symbol;
+class SymbolProcedure;
+class SymbolTypeVariable;
+class TypeArgument;
+class TypeProc;
+class TypeUnifier;
 
 /******************************************************************
   TreeNode

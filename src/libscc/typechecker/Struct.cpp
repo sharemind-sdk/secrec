@@ -14,6 +14,7 @@
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "Types.h"
 
 #include <set>
 
