@@ -16,6 +16,7 @@
 #include "Templates.h"
 #include "TreeNode.h"
 #include "TypeUnifier.h"
+#include "SecurityType.h"
 
 #include <boost/range.hpp>
 #include <boost/range/adaptor/reversed.hpp>

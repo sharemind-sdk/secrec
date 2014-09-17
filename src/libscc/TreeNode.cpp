@@ -9,6 +9,7 @@
 #include "TreeNodeC.h"
 #include "TypeArgument.h"
 #include "TypeChecker.h"
+#include "SecurityType.h"
 
 #include <algorithm>
 #include <iostream>
@@ -392,7 +393,7 @@ void TreeNodeType::typeString(std::ostream& os) const {
     }
 
     if (m_cachedType) {
-        os << Type::PrettyPrint (m_cachedType);
+        os << PrettyPrint (m_cachedType);
         return;
     }
 
@@ -460,6 +461,23 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
             m_resultType->secrecSecType(),
             dType,
             m_resultType->secrecDimType());
+}
+
+void TreeNodeExpr::instantiateDataType (Context& cxt, DataType* dType) {
+    assert (dType != nullptr);
+    if (dType->isPrimitive ()) {
+        instantiateDataType (cxt, static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+    }
+}
+
+// If possible instantiate abstract data type to given concrete data type
+void TreeNodeExpr::instantiateDataType (Context& cxt, SecrecDataType dType) {
+    assert (resultType () != nullptr);
+    if ( ! resultType ()->isVoid ()
+        && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
+        && dType != DATATYPE_NUMERIC) {
+        instantiateDataTypeV (cxt, dType);
+    }
 }
 
 CGBranchResult TreeNodeExpr::codeGenBoolWith (CodeGen&) {

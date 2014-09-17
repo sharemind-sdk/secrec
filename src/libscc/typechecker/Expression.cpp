@@ -15,6 +15,7 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
+#include "SecurityType.h"
 #include "Visitor.h"
 
 #include <boost/range.hpp>
@@ -998,7 +999,7 @@ TypeChecker::Status TypeChecker::visitStringPartIdentifier(TreeNodeStringPartIde
         if (! canPrintValue (ty)) {
             m_log.fatalInProc(p)
                 << "Unable to convert variable \"" << symSym->name () << "\" to string. "
-                << "Got " << Type::PrettyPrint (ty) << " at " << p->location() << ". "
+                << "Got " << PrettyPrint (ty) << " at " << p->location() << ". "
                 << "Expecting a public scalar or a string.";
             return E_TYPE;
         }
@@ -1044,7 +1045,7 @@ TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
     {
         m_log.fatalInProc(root) << "Conditional subexpression at " << e1->location()
             << " of ternary expression has to be public boolean, got "
-            << Type::PrettyPrint(cType) << '.';
+            << PrettyPrint(cType) << '.';
         return E_TYPE;
     }
 
@@ -1215,7 +1216,7 @@ TypeChecker::Status TypeChecker::visitExprStringFromBytes(TreeNodeExprStringFrom
             ty->secrecDimType() != 1)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "
-                             << Type::PrettyPrint(ty) << " at " << e->location() << '.';
+                             << PrettyPrint(ty) << " at " << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1243,7 +1244,7 @@ TypeChecker::Status TypeChecker::visitExprBytesFromString(TreeNodeExprBytesFromS
             ty->secrecDimType() != 0)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public string, got "
-                             << Type::PrettyPrint(ty) << " at " << e->location() << '.';
+                             << PrettyPrint(ty) << " at " << e->location() << '.';
         return E_TYPE;
     }
 

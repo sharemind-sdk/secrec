@@ -10,6 +10,7 @@
 #include "TreeNode.h"
 #include "typechecker/Templates.h"
 #include "TypeChecker.h"
+#include "SecurityType.h"
 
 #include <boost/filesystem/fstream.hpp>
 

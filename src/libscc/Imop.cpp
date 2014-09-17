@@ -3,6 +3,7 @@
 #include "Constant.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "SecurityType.h"
 
 #include <algorithm>
 #include <boost/range.hpp>

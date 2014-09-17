@@ -12,6 +12,8 @@
 #include "Misc.h"
 #include "Symbol.h"
 #include "TreeNode.h"
+#include "Types.h"
+#include "SecurityType.h"
 
 #include <sstream>
 

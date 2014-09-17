@@ -26,14 +26,20 @@ std::string mangleDataType (const Type* ty) {
 } // namespace anonymous
 
 /*******************************************************************************
+  Type
+*******************************************************************************/
+
+bool Type::isPublicUIntScalar () const {
+    return secrecDataType ()->equals (DATATYPE_UINT64) &&
+           secrecSecType ()->isPublic () &&
+           secrecDimType () == 0;
+}
+
+/*******************************************************************************
   TypeVoid
 *******************************************************************************/
 
-void TypeVoid::print (std::ostream & os) const {
-    os << "void";
-}
-
-void TypeVoid::prettyPrint (std::ostream& os) const {
+void TypeVoid::printPrettyV (std::ostream& os) const {
     os << "void";
 }
 
@@ -43,14 +49,28 @@ TypeVoid* TypeVoid::get (Context& cxt) {
 }
 
 /*******************************************************************************
+  TypeNonVoid
+*******************************************************************************/
+
+bool TypeNonVoid::latticeLEQ (Context& cxt, const TypeNonVoid* other) const {
+    if (kind () != other->kind ())
+        return false;
+
+    DataType* dataType = other->secrecDataType ();
+    if (other->secrecSecType ()->isPrivate () && secrecSecType ()->isPublic ()) {
+        dataType = dtypeDeclassify (cxt, dataType);
+    }
+
+    return     latticeSecTypeLEQ (secrecSecType (), other->secrecSecType ())
+            && latticeDataTypeLEQ (secrecDataType (), dataType)
+            && latticeDimTypeLEQ (secrecDimType (), other->secrecDimType ());
+}
+
+/*******************************************************************************
   TypeBasic
 *******************************************************************************/
 
-void TypeBasic::print (std::ostream& os) const {
-    os << mangleDataType (this);
-}
-
-void TypeBasic::prettyPrint (std::ostream& os) const {
+void TypeBasic::printPrettyV (std::ostream& os) const {
     if (!secrecSecType ()->isPublic())
         os << *secrecSecType () << ' ';
     os << *secrecDataType ();
@@ -105,11 +125,7 @@ TypeBasic* TypeBasic::getPublicBoolType (Context& cxt)
   TypeProc
 *******************************************************************************/
 
-void TypeProc::print (std::ostream & os) const {
-    os << mangle () << " -> " << *returnType ();
-}
-
-void TypeProc::prettyPrint (std::ostream& os) const {
+void TypeProc::printPrettyV (std::ostream& os) const {
     os << PrettyPrint (returnType ()) << " ()" << paramsToNormalString ();
 }
 

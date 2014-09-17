@@ -845,22 +845,10 @@ public: /* Methods: */
         , m_resultType (nullptr)
     { }
 
-    void instantiateDataType (Context& cxt, DataType* dType) {
-        assert (dType != nullptr);
-        if (dType->isPrimitive ()) {
-            instantiateDataType (cxt, static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
-        }
-    }
+    void instantiateDataType (Context& cxt, DataType* dType);
 
     // If possible instantiate abstract data type to given concrete data type
-    void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64) {
-        assert (resultType () != nullptr);
-        if ( ! resultType ()->isVoid ()
-            && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
-            && dType != DATATYPE_NUMERIC) {
-            instantiateDataTypeV (cxt, dType);
-        }
-    }
+    void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64);
 
     bool haveResultType() const { return m_resultType != nullptr; }
     bool havePublicBoolType() const;

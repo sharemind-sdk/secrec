@@ -3,6 +3,7 @@
 #include "Blocks.h"
 #include "Imop.h"
 #include "TreeNode.h"
+#include "SecurityType.h"
 
 #include <string>
 
@@ -237,7 +238,6 @@ SymbolProcedure::SymbolProcedure(StringRef name,
 }
 
 void SymbolProcedure::print(std::ostream & os) const {
-    typedef SecreC::Type::PrettyPrint PrettyPrint;
     TypeProc* procType = static_cast<TypeProc*>(secrecType ());
     os << PrettyPrint (procType->returnType ());
     os << ' ' << name () << '(';

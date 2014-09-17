@@ -10,11 +10,11 @@
 #ifndef SECREC_STRINGTABLE_H
 #define SECREC_STRINGTABLE_H
 
+#include "StringRef.h"
+
 #include <unordered_set>
 
 namespace SecreC {
-
-class StringRef;
 
 /*******************************************************************************
   StringTable

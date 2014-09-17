@@ -18,6 +18,7 @@
 #include <libscc/Blocks.h>
 #include <libscc/Constant.h>
 #include <libscc/Types.h>
+#include <libscc/SecurityType.h>
 
 #include "DeadVariableElimination.h"
 #include "ScalarAllocPlacement.h"

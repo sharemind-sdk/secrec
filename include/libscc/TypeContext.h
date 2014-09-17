@@ -77,11 +77,7 @@ public: /* Methods: */
         setContextDimType (ty->secrecDimType ());
     }
 
-    void setContextIndexType (Context& cxt) {
-        setContextDataType (DataTypePrimitive::get (cxt, DATATYPE_UINT64));
-        setContextDimType (0);
-        setContextSecType (PublicSecType::get (cxt));
-    }
+    void setContextIndexType (Context& cxt);
 
     void setContextSecType (SecurityType* secTy) {
         m_contextSecType = secTy;

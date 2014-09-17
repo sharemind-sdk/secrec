@@ -4,6 +4,7 @@
 #include "Constant.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "SecurityType.h"
 
 #include <boost/preprocessor/control/if.hpp>
 #include <cstdlib>

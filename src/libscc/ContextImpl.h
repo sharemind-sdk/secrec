@@ -15,11 +15,15 @@
 #include "Constant.h"
 #include "StringTable.h"
 #include "TypeArgument.h"
+#include "SecurityType.h"
 
 #include <map>
 #include <tuple>
 
 namespace SecreC {
+
+class PrivateSecType;
+class PublicSecType;
 
 class ContextImpl {
 private:

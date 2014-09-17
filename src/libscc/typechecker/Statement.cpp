@@ -12,6 +12,7 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+#include "SecurityType.h"
 
 #include <boost/range.hpp>
 
@@ -283,7 +284,7 @@ TypeChecker::Status TypeChecker::visitStmtAssert(TreeNodeStmtAssert * stmt) {
     if (checkPublicBooleanScalar (e) != OK) {
         if (e->haveResultType ()) {
             m_log.fatalInProc(stmt) << "Invalid expression of type "
-                                    << Type::PrettyPrint (e->resultType())
+                                    << PrettyPrint (e->resultType())
                                     << " passed to assert statement at " << e->location() << '.'
                                     << " Expecting 'bool'.";
         }

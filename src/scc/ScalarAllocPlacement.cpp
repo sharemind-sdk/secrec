@@ -5,6 +5,7 @@
 #include <libscc/analysis/LiveVariables.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Symbol.h>
+#include <libscc/SecurityType.h>
 
 using boost::adaptors::reverse;
 

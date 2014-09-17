@@ -10,26 +10,25 @@
 #ifndef SECREC_TYPES_H
 #define SECREC_TYPES_H
 
-#include "DataType.h"
 #include "ParserEnums.h"
-#include "SecurityType.h"
+#include "PrettyPrint.h"
 
 #include <cassert>
 #include <vector>
 #include <utility>
+#include <iosfwd>
 
 namespace SecreC {
 
 class Context;
+class SecurityType;
+class DataType;
 
 /*******************************************************************************
   Type
 *******************************************************************************/
 
-class Type {
-private:
-    Type (const Type&) = delete;
-    Type& operator = (const Type&) = delete;
+class Type: public PrettyPrintable {
 public: /* Types: */
 
     enum Kind {
@@ -38,23 +37,16 @@ public: /* Types: */
         PROCEDURE
     };
 
-    class PrettyPrint {
-    public: /* Methods: */
-        explicit PrettyPrint (const Type* self) : m_self (*self) { }
-        explicit PrettyPrint (const Type& self) : m_self (self) { }
-        inline void operator () (std::ostream& os) const { m_self.prettyPrint (os); }
-    private: /* Fields: */
-        const Type& m_self;
-    };
-
 public: /* Methods: */
 
-    virtual inline ~Type() { }
+    Type (const Type&) = delete;
+    Type& operator = (const Type&) = delete;
+    virtual ~Type() { }
 
-    inline Kind kind () const { return m_kind; }
-    inline bool isVoid() const { return m_kind == VOID; }
-    inline bool isScalar () const { return secrecDimType() == 0; }
-    inline bool isPublicUIntScalar () const;
+    Kind kind () const { return m_kind; }
+    bool isVoid() const { return m_kind == VOID; }
+    bool isScalar () const { return secrecDimType() == 0; }
+    bool isPublicUIntScalar () const;
 
     virtual SecurityType* secrecSecType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
@@ -65,10 +57,6 @@ protected: /* Methods: */
     explicit inline Type (Kind kind)
         : m_kind (kind)
     { }
-
-    friend std::ostream& operator << (std::ostream& os, const Type& type);
-    virtual void print (std::ostream& os) const = 0;
-    virtual void prettyPrint (std::ostream& os) const = 0;
 
 private: /* Fields: */
     const Kind m_kind;
@@ -84,31 +72,30 @@ public: /* Methods: */
     static TypeVoid* get (Context& cxt);
 
 
-    inline SecurityType* secrecSecType() const override {
+    SecurityType* secrecSecType() const override final {
         assert (false && "TypeVoid::secrecSecType");
         return nullptr;
     }
 
-    inline DataType* secrecDataType() const override {
+    DataType* secrecDataType() const override final {
         assert (false && "TypeVoid::secrecDataType");
         return nullptr;
     }
 
-    inline SecrecDimType secrecDimType() const override {
+    SecrecDimType secrecDimType() const override final {
         assert (false && "TypeVoid::secrecDimType");
         return (~ SecrecDimType(0));
     }
 
 protected: /* Methods: */
 
-    friend class ContextImpl; // TODO: workaround
+    friend class ContextImpl;
 
     inline TypeVoid ()
         : Type (VOID)
     { }
 
-    void print (std::ostream& os) const override;
-    void prettyPrint (std::ostream& os) const override;
+    void printPrettyV (std::ostream &os) const override;
 };
 
 /*******************************************************************************
@@ -119,19 +106,7 @@ class TypeNonVoid: public Type {
 public: /* Methods: */
 
     // TODO: this is not pretty
-    inline bool latticeLEQ (Context& cxt, const TypeNonVoid* other) const {
-        if (kind () != other->kind ())
-            return false;
-
-        DataType* dataType = other->secrecDataType ();
-        if (other->secrecSecType ()->isPrivate () && secrecSecType ()->isPublic ()) {
-            dataType = dtypeDeclassify (cxt, dataType);
-        }
-
-        return     latticeSecTypeLEQ (secrecSecType (), other->secrecSecType ())
-                && latticeDataTypeLEQ (secrecDataType (), dataType)
-                && latticeDimTypeLEQ (secrecDimType (), other->secrecDimType ());
-    }
+    bool latticeLEQ (Context& cxt, const TypeNonVoid* other) const;
 
 protected: /* Methods: */
 
@@ -147,9 +122,9 @@ protected: /* Methods: */
 class TypeBasic : public TypeNonVoid {
 public: /* Methods: */
 
-    inline SecurityType* secrecSecType() const override { return m_secType; }
-    inline SecrecDimType secrecDimType() const override { return m_dimType; }
-    inline DataType* secrecDataType() const override { return m_dataType; }
+    SecurityType* secrecSecType() const override final { return m_secType; }
+    SecrecDimType secrecDimType() const override final { return m_dimType; }
+    DataType* secrecDataType() const override final { return m_dataType; }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType = 0);
@@ -175,8 +150,7 @@ protected: /* Methods: */
         , m_dimType (dim)
     { }
 
-    void print (std::ostream& os) const override;
-    void prettyPrint (std::ostream& os) const override;
+    void printPrettyV (std::ostream &os) const override;
 
 private: /* Fields: */
     SecurityType*   const m_secType;
@@ -196,9 +170,17 @@ public: /* Methods: */
     std::string mangle () const;
     std::string paramsToNormalString () const;
 
-    inline SecurityType* secrecSecType() const override { return returnType ()->secrecSecType (); }
-    inline DataType* secrecDataType() const override { return returnType ()->secrecDataType (); }
-    inline SecrecDimType secrecDimType() const override { return returnType ()->secrecDimType (); }
+    SecurityType* secrecSecType() const override final {
+        return returnType ()->secrecSecType ();
+    }
+
+    DataType* secrecDataType() const override final {
+        return returnType ()->secrecDataType ();
+    }
+
+    SecrecDimType secrecDimType() const override final {
+        return returnType ()->secrecDimType ();
+    }
 
     static TypeProc* get (Context& cxt,
                           const std::vector<TypeBasic*>& params,
@@ -213,30 +195,12 @@ protected: /* Methods: */
         , m_returnType (returnType)
     { }
 
-    void print (std::ostream& os) const override;
-    void prettyPrint (std::ostream& os) const override;
+    void printPrettyV (std::ostream &os) const override;
 
 private: /* Fields: */
     std::vector<TypeBasic*> const m_params;
     Type* const m_returnType;
 };
-
-
-inline bool Type::isPublicUIntScalar () const {
-    return secrecDataType ()->equals (DATATYPE_UINT64) &&
-           secrecSecType ()->isPublic () &&
-           secrecDimType () == 0;
-}
-
-inline std::ostream &operator<<(std::ostream &out, const Type &type) {
-    type.print (out);
-    return out;
-}
-
-inline std::ostream& operator << (std::ostream& os, const Type::PrettyPrint& pp) {
-    pp (os);
-    return os;
-}
 
 
 } // namespace SecreC

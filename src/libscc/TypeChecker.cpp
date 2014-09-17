@@ -14,6 +14,7 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "typechecker/Templates.h"
+#include "SecurityType.h"
 
 #include <boost/range.hpp>
 

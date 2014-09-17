@@ -13,6 +13,7 @@
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "Visitor.h"
+#include "SecurityType.h"
 
 #define TUGUARD(expr) \
     do { \

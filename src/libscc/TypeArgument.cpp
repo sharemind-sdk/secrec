@@ -16,6 +16,7 @@
 #include "SymbolTable.h"
 #include "Log.h"
 #include "Visitor.h"
+#include "SecurityType.h"
 
 namespace SecreC {
 

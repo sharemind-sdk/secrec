@@ -10,6 +10,8 @@
 #include "TypeContext.h"
 
 #include "Misc.h"
+#include "DataType.h"
+#include "SecurityType.h"
 
 #include <ostream>
 
@@ -48,5 +50,12 @@ void TypeContext::prettyPrint (std::ostream& os) const {
     if (! foundAny)
         os << '*';
 }
+
+void TypeContext::setContextIndexType (Context& cxt) {
+    setContextDataType (DataTypePrimitive::get (cxt, DATATYPE_UINT64));
+    setContextDimType (0);
+    setContextSecType (PublicSecType::get (cxt));
+}
+
 
 } // namespace SecreC
