@@ -60,7 +60,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     {
         std::set<StringRef> seen;
         for (TreeNodeQuantifier& q : quants) {
-            TCGUARD (visit (&q));
+            TCGUARD (visitQuantifier (&q));
             const StringRef name = q.typeVariable ()->value ();
             if (! seen.insert (name).second) {
                 m_log.fatal () << "Duplicate quantifier at " << q.location () << ".";
@@ -83,7 +83,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     for (TreeNodeAttribute& attr : decl->attributes ()) {
         // TODO: This is incredibly ugly workaround! We are cloning in order to avoid using cache-d type.
         TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (nullptr));
-        TCGUARD (visit (type));
+        TCGUARD (visitType (type));
         if (type->secrecType ()->kind () != Type::BASIC) {
             m_log.fatal () << "Invalid structure field at " << type->location () << '.';
             delete type;
@@ -100,7 +100,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     return OK;
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStructDecl* decl) {
+TypeChecker::Status TypeChecker::visitStructDecl (TreeNodeStructDecl* decl) {
     TreeNodeIdentifier* id = decl->identifier ();
 
     // Structure declaration must not overshadow another one:
@@ -128,7 +128,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStructDecl* decl) {
         TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
         std::set<StringRef> seen;
         for (TreeNodeQuantifier& q : quants) {
-            TCGUARD (visit (&q));
+            TCGUARD (visitQuantifier (&q));
             const StringRef name = q.typeVariable ()->value ();
             if (! seen.insert (name).second) {
                 m_log.fatal () << "Duplicate quantifier at " << q.location () << ".";

@@ -1,8 +1,10 @@
 #include "CodeGen.h"
+#include "CodeGenResult.h"
 #include "Constant.h"
 #include "Misc.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "TypeChecker.h"
 
 #include <sstream>
 #include <vector>
@@ -47,7 +49,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
     // Type check:
-    if (m_tyChecker->visit(e) != TypeChecker::OK)
+    if (m_tyChecker->visitExprAssign(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;

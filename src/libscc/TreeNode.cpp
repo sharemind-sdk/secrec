@@ -1,5 +1,6 @@
 #include "TreeNode.h"
 
+#include "CodeGenResult.h"
 #include "Context.h"
 #include "Misc.h"
 #include "StringTable.h"
@@ -183,9 +184,9 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
     CASE_NODE_NAME(STMT_WHILE);
     CASE_NODE_NAME(SUBSCRIPT);
     CASE_NODE_NAME(TEMPLATE_DECL);
-    CASE_NODE_NAME(TEMPLATE_DATA_QUANT);
-    CASE_NODE_NAME(TEMPLATE_DIM_QUANT);
-    CASE_NODE_NAME(TEMPLATE_DOMAIN_QUANT);
+    CASE_NODE_NAME(TEMPLATE_QUANTIFIER_DATA);
+    CASE_NODE_NAME(TEMPLATE_QUANTIFIER_DIM);
+    CASE_NODE_NAME(TEMPLATE_QUANTIFIER_DOMAIN);
     CASE_NODE_NAME(TYPETYPE);
     CASE_NODE_NAME(TYPEVOID);
     CASE_NODE_NAME(TYPEVAR);
@@ -459,6 +460,11 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
             m_resultType->secrecSecType(),
             dType,
             m_resultType->secrecDimType());
+}
+
+CGBranchResult TreeNodeExpr::codeGenBoolWith (CodeGen&) {
+    assert (false && "Not implemented!");
+    return CGBranchResult (CGResult::ERROR_FATAL);
 }
 
 /*******************************************************************************
@@ -957,11 +963,11 @@ TreeNodeIdentifier* TreeNodeQuantifier::typeVariable () const {
 }
 
 /*******************************************************************************
-  TreeNodeDomainQuantifier
+  TreeNodeQuantifierDomain
 *******************************************************************************/
 
 // will equal to zero, if kind not specified
-TreeNodeIdentifier* TreeNodeDomainQuantifier::kind () const {
+TreeNodeIdentifier* TreeNodeQuantifierDomain::kind () const {
     assert (children ().size () == 1 || children ().size () == 2);
     if (children ().size () == 2) {
         return childAt<TreeNodeIdentifier>(this, 1);
@@ -970,25 +976,25 @@ TreeNodeIdentifier* TreeNodeDomainQuantifier::kind () const {
     return nullptr;
 }
 
-void TreeNodeDomainQuantifier::printQuantifier (std::ostream &os) const {
+void TreeNodeQuantifierDomain::printQuantifier (std::ostream &os) const {
     os << "domain " << typeVariable ()->value();
     if (kind())
         os << " : " << kind()->value();
 }
 
 /*******************************************************************************
-  TreeNodeDimQuantifier
+  TreeNodeQuantifierDim
 *******************************************************************************/
 
-void TreeNodeDimQuantifier::printQuantifier (std::ostream & os) const {
+void TreeNodeQuantifierDim::printQuantifier (std::ostream & os) const {
     os << "dim " << typeVariable ()->value ();
 }
 
 /*******************************************************************************
-  TreeNodeDataQuantifier
+  TreeNodeQuantifierData
 *******************************************************************************/
 
-void TreeNodeDataQuantifier::printQuantifier (std::ostream & os) const {
+void TreeNodeQuantifierData::printQuantifier (std::ostream & os) const {
     os << "type " << typeVariable ()->value ();
 }
 
@@ -1464,9 +1470,9 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(EXPR_CAST, ExprCast);
     SELECTNODE(KIND, Kind);
     SELECTNODE(DOMAIN, Domain);
-    SELECTNODE(TEMPLATE_DATA_QUANT, DataQuantifier);
-    SELECTNODE(TEMPLATE_DOMAIN_QUANT, DomainQuantifier);
-    SELECTNODE(TEMPLATE_DIM_QUANT, DimQuantifier);
+    SELECTNODE(TEMPLATE_QUANTIFIER_DATA, QuantifierData);
+    SELECTNODE(TEMPLATE_QUANTIFIER_DOMAIN, QuantifierDomain);
+    SELECTNODE(TEMPLATE_QUANTIFIER_DIM, QuantifierDim);
     SELECTNODE(TEMPLATE_DECL, Template);
     SELECTNODE(VAR_INIT, VarInit);
     SELECTNODE(MODULE, Module);

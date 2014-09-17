@@ -41,19 +41,18 @@ class DataTypeStruct;
 *******************************************************************************/
 
 class TypeChecker {
-private:
-
-    TypeChecker (const TypeChecker&) = delete;
-    TypeChecker& operator = (const TypeChecker&) = delete;
-
 public: /* Types: */
 
     enum Status { OK, E_TYPE, E_NOT_IMPLEMENTED, E_OTHER };
+
+    using result_type = Status;
 
 public: /* Methods: */
 
     TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt);
     ~TypeChecker ();
+    TypeChecker (const TypeChecker&) = delete;
+    TypeChecker& operator = (const TypeChecker&) = delete;
 
     void setScope (SymbolTable& st) {
         m_st = &st;
@@ -65,76 +64,81 @@ public: /* Methods: */
 
     Status visitExpr(TreeNodeExpr * e);
 
-    Status visit(TreeNodeExprArrayConstructor * e);
-    Status visit(TreeNodeExprBool * e);
-    Status visit(TreeNodeExprCast * root);
-    Status visit(TreeNodeExprIndex * root);
-    Status visit(TreeNodeExprSize * root);
-    Status visit(TreeNodeExprShape * root);
-    Status visit(TreeNodeExprCat * root);
-    Status visit(TreeNodeExprReshape * root);
-    Status visit(TreeNodeExprToString * root);
-    Status visit(TreeNodeExprBinary * root);
-    Status visit(TreeNodeExprUnary * root);
-    Status visit(TreeNodeExprClassify * root);
-    Status visit(TreeNodeExprProcCall * root);
-    Status visit(TreeNodeExprPrefix * root);
-    Status visit(TreeNodeExprPostfix * root);
-    Status visit(TreeNodeExprDeclassify * e);
-    Status visit(TreeNodeExprRVariable * e);
-    Status visit(TreeNodeExprString * e);
-    Status visit(TreeNodeExprFloat * e);
-    Status visit(TreeNodeExprTernary * e);
-    Status visit(TreeNodeExprAssign * e);
-    Status visit(TreeNodeExprInt * e);
-    Status visit(TreeNodeExprDomainID * e);
-    Status visit(TreeNodeExprQualified * e);
-    Status visit(TreeNodeExprBytesFromString * e);
-    Status visit(TreeNodeExprStringFromBytes * e);
-    Status visit(TreeNodeExprSelection * e);
+    Status visitExprArrayConstructor(TreeNodeExprArrayConstructor * e);
+    Status visitExprAssign(TreeNodeExprAssign * e);
+    Status visitExprBinary(TreeNodeExprBinary * root);
+    Status visitExprBool(TreeNodeExprBool * e);
+    Status visitExprBytesFromString(TreeNodeExprBytesFromString * e);
+    Status visitExprCast(TreeNodeExprCast * root);
+    Status visitExprCat(TreeNodeExprCat * root);
+    Status visitExprClassify(TreeNodeExprClassify * root);
+    Status visitExprDeclassify(TreeNodeExprDeclassify * e);
+    Status visitExprDomainID(TreeNodeExprDomainID * e);
+    Status visitExprFloat(TreeNodeExprFloat * e);
+    Status visitExprIndex(TreeNodeExprIndex * root);
+    Status visitExprInt(TreeNodeExprInt * e);
+    Status visitExprNone(TreeNodeExprNone* e);
+    Status visitExprPostfix(TreeNodeExprPostfix * root);
+    Status visitExprPrefix(TreeNodeExprPrefix * root);
+    Status visitExprProcCall(TreeNodeExprProcCall * root);
+    Status visitExprQualified(TreeNodeExprQualified * e);
+    Status visitExprReshape(TreeNodeExprReshape * root);
+    Status visitExprRVariable(TreeNodeExprRVariable * e);
+    Status visitExprSelection(TreeNodeExprSelection * e);
+    Status visitExprShape(TreeNodeExprShape * root);
+    Status visitExprSize(TreeNodeExprSize * root);
+    Status visitExprStringFromBytes(TreeNodeExprStringFromBytes * e);
+    Status visitExprString(TreeNodeExprString * e);
+    Status visitExprTernary(TreeNodeExprTernary * e);
+    Status visitExprToString(TreeNodeExprToString * root);
+    Status visitExprUnary(TreeNodeExprUnary * root);
 
-    Status visit(TreeNodeTypeF* ty);
-    Status visit(TreeNodeTypeVarF* ty);
-    Status visit(TreeNodeSecTypeF * ty);
-    Status visit(TreeNodeDimTypeF* ty);
-    Status visit(TreeNodeDimTypeVarF * ty);
-    Status visit(TreeNodeDataTypeVarF * ty);
-    Status visit(TreeNodeDataTypeTemplateF* t);
-    Status visit(TreeNodeType * _ty);
+    Status visitType(TreeNodeType * _ty);
+    Status visitTypeVarF(TreeNodeTypeVarF* ty);
+    Status visitDataTypeF(TreeNodeDataTypeF* ty);
+    Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty);
+    Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t);
+    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty);
+    Status visitDimTypeConstF(TreeNodeDimTypeConstF *);
+    Status visitDimTypeF(TreeNodeDimTypeF* ty);
+    Status visitDimTypeVarF(TreeNodeDimTypeVarF * ty);
+    Status visitSecTypeF(TreeNodeSecTypeF * ty);
+    Status visitTypeF(TreeNodeTypeF* ty);
 
-    Status visit(TreeNodeTypeArg* t);
-    Status visit(TreeNodeTypeArgVar* t);
-    Status visit(TreeNodeTypeArgTemplate* t);
-    Status visit(TreeNodeTypeArgDataTypeConst* t);
-    Status visit(TreeNodeTypeArgDimTypeConst* t);
-    Status visit(TreeNodeTypeArgPublic* t);
+    Status visitTypeArg(TreeNodeTypeArg* t);
+    Status visitTypeArgVar(TreeNodeTypeArgVar* t);
+    Status visitTypeArgTemplate(TreeNodeTypeArgTemplate* t);
+    Status visitTypeArgDataTypeConst(TreeNodeTypeArgDataTypeConst* t);
+    Status visitTypeArgDimTypeConst(TreeNodeTypeArgDimTypeConst* t);
+    Status visitTypeArgPublic(TreeNodeTypeArgPublic* t);
 
-    Status visit(TreeNodeQuantifier* q);
-    Status visit(TreeNodeDimQuantifier*);
-    Status visit(TreeNodeDomainQuantifier* q);
-    Status visit(TreeNodeDataQuantifier* q);
+    Status visitQuantifier(TreeNodeQuantifier* q);
+    Status visitQuantifierDim(TreeNodeQuantifierDim*);
+    Status visitQuantifierData(TreeNodeQuantifierData* q);
+    Status visitQuantifierDomain(TreeNodeQuantifierDomain* q);
 
-    Status visit(TreeNodeStmtIf * stmt);
-    Status visit(TreeNodeStmtWhile * stmt);
-    Status visit(TreeNodeStmtDoWhile * stmt);
-    Status visit(TreeNodeStmtDecl * decl);
-    Status visit(TreeNodeStmtPrint * stmt);
-    Status visit(TreeNodeStmtReturn * stmt);
-    Status visit(TreeNodeStmtSyscall * stmt);
-    Status visit(TreeNodeStmtAssert * stmt);
+    Status visitStmt(TreeNodeStmt * stmt);
+    Status visitStmtIf(TreeNodeStmtIf * stmt);
+    Status visitStmtWhile(TreeNodeStmtWhile * stmt);
+    Status visitStmtDoWhile(TreeNodeStmtDoWhile * stmt);
+    Status visitStmtDecl(TreeNodeStmtDecl * decl);
+    Status visitStmtPrint(TreeNodeStmtPrint * stmt);
+    Status visitStmtReturn(TreeNodeStmtReturn * stmt);
+    Status visitStmtSyscall(TreeNodeStmtSyscall * stmt);
+    Status visitStmtAssert(TreeNodeStmtAssert * stmt);
 
-    Status visit(TreeNodeStringPart * p);
-    Status visit(TreeNodeStringPartFragment * p);
-    Status visit(TreeNodeStringPartIdentifier * p);
+    Status visitStringPart(TreeNodeStringPart * p);
+    Status visitStringPartFragment(TreeNodeStringPartFragment * p);
+    Status visitStringPartIdentifier(TreeNodeStringPartIdentifier * p);
 
-    Status visit(TreeNodeStructDecl* decl);
-    Status visit(TreeNodeProcDef * proc, SymbolTable * localScope);
-    Status visit(TreeNodeTemplate * templ);
+    Status visitStructDecl(TreeNodeStructDecl* decl);
+    Status visitProcDef(TreeNodeProcDef * proc, SymbolTable * localScope);
+    Status visitTemplate(TreeNodeTemplate * templ);
 
-    Status visit(TreeNodeLValue* lvalue);
-    Status visit(TreeNodeLIndex* lindex);
-    Status visit(TreeNodeLVariable* lvar);
-    Status visit(TreeNodeLSelect* lselect);
+    Status visitLValue(TreeNodeLValue* lvalue);
+    Status visitLIndex(TreeNodeLIndex* lindex);
+    Status visitLVariable(TreeNodeLVariable* lvar);
+    Status visitLSelect(TreeNodeLSelect* lselect);
 
     /// \see TemplateInstantiator
     bool getForInstantiation (InstanceInfo&);
@@ -226,10 +230,10 @@ private:
 
 private: /* Fields: */
 
-    SymbolTable*            m_st;
-    CompileLog&             m_log;
-    Context&                m_context;
-    TemplateInstantiator*   m_instantiator;
+    SymbolTable*          m_st;
+    CompileLog&           m_log;
+    Context&              m_context;
+    TemplateInstantiator* m_instantiator;
 };
 
 } // namespace SecreC

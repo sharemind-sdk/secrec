@@ -2,6 +2,7 @@
 
 #include "Parser.h"
 #include "CodeGen.h"
+#include "CodeGenResult.h"
 #include "Context.h"
 #include "ContextImpl.h"
 #include "SymbolTable.h"

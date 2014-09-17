@@ -9,6 +9,7 @@
 
 #include "CodeGen.h"
 
+#include "CodeGenResult.h"
 #include "TreeNode.h"
 #include "SymbolTable.h"
 #include "Symbol.h"

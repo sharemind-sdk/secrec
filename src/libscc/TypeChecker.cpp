@@ -34,10 +34,6 @@ TypeChecker::~TypeChecker () {
     delete m_instantiator;
 }
 
-TypeChecker::Status TypeChecker::visitExpr(TreeNodeExpr * e) {
-    return e->accept(*this);
-}
-
 bool TypeChecker::getForInstantiation (InstanceInfo& info) {
     return m_instantiator->getForInstantiation (info);
 }

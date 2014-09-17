@@ -15,6 +15,7 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
+#include "Visitor.h"
 
 #include <boost/range.hpp>
 
@@ -106,7 +107,7 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
     const char * m1 = isPrefix ? "Prefix " : "Postfix ";
     const char * m2 = isInc ? "increment" : "decrement";
 
-    TCGUARD (visit (lval));
+    TCGUARD (visitLValue (lval));
 
     TypeNonVoid* eType = lval->secrecType ();
 
@@ -121,20 +122,6 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
     root->setResultType(eType);
     return OK;
 }
-
-/*******************************************************************************
-  TreeNodeExprNone
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeExprNone::accept(TypeChecker&) {
-    return TypeChecker::OK;
-}
-
-void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
-
-/*******************************************************************************
-  TreeNodeExprSelection
-*******************************************************************************/
 
 TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
                                        TreeNodeIdentifier* id)
@@ -168,11 +155,19 @@ TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
     return matchingFieldType;
 }
 
-TypeChecker::Status TreeNodeExprSelection::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
+/*******************************************************************************
+  TreeNodeExpr
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visitExpr(TreeNodeExpr * e) {
+    return dispatchExpr (*this, e);
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
+/*******************************************************************************
+  TreeNodeExprSelection
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visitExprSelection (TreeNodeExprSelection * e) {
     if (e->haveResultType())
         return OK;
 
@@ -192,18 +187,14 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprSelection * e) {
   TreeNodeExprAssign
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprAssign::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
+TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
     if (e->haveResultType())
         return OK;
 
     // Get symbol for l-value:
     TreeNodeLValue* lval = e->leftHandSide ();
 
-    TCGUARD (visit (lval));
+    TCGUARD (visitLValue (lval));
     TypeNonVoid * lhsType = lval->secrecType ();
 
     // Calculate type of r-value:
@@ -233,15 +224,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprAssign * e) {
   TreeNodeExprCast
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprCast::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
+TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     if (root->haveResultType())
         return OK;
 
-    TCGUARD (visit (root->dataType ()));
+    TCGUARD (visitDataTypeF (root->dataType ()));
 
     DataType* resultingDType = root->dataType()->cachedType ();;
     TreeNodeExpr * subExpr = root->expression();
@@ -271,11 +258,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprCast * root) {
   TreeNodeExprIndex
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprIndex::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprIndex * root) {
+TypeChecker::Status TypeChecker::visitExprIndex(TreeNodeExprIndex * root) {
     typedef TypeNonVoid TNV;
 
     if (root->haveResultType())
@@ -314,11 +297,7 @@ void TreeNodeExprIndex::instantiateDataTypeV (Context &cxt, SecrecDataType dType
   TreeNodeExprSize
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprSize::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprSize * root) {
+TypeChecker::Status TypeChecker::visitExprSize(TreeNodeExprSize * root) {
     if (! root->haveResultType()) {
         TreeNodeExpr * e = root->expression();
         TCGUARD (visitExpr(e));
@@ -335,11 +314,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprSize * root) {
   TreeNodeExprShape
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprShape::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprShape * root) {
+TypeChecker::Status TypeChecker::visitExprShape(TreeNodeExprShape * root) {
     if (! root->haveResultType()) {
         TreeNodeExpr * e = root->expression();
         TCGUARD (visitExpr(e));
@@ -356,11 +331,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprShape * root) {
   TreeNodeExprCat
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprCat::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprCat * root) {
+TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
     typedef TypeNonVoid TNV;
 
     if (root->haveResultType())
@@ -466,13 +437,7 @@ void TreeNodeExprCat::instantiateDataTypeV(Context & cxt, SecrecDataType dType) 
   TreeNodeExprReshape
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprReshape::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
-    typedef TypeNonVoid TNV;
-
+TypeChecker::Status TypeChecker::visitExprReshape(TreeNodeExprReshape * root) {
     if (root->haveResultType())
         return OK;
 
@@ -484,7 +449,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
     if (checkAndLogIfVoid(e))
         return E_TYPE;
 
-    TNV * eType = static_cast<TNV *>(e->resultType());
+    const auto eType = static_cast<TypeNonVoid *>(e->resultType());
     for (TreeNodeExpr& dim : root->dimensions()) {
         dim.setContextIndexType (getContext());
         TCGUARD (visitExpr(&dim));
@@ -492,7 +457,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprReshape * root) {
         if (checkAndLogIfVoid(&dim))
             return E_TYPE;
 
-        TNV * dimType = static_cast<TNV *>(dim.resultType());
+        const auto dimType = static_cast<TypeNonVoid *>(dim.resultType());
         if (! dimType->isPublicUIntScalar()) {
             m_log.fatalInProc(root) << "Expecting 'uint' at "
                 << dim.location() << " got " << *dimType << '.';
@@ -520,11 +485,7 @@ void TreeNodeExprReshape::instantiateDataTypeV(Context & cxt, SecrecDataType dTy
   TreeNodeExprToString
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprToString::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprToString * root) {
+TypeChecker::Status TypeChecker::visitExprToString(TreeNodeExprToString * root) {
     if (root->haveResultType())
         return OK;
 
@@ -553,11 +514,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprToString * root) {
   TreeNodeExprBinary
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprBinary::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprBinary * root) {
+TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     if (root->haveResultType())
         return OK;
 
@@ -683,11 +640,7 @@ void TreeNodeExprBinary::instantiateDataTypeV(Context & cxt, SecrecDataType dTyp
   TreeNodeExprUnary
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprUnary::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprUnary * root) {
+TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
     if (root->haveResultType())
         return OK;
 
@@ -761,11 +714,7 @@ void TreeNodeExprUnary::instantiateDataTypeV (Context &cxt, SecrecDataType dType
   TreeNodeExprBool
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprBool::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprBool * e) {
+TypeChecker::Status TypeChecker::visitExprBool(TreeNodeExprBool * e) {
     if (! e->haveResultType()) {
         e->setResultType(TypeBasic::get(m_context, DATATYPE_BOOL));
     }
@@ -777,11 +726,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBool * e) {
   TreeNodeExprArrayConstructor
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprArrayConstructor::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
+TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
     if (e->haveResultType ()) {
         return OK;
     }
@@ -799,7 +744,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
         TypeNonVoid* childType = static_cast<TypeNonVoid*>(child.resultType ());
 
         if (! childType->isScalar ()) {
-            m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at " << child.location () << ".";
+            m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at "
+                                  << child.location () << ".";
             return E_TYPE;
         }
 
@@ -810,7 +756,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
         else {
             elemType = upperTypeNonVoid (getContext (), childType, elemType);
             if (elemType == nullptr) {
-                m_log.fatalInProc (e) << "Array element of invalid type at " << child.location () << ".";
+                m_log.fatalInProc (e) << "Array element of invalid type at "
+                                      << child.location () << ".";
                 return E_TYPE;
             }
         }
@@ -821,7 +768,8 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprArrayConstructor * e) {
     }
 
 
-    e->setResultType (TypeBasic::get (getContext (), elemType->secrecSecType (), elemType->secrecDataType (), 1));
+    e->setResultType (TypeBasic::get (getContext (),
+        elemType->secrecSecType (), elemType->secrecDataType (), 1));
     return OK;
 }
 
@@ -836,17 +784,14 @@ void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDat
   TreeNodeExprInt
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprInt::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprInt * e) {
+TypeChecker::Status TypeChecker::visitExprInt(TreeNodeExprInt * e) {
     if (! e->haveResultType()) {
         DataType* dtype = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
             dtype = dtypeDeclassify(getContext (), e->contextDataType());
             if (! isNumericDataType(dtype)) {
-                m_log.fatalInProc(e) << "Expecting numeric context at " << e->location() << '.';
+                m_log.fatalInProc(e) << "Expecting numeric context at "
+                                     << e->location() << '.';
                 return E_TYPE;
             }
         }
@@ -865,11 +810,7 @@ void TreeNodeExprInt::instantiateDataTypeV(Context & cxt, SecrecDataType dType) 
   TreeNodeExprFloat
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprFloat::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprFloat * e) {
+TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
     if (!e->haveResultType()) {
         DataType* dType = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
@@ -896,13 +837,10 @@ void TreeNodeExprFloat::instantiateDataTypeV(Context & cxt, SecrecDataType dType
   TreeNodeExprClassify
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprClassify::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprClassify * root) {
+TypeChecker::Status TypeChecker::visitExprClassify(TreeNodeExprClassify * root) {
     if (! root->haveResultType()) {
-        m_log.fatalInProc(root) << "ICE: type checking classify node at " << root->location() << '.';
+        m_log.fatalInProc(root) << "ICE: type checking classify node at "
+                                << root->location() << '.';
         return E_OTHER;
     }
 
@@ -913,11 +851,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprClassify * root) {
   TreeNodeExprDeclassify
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprDeclassify::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprDeclassify * root) {
+TypeChecker::Status TypeChecker::visitExprDeclassify(TreeNodeExprDeclassify * root) {
     if (root->haveResultType())
         return OK;
 
@@ -950,11 +884,7 @@ void TreeNodeExprDeclassify::instantiateDataTypeV(Context & cxt, SecrecDataType 
   TreeNodeExprRVariable
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprRVariable::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprRVariable * e) {
+TypeChecker::Status TypeChecker::visitExprRVariable (TreeNodeExprRVariable * e) {
     if (e->haveResultType())
         return OK;
 
@@ -988,16 +918,12 @@ bool TreeNodeExprString::isConstant () const {
     return true;
 }
 
-TypeChecker::Status TreeNodeExprString::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprString * e) {
+TypeChecker::Status TypeChecker::visitExprString(TreeNodeExprString * e) {
     if (e->haveResultType())
         return OK;
 
     for (TreeNodeStringPart& part : e->parts ()) {
-        TCGUARD (visit (&part));
+        TCGUARD (visitStringPart (&part));
     }
 
     e->setResultType(TypeBasic::get(m_context, DATATYPE_STRING));
@@ -1008,20 +934,15 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprString * e) {
   TreeNodeStringPart
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit (TreeNodeStringPart * e) {
-    return e->accept (*this);
+TypeChecker::Status TypeChecker::visitStringPart (TreeNodeStringPart * e) {
+    return dispatchStringPart (*this, e);
 }
 
 /*******************************************************************************
   TreeNodeStringPartFragment
 *******************************************************************************/
 
-
-TypeChecker::Status TreeNodeStringPartFragment::accept (TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeStringPartFragment *) {
+TypeChecker::Status TypeChecker::visitStringPartFragment(TreeNodeStringPartFragment *) {
     return OK;
 }
 
@@ -1034,11 +955,7 @@ StringRef TreeNodeStringPartIdentifier::staticValue () const {
     return m_value->value ();
 }
 
-TypeChecker::Status TreeNodeStringPartIdentifier::accept (TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
+TypeChecker::Status TypeChecker::visitStringPartIdentifier(TreeNodeStringPartIdentifier * p) {
     if (p->value () || p->secrecType ())
         return OK;
 
@@ -1096,11 +1013,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStringPartIdentifier * p) {
   TreeNodeExprTernary
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprTernary::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
+TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
     if (root->haveResultType())
         return OK;
 
@@ -1131,7 +1044,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprTernary * root) {
     {
         m_log.fatalInProc(root) << "Conditional subexpression at " << e1->location()
             << " of ternary expression has to be public boolean, got "
-            << *cType << '.';
+            << Type::PrettyPrint(cType) << '.';
         return E_TYPE;
     }
 
@@ -1206,11 +1119,7 @@ void TreeNodeExprTernary::instantiateDataTypeV(Context & cxt, SecrecDataType dTy
   TreeNodeExprDomainID
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprDomainID::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprDomainID * e) {
+TypeChecker::Status TypeChecker::visitExprDomainID(TreeNodeExprDomainID * e) {
     if (e->haveResultType())
         return OK;
 
@@ -1220,7 +1129,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprDomainID * e) {
         return E_TYPE;
     }
 
-    TCGUARD (visit(e->securityType()));
+    TCGUARD (visitSecTypeF (e->securityType()));
     e->setResultType(TypeBasic::get(getContext(), DATATYPE_UINT64));
     return OK;
 }
@@ -1229,11 +1138,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprDomainID * e) {
   TreeNodeExprQualified
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprQualified::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
+TypeChecker::Status TypeChecker::visitExprQualified(TreeNodeExprQualified * e) {
     if (e->haveResultType())
         return OK;
 
@@ -1241,7 +1146,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprQualified * e) {
     TreeNodeExpr * subExpr = e->expression();
     subExpr->setContext(e);
     for (TreeNodeTypeF& node : e->types()) {
-        TCGUARD (visit (&node));
+        TCGUARD (visitTypeF (&node));
         node.setTypeContext (suppliedContext);
         node.setTypeContext (*subExpr); // not the nicest solution
     }
@@ -1294,11 +1199,7 @@ void TreeNodeExprQualified::instantiateDataTypeV(Context & cxt, SecrecDataType d
   TreeNodeExprStringFromBytes
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprStringFromBytes::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
+TypeChecker::Status TypeChecker::visitExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     if (e->haveResultType())
         return OK;
 
@@ -1314,7 +1215,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
             ty->secrecDimType() != 1)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public byte array, got "
-                             << *ty << " at " << e->location() << '.';
+                             << Type::PrettyPrint(ty) << " at " << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1328,11 +1229,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprStringFromBytes * e) {
   TreeNodeExprBytesFromString
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprBytesFromString::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprBytesFromString * e) {
+TypeChecker::Status TypeChecker::visitExprBytesFromString(TreeNodeExprBytesFromString * e) {
     if (e->haveResultType())
         return OK;
 
@@ -1346,7 +1243,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBytesFromString * e) {
             ty->secrecDimType() != 0)
     {
         m_log.fatalInProc(e) << "Invalid argument. Expected public string, got "
-                             << *ty << " at " << e->location() << '.';
+                             << Type::PrettyPrint(ty) << " at " << e->location() << '.';
         return E_TYPE;
     }
 
@@ -1360,11 +1257,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprBytesFromString * e) {
   TreeNodeExprPrefix
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprPrefix::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprPrefix * root) {
+TypeChecker::Status TypeChecker::visitExprPrefix(TreeNodeExprPrefix * root) {
     return checkPostfixPrefixIncDec(root, false,
             root->type() == NODE_EXPR_PREFIX_INC);
 }
@@ -1373,13 +1266,21 @@ TypeChecker::Status TypeChecker::visit(TreeNodeExprPrefix * root) {
   TreeNodeExprPostfix
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeExprPostfix::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeExprPostfix * root) {
+TypeChecker::Status TypeChecker::visitExprPostfix(TreeNodeExprPostfix * root) {
     return checkPostfixPrefixIncDec(root, true,
             root->type() == NODE_EXPR_POSTFIX_INC);
+}
+
+/*******************************************************************************
+  TreeNodeExprNone
+*******************************************************************************/
+
+void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
+
+TypeChecker::Status TypeChecker::visitExprNone (TreeNodeExprNone *e) {
+    m_log.fatalInProc (e) << "Invalid expression node at " << e->location () << ". "
+                          << "Most likely internal compiler error!";
+    return E_TYPE;
 }
 
 } // namespace SecreC

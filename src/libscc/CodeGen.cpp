@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 
+#include "CodeGenResult.h"
 #include "Constant.h"
 #include "ContextImpl.h"
 #include "Intermediate.h"

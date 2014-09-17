@@ -12,6 +12,7 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+#include "Visitor.h"
 
 namespace SecreC {
 
@@ -19,19 +20,11 @@ namespace SecreC {
  TreeNodeQuantifier
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeQuantifier* q) {
-    return q->accept (*this);
+TypeChecker::Status TypeChecker::visitQuantifier (TreeNodeQuantifier* q) {
+    return dispatchQuantifier (*this, q);
 }
 
-/*******************************************************************************
- TreeNodeDomainQuantifier
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDomainQuantifier::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeDomainQuantifier* q) {
+TypeChecker::Status TypeChecker::visitQuantifierDomain(TreeNodeQuantifierDomain* q) {
     if (q->kind ()) {
         if (findIdentifier (SYM_KIND, q->kind ()) == nullptr)
             return E_TYPE;
@@ -40,27 +33,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeDomainQuantifier* q) {
     return OK;
 }
 
-/*******************************************************************************
- TreeNodeDimQuantifier
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDimQuantifier::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeDimQuantifier*) {
+TypeChecker::Status TypeChecker::visitQuantifierDim (TreeNodeQuantifierDim*) {
     return OK;
 }
 
-/*******************************************************************************
- TreeNodeDataQuantifier
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDataQuantifier::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeDataQuantifier*) {
+TypeChecker::Status TypeChecker::visitQuantifierData(TreeNodeQuantifierData*) {
     return OK;
 }
 
@@ -68,19 +45,11 @@ TypeChecker::Status TypeChecker::visit(TreeNodeDataQuantifier*) {
  TreeNodeTypeF
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeF* ty) {
-    return ty->accept (*this);
+TypeChecker::Status TypeChecker::visitTypeF(TreeNodeTypeF* ty) {
+    return dispatchTypeF (*this, ty);
 }
 
-/*******************************************************************************
-  TreeNodeTypeVarF
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeTypeVarF::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeVarF* ty) {
+TypeChecker::Status TypeChecker::visitTypeVarF(TreeNodeTypeVarF* ty) {
     if (ty->typeVariable ())
         return OK;
 
@@ -107,11 +76,7 @@ void TreeNodeTypeVarF::setTypeContext (TypeContext& cxt) const {
  TreeNodeSecTypeF
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeSecTypeF::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeSecTypeF * ty) {
+TypeChecker::Status TypeChecker::visitSecTypeF(TreeNodeSecTypeF * ty) {
     if (ty->cachedType () != nullptr)
         return OK;
 
@@ -134,31 +99,27 @@ void TreeNodeSecTypeF::setTypeContext (TypeContext& cxt) const {
 }
 
 /*******************************************************************************
-  TreeNodeDataTypeConstF
+  TreeNodeDataTypeF
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeDataTypeConstF::accept(TypeChecker& tyChecker) {
-    if (cachedType () != nullptr) {
-        return TypeChecker::OK;
+TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty) {
+    return dispatchDataTypeF (*this, ty);
+}
+
+TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty) {
+    if (ty->cachedType () != nullptr) {
+        return OK;
     }
 
-    setCachedType (DataTypePrimitive::get (tyChecker.getContext (), m_secrecDataType));
-    return TypeChecker::OK;
+    ty->setCachedType (DataTypePrimitive::get (getContext (), ty->secrecDataType ()));
+    return OK;
 }
 
 void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
     cxt.setContextDataType (cachedType ());
 }
 
-/*******************************************************************************
-  TreeNodeDataTypeVarF
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDataTypeVarF::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit (TreeNodeDataTypeVarF* ty) {
+TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty) {
     if (ty->cachedType () != nullptr) {
         return OK;
     }
@@ -175,31 +136,19 @@ TypeChecker::Status TypeChecker::visit (TreeNodeDataTypeVarF* ty) {
   TreeNodeDimTypeF
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeDimTypeF* ty) {
-    return ty->accept (*this);
+TypeChecker::Status TypeChecker::visitDimTypeF(TreeNodeDimTypeF* ty) {
+    return dispatchDimTypeF (*this, ty);
 }
 
 void TreeNodeDimTypeF::setTypeContext (TypeContext& cxt) const {
     cxt.setContextDimType (cachedType ());
 }
 
-/*******************************************************************************
-  TreeNodeDimTypeConstF
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDimTypeConstF::accept (TypeChecker&) {
-    return TypeChecker::OK;
+TypeChecker::Status TypeChecker::visitDimTypeConstF (TreeNodeDimTypeConstF*) {
+    return OK;
 }
 
-/*******************************************************************************
-  TreeNodeDimTypeVarF
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeDimTypeVarF::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit (TreeNodeDimTypeVarF * ty) {
+TypeChecker::Status TypeChecker::visitDimTypeVarF (TreeNodeDimTypeVarF * ty) {
     if (ty->cachedType () != ~ SecrecDimType (0)) {
         return OK;
     }
@@ -216,7 +165,7 @@ TypeChecker::Status TypeChecker::visit (TreeNodeDimTypeVarF * ty) {
   TreeNodeType
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
+TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
     if (_ty->m_cachedType != nullptr)
         return OK;
 
@@ -224,9 +173,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != nullptr);
         TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF* secTyNode = tyNode->secType ();
-        TCGUARD (visit(secTyNode));
-        TCGUARD (visit (tyNode->dimType ()));
-        TCGUARD (visit (tyNode->dataType ()));
+        TCGUARD (visitSecTypeF (secTyNode));
+        TCGUARD (visitDimTypeF (tyNode->dimType ()));
+        TCGUARD (visitDataTypeF (tyNode->dataType ()));
 
         SecurityType* secType = secTyNode->cachedType ();
         DataType* dataType = tyNode->dataType ()->cachedType ();
@@ -269,11 +218,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeType * _ty) {
   TreeNodeDataTypeTemplateF
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeDataTypeTemplateF::accept(TypeChecker& tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeDataTypeTemplateF* t) {
+TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t) {
     assert (t != nullptr);
     if (t->cachedType () != nullptr)
         return OK;
@@ -311,7 +256,7 @@ TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
     typeArgs.reserve (args.size ());
     for (size_t i = 0; i < args.size (); ++ i) {
         TreeNodeTypeArg& arg = args[i];
-        TCGUARD (visit (&arg));
+        TCGUARD (visitTypeArg (&arg));
         TreeNodeQuantifier& quant = quants[i];
         const TypeArgument& typeArg = arg.typeArgument ();
         if (typeArg.kind () != quantifierKind (quant)) {

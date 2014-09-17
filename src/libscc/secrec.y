@@ -616,23 +616,23 @@ template_quantifiers
 template_quantifier
  : DOMAIN identifier ':' identifier
   {
-    $$ = treenode_init(NODE_TEMPLATE_DOMAIN_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANTIFIER_DOMAIN, &@$);
     treenode_appendChild($$, $2);
     treenode_appendChild($$, $4);
   }
  | DOMAIN identifier
   {
-    $$ = treenode_init(NODE_TEMPLATE_DOMAIN_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANTIFIER_DOMAIN, &@$);
     treenode_appendChild($$, $2);
   }
  | DIMENSIONALITY identifier
   {
-    $$ = treenode_init(NODE_TEMPLATE_DIM_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANTIFIER_DIM, &@$);
     treenode_appendChild($$, $2);
   }
  | TYPE identifier
   {
-    $$ = treenode_init(NODE_TEMPLATE_DATA_QUANT, &@$);
+    $$ = treenode_init(NODE_TEMPLATE_QUANTIFIER_DATA, &@$);
     treenode_appendChild($$, $2);
   }
  ;

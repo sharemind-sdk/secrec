@@ -19,11 +19,11 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         switch (quant.type ()) {
-        case NODE_TEMPLATE_DOMAIN_QUANT:
-            assert (dynamic_cast<TreeNodeDomainQuantifier*>(&quant) != nullptr);
-            if (static_cast<TreeNodeDomainQuantifier&>(quant).kind () == nullptr)
+        case NODE_TEMPLATE_QUANTIFIER_DOMAIN:
+            assert (dynamic_cast<TreeNodeQuantifierDomain*>(&quant) != nullptr);
+            if (static_cast<TreeNodeQuantifierDomain&>(quant).kind () == nullptr)
                 ++ qualifiedTypeVariableCount;
-        case NODE_TEMPLATE_DIM_QUANT:
+        case NODE_TEMPLATE_QUANTIFIER_DIM:
             typeVariables.insert (quant.typeVariable ()->value ());
         default:
             break;

@@ -14,6 +14,7 @@
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
+#include "TypeChecker.h"
 
 namespace SecreC {
 
@@ -47,8 +48,8 @@ TypeArgumentKind typeFragmentKind (const TreeNodeTypeF& ty) {
     case NODE_SECTYPE_PUBLIC_F:
         return TA_SEC;
     default:
-        assert (false && "Invalid tree node.");
-        return TA_UNDEF;
+        assert (false && "Invalid tree node (probably parser error).");
+        return TA_DATA;
     }
 }
 
@@ -57,7 +58,6 @@ SymbolCategory symbolCategory (TypeArgumentKind kind) {
     case TA_SEC: return SYM_DOMAIN;
     case TA_DATA: return SYM_TYPE;
     case TA_DIM: return SYM_DIM;
-    case TA_UNDEF: return SYM_UNDEFINED;
     }
 }
 
@@ -66,9 +66,6 @@ const char* kindAsString (TypeArgumentKind kind) {
     case TA_SEC: return "domain";
     case TA_DATA: return "data";
     case TA_DIM: return "dimensionality";
-    case TA_UNDEF:
-        assert (false && "Invalid type variable kind.");
-        return "undefined";
     }
 }
 
@@ -120,7 +117,7 @@ TypeChecker::Status checkTypeVariable (TypeVariableMap& map,
  * template declarations we perform no type checking of the template body --
  * it only needs to parse.
  */
-TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
+TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
@@ -139,7 +136,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTemplate * templ) {
         typeVariables.insert (it, std::make_pair (name,
             TemplateTypeVariable (quant.typeVariable (), quantifierKind (quant))));
 
-        TCGUARD (visit (&quant));
+        TCGUARD (visitQuantifier (&quant));
     }
 
     if (body->returnType ()->isNonVoid ()) {

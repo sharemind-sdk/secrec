@@ -15,6 +15,7 @@
 #include "TypeChecker.h"
 #include "SymbolTable.h"
 #include "Log.h"
+#include "Visitor.h"
 
 namespace SecreC {
 
@@ -25,27 +26,17 @@ namespace SecreC {
 
 SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
     switch (m_kind) {
-    case TA_UNDEF: return nullptr;
-    case TA_SEC:   return new SymbolDomain (name, secType ());
-    case TA_DATA:  return new SymbolDataType (name, dataType ());
-    case TA_DIM:   return new SymbolDimensionality (name, dimType ());
+    case TA_SEC:  return new SymbolDomain (name, secType ());
+    case TA_DATA: return new SymbolDataType (name, dataType ());
+    case TA_DIM:  return new SymbolDimensionality (name, dimType ());
     }
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArg* t) {
-    assert (t != nullptr);
-    if (t->hasTypeArgument ())
-        return OK;
-
-    return t->accept (*this);
 }
 
 std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
     switch (a.m_kind) {
-    case TA_UNDEF: os << "TA_UNDEF"; break;
-    case TA_SEC:   os << *a.secType (); break;
-    case TA_DATA:  os << *a.dataType (); break;
-    case TA_DIM:   os <<  a.dimType (); break;
+    case TA_SEC:  os << *a.secType (); break;
+    case TA_DATA: os << *a.dataType (); break;
+    case TA_DIM:  os <<  a.dimType (); break;
     }
 
     return os;
@@ -53,10 +44,12 @@ std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
 
 TypeArgumentKind quantifierKind (const TreeNodeQuantifier& quant) {
     switch (quant.type ()) {
-    case NODE_TEMPLATE_DOMAIN_QUANT: return TA_SEC;
-    case NODE_TEMPLATE_DATA_QUANT: return TA_DATA;
-    case NODE_TEMPLATE_DIM_QUANT: return TA_DIM;
-    default: return TA_UNDEF;
+    case NODE_TEMPLATE_QUANTIFIER_DOMAIN: return TA_SEC;
+    case NODE_TEMPLATE_QUANTIFIER_DATA: return TA_DATA;
+    case NODE_TEMPLATE_QUANTIFIER_DIM: return TA_DIM;
+    default:
+        assert (false && "ICE: invalid quantifier (probably parser error).");
+        return TA_DATA;
     }
 }
 
@@ -67,16 +60,17 @@ bool TypeArgument::equals (SecrecDataType dataType) const {
 }
 
 /*******************************************************************************
-  TreeNodeTypeArgVar
+  TreeNodeTypeArg
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeTypeArgVar::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
+TypeChecker::Status TypeChecker::visitTypeArg (TreeNodeTypeArg *t) {
+    assert (t != nullptr);
+    if (t->hasTypeArgument ())
+        return OK;
+    return dispatchTypeArg (*this, t);
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
-    assert (t != nullptr);
-
+TypeChecker::Status TypeChecker::visitTypeArgVar(TreeNodeTypeArgVar* t) {
     const StringRef name = t->identifier ()->value ();
     SymbolDomain* symDom = m_st->find<SYM_DOMAIN>(name);
     SymbolDataType* symTy = m_st->find<SYM_TYPE>(name);
@@ -108,16 +102,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgVar* t) {
     return OK;
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgTemplate
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeTypeArgTemplate::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgTemplate* t) {
-    assert (t != nullptr);
+TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t) {
     DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
     assert (structType != nullptr);
@@ -125,44 +110,17 @@ TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgTemplate* t) {
     return OK;
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgDataTypeConst
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeTypeArgDataTypeConst::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDataTypeConst* t) {
-    assert (t != nullptr);
+TypeChecker::Status TypeChecker::visitTypeArgDataTypeConst(TreeNodeTypeArgDataTypeConst* t) {
     t->setTypeArgument (DataTypePrimitive::get (getContext (), t->secrecDataType ()));
     return OK;
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgDimTypeConst
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeTypeArgDimTypeConst::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgDimTypeConst* t) {
-    assert (t != nullptr);
+TypeChecker::Status TypeChecker::visitTypeArgDimTypeConst(TreeNodeTypeArgDimTypeConst* t) {
     t->setTypeArgument (t->secrecDimType ());
     return OK;
 }
 
-/*******************************************************************************
-  TreeNodeTypeArgPublic
-*******************************************************************************/
-
-TypeChecker::Status TreeNodeTypeArgPublic::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeTypeArgPublic* t) {
-    assert (t != nullptr);
+TypeChecker::Status TypeChecker::visitTypeArgPublic(TreeNodeTypeArgPublic* t) {
     t->setTypeArgument (PublicSecType::get (getContext ()));
     return OK;
 }

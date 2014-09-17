@@ -11,6 +11,7 @@
 
 #include "TreeNode.h"
 #include "Symbol.h"
+#include "Visitor.h"
 
 namespace SecreC {
 
@@ -22,19 +23,15 @@ namespace SecreC {
   TreeNodeLValue
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeLValue* lvalue) {
-    return lvalue->accept (*this);
+TypeChecker::Status TypeChecker::visitLValue (TreeNodeLValue* lvalue) {
+    return dispatchLValue (*this, lvalue);
 }
 
 /*******************************************************************************
   TreeNodeLVariable
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeLVariable::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeLVariable* lvar) {
+TypeChecker::Status TypeChecker::visitLVariable (TreeNodeLVariable* lvar) {
     if (lvar->secrecType () != nullptr)
         return OK;
 
@@ -58,17 +55,13 @@ TreeNodeLValue* TreeNodeExprRVariable::makeLValueV (Location&) const {
   TreeNodeLSelect
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeLSelect::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeLSelect* lselect) {
+TypeChecker::Status TypeChecker::visitLSelect (TreeNodeLSelect* lselect) {
     if (lselect->secrecType ())
         return OK;
 
     // Check subexpression:
     TreeNodeLValue* lval = lselect->lvalue ();
-    TCGUARD (visit (lval));
+    TCGUARD (visitLValue (lval));
     TypeNonVoid* fieldType = checkSelect (lval->location (), lval->secrecType (), lselect->identifier ());
     if (fieldType != nullptr) {
         lselect->setSecrecType (fieldType);
@@ -94,16 +87,12 @@ TreeNodeLValue* TreeNodeExprSelection::makeLValueV (Location& loc) const {
   TreeNodeLIndex
 *******************************************************************************/
 
-TypeChecker::Status TreeNodeLIndex::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit (this);
-}
-
-TypeChecker::Status TypeChecker::visit(TreeNodeLIndex* lindex) {
+TypeChecker::Status TypeChecker::visitLIndex(TreeNodeLIndex* lindex) {
     if (lindex->secrecType ())
         return OK;
 
     TreeNodeLValue* lval = lindex->lvalue ();
-    TCGUARD (visit (lval));
+    TCGUARD (visitLValue (lval));
     TypeNonVoid* lvalType = lval->secrecType ();
     SecrecDimType destDim = 0;
     TCGUARD (checkIndices(lindex->indices (), destDim));

@@ -77,7 +77,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
   TreeNodeStmtIf
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
+TypeChecker::Status TypeChecker::visitStmtIf(TreeNodeStmtIf * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
         m_log.fatalInProc(stmt) << "Conditional expression in if statement must be of "
@@ -92,7 +92,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtIf * stmt) {
   TreeNodeStmtWhile
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
+TypeChecker::Status TypeChecker::visitStmtWhile(TreeNodeStmtWhile * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
         m_log.fatalInProc(stmt) << "Conditional expression in while statement must be of "
@@ -107,7 +107,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtWhile * stmt) {
   TreeNodeStmtDoWhile
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
+TypeChecker::Status TypeChecker::visitStmtDoWhile(TreeNodeStmtDoWhile * stmt) {
     TreeNodeExpr *e = stmt->conditional ();
     if (checkPublicBooleanScalar (e) != OK) {
         m_log.fatalInProc(stmt) << "Conditional expression in do-while statement must be of "
@@ -126,12 +126,12 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDoWhile * stmt) {
 // Note that declarations are type checked very lazility, checks of
 // individual variable initializations will be requested by the code
 // generator (see CodeGen::cgVarInit).
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
+TypeChecker::Status TypeChecker::visitStmtDecl(TreeNodeStmtDecl * decl) {
     if (decl->haveResultType ())
         return OK;
 
     TreeNodeType *type = decl->varType ();
-    TCGUARD (visit(type));
+    TCGUARD (visitType(type));
     assert (! type->secrecType()->isVoid());
     assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != nullptr);
     TypeNonVoid* justType = static_cast<TypeNonVoid*>(type->secrecType());
@@ -152,7 +152,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtDecl * decl) {
   TreeNodeStmtPrint
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
+TypeChecker::Status TypeChecker::visitStmtPrint(TreeNodeStmtPrint * stmt) {
     for (TreeNodeExpr& e : stmt->expressions ()) {
         e.setContextSecType (PublicSecType::get (getContext ()));
         e.setContextDimType (0);
@@ -179,7 +179,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtPrint * stmt) {
   TreeNodeStmtReturn
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
+TypeChecker::Status TypeChecker::visitStmtReturn(TreeNodeStmtReturn * stmt) {
     TypeProc* procType = stmt->containingProcedure ()->procedureType ();
     if (!stmt->hasExpression()) { // stmt = return;
         if (! procType->returnType ()->isVoid ()) {
@@ -221,9 +221,9 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtReturn * stmt) {
   TreeNodeStmtSyscall
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
+TypeChecker::Status TypeChecker::visitStmtSyscall(TreeNodeStmtSyscall * stmt) {
     TreeNodeExprString* e = stmt->name ();
-    TCGUARD (visit (e));
+    TCGUARD (visitExprString (e));
 
     if (! e->isConstant ()) {
         m_log.fatalInProc (stmt) << "Syscall name at " << e->location ()
@@ -278,7 +278,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeStmtSyscall * stmt) {
   TreeNodeStmtAssert
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visit(TreeNodeStmtAssert * stmt) {
+TypeChecker::Status TypeChecker::visitStmtAssert(TreeNodeStmtAssert * stmt) {
     TreeNodeExpr* e = stmt->expression ();
     if (checkPublicBooleanScalar (e) != OK) {
         if (e->haveResultType ()) {

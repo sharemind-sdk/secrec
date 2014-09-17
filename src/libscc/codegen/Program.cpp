@@ -1,4 +1,5 @@
 #include "CodeGen.h"
+#include "CodeGenResult.h"
 #include "Log.h"
 #include "Misc.h"
 #include "ModuleInfo.h"
@@ -8,6 +9,7 @@
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "typechecker/Templates.h"
+#include "TypeChecker.h"
 
 #include <boost/filesystem/fstream.hpp>
 
@@ -68,7 +70,7 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgStructDecl (TreeNodeStructDecl* decl) {
-    if (m_tyChecker->visit (decl))
+    if (m_tyChecker->visitStructDecl (decl))
         return CGResult::ERROR_CONTINUE;
     return CGResult::OK;
 }
@@ -96,7 +98,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
     assert(localScope->parent() == m_st);
     assert(def != nullptr);
 
-    if (m_tyChecker->visit(def, localScope) != TypeChecker::OK)
+    if (m_tyChecker->visitProcDef(def, localScope) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     CGStmtResult result;
@@ -259,7 +261,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             assert(dynamic_cast<TreeNodeTemplate *>(decl) != nullptr);
             TreeNodeTemplate * templ = static_cast<TreeNodeTemplate *>(decl);
             templ->setContainingModule(*mod);
-            if (m_tyChecker->visit(templ) != TypeChecker::OK) {
+            if (m_tyChecker->visitTemplate(templ) != TypeChecker::OK) {
                 result |= CGResult::ERROR_CONTINUE;
             }
             break;

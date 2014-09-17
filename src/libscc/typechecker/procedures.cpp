@@ -118,7 +118,7 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
     params.clear ();
     params.reserve (proc->params ().size ());
     for (TreeNodeStmtDecl& decl : proc->params ()) {
-        TCGUARD (visit (&decl));
+        TCGUARD (visitStmtDecl (&decl));
         assert (dynamic_cast<TypeBasic*>(decl.resultType()) != nullptr);
         params.push_back (static_cast<TypeBasic*>(decl.resultType()));
     }
@@ -128,8 +128,8 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
 
 
 /// Procedure definitions.
-TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
-                                       SymbolTable * localScope)
+TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
+                                               SymbolTable * localScope)
 {
     if (proc->m_cachedType != nullptr) {
         return OK;
@@ -137,7 +137,7 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
 
     std::swap (m_st, localScope);
     TreeNodeType* rt = proc->returnType ();
-    TCGUARD (visit(rt));
+    TCGUARD (visitType (rt));
 
     if (proc->procedureName() == "main" && rt->isNonVoid()) {
         m_log.fatal() << "Invalid return type procedure 'main' at " << proc->location() << '.';
@@ -192,10 +192,6 @@ TypeChecker::Status TypeChecker::visit(TreeNodeProcDef * proc,
  * Procedure calls. This includes both calls to templates and calls to
  * regular procedures.
  */
-
-TypeChecker::Status TreeNodeExprProcCall::accept(TypeChecker & tyChecker) {
-    return tyChecker.visit(this);
-}
 
 TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                                                const TreeNodeExprProcCall & tyCxt,
@@ -290,7 +286,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     return OK;
 }
 
-TypeChecker::Status TypeChecker::visit(TreeNodeExprProcCall * root) {
+TypeChecker::Status TypeChecker::visitExprProcCall (TreeNodeExprProcCall * root) {
     if (root->haveResultType())
         return OK;
 
@@ -441,8 +437,8 @@ bool TypeChecker::unify (Instantiation& inst,
         StringRef typeVar = quant.typeVariable ()->value ();
         assert (varMap.find (typeVar) != varMap.end ());
         const TypeArgument& param = varMap.find (typeVar)->second;
-        if (quant.type () == NODE_TEMPLATE_DOMAIN_QUANT) {
-            TreeNodeDomainQuantifier* domain = static_cast<TreeNodeDomainQuantifier*>(&quant);
+        if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
+            TreeNodeQuantifierDomain* domain = static_cast<TreeNodeQuantifierDomain*>(&quant);
             if (domain->kind () != nullptr) {
                 if (param.secType ()->isPublic ())
                     return false;
@@ -472,7 +468,7 @@ TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
     SymbolTable* localST = info.m_localScope;
     assert (localST->parent () == moduleST);
     std::swap (m_st, moduleST);
-    TCGUARD (visit(body, localST));
+    TCGUARD (visitProcDef (body, localST));
 
     proc = findProcedure (m_st, body->procedureName (), body->procedureType ());
     if (proc == nullptr) {

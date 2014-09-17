@@ -1,4 +1,5 @@
 #include "CodeGen.h"
+#include "CodeGenResult.h"
 #include "Constant.h"
 #include "Log.h"
 #include "Misc.h"
@@ -351,7 +352,7 @@ CGStmtResult TreeNodeStmtDecl::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtDecl(TreeNodeStmtDecl * s) {
     // Type check:
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtDecl(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     CGStmtResult result;
@@ -508,7 +509,7 @@ CGStmtResult TreeNodeStmtIf::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtIf(TreeNodeStmtIf * s) {
 
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtIf(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     CGStmtResult result;
@@ -594,7 +595,7 @@ CGStmtResult TreeNodeStmtReturn::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
     // Type check:
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtReturn(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     CGStmtResult result;
@@ -649,7 +650,7 @@ CGStmtResult CodeGen::cgStmtWhile(TreeNodeStmtWhile * s) {
 
     // Generate the conditional expression:
     CGBranchResult eResult = CGResult::ERROR_CONTINUE;
-    if (m_tyChecker->visit(s) == TypeChecker::OK) {
+    if (m_tyChecker->visitStmtWhile(s) == TypeChecker::OK) {
         eResult = codeGenBranch(s->conditional());
     }
 
@@ -714,7 +715,7 @@ CGStmtResult TreeNodeStmtPrint::codeGenWith(CodeGen & cg) {
 
 CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
     // Type check:
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtPrint(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     TypeBasic * strTy = TypeBasic::get(getContext(), DATATYPE_STRING);
@@ -761,7 +762,7 @@ CGStmtResult TreeNodeStmtSyscall::codeGenWith(CodeGen & cg) {
 }
 
 CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
-    if (m_tyChecker->visit(s) != TypeChecker::OK) {
+    if (m_tyChecker->visitStmtSyscall(s) != TypeChecker::OK) {
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -838,7 +839,7 @@ CGStmtResult TreeNodeStmtDoWhile::codeGenWith (CodeGen& cg) {
 
 CGStmtResult CodeGen::cgStmtDoWhile(TreeNodeStmtDoWhile * s) {
 
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtDoWhile(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     // Loop body:
@@ -926,7 +927,7 @@ CGStmtResult TreeNodeStmtAssert::codeGenWith(CodeGen & cg) {
 }
 
 CGStmtResult CodeGen::cgStmtAssert(TreeNodeStmtAssert * s) {
-    if (m_tyChecker->visit(s) != TypeChecker::OK)
+    if (m_tyChecker->visitStmtAssert(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
     TreeNodeExpr * e = s->expression();

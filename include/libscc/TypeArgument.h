@@ -28,7 +28,6 @@ class TreeNodeQuantifier;
 *******************************************************************************/
 
 enum TypeArgumentKind {
-    TA_UNDEF,
     TA_SEC,
     TA_DATA,
     TA_DIM
@@ -118,9 +117,6 @@ private: /* Fields: */
 };
 
 inline bool operator == (const TypeArgument& a, const TypeArgument& b) {
-    assert (a.m_kind != TA_UNDEF);
-    assert (b.m_kind != TA_UNDEF);
-
     if (a.m_kind != b.m_kind)
         return false;
 
@@ -128,7 +124,6 @@ inline bool operator == (const TypeArgument& a, const TypeArgument& b) {
     case TA_DIM:   return a.un_dimType  == b.un_dimType;
     case TA_SEC:   return a.un_secType  == b.un_secType;
     case TA_DATA:  return a.un_dataType == b.un_dataType;
-    case TA_UNDEF: return false;
     }
 }
 
@@ -137,16 +132,12 @@ inline bool operator != (const TypeArgument& a, const TypeArgument& b) {
 }
 
 inline bool operator < (const TypeArgument& a, const TypeArgument& b) {
-    assert (a.m_kind != TA_UNDEF);
-    assert (b.m_kind != TA_UNDEF);
-
     if (a.m_kind < b.m_kind) return true;
     if (a.m_kind > b.m_kind) return false;
     switch (a.m_kind) {
     case TA_DIM:   return a.un_dimType  < b.un_dimType;
     case TA_SEC:   return a.un_secType  < b.un_secType;
     case TA_DATA:  return a.un_dataType < b.un_dataType;
-    case TA_UNDEF: return false;
     }
 }
 
