@@ -4,27 +4,27 @@
 #include "ParserEnums.h"
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
+#include "TypeArgument.h"
 
 #include <vector>
 
 namespace SecreC {
 
-class StringRef;
 class CompileLog;
 class Context;
-class TypeArgument;
-class TypeBasic;
-class TypeProc;
+class DataTypeStruct;
 class Instantiation;
+class Location;
 class SecurityType;
+class StringRef;
 class SymbolTable;
 class TemplateInstantiator;
 class Type;
+class TypeBasic;
 class TypeContext;
 class TypeNonVoid;
+class TypeProc;
 struct InstanceInfo;
-class Location;
-class DataTypeStruct;
 
 #ifndef TCGUARD
 #define TCGUARD(expr) \
