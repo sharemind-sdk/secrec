@@ -9,6 +9,7 @@
 
 #include "ContextImpl.h"
 
+#include "DataType.h"
 #include "Misc.h"
 #include "Types.h"
 
