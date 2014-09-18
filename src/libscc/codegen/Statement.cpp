@@ -35,8 +35,7 @@ void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
 // Note that this does not assign values to those symbols.
 void initFieldSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
     DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
-    typedef DataTypeStruct::Field Field;
-    for (const Field& field : structType->fields ()) {
+    for (const auto& field : structType->fields ()) {
         TypeBasic* fieldType = field.type;
         SymbolSymbol* fieldSymbol = st->appendTemporary (fieldType);
         initShapeSymbols (cxt, st, fieldSymbol);
@@ -362,8 +361,7 @@ CGStmtResult CodeGen::cgStmtDecl(TreeNodeStmtDecl * s) {
     const bool isProcParam = s->procParam();
     assert (! (isGlobal && isProcParam));
 
-    typedef CGStmtResult (CodeGen::*varInitFunc)(TypeNonVoid*, TreeNodeVarInit*);
-    const varInitFunc cgInit =
+    const auto cgInit =
         isProcParam ? &CodeGen::cgProcParamInit :
         isGlobal    ? &CodeGen::cgGlobalVarInit :
                       &CodeGen::cgLocalVarInit;
@@ -769,7 +767,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     }
 
     CGStmtResult result;
-    typedef std::pair<TreeNodeSyscallParam *, Symbol *> NodeSymbolPair;
+    using NodeSymbolPair = std::pair<TreeNodeSyscallParam*, Symbol*>;
     std::vector<NodeSymbolPair> results;
     for (TreeNodeSyscallParam& param : s->params()) {
         TreeNodeExpr * e = param.expression ();

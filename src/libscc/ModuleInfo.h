@@ -32,7 +32,7 @@ private:
     ModuleInfo& operator = (const ModuleInfo&) = delete;
 
 private: /* Types: */
-    typedef boost::filesystem::directory_entry directory_entry;
+    using directory_entry = boost::filesystem::directory_entry;
 
 public:
     enum CGStatus {

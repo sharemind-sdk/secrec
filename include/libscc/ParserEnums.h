@@ -17,7 +17,7 @@ extern "C" {
 typedef unsigned SecrecDimType; /**< (~ SecrecDimType(0)) reserved for undefined  */
 
 #ifdef __cplusplus
-namespace SecreC { typedef ::SecrecDimType SecrecDimType; }
+namespace SecreC { using SecrecDimType = ::SecrecDimType; }
 #endif /* #ifdef __cplusplus */
 
 enum SecrecOperator {

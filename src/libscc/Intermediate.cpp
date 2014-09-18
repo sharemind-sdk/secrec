@@ -73,10 +73,8 @@ std::ostream &operator<<(std::ostream &out, const ICode::Status &s) {
 }
 
 std::ostream &operator<<(std::ostream &out, const ICodeList &c) {
-    typedef ICodeList::const_iterator CLCI;
     unsigned i = 1;
-
-    for (CLCI it (c.begin()); it != c.end (); it++, i++) {
+    for (auto it = c.begin(); it != c.end (); it++, i++) {
         out << i << "  " << *it << std::endl;
     }
 

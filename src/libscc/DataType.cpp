@@ -285,12 +285,11 @@ void DataTypePrimitive::print (std::ostream& os) const {
 }
 
 DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
-    typedef ContextImpl::PrimitiveTypeMap Map;
-    Map& map = cxt.pImpl ()->m_primitiveTypes;
-    const Map::key_type index (dataType);
+    auto& map = cxt.pImpl ()->m_primitiveTypes;
+    const auto index = dataType;
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, Map::value_type (index, new DataTypePrimitive (dataType)));
+        i = map.emplace_hint (i, index, new DataTypePrimitive (dataType));
     }
 
     return i->second;
@@ -312,10 +311,9 @@ void DataTypeStruct::print (std::ostream& os) const {
 DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
                                       const DataTypeStruct::TypeArgumentList& args)
 {
-    typedef ContextImpl::StructTypeMap Map;
-    Map& map = cxt.pImpl ()->m_structTypes;
-    const Map::key_type index (name, args);
-    const Map::iterator i = map.find (index);
+    auto& map = cxt.pImpl ()->m_structTypes;
+    const auto index = std::make_pair (name, args);
+    const auto i = map.find (index);
     return i == map.end () ? nullptr : i->second;
 }
 
@@ -323,12 +321,11 @@ DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
                                      const DataTypeStruct::FieldList& fields,
                                      const DataTypeStruct::TypeArgumentList& args)
 {
-    typedef ContextImpl::StructTypeMap Map;
-    Map& map = cxt.pImpl ()->m_structTypes;
-    const Map::key_type index (name, args);
+    auto& map = cxt.pImpl ()->m_structTypes;
+    const auto index = std::make_pair (name, args);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, Map::value_type (index, new DataTypeStruct (name, args, fields)));
+        i = map.emplace_hint (i, index, new DataTypeStruct (name, args, fields));
     }
 
     return i->second;

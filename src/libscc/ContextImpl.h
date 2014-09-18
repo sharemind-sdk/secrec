@@ -36,16 +36,16 @@ private:
 
 public: /* Types: */
 
-    typedef std::map<StringRef, PrivateSecType*> PrivateSecTypeMap;
-    typedef std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*> TypeProcMap;
-    typedef std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*> TypeBasicMap;
+    using PrivateSecTypeMap = std::map<StringRef, PrivateSecType*>;
+    using TypeProcMap = std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*>;
+    using TypeBasicMap = std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*>;
 
-    typedef std::map<StringRef, ConstantString*> ConstantStringMap;
-    typedef std::map<APInt, ConstantInt*, APInt::BitwiseCmp> NumericConstantMap;
-    typedef std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp> FloatConstantMap;
+    using ConstantStringMap = std::map<StringRef, ConstantString*>;
+    using NumericConstantMap = std::map<APInt, ConstantInt*, APInt::BitwiseCmp>;
+    using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
 
-    typedef std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*> StructTypeMap;
-    typedef std::map<SecrecDataType, DataTypePrimitive*> PrimitiveTypeMap;
+    using StructTypeMap = std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*>;
+    using PrimitiveTypeMap = std::map<SecrecDataType, DataTypePrimitive*>;
 
 public: /* Methods: */
 

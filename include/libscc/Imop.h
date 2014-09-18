@@ -225,7 +225,7 @@ private: /* Fields: */
     unsigned long m_index;
 };
 
-typedef boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false> > ImopList;
+using ImopList = boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false>>;
 
 /**
  * Convenience operators for Imop creation.

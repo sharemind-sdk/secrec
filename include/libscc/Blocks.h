@@ -18,9 +18,10 @@ class Program;
 class Procedure;
 class Block;
 
-typedef boost::intrusive::list_base_hook<
-            boost::intrusive::link_mode<
-                boost::intrusive::auto_unlink> > auto_unlink_hook;
+using auto_unlink_hook =
+    boost::intrusive::list_base_hook<
+        boost::intrusive::link_mode<
+            boost::intrusive::auto_unlink> > ;
 
 /*******************************************************************************
   Edge
@@ -66,8 +67,8 @@ class Block : private ImopList
 {
 public: /* Types: */
 
-    typedef CFGNode<Block, Edge::Label> CFGBase;
-    typedef std::set<Block*> Set;
+    using CFGBase = CFGNode<Block, Edge::Label>;
+    using Set = std::set<Block*>;
     using ImopList::iterator;
     using ImopList::const_iterator;
     using ImopList::reverse_iterator;
@@ -126,7 +127,7 @@ private: /* Fields: */
     bool       m_reachable; ///< If block is reachable
 };
 
-typedef boost::intrusive::list<Block, boost::intrusive::constant_time_size<false> > BlockList;
+using BlockList = boost::intrusive::list<Block, boost::intrusive::constant_time_size<false>>;
 
 inline Block::iterator blockIterator (Imop& imop) {
     return Block::s_iterator_to (imop);
@@ -196,7 +197,7 @@ private: /* Fields: */
     const SymbolProcedure* const  m_name;
 };
 
-typedef boost::intrusive::list<Procedure, boost::intrusive::constant_time_size<false> > ProcedureList;
+using ProcedureList = boost::intrusive::list<Procedure, boost::intrusive::constant_time_size<false>>;
 
 /// Blocks can be converted to procedure iterator
 inline Procedure::iterator procIterator (Block& block) {

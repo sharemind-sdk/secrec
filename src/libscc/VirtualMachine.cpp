@@ -46,18 +46,18 @@ union Value {
 };
 
 template <SecrecDataType ty> struct secrec_type_traits;
-template <> struct secrec_type_traits<DATATYPE_FLOAT64> { typedef double type; };
-template <> struct secrec_type_traits<DATATYPE_FLOAT32> { typedef float type; };
-template <> struct secrec_type_traits<DATATYPE_UINT64> { typedef uint64_t type; };
-template <> struct secrec_type_traits<DATATYPE_UINT32> { typedef uint32_t type; };
-template <> struct secrec_type_traits<DATATYPE_UINT16> { typedef uint16_t type; };
-template <> struct secrec_type_traits<DATATYPE_UINT8> { typedef uint8_t type; };
-template <> struct secrec_type_traits<DATATYPE_INT64> { typedef int64_t type; };
-template <> struct secrec_type_traits<DATATYPE_INT32> { typedef int32_t type; };
-template <> struct secrec_type_traits<DATATYPE_INT16> { typedef int16_t type; };
-template <> struct secrec_type_traits<DATATYPE_INT8> { typedef int8_t type; };
-template <> struct secrec_type_traits<DATATYPE_STRING> { typedef const std::string& type; };
-template <> struct secrec_type_traits<DATATYPE_BOOL> { typedef bool type; };
+template <> struct secrec_type_traits<DATATYPE_FLOAT64> { using type = double; };
+template <> struct secrec_type_traits<DATATYPE_FLOAT32> { using type = float; };
+template <> struct secrec_type_traits<DATATYPE_UINT64> { using type = uint64_t; };
+template <> struct secrec_type_traits<DATATYPE_UINT32> { using type = uint32_t; };
+template <> struct secrec_type_traits<DATATYPE_UINT16> { using type = uint16_t; };
+template <> struct secrec_type_traits<DATATYPE_UINT8> { using type = uint8_t; };
+template <> struct secrec_type_traits<DATATYPE_INT64> { using type = int64_t; };
+template <> struct secrec_type_traits<DATATYPE_INT32> { using type = int32_t; };
+template <> struct secrec_type_traits<DATATYPE_INT16> { using type = int16_t; };
+template <> struct secrec_type_traits<DATATYPE_INT8> { using type = int8_t; };
+template <> struct secrec_type_traits<DATATYPE_STRING> { using type = const std::string&; };
+template <> struct secrec_type_traits<DATATYPE_BOOL> { using type = bool; };
 
 /// Get value based on the data type.
 template <SecrecDataType ty> typename secrec_type_traits<ty>::type getValue (const Value&);
@@ -91,7 +91,7 @@ inline void assignValue (Value& v, const std::string& r) { v.un_str_val = new st
 /// Statically typed value casting.
 template <SecrecDataType toTy, SecrecDataType fromTy >
 void castValue (Value& dest, const Value& from) {
-    typedef typename secrec_type_traits<toTy>::type type;
+    using type = typename secrec_type_traits<toTy>::type;
     assignValue (dest, static_cast<type>(getValue<fromTy>(from)));
 }
 
@@ -173,10 +173,10 @@ struct VMSym {
 };
 
 /// Very naive implementation of a memory store.
-typedef std::map<const Symbol*, Value> Store;
+using Store = std::map<const Symbol*, Value>;
 
 /// Type of instantiated callback.
-typedef int (*CallbackTy)(const Instruction*);
+using CallbackTy = int (*)(const Instruction*);
 
 /// Instructions are composed of callback, and 4 arguments.
 struct Instruction {
@@ -692,7 +692,7 @@ void storeConstantString (Value& out, const Symbol* c) {
 
 template <SecrecDataType ty>
 void storeConstantInt (Value& out, const Symbol* c) {
-    typedef typename secrec_type_traits<ty>::type type;
+    using type = typename secrec_type_traits<ty>::type;
     const ConstantInt* intSym = static_cast<const ConstantInt*>(c);
     const uint64_t value = intSym->value ();
     assignValue (out, static_cast<type>(value));
@@ -730,8 +730,8 @@ void storeConstant (VMSym sym, const Symbol* c) {
 class Compiler {
 public: /* Types: */
 
-    typedef std::vector<std::pair<Instruction, const Imop* > > UnlinkedCode;
-    typedef std::map<const Imop*, unsigned > ImopAddrs;
+    using UnlinkedCode = std::vector<std::pair<Instruction, const Imop* > >;
+    using ImopAddrs = std::map<const Imop*, unsigned >;
 
 public: /* Methods: */
 

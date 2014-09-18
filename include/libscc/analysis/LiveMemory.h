@@ -28,10 +28,10 @@ public: /* Types: */
         Live  = 0x3
     };
 
-    typedef std::set<const Symbol*> Symbols;
-    typedef std::map<const Symbol*, Domain> Values;
-    typedef std::map<const Block*, Values> BV;
-    typedef std::map<const Block*, Symbols> BS;
+    using Symbols = std::set<const Symbol*>;
+    using Values = std::map<const Symbol*, Domain>;
+    using BV = std::map<const Block*, Values>;
+    using BS = std::map<const Block*, Symbols>;
 
 public: /* Methods: */
 

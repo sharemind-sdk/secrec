@@ -39,9 +39,8 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
     }
 
     if (ty->secrecDataType ()->isComposite ()) {
-        typedef DataTypeStruct::Field Field;
         DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
-        for (const Field& field : structType->fields ()) {
+        for (const auto& field : structType->fields ()) {
             sym->appendField (generateSymbol (cxt, st, field.type));
         }
     }
@@ -407,14 +406,13 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
 }
 
 CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv) {
-    typedef SubscriptInfo::SPV SPV;
     assert(loopInfo.empty());
     TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
     CGResult result;
     LoopInfo::const_iterator idxIt;
 
     idxIt = loopInfo.begin();
-    for (const SPV::value_type & v : spv) {
+    for (const auto& v : spv) {
         if (! v.second) {
             Symbol * idx  = *idxIt;
             auto i = new Imop(m_node, Imop::ASSIGN, idx, v.first);
@@ -427,7 +425,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv)
     }
 
     idxIt = loopInfo.begin();
-    for (const SPV::value_type & v : spv) {
+    for (const auto& v : spv) {
         Symbol * idx  = *idxIt;
         if (v.second) {
             auto i = new Imop(m_node, Imop::ASSIGN, idx, v.first);

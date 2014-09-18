@@ -14,7 +14,7 @@ class Imop;
 class Symbol;
 class SymbolLabel;
 
-typedef std::vector<Imop*> PatchList;
+using PatchList = std::vector<Imop*>;
 
 /*******************************************************************************
   CGResult

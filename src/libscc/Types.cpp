@@ -100,13 +100,11 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
                            DataType* dataType,
                            SecrecDimType dimType)
 {
-    typedef ContextImpl::TypeBasicMap Map;
-    Map& map = cxt.pImpl ()->m_basicTypes;
-    const Map::key_type index (secType, dataType, dimType);
+    auto& map = cxt.pImpl ()->m_basicTypes;
+    const auto index = std::make_tuple (secType, dataType, dimType);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, Map::value_type (index,
-            new TypeBasic (secType, dataType, dimType)));
+        i = map.emplace_hint (i, index, new TypeBasic (secType, dataType, dimType));
     }
 
     return i->second;
@@ -161,13 +159,11 @@ TypeProc* TypeProc::get (Context& cxt,
     if (returnType == nullptr)
         return TypeProc::get (cxt, params, TypeVoid::get (cxt));
 
-    typedef ContextImpl::TypeProcMap Map;
-    Map& map = cxt.pImpl ()->m_procTypes;
-    const Map::key_type index (returnType, params);
+    auto& map = cxt.pImpl ()->m_procTypes;
+    const auto index = std::make_pair (returnType, params);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, Map::value_type (index,
-            new TypeProc (params, returnType)));
+        i = map.emplace_hint (i, index, new TypeProc (params, returnType));
     }
 
     return i->second;

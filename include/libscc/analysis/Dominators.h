@@ -28,7 +28,7 @@ class Program;
 class DominanceNode {
     friend class Dominators;
 private: /* Types: */
-    typedef std::vector<DominanceNode*> ChildrenList;
+    using ChildrenList = std::vector<DominanceNode*>;
 public: /* Methods: */
 
     explicit
@@ -58,7 +58,7 @@ private: /* Fields: */
 
 class Dominators {
 private: /* Types: */
-    typedef std::map<const Block*, DominanceNode*> NodeMap;
+    using NodeMap = std::map<const Block*, DominanceNode*>;
 public: /* Methods: */
     Dominators () { }
     ~Dominators ();

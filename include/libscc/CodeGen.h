@@ -38,8 +38,8 @@ class TypeNonVoid;
 
 class SubscriptInfo {
 public: /* Types: */
-    typedef std::vector<unsigned> SliceIndices;
-    typedef std::vector<std::pair<Symbol*, Symbol* > > SPV;
+    using SliceIndices = std::vector<unsigned>;
+    using SPV = std::vector<std::pair<Symbol*, Symbol* > >;
 
     const SliceIndices& slices () const { return m_slices; }
     const SPV& spv () const { return m_spv; }
@@ -60,9 +60,9 @@ private: /* Fields: */
 
 class LoopInfo {
 public: /* Types: */
-    typedef std::vector<Symbol* > IndexList;
-    typedef IndexList::iterator iterator;
-    typedef IndexList::const_iterator const_iterator;
+    using IndexList = std::vector<Symbol*>;
+    using iterator = IndexList::iterator;
+    using const_iterator = IndexList::const_iterator;
 
     struct LoopCheck {
         Symbol* index;
@@ -113,11 +113,11 @@ private: /* Fields: */
 
 class ArrayStrideInfo {
 private: /* Types: */
-    typedef std::vector<Symbol*> StrideList;
+    using StrideList = std::vector<Symbol*>;
 public:
-    typedef StrideList::iterator iterator;
-    typedef StrideList::const_iterator const_iterator;
-    typedef StrideList::size_type size_type;
+    using iterator = StrideList::iterator;
+    using const_iterator = StrideList::const_iterator;
+    using size_type = StrideList::size_type;
 public: /* Methods: */
 
     ArrayStrideInfo (Symbol* sym)
@@ -171,8 +171,8 @@ private:
 
 private: /* Types: */
 
-    typedef std::map<SymbolProcedure*, std::set<Imop*> > CallMap;
-    typedef std::vector<SymbolTable*> STList;
+    using CallMap = std::map<SymbolProcedure*, std::set<Imop*>>;
+    using STList = std::vector<SymbolTable*>;
 
 public: /* Methods: */
 

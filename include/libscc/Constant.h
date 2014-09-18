@@ -35,13 +35,12 @@ public: /* Types: */
 
     struct BitwiseCmp {
         inline bool operator () (const APInt& x, const APInt& y) const {
-            return x.m_numBits < y.m_numBits ||
-                (x.m_numBits == y.m_numBits && x.m_value < y.m_value);
+            return std::tie(x.m_numBits, x.m_value) < std::tie(y.m_numBits, y.m_value);
         }
     };
 
 private: /* Types: */
-    typedef uint64_t value_type;
+    using value_type = uint64_t;
     enum {
         BitsPerWord = static_cast<unsigned>(sizeof (value_type)) * 8,
         WordSize = static_cast<unsigned>(sizeof (value_type))
@@ -108,7 +107,7 @@ private: /* Fields: */
 class APFloat {
 public: /* Types: */
 
-    typedef mpfr_prec_t prec_t;
+    using prec_t = mpfr_prec_t;
 
     struct BitwiseCmp {
         inline bool operator () (const APFloat& x, const APFloat& y) const {

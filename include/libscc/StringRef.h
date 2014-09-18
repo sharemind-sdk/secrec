@@ -27,10 +27,10 @@ namespace SecreC {
  */
 class StringRef {
 public: /* Types: */
-    typedef const char* iterator;
-    typedef const char* const_iterator;
-    typedef char value_type;
-    typedef size_t size_type;
+    using iterator = const char*;
+    using const_iterator =  const char*;
+    using value_type = char;
+    using size_type = size_t;
 
     /**
      * \note Only use if you know what you're doing.

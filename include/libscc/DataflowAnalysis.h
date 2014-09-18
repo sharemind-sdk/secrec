@@ -14,8 +14,7 @@ inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
 
 template <class T, class U>
 inline std::set<T> &operator-=(std::set<T> &dest, const std::set<U> &src) {
-    typedef typename std::set<U >::const_iterator Iter;
-    for (Iter i = src.begin (), e = src.end (); i != e; ++ i)
+    for (auto i = src.begin (), e = src.end (); i != e; ++ i)
         dest.erase (*i);
     return dest;
 }
@@ -96,9 +95,9 @@ public: /* Methods: */
 
 class DataFlowAnalysisRunner {
 public: /* Types: */
-    typedef std::set<DataFlowAnalysis*>         AnalysisSet;
-    typedef std::set<BackwardDataFlowAnalysis*> BackwardAnalysisSet;
-    typedef std::set<ForwardDataFlowAnalysis*>  ForwardAnalysisSet;
+    using AnalysisSet = std::set<DataFlowAnalysis*>;
+    using BackwardAnalysisSet = std::set<BackwardDataFlowAnalysis*>;
+    using ForwardAnalysisSet = std::set<ForwardDataFlowAnalysis*>;
 
 public: /* Methods: */
     inline DataFlowAnalysisRunner& addAnalysis (DataFlowAnalysis& a) {

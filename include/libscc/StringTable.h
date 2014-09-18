@@ -24,21 +24,20 @@ namespace SecreC {
  * Extremly simple implementation of string table.
  */
 class StringTable {
-    StringTable (const StringTable&) = delete;
-    StringTable& operator = (const StringTable&) = delete;
 private: /* Types: */
 
-    typedef std::unordered_set<StringRef> impl_t;
+    using impl_t = std::unordered_set<StringRef>;
 
 public: /* Types: */
 
-    typedef impl_t::iterator iterator;
-    typedef impl_t::const_iterator const_iterator;
+    using iterator = impl_t::iterator;
+    using const_iterator = impl_t::const_iterator;
 
 public: /* Methods: */
 
     StringTable () { }
-
+    StringTable (const StringTable&) = delete;
+    StringTable& operator = (const StringTable&) = delete;
     ~StringTable () {
         for (const auto & strRef : *this) {
             StringRef::free (strRef);

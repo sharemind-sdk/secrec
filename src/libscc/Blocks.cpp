@@ -14,10 +14,6 @@
 
 namespace SecreC {
 
-typedef std::set<Block*>::const_iterator BSCI;
-typedef std::set<Imop*> IS;
-typedef IS::const_iterator ISCI;
-
 namespace /* anonymous */ {
 
 inline bool fallsThru(const Block &b) {

@@ -56,8 +56,8 @@ private: /* Types: */
         }
     };
 
-    typedef std::set<std::reference_wrapper<const Block>, BlockCmp> WorkList;
-    typedef AnalysisRunner<ForwardDataFlowAnalysis> Base;
+    using WorkList = std::set<std::reference_wrapper<const Block>, BlockCmp>;
+    using Base = AnalysisRunner<ForwardDataFlowAnalysis>;
 
 public: /* Methods: */
 
@@ -108,8 +108,8 @@ private: /* Types: */
         }
     };
 
-    typedef std::set<std::reference_wrapper<const Block>, BlockCmp> WorkList;
-    typedef AnalysisRunner<BackwardDataFlowAnalysis> Base;
+    using WorkList = std::set<std::reference_wrapper<const Block>, BlockCmp>;
+    using Base = AnalysisRunner<BackwardDataFlowAnalysis>;
 
 public: /* Methods: */
 

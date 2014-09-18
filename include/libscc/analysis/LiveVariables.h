@@ -27,8 +27,8 @@ namespace SecreC {
 class LiveVariables : public BackwardDataFlowAnalysis {
 public: /* Types: */
 
-    typedef boost::container::flat_set<const Symbol* > Symbols;
-    typedef std::map<const Block*, Symbols> BSM;
+    using Symbols = boost::container::flat_set<const Symbol* >;
+    using BSM = std::map<const Block*, Symbols>;
 
     struct BlockInfo {
         Symbols gen;
@@ -37,7 +37,7 @@ public: /* Types: */
         Symbols out;
     };
 
-    typedef std::map<const Block*, BlockInfo> BlockInfoMap;
+    using BlockInfoMap = std::map<const Block*, BlockInfo>;
 
 public: /* Methods: */
 

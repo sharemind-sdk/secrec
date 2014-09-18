@@ -47,7 +47,6 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
 }
 
 CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
-    typedef SubscriptInfo::SPV SPV; // symbol pair vector
 
     // Type check:
     if (m_tyChecker->visitExprAssign(e) != TypeChecker::OK)
@@ -81,7 +80,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
     // x[e1,...,ek] = e
     if (isIndexed) {
-        const SPV & spv = cgSub.spv();
+        const SubscriptInfo::SPV & spv = cgSub.spv();
         const SubscriptInfo::SliceIndices & slices = cgSub.slices();
 
         // 2. check that rhs has correct dimensions

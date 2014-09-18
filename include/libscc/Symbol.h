@@ -29,7 +29,7 @@ class TypeProc;
 class Symbol {
 public: /* Types: */
 
-    typedef SymbolCategory Type;
+    using Type = SymbolCategory;
 
 public: /* Methods: */
 
@@ -256,13 +256,13 @@ SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName);
  */
 std::vector<Symbol*> flattenSymbol (Symbol* sym);
 
-typedef SymbolSymbol SymbolTemporary;
+using SymbolTemporary = SymbolSymbol;
 
 template <typename BaseTy, typename ElemTy >
 class DimIterator : public std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
 public: /* Types: */
 
-    typedef DimIterator<BaseTy, ElemTy > Self;
+    using Self = DimIterator<BaseTy, ElemTy >;
 
 public: /* Methods: */
 
@@ -300,8 +300,8 @@ private: /* Methods: */
 };
 
 /// \{
-typedef DimIterator<SymbolSymbol*, SymbolSymbol> dim_iterator;
-typedef DimIterator<const SymbolSymbol*, SymbolSymbol> dim_const_iterator;
+using dim_iterator = DimIterator<SymbolSymbol*, SymbolSymbol>;
+using dim_const_iterator = DimIterator<const SymbolSymbol*, SymbolSymbol>;
 inline dim_iterator dim_begin (SymbolSymbol* symbol) { return dim_iterator (symbol); }
 inline dim_iterator dim_end (SymbolSymbol* symbol) { return dim_iterator (symbol, true); }
 inline dim_const_iterator dim_begin (const SymbolSymbol* symbol) { return dim_const_iterator (symbol); }

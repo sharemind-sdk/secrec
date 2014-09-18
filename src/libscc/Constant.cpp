@@ -131,9 +131,8 @@ ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
 }
 
 ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value) {
-    typedef ContextImpl::NumericConstantMap IntMap;
     const APInt apvalue (widthInBits (type), value);
-    IntMap& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
+    auto& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
     auto it = map.find (apvalue);
     if (it == map.end ()) {
         auto cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
@@ -162,8 +161,7 @@ ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, StringRef str) 
 }
 
 ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, const APFloat& value) {
-    typedef ContextImpl::FloatConstantMap FloatMap;
-    FloatMap& map = cxt.pImpl ()->m_floatConstants;
+    auto& map = cxt.pImpl ()->m_floatConstants;
     auto it = map.find (value);
     if (it == map.end ()) {
         auto cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
@@ -180,8 +178,7 @@ void ConstantFloat::print (std::ostream &os) const { os << m_value; }
 *******************************************************************************/
 
 ConstantString* ConstantString::get (Context& cxt, StringRef str) {
-    typedef ContextImpl::ConstantStringMap StringMap;
-    StringMap& map = cxt.pImpl ()->m_stringLiterals;
+    auto& map = cxt.pImpl ()->m_stringLiterals;
     auto it = map.find (str);
     if (it == map.end ()) {
         // Make sure that the string is allocated in the table

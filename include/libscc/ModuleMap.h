@@ -27,7 +27,7 @@ class ModuleMap {
     ModuleMap (ModuleMap&) = delete;
     ModuleMap& operator = (const ModuleMap&) = delete;
 private: /* Types: */
-    typedef std::map<std::string, ModuleInfo*> MapType;
+    using MapType = std::map<std::string, ModuleInfo*>;
 public: /* Methods: */
 
     explicit ModuleMap (Context& cxt) : m_cxt (cxt) { }

@@ -780,8 +780,6 @@ CGBranchResult TreeNodeExprBinary::codeGenBoolWith(CodeGen & cg) {
 }
 
 CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
-    typedef TypeNonVoid TNV;
-
     if (e->isOverloaded()) {
         return cgBoolSimple(e);
     }
@@ -794,13 +792,13 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
     case NODE_EXPR_BINARY_LAND: // fall through
     case NODE_EXPR_BINARY_LOR:
         assert(!eArg1->resultType()->isVoid());
-        assert(dynamic_cast<TNV *>(eArg1->resultType()) != nullptr);
+        assert(dynamic_cast<TypeNonVoid *>(eArg1->resultType()) != nullptr);
 
         /*
            If first sub-expression is public, then generate short-circuit
            code for logical && and logical ||.
            */
-        if (static_cast<TNV *>(eArg1->resultType())->secrecSecType()->isPublic()) {
+        if (static_cast<TypeNonVoid *>(eArg1->resultType())->secrecSecType()->isPublic()) {
             // Generate code for first child expression:
             result = codeGenBranch(eArg1);
             if (result.isNotOk()) {
@@ -2022,7 +2020,6 @@ CGResult TreeNodeExprPostfix::codeGenWith(CodeGen & cg) {
 // TODO: this has tons of common code with cgExprIndex. We can probably refactor
 // this using a higher order function.
 CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
-    typedef SubscriptInfo::SPV SPV;
 
     // Type check:
     if (m_tyChecker->visitExprPostfix(e) != TypeChecker::OK)
@@ -2063,7 +2060,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     if (isIndexed) {
         // r = (e[is] ++)
 
-        const SPV & spv = subscript.spv();
+        const auto & spv = subscript.spv();
         ArrayStrideInfo stride(lvalSym);
         append(result, codeGenStride(stride));
         if (result.isNotOk()) {

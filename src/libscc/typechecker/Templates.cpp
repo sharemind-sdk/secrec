@@ -34,7 +34,7 @@ struct TemplateTypeVariable {
     { }
 };
 
-typedef std::map<StringRef, TemplateTypeVariable, StringRef::FastCmp> TypeVariableMap;
+using TypeVariableMap = std::map<StringRef, TemplateTypeVariable, StringRef::FastCmp>;
 
 TypeArgumentKind typeFragmentKind (const TreeNodeTypeF& ty) {
     switch (ty.type ()) {

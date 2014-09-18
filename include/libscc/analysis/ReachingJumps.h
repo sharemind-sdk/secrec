@@ -20,8 +20,8 @@ namespace SecreC {
 
 class ReachingJumps: public ForwardDataFlowAnalysis {
 public: /* Types: */
-    typedef std::set<const Imop*>         Jumps;
-    typedef std::map<const Block*, Jumps> BJM;
+    using Jumps = std::set<const Imop*>;
+    using BJM = std::map<const Block*, Jumps>;
 
 public: /* Methods: */
 

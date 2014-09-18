@@ -36,7 +36,7 @@ class CodeGenState {
     friend struct ScopedSetSymbolTable;
 protected: /* Types: */
 
-    typedef ImopList::const_iterator InsertPoint;
+    using InsertPoint = ImopList::const_iterator;
 
 public: /* Methods: */
 

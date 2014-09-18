@@ -22,14 +22,14 @@ template <class NodeT, typename LabelT >
 class CFGNode {
 public: /* Types: */
 
-    typedef NodeT NodeType;
-    typedef LabelT LabelType;
-    typedef std::map<NodeType*, LabelType> NeighbourMap;
-    typedef typename NeighbourMap::value_type edge_type;
-    typedef typename NeighbourMap::iterator neighbour_iterator;
-    typedef typename NeighbourMap::const_iterator neighbour_const_iterator;
-    typedef std::pair<neighbour_iterator, neighbour_iterator> neighbour_range;
-    typedef std::pair<neighbour_const_iterator, neighbour_const_iterator> neighbour_const_range;
+    using NodeType = NodeT ;
+    using LabelType = LabelT ;
+    using NeighbourMap = std::map<NodeType*, LabelType> ;
+    using edge_type = typename NeighbourMap::value_type ;
+    using neighbour_iterator = typename NeighbourMap::iterator ;
+    using neighbour_const_iterator = typename NeighbourMap::const_iterator ;
+    using neighbour_range = std::pair<neighbour_iterator, neighbour_iterator> ;
+    using neighbour_const_range = std::pair<neighbour_const_iterator, neighbour_const_iterator> ;
 
 public:
 

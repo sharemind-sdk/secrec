@@ -22,7 +22,7 @@ class TypeNonVoid;
 
 class SymbolTable {
 private: /* Types: */
-    typedef std::vector<Symbol*> Table;
+    using Table = std::vector<Symbol*>;
 
     SymbolTable (const SymbolTable&); // do not implement
     SymbolTable& operator = (const SymbolTable&); // do not implement

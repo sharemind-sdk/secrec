@@ -140,8 +140,7 @@ TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
     DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
     StringRef fieldName = id->value ();
     TypeBasic* matchingFieldType = nullptr;
-    typedef DataTypeStruct::Field Field;
-    for (const Field& field : structType->fields ()) {
+    for (const auto& field : structType->fields ()) {
         if (fieldName == field.name) {
             matchingFieldType = field.type;
             break;
@@ -261,8 +260,6 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visitExprIndex(TreeNodeExprIndex * root) {
-    typedef TypeNonVoid TNV;
-
     if (root->haveResultType())
         return TypeChecker::OK;
 
@@ -273,7 +270,7 @@ TypeChecker::Status TypeChecker::visitExprIndex(TreeNodeExprIndex * root) {
     TCGUARD (visitExpr(e));
     if (checkAndLogIfVoid(e))
         return E_TYPE;
-    TNV * eType = static_cast<TNV *>(e->resultType());
+    const auto eType = static_cast<TypeNonVoid*>(e->resultType());
     SecrecDimType k = 0;
     SecrecDimType n = eType->secrecDimType();
 
@@ -334,8 +331,6 @@ TypeChecker::Status TypeChecker::visitExprShape(TreeNodeExprShape * root) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
-    typedef TypeNonVoid TNV;
-
     if (root->haveResultType())
         return OK;
 
@@ -345,7 +340,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         root->appendChild(e);
     }
 
-    TNV * eTypes[2];
+    TypeNonVoid* eTypes[2];
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
     for (int i = 0; i < 2; ++ i) {
@@ -355,7 +350,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        eTypes[i] = static_cast<TNV *>(e->resultType());
+        eTypes[i] = static_cast<TypeNonVoid*>(e->resultType());
         if (eTypes[i]->isScalar()) {
             m_log.fatalInProc(root) << "Concatenation of scalar values at "
                 << e->location() << '.';
@@ -374,8 +369,8 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         TreeNodeExpr * right = root->rightExpression();
         left = classifyIfNeeded(left, rSecTy);
         right = classifyIfNeeded(right, lSecTy);
-        eTypes[0] = static_cast<TNV *>(left->resultType());
-        eTypes[1] = static_cast<TNV *>(right->resultType());
+        eTypes[0] = static_cast<TypeNonVoid*>(left->resultType());
+        eTypes[1] = static_cast<TypeNonVoid*>(right->resultType());
     }
 
     SecurityType * resSecType = upperSecType(eTypes[0]->secrecSecType(),
@@ -414,7 +409,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
     if (checkAndLogIfVoid(e3))
         return E_TYPE;
 
-    TNV * e3Type = static_cast<TNV *>(e3->resultType());
+    const auto e3Type = static_cast<TypeNonVoid *>(e3->resultType());
     if (! e3Type->isPublicUIntScalar()) {
         m_log.fatalInProc(root) << "Expected public scalar integer at "
             << root->dimensionality()->location()

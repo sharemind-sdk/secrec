@@ -16,10 +16,10 @@ namespace SecreC {
 
 class ReachableReleases : public BackwardDataFlowAnalysis {
 public: /* Methods: */
-    typedef std::set<const Imop*> Domain;
-    typedef std::map<const Symbol*, Domain> Values;
-    typedef std::map<const Block*, Values> BV;
-    typedef std::set<const Symbol*> Symbols;
+    using Domain = std::set<const Imop*>;
+    using Values = std::map<const Symbol*, Domain>;
+    using BV = std::map<const Block*, Values>;
+    using Symbols = std::set<const Symbol*>;
 
 public: /* Types: */
 

@@ -20,7 +20,9 @@ namespace SecreC {
 
 class ReachingDeclassify: public ForwardDataFlowAnalysis {
 public: /* Types: */
-    typedef std::set<const Imop*> ImopSet;
+
+    using ImopSet = std::set<const Imop*>;
+
     struct Defs {
         ImopSet  sensitive;
         ImopSet  nonsensitive;
@@ -48,9 +50,9 @@ public: /* Types: */
         }
     };
 
-    typedef std::map<const Symbol*, Defs> PDefs;
-    typedef std::map<const Block*, PDefs> RD;
-    typedef std::map<const Imop*, Defs> DD;
+    using PDefs = std::map<const Symbol*, Defs>;
+    using RD = std::map<const Block*, PDefs>;
+    using DD = std::map<const Imop*, Defs>;
 
 public: /* Methods: */
 

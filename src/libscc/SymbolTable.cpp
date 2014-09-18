@@ -53,7 +53,7 @@ void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) 
  */
 class SymbolTable::OtherSymbols {
 private: /* Types: */
-    typedef std::map<const Imop*, SymbolLabel* > LabelMap;
+    using LabelMap = std::map<const Imop*, SymbolLabel* >;
 public: /* Methods: */
     OtherSymbols ()
         : m_tempCount (0)

@@ -168,14 +168,14 @@ private: /* Types: */
     };
 
 public: /* Types: */
-    typedef SubClass                               value_type;
-    typedef SubClass&                              reference;
-    typedef const SubClass&                        const_reference;
-    typedef SubClass*                              pointer;
-    typedef const SubClass*                        const_pointer;
-    typedef TreeNode::ChildrenList::size_type      size_type;
-    typedef iterator_base<value_type, CLCI>        iterator;
-    typedef iterator_base<const value_type, CLCI>  const_iterator;
+    using value_type = SubClass;
+    using reference = SubClass&;
+    using const_reference = const SubClass&;
+    using pointer = SubClass*;
+    using const_pointer = const SubClass*;
+    using size_type = TreeNode::ChildrenList::size_type;
+    using iterator = iterator_base<value_type, CLCI>;
+    using const_iterator = iterator_base<const value_type, CLCI>;
 
 public: /* Methods: */
 

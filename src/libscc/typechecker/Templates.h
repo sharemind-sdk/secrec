@@ -41,8 +41,7 @@ class Symbol;
 class SymbolTypeVariable;
 
 
-typedef std::map<StringRef, TypeArgument, StringRef::FastCmp>
-    TemplateVarMap;
+using TemplateVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
 
 /*******************************************************************************
   Instantiation
@@ -103,7 +102,7 @@ struct InstanceInfo {
 class TemplateInstantiator {
 private: /* Types: */
 
-    typedef std::map<Instantiation, InstanceInfo> InstanceInfoMap;
+    using InstanceInfoMap = std::map<Instantiation, InstanceInfo>;
 
 public: /* Methods: */
 

@@ -39,16 +39,16 @@ class SymbolDimensionality;
 class SymbolDataType;
 
 template <SymbolCategory type> struct SymbolTraits;
-template <> struct SymbolTraits<SYM_PROCEDURE> { typedef SymbolProcedure Type; };
-template <> struct SymbolTraits<SYM_STRUCT> { typedef SymbolStruct Type; };
-template <> struct SymbolTraits<SYM_TEMPLATE> { typedef SymbolTemplate Type; };
-template <> struct SymbolTraits<SYM_CONSTANT> { typedef SymbolConstant Type; };
-template <> struct SymbolTraits<SYM_LABEL> { typedef SymbolLabel Type; };
-template <> struct SymbolTraits<SYM_SYMBOL> { typedef SymbolSymbol Type; };
-template <> struct SymbolTraits<SYM_KIND> { typedef SymbolKind Type; };
-template <> struct SymbolTraits<SYM_DOMAIN> { typedef SymbolDomain Type; };
-template <> struct SymbolTraits<SYM_DIM> { typedef SymbolDimensionality Type; };
-template <> struct SymbolTraits<SYM_TYPE> { typedef SymbolDataType Type; };
+template <> struct SymbolTraits<SYM_PROCEDURE> { using Type = SymbolProcedure; };
+template <> struct SymbolTraits<SYM_STRUCT> { using Type = SymbolStruct; };
+template <> struct SymbolTraits<SYM_TEMPLATE> { using Type = SymbolTemplate; };
+template <> struct SymbolTraits<SYM_CONSTANT> { using Type = SymbolConstant; };
+template <> struct SymbolTraits<SYM_LABEL> { using Type = SymbolLabel; };
+template <> struct SymbolTraits<SYM_SYMBOL> { using Type = SymbolSymbol; };
+template <> struct SymbolTraits<SYM_KIND> { using Type = SymbolKind; };
+template <> struct SymbolTraits<SYM_DOMAIN> { using Type = SymbolDomain; };
+template <> struct SymbolTraits<SYM_DIM> { using Type = SymbolDimensionality; };
+template <> struct SymbolTraits<SYM_TYPE> { using Type = SymbolDataType; };
 } // namespace SecreC
 
 #endif // SECREC_SYMBOL_FWD_H
