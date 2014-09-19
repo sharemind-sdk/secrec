@@ -8,6 +8,7 @@
 #include <mpfr.h>
 #include <stdexcept>
 #include <stdint.h>
+#include <utility>
 
 
 #if MPFR_VERSION >= 0x030000
