@@ -113,8 +113,8 @@ inline bool operator < (StringRef r1, StringRef r2) {
 namespace std {
 
 template<>
-struct hash<::SecreC::StringRef> {
-    size_t operator()(::SecreC::StringRef sref) const {
+struct hash<SecreC::StringRef> {
+    size_t operator()(SecreC::StringRef sref) const {
         size_t seed = 0;
         hash<char> hasher;
         for (char c : sref) {
