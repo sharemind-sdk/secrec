@@ -12,9 +12,10 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iosfwd>
 #include <string>
-#include <utility>
+#include <tuple>
 
 namespace SecreC {
 
@@ -112,10 +113,10 @@ inline bool operator < (StringRef r1, StringRef r2) {
 namespace std {
 
 template<>
-struct hash<SecreC::StringRef> {
-    std::size_t operator()(SecreC::StringRef sref) const {
-        std::size_t seed = 0;
-        std::hash<char> hasher;
+struct hash<::SecreC::StringRef> {
+    size_t operator()(::SecreC::StringRef sref) const {
+        size_t seed = 0;
+        hash<char> hasher;
         for (char c : sref) {
             seed ^= hasher(c) + 0x9e3779b9 + (seed<<6) + (seed>>2);
         }
