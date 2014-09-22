@@ -14,6 +14,7 @@
 #include <cstring>
 #include <iosfwd>
 #include <string>
+#include <utility>
 
 namespace SecreC {
 
@@ -37,8 +38,7 @@ public: /* Types: */
      */
     struct FastCmp {
         inline bool operator () (StringRef r1, StringRef r2) const {
-            return std::make_pair (r1.m_data, r1.m_size) <
-                   std::make_pair (r2.m_data, r2.m_size);
+            return std::tie (r1.m_data, r1.m_size) < std::tie (r2.m_data, r2.m_size);
         }
     };
 
@@ -110,19 +110,20 @@ inline bool operator < (StringRef r1, StringRef r2) {
 } // namespace SecreC
 
 namespace std {
-    template<>
-    struct hash<SecreC::StringRef> {
-      std::size_t operator()(SecreC::StringRef sref) const
-      {
-          std::size_t seed = 0;
-          std::hash<char> hasher;
-          for (char c : sref) {
-              seed ^= hasher(c) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-          }
 
-          return seed;
-       }
-    };
-} // namespace boost
+template<>
+struct hash<SecreC::StringRef> {
+    std::size_t operator()(SecreC::StringRef sref) const {
+        std::size_t seed = 0;
+        std::hash<char> hasher;
+        for (char c : sref) {
+            seed ^= hasher(c) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        }
+
+        return seed;
+    }
+};
+
+} // namespace std
 
 #endif /* SECREC_STRINGREF_H */
