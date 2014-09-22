@@ -104,7 +104,7 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
     const auto index = std::make_tuple (secType, dataType, dimType);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.emplace_hint (i, index, new TypeBasic (secType, dataType, dimType));
+        i = map.insert (i, std::make_pair (index, new TypeBasic (secType, dataType, dimType)));
     }
 
     return i->second;
@@ -163,7 +163,7 @@ TypeProc* TypeProc::get (Context& cxt,
     const auto index = std::make_pair (returnType, params);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.emplace_hint (i, index, new TypeProc (params, returnType));
+        i = map.insert (i, std::make_pair (index, new TypeProc (params, returnType)));
     }
 
     return i->second;

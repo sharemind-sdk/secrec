@@ -289,7 +289,7 @@ DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType
     const auto index = dataType;
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.emplace_hint (i, index, new DataTypePrimitive (dataType));
+        i = map.insert (i, std::make_pair (index, new DataTypePrimitive (dataType)));
     }
 
     return i->second;
@@ -325,7 +325,7 @@ DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
     const auto index = std::make_pair (name, args);
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.emplace_hint (i, index, new DataTypeStruct (name, args, fields));
+        i = map.insert (i, std::make_pair (index, new DataTypeStruct (name, args, fields)));
     }
 
     return i->second;
