@@ -68,6 +68,10 @@ public: /* Methods: */
         , value (value)
     { }
 
+    IntValue (APInt value)
+        : IntValue (false, value)
+    { }
+
     APInt::value_type bits () const { return value.bits (); }
     std::string toString () const override final;
 
@@ -257,10 +261,10 @@ IntValue intBinary (Imop::Type iType, const IntValue& x, const IntValue& y) {
     case Imop::MUL:  return intLift (APInt::mul, x, y);
     case Imop::DIV:  return intLift (div, x, y);
     case Imop::MOD:  return intLift (rem, x, y);
-    case Imop::LE:   return intLift (APInt::cmp, x, y, isSigned ? APInt::SLE : APInt::ULE);
-    case Imop::LT:   return intLift (APInt::cmp, x, y, isSigned ? APInt::SLT : APInt::ULT);
-    case Imop::GE:   return intLift (APInt::cmp, x, y, isSigned ? APInt::SGE : APInt::UGE);
-    case Imop::GT:   return intLift (APInt::cmp, x, y, isSigned ? APInt::SGT : APInt::UGT);
+    case Imop::LE:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SLE : APInt::ULE);
+    case Imop::LT:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SLT : APInt::ULT);
+    case Imop::GE:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SGE : APInt::UGE);
+    case Imop::GT:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SGT : APInt::UGT);
     case Imop::LAND:
     case Imop::BAND: return intLift (APInt::AND, x, y);
     case Imop::LOR:
@@ -268,8 +272,8 @@ IntValue intBinary (Imop::Type iType, const IntValue& x, const IntValue& y) {
     case Imop::XOR:  return intLift (APInt::XOR, x, y);
     case Imop::SHL:  return intLift (APInt::shl, x, y);
     case Imop::SHR:  return intLift (shr, x, y);
-    case Imop::EQ:   return intLift (APInt::cmp, x, y, APInt::EQ);
-    case Imop::NE:   return intLift (APInt::cmp, x, y, APInt::NE);
+    case Imop::EQ:   return APInt::cmp (x.value, y.value, APInt::EQ);
+    case Imop::NE:   return APInt::cmp (x.value, y.value, APInt::NE);
     default:
         assert (false && "Invalid binary integer operation.");
         return IntValue ();
