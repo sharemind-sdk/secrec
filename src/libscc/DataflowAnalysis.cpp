@@ -74,7 +74,6 @@ public: /* Methods: */
             const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
-            if (cur.isProgramEntry ()) continue;
             m_analysis.startBlock (cur);
             for (const auto& edge : cur.predecessors ()) {
                 m_analysis.inFrom (*edge.first, edge.second, cur);
@@ -126,7 +125,6 @@ public: /* Methods: */
             const Block& cur = *i;
             current.erase (i);
             if (! cur.reachable ()) continue;
-            if (cur.isProgramExit ()) continue;
             m_analysis.startBlock (cur);
             for (const auto& edge : cur.successors ()) {
                 m_analysis.outTo (*edge.first, edge.second, cur);
