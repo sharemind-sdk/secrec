@@ -41,7 +41,7 @@ public: /* Types: */
     using TypeBasicMap = std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*>;
 
     using ConstantStringMap = std::map<StringRef, ConstantString*>;
-    using NumericConstantMap = std::map<APInt, ConstantInt*, APInt::BitwiseCmp>;
+    using NumericConstantMap = std::map<APInt, ConstantInt*>;
     using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
 
     using StructTypeMap = std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*>;

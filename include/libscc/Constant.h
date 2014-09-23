@@ -2,6 +2,7 @@
 #define SECREC_CONSTANT_H
 
 #include "Symbol.h"
+#include "APInt.h"
 
 #include <cassert>
 #include <iostream>
@@ -26,80 +27,6 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
 
 SymbolConstant* defaultConstant (Context& cxt, DataType* ty);
 SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value);
-
-/******************************************************************
-  APInt
-******************************************************************/
-
-class APInt {
-public: /* Types: */
-
-    struct BitwiseCmp {
-        inline bool operator () (const APInt& x, const APInt& y) const {
-            return std::tie(x.m_numBits, x.m_value) < std::tie(y.m_numBits, y.m_value);
-        }
-    };
-
-private: /* Types: */
-    using value_type = uint64_t;
-    enum {
-        BitsPerWord = static_cast<unsigned>(sizeof (value_type)) * 8,
-        WordSize = static_cast<unsigned>(sizeof (value_type))
-    };
-
-public: /* Methods: */
-
-    APInt (unsigned numBits, uint64_t value)
-        : m_numBits (numBits)
-        , m_value (value)
-    { }
-
-    APInt trunc (unsigned numBits) {
-        assert (numBits && numBits < m_numBits);
-        APInt val (numBits, m_value);
-        val.clearUnusedBits ();
-        return val;
-    }
-
-    APInt zeroExtend (unsigned numBits) {
-        assert (numBits <= BitsPerWord);
-        assert (numBits > m_numBits);
-        APInt val (numBits, m_value);
-        val.clearUnusedBits ();
-        return val;
-    }
-
-    bool isNegative () const {
-        assert (m_numBits > 0);
-        return (*this)[m_numBits - 1];
-    }
-
-    bool operator [] (size_t i) const {
-        assert (i < m_numBits);
-        return m_value & (value_type (1) << i);
-    }
-
-    // TODO: temporary solution
-    operator uint64_t () const {
-        return m_value;
-    }
-
-private:
-
-    APInt& clearUnusedBits () {
-        const unsigned wordSize = m_numBits % BitsPerWord;
-        if (wordSize == 0)
-            return *this;
-
-        const value_type mask = ~value_type(0) >> (BitsPerWord - wordSize);
-        m_value &= mask;
-        return *this;
-    }
-
-private: /* Fields: */
-    unsigned   m_numBits;
-    value_type m_value;
-};
 
 /******************************************************************
   APFloat
@@ -163,7 +90,7 @@ private: /* Fields: */
 // TODO: respect float formatting?
 inline std::ostream& operator << (std::ostream& os, const APFloat& apf) {
     const size_t buff_size = 256;
-    char buff [buff_size];
+    char buff [buff_size] = {};
     const int n = mpfr_snprintf (buff, buff_size, "%.RNg", apf.m_value);
     if (n < 0) {
         os.setstate (std::ios::failbit);

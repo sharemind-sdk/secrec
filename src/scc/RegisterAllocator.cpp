@@ -58,7 +58,7 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
         case DATATYPE_XOR_UINT16:
         case DATATYPE_XOR_UINT32:
         case DATATYPE_XOR_UINT64:
-            value = static_cast<const ConstantInt*>(sym)->value ();
+            value = static_cast<const ConstantInt*>(sym)->value ().bits ();
             break;
         default:
             assert (false && "Undefined SecreC data type.");

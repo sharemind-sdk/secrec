@@ -146,7 +146,14 @@ ConstantInt* ConstantInt::getBool (Context& cxt, bool value) {
     return ConstantInt::get (cxt, DATATYPE_BOOL, value);
 }
 
-void ConstantInt::print (std::ostream &os) const { os << m_value; }
+void ConstantInt::print (std::ostream &os) const {
+    const auto dataType = static_cast<DataTypePrimitive*>(secrecType ()->secrecDataType ());
+    const auto secrecDataType = dataType->secrecDataType ();
+    if (isSignedNumericDataType (secrecDataType))
+        m_value.sprint (os);
+    else
+        m_value.uprint (os);
+}
 
 /*******************************************************************************
   ConstantFloat

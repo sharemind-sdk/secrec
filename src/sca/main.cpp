@@ -9,20 +9,21 @@
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/iostreams/device/file.hpp>
 
-#include <libscc/Context.h>
 #include <libscc/Blocks.h>
+#include <libscc/Context.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Intermediate.h>
 #include <libscc/Parser.h>
 #include <libscc/TreeNode.h>
 #include <libscc/VirtualMachine.h>
+#include <libscc/analysis/ConstantFolding.h>
+#include <libscc/analysis/Dominators.h>
+#include <libscc/analysis/LiveMemory.h>
+#include <libscc/analysis/LiveVariables.h>
+#include <libscc/analysis/ReachableReleases.h>
 #include <libscc/analysis/ReachingDeclassify.h>
 #include <libscc/analysis/ReachingDefinitions.h>
 #include <libscc/analysis/ReachingJumps.h>
-#include <libscc/analysis/ReachableReleases.h>
-#include <libscc/analysis/LiveVariables.h>
-#include <libscc/analysis/LiveMemory.h>
-#include <libscc/analysis/Dominators.h>
 
 
 using namespace std;
@@ -119,6 +120,10 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "lm") {
         return new SecreC::LiveMemory ();
+    }
+
+    if (name == "cf") {
+        return new SecreC::ConstantFolding ();
     }
 
     return 0;
@@ -247,6 +252,7 @@ int main(int argc, char *argv[]) {
              "\t\"rr\"  -- reachable releases\n"
              "\t\"lm\"  -- live memory\n"
              "\t\"lv\"  -- live variables\n"
+             "\t\"cf\"  -- constant folding\n"
              );
     po::positional_options_description p;
     p.add("input", -1);

@@ -40,6 +40,7 @@ bool isNumericDataType (SecrecDataType dType);
 bool isXorDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);
 bool isUnsignedNumericDataType (SecrecDataType dType);
+unsigned widthInBitsDataType (SecrecDataType dType);
 
 SecrecDataType dtypeDeclassify (SecrecDataType dtype);
 

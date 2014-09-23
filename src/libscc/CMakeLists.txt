@@ -16,6 +16,7 @@ SET(FLEX_BISON_SOURCES
     "secrec.y")
 
 SET(LIBSCC_SOURCES
+    "analysis/ConstantFolding.cpp"
     "analysis/Dominators.cpp"
     "analysis/LiveMemory.cpp"
     "analysis/LiveVariables.cpp"
@@ -23,6 +24,7 @@ SET(LIBSCC_SOURCES
     "analysis/ReachingDeclassify.cpp"
     "analysis/ReachingDefinitions.cpp"
     "analysis/ReachingJumps.cpp"
+    "APInt.cpp"
     "Blocks.cpp"
     "CodeGen.cpp"
     "CodeGenResult.cpp"
@@ -70,6 +72,7 @@ SET(LIBSCC_SOURCES
 
 
 SET(LIBSCC_HEADERS
+    "${LIBSCC_INCLUDE_DIR}/analysis/ConstantFolding.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/Dominators.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/LiveMemory.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/LiveVariables.h"
@@ -77,6 +80,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDeclassify.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDefinitions.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingJumps.h"
+    "${LIBSCC_INCLUDE_DIR}/APInt.h"
     "${LIBSCC_INCLUDE_DIR}/Blocks.h"
     "${LIBSCC_INCLUDE_DIR}/CFG.h"
     "${LIBSCC_INCLUDE_DIR}/CodeGen.h"

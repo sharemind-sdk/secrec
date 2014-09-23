@@ -694,7 +694,7 @@ template <SecrecDataType ty>
 void storeConstantInt (Value& out, const Symbol* c) {
     using type = typename secrec_type_traits<ty>::type;
     const ConstantInt* intSym = static_cast<const ConstantInt*>(c);
-    const uint64_t value = intSym->value ();
+    const uint64_t value = intSym->value ().bits ();
     assignValue (out, static_cast<type>(value));
 }
 
