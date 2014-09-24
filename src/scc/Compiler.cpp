@@ -11,23 +11,22 @@
 
 #include <iostream>
 
-#include <libscc/TreeNode.h>
-#include <libscc/DataflowAnalysis.h>
-#include <libscc/analysis/LiveVariables.h>
-#include <libscc/Intermediate.h>
 #include <libscc/Blocks.h>
 #include <libscc/Constant.h>
-#include <libscc/Types.h>
+#include <libscc/DataflowAnalysis.h>
+#include <libscc/Intermediate.h>
+#include <libscc/Optimizer.h>
 #include <libscc/SecurityType.h>
+#include <libscc/TreeNode.h>
+#include <libscc/Types.h>
+#include <libscc/analysis/LiveVariables.h>
 
-#include "DeadVariableElimination.h"
-#include "ScalarAllocPlacement.h"
-#include "CopyElimination.h"
-#include "SyscallManager.h"
-#include "StringLiterals.h"
-#include "RegisterAllocator.h"
-#include "RemoveUnreachableBlocks.h"
 #include "Builtin.h"
+#include "CopyElimination.h"
+#include "RegisterAllocator.h"
+#include "ScalarAllocPlacement.h"
+#include "StringLiterals.h"
+#include "SyscallManager.h"
 #include "VMDataType.h"
 
 namespace SecreCC {
@@ -329,7 +328,7 @@ std::string SyscallName::cast (TypeNonVoid* from, TypeNonVoid* to) {
   Compiler
 *******************************************************************************/
 
-Compiler::Compiler (ICode& code)
+Compiler::Compiler (ICode& code, bool optimize)
     : m_code (code)
     , m_target (0)
     , m_param (0)
@@ -337,6 +336,7 @@ Compiler::Compiler (ICode& code)
     , m_ra (0)
     , m_scm (0)
     , m_strLit (0)
+    , m_optimize (optimize)
 { }
 
 Compiler::~Compiler () {
@@ -348,8 +348,14 @@ Compiler::~Compiler () {
 
 void Compiler::run (VMLinkingUnit& vmlu) {
 
-    removeUnreachableBlocks (m_code);
-    eliminateDeadVariables (m_code);
+    if (m_optimize) {
+        optimizeCode (m_code);
+    }
+    else {
+        removeUnreachableBlocks (m_code);
+        eliminateDeadVariables (m_code);
+    }
+
     // eliminateRedundantCopies (m_code);
     m_allocs = placePrivateScalarAllocs (m_code);
 

@@ -13,6 +13,7 @@
 #include <libscc/Context.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Intermediate.h>
+#include <libscc/Optimizer.h>
 #include <libscc/Parser.h>
 #include <libscc/TreeNode.h>
 #include <libscc/VirtualMachine.h>
@@ -41,6 +42,7 @@ struct Configuration {
     bool m_eval;
     bool m_stdin;
     bool m_stdout;
+    bool m_optimize;
 
     string m_output;
     string m_input;
@@ -57,6 +59,7 @@ struct Configuration {
         , m_eval (false)
         , m_stdin (true)
         , m_stdout (true)
+        , m_optimize (false)
     { }
 
     void read (const po::variables_map& vm) {
@@ -68,6 +71,7 @@ struct Configuration {
         m_printCFG = vm.count ("print-cfg");
         m_printIR = vm.count ("print-ir");
         m_printDom = vm.count ("print-dom");
+        m_optimize = vm.count ("optimize");
 
         if (vm.count ("output")) {
             m_stdout = false;
@@ -181,6 +185,9 @@ int run (const Configuration& cfg) {
              << icode.compileLog();
     }
 
+    if (cfg.m_optimize)
+        optimizeCode (icode);
+
     if (cfg.m_printST) {
         out << icode.symbols () << endl;
         return EXIT_SUCCESS;
@@ -238,6 +245,7 @@ int main(int argc, char *argv[]) {
             ("include,I",  po::value<vector<string > >(),
              "Directory for module search path.")
             ("no-stdlib", "Do not look for standard library imports.")
+            ("optimize,O", "Optimize the generated code.")
             ("eval,e", "Evaluate the program")
             ("print-ast", "Print the abstract syntax tree")
             ("print-st",  "Print the symbol table")

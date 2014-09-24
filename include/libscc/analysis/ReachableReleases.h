@@ -25,8 +25,12 @@ public: /* Types: */
 
     std::string toString(const Program &pr) const override;
 
-    const Values& releasedOnExit (const Block& block) {
-        return m_outs[&block];
+    Values releasedOnExit (const Block& block) const {
+        const auto it = m_outs.find (&block);
+        if (it != m_outs.end ())
+            return it->second;
+
+        return Values ();
     }
 
     static void update (const Imop& imop, Values& vals);

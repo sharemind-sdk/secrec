@@ -1,3 +1,12 @@
+/*
+ * This file is a part of the Sharemind framework.
+ * Copyright (C) Cybernetica AS
+ *
+ * All rights are reserved. Reproduction in whole or part is prohibited
+ * without the written consent of the copyright owner. The usage of this
+ * code is subject to the appropriate license agreement.
+ */
+
 #include "analysis/ConstantFolding.h"
 
 #include "Constant.h"
@@ -47,7 +56,6 @@ public: /* Methods: */
     virtual std::string toString () const = 0;
     virtual SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const = 0;
     ValueTag tag () const { return m_tag; }
-
 
 private: /* Fields: */
     const ValueTag m_tag;
@@ -394,6 +402,7 @@ Value meetValue (ValueFactory& factory, Value x, Value y) {
     return Value::nac ();
 }
 
+// Lattice comparison:
 bool leValue (Value x, Value y) {
     if (x.isUndef () || y.isNac ()) return true;
     if (x.isNac () || y.isUndef ()) return false;
@@ -904,10 +913,15 @@ bool ConstantFolding::finishBlock (const Block &b) {
 
 void ConstantFolding::finish () { }
 
-void ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
-                                     Block& block, SVM val) const
+size_t ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
+                                       Block& block) const
 {
+    const auto it = m_ins.find (&block);
+    if (it == m_ins.end ())
+        return 0;
+
     std::vector<std::pair<std::unique_ptr<Imop>, Imop*>> replace;
+    SVM val = it->second;
 
     for (Imop& imop : block) {
         transfer (val, imop);
@@ -917,11 +931,16 @@ void ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
 
         // We can't or there's no reason to optimize the following:
         switch (imop.type ()) {
-        case Imop::ASSIGN:
         case Imop::SYSCALL:
         case Imop::CALL:
         case Imop::PARAM:
             continue;
+        case Imop::ASSIGN:
+        case Imop::DECLASSIFY:
+        case Imop::CLASSIFY:
+        case Imop::ALLOC:
+            if (imop.arg1 ()->isConstant ())
+                continue;
         default:
             break;
         }
@@ -950,16 +969,8 @@ void ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
 
     for (auto& p : replace)
         p.first->replaceWith (*p.second);
-}
 
-void ConstantFolding::optimize (Context& cxt, StringTable& st, Program& prog) const {
-    for (auto& proc : prog) {
-        for (auto& block : proc) {
-            const auto it = m_ins.find (&block);
-            if (it != m_ins.end ())
-                optimizeBlock (cxt, st, block, it->second);
-        }
-    }
+    return replace.size ();
 }
 
 std::string ConstantFolding::toString (const Program& program) const {

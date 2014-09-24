@@ -1,3 +1,12 @@
+/*
+ * This file is a part of the Sharemind framework.
+ * Copyright (C) Cybernetica AS
+ *
+ * All rights are reserved. Reproduction in whole or part is prohibited
+ * without the written consent of the copyright owner. The usage of this
+ * code is subject to the appropriate license agreement.
+ */
+
 #ifndef SECREC_CONSTANT_FOLDING_H
 #define SECREC_CONSTANT_FOLDING_H
 
@@ -80,10 +89,11 @@ inline bool operator != (Value x, Value y) {
 *******************************************************************************/
 
 class ConstantFolding : public ForwardDataFlowAnalysis {
-public:
+public: /* Types: */
     using SVM = boost::container::flat_map<const Symbol*, Value>; // symbol to value map
     using BSVM = std::map<const Block*, SVM>; // block to symbol to value map
-public:
+
+public: /* Methods: */
 
     ConstantFolding ();
     ConstantFolding (const ConstantFolding&) = delete;
@@ -96,8 +106,7 @@ public:
     bool finishBlock(const Block &b) override final;
     void finish();
 
-    void optimize (Context& cxt, StringTable& st, Program& prog) const;
-    void optimizeBlock (Context& cxt, StringTable& st, Block& block, SVM val) const;
+    size_t optimizeBlock(Context& cxt, StringTable& st, Block& block) const;
 
     std::string toString (const Program &bs) const override final;
 
@@ -109,6 +118,7 @@ private:
     Value getVal (const SVM& val, const Symbol* sym) const;
     static void setVal (SVM& val, const Symbol* sym, Value x);
 
+private: /* Fields: */
     SVM m_constants;
     BSVM m_ins;
     BSVM m_outs;

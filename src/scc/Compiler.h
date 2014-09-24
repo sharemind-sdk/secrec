@@ -44,7 +44,7 @@ private:
 
 public: /* Methods: */
 
-    Compiler (SecreC::ICode& code);
+    Compiler (SecreC::ICode& code, bool optimize);
     ~Compiler ();
 
     void run (VMLinkingUnit& vmlu);
@@ -113,15 +113,16 @@ private:
 
 private: /* Fields: */
 
-    SecreC::ICode&        m_code;    ///< SecreC intermediate code
-    VMCodeSection*        m_target;  ///< Target code
-    VMSymbolTable         m_st;      ///< VM symbol table
-    unsigned              m_param;   ///< Current param count
-    BuiltinFunctions*     m_funcs;   ///< Bult-in functions
-    RegisterAllocator*    m_ra;      ///< Register allocator
-    SyscallManager*       m_scm;     ///< The syscall manager
-    StringLiterals*       m_strLit;  ///< String literals
-    AllocMap              m_allocs;  ///< Where to allocate scalar private symbols
+    SecreC::ICode&        m_code;     ///< SecreC intermediate code
+    VMCodeSection*        m_target;   ///< Target code
+    VMSymbolTable         m_st;       ///< VM symbol table
+    unsigned              m_param;    ///< Current param count
+    BuiltinFunctions*     m_funcs;    ///< Bult-in functions
+    RegisterAllocator*    m_ra;       ///< Register allocator
+    SyscallManager*       m_scm;      ///< The syscall manager
+    StringLiterals*       m_strLit;   ///< String literals
+    AllocMap              m_allocs;   ///< Where to allocate scalar private symbols
+    bool                  m_optimize; ///< If we need to optimize the code.
 };
 
 } // namespace SecreCC

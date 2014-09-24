@@ -1,5 +1,6 @@
 #include "Imop.h"
 
+#include "Blocks.h"
 #include "Constant.h"
 #include "SecurityType.h"
 #include "SymbolTable.h"
@@ -136,7 +137,11 @@ struct LabelOstreamWrapper : public SymbolWrapperBase  {
         }
 
         assert (dynamic_cast<const SymbolLabel*>(m_symbol) != nullptr);
-        os << static_cast<const SymbolLabel*>(m_symbol)->target()->index();
+        const auto dest = static_cast<const SymbolLabel*>(m_symbol);
+        if (dest->block ())
+            os << "[Block " << dest->block ()->index () << "]";
+        else
+            os << "[" << dest->target ()->index () << "]";
     }
 };
 

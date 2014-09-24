@@ -113,6 +113,7 @@ struct ProgramOptions {
     bool                     showHelp;
     bool                     verbose;
     bool                     assembleOnly;
+    bool                     optimize;
     boost::optional<string>  output; // nothing if cout
     boost::optional<string>  input; // nothing if cin
     vector<string>           includes;
@@ -138,6 +139,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
             ("output,o", po::value<string>(), "Output file.")
             ("input", po::value<string>(), "Input file.")
             ("no-stdlib", "Do not look for standard library imports.")
+            ("optimize,O", "Optimize the generated code.")
             ;
     po::positional_options_description p;
     p.add("input", -1);
@@ -161,6 +163,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 
         opts.verbose = vm.count("verbose");
         opts.assembleOnly = vm.count("assemble");
+        opts.optimize = vm.count ("optimize");
 
         if (vm.count("output"))
             opts.output = vm["output"].as<string>();
@@ -170,6 +173,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 
         if (vm.count("include"))
             opts.includes = vm["include"].as<vector<string> >();
+
 
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
@@ -346,7 +350,7 @@ int main (int argc, char *argv[]) {
 
     /* Compile: */
     VMLinkingUnit vmlu;
-    Compiler compiler (icode);
+    Compiler compiler (icode, opts.optimize);
     compiler.run (vmlu);
 
     /* Output: */
