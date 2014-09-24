@@ -588,8 +588,8 @@ Value valueArrayUnaryArith (ValueFactory& factory, Imop::Type iType, Value x) {
     if (x.isNac () || x.isUndef ())
         return x;
 
+    assert (x.value () && x.value ()->tag () == VARR);
     const auto xv = static_cast<const ArrayValue*>(x.value ());
-    assert (xv != nullptr);
     auto elems = xv->elems;
     for (size_t i = 0; i < elems.size (); ++ i) {
         elems[i] = valueScalarUnaryArith (factory, iType, elems[i]);
@@ -749,6 +749,11 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
 
     if (iType == Imop::CAST) {
         TypeNonVoid* resultType = imop.dest ()->secrecType ();
+        if (resultType->isFloat () || imop.arg1 ()->secrecType ()->isFloat ()) {
+            setVal (val, imop.dest (), Value::nac ());
+            return;
+        }
+
         const auto& x = getVal (val, imop.arg1 ());
         if (resultType->isScalar ())
             setVal (val, imop.dest (), valueScalarCast (factory, resultType, x));
@@ -792,6 +797,9 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
     }
 
     if (imop.isVectorized ()) {
+        if (imop.arg1 ()->secrecType ()->isFloat ())
+            setVal (val, imop.dest (), Value::nac ());
+
         if (imop.nArgs () == 3) {
             const auto x = getVal (val, imop.arg1 ());
             setVal (val, imop.dest (), valueArrayUnaryArith (factory, iType, x));
@@ -810,6 +818,9 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
     }
 
     if (imop.isExpr ()) {
+        if (imop.arg1 ()->secrecType ()->isFloat ())
+            setVal (val, imop.dest (), Value::nac ());
+
         if (imop.nArgs () == 2) {
             const auto x = getVal (val, imop.arg1 ());
             setVal (val, imop.dest (), valueScalarUnaryArith (factory, iType, x));
