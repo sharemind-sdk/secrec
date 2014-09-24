@@ -371,7 +371,6 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-
     const CGResult & arg2Result(codeGen(e->rightExpression()));
     append(result, arg2Result);
     if (result.isNotOk()) {
@@ -434,8 +433,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     LoopInfo loopInfo;
     TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
     for (SecrecDimType it = 0; it < n; ++ it) {
-        Symbol * sym = m_st->appendTemporary(pubIntTy);
-        loopInfo.push_index(sym);
+        loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     }
 
     // Compute size and allocate resulting array:
@@ -459,51 +457,41 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // IF (i_k >= d_k) GOTO T1;
     SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
-    auto i = new Imop(e, Imop::GE, temp_bool, loopInfo.at(k), arg1ResultSymbol->getDim(k));
-    push_imop(i);
+    emplaceImop (e, Imop::GE, temp_bool, loopInfo.at(k), arg1ResultSymbol->getDim(k));
 
-    i = new Imop(e, Imop::JT, (Symbol *) nullptr, temp_bool);
+    auto i = new Imop(e, Imop::JT, nullptr, temp_bool);
     push_imop(i);
     result.addToNextList(i);
 
     // compute j if i < d (for e1)
+    pushComment ("Left argument:");
     for (unsigned count = 0; count < strides[0].size(); ++ count) {
-        auto i = new Imop(e, Imop::MUL, tmpInt, strides[0].at(count), loopInfo.at(count));
-        push_imop(i);
-
-        i = new Imop(e, Imop::ADD, offset, offset, tmpInt);
-        push_imop(i);
+        emplaceImop(e, Imop::MUL, tmpInt, strides[0].at(count), loopInfo.at(count));
+        emplaceImop(e, Imop::ADD, offset, offset, tmpInt);
     }
 
     // t = x[j]
-    i = new Imop(e, Imop::LOAD, tmp_elem, arg1Result.symbol(), offset);
-    push_imop(i);
+    emplaceImop (e, Imop::LOAD, tmp_elem, arg1Result.symbol(), offset);
 
     // jump out
-    auto jump_out = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+    auto jump_out = new Imop(e, Imop::JUMP, nullptr);
     push_imop(jump_out);
 
     // compute j if i >= d (for e2)
     for (SecrecDimType count = 0; static_cast<size_t>(count) < strides[1].size(); ++ count) {
         if (count == k) {
-            i = new Imop(e, Imop::SUB, tmpInt, loopInfo.at(count), arg1ResultSymbol->getDim(k));
-            pushImopAfter(result, i);
-
-            i = new Imop(e, Imop::MUL, tmpInt, strides[1].at(count), tmpInt);
-            push_imop(i);
+            emplaceImopAfter (result, e, Imop::SUB, tmpInt, loopInfo.at(count), arg1ResultSymbol->getDim(k));
+            emplaceImop (e, Imop::MUL, tmpInt, strides[1].at(count), tmpInt);
         }
         else {
-            i = new Imop(e, Imop::MUL, tmpInt, strides[1].at(count), loopInfo.at(count));
-            pushImopAfter(result, i);
+            emplaceImopAfter (result, e, Imop::MUL, tmpInt, strides[1].at(count), loopInfo.at(count));
         }
 
-        i = new Imop(e, Imop::ADD, offset, offset, tmpInt);
-        push_imop(i);
+        emplaceImop (e, Imop::ADD, offset, offset, tmpInt);
     }
 
     // t = y[j]
-    i = new Imop(e, Imop::LOAD, tmp_elem, arg2Result.symbol(), offset);
-    pushImopAfter(result, i);
+    emplaceImopAfter (result, e, Imop::LOAD, tmp_elem, arg2Result.symbol(), offset);
 
     // out: r[i] = t
     i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
@@ -512,15 +500,11 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // compute j if i < d (for e1)
     for (unsigned count = 0; count != strides[2].size(); ++ count) {
-        auto i = new Imop(e, Imop::MUL, tmpInt, strides[2].at(count), loopInfo.at(count));
-        push_imop(i);
-
-        i = new Imop(e, Imop::ADD, offset, offset, tmpInt);
-        push_imop(i);
+        emplaceImop (e, Imop::MUL, tmpInt, strides[2].at(count), loopInfo.at(count));
+        emplaceImop (e, Imop::ADD, offset, offset, tmpInt);
     }
 
-    i = new Imop(e, Imop::STORE, resSym, offset, tmp_elem);
-    push_imop(i);
+    emplaceImop (e, Imop::STORE, resSym, offset, tmp_elem);
 
     releaseTemporary(result, tmp_elem);
 

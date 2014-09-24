@@ -311,6 +311,16 @@ public: /* Methods: */
         m_code.insert (m_insertPoint, imop);
     }
 
+    template <typename ...Args>
+    inline void emplaceImopAfter (CGResult& result, Args&& ...args) {
+        pushImopAfter (result, new Imop (std::forward<Args>(args)...));
+    }
+
+    template <typename ...Args>
+    inline void emplaceImop (Args&& ...args) {
+        push_imop (new Imop (std::forward<Args>(args)...));
+    }
+
     /**
      * \brief Used to push instruction right after code block.
      * \pre imop is not NULL
