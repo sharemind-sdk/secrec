@@ -43,21 +43,13 @@ APInt APInt::urem (APInt x, APInt y) {
 APInt APInt::sdiv (APInt x, APInt y) {
     assert (x.m_numBits == y.m_numBits);
     assert (y.m_bits != 0 && "ICE: division by zero.");
-    const bool flipR = x.negative() != y.negative();
-    const value_type tx = x.negative() ? - x.m_bits : x.m_bits;
-    const value_type ty = y.negative() ? - y.m_bits : y.m_bits;
-    const value_type tr = tx / ty;
-    return APInt (x.m_numBits, flipR ? - tr : tr);
+    return APInt (x.m_numBits, x.signedBits () / y.signedBits ());
 }
 
 APInt APInt::srem (APInt x, APInt y) {
     assert (x.m_numBits == y.m_numBits);
     assert (y.m_bits != 0 && "ICE: rem by zero!");
-    const bool flipR = x.negative ();
-    const value_type tx = x.negative() ? - x.m_bits : x.m_bits;
-    const value_type ty = y.negative() ? - y.m_bits : y.m_bits;
-    const value_type tr = tx % ty;
-    return APInt (x.m_numBits, flipR ? - tr : tr);
+    return APInt (x.m_numBits, x.signedBits () % y.signedBits ());
 }
 
 APInt APInt::shl (APInt x, APInt y) {
@@ -130,6 +122,23 @@ APInt APInt::cmp (APInt x, APInt y, APInt::CmpMode mode) {
     case SLE: return x.signedBits () <= y.signedBits ();
     case SGE: return x.signedBits () >= y.signedBits ();
     }
+}
+
+APInt APInt::getMax (unsigned numBits) {
+    return APInt (numBits, ~ value_type (0));
+}
+
+APInt APInt::getNegativeOne (unsigned numBits) {
+    return getMax (numBits);
+}
+
+APInt APInt::getNegativeMax (unsigned numBits) {
+    return ashr (getMax (numBits), APInt (numBits, 1u));
+}
+
+APInt APInt::getNegativeMin (unsigned numBits) {
+    assert (numBits > 0);
+    return APInt (numBits, value_type (1) << (numBits - 1), bool ());
 }
 
 void APInt::uprint (std::ostream& os) const {

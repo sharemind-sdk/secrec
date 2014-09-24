@@ -85,12 +85,19 @@ public: /* Methods: */
     static APInt extend (APInt x, unsigned numBits);
     static APInt sextend (APInt x, unsigned numBits);
 
+    static APInt getMax (unsigned numBits);
+    static APInt getNegativeOne (unsigned numBits);
+    static APInt getNegativeMax (unsigned numBits);
+    static APInt getNegativeMin (unsigned numBits);
+
     void uprint (std::ostream& os) const;
     void sprint (std::ostream& os) const;
     unsigned numBits () const { return m_numBits; }
     value_type bits () const { return m_bits; }
 
     friend bool operator < (APInt x, APInt y);
+    friend bool operator == (APInt x, APInt y);
+    friend bool operator != (APInt x, APInt y);
 
 private:
 
@@ -120,6 +127,14 @@ private: /* Fields: */
     const unsigned   m_numBits;
     const value_type m_bits;
 };
+
+inline bool operator == (APInt x, APInt y) {
+    return x.m_numBits == y.m_numBits && x.m_bits == y.m_bits;
+}
+
+inline bool operator != (APInt x, APInt y) {
+    return !(x == y);
+}
 
 inline bool operator < (APInt x, APInt y) {
     return std::tie (x.m_numBits, x.m_bits) < std::tie (y.m_numBits, y.m_bits);
