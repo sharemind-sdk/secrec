@@ -46,6 +46,15 @@ bool Type::isString () const {
     return secrecDataType ()->equals (DATATYPE_STRING);
 }
 
+bool Type::isFloat () const {
+    if (m_kind != BASIC)
+        return false;
+
+    return secrecDataType ()->equals (DATATYPE_FLOAT32) ||
+           secrecDataType ()->equals (DATATYPE_FLOAT64);
+}
+
+
 /*******************************************************************************
   TypeVoid
 *******************************************************************************/

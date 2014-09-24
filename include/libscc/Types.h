@@ -48,6 +48,7 @@ public: /* Methods: */
     bool isScalar () const { return secrecDimType() == 0; }
     bool isPublicUIntScalar () const;
     bool isString () const;
+    bool isFloat () const;
 
     virtual SecurityType* secrecSecType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
