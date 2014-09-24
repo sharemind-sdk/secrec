@@ -7,6 +7,7 @@
 #include "Imop.h"
 #include "SecurityType.h"
 #include "SymbolTable.h"
+#include "StringTable.h"
 #include "Types.h"
 
 #include <iostream>
@@ -44,7 +45,9 @@ public: /* Methods: */
 
     virtual ~AbstractValue () { }
     virtual std::string toString () const = 0;
+    virtual SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const = 0;
     ValueTag tag () const { return m_tag; }
+
 
 private: /* Fields: */
     const ValueTag m_tag;
@@ -74,6 +77,7 @@ public: /* Methods: */
 
     APInt::value_type bits () const { return value.bits (); }
     std::string toString () const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
 
 public: /* Methods: */
     const bool  isSigned;
@@ -93,6 +97,10 @@ std::string IntValue::toString () const {
     return ss.str ();
 }
 
+SymbolConstant* IntValue::toConstant (Context& cxt, StringTable&, DataType* t) const  {
+    return ConstantInt::get (cxt, t, value.bits ());
+}
+
 /*******************************************************************************
   StringValue
 *******************************************************************************/
@@ -105,6 +113,7 @@ public: /* Methods: */
     { }
 
     std::string toString () const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
 
 public: /* Fields: */
     const std::string str;
@@ -116,6 +125,10 @@ bool operator < (const StringValue& x, const StringValue& y) {
 
 std::string StringValue::toString () const {
     return str;
+}
+
+SymbolConstant* StringValue::toConstant (Context& cxt, StringTable& st, DataType*) const {
+    return ConstantString::get (cxt, *st.addString (str));
 }
 
 /*******************************************************************************
@@ -135,6 +148,9 @@ public: /* Methods: */
     { }
 
     std::string toString () const override final;
+    SymbolConstant* toConstant (Context&, StringTable&, DataType*) const override final {
+        return nullptr;
+    }
 
 public: /* Fields: */
     const std::vector<Value> elems;
@@ -298,19 +314,47 @@ StringValue intToString (const IntValue& x) {
 }
 
 /*******************************************************************************
+  StringValue
+*******************************************************************************/
+
+StringValue strAdd (const StringValue& x, const StringValue& y) {
+    return StringValue (x.str + y.str);
+}
+
+IntValue strCmp (Imop::Type iType, const StringValue& x, const StringValue& y) {
+    switch (iType) {
+    case Imop::EQ: return IntValue (x.str == y.str);
+    case Imop::NE: return IntValue (x.str != y.str);
+    case Imop::LT: return IntValue (x.str <  y.str);
+    case Imop::GT: return IntValue (x.str >  y.str);
+    case Imop::GE: return IntValue (x.str >= y.str);
+    case Imop::LE: return IntValue (x.str <= y.str);
+    default:
+        assert (false && "Invalid string comparison!");
+        return IntValue ();
+    }
+}
+
+/*******************************************************************************
   ArrayValue
 *******************************************************************************/
 
 Value arrLoad (const ArrayValue& a, const IntValue& i) {
-    assert (i.bits () < a.elems.size ());
-    return a.elems[i.bits ()];
+    if (i.bits () < a.elems.size ())
+        return a.elems[i.bits ()];
+    else
+        return Value::undef ();
 }
 
 ArrayValue arrStore (const ArrayValue& a, const IntValue& i, Value v) {
-    assert (i.bits () < a.elems.size ());
-    auto elems = a.elems;
-    elems[i.bits ()] = v;
-    return ArrayValue (std::move (elems));
+    if (i.bits () < a.elems.size ()) {
+        auto elems = a.elems;
+        elems[i.bits ()] = v;
+        return ArrayValue (std::move (elems));
+    }
+    else {
+        return a;
+    }
 }
 
 ArrayValue arrAlloc (Value v, const IntValue& i) {
@@ -348,6 +392,35 @@ Value meetValue (ValueFactory& factory, Value x, Value y) {
     }
 
     return Value::nac ();
+}
+
+bool leValue (Value x, Value y) {
+    if (x.isUndef () || y.isNac ()) return true;
+    if (x.isNac () || y.isUndef ()) return false;
+
+    assert (x.isConst () && y.isConst ());
+    const auto xv = x.value ();
+    const auto yv = y.value ();
+    if (xv == yv) return true;
+
+    if (xv->tag () == VARR && yv->tag () == VARR) {
+        const auto& xs = static_cast<const ArrayValue*>(xv)->elems;
+        const auto& ys = static_cast<const ArrayValue*>(yv)->elems;
+        if (xs.size () == ys.size ()) {
+            for (size_t i = 0; i < xs.size (); ++ i) {
+                if (! leValue (xs[i], ys[i]))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ltValue (Value x, Value y) {
+    return x != y && leValue (x, y);
 }
 
 template <typename Iter>
@@ -414,6 +487,24 @@ Value valueScalarUnaryArith (ValueFactory& factory, Imop::Type iType, Value x) {
     return factory.get (intUnary (iType, *xv));
 }
 
+Value valueStringBinary (ValueFactory& factory, Imop::Type iType, Value x, Value y) {
+    if (x.isUndef () || y.isUndef ())
+        return Value::undef ();
+
+    if (x.isNac () || y.isNac ())
+        return Value::nac ();
+
+    assert (x.value () != nullptr && y.value () != nullptr);
+    assert (x.value ()->tag () == VSTR);
+    assert (y.value ()->tag () == VSTR);
+    const auto xv = static_cast<const StringValue*>(x.value ());
+    const auto yv = static_cast<const StringValue*>(y.value ());
+    if (iType == Imop::ADD)
+        return factory.get (strAdd (*xv, *yv));
+    else
+        return factory.get (strCmp (iType, *xv, *yv));
+}
+
 Value valueScalarBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, Value y) {
     const auto xv = static_cast<const IntValue*>(x.value ());
     const auto yv = static_cast<const IntValue*>(y.value ());
@@ -421,9 +512,31 @@ Value valueScalarBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, 
     const bool xIsZero = xv ? xv->tag () == VINT && xv->bits () == 0 : false;
     const bool yIsZero = yv ? yv->tag () == VINT && yv->bits () == 0 : false;
 
-    /**
-     * Check if the result is constant no matter the other argument:
-     */
+
+    // Check for undefined behaviour:
+    if (iType == Imop::DIV || iType == Imop::MOD) {
+        if (yIsZero) {
+            return Value::undef ();
+        }
+    }
+
+    if (iType == Imop::DIV && xv && yv && xv->isSigned) {
+        const auto a = xv->value;
+        const auto b = xv->value;
+        const auto negMin = APInt::getNegativeMin (a.numBits ());
+        const auto negOne = APInt::getNegativeOne (a.numBits ());
+        if (a == negMin && b == negOne)
+            return Value::undef ();
+    }
+
+    if (iType == Imop::SHL || iType == Imop::SHR) {
+        if (yv && yv->isSigned) {
+            const auto b = yv->value;
+            const auto r = APInt::cmp (b, APInt (b.numBits (), 0), APInt::SLT);
+            if (r.bits () != 0)
+                return Value::undef ();
+        }
+    }
 
     switch (iType) {
     case Imop::MUL:
@@ -441,6 +554,10 @@ Value valueScalarBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, 
     default:
         break;
     }
+
+    /**
+     * Check if the result is constant no matter the other argument:
+     */
 
     if (x.isUndef () || y.isUndef ())
         return Value::undef ();
@@ -500,7 +617,7 @@ Value valueArrayBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, V
     const auto& yElems = yv.elems;
     std::vector<Value> elems;
     elems.reserve (xElems.size ());
-    for (size_t i = 0; i < elems.size (); ++ i) {
+    for (size_t i = 0; i < xElems.size (); ++ i) {
         elems.push_back (valueScalarBinaryArith (factory, iType, xElems[i], yElems[i]));
     }
 
@@ -565,7 +682,7 @@ void ConstantFolding::addConstant (const Symbol* sym) {
     }
 }
 
-Value ConstantFolding::getVal (SVM& val, const Symbol* sym) {
+Value ConstantFolding::getVal (const SVM& val, const Symbol* sym) const {
     const auto cit = m_constants.find (sym);
     if (cit != m_constants.end ())
         return cit->second;
@@ -574,15 +691,20 @@ Value ConstantFolding::getVal (SVM& val, const Symbol* sym) {
     if (sym->isConstant ())
         return Value::nac ();
 
-    return val[sym];
+    const auto it = val.find (sym);
+    return it == val.end () ? Value::undef () : it->second;
 }
 
 void ConstantFolding::setVal (SVM& val, const Symbol* sym, Value x) {
-    val[sym] = x;
+    if (! x.isUndef ())
+        val[sym] = x;
 }
 
-void ConstantFolding::transfer (SVM& val, const Imop& imop) {
+void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
+
     const auto iType = imop.type ();
+
+    auto& factory = *m_values;
 
     if (iType == Imop::PARAM || iType == Imop::DOMAINID) {
         setVal (val, imop.dest (), Value::nac ());
@@ -620,16 +742,16 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) {
         TypeNonVoid* resultType = imop.dest ()->secrecType ();
         const auto& x = getVal (val, imop.arg1 ());
         if (resultType->isScalar ())
-            setVal (val, imop.dest (), valueScalarCast (*m_values, resultType, x));
+            setVal (val, imop.dest (), valueScalarCast (factory, resultType, x));
         else
-            setVal (val, imop.dest (), valueArrayCast (*m_values, resultType, x));
+            setVal (val, imop.dest (), valueArrayCast (factory, resultType, x));
 
         return;
     }
 
     if (iType == Imop::TOSTRING) {
         const auto x = getVal (val, imop.arg1 ());
-        setVal (val, imop.dest (), valueToString (*m_values, x));
+        setVal (val, imop.dest (), valueToString (factory, x));
         return;
     }
 
@@ -641,14 +763,14 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) {
     if (iType == Imop::ALLOC) {
         const auto e = getVal (val, imop.arg1 ());
         const auto s = getVal (val, imop.arg2 ());
-        setVal (val, imop.dest (), valueAlloc (*m_values, e, s));
+        setVal (val, imop.dest (), valueAlloc (factory, e, s));
         return;
     }
 
     if (iType == Imop::LOAD) {
         const auto& a = getVal (val, imop.arg1 ());
         const auto& i = getVal (val, imop.arg2 ());
-        setVal (val, imop.dest (), valueLoad (*m_values, a, i));
+        setVal (val, imop.dest (), valueLoad (factory, a, i));
         return;
     }
 
@@ -656,21 +778,21 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) {
         const auto a = getVal (val, imop.dest ());
         const auto i = getVal (val, imop.arg1 ());
         const auto v = getVal (val, imop.arg2 ());
-        setVal (val, imop.dest (), valueStore (*m_values, a, i, v));
+        setVal (val, imop.dest (), valueStore (factory, a, i, v));
         return;
     }
 
     if (imop.isVectorized ()) {
         if (imop.nArgs () == 3) {
             const auto x = getVal (val, imop.arg1 ());
-            setVal (val, imop.dest (), valueArrayUnaryArith (*m_values, iType, x));
+            setVal (val, imop.dest (), valueArrayUnaryArith (factory, iType, x));
             return;
         }
 
         if (imop.nArgs () == 4) {
             const auto x = getVal (val, imop.arg1 ());
             const auto y = getVal (val, imop.arg2 ());
-            setVal (val, imop.dest (), valueArrayBinaryArith (*m_values, iType, x, y));
+            setVal (val, imop.dest (), valueArrayBinaryArith (factory, iType, x, y));
             return;
         }
 
@@ -681,14 +803,17 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) {
     if (imop.isExpr ()) {
         if (imop.nArgs () == 2) {
             const auto x = getVal (val, imop.arg1 ());
-            setVal (val, imop.dest (), valueScalarUnaryArith (*m_values, iType, x));
+            setVal (val, imop.dest (), valueScalarUnaryArith (factory, iType, x));
             return;
         }
 
         if (imop.nArgs () == 3) {
             const auto x = getVal (val, imop.arg1 ());
             const auto y = getVal (val, imop.arg2 ());
-            setVal (val, imop.dest (), valueScalarBinaryArith (*m_values, iType, x, y));
+            if (imop.arg1 ()->secrecType ()->isString ())
+                setVal (val, imop.dest (), valueStringBinary (factory, iType, x, y));
+            else
+                setVal (val, imop.dest (), valueScalarBinaryArith (factory, iType, x, y));
             return;
         }
 
@@ -696,6 +821,8 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) {
         return;
     }
 
+    // Make sure we are handling all operations. If we add an instruction
+    // this will fail (as opposed to quietly working incorrectly).
     switch (iType) {
     case Imop::COMMENT:
     case Imop::END:
@@ -747,10 +874,28 @@ void ConstantFolding::inFrom (const Block &from, Edge::Label label, const Block 
 bool ConstantFolding::makeOuts (const Block& b, const SVM& in, SVM& out) {
     const SVM old = out;
     out = in;
-    for (auto it = b.begin (); it != b.end (); ++ it)
+    for (auto it = b.begin (); it != b.end (); ++ it) {
         transfer (out, *it);
+    }
 
-    return out != old;
+    // Check if we increased the (lattice) value of any of the symbols:
+
+    for (const auto& v : old) {
+        const auto x = v.second;
+        const auto y = getVal (out, v.first);
+        if (ltValue (x, y))
+            return true;
+    }
+
+    for (const auto& v : out) {
+        const auto sym = v.first;
+        const auto x = getVal (old, sym);
+        const auto y = v.second;
+        if (ltValue (x, y))
+            return true;
+    }
+
+    return false;
 }
 
 bool ConstantFolding::finishBlock (const Block &b) {
@@ -759,16 +904,78 @@ bool ConstantFolding::finishBlock (const Block &b) {
 
 void ConstantFolding::finish () { }
 
+void ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
+                                     Block& block, SVM val) const
+{
+    std::vector<std::pair<std::unique_ptr<Imop>, Imop*>> replace;
+
+    for (Imop& imop : block) {
+        transfer (val, imop);
+
+        if (! imop.isExpr ())
+            continue;
+
+        // We can't or there's no reason to optimize the following:
+        switch (imop.type ()) {
+        case Imop::ASSIGN:
+        case Imop::SYSCALL:
+        case Imop::CALL:
+        case Imop::PARAM:
+            continue;
+        default:
+            break;
+        }
+
+        // Can't optimize non-constants:
+        const auto symb = imop.dest ();
+        const auto dest = getVal (val, symb);
+        if (! dest.isConst ())
+            continue;
+
+        // Can't optimize arrays as we don't have constant arrays:
+        if (dest.value ()->tag () == VARR)
+            continue;
+
+        const auto dataType = symb->secrecType ()->secrecDataType ();
+
+        if (SymbolConstant* c = dest.value ()->toConstant (cxt, st, dataType)) {
+            Imop::Type iType = Imop::ASSIGN;
+            if (symb->secrecType ()->secrecSecType ()->isPrivate ())
+                iType = Imop::CLASSIFY;
+
+            Imop* newImop = new Imop (imop.creator (), iType, symb, c);
+            replace.emplace_back (std::unique_ptr<Imop>(&imop), newImop);
+        }
+    }
+
+    for (auto& p : replace)
+        p.first->replaceWith (*p.second);
+}
+
+void ConstantFolding::optimize (Context& cxt, StringTable& st, Program& prog) const {
+    for (auto& proc : prog) {
+        for (auto& block : proc) {
+            const auto it = m_ins.find (&block);
+            if (it != m_ins.end ())
+                optimizeBlock (cxt, st, block, it->second);
+        }
+    }
+}
+
 std::string ConstantFolding::toString (const Program& program) const {
     std::ostringstream os;
+
+    os << "Constant folding analysis results:\n";
     for (const Procedure& proc : program) {
         if (proc.name ())
             os << "[Proc " << proc.name ()->procedureName () << "]\n";
         else
             os << "[Internal Proc]\n";
+
         for (const Block& block : proc) {
             if (! block.reachable ())
                 continue;
+
             os << "  [Block " << block.index () << "]\n";
             const auto it = m_outs.find (&block);
             if (it == m_outs.end ())

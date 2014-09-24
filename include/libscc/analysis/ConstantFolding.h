@@ -8,6 +8,8 @@
 namespace SecreC {
 
 class AbstractValue;
+class Context;
+class StringTable;
 class ValueFactory;
 
 /*******************************************************************************
@@ -40,10 +42,6 @@ public: /* Methods: */
         , m_value (value)
     { }
 
-    inline bool operator == (Value const& other) const {
-        return m_kind == other.m_kind && m_value == other.m_value;
-    }
-
     bool isNac () const { return m_kind == NAC; }
     bool isUndef () const { return m_kind == UNDEF; }
     bool isConst () const { return m_kind == CONSTANT; }
@@ -55,15 +53,26 @@ public: /* Methods: */
     static Value nac () { return Value (NAC, nullptr); }
     static Value undef () { return Value (UNDEF, nullptr); }
 
-    friend bool operator < (const Value& x, const Value& y);
+    friend bool operator < (Value x, Value y);
+    friend bool operator == (Value x, Value y);
+    friend bool operator != (Value x, Value y);
 
 private: /* Fields: */
     Kind                 m_kind;
     const AbstractValue* m_value;
 };
 
-inline bool operator < (const Value& x, const Value& y) {
+// This is lexicographic not lattice ordering!
+inline bool operator < (Value x, Value y) {
     return std::tie (x.m_kind, x.m_value) < std::tie (y.m_kind, y.m_value);
+}
+
+inline bool operator == (Value x, Value y) {
+    return x.m_kind == y.m_kind && x.m_value == y.m_value;
+}
+
+inline bool operator != (Value x, Value y) {
+    return !(x == y);
 }
 
 /*******************************************************************************
@@ -81,20 +90,23 @@ public:
     ConstantFolding& operator = (const ConstantFolding&) = delete;
     ~ConstantFolding ();
 
-    virtual void start(const Program &bs);
-    virtual void startBlock(const Block &b);
-    virtual void inFrom(const Block &from, Edge::Label label, const Block &to);
-    virtual bool finishBlock(const Block &b);
-    virtual inline void finish();
+    void start(const Program &bs) override final;
+    void startBlock(const Block &b) override final;
+    void inFrom(const Block &from, Edge::Label label, const Block &to) override final;
+    bool finishBlock(const Block &b) override final;
+    void finish();
 
-    std::string toString (const Program &bs) const;
+    void optimize (Context& cxt, StringTable& st, Program& prog) const;
+    void optimizeBlock (Context& cxt, StringTable& st, Block& block, SVM val) const;
+
+    std::string toString (const Program &bs) const override final;
 
 private:
 
     bool makeOuts (Block const& b, SVM const& in, SVM& out);
     void addConstant (const Symbol* sym);
-    void transfer (SVM& val, const Imop& imop);
-    Value getVal (SVM& val, const Symbol* sym);
+    void transfer (SVM& val, const Imop& imop) const;
+    Value getVal (const SVM& val, const Symbol* sym) const;
     static void setVal (SVM& val, const Symbol* sym, Value x);
 
     SVM m_constants;
