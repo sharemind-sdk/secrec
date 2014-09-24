@@ -31,9 +31,19 @@ std::string mangleDataType (const Type* ty) {
 *******************************************************************************/
 
 bool Type::isPublicUIntScalar () const {
+    if (m_kind != BASIC)
+        return false;
+
     return secrecDataType ()->equals (DATATYPE_UINT64) &&
            secrecSecType ()->isPublic () &&
            secrecDimType () == 0;
+}
+
+bool Type::isString () const {
+    if (m_kind != BASIC)
+        return false;
+
+    return secrecDataType ()->equals (DATATYPE_STRING);
 }
 
 /*******************************************************************************

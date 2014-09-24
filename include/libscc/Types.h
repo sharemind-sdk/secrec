@@ -47,6 +47,7 @@ public: /* Methods: */
     bool isVoid() const { return m_kind == VOID; }
     bool isScalar () const { return secrecDimType() == 0; }
     bool isPublicUIntScalar () const;
+    bool isString () const;
 
     virtual SecurityType* secrecSecType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
