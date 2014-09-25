@@ -38,19 +38,6 @@ unsigned widthInBits (SecrecDataType type) {
     }
 }
 
-APFloat::prec_t floatPrec (SecrecDataType type) {
-    switch (type) {
-    case DATATYPE_FLOAT32: return 24;
-    case DATATYPE_FLOAT64: return 53;
-    default:  assert (false && "floatPrec: Unsupported type!"); return 0;
-    }
-}
-
-APFloat::prec_t floatPrec (DataType* type) {
-    assert (type != nullptr && type->isPrimitive ());
-    return floatPrec (static_cast<DataTypePrimitive*>(type)->secrecDataType ());
-}
-
 } // anonymous namesace
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
@@ -81,43 +68,6 @@ SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
         return ConstantFloat::get (cxt, ty, value);
     else
         return ConstantInt::get (cxt, ty, value);
-}
-
-
-/*******************************************************************************
-  APFloat
-*******************************************************************************/
-
-// TODO: this function breaks MPFR abstraction
-bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr y) {
-    if (x->_mpfr_prec < y->_mpfr_prec) return true;
-    if (x->_mpfr_prec > y->_mpfr_prec) return false;
-    if (x->_mpfr_sign < y->_mpfr_sign) return true;
-    if (x->_mpfr_sign > y->_mpfr_sign) return false;
-    if (x->_mpfr_exp  < y->_mpfr_exp)  return true;
-    if (x->_mpfr_exp  > y->_mpfr_exp)  return false;
-    const size_t num_bytes = mpfr_custom_get_size (x->_mpfr_prec);
-    return std::memcmp (x->_mpfr_d, y->_mpfr_d, num_bytes) < 0;
-}
-
-// TODO: don't rely on IEEE representation of float!
-uint32_t APFloat::ieee32bits () const {
-    assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
-    #if MPFR_VERSION >= 0x030000
-    float float_result = mpfr_get_flt (m_value, SECREC_CONSTANT_MPFR_RNDN);
-    #else
-    float float_result = mpfr_get_ld (m_value, SECREC_CONSTANT_MPFR_RNDN);
-    #endif
-    auto result = new (&float_result) uint32_t;
-    return *result;
-}
-
-// TODO: don't rely on IEEE representation of double!
-uint64_t APFloat::ieee64bits () const {
-    assert (getPrec () == floatPrec (DATATYPE_FLOAT64));
-    double double_result = mpfr_get_d (m_value, SECREC_CONSTANT_MPFR_RNDN);
-    auto result = new (&double_result) uint64_t;
-    return *result;
 }
 
 /*******************************************************************************
