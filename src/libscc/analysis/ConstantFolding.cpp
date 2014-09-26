@@ -43,7 +43,8 @@ class StringValue;
 enum ValueTag {
     VINT,
     VARR,
-    VSTR
+    VSTR,
+    VFLOAT
 };
 
 class AbstractValue {
@@ -65,7 +66,7 @@ private: /* Fields: */
   IntValue
 *******************************************************************************/
 
-class IntValue : public AbstractValue {
+class IntValue : public AbstractValue, public APInt {
 public: /* Methods: */
 
     IntValue ()
@@ -75,106 +76,128 @@ public: /* Methods: */
 
     IntValue (bool isSigned, APInt value)
         : AbstractValue (VINT)
+        , APInt (value)
         , isSigned (isSigned)
-        , value (value)
     { }
 
     IntValue (APInt value)
         : IntValue (false, value)
     { }
 
-    APInt::value_type bits () const { return value.bits (); }
+    IntValue (bool value)
+        : IntValue (false, value)
+    { }
+
+    const APInt& getValue () const { return *this; }
     std::string toString () const override final;
     SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
 
 public: /* Methods: */
-    const bool  isSigned;
-    const APInt value;
+    const bool isSigned;
 };
 
 bool operator < (const IntValue& x, const IntValue& y) {
-    return std::tie (x.isSigned, x.value) < std::tie (y.isSigned, y.value);
+    return std::tie (x.isSigned, (APInt&) x) < std::tie (y.isSigned, (APInt&) y);
 }
 
 std::string IntValue::toString () const {
     std::ostringstream ss;
     if (isSigned)
-        value.sprint (ss);
+        sprint (ss);
     else
-        value.uprint (ss);
+        uprint (ss);
     return ss.str ();
 }
 
 SymbolConstant* IntValue::toConstant (Context& cxt, StringTable&, DataType* t) const  {
-    return ConstantInt::get (cxt, t, value.bits ());
+    return ConstantInt::get (cxt, t, bits ());
 }
 
 /*******************************************************************************
   StringValue
 *******************************************************************************/
 
-class StringValue : public AbstractValue {
+class StringValue : public AbstractValue, public std::string {
 public: /* Methods: */
     StringValue (std::string val)
         : AbstractValue (VSTR)
-        , str (std::move (val))
+        , std::string (std::move (val))
     { }
 
+    const std::string& getValue () const { return *this; }
     std::string toString () const override final;
     SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
-
-public: /* Fields: */
-    const std::string str;
 };
 
-bool operator < (const StringValue& x, const StringValue& y) {
-    return x.str < y.str;
-}
-
 std::string StringValue::toString () const {
-    return str;
+    return *this;
 }
 
 SymbolConstant* StringValue::toConstant (Context& cxt, StringTable& st, DataType*) const {
-    return ConstantString::get (cxt, *st.addString (str));
+    return ConstantString::get (cxt, *st.addString (*this));
+}
+
+/*******************************************************************************
+  FloatValue
+*******************************************************************************/
+
+class FloatValue : public AbstractValue, public APFloat {
+public: /* Methods: */
+
+    FloatValue (APFloat val)
+        : AbstractValue (VFLOAT)
+        , APFloat (std::move (val))
+    { }
+
+    const APFloat& getValue () const { return *this; }
+    std::string toString () const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable&, DataType* t) const override final;
+};
+
+bool operator < (const FloatValue& x, const FloatValue& y) {
+    return APFloat::BitwiseCmp()(x, y);
+}
+
+std::string FloatValue::toString () const {
+    std::ostringstream os;
+    os << *this;
+    return os.str ();
+}
+
+SymbolConstant* FloatValue::toConstant (Context& cxt, StringTable&, DataType* t) const {
+    return ConstantFloat::get (cxt, t, *this);
 }
 
 /*******************************************************************************
   ArrayValue
 *******************************************************************************/
 
-class ArrayValue : public AbstractValue {
+class ArrayValue : public AbstractValue, public std::vector<Value> {
 public: /* Methods: */
     ArrayValue (size_t size, Value elem)
         : AbstractValue (VARR)
-        , elems (size, elem)
+        , std::vector<Value> (size, elem)
     { }
 
     ArrayValue (std::vector<Value> elems)
         : AbstractValue (VARR)
-        , elems (std::move (elems))
+        , std::vector<Value>(std::move (elems))
     { }
 
+    const std::vector<Value>& getValue () const { return *this; }
     std::string toString () const override final;
     SymbolConstant* toConstant (Context&, StringTable&, DataType*) const override final {
         return nullptr;
     }
-
-public: /* Fields: */
-    const std::vector<Value> elems;
 };
-
-bool operator < (const ArrayValue& x, const ArrayValue& y) {
-    return x.elems < y.elems;
-}
 
 std::string ArrayValue::toString () const {
     std::stringstream ss;
     ss << '{';
-    for (size_t i = 0; i < elems.size (); ++ i) {
+    for (size_t i = 0; i < size (); ++ i) {
         if (i != 0)
             ss << ", ";
-        ss << elems[i].toString ();
+        ss << (*this)[i].toString ();
     }
 
     ss << '}';
@@ -213,6 +236,7 @@ public: /* Methods: */
     Value get (const IntValue& val) { return get (m_intValues, val); }
     Value get (const ArrayValue& val) { return get (m_arrayValues, val); }
     Value get (const StringValue& val) { return get (m_stringValues, val); }
+    Value get (const FloatValue& val) { return get (m_floatValues, val); }
 
 private:
 
@@ -225,118 +249,51 @@ private: /* Fields: */
     std::set<IntValue>    m_intValues;
     std::set<ArrayValue>  m_arrayValues;
     std::set<StringValue> m_stringValues;
+    std::set<FloatValue>  m_floatValues;
 };
 
 namespace /* anonymous */ {
 
-/*******************************************************************************
-  IntValue
-*******************************************************************************/
+template <ValueTag tag> struct GetTagType { };
+template <> struct GetTagType<VINT> { using Type = IntValue; };
+template <> struct GetTagType<VFLOAT> { using Type = FloatValue; };
+template <> struct GetTagType<VARR> { using Type = ArrayValue; };
+template <> struct GetTagType<VSTR> { using Type = StringValue; };
 
-template <typename F>
-inline IntValue intLift (F op, const IntValue& x) {
-    return IntValue (x.isSigned, op (x.value));
+template <ValueTag tag>
+inline const typename GetTagType<tag>::Type& as (const AbstractValue* v) {
+    assert (v != nullptr && v->tag () == tag);
+    return *static_cast<const typename GetTagType<tag>::Type*>(v);
 }
 
-template <typename F, typename ...Args>
-inline IntValue intLift (F op, const IntValue& x, const IntValue& y, Args&& ...args) {
-    return IntValue (x.isSigned, op (x.value, y.value, std::forward<Args>(args)...));
-}
-
-IntValue intCast (TypeNonVoid* resultType, const IntValue& x) {
-    assert (resultType != nullptr && resultType->secrecDataType () != nullptr);
-    assert (resultType->secrecDataType ()->isPrimitive ());
-    const auto dataType = resultType->secrecDataType ();
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
-    const auto destWidth = widthInBitsDataType (secrecDataType);
-    const bool destIsSigned = isSignedNumericDataType (dataType);
-
-    // Cast to boolean:
-    if (secrecDataType == DATATYPE_BOOL)
-        return {false, x.bits () != 0};
-
-    if (destWidth == x.value.numBits ())
-        return {destIsSigned, x.value};
-
-    // Trunc:
-    if (destWidth < x.value.numBits ())
-        return {destIsSigned, APInt::trunc (x.value, destWidth)};
-
-    // Sign extend:
-    if (x.isSigned)
-        return {destIsSigned, APInt::sextend (x.value, destWidth)};
-
-    // Extend:
-    return {destIsSigned, APInt::extend (x.value, destWidth)};
-}
-
-IntValue intBinary (Imop::Type iType, const IntValue& x, const IntValue& y) {
-    assert (x.isSigned == y.isSigned && "ICE: mismatching signs in binary operator!");
-
-    const bool isSigned = x.isSigned;
-
-    const auto div = isSigned ? APInt::sdiv : APInt::udiv;
-    const auto rem = isSigned ? APInt::srem : APInt::urem;
-    const auto shr = isSigned ? APInt::ashr : APInt::lshr;
-
-    switch (iType) {
-    case Imop::ADD:  return intLift (APInt::add, x, y);
-    case Imop::SUB:  return intLift (APInt::sub, x, y);
-    case Imop::MUL:  return intLift (APInt::mul, x, y);
-    case Imop::DIV:  return intLift (div, x, y);
-    case Imop::MOD:  return intLift (rem, x, y);
-    case Imop::LE:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SLE : APInt::ULE);
-    case Imop::LT:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SLT : APInt::ULT);
-    case Imop::GE:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SGE : APInt::UGE);
-    case Imop::GT:   return APInt::cmp (x.value, y.value, isSigned ? APInt::SGT : APInt::UGT);
-    case Imop::LAND:
-    case Imop::BAND: return intLift (APInt::AND, x, y);
-    case Imop::LOR:
-    case Imop::BOR:  return intLift (APInt::OR, x, y);
-    case Imop::XOR:  return intLift (APInt::XOR, x, y);
-    case Imop::SHL:  return intLift (APInt::shl, x, y);
-    case Imop::SHR:  return intLift (shr, x, y);
-    case Imop::EQ:   return APInt::cmp (x.value, y.value, APInt::EQ);
-    case Imop::NE:   return APInt::cmp (x.value, y.value, APInt::NE);
-    default:
-        assert (false && "Invalid binary integer operation.");
-        return IntValue ();
+template <ValueTag tag>
+inline std::vector<const typename GetTagType<tag>::Type*> as (const std::vector<const AbstractValue*>& vs) {
+    std::vector<const typename GetTagType<tag>::Type*> result;
+    result.reserve (vs.size ());
+    for (auto v : vs) {
+        assert (v != nullptr && v->tag () == tag);
+        result.push_back (static_cast<const typename GetTagType<tag>::Type*>(v));
     }
-}
 
-IntValue intUnary (Imop::Type iType, const IntValue& x) {
-    switch (iType) {
-    case Imop::CLASSIFY:   return x;
-    case Imop::DECLASSIFY: return x;
-    case Imop::UINV:
-    case Imop::UNEG:       return intLift (APInt::inv, x);
-    case Imop::UMINUS:     return intLift (APInt::minus, x);
-    default:
-        assert (false && "Invalid unary integer operation.");
-        return IntValue ();
-    }
-}
-
-StringValue intToString (const IntValue& x) {
-    return StringValue (x.toString ());
+    return std::move (result);
 }
 
 /*******************************************************************************
   StringValue
 *******************************************************************************/
 
-StringValue strAdd (const StringValue& x, const StringValue& y) {
-    return StringValue (x.str + y.str);
+std::string strAdd (const std::string& x, const std::string& y) {
+    return StringValue (x + y);
 }
 
-IntValue strCmp (Imop::Type iType, const StringValue& x, const StringValue& y) {
+IntValue strCmp (Imop::Type iType, const std::string& x, const std::string& y) {
     switch (iType) {
-    case Imop::EQ: return IntValue (x.str == y.str);
-    case Imop::NE: return IntValue (x.str != y.str);
-    case Imop::LT: return IntValue (x.str <  y.str);
-    case Imop::GT: return IntValue (x.str >  y.str);
-    case Imop::GE: return IntValue (x.str >= y.str);
-    case Imop::LE: return IntValue (x.str <= y.str);
+    case Imop::EQ: return x == y;
+    case Imop::NE: return x != y;
+    case Imop::LT: return x <  y;
+    case Imop::GT: return x >  y;
+    case Imop::GE: return x >= y;
+    case Imop::LE: return x <= y;
     default:
         assert (false && "Invalid string comparison!");
         return IntValue ();
@@ -348,25 +305,21 @@ IntValue strCmp (Imop::Type iType, const StringValue& x, const StringValue& y) {
 *******************************************************************************/
 
 Value arrLoad (const ArrayValue& a, const IntValue& i) {
-    if (i.bits () < a.elems.size ())
-        return a.elems[i.bits ()];
+    if (i.bits () < a.size ())
+        return a[i.bits ()];
     else
         return Value::undef ();
 }
 
 ArrayValue arrStore (const ArrayValue& a, const IntValue& i, Value v) {
-    if (i.bits () < a.elems.size ()) {
-        auto elems = a.elems;
+    if (i.bits () < a.size ()) {
+        std::vector<Value> elems = a;
         elems[i.bits ()] = v;
         return ArrayValue (std::move (elems));
     }
     else {
         return a;
     }
-}
-
-ArrayValue arrAlloc (Value v, const IntValue& i) {
-    return ArrayValue (i.bits (), v);
 }
 
 /*******************************************************************************
@@ -386,8 +339,8 @@ Value meetValue (ValueFactory& factory, Value x, Value y) {
         return xv;
 
     if (xv->tag () == VARR && yv->tag () == VARR) {
-        const auto& xs = static_cast<const ArrayValue*>(xv)->elems;
-        const auto& ys = static_cast<const ArrayValue*>(yv)->elems;
+        const std::vector<Value>& xs = *static_cast<const ArrayValue*>(xv);
+        const std::vector<Value>& ys = *static_cast<const ArrayValue*>(yv);
         if (xs.size () == ys.size ()) {
             std::vector<Value> elems;
             elems.reserve (xs.size ());
@@ -413,8 +366,8 @@ bool leValue (Value x, Value y) {
     if (xv == yv) return true;
 
     if (xv->tag () == VARR && yv->tag () == VARR) {
-        const auto& xs = static_cast<const ArrayValue*>(xv)->elems;
-        const auto& ys = static_cast<const ArrayValue*>(yv)->elems;
+        const std::vector<Value>& xs = *static_cast<const ArrayValue*>(xv);
+        const std::vector<Value>& ys = *static_cast<const ArrayValue*>(yv);
         if (xs.size () == ys.size ()) {
             for (size_t i = 0; i < xs.size (); ++ i) {
                 if (! leValue (xs[i], ys[i]))
@@ -452,7 +405,7 @@ Value valueLoad (ValueFactory& factory, Value a, Value i) {
     if (a.isUndef () || a.isNac ()) return a;
     assert (a.value ()->tag () == VARR);
     const auto av = static_cast<const ArrayValue*>(a.value ());
-    const auto& elems = av->elems;
+    const std::vector<Value>& elems = *av;
 
     // For undefined, or non-constant indices return meet of all values
     // TODO: not sure if this is correct.
@@ -464,189 +417,254 @@ Value valueLoad (ValueFactory& factory, Value a, Value i) {
     return arrLoad (*av, *iv);
 }
 
-Value valueScalarCast (ValueFactory& factory, TypeNonVoid* resultType, Value x) {
-    if (x.isNac () || x.isUndef ())
-        return x;
+/**
+ */
 
-    assert (x.value () && x.value ()->tag () == VINT);
-    const auto xv = static_cast<const IntValue*>(x.value ());
-    return factory.get (intCast (resultType, *xv));
+Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Value>& args);
+
+inline Value makeSigned (ValueFactory& factory, const APInt& x) {
+    return factory.get (IntValue (true, x));
 }
 
-Value valueArrayCast (ValueFactory& factory, TypeNonVoid* resultType, Value x) {
-    if (x.isNac () || x.isUndef ())
-        return x;
-
-    assert (x.value () && x.value ()->tag () == VARR);
-    const auto xv = static_cast<const ArrayValue*>(x.value ());
-    auto elems = xv->elems;
-    for (size_t i = 0; i < elems.size (); ++ i) {
-        elems[i] = valueScalarCast (factory, resultType, elems[i]);
-    }
-
-    return factory.get (ArrayValue (elems));
+inline Value makeUnsigned (ValueFactory& factory, const APInt& x) {
+    return factory.get (IntValue (false, x));
 }
 
-Value valueScalarUnaryArith (ValueFactory& factory, Imop::Type iType, Value x) {
-    if (x.isNac () || x.isUndef ())
-        return x;
-
-    const auto xv = static_cast<const IntValue*>(x.value ());
-    assert (xv != nullptr);
-    return factory.get (intUnary (iType, *xv));
-}
-
-Value valueStringBinary (ValueFactory& factory, Imop::Type iType, Value x, Value y) {
-    if (x.isUndef () || y.isUndef ())
-        return Value::undef ();
-
-    if (x.isNac () || y.isNac ())
-        return Value::nac ();
-
-    assert (x.value () != nullptr && y.value () != nullptr);
-    assert (x.value ()->tag () == VSTR);
-    assert (y.value ()->tag () == VSTR);
-    const auto xv = static_cast<const StringValue*>(x.value ());
-    const auto yv = static_cast<const StringValue*>(y.value ());
-    if (iType == Imop::ADD)
-        return factory.get (strAdd (*xv, *yv));
-    else
-        return factory.get (strCmp (iType, *xv, *yv));
-}
-
-Value valueScalarBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, Value y) {
-    const auto xv = static_cast<const IntValue*>(x.value ());
-    const auto yv = static_cast<const IntValue*>(y.value ());
-
-    const bool xIsZero = xv ? xv->tag () == VINT && xv->bits () == 0 : false;
-    const bool yIsZero = yv ? yv->tag () == VINT && yv->bits () == 0 : false;
-
-
-    // Check for undefined behaviour:
-    if (iType == Imop::DIV || iType == Imop::MOD) {
-        if (yIsZero) {
-            return Value::undef ();
-        }
-    }
-
-    if (iType == Imop::DIV && xv && yv && xv->isSigned) {
-        const auto a = xv->value;
-        const auto b = xv->value;
-        const auto negMin = APInt::getNegativeMin (a.numBits ());
-        const auto negOne = APInt::getNegativeOne (a.numBits ());
-        if (a == negMin && b == negOne)
-            return Value::undef ();
-    }
-
-    if (iType == Imop::SHL || iType == Imop::SHR) {
-        if (yv && yv->isSigned) {
-            const auto b = yv->value;
-            const auto r = APInt::cmp (b, APInt (b.numBits (), 0), APInt::SLT);
-            if (r.bits () != 0)
-                return Value::undef ();
-        }
-    }
-
-    switch (iType) {
-    case Imop::MUL:
-    case Imop::BAND:
+Value intEval (ValueFactory& f, const Imop& imop, const std::vector<const IntValue*>& args) {
+    switch (imop.type ()) {
+    case Imop::ADD:        return makeSigned (f, APInt::add (*args[0], *args[1]));
+    case Imop::SUB:        return makeSigned (f, APInt::sub (*args[0], *args[1]));
+    case Imop::MUL:        return makeSigned (f, APInt::mul (*args[0], *args[1]));
+    case Imop::DIV:        return makeSigned (f, APInt::sdiv (*args[0], *args[1]));
+    case Imop::MOD:        return makeSigned (f, APInt::srem (*args[0], *args[1]));
+    case Imop::LE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::SLE));
+    case Imop::LT:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::SLT));
+    case Imop::GE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::SGE));
+    case Imop::GT:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::SGT));
     case Imop::LAND:
-        if (xIsZero) return x;
-        if (yIsZero) return y;
-        break;
-    case Imop::DIV:
-    case Imop::MOD:
-    case Imop::SHL:
-    case Imop::SHR:
-        if (xIsZero) return x;
-        break;
+    case Imop::BAND:       return makeSigned (f, APInt::AND (*args[0], *args[1]));
+    case Imop::LOR:
+    case Imop::BOR:        return makeSigned (f, APInt::OR (*args[0], *args[1]));
+    case Imop::XOR:        return makeSigned (f, APInt::XOR (*args[0], *args[1]));
+    case Imop::SHL:        return makeSigned (f, APInt::shl (*args[0], *args[1]));
+    case Imop::SHR:        return makeSigned (f, APInt::ashr (*args[0], *args[1]));
+    case Imop::EQ:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::EQ));
+    case Imop::NE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::NE));
+    case Imop::UINV:
+    case Imop::UNEG:       return makeSigned (f, APInt::inv (*args[0]));
+    case Imop::UMINUS:     return makeSigned (f, APInt::minus (*args[0]));
     default:
-        break;
-    }
-
-    /**
-     * Check if the result is constant no matter the other argument:
-     */
-
-    if (x.isUndef () || y.isUndef ())
-        return Value::undef ();
-
-    if (x.isNac () || y.isNac ())
+        assert (false && "Invalid signed integer operation.");
         return Value::nac ();
-
-    if (iType == Imop::EQ)
-        return factory.get (IntValue (false, x == y));
-
-    if (iType == Imop::NE)
-        return factory.get (IntValue (false, ! (x == y)));
-
-    assert (xv != nullptr && yv != nullptr);
-    return factory.get (intBinary (iType, *xv, *yv));
+    }
 }
 
-Value valueArrayUnaryArith (ValueFactory& factory, Imop::Type iType, Value x) {
-    if (x.isNac () || x.isUndef ())
-        return x;
+Value uintEval (ValueFactory& f, const Imop& imop, const std::vector<const IntValue*>& args) {
+    switch (imop.type ()) {
+    case Imop::ADD:        return makeUnsigned (f, APInt::add (*args[0], *args[1]));
+    case Imop::SUB:        return makeUnsigned (f, APInt::sub (*args[0], *args[1]));
+    case Imop::MUL:        return makeUnsigned (f, APInt::mul (*args[0], *args[1]));
+    case Imop::DIV:        return makeUnsigned (f, APInt::udiv (*args[0], *args[1]));
+    case Imop::MOD:        return makeUnsigned (f, APInt::urem (*args[0], *args[1]));
+    case Imop::LE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::ULE));
+    case Imop::LT:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::ULT));
+    case Imop::GE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::UGE));
+    case Imop::GT:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::UGT));
+    case Imop::LAND:
+    case Imop::BAND:       return makeUnsigned (f, APInt::AND (*args[0], *args[1]));
+    case Imop::LOR:
+    case Imop::BOR:        return makeUnsigned (f, APInt::OR (*args[0], *args[1]));
+    case Imop::XOR:        return makeUnsigned (f, APInt::XOR (*args[0], *args[1]));
+    case Imop::SHL:        return makeUnsigned (f, APInt::shl (*args[0], *args[1]));
+    case Imop::SHR:        return makeUnsigned (f, APInt::lshr (*args[0], *args[1]));
+    case Imop::EQ:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::EQ));
+    case Imop::NE:         return makeUnsigned (f, APInt::cmp (*args[0], *args[1], APInt::NE));
+    case Imop::UINV:
+    case Imop::UNEG:       return makeUnsigned (f, APInt::inv (*args[0]));
+    case Imop::UMINUS:     return makeUnsigned (f, APInt::minus (*args[0]));
+    default:
+        assert (false && "Invalid unsigned integer operation.");
+        return Value::nac ();
+    }
+}
 
-    assert (x.value () && x.value ()->tag () == VARR);
-    const auto xv = static_cast<const ArrayValue*>(x.value ());
-    auto elems = xv->elems;
+Value strEval (ValueFactory& f, const Imop& imop, const std::vector<const StringValue*>& args) {
+    switch (imop.type ()) {
+    case Imop::LE:
+    case Imop::LT:
+    case Imop::GE:
+    case Imop::GT:
+    case Imop::EQ:
+    case Imop::NE:
+        return makeUnsigned (f, strCmp (imop.type (), *args[0], *args[1]));
+    case Imop::ADD:
+        return f.get (strAdd (*args[0], *args[1]));
+    default:
+        assert (false && "Invalid string operation.");
+        return Value::nac ();
+    }
+}
+
+Value floatEval (ValueFactory& f, const Imop& imop, const std::vector<const FloatValue*>& args) {
+    switch (imop.type ()) {
+    case Imop::ADD:    return f.get (APFloat::add (*args[0], *args[1]));
+    case Imop::SUB:    return f.get (APFloat::sub (*args[0], *args[1]));
+    case Imop::MUL:    return f.get (APFloat::mul (*args[0], *args[1]));
+    case Imop::DIV:    return f.get (APFloat::div (*args[0], *args[1]));
+    case Imop::LE:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::LE));
+    case Imop::LT:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::LT));
+    case Imop::GE:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::GE));
+    case Imop::GT:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::GT));
+    case Imop::EQ:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::EQ));
+    case Imop::NE:     return makeUnsigned (f, APFloat::cmp (*args[0], *args[1], APFloat::NE));
+    case Imop::UMINUS: return f.get (APFloat::minus (*args[0]));
+    default:
+        assert (false && "Invalid unsigned integer operation.");
+        return Value::nac ();
+    }
+}
+
+Value arrEval (ValueFactory& factory, const Imop& imop, const std::vector<const ArrayValue*>& args) {
+    std::vector<Value> vs;
+    std::vector<Value> elems (args.at(0)->size ());
     for (size_t i = 0; i < elems.size (); ++ i) {
-        elems[i] = valueScalarUnaryArith (factory, iType, elems[i]);
+        vs.clear ();
+        for (auto arg : args)
+            vs.push_back (arg->at (i));
+
+        elems[i] = exprValue (factory, imop, vs);
     }
 
-    return factory.get (ArrayValue (std::move (elems)));
+    return factory.get (elems);
 }
 
-// Either returns x is it is constant or resizes it to the size of the other argument.
-ArrayValue valueArrayLift (Value x, Value y) {
-    assert (x.isConst () || y.isConst ());
-    if (x.isConst ()) {
-        return *static_cast<const ArrayValue*>(x.value ());
+Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Value>& args) {
+    assert (args.size () > 0);
+
+    /*
+     * The generic case:
+     *  - if all arguments are const apply the operation
+     *  - return NAC if any arguments are NAC
+     *  - return UNDEF otherwise
+     */
+    bool anyIsUndef = false;
+    std::vector<const AbstractValue*> vs;
+    for (const auto v : args) {
+        if (v.isConst ()) {
+            assert (v.value () != nullptr);
+            vs.push_back (v.value ());
+            continue;
+        }
+
+        if (v.isNac ())
+            return Value::nac ();
+
+        if (v.isUndef ())
+            anyIsUndef = true;
+    }
+
+    if (anyIsUndef) {
+        return Value::undef ();
+    }
+
+    assert (vs.size () > 0);
+
+    if (imop.type () == Imop::TOSTRING) {
+        assert (vs.size () == 1);
+        return factory.get (vs[0]->toString ());
+    }
+
+    const bool isSigned = isSignedNumericDataType (imop.arg1 ()->secrecType ()->secrecDataType ());
+    switch (vs.at(0)->tag ()) {
+    case VINT:
+        if (isSigned)
+            return intEval (factory, imop, as<VINT>(vs));
+        else
+            return uintEval (factory, imop, as<VINT>(vs));
+    case VFLOAT: return floatEval (factory, imop, as<VFLOAT>(vs));
+    case VSTR: return strEval (factory, imop, as<VSTR>(vs));
+    case VARR: return arrEval (factory, imop, as<VARR>(vs));
+    }
+}
+
+/**
+ * @brief Abstract value casting.
+ * Need to consider the following cases:
+ * - floatToFloatCast
+ * - floatToIntCast
+ * - intToFloatCast
+ * - intToIntCast
+ * - arrayCast
+ */
+Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractValue* arg);
+
+Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x) {
+    const auto dataType = resultType->secrecDataType ();
+    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+
+    if (resultType->isFloat ()) {
+        const auto prec = floatPrec (secrecDataType);
+        if (x.isSigned)
+            return factory.get (APFloat::makeSigned (prec, x.bits ()));
+        else
+            return factory.get (APFloat::makeUnsigned (prec, x.bits ()));
     }
     else {
-        const size_t size = static_cast<const ArrayValue*>(y.value ())->elems.size ();
-        return ArrayValue (size, x);
+        const bool destIsSigned = isSignedNumericDataType (dataType);
+        const auto destWidth = widthInBitsDataType (secrecDataType);
+
+        if (secrecDataType == DATATYPE_BOOL)
+            return factory.get (IntValue (false, x.bits () != 0));
+
+        if (destWidth == x.numBits ())
+            return factory.get (IntValue (destIsSigned, x));
+
+        if (destWidth < x.numBits ())
+            return factory.get (IntValue (destIsSigned, APInt::trunc (x, destWidth)));
+
+        if (x.isSigned)
+            return factory.get (IntValue (destIsSigned, APInt::sextend (x, destWidth)));
+
+        return factory.get (IntValue (destIsSigned, APInt::extend (x, destWidth)));
     }
 }
 
-Value valueArrayBinaryArith (ValueFactory& factory, Imop::Type iType, Value x, Value y) {
-
-    if (!x.isConst () || !y.isConst ()) {
-        if (x.isNac () && y.isNac ())
-            return Value::nac ();
-        return Value::undef ();
+Value castFloat (ValueFactory& factory, TypeNonVoid* resultType, const FloatValue& x) {
+    const auto dataType = resultType->secrecDataType ();
+    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    if (resultType->isFloat ()) {
+        const auto prec = floatPrec (secrecDataType);
+        return factory.get (APFloat (prec, x));
     }
+    else {
+        const bool isSigned = isSignedNumericDataType (dataType);
+        const auto destWidth = widthInBitsDataType (secrecDataType);
+        const uint64_t bits = isSigned ? APFloat::getSigned (x) : APFloat::getUnsigned (x);
+        return factory.get (IntValue (isSigned, APInt (destWidth, bits)));
+    }
+}
 
-    // At least one of the arguments is constant!
-
-    const auto xv = valueArrayLift (x, y);
-    const auto yv = valueArrayLift (y, x);
-    const auto& xElems = xv.elems;
-    const auto& yElems = yv.elems;
+Value castArr (ValueFactory& factory, TypeNonVoid* resultType, const ArrayValue& x) {
     std::vector<Value> elems;
-    elems.reserve (xElems.size ());
-    for (size_t i = 0; i < xElems.size (); ++ i) {
-        elems.push_back (valueScalarBinaryArith (factory, iType, xElems[i], yElems[i]));
+    elems.reserve (x.size ());
+    for (const auto& v : x) {
+        if (v.isNac ()) elems.push_back (Value::nac ());
+        if (v.isUndef ()) elems.push_back (Value::undef ());
+        if (v.isConst ()) elems.push_back (castValue (factory, resultType, v.value ()));
     }
 
-    return factory.get (ArrayValue (std::move (elems)));
+    return factory.get (elems);
 }
 
-Value valueAlloc (ValueFactory& factory, Value e, Value s) {
-    if (s.isNac ()) return Value::nac ();
-    if (s.isUndef ()) return Value::undef ();
-    const auto sv = static_cast<const IntValue*>(s.value ());
-    return factory.get (arrAlloc (e, *sv));
-}
-
-Value valueToString (ValueFactory& factory, Value x) {
-    if (! x.isConst ())
-        return x;
-
-    assert (x.value ()->tag () == VINT);
-    const auto xv = static_cast<const IntValue*>(x.value ());
-    return factory.get (intToString (*xv));
+Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractValue* arg) {
+    switch (arg->tag ()) {
+    case VINT:   return castInt (factory, resultType, as<VINT>(arg));
+    case VFLOAT: return castFloat (factory, resultType, as<VFLOAT>(arg));
+    case VARR:   return castArr (factory, resultType, as<VARR>(arg));
+    default:
+        assert (false && "ICE: invalid CAST argument!");
+        return Value::nac ();
+    }
 }
 
 } // namespace anonymous
@@ -676,18 +694,24 @@ void ConstantFolding::addConstant (const Symbol* sym) {
     assert (dataType->isPrimitive () && "Non-primitive constant symbol!");
     const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
     if (const auto s = dynamic_cast<const ConstantInt*>(sym)) {
-        const auto v = s->value ();
         const bool isSigned = isSignedNumericDataType (secrecDataType);
-        m_constants.insert (it,
-            std::make_pair (sym, m_values->get (IntValue (isSigned, v))));
+        const auto v = IntValue (isSigned, s->value ());
+        m_constants.insert (it, std::make_pair (sym, m_values->get (v)));
+        return;
+    }
+
+    if (const auto s = dynamic_cast<const ConstantFloat*>(sym)) {
+        const auto v = FloatValue (s->value ());
+        m_constants.insert (it, std::make_pair (sym, m_values->get (v)));
         return;
     }
 
     if (const auto s = dynamic_cast<const ConstantString*>(sym)) {
         std::ostringstream os;
         os << s->value ();
-        m_constants.insert (it,
-            std::make_pair (sym, m_values->get (StringValue (os.str ()))));
+        const auto v = StringValue (os.str ());
+        m_constants.insert (it, std::make_pair (sym, m_values->get (v)));
+        return;
     }
 }
 
@@ -696,10 +720,7 @@ Value ConstantFolding::getVal (const SVM& val, const Symbol* sym) const {
     if (cit != m_constants.end ())
         return cit->second;
 
-    // TODO: Bailing for constant floats. We should also consider those.
-    if (sym->isConstant ())
-        return Value::nac ();
-
+    assert (! sym->isConstant () && "ICE: unhandled constant!");
     const auto it = val.find (sym);
     return it == val.end () ? Value::undef () : it->second;
 }
@@ -707,28 +728,50 @@ Value ConstantFolding::getVal (const SVM& val, const Symbol* sym) const {
 void ConstantFolding::setVal (SVM& val, const Symbol* sym, Value x) {
     if (! x.isUndef ())
         val[sym] = x;
+    else
+        val.erase (sym);
 }
 
 void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
-
     const auto iType = imop.type ();
-
     auto& factory = *m_values;
 
-    if (iType == Imop::PARAM || iType == Imop::DOMAINID) {
-        setVal (val, imop.dest (), Value::nac ());
-        return;
-    }
-
-    if (iType == Imop::SYSCALL) {
+    switch (iType) {
+    case Imop::PARAM:
+    case Imop::DOMAINID:
+    case Imop::SYSCALL:
         if (imop.dest () != nullptr)
             setVal (val, imop.dest (), Value::nac ());
         return;
-    }
-
-    if (iType == Imop::PUSHREF) {
+    case Imop::PUSHREF:
         setVal (val, imop.arg1 (), Value::nac ());
         return;
+    case Imop::CALL:
+        for (auto dest : imop.defRange ())
+            setVal (val, dest, Value::nac ());
+        return;
+    case Imop::COMMENT:
+    case Imop::END:
+    case Imop::ERROR:
+    case Imop::JF:
+    case Imop::JT:
+    case Imop::JUMP:
+    case Imop::PRINT:
+    case Imop::PUSHCREF:
+    case Imop::RELEASE:
+    case Imop::RETCLEAN:
+    case Imop::RETURN:
+        /* No effect: */
+        return;
+    case Imop::ASSIGN:
+    case Imop::COPY:
+    case Imop::CLASSIFY:
+    case Imop::DECLASSIFY:
+        /* Trivial copy: */
+        setVal (val, imop.dest (), getVal (val, imop.arg1 ()));
+        return;
+    default:
+        break;
     }
 
     if (iType == Imop::PUSH) {
@@ -741,50 +784,15 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
         return;
     }
 
-    if (iType == Imop::CALL) {
-        for (auto dest : imop.defRange ())
-            setVal (val, dest, Value::nac ());
-        return;
-    }
-
-    if (iType == Imop::CAST) {
-        TypeNonVoid* resultType = imop.dest ()->secrecType ();
-        if (resultType->isFloat () || imop.arg1 ()->secrecType ()->isFloat ()) {
-            setVal (val, imop.dest (), Value::nac ());
-            return;
-        }
-
-        const auto& x = getVal (val, imop.arg1 ());
-        if (resultType->isScalar ())
-            setVal (val, imop.dest (), valueScalarCast (factory, resultType, x));
-        else
-            setVal (val, imop.dest (), valueArrayCast (factory, resultType, x));
-
-        return;
-    }
-
-    if (iType == Imop::TOSTRING) {
-        const auto x = getVal (val, imop.arg1 ());
-        setVal (val, imop.dest (), valueToString (factory, x));
-        return;
-    }
-
-    if (iType == Imop::ASSIGN || iType == Imop::COPY) {
-        setVal (val, imop.dest (), getVal (val, imop.arg1 ()));
-        return;
-    }
-
     if (iType == Imop::ALLOC) {
         const auto e = getVal (val, imop.arg1 ());
         const auto s = getVal (val, imop.arg2 ());
-        setVal (val, imop.dest (), valueAlloc (factory, e, s));
-        return;
-    }
-
-    if (iType == Imop::LOAD) {
-        const auto& a = getVal (val, imop.arg1 ());
-        const auto& i = getVal (val, imop.arg2 ());
-        setVal (val, imop.dest (), valueLoad (factory, a, i));
+        if (s.isConst ()) {
+            auto r = ArrayValue (as<VINT>(s.value ()).bits (), e);
+            setVal (val, imop.dest (), factory.get (r));
+        }
+        else
+            setVal (val, imop.dest (), s);
         return;
     }
 
@@ -796,70 +804,42 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
         return;
     }
 
+    if (iType == Imop::LOAD) {
+        const auto a = getVal (val, imop.arg1 ());
+        const auto i = getVal (val, imop.arg2 ());
+        setVal (val, imop.dest (), valueLoad (factory, a, i));
+        return;
+    }
+
+    if (iType == Imop::CAST) {
+        const auto a = getVal (val, imop.arg1 ());
+        const auto resultType = imop.dest ()->secrecType ();
+        if (a.isConst ())
+            setVal (val, imop.dest (), castValue (factory, resultType, a.value ()));
+        else
+            setVal (val, imop.dest (), a);
+        return;
+    }
+
+    /*
+     * The generic case:
+     *  - if all arguments are const apply the operation
+     *  - return NAC if any arguments are NAC
+     *  - return UNDEF otherwise
+     */
+    std::vector<Value> args;
+
     if (imop.isVectorized ()) {
-        if (imop.arg1 ()->secrecType ()->isFloat ())
-            setVal (val, imop.dest (), Value::nac ());
-
-        if (imop.nArgs () == 3) {
-            const auto x = getVal (val, imop.arg1 ());
-            setVal (val, imop.dest (), valueArrayUnaryArith (factory, iType, x));
-            return;
-        }
-
-        if (imop.nArgs () == 4) {
-            const auto x = getVal (val, imop.arg1 ());
-            const auto y = getVal (val, imop.arg2 ());
-            setVal (val, imop.dest (), valueArrayBinaryArith (factory, iType, x, y));
-            return;
-        }
-
-        assert (false && "Unhandled vectorized operation!");
-        return;
+        for (size_t i = 1; i + 1 < imop.nArgs (); ++ i)
+            args.push_back (getVal (val, imop.arg (i)));
+    }
+    else {
+        for (const Symbol* sym : imop.useRange ())
+            args.push_back (getVal (val, sym));
     }
 
-    if (imop.isExpr ()) {
-        if (imop.arg1 ()->secrecType ()->isFloat ())
-            setVal (val, imop.dest (), Value::nac ());
-
-        if (imop.nArgs () == 2) {
-            const auto x = getVal (val, imop.arg1 ());
-            setVal (val, imop.dest (), valueScalarUnaryArith (factory, iType, x));
-            return;
-        }
-
-        if (imop.nArgs () == 3) {
-            const auto x = getVal (val, imop.arg1 ());
-            const auto y = getVal (val, imop.arg2 ());
-            if (imop.arg1 ()->secrecType ()->isString ())
-                setVal (val, imop.dest (), valueStringBinary (factory, iType, x, y));
-            else
-                setVal (val, imop.dest (), valueScalarBinaryArith (factory, iType, x, y));
-            return;
-        }
-
-        assert (false && "Unhandled expression operation!");
-        return;
-    }
-
-    // Make sure we are handling all operations. If we add an instruction
-    // this will fail (as opposed to quietly working incorrectly).
-    switch (iType) {
-    case Imop::COMMENT:
-    case Imop::END:
-    case Imop::ERROR:
-    case Imop::JF:
-    case Imop::JT:
-    case Imop::JUMP:
-    case Imop::PRINT:
-    case Imop::PUSHCREF:
-    case Imop::RELEASE:
-    case Imop::RETCLEAN:
-    case Imop::RETURN:
-        return;
-    default:
-        assert (false && "Unhandled operation!");
-        return;
-    }
+    setVal (val, imop.dest (), exprValue (factory, imop, args));
+    return;
 }
 
 void ConstantFolding::start (const Program& program) {
@@ -894,9 +874,8 @@ void ConstantFolding::inFrom (const Block &from, Edge::Label label, const Block 
 bool ConstantFolding::makeOuts (const Block& b, const SVM& in, SVM& out) {
     const SVM old = out;
     out = in;
-    for (auto it = b.begin (); it != b.end (); ++ it) {
-        transfer (out, *it);
-    }
+    for (auto& imop : b)
+        transfer (out, imop);
 
     // Check if we increased the (lattice) value of any of the symbols:
 
