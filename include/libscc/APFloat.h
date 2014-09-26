@@ -63,9 +63,13 @@ public: /* Methods: */
     explicit APFloat (prec_t p);
     APFloat (prec_t p, StringRef str);
     APFloat (prec_t p, uint64_t value);
+    APFloat (prec_t p, const APFloat& x, RoundMode mode = RNDN);
+
     ~APFloat ();
     APFloat (const APFloat& apf);
     APFloat& operator = (const APFloat& apf);
+
+    void assign (const APFloat& x, RoundMode mode = RNDN);
 
     static APFloat add (APFloat x, APFloat y, RoundMode mode = RNDN);
     static APFloat sub (APFloat x, APFloat y, RoundMode mode = RNDN);
@@ -73,6 +77,10 @@ public: /* Methods: */
     static APFloat div (APFloat x, APFloat y, RoundMode mode = RNDN);
     static bool cmp (APFloat x, APFloat y, CmpMode mode);
     static APFloat minus (APFloat x, RoundMode mode = RNDN);
+    static APFloat makeSigned (prec_t p, int64_t value, RoundMode mode = RNDN);
+    static APFloat makeUnsigned (prec_t p, uint64_t value, RoundMode mode = RNDN);
+    static uint64_t getUnsigned (APFloat x, RoundMode mode = RNDN);
+    static int64_t getSigned (APFloat x, RoundMode mode = RNDN);
 
     friend std::ostream& operator << (std::ostream& os, const APFloat& apf);
 

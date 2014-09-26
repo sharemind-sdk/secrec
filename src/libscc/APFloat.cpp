@@ -119,6 +119,11 @@ APFloat::APFloat (prec_t p, uint64_t value) {
     mpfr_set_ui (m_value, value, SECREC_CONSTANT_MPFR_RNDN);
 }
 
+APFloat::APFloat (prec_t p, const APFloat& x, RoundMode mode) {
+    mpfr_init2 (m_value, p);
+    mpfr_set (m_value, x.m_value, mpfrRoundMode (mode));
+}
+
 APFloat::~APFloat () {
     mpfr_clear (m_value);
 }
@@ -131,6 +136,10 @@ APFloat::APFloat (const APFloat& apf) {
 APFloat& APFloat::operator = (const APFloat& apf) {
     mpfr_set (m_value, apf.m_value, SECREC_CONSTANT_MPFR_RNDN);
     return *this;
+}
+
+void APFloat::assign (const APFloat& x, APFloat::RoundMode mode) {
+    mpfr_set (m_value, x.m_value, mpfrRoundMode (mode));
 }
 
 APFloat APFloat::add (APFloat x, APFloat y, APFloat::RoundMode mode) {
@@ -162,6 +171,26 @@ bool APFloat::cmp (APFloat x, APFloat y, APFloat::CmpMode mode) {
 
 APFloat APFloat::minus (APFloat x, APFloat::RoundMode mode) {
     return mpfrApply (mpfr_neg, x, mode);
+}
+
+APFloat APFloat::makeUnsigned (prec_t p, uint64_t value, APFloat::RoundMode mode) {
+    auto result = APFloat (p);
+    mpfr_set_ui (result.bits (), value, mpfrRoundMode (mode));
+    return result;
+}
+
+APFloat APFloat::makeSigned (prec_t p, int64_t value, APFloat::RoundMode mode) {
+    auto result = APFloat (p);
+    mpfr_set_si (result.bits (), value, mpfrRoundMode (mode));
+    return result;
+}
+
+uint64_t APFloat::getUnsigned (APFloat x, APFloat::RoundMode mode) {
+    return mpfr_get_ui (x.bits (), mpfrRoundMode (mode));
+}
+
+int64_t APFloat::getSigned (APFloat x, APFloat::RoundMode mode) {
+    return mpfr_get_si (x.bits (), mpfrRoundMode (mode));
 }
 
 std::ostream& operator << (std::ostream& os, const APFloat& apf) {
