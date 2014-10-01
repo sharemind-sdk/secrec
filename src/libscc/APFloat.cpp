@@ -11,6 +11,7 @@
 #include "DataType.h"
 
 #include <ostream>
+#include <stdexcept>
 
 namespace SecreC {
 
