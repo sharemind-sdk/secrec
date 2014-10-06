@@ -13,99 +13,11 @@
 #include "ModuleInfo.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
+#include "TemplateChecker.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
 
 namespace SecreC {
-
-namespace /* anonymous */ {
-
-struct TemplateTypeVariable {
-    TreeNodeIdentifier*  id;
-    TypeArgumentKind     kind;
-    bool                 bound;
-    bool                 ret;
-
-    TemplateTypeVariable (TreeNodeIdentifier* id, TypeArgumentKind kind)
-        : id (id)
-        , kind (kind)
-        , bound (false)
-        , ret (false)
-    { }
-};
-
-using TypeVariableMap = std::map<StringRef, TemplateTypeVariable, StringRef::FastCmp>;
-
-TypeArgumentKind typeFragmentKind (const TreeNodeTypeF& ty) {
-    switch (ty.type ()) {
-    case NODE_DATATYPE_VAR_F:
-    case NODE_DATATYPE_CONST_F:
-        return TA_DATA;
-    case NODE_DIMTYPE_VAR_F:
-    case NODE_DIMTYPE_CONST_F:
-        return TA_DIM;
-    case NODE_SECTYPE_PRIVATE_F:
-    case NODE_SECTYPE_PUBLIC_F:
-        return TA_SEC;
-    default:
-        assert (false && "Invalid tree node (probably parser error).");
-        return TA_DATA;
-    }
-}
-
-SymbolCategory symbolCategory (TypeArgumentKind kind) {
-    switch (kind) {
-    case TA_SEC: return SYM_DOMAIN;
-    case TA_DATA: return SYM_TYPE;
-    case TA_DIM: return SYM_DIM;
-    }
-}
-
-const char* kindAsString (TypeArgumentKind kind) {
-    switch (kind) {
-    case TA_SEC: return "domain";
-    case TA_DATA: return "data";
-    case TA_DIM: return "dimensionality";
-    }
-}
-
-TypeChecker::Status checkTypeVariable (TypeVariableMap& map,
-                                       SymbolTable* st,
-                                       CompileLog& log,
-                                       const TreeNodeTypeF& t,
-                                       bool isReturn)
-{
-    if (! t.isVariable ())
-        return TypeChecker::OK;
-
-    const StringRef name = t.identifier ()->value ();
-    const TypeArgumentKind kind = typeFragmentKind (t);
-    const TypeVariableMap::iterator it = map.find (name);
-    if (it != map.end ()) {
-        TemplateTypeVariable& tv = it->second;
-        if (tv.kind != kind) {
-            log.fatal () << "Unexpected " << kindAsString (kind) << " type variable \'" << name
-                         << "\' at " << t.identifier ()->location () << ". "
-                         << "Expecting " <<  kindAsString (tv.kind) << " type variable.";
-            return TypeChecker::E_TYPE;
-        }
-
-        tv.bound = true;
-        tv.ret = isReturn;
-    }
-    else {
-        Symbol* sym = st->find (symbolCategory (kind), name);
-        if (sym == nullptr) {
-            log.fatal () << "Unable to find " << kindAsString (kind) << " type variable \'" << name
-                         << "\' at " << t.identifier ()->location () << ". ";
-            return TypeChecker::E_TYPE;
-        }
-    }
-
-    return TypeChecker::OK;
-}
-
-} // namespace anonymous
 
 /*******************************************************************************
   TreeNodeTemplate
@@ -121,61 +33,58 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
-    // Collect quantifiers:
-    TypeVariableMap typeVariables;
-    for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
+    auto varChecker = TemplateVarChecker {m_st, m_log};
+    auto& typeVariables = varChecker.vars ();
+    for (auto& quant : templ->quantifiers ()) {
         const StringRef name = quant.typeVariable ()->value ();
         auto it = typeVariables.find (name);
         if (it != typeVariables.end ()) {
             m_log.fatal ()
-                    << "Redeclaration of a type variable \'" << name << '\''
-                    << " at " << id->location () << '.';
+                << "Redeclaration of a type variable \'" << name << '\''
+                << " at " << id->location () << '.';
             return E_TYPE;
         }
 
         typeVariables.insert (it, std::make_pair (name,
-            TemplateTypeVariable (quant.typeVariable (), quantifierKind (quant))));
-
+            TemplateTypeVar (quant.typeVariable (), quantifierKind (quant))));
         TCGUARD (visitQuantifier (&quant));
     }
 
-    if (body->returnType ()->isNonVoid ()) {
-        for (TreeNodeTypeF& t : body->returnType ()->types ()) {
-            TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, true));
-        }
-    }
+    // We need to check return postion first in order for the parameters to
+    // override the positional information of type variables.
+    varChecker.setArgPosition (ArgReturn);
+    if (! varChecker.visitType (body->returnType ()))
+        return E_TYPE;
 
+    varChecker.setArgPosition (ArgParameter);
     for (TreeNodeStmtDecl& decl : body->params ()) {
-        for (TreeNodeTypeF& t : decl.varType ()->types ()) {
-            TCGUARD (checkTypeVariable (typeVariables, m_st, m_log, t, false));
-        }
+        if (! varChecker.visitType (decl.varType ()))
+            return E_TYPE;
     }
 
     bool expectsSecType = false;
     bool expectsDataType = false;
     bool expectsDimType = false;
 
-    std::vector<TreeNodeIdentifier*> unboundTV;
+    std::vector<TreeNodeIdentifier*> unboundTVs;
     for (const auto& v : typeVariables) {
-        const TemplateTypeVariable& tv = v.second;
+        auto& tv = v.second;
         if (! tv.bound) {
-            unboundTV.push_back (tv.id);
+            unboundTVs.push_back (tv.id);
             continue;
         }
 
-        if (! tv.ret) {
-            continue;
+        if (tv.pos == ArgReturn) {
+            if (tv.kind == TA_SEC) expectsSecType = true;
+            if (tv.kind == TA_DATA) expectsDataType = true;
+            if (tv.kind == TA_DIM) expectsDimType = true;
         }
-
-        if (tv.kind == TA_SEC) expectsSecType = true;
-        if (tv.kind == TA_DATA) expectsDataType = true;
-        if (tv.kind == TA_DIM) expectsDimType = true;
     }
 
-    if (! unboundTV.empty()) {
+    if (! unboundTVs.empty()) {
         bool first = true;
         std::stringstream ss;
-        for (TreeNodeIdentifier* id : unboundTV) {
+        for (TreeNodeIdentifier* id : unboundTVs) {
             if (! first)
                 ss << ",";
             ss << " \'" << id->value () << "\' at " << id->location();
