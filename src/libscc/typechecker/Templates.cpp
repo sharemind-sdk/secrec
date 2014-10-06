@@ -34,19 +34,10 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     TreeNodeIdentifier* id = body->identifier ();
 
     auto varChecker = TemplateVarChecker {m_st, m_log};
-    auto& typeVariables = varChecker.vars ();
     for (auto& quant : templ->quantifiers ()) {
-        const StringRef name = quant.typeVariable ()->value ();
-        auto it = typeVariables.find (name);
-        if (it != typeVariables.end ()) {
-            m_log.fatal ()
-                << "Redeclaration of a type variable \'" << name << '\''
-                << " at " << id->location () << '.';
+        if (! varChecker.visitQuantifier (&quant))
             return E_TYPE;
-        }
 
-        typeVariables.insert (it, std::make_pair (name,
-            TemplateTypeVar (quant.typeVariable (), quantifierKind (quant))));
         TCGUARD (visitQuantifier (&quant));
     }
 
@@ -67,7 +58,7 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     bool expectsDimType = false;
 
     std::vector<TreeNodeIdentifier*> unboundTVs;
-    for (const auto& v : typeVariables) {
+    for (const auto& v : varChecker.vars ()) {
         auto& tv = v.second;
         if (! tv.bound) {
             unboundTVs.push_back (tv.id);

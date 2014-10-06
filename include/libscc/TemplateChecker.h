@@ -94,7 +94,6 @@ public: /* Methods: */
     bool visitTypeArgPublic (TreeNodeTypeArgPublic* t, TypeArgumentKind kind);
 
     const TemplateVarMap& vars () const { return m_vars; }
-    TemplateVarMap& vars () { return m_vars; }
 
     void setArgPosition (TemplateArgPos pos) { m_pos = pos; }
 
