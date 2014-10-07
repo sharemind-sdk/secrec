@@ -283,7 +283,7 @@ private: /* Fields: */
 
 std::string SyscallName::tostring (SecrecDataType dType) {
     SyscallName scname;
-    scname << "miner_" << dType << "_to_string";
+    scname << dType << "_toString";
     return scname.str ();
 }
 
