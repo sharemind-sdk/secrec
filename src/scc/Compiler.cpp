@@ -1014,7 +1014,7 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
     pushString (block, imop.arg1 ());
-    emitSyscall (block, "miner_log_string");
+    emitSyscall (block, "Process_logString");
 }
 
 void Compiler::cgComment(VMBlock & block, const Imop & imop) {
@@ -1026,7 +1026,7 @@ void Compiler::cgComment(VMBlock & block, const Imop & imop) {
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ERROR);
     pushString (block, imop.arg1 ());
-    emitSyscall (block, "miner_log_string");
+    emitSyscall (block, "Process_logString");
     block.push_new () << "except 0xf00";
 }
 
