@@ -262,7 +262,29 @@ TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
         TCGUARD (visitTypeArg (&arg));
         TreeNodeQuantifier& quant = quants[i];
         const TypeArgument& typeArg = arg.typeArgument ();
+        bool mismatch = false;
         if (typeArg.kind () != quantifierKind (quant)) {
+            mismatch = true;
+        }
+        else
+        if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
+            auto kind = static_cast<TreeNodeQuantifierDomain&>(quant).kind ();
+            if (kind != nullptr) {
+                if (typeArg.secType ()->isPublic ()) {
+                    mismatch = true;
+                }
+                else {
+                    auto kindSym = m_st->find<SYM_KIND>(kind->value ());
+                    assert (kindSym != nullptr);
+                    auto privateSecType = static_cast<PrivateSecType*>(typeArg.secType ());
+                    if (privateSecType->securityKind () != kindSym) {
+                        mismatch = true;
+                    }
+                }
+            }
+        }
+
+        if (mismatch) {
             m_log.fatal () << "Mismatching type argument at " << arg.location () << ".";
             m_log.fatal () << "Respective quantifier defined at " << quant.location () << ".";
             return E_TYPE;
