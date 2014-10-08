@@ -59,10 +59,10 @@ enum SecrecTreeNodeType {
 
     NODE_EXPR_ARRAY_CONSTRUCTOR, /* { e1, e2, ..., en }      */
     NODE_EXPR_BINARY_ADD,        /* expr + expr              */
+    NODE_EXPR_BINARY_ASSIGN,     /* expr = expr              */
     NODE_EXPR_BINARY_ASSIGN_ADD, /* expr += expr             */
     NODE_EXPR_BINARY_ASSIGN_AND, /* expr &= expr             */
     NODE_EXPR_BINARY_ASSIGN_DIV, /* expr /= expr             */
-    NODE_EXPR_BINARY_ASSIGN,     /* expr = expr              */
     NODE_EXPR_BINARY_ASSIGN_MOD, /* expr %= expr             */
     NODE_EXPR_BINARY_ASSIGN_MUL, /* expr *= expr             */
     NODE_EXPR_BINARY_ASSIGN_OR,  /* expr |= expr             */
@@ -105,6 +105,7 @@ enum SecrecTreeNodeType {
     NODE_EXPR_SHAPE,             /* shape(expr)              */
     NODE_EXPR_SIZE,              /* size(expr)               */
     NODE_EXPR_STRING_FROM_BYTES, /* __string_from_bytes      */
+    NODE_EXPR_STRLEN,            /* strlen(e)                */
     NODE_EXPR_TERNIF,            /* expr ? expr : expr       */
     NODE_EXPR_TOSTRING,          /* tostring(expr)           */
     NODE_EXPR_TYPE_QUAL,         /* expr :: type             */

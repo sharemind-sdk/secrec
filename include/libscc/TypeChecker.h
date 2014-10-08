@@ -82,13 +82,14 @@ public: /* Methods: */
     Status visitExprPrefix(TreeNodeExprPrefix * root);
     Status visitExprProcCall(TreeNodeExprProcCall * root);
     Status visitExprQualified(TreeNodeExprQualified * e);
-    Status visitExprReshape(TreeNodeExprReshape * root);
     Status visitExprRVariable(TreeNodeExprRVariable * e);
+    Status visitExprReshape(TreeNodeExprReshape * root);
     Status visitExprSelection(TreeNodeExprSelection * e);
     Status visitExprShape(TreeNodeExprShape * root);
     Status visitExprSize(TreeNodeExprSize * root);
-    Status visitExprStringFromBytes(TreeNodeExprStringFromBytes * e);
     Status visitExprString(TreeNodeExprString * e);
+    Status visitExprStringFromBytes(TreeNodeExprStringFromBytes * e);
+    Status visitExprStrlen(TreeNodeExprStrlen* e);
     Status visitExprTernary(TreeNodeExprTernary * e);
     Status visitExprToString(TreeNodeExprToString * root);
     Status visitExprUnary(TreeNodeExprUnary * root);

@@ -35,12 +35,13 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     // Unary operators:
       { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
     , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
-    , { Imop::TOSTRING,   1, 0, 0, 0,UD, 1 }
     , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
     , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
     , { Imop::UINV,       1, 0, 0, 1, 3, 1 }
     , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
     , { Imop::UMINUS,     1, 0, 0, 1, 3, 1 }
+    , { Imop::TOSTRING,   1, 0, 0, 0,UD, 1 }
+    , { Imop::STRLEN,     1, 0, 0, 1,UD, 1 }
     // Binary operators:
     , { Imop::MUL,        1, 0, 0, 1, 4, 1 }
     , { Imop::DIV,        1, 0, 0, 1, 4, 1 }

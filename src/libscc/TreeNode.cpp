@@ -1056,6 +1056,15 @@ TreeNodeSeqView<TreeNodeTypeF> TreeNodeExprQualified::types() const {
 }
 
 /*******************************************************************************
+  TreeNodeExprStrlen
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprStrlen::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (this, 0);
+}
+
+/*******************************************************************************
   TreeNodeExprStringFromBytes
 *******************************************************************************/
 
@@ -1538,6 +1547,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTEXPR(TYPE_QUAL, Qualified);
     SELECTEXPR(ARRAY_CONSTRUCTOR, ArrayConstructor);
     SELECTEXPR(SELECTION, Selection);
+    SELECTEXPR(STRLEN, Strlen);
 
     SELECTEXPR(TERNIF, Ternary);
     SELECTEXPRTYPE(UINV, Unary);

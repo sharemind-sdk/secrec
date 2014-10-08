@@ -1161,8 +1161,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
      */
 
     // r = ALLOC 0 i
-    push_imop(
-            new Imop(e, Imop::ALLOC, resSym, zeroByte, sizeSym));
+    push_imop(new Imop(e, Imop::ALLOC, resSym, zeroByte, sizeSym));
 
     /**
      * Copy the data:
@@ -2214,6 +2213,32 @@ CGBranchResult TreeNodeExprSelection::codeGenBoolWith(CodeGen & cg) {
 
 CGBranchResult CodeGen::cgBoolExprSelection(TreeNodeExprSelection* e) {
     return cgBoolSimple(e);
+}
+
+/*******************************************************************************
+  TreeNodeExprStrlen
+*******************************************************************************/
+
+CGResult TreeNodeExprStrlen::codeGenWith (CodeGen& cg) {
+    return cg.cgExprStrlen(this);
+}
+
+CGResult CodeGen::cgExprStrlen(TreeNodeExprStrlen* e) {
+    if (m_tyChecker->visitExprStrlen (e) != TypeChecker::OK)
+        return CGResult::ERROR_CONTINUE;
+
+    CGResult result;
+    const CGResult & argResult = codeGen(e->expression());
+    append(result, argResult);
+    if (result.isNotOk()) {
+        return result;
+    }
+
+    Symbol* strSym = argResult.symbol();
+    SymbolSymbol* resSym = generateResultSymbol(result, e);
+    emplaceImopAfter (result, e, Imop::STRLEN, resSym, strSym);
+    releaseTemporary(result, strSym);
+    return result;
 }
 
 } // namespace SecreC

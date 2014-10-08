@@ -268,6 +268,7 @@ public: /* Methods: */
     CGResult cgExprSize (TreeNodeExprSize* e);
     CGResult cgExprAssign (TreeNodeExprAssign* e);
     CGResult cgExprSelection (TreeNodeExprSelection* e);
+    CGResult cgExprStrlen (TreeNodeExprStrlen* e);
     /// \}
 
     /// \{

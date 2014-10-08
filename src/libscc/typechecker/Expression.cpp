@@ -1280,4 +1280,27 @@ TypeChecker::Status TypeChecker::visitExprNone (TreeNodeExprNone *e) {
     return E_TYPE;
 }
 
+/*******************************************************************************
+  TreeNodeExprStrlen
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visitExprStrlen(TreeNodeExprStrlen* e) {
+    if (e->haveResultType ())
+        return OK;
+
+    auto subExpr = e->expression ();
+    auto stringType = TypeBasic::get(getContext(), DATATYPE_STRING);
+    subExpr->setContext(stringType);
+    TCGUARD (visitExpr(subExpr));
+    if (subExpr->resultType () != stringType) {
+        m_log.fatalInProc (e) << "Expecting string as argument to 'strlen' got "
+                              << *subExpr->resultType () << " at " << subExpr->location () << ".";
+        return E_TYPE;
+    }
+
+    e->setResultType (TypeBasic::getIndexType (getContext ()));
+    return OK;
+}
+
+
 } // namespace SecreC

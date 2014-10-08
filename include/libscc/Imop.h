@@ -51,12 +51,13 @@ public: /* Types: */
         //-------------
         ASSIGN = 0, //   d = arg1 {arg2}
         CAST,       //   d = arg1 {arg2}
-        TOSTRING,   //   d = toString arg1
         CLASSIFY,   //   d = CLASSIFY(arg1 {, arg2})
         DECLASSIFY, //   d = DECLASSIFY(arg1 {, arg2})
         UINV,       //   d = ~arg1 {arg2}
         UNEG,       //   d = !arg1 {arg2}
         UMINUS,     //   d = -arg1 {arg2}
+        TOSTRING,   //   d = toString arg1
+        STRLEN,     //   d = STRLEN s
         MUL,        //   d = arg1 *  arg2 {arg3}
         DIV,        //   d = arg1 /  arg2 {arg3}
         MOD,        //   d = arg1 %  arg2 {arg3}

@@ -1654,9 +1654,30 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeExprStrlen
+******************************************************************/
+
+// TODO: make this a builtin function
+class TreeNodeExprStrlen : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprStrlen(const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_STRLEN, loc) {}
+
+    CGResult codeGenWith (CodeGen& cg) override final;
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    TreeNode* cloneV () const override final {
+        return new TreeNodeExprStrlen (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeExprStringFromBytes
 ******************************************************************/
 
+// TODO: make this a builtin function
 class TreeNodeExprStringFromBytes : public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprStringFromBytes(const Location & loc)
@@ -1677,6 +1698,7 @@ protected:
   TreeNodeExprBytesFromString
 ******************************************************************/
 
+// TODO: make this a builtin function
 class TreeNodeExprBytesFromString : public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprBytesFromString(const Location & loc)

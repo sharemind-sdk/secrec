@@ -113,7 +113,7 @@
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
-%token SYSCALL_RETURN TYPE STRUCT
+%token SYSCALL_RETURN TYPE STRUCT STRLEN
 
  /* Identifiers: */
 %token <str> IDENTIFIER
@@ -1420,6 +1420,11 @@ postfix_expression
  | TOSTRING '(' expression ')'
    {
      $$ = treenode_init(NODE_EXPR_TOSTRING, &@$);
+     treenode_appendChild($$, $3);
+   }
+ | STRLEN '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_STRLEN, &@$);
      treenode_appendChild($$, $3);
    }
  | STRINGFROMBYTES '(' expression ')'

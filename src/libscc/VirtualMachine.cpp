@@ -435,6 +435,10 @@ MKCALLBACK(DOMAINID, 1, 0, 0, 0,
     assignValue (dest, c);
 )
 
+MKCALLBACK(STRLEN, 1, 1, 0, 0,
+    assignValue (dest, arg1.un_str_val->size ());
+)
+
 MKCALLBACK(PUSH, 0, 1, 0, 0,
     m_stack.push(arg1);
 )
@@ -670,6 +674,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
     case Imop::TOSTRING:   SET_SPECIALIZE_CALLBACK(TOSTRING,SWITCH_ARITH); break;
+    case Imop::STRLEN:     SET_SIMPLE_CALLBACK(STRLEN); break;
     default:
         assert (false && "Reached unsupported instruction.");
         break;
