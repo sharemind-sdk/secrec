@@ -436,7 +436,7 @@ MKCALLBACK(DOMAINID, 1, 0, 0, 0,
 )
 
 MKCALLBACK(STRLEN, 1, 1, 0, 0,
-    assignValue (dest, arg1.un_str_val->size ());
+    dest.un_uint_val = arg1.un_str_val->size ();
 )
 
 MKCALLBACK(PUSH, 0, 1, 0, 0,
