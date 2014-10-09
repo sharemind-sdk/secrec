@@ -559,6 +559,22 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     }
 }
 
+void Compiler::cgStrlen (VMBlock& block, const Imop& imop) {
+    auto str = imop.arg1 ();
+    auto dest = find (imop.dest ());
+    if (str->isConstant ()) {
+        assert (dynamic_cast<const ConstantString*>(str) != NULL);
+        auto cstr = static_cast<const ConstantString*>(str);
+        auto len = m_st.getImm (cstr->value ().size ());
+        block.push_new () << "mov" << len << dest;
+    }
+    else {
+        auto arg = find (str);
+        block.push_new () << "getmemsize" << arg << dest;
+        block.push_new () << "udec" << VM_UINT64 << dest;
+    }
+}
+
 void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::RELEASE);
     if (isPrivate (imop)) {
@@ -1051,6 +1067,9 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
     switch (imop.type ()) {
     case Imop::TOSTRING:
         cgToString (block, imop);
+        return;
+    case Imop::STRLEN:
+        cgStrlen (block, imop);
         return;
     case Imop::CLASSIFY:
         cgClassify (block, imop);

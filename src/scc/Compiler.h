@@ -81,6 +81,7 @@ private:
     void cgPrint (VMBlock& block, const SecreC::Imop& imop);
     void cgComment(VMBlock & block, const SecreC::Imop & imop);
     void cgToString (VMBlock& block, const SecreC::Imop& imop);
+    void cgStrlen (VMBlock& block, const SecreC::Imop& imop);
 
 
     /**
