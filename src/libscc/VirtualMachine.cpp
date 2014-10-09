@@ -29,20 +29,20 @@ namespace /* anonymous */ {
 
 /// Primitive values of the VM.
 union Value {
-    double              un_float64_val;
-    float               un_float32_val;
-    uint64_t            un_uint_val;
-    uint32_t            un_uint32_val;
-    uint16_t            un_uint16_val;
-    uint8_t             un_uint8_val;
-    int64_t             un_int_val;
-    int32_t             un_int32_val;
-    int16_t             un_int16_val;
-    int8_t              un_int8_val;
-    bool                un_bool_val;
+    double        un_float64_val;
+    float         un_float32_val;
+    uint64_t      un_uint_val;
+    uint32_t      un_uint32_val;
+    uint16_t      un_uint16_val;
+    uint8_t       un_uint8_val;
+    int64_t       un_int_val;
+    int32_t       un_int32_val;
+    int16_t       un_int16_val;
+    int8_t        un_int8_val;
+    bool          un_bool_val;
 
-    Value*              un_ptr;
-    const std::string*  un_str_val;
+    Value*        un_ptr;
+    std::string*  un_str_val;
 };
 
 template <SecrecDataType ty> struct secrec_type_traits;
@@ -140,7 +140,7 @@ private:
 
     void increase_size () {
         m_size = ((m_size + 1) * 3) / 2;
-        TRACE("RESIZE STACK TO %u\n", m_size);
+        TRACE("RESIZE STACK TO %zu\n", m_size);
         Value* newBPtr = (Value*) realloc (m_bptr, m_size * sizeof (Value));
         if (newBPtr != nullptr) {
             m_bptr = newBPtr;
@@ -492,9 +492,7 @@ Value loadArray (Value& arg, uint64_t index) { return arg.un_ptr[index]; }
 template <>
 Value loadArray<DATATYPE_STRING>(Value& arg, uint64_t index) {
     Value out;
-    assert (index <= arg.un_str_val->size ());
-    const char* bytes = arg.un_str_val->c_str ();
-    out.un_uint8_val = bytes[index];
+    out.un_uint8_val = arg.un_str_val->at (index);
     return out;
 }
 
@@ -502,8 +500,18 @@ MKCALLBACK(LOAD, 0, 1, 1, 0,
     storeSym (ip->args[0], loadArray<ty>(arg1, arg2.un_uint_val));
 )
 
+template <SecrecDataType ty>
+void storeArray (Value& dest, uint64_t i, Value v) {
+    dest.un_ptr[i] = v;
+}
+
+template <>
+void storeArray<DATATYPE_STRING>(Value& dest, uint64_t i, Value v) {
+    dest.un_str_val->at (i) = v.un_uint8_val;
+}
+
 MKCALLBACK(STORE, 1, 1, 1, 0,
-    dest.un_ptr[arg1.un_uint_val] = arg2;
+    storeArray<ty>(dest, arg1.un_uint_val, arg2);
 )
 
 MKCALLBACK(NOP, 0, 0, 0, 0, { })
@@ -625,6 +633,12 @@ CallbackTy getCallback (const Imop& imop) {
         break;
     }
 
+    if (imop.type () == Imop::STORE) {
+        DataType* dataType = imop.dest()->secrecType()->secrecDataType();
+        assert (dataType != nullptr && dataType->isPrimitive ());
+        ty = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    }
+
     if (imop.type () == Imop::ASSIGN) {
         if (! matchTypes (imop.dest ()->secrecType (), imop.arg1 ()->secrecType ())) {
             std::cerr << imop << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
@@ -668,7 +682,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::ALLOC:      SET_SIMPLE_CALLBACK(ALLOC); break;
     case Imop::COPY:       SET_SIMPLE_CALLBACK(COPY); break;
     case Imop::RELEASE:    SET_SIMPLE_CALLBACK(RELEASE); break;
-    case Imop::STORE:      SET_SIMPLE_CALLBACK(STORE); break;
+    case Imop::STORE:      SET_SPECIALIZE_CALLBACK(STORE,SWITCH_ANY); break;
     case Imop::LOAD:       SET_SPECIALIZE_CALLBACK(LOAD,SWITCH_ANY); break;
     case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;

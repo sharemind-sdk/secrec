@@ -412,6 +412,9 @@ void Imop::print(std::ostream & os) const {
             os << dname << " = ";
         os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
         break;
+    case STRLEN:
+        os << dname << " = STRLEN " << a1name;
+        break;
     case PUSH:
         os << "__PUSH " << a1name;
         break;

@@ -1126,6 +1126,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     }
 
     Symbol * sizeSym = resSym->getDim(0);
+    Symbol * indexSym = m_st->appendTemporary(TypeBasic::getIndexType (cxt));
     Symbol * strSym = argResult.symbol();
     Symbol * charSym = m_st->appendTemporary(TypeBasic::get(cxt, DATATYPE_UINT8));
     Symbol * tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType(cxt));
@@ -1135,62 +1136,42 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
      * Compute length of the array:
      */
 
-    auto loadChar = new Imop(e, Imop::LOAD, charSym, strSym, sizeSym);
-    auto inc = new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1));
-
-    // i = 0
-    pushImopAfter(result, new Imop(e, Imop::ASSIGN, sizeSym, indexConstant(0)));
-
-    // jump L1
-    push_imop(new Imop(e, Imop::JUMP, m_st->label(loadChar)));
-
-    // L2: i = i + 1
-    push_imop(inc);
-
-    // L1: c = str[i]
-    push_imop(loadChar);
-
-    // b = (c == 0)
-    push_imop(new Imop(e, Imop::EQ, tempBool, charSym, zeroByte));
-
-    // if !b jump L2
-    push_imop(new Imop(e, Imop::JF, m_st->label(inc), tempBool));
-
-    /**
-     * Allocate the array:
-     */
+    // size = strlen (str)
+    emplaceImopAfter(result, e, Imop::STRLEN, sizeSym, strSym);
 
     // r = ALLOC 0 i
-    push_imop(new Imop(e, Imop::ALLOC, resSym, zeroByte, sizeSym));
+    emplaceImop(e, Imop::ALLOC, resSym, zeroByte, sizeSym);
 
     /**
      * Copy the data:
      */
 
-    loadChar = new Imop(e, Imop::LOAD, charSym, strSym, sizeSym);
-    inc = new Imop(e, Imop::ADD, sizeSym, sizeSym, indexConstant(1));
-
     // i = 0
-    push_imop(new Imop(e, Imop::ASSIGN, sizeSym, indexConstant(0)));
+    emplaceImop(e, Imop::ASSIGN, indexSym, indexConstant(0));
 
-    // jump L1
-    push_imop(new Imop(e, Imop::JUMP, m_st->label(loadChar)));
+    // BACK:
+    // t = i < size
+    auto cmp = new Imop (e, Imop::LT, tempBool, indexSym, sizeSym);
+    push_imop (cmp);
 
-    // L2: i = i + 1
-    push_imop(inc);
+    // JF OUT t
+    auto jmp = new Imop (e, Imop::JF, nullptr, tempBool);
+    result.addToNextList (jmp);
+    push_imop (jmp);
 
     // L1: c = str[i]
-    push_imop(loadChar);
+    emplaceImop(e, Imop::LOAD, charSym, strSym, indexSym);
 
     // r[i] = c
-    push_imop(new Imop(e, Imop::STORE, resSym, sizeSym, charSym));
+    emplaceImop(e, Imop::STORE, resSym, indexSym, charSym);
 
-    // b = (c == 0)
-    push_imop(new Imop(e, Imop::EQ, tempBool, charSym, zeroByte));
+    // i = i + 1
+    emplaceImop(e, Imop::ADD, indexSym, indexSym, indexConstant(1));
 
-    // if !b jump L2
-    push_imop(new Imop(e, Imop::JF, m_st->label(inc), tempBool));
+    // JUMP BACK
+    emplaceImop(e, Imop::JUMP, m_st->label (cmp));
 
+    // OUT:
     codeGenSize(result);
     releaseTemporary(result, strSym);
     return result;
