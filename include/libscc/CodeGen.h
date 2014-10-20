@@ -363,6 +363,7 @@ private:
 
     /// Copy shape from another symbol
     void copyShapeFrom (CGResult& result, Symbol* sym);
+    CGResult copyShape (Symbol* dest, Symbol* sym);
 
     LoopInfo prepareLoopInfo (const SubscriptInfo& subscript);
 

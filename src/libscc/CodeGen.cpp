@@ -304,24 +304,28 @@ void CodeGen::codeGenSize(CGResult & result) {
     codeGenSize (result, result.symbol ());
 }
 
+CGResult CodeGen::copyShape (Symbol* dest, Symbol* sym) {
+    assert(dynamic_cast<SymbolSymbol *>(dest) != nullptr);
+    assert (dynamic_cast<SymbolSymbol *>(sym) != nullptr);
+    SymbolSymbol* d = static_cast<SymbolSymbol *>(dest);
+    SymbolSymbol* s = static_cast<SymbolSymbol *>(sym);
+    dim_iterator dj = dim_begin (d);
+
+    CGResult result;
+    for (dim_iterator di(dim_begin(s)); di != dim_end(s); ++ di, ++ dj) {
+        assert(dj != dim_end(d));
+        emplaceImopAfter (result, m_node, Imop::ASSIGN, *dj, *di);
+    }
+
+    if (s->getSizeSym() != nullptr) {
+        emplaceImopAfter (result, m_node, Imop::ASSIGN, d->getSizeSym(), s->getSizeSym());
+    }
+
+    return result;
+}
+
 void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
-    assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != nullptr);
-    assert(dynamic_cast<SymbolSymbol *>(tmp) != nullptr);
-    SymbolSymbol * resSym = static_cast<SymbolSymbol *>(result.symbol());
-    SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
-    dim_iterator dj = dim_begin(resSym);
-    Imop * i = nullptr;
-
-    for (dim_iterator di(dim_begin(sym)); di != dim_end(sym); ++ di, ++ dj) {
-        assert(dj != dim_end(resSym));
-        i = new Imop(m_node, Imop::ASSIGN, *dj, *di);
-        pushImopAfter(result, i);
-    }
-
-    if (sym->getSizeSym() != nullptr) {
-        i = new Imop(m_node, Imop::ASSIGN, resSym->getSizeSym(), sym->getSizeSym());
-        pushImopAfter(result, i);
-    }
+    append (result, copyShape (result.symbol (), tmp));
 }
 
 LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
