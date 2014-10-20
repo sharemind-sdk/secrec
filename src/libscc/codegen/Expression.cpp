@@ -1362,11 +1362,15 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         if (!e->resultType()->isVoid()) {
             if (!eTrueResult.symbol()->secrecType()->isScalar()) {
                 SymbolSymbol * resultSymbol = static_cast<SymbolSymbol *>(result.symbol());
-                resultSymbol->inheritShape(eTrueResult.symbol());
+                append (eTrueResult, copyShape (resultSymbol, eTrueResult.symbol ()));
+                if (eTrueResult.isNotOk ())
+                    return result;
+
                 auto i = new Imop(e, Imop::ALLOC, resultSymbol,
                         defaultConstant(getContext(),
                             eTrueResult.symbol()->secrecType()->secrecDataType()),
                         resultSymbol->getSizeSym());
+
                 pushImopAfter(eTrueResult, i);
             }
 
@@ -1392,7 +1396,10 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         if (!e->resultType()->isVoid()) {
             if (!eFalseResult.symbol()->secrecType()->isScalar()) {
                 SymbolSymbol * resultSymbol = static_cast<SymbolSymbol *>(result.symbol());
-                resultSymbol->inheritShape(eFalseResult.symbol());
+                append (eFalseResult, copyShape (resultSymbol, eFalseResult.symbol ()));
+                if (eFalseResult.isNotOk ())
+                    return result;
+
                 auto i = new Imop(e, Imop::ALLOC, resultSymbol,
                         defaultConstant(getContext(),
                             eFalseResult.symbol()->secrecType()->secrecDataType()),
@@ -1448,19 +1455,10 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         for (; di != de; ++ di, ++ dj, ++ dk) {
             SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
 
-            Imop * i = nullptr;
-
-            i = new Imop(e, Imop::NE, temp_bool, *di, *dj);
-            pushImopAfter(result, i);
-
-            i = new Imop(e, Imop::JT, errLabel, temp_bool);
-            push_imop(i);
-
-            i = new Imop(e, Imop::NE, temp_bool, *dj, *dk);
-            push_imop(i);
-
-            i = new Imop(e, Imop::JT, errLabel, temp_bool);
-            push_imop(i);
+            emplaceImopAfter (result, e, Imop::NE, temp_bool, *di, *dj);
+            emplaceImop (e, Imop::JT, errLabel, temp_bool);
+            emplaceImop (e, Imop::NE, temp_bool, *dj, *dk);
+            emplaceImop (e, Imop::JT, errLabel, temp_bool);
         }
 
         result.patchNextList(m_st->label(jmp));
