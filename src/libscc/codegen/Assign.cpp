@@ -1,6 +1,7 @@
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "Constant.h"
+#include "DataType.h"
 #include "Misc.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
@@ -46,6 +47,44 @@ CGResult TreeNodeExprAssign::codeGenWith (CodeGen &cg) {
     return cg.cgExprAssign (this);
 }
 
+CGResult CodeGen::cgAssign (SymbolSymbol* dest, Symbol* src) {
+    assert (dest != nullptr);
+    assert (src != nullptr);
+
+    CGResult result;
+    result.setResult (dest);
+
+    if (dest->secrecType ()->secrecDataType ()->isComposite ()) {
+        const auto& destFields = dest->fields ();
+        const auto& srcFields = static_cast<SymbolSymbol*>(src)->fields ();
+        assert (destFields.size () == srcFields.size ());
+        for (size_t i = 0; i < destFields.size (); ++ i) {
+            append (result, cgAssign (destFields[i], srcFields[i]));
+            if (result.isNotOk ())
+                return result;
+        }
+    }
+    else {
+        copyShapeFrom (result, src);
+        if (result.isNotOk()) {
+            return result;
+        }
+
+        if (dest->isArray()) {
+            emplaceImopAfter (result, m_node, Imop::RELEASE, nullptr, dest);
+
+            if (src->secrecType ()->isScalar ())
+                emplaceImop (m_node, Imop::ALLOC, dest, src, dest->getSizeSym());
+            else
+                emplaceImop (m_node, Imop::COPY, dest, src, dest->getSizeSym());
+        } else {
+            emplaceImopAfter (result, m_node, Imop::ASSIGN, dest, src);
+        }
+    }
+
+    return result;
+}
+
 CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
     // Type check:
@@ -77,6 +116,15 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
     TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
     TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+
+    // struct to struct assignment
+    if (destSym->secrecType ()->secrecDataType ()->isComposite ()) {
+        append (result, cgAssign (destSym, arg2Result.symbol ()));
+        if (result.isNotOk ())
+            return result;
+
+        return result;
+    }
 
     // x[e1,...,ek] = e
     if (isIndexed) {
