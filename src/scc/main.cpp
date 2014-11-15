@@ -87,8 +87,7 @@ public:
     }
 
     ~ScopedAsmLinkingUnits () {
-        SharemindAssemblerLinkingUnits_destroy_with(this,
-            &SharemindAssemblerLinkingUnit_destroy);
+        SharemindAssemblerLinkingUnits_destroy(this);
     }
 };
 
