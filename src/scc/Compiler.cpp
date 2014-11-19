@@ -157,8 +157,8 @@ void syscallMangleImopType (std::ostream& os, Imop::Type iType) {
     case Imop::UNEG:       os << "not";         break;
     case Imop::UMINUS:     os << "neg";         break;
     case Imop::XOR:        os << "xor";         break;
-    case Imop::SHL:        os << "shl";         break;
-    case Imop::SHR:        os << "shr";         break;
+    case Imop::SHL:        os << "shift_left";  break;
+    case Imop::SHR:        os << "shift_right"; break;
     default:                                    break;
     }
 }
