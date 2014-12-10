@@ -39,16 +39,20 @@ void ModuleInfo::setCodeGenState (const CodeGenState& state) {
 bool ModuleInfo::read() {
     using namespace boost;
     assert (m_body == nullptr);
-    FILE* f = fopen (m_location.path ().c_str (), "r");
-    if (f == nullptr)
+    const char* fname = m_location.path ().c_str ();
+    FILE* f = fopen (fname, "r");
+    if (f == nullptr) {
+        std::cerr << "Was not able to open file \"" << fname << "\"." << std::endl;
         return false;
+    }
 
     ContextImpl* pImpl = m_cxt.pImpl ();
     TreeNodeModule* treeNode = nullptr;
     int parseResult = sccparse_file(&pImpl->stringTable (), m_location.path().c_str (), f, &treeNode);
     fclose (f);
-    if (parseResult != 0 || treeNode == nullptr)
+    if (parseResult != 0 || treeNode == nullptr) {
         return false;
+    }
 
     m_body = treeNode;
     return true;

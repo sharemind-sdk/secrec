@@ -42,16 +42,28 @@ bool ModuleMap::addSearchPath (const std::string& pathName) {
     using namespace boost::filesystem;
 
     const path p (pathName);
-    if (! exists (p)) return true;
-    if (! is_directory (p)) return true;
-    const auto& range = iterator_range<directory_iterator>(directory_iterator (p), directory_iterator ());
-    for (const directory_entry& f : range) {
-        if (! is_regular_file (f)) continue;
-        if (f.path ().extension () != ".sc") continue;
-        std::unique_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
-        if (! addModule (f.path ().stem ().string (), std::move(newModule))) {
+
+    try  {
+        if (! exists (p))
             return false;
+
+        if (! is_directory (p))
+            return false;
+
+        for (auto f : make_iterator_range (directory_iterator (p), directory_iterator ())) {
+            if (! is_regular_file (f))
+                continue;
+
+            if (f.path ().extension () != ".sc")
+                continue;
+
+            std::unique_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
+            if (! addModule (f.path ().stem ().string (), std::move (newModule)))
+                return false;
         }
+    }
+    catch (...) {
+        return false;
     }
 
     return true;
