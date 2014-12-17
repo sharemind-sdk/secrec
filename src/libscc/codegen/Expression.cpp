@@ -609,9 +609,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     TreeNodeExpr * eArg2 = e->rightExpression();
 
     if (e->isOverloaded()) {
-        std::vector<TreeNodeExpr * > params;
-        params.push_back(eArg1);
-        params.push_back(eArg2);
+        const std::vector<TreeNodeExpr * > params {eArg1, eArg2};
         return cgProcCall(e->procSymbol(), e->resultType(), params);
     }
 
