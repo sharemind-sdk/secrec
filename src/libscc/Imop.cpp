@@ -23,6 +23,7 @@ namespace /* anonymous*/ {
 struct ImopInfoBits {
     unsigned  type;              ///< Opcode
     bool      isExpr : 1;        ///< Expression (why do we even need this?)
+    bool      defIfPrivate : 1;  ///< Is destination DEF if it's private.
     bool      isJump : 1;        ///< Instruction is procedure-local jump
     bool      isTerminator : 1;  ///< Instruction terminates a basic block
     bool      writesDest : 1;    ///< Instruction may write to destination operand
@@ -31,62 +32,63 @@ struct ImopInfoBits {
 };
 
 ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
-    //{ Imop::Type,       E, J, T, W, V, U }
+    //{ Imop::Type,       E, D, J, T, W, V, U }
     // Unary operators:
-      { Imop::ASSIGN,     1, 0, 0, 1, 3, 1 }
-    , { Imop::CAST,       1, 0, 0, 1, 3, 1 }
-    , { Imop::CLASSIFY,   1, 0, 0, 1, 3, 1 }
-    , { Imop::DECLASSIFY, 1, 0, 0, 1, 3, 1 }
-    , { Imop::UINV,       1, 0, 0, 1, 3, 1 }
-    , { Imop::UNEG,       1, 0, 0, 1, 3, 1 }
-    , { Imop::UMINUS,     1, 0, 0, 1, 3, 1 }
-    , { Imop::TOSTRING,   1, 0, 0, 0,UD, 1 }
-    , { Imop::STRLEN,     1, 0, 0, 1,UD, 1 }
+      { Imop::DECLARE,    1, 1, 0, 0, 1,UD, 1 }
+    , { Imop::ASSIGN,     1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::CAST,       1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::CLASSIFY,   1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::DECLASSIFY, 1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::UINV,       1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::UNEG,       1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::UMINUS,     1, 0, 0, 0, 1, 3, 1 }
+    , { Imop::TOSTRING,   1, 0, 0, 0, 0,UD, 1 }
+    , { Imop::STRLEN,     1, 0, 0, 0, 1,UD, 1 }
     // Binary operators:
-    , { Imop::MUL,        1, 0, 0, 1, 4, 1 }
-    , { Imop::DIV,        1, 0, 0, 1, 4, 1 }
-    , { Imop::MOD,        1, 0, 0, 1, 4, 1 }
-    , { Imop::ADD,        1, 0, 0, 1, 4, 1 }
-    , { Imop::SUB,        1, 0, 0, 1, 4, 1 }
-    , { Imop::EQ,         1, 0, 0, 1, 4, 1 }
-    , { Imop::NE,         1, 0, 0, 1, 4, 1 }
-    , { Imop::LE,         1, 0, 0, 1, 4, 1 }
-    , { Imop::LT,         1, 0, 0, 1, 4, 1 }
-    , { Imop::GE,         1, 0, 0, 1, 4, 1 }
-    , { Imop::GT,         1, 0, 0, 1, 4, 1 }
-    , { Imop::LAND,       1, 0, 0, 1, 4, 1 }
-    , { Imop::LOR,        1, 0, 0, 1, 4, 1 }
-    , { Imop::BAND,       1, 0, 0, 1, 4, 1 }
-    , { Imop::BOR,        1, 0, 0, 1, 4, 1 }
-    , { Imop::XOR,        1, 0, 0, 1, 4, 1 }
-    , { Imop::SHL,        1, 0, 0, 1, 4, 1 }
-    , { Imop::SHR,        1, 0, 0, 1, 4, 1 }
+    , { Imop::MUL,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::DIV,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::MOD,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::ADD,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::SUB,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::EQ,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::NE,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::LE,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::LT,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::GE,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::GT,         1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::LAND,       1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::LOR,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::BAND,       1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::BOR,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::XOR,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::SHL,        1, 0, 0, 0, 1, 4, 1 }
+    , { Imop::SHR,        1, 0, 0, 0, 1, 4, 1 }
     // Array expressions:
-    , { Imop::STORE,      0, 0, 0, 1,UD, 0 }
-    , { Imop::LOAD,       1, 0, 0, 0,UD, 1 }
-    , { Imop::ALLOC,      1, 0, 0, 0,UD, 1 }
-    , { Imop::COPY,       1, 0, 0, 0,UD, 1 }
-    , { Imop::RELEASE,    0, 0, 0, 0,UD, 1 }
+    , { Imop::STORE,      0, 0, 0, 0, 1,UD, 0 }
+    , { Imop::LOAD,       1, 0, 0, 0, 0,UD, 1 }
+    , { Imop::ALLOC,      1, 1, 0, 0, 0,UD, 1 }
+    , { Imop::COPY,       1, 1, 0, 0, 0,UD, 1 }
+    , { Imop::RELEASE,    0, 0, 0, 0, 0,UD, 1 }
     // Other expressions:
-    , { Imop::PARAM,      1, 0, 0, 0,UD, 1 }
-    , { Imop::DOMAINID,   1, 0, 0, 0,UD,UD }
-    , { Imop::CALL,       1, 0, 1, 0,UD, 1 }
+    , { Imop::PARAM,      1, 1, 0, 0, 0,UD, 1 }
+    , { Imop::DOMAINID,   1, 0, 0, 0, 0,UD,UD }
+    , { Imop::CALL,       1, 1, 0, 1, 0,UD, 1 }
     // Jumps:
-    , { Imop::JUMP,       0, 1, 1, 0,UD, 1 }
-    , { Imop::JT,         0, 1, 1, 0,UD, 1 }
-    , { Imop::JF,         0, 1, 1, 0,UD, 1 }
+    , { Imop::JUMP,       0, 0, 1, 1, 0,UD, 1 }
+    , { Imop::JT,         0, 0, 1, 1, 0,UD, 1 }
+    , { Imop::JF,         0, 0, 1, 1, 0,UD, 1 }
     // Terminators:
-    , { Imop::ERROR,      0, 0, 1, 0,UD,UD }
-    , { Imop::RETURN,     0, 0, 1, 0,UD, 1 }
-    , { Imop::END,        0, 0, 1, 0,UD,UD }
+    , { Imop::ERROR,      0, 0, 0, 1, 0,UD,UD }
+    , { Imop::RETURN,     0, 0, 0, 1, 0,UD, 1 }
+    , { Imop::END,        0, 0, 0, 1, 0,UD,UD }
     // Other:
-    , { Imop::COMMENT,    0, 0, 0, 0,UD,UD }
-    , { Imop::PRINT,      0, 0, 0, 0,UD,UD }
-    , { Imop::SYSCALL,    1, 0, 0, 0,UD, 1 }
-    , { Imop::PUSH,       0, 0, 0, 0,UD, 1 }
-    , { Imop::PUSHREF,    0, 0, 0, 0,UD, 1 }
-    , { Imop::PUSHCREF,   0, 0, 0, 0,UD, 1 }
-    , { Imop::RETCLEAN,   0, 0, 0, 0,UD,UD }
+    , { Imop::COMMENT,    0, 0, 0, 0, 0,UD,UD }
+    , { Imop::PRINT,      0, 0, 0, 0, 0,UD,UD }
+    , { Imop::SYSCALL,    1, 0, 0, 0, 0,UD, 1 } // DEF if private?
+    , { Imop::PUSH,       0, 0, 0, 0, 0,UD, 1 }
+    , { Imop::PUSHREF,    0, 0, 0, 0, 0,UD, 1 }
+    , { Imop::PUSHCREF,   0, 0, 0, 0, 0,UD, 1 }
+    , { Imop::RETCLEAN,   0, 0, 0, 0, 0,UD,UD }
 };
 
 const ImopInfoBits& getImopInfoBits (Imop::Type type) {
@@ -167,8 +169,17 @@ void printUnaryArith (std::ostream& os, const Imop& imop, const char* opname) {
         os << " (" << a2name << ")";
 }
 
-} // anonymous namespace
+// Has private destination that needs to be skipped as DEF.
+bool hasUSEPrivateDest (const Imop& imop) {
+    return
+        imop.isExpr () &&
+        imop.nArgs () > 0 &&
+        imop.dest () &&
+        ! getImopInfoBits (imop.type ()).defIfPrivate &&
+        imop.dest ()->secrecType ()->secrecSecType ()->isPrivate ();
+}
 
+} // anonymous namespace
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
     return new Imop (node, Imop::ERROR, (Symbol*) nullptr, msg);
@@ -255,9 +266,14 @@ bool Imop::writesDest () const {
 
 Imop::OperandConstRange Imop::useRange () const {
     size_t off = 0;
+
     if (! isVectorized ()) {
         off = std::min (static_cast<unsigned>(m_args.size ()),
                         getImopInfoBits (m_type).useBegin);
+    }
+
+    if (hasUSEPrivateDest (*this)) {
+        off = 0;
     }
 
     const OperandConstIterator i = m_args.begin () + off;
@@ -270,11 +286,6 @@ Imop::OperandConstRange Imop::defRange () const {
     auto i = operandsBegin ();
     const OperandConstIterator e = operandsEnd ();
 
-    // vectorised operations don't DEF any operands.
-    if (isVectorized () || ! getImopInfoBits (m_type).isExpr) {
-        return OperandConstRange (e, e);
-    }
-
     if (type () == SYSCALL) {
         return dest () ? OperandConstRange (i, i + 1) : OperandConstRange (e, e);
     }
@@ -283,6 +294,15 @@ Imop::OperandConstRange Imop::defRange () const {
         for  (++ i ; *i != nullptr && i != e; ++ i);
         if (i != m_args.end () && *i == nullptr) ++ i;
         return OperandConstRange (i, e);
+    }
+
+    if (hasUSEPrivateDest (*this)) {
+        return OperandConstRange (e, e);
+    }
+
+    // vectorised operations don't DEF any operands.
+    if (isVectorized () || ! getImopInfoBits (m_type).isExpr) {
+        return OperandConstRange (e, e);
     }
 
     return OperandConstRange (i, i + 1);
@@ -305,6 +325,9 @@ SymbolLabel* Imop::jumpDest() const {
 void Imop::print(std::ostream & os) const {
     const Imop& imop = *this;
     switch (m_type) {
+    case DECLARE:
+        os << dname << " = UNDEF;";
+        break;
     case ASSIGN:       /*   d = arg1;                        */
         os << dname << " <- " << a1name;
         if (nArgs() == 3) os <<  " (" << a2name << ")";

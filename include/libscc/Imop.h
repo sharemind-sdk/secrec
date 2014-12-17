@@ -49,7 +49,8 @@ public: /* Types: */
         //-------------
         // Expressions:
         //-------------
-        ASSIGN = 0, //   d = arg1 {arg2}
+        DECLARE = 0,//   d = UNDEF (marks the start of lifetime)
+        ASSIGN,     //   d = arg1 {arg2}
         CAST,       //   d = arg1 {arg2}
         CLASSIFY,   //   d = CLASSIFY(arg1 {, arg2})
         DECLASSIFY, //   d = DECLASSIFY(arg1 {, arg2})
@@ -84,7 +85,7 @@ public: /* Types: */
         LOAD,       //    d = arg1[arg2];
         ALLOC,      //    d = ALLOC (arg1, arg2)
         COPY,       //    d = COPY arg1 arg2
-        RELEASE,    //    RELEASE arg1
+        RELEASE,    //    RELEASE arg1 (marks the end of lifetime)
 
         //-------------------
         // Other expressions:

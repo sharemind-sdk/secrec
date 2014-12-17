@@ -143,7 +143,6 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     CGResult result;
     bool isScalar = e->resultType()->isScalar();
-    bool isPrivate = e->resultType()->secrecSecType()->isPrivate();
 
     SymbolSymbol * resSym = generateResultSymbol(result, e);
 
@@ -172,8 +171,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
         unsigned count = 0;
         for (unsigned k : slices) {
             Symbol * sym = resSym->getDim(count);
-            auto i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
-            pushImopAfter(result, i);
+            emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
             ++ count;
         }
 
@@ -182,16 +180,13 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // r = ALLOC def size (r = def)
     {
-        Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-        Imop * initImop = nullptr;
         if (!isScalar) {
-            initImop = new Imop(e, Imop::ALLOC, resSym, def, resSym->getSizeSym());
+            Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+            emplaceImopAfter(result, e, Imop::ALLOC, resSym, def, resSym->getSizeSym());
         }
         else {
-            initImop = new Imop(e, isPrivate ? Imop::CLASSIFY : Imop::ASSIGN, resSym, def);
+            emplaceImopAfter(result, e, Imop::DECLARE, resSym);
         }
-
-        pushImopAfter(result, initImop);
     }
 
     // 4. initialze required temporary symbols
@@ -222,51 +217,41 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     {
         // old_ffset = 0
         pushComment("Compute offset:");
-        auto i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
-        push_imop(i);
+        emplaceImop(e, Imop::ASSIGN, offset, indexConstant(0));
 
         auto itIt = loopInfo.begin();
         auto itEnd = loopInfo.end();
         for (unsigned k = 0; itIt != itEnd; ++ k, ++ itIt) {
             // tmp_result2 = s[k] * idx[k]
-            i = new Imop(e, Imop::MUL, tmp_result2, strides[0].at(k), *itIt);
-            push_imop(i);
+            emplaceImop(e, Imop::MUL, tmp_result2, strides[0].at(k), *itIt);
 
             // old_offset = old_offset + tmp_result2
-            i = new Imop(e, Imop::ADD, offset, offset, tmp_result2);
-            push_imop(i);
+            emplaceImop(e, Imop::ADD, offset, offset, tmp_result2);
         }
     }
 
     // 9. load and store
     {
         pushComment("Load and store:");
+        if (isScalar) {
+            emplaceImop(e, Imop::LOAD, resSym, x, offset);
+        }
+        else {
+            emplaceImop(e, Imop::DECLARE, tmp_result);
+            emplaceImop(e, Imop::LOAD, tmp_result, x, offset);
+            emplaceImop(e, Imop::ASSIGN, offset, indexConstant(0));
 
-        // tmp = x[old_offset] or r = x[old_offset] if scalar
-        auto i = new Imop(e, Imop::LOAD, (isScalar ? resSym : tmp_result), x, offset);
-        push_imop(i);
-
-        // r[offset] = tmp if not scalar
-        if (!isScalar) {
-            i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
-            push_imop(i);
             unsigned count = 0;
             for (unsigned k : slices) {
                 Symbol * idx = loopInfo.at(k);
-
-                i = new Imop(e, Imop::SUB, tmp_result2, idx, spv[k].first);
-                push_imop(i);
-
-                i = new Imop(e, Imop::MUL, tmp_result2, tmp_result2, strides[1].at(count));
-                push_imop(i);
-
-                i = new Imop(e, Imop::ADD, offset, offset, tmp_result2);
-                push_imop(i);
+                emplaceImop(e, Imop::SUB, tmp_result2, idx, spv[k].first);
+                emplaceImop(e, Imop::MUL, tmp_result2, tmp_result2, strides[1].at(count));
+                emplaceImop(e, Imop::ADD, offset, offset, tmp_result2);
                 ++ count;
             }
 
-            i = new Imop(e, Imop::STORE, resSym, offset, tmp_result);
-            push_imop(i);
+            emplaceImop(e, Imop::STORE, resSym, offset, tmp_result);
+            releaseTemporary(result, tmp_result);
         }
     }
 
@@ -330,17 +315,13 @@ CGResult CodeGen::cgExprShape(TreeNodeExprShape * e) {
     }
 
     Symbol * n = indexConstant(eArg->resultType()->secrecDimType());
-    auto i = new Imop(e, Imop::ALLOC, resSym, indexConstant(0), n);
-    pushImopAfter(result, i);
-
-    i = new Imop(e, Imop::ASSIGN, resSym->getDim(0), n);
-    push_imop(i);
+    emplaceImopAfter(result, e, Imop::ALLOC, resSym, indexConstant(0), n);
+    emplaceImop(e, Imop::ASSIGN, resSym->getDim(0), n);
 
     unsigned count = 0;
     for (Symbol* sizeSym : dim_range(argResult.symbol())) {
         Symbol * indexSym = indexConstant(count);
-        auto i = new Imop(e, Imop::STORE, resSym, indexSym, sizeSym);
-        push_imop(i);
+        emplaceImop(e, Imop::STORE, resSym, indexSym, sizeSym);
         ++ count;
     }
 
@@ -394,20 +375,13 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         Symbol * s1 = arg1ResultSymbol->getDim(it);
         Symbol * s2 = arg2ResultSymbol->getDim(it);
         if (it == k) {
-            auto i = new Imop(e, Imop::ADD, resSym->getDim(it), s1, s2);
-            pushImopAfter(result, i);
+            emplaceImopAfter(result, e, Imop::ADD, resSym->getDim(it), s1, s2);
         }
         else {
             SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
-
-            auto i = new Imop(e, Imop::NE, temp_bool, s1, s2);
-            pushImopAfter(result, i);
-
-            i = new Imop(e, Imop::JT, errLabel, temp_bool);
-            push_imop(i);
-
-            i = new Imop(e, Imop::ASSIGN, resSym->getDim(it), s1);
-            push_imop(i);
+            emplaceImopAfter(result, e, Imop::NE, temp_bool, s1, s2);
+            emplaceImop(e, Imop::JT, errLabel, temp_bool);
+            emplaceImop(e, Imop::ASSIGN, resSym->getDim(it), s1);
         }
     }
 
@@ -450,10 +424,13 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     allocTemporaryResult(result);
 
+    // Allocate memory for the temporary if needed:
+    emplaceImopAfter(result, e, Imop::DECLARE, tmp_elem);
+
     append(result, enterLoop(loopInfo, resSym));
 
     // j = 0 (right hand side index)
-    initSymbol(result, offset, indexConstant(0));
+    emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant (0));
 
     // IF (i_k >= d_k) GOTO T1;
     SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
@@ -506,12 +483,11 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     emplaceImop (e, Imop::STORE, resSym, offset, tmp_elem);
 
-    releaseTemporary(result, tmp_elem);
-
     append(result, exitLoop(loopInfo));
+
+    releaseTemporary(result, tmp_elem);
     releaseTemporary(result, arg1ResultSymbol);
     releaseTemporary(result, arg2ResultSymbol);
-
     return result;
 }
 
@@ -565,8 +541,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         Symbol * sizeSymbol = static_cast<SymbolSymbol *>(rhs)->getSizeSym();
         SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
 
-        auto test = new Imop(e, Imop::EQ, temp_bool, sizeSymbol, resSym->getSizeSym());
-        pushImopAfter(result, test);
+        emplaceImopAfter(result, e, Imop::EQ, temp_bool, sizeSymbol, resSym->getSizeSym());
 
         auto jmp = new Imop(e, Imop::JT, nullptr, temp_bool);
         push_imop(jmp);
@@ -702,7 +677,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         tmpe2->inheritShape(tmpe1);
         e1result = tmpe1;
         e2result = tmpe2;
-        pushImopAfter(result, new Imop(e, Imop::ALLOC, e2result, arg2Result.symbol(), tmpe1->getSizeSym()));
+        emplaceImopAfter(result, e, Imop::ALLOC, e2result, arg2Result.symbol(), tmpe1->getSizeSym());
         releaseTemporary(result, arg2Result.symbol());
     }
     else if (eArg2->resultType()->secrecDimType() > eArg1->resultType()->secrecDimType()) {
@@ -711,7 +686,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         tmpe1->inheritShape(tmpe2);
         e1result = tmpe1;
         e2result = tmpe2;
-        pushImopAfter(result, new Imop(e, Imop::ALLOC, e1result, arg1Result.symbol(), tmpe2->getSizeSym()));
+        emplaceImopAfter(result, e, Imop::ALLOC, e1result, arg1Result.symbol(), tmpe2->getSizeSym());
         releaseTemporary(result, arg1Result.symbol());
     }
     else {
@@ -751,8 +726,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     }
 
     allocTemporaryResult(result);
-    Imop * i = newBinary(e, iType, resSym, e1result, e2result);
-    pushImopAfter(result, i);
+    pushImopAfter(result, newBinary(e, iType, resSym, e1result, e2result));
     releaseTemporary(result, e1result);
     releaseTemporary(result, e2result);
     return result;
@@ -1082,12 +1056,11 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
      * Allocate memory for the string:
      */
 
-    auto i = new Imop(e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
-    pushImopAfter(result, i);
+    emplaceImopAfter(result, e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
 
     // XXX TODO: giant hack
-    push_imop(new Imop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym)); // allocates 1 byte more
-    push_imop(new Imop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0))); // initialize last byte to zero
+    emplaceImop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym); // allocates 1 byte more
+    emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0)); // initialize last byte to zero
 
     /**
      * Copy the data from array to the string:
@@ -1096,8 +1069,8 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     LoopInfo loopInfo;
     loopInfo.push_index(m_st->appendTemporary(TypeBasic::getIndexType(cxt)));
     append(result, enterLoop(loopInfo, arrSym));
-    push_imop(new Imop(e, Imop::LOAD, tempElem, arrSym, loopInfo.at(0)));
-    push_imop(new Imop(e, Imop::STORE, resSym, loopInfo.at(0), tempElem));
+    emplaceImop(e, Imop::LOAD, tempElem, arrSym, loopInfo.at(0));
+    emplaceImop(e, Imop::STORE, resSym, loopInfo.at(0), tempElem);
     append(result, exitLoop(loopInfo));
     releaseTemporary(result, arrSym);
     return result;
@@ -1366,16 +1339,12 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
                 if (eTrueResult.isNotOk ())
                     return result;
 
-                auto i = new Imop(e, Imop::ALLOC, resultSymbol,
-                        defaultConstant(getContext(),
-                            eTrueResult.symbol()->secrecType()->secrecDataType()),
-                        resultSymbol->getSizeSym());
-
-                pushImopAfter(eTrueResult, i);
+                emplaceImopAfter(eTrueResult, e, Imop::ALLOC, resultSymbol,
+                    defaultConstant(getContext(), eTrueResult.symbol()->secrecType()->secrecDataType()),
+                    resultSymbol->getSizeSym());
             }
 
-            Imop * i = newAssign(e, result.symbol(), eTrueResult.symbol());
-            pushImopAfter(eTrueResult, i);
+            pushImopAfter(eTrueResult, newAssign(e, result.symbol(), eTrueResult.symbol()));
             releaseTemporary(eTrueResult, eTrueResult.symbol());
         }
 
@@ -1400,15 +1369,12 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
                 if (eFalseResult.isNotOk ())
                     return result;
 
-                auto i = new Imop(e, Imop::ALLOC, resultSymbol,
-                        defaultConstant(getContext(),
-                            eFalseResult.symbol()->secrecType()->secrecDataType()),
-                        resultSymbol->getSizeSym());
-                pushImopAfter(eFalseResult, i);
+                emplaceImopAfter(eFalseResult, e, Imop::ALLOC, resultSymbol,
+                    defaultConstant(getContext(), eFalseResult.symbol()->secrecType()->secrecDataType()),
+                    resultSymbol->getSizeSym());
             }
 
-            Imop * i = newAssign(e, result.symbol(), eFalseResult.symbol());
-            pushImopAfter(eFalseResult, i);
+            pushImopAfter(eFalseResult, newAssign(e, result.symbol(), eFalseResult.symbol()));
             releaseTemporary(eFalseResult, eFalseResult.symbol());
         }
 
@@ -1583,8 +1549,8 @@ CGResult CodeGen::cgExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
     SymbolSymbol * resultSymbol = generateResultSymbol (result, e);
     Symbol* sizeValue = indexConstant (e->expressions ().size ());
 
-    pushImopAfter (result, new Imop (e, Imop::ASSIGN, resultSymbol->getDim (0), sizeValue));
-    pushImopAfter (result, new Imop (e, Imop::ASSIGN, resultSymbol->getSizeSym (), sizeValue));
+    emplaceImopAfter (result, e, Imop::ASSIGN, resultSymbol->getDim (0), sizeValue);
+    emplaceImopAfter (result, e, Imop::ASSIGN, resultSymbol->getSizeSym (), sizeValue);
     allocTemporaryResult (result);
 
     unsigned index = 0;
@@ -1594,7 +1560,7 @@ CGResult CodeGen::cgExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
         if (result.isNotOk ())
             return result;
 
-        pushImopAfter (result, new Imop (e, Imop::STORE, resultSymbol, indexConstant (index), exprResult.symbol ()));
+        emplaceImopAfter (result, e, Imop::STORE, resultSymbol, indexConstant (index), exprResult.symbol ());
         releaseTemporary (result, exprResult.symbol ());
         ++ index;
     }
@@ -1686,9 +1652,7 @@ CGResult CodeGen::cgExprClassify(TreeNodeExprClassify * e) {
     SymbolSymbol * resSym = generateResultSymbol(result, e);
     resSym->inheritShape(argSym);
     allocTemporaryResult(result);
-
-    Imop * i = newUnary(e, Imop::CLASSIFY, resSym, argSym);
-    pushImopAfter(result, i);
+    pushImopAfter(result, newUnary(e, Imop::CLASSIFY, resSym, argSym));
     releaseTemporary(result, argSym);
     return result;
 }
@@ -1717,8 +1681,7 @@ CGResult CodeGen::cgExprDeclassify(TreeNodeExprDeclassify * e) {
     SymbolSymbol * resSym = generateResultSymbol(result, e);
     resSym->inheritShape(argSym);
     allocTemporaryResult(result);
-    Imop * i = newUnary(e, Imop::DECLASSIFY, resSym, argSym);
-    pushImopAfter(result, i);
+    pushImopAfter(result, newUnary(e, Imop::DECLASSIFY, resSym, argSym));
     releaseTemporary(result, argSym);
     return result;
 }
@@ -1761,17 +1724,16 @@ CGResult CodeGen::cgExprUnary(TreeNodeExprUnary * e) {
 
     // Generate code for unary expression:
     Imop::Type iType;
-    if (e->type() == NODE_EXPR_UINV) {
-        iType = Imop::UINV;
-    } else if (e->type() == NODE_EXPR_UNEG) {
-        iType = Imop::UNEG;
-    } else {
+    switch (e->type ()) {
+    case NODE_EXPR_UINV: iType = Imop::UINV; break;
+    case NODE_EXPR_UNEG: iType = Imop::UNEG; break;
+    default:
         assert(e->type() == NODE_EXPR_UMINUS);
         iType = Imop::UMINUS;
+        break;
     }
 
-    Imop * i = newUnary(e, iType, result.symbol(), eResult);
-    pushImopAfter(result, i);
+    pushImopAfter(result, newUnary(e, iType, result.symbol(), eResult));
     releaseTemporary(result, eResult);
     return result;
 }
@@ -1866,8 +1828,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
             unsigned count = 0;
             for (unsigned k : subscript.slices()) {
                 Symbol * sym = r->getDim(count);
-                auto i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
-                pushImopAfter(result, i);
+                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
                 ++ count;
             }
 
@@ -1875,19 +1836,18 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         }
 
         // allocate memory for the result symbol "r"
-        {
+        if (!isScalar) {
             Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-            if (!isScalar) {
-                pushImopAfter(result, new Imop(e, Imop::ALLOC, r, def, r->getSizeSym()));
-            }
-            else {
-                pushImopAfter(result, new Imop(e, isPrivate ? Imop::CLASSIFY : Imop::ASSIGN, r, def));
-            }
+            emplaceImopAfter(result, e, Imop::ALLOC, r, def, r->getSizeSym());
+            emplaceImopAfter(result, e, Imop::DECLARE, tmpElem);
+        }
+        else {
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
         }
 
         if (isPrivate) {
             Symbol * t = m_st->appendTemporary(elemType);
-            pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
+            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -1903,41 +1863,50 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Loop body:
         {
             // compute offset:
-            push_imop(new Imop(e, Imop::ASSIGN, offset, indexConstant(0)));
+            emplaceImop(e, Imop::ASSIGN, offset, indexConstant(0));
             LoopInfo::const_iterator idxIt = loopInfo.begin();
             for (unsigned k = 0; k < stride.size(); ++ k, ++ idxIt) {
-                push_imop(new Imop(e, Imop::MUL, tmpResult, stride.at(k), *idxIt));
-                push_imop(new Imop(e, Imop::ADD, offset, offset, tmpResult));
+                emplaceImop(e, Imop::MUL, tmpResult, stride.at(k), *idxIt);
+                emplaceImop(e, Imop::ADD, offset, offset, tmpResult);
             }
 
             // increment the value:
-
-            // t = x[offset]
-            push_imop(new Imop(e, Imop::LOAD, tmpElem, x, offset));
-
-            // t = t + 1
-            push_imop(new Imop(e, iType, tmpElem, tmpElem, one));
-
             if (isScalar) {
-                // r = t
-                push_imop(new Imop(e, Imop::ASSIGN, r, tmpElem));
+                // r = x[offset]
+                emplaceImop(e, Imop::LOAD, r, x, offset);
+
+                // r = r + 1
+                emplaceImop(e, iType, r, r, one);
+
+                // x[offset] = r
+                emplaceImop(e, Imop::STORE, x, offset, r);
             }
             else {
-                // r[resultOffset] = t
-                push_imop(new Imop(e, Imop::STORE, r, resultOffset, tmpElem));
-            }
+                // t = x[offset]
+                emplaceImop(e, Imop::LOAD, tmpElem, x, offset);
 
-            // x[offset] = t
-            push_imop(new Imop(e, Imop::STORE, x, offset, tmpElem));
+                // t = t + 1
+                emplaceImop(e, iType, tmpElem, tmpElem, one);
+
+                // r[resultOffset] = t
+                emplaceImop(e, Imop::STORE, r, resultOffset, tmpElem);
+
+                // x[offset] = t
+                emplaceImop(e, Imop::STORE, x, offset, tmpElem);
+            }
 
             // Increment the result "r" offset
             // resultOffset = resultOffset + 1
-            push_imop (new Imop (e, Imop::ADD, resultOffset, resultOffset, idxOne));
+            emplaceImop (e, Imop::ADD, resultOffset, resultOffset, idxOne);
         }
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
-        releaseTemporary(result, one);
+        releaseTemporary (result, one);
+        if (!isScalar) {
+            releaseTemporary (result, tmpElem);
+        }
+
         return result;
     }
     else {
@@ -1945,12 +1914,12 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
         if (! isScalar) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            pushImopAfter(result, new Imop(e, Imop::ALLOC, t, one, x->getSizeSym()));
+            emplaceImopAfter(result, e, Imop::ALLOC, t, one, x->getSizeSym());
             one = t;
         }
         else if (isPrivate) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
+            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -1960,7 +1929,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Copy the value of e to the result "r"
         if (! isScalar) {
             copyShapeFrom(result, x);
-            pushImopAfter(result, new Imop(e, Imop::COPY, r, x, x->getSizeSym()));
+            emplaceImopAfter(result, e, Imop::COPY, r, x, x->getSizeSym());
         }
         else {
             pushImopAfter(result, newAssign(e, r, x));
@@ -2044,8 +2013,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
             unsigned count = 0;
             for (unsigned k : subscript.slices()) {
                 Symbol * sym = r->getDim(count);
-                auto i = new Imop(e, Imop::SUB, sym, spv[k].second, spv[k].first);
-                pushImopAfter(result, i);
+                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
                 ++ count;
             }
 
@@ -2053,20 +2021,20 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         }
 
         // allocate memory for the result symbol "r"
-        {
+        if (!isScalar) {
             Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-            if (!isScalar) {
-                pushImopAfter(result, new Imop(e, Imop::ALLOC, r, def, r->getSizeSym()));
-            }
-            else {
-                pushImopAfter(result, new Imop(e, isPrivate ? Imop::CLASSIFY : Imop::ASSIGN, r, def));
-            }
+            emplaceImopAfter(result, e, Imop::ALLOC, r, def, r->getSizeSym());
         }
+        else {
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+        }
+
+        emplaceImopAfter(result, e, Imop::DECLARE, tmpElem);
 
         // make the symbol "one" private if need be
         if (isPrivate) {
             Symbol * t = m_st->appendTemporary(elemType);
-            pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
+            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -2082,39 +2050,40 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         // Loop body:
         {
             // compute RHS offset:
-            push_imop(new Imop(e, Imop::ASSIGN, rhsOffset, indexConstant(0)));
+            emplaceImop(e, Imop::ASSIGN, rhsOffset, indexConstant(0));
             LoopInfo::const_iterator idxIt = loopInfo.begin();
             for (unsigned k = 0; k < stride.size(); ++ k, ++ idxIt) {
-                push_imop(new Imop(e, Imop::MUL, tmpResult, stride.at(k), *idxIt));
-                push_imop(new Imop(e, Imop::ADD, rhsOffset, rhsOffset, tmpResult));
+                emplaceImop(e, Imop::MUL, tmpResult, stride.at(k), *idxIt);
+                emplaceImop(e, Imop::ADD, rhsOffset, rhsOffset, tmpResult);
             }
 
             // t = x[rhsOffset]
-            push_imop(new Imop(e, Imop::LOAD, tmpElem, lvalSym, rhsOffset));
+            emplaceImop(e, Imop::LOAD, tmpElem, lvalSym, rhsOffset);
 
             if (isScalar) {
                 // r = t
-                push_imop(new Imop(e, Imop::ASSIGN, r, tmpElem));
+                emplaceImop(e, Imop::ASSIGN, r, tmpElem);
             }
             else {
                 // r[resultOffset] = t
-                push_imop(new Imop(e, Imop::STORE, r, resultOffset, tmpElem));
+                emplaceImop(e, Imop::STORE, r, resultOffset, tmpElem);
             }
 
             // t = t + 1
-            push_imop(new Imop(e, iType, tmpElem, tmpElem, one));
+            emplaceImop(e, iType, tmpElem, tmpElem, one);
 
             // x[rhsOffset] = t
-            push_imop(new Imop(e, Imop::STORE, lvalSym, rhsOffset, tmpElem));
+            emplaceImop(e, Imop::STORE, lvalSym, rhsOffset, tmpElem);
 
             // Increment the result "r" offset
             // resultOffset = resultOffset + 1
-            push_imop (new Imop (e, Imop::ADD, resultOffset, resultOffset, idxOne));
+            emplaceImop (e, Imop::ADD, resultOffset, resultOffset, idxOne);
         }
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
         releaseTemporary(result, one);
+        releaseTemporary(result, tmpElem);
         return result;
     }
     else {
@@ -2123,7 +2092,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         // Copy the value of e to the result "r"
         if (! isScalar) {
             copyShapeFrom(result, lvalSym);
-            pushImopAfter(result, new Imop(e, Imop::COPY, r, lvalSym, lvalSym->getSizeSym()));
+            emplaceImopAfter(result, e, Imop::COPY, r, lvalSym, lvalSym->getSizeSym());
         }
         else {
             pushImopAfter(result, newAssign(e, r, lvalSym));
@@ -2176,6 +2145,7 @@ CGResult CodeGen::cgExprSelection(TreeNodeExprSelection* root) {
     StringRef fieldName = root->identifier ()->value ();
     if (SymbolSymbol* fieldValue = lookupField (exprValue, fieldName)) {
         result.setResult (fieldValue);
+        releaseTemporary (result, exprResult.symbol (), fieldValue);
         // TODO: Remove temporaries?
         return result;
     }

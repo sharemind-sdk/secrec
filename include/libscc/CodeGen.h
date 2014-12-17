@@ -287,9 +287,8 @@ public: /* Methods: */
     /// Memory management
     /// \{
     void allocTemporaryResult (CGResult& result, Symbol* val = nullptr);
-    void initSymbol (CGResult& result, Symbol* sym, Symbol* def = nullptr);
     void releaseResource (CGResult& result, Symbol* sym);
-    void releaseTemporary (CGResult& result, Symbol* sym);
+    void releaseTemporary (CGResult& result, Symbol* sym, Symbol* ex = nullptr);
     void releaseScopeVariables (CGResult& result);
     void releaseProcVariables (CGResult& result, Symbol* ex = nullptr);
     void releaseAllVariables (CGResult& result);

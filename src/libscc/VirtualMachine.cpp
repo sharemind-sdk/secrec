@@ -361,6 +361,7 @@ void castValueDyn (DataType* dataType, Value& dest, const Value& from) {
  * Unary and binary regular and vectorized ops:
  */
 
+DECLOP1 (DECLARE, 0)
 DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
@@ -649,6 +650,7 @@ CallbackTy getCallback (const Imop& imop) {
     }
 
     switch (imop.type ()) {
+    case Imop::DECLARE:    SET_SIMPLE_CALLBACK(NOP); break;
     case Imop::ASSIGN:     SET_SPECIALIZE_CALLBACK_V(ASSIGN,SWITCH_ANY); break;
     case Imop::CLASSIFY:   SET_SPECIALIZE_CALLBACK_V(CLASSIFY,SWITCH_ANY); break;
     case Imop::DECLASSIFY: SET_SPECIALIZE_CALLBACK_V(DECLASSIFY,SWITCH_ANY); break;

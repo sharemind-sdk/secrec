@@ -12,7 +12,6 @@
 
 #include "VMCode.h"
 #include "VMSymbolTable.h"
-#include "ScalarAllocPlacement.h"
 
 #include <set>
 #include <map>
@@ -60,6 +59,7 @@ private:
     /**
      * Code generation for various intermediate instructions:
      */
+    void cgDeclare (VMBlock& block, const SecreC::Imop& imop);
     void cgJump (VMBlock& block, const SecreC::Imop& imop);
     void cgAssign (VMBlock& block, const SecreC::Imop& imop);
     void cgCast (VMBlock& block, const SecreC::Imop& imop);
@@ -122,7 +122,6 @@ private: /* Fields: */
     RegisterAllocator*    m_ra;       ///< Register allocator
     SyscallManager*       m_scm;      ///< The syscall manager
     StringLiterals*       m_strLit;   ///< String literals
-    AllocMap              m_allocs;   ///< Where to allocate scalar private symbols
     bool                  m_optimize; ///< If we need to optimize the code.
 };
 

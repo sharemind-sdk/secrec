@@ -208,55 +208,49 @@ Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* 
 }
 
 void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
-    if (result.symbol()->secrecType()->isScalar()) {
-        return;
-    }
-
     assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != nullptr);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(result.symbol());
-    if (val == nullptr) {
-        val = defaultConstant(getContext(), sym->secrecType()->secrecDataType());
+
+    if (result.symbol()->secrecType()->isScalar()) {
+        emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
     }
+    else {
+        if (val == nullptr)
+            val = defaultConstant(getContext(), sym->secrecType()->secrecDataType());
 
-    auto i = new Imop(m_node, Imop::ALLOC, sym, val, sym->getSizeSym());
-    pushImopAfter(result, i);
-}
-
-void CodeGen::initSymbol(CGResult & result, Symbol * sym, Symbol * def) {
-    TypeNonVoid * tnv = sym->secrecType();
-    if (def == nullptr) {
-        def = defaultConstant(getContext(), tnv->secrecDataType());
+        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, val, sym->getSizeSym());
     }
-
-    Imop * i = nullptr;
-    if (tnv->secrecDimType() > 0)
-        i = new Imop(m_node, Imop::ALLOC, sym, def, indexConstant(0));
-    else if (tnv->secrecSecType()->isPrivate()) {
-        i = new Imop(m_node, Imop::CLASSIFY, sym, def);
-    }
-    else
-        i = new Imop(m_node, Imop::ASSIGN, sym, def);
-
-    pushImopAfter(result, i);
 }
 
 void CodeGen::releaseScopeVariables (CGResult& result) {
-    for (Symbol * var : m_st->variables()) {
-        releaseResource(result, var);
+    for (auto sym : m_st->variables()) {
+        for (auto var : flattenSymbol (sym)) {
+            releaseResource (result, var);
+        }
     }
 }
 
 void CodeGen::releaseProcVariables(CGResult & result, Symbol * ex) {
-    for (Symbol * var : m_st->variablesUpTo(m_st->globalScope())) {
-        if (var != ex) {
-            releaseResource(result, var);
+    std::set<Symbol*> exclude;
+    if (ex != nullptr) {
+        const auto symVec = flattenSymbol (ex);
+        exclude.insert (symVec.begin (), symVec.end ());
+    }
+
+    for (auto sym : m_st->variablesUpTo(m_st->globalScope())) {
+        for (auto var : flattenSymbol (sym)) {
+            if (exclude.find (var) == exclude.end ()) {
+                releaseResource (result, var);
+            }
         }
     }
 }
 
 void CodeGen::releaseAllVariables(CGResult & result) {
-    for (Symbol * var : m_st->variablesUpTo(nullptr)) {
-        releaseResource(result, var);
+    for (auto sym : m_st->variablesUpTo(nullptr)) {
+        for (auto var : flattenSymbol (sym)) {
+            releaseResource (result, var);
+        }
     }
 }
 
@@ -266,10 +260,19 @@ void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
     }
 }
 
-void CodeGen::releaseTemporary(CGResult & result, Symbol * sym) {
+void CodeGen::releaseTemporary(CGResult & result, Symbol * sym, Symbol* ex) {
     assert(sym != nullptr);
+    std::vector<Symbol*> exclude;
+    if (ex != nullptr) {
+        for (SymbolSymbol* temp : collectTemporaries (ex)) {
+            exclude.push_back (temp);
+        }
+    }
+
     for (SymbolSymbol* temp : collectTemporaries (sym)) {
-        releaseResource(result, temp);
+        if (std::find (exclude.begin (), exclude.end (), temp) == exclude.end ()) {
+            releaseResource(result, temp);
+        }
     }
 }
 
@@ -292,10 +295,9 @@ void CodeGen::codeGenSize (CGResult &result, SymbolSymbol* sym) {
         if (size == nullptr)
             return;
         Symbol * one = indexConstant(1);
-        pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, size, one));
-
-        for (dim_iterator it = dim_begin(sym), e = dim_end(sym); it != e; ++ it) {
-            push_imop(new Imop(m_node, Imop::MUL, size, size, *it));
+        emplaceImopAfter (result, m_node, Imop::ASSIGN, size, one);
+        for (auto dimSym : dim_range (sym)) {
+            emplaceImop(m_node, Imop::MUL, size, size, dimSym);
         }
     }
 }
@@ -370,14 +372,10 @@ CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
         strideInfo.push_back(m_st->appendTemporary(ty));
     }
 
-    auto i = new Imop(m_node, Imop::ASSIGN, strideInfo.at(n - 1), indexConstant(1));
-    pushImopAfter(result, i);
-
+    emplaceImopAfter (result, m_node, Imop::ASSIGN, strideInfo.at(n - 1), indexConstant(1));
     for (unsigned it = n - 1; it != 0; -- it) {
-        Symbol * symDim = sym->getDim(it);
-        i = new Imop(m_node, Imop::MUL,
-                strideInfo.at(it - 1), strideInfo.at(it), symDim);
-        push_imop(i);
+        emplaceImop (m_node, Imop::MUL,
+            strideInfo.at(it - 1), strideInfo.at(it), sym->getDim(it));
     }
 
     return result;
@@ -623,21 +621,21 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     }
     else
     if (ty->isScalar ()) {
-        pushImopAfter(result, new Imop(m_node, Imop::PARAM, sym));
+        emplaceImopAfter(result, m_node, Imop::PARAM, sym);
     }
     else {
         SymbolSymbol * const tns = m_st->appendTemporary(sym->secrecType());
 
         // Pop parameters:
         for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
-            push_imop(new Imop(m_node, Imop::PARAM, *di));
-        pushImopAfter(result, new Imop(m_node, Imop::PARAM, tns));
+            emplaceImopAfter(result, m_node, Imop::PARAM, *di);
+        emplaceImopAfter(result, m_node, Imop::PARAM, tns);
 
         // Update size:
-        push_imop(new Imop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1)));
+        emplaceImop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1));
         for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
-            push_imop(new Imop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), *di));
-        push_imop(new Imop(m_node, Imop::COPY, sym, tns, sym->getSizeSym()));
+            emplaceImop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), *di);
+        emplaceImop(m_node, Imop::COPY, sym, tns, sym->getSizeSym());
     }
 
     return result;
@@ -662,19 +660,20 @@ CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     // Initialize the value of the shape (and size) if need be.
     if (! ty->isScalar () && ! hasShape) {
         SymbolConstant* defIdx = indexConstant (0);
-        pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, sym->getSizeSym(), defIdx));
+        emplaceImopAfter(result, m_node, Imop::ASSIGN, sym->getSizeSym(), defIdx);
         for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
-            push_imop(new Imop(m_node, Imop::ASSIGN, sym->getDim(it), defIdx));
+            emplaceImop(m_node, Imop::ASSIGN, sym->getDim(it), defIdx);
 
     }
 
     SymbolConstant* def = defaultConstant (getContext (), ty->secrecDataType ());
     if (ty->isScalar ()) {
         Imop::Type iType = ty->secrecSecType ()->isPrivate () ? Imop::CLASSIFY : Imop::ASSIGN;
-        pushImopAfter(result, new Imop(m_node, iType, sym, def));
+        emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
+        emplaceImopAfter(result, m_node, iType, sym, def);
     }
     else {
-        pushImopAfter(result, new Imop(m_node, Imop::ALLOC, sym, def, getSizeOr(sym, 0)));
+        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, def, getSizeOr(sym, 0));
     }
 
     return result;
@@ -706,7 +705,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     if (hasShape) { // type[[n>0]] x(i_1,...,i_n) = foo;
         if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
             // fill lhs with constant value
-            pushImopAfter(result, new Imop(m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym()));
+            emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym());
             releaseTemporary(result, rhs);
         }
         else {
@@ -718,9 +717,8 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
             dim_iterator lhsDimIter = dim_begin(lhs);
             for (Symbol * rhsDim : dim_range(rhs)) {
                 SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
-                pushImopAfter(result, new Imop(m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter));
-                push_imop(new Imop(m_node, Imop::JT, errLabel, temp_bool));
-
+                emplaceImopAfter(result, m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter);
+                emplaceImop(m_node, Imop::JT, errLabel, temp_bool);
                 ++lhsDimIter;
             }
 
@@ -735,7 +733,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     } else {
         if (ty->secrecDimType() > 0) { // type[[>0]] x = foo;
             if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
-                pushImopAfter(result, new Imop(m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym()));
+                emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym());
                 releaseTemporary(result, rhs);
             } else {
                 assert(ty->secrecDimType() == rhs->secrecType()->secrecDimType());
@@ -743,19 +741,20 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
                 dim_iterator srcIter = dim_begin(rhs);
                 for (Symbol * const destSym : dim_range(lhs)) {
                     assert(srcIter != dim_end(rhs));
-                    pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, destSym, *srcIter));
+                    emplaceImopAfter(result, m_node, Imop::ASSIGN, destSym, *srcIter);
                     ++srcIter;
                 }
 
                 // The type checker should ensure that the symbol is a symbol (and not a constant):
                 assert(rhs->symbolType() == SYM_SYMBOL);
                 SymbolSymbol * const s = static_cast<SymbolSymbol *>(rhs);
-                pushImopAfter(result, newAssign(m_node,  lhs->getSizeSym(), s->getSizeSym()));
-                pushImopAfter(result, new Imop(m_node, Imop::COPY, lhs, s, lhs->getSizeSym()));
+                emplaceImopAfter(result, m_node, Imop::ASSIGN, lhs->getSizeSym(), s->getSizeSym());
+                emplaceImop(m_node, Imop::COPY, lhs, s, lhs->getSizeSym());
                 releaseTemporary(result, rhs);
             }
         } else { // scalar_type x = scalar;
-            pushImopAfter(result, new Imop(m_node, Imop::ASSIGN, lhs, rhs));
+            emplaceImopAfter(result, m_node, Imop::DECLARE, lhs);
+            emplaceImop(m_node, Imop::ASSIGN, lhs, rhs);
             releaseTemporary(result, rhs);
         }
     }

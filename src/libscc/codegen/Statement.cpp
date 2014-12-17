@@ -292,8 +292,8 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     // evaluate shape if given, also compute size
     if (! varInit->shape().empty()) {
         if (!isScalar)
-            pushImopAfter(result, new Imop(varInit, Imop::ASSIGN,
-                                           ns->getSizeSym(), indexConstant(1)));
+            emplaceImopAfter(result, varInit, Imop::ASSIGN,
+                ns->getSizeSym(), indexConstant(1));
 
         for (TreeNodeExpr& e : varInit->shape()) {
 
@@ -303,12 +303,12 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
             if (result.isNotOk())
                 return result;
 
-            pushImopAfter(result, new Imop(varInit, Imop::ASSIGN,
-                                           ns->getDim(shapeExpressions),
-                                           eResult.symbol()));
+            emplaceImopAfter(result, varInit, Imop::ASSIGN,
+                ns->getDim(shapeExpressions), eResult.symbol());
 
-            push_imop(new Imop(varInit, Imop::MUL, ns->getSizeSym(),
-                               ns->getSizeSym(), eResult.symbol()));
+            emplaceImop(varInit, Imop::MUL, ns->getSizeSym(),
+                ns->getSizeSym(), eResult.symbol());
+
             ++shapeExpressions;
         }
 
@@ -316,10 +316,10 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
         assert(shapeExpressions == ty->secrecDimType());
     } else {
         if (!isScalar)
-            pushImopAfter(result, new Imop(varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0)));
+            emplaceImopAfter(result, varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0));
 
         for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
-            push_imop(new Imop(varInit, Imop::ASSIGN, ns->getDim(it), indexConstant(0)));
+            emplaceImop(varInit, Imop::ASSIGN, ns->getDim(it), indexConstant(0));
     }
 
     // TypeChecker::checkVarInit() should ensure this:

@@ -24,7 +24,6 @@
 #include "Builtin.h"
 #include "CopyElimination.h"
 #include "RegisterAllocator.h"
-#include "ScalarAllocPlacement.h"
 #include "StringLiterals.h"
 #include "SyscallManager.h"
 #include "VMDataType.h"
@@ -357,7 +356,6 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     }
 
     // eliminateRedundantCopies (m_code);
-    m_allocs = placePrivateScalarAllocs (m_code);
 
     // Create and add the linking unit sections:
     VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
@@ -511,6 +509,13 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
     block.push_back (instr);
 }
 
+void Compiler::cgDeclare (VMBlock& block, const Imop& imop) {
+    assert (imop.dest ());
+    if (imop.dest ()->secrecType ()->secrecSecType ()->isPrivate ()) {
+        cgNewPrivateScalar (block, imop.dest ());
+    }
+}
+
 void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ALLOC);
 
@@ -582,7 +587,11 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    block.push_new () << "free" << find (imop.arg1 ());
+    // We allow for public scalar to be freed (which is a nop).
+    if (imop.arg1()->isArray ()) {
+        block.push_new () << "free" << find (imop.arg1 ());
+        return;
+    }
 }
 
 void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
@@ -1050,21 +1059,15 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
     m_ra->getReg (imop);
 
-    AllocMap::iterator it = m_allocs.find (&imop);
-    if (it != m_allocs.end ()) {
-        for (const Symbol* dest : it->second) {
-            cgNewPrivateScalar (block, dest);
-        }
-
-        m_allocs.erase (it);
-    }
-
     if (imop.isJump ()) {
         cgJump (block, imop);
         return;
     }
 
     switch (imop.type ()) {
+    case Imop::DECLARE:
+        cgDeclare (block, imop);
+        return;
     case Imop::TOSTRING:
         cgToString (block, imop);
         return;

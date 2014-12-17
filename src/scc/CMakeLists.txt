@@ -17,8 +17,6 @@ SET(SCC_SOURCES
     "SyscallManager.cpp"
     "RegisterAllocator.h"
     "RegisterAllocator.cpp"
-    "ScalarAllocPlacement.h"
-    "ScalarAllocPlacement.cpp"
     "StringLiterals.h"
     "StringLiterals.cpp"
     "VMInstruction.h"

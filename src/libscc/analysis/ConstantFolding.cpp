@@ -774,6 +774,11 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
         break;
     }
 
+    if (iType == Imop::DECLARE) {
+        setVal (val, imop.dest (), Value::undef ());
+        return;
+    }
+
     if (iType == Imop::PUSH) {
         const auto t = imop.arg1 ()->secrecType ();
         const bool isString = t->secrecDataType ()->isString ();

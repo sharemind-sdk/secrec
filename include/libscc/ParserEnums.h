@@ -45,137 +45,6 @@ enum SecrecOperator {
     SCOP_UN_MINUS = 0x300
 };
 
-enum SecrecTreeNodeType {
-    /** Just a node for counting, internal use only. */
-    NODE_ATTRIBUTE,
-    NODE_DATATYPE_CONST_F,
-    NODE_DATATYPE_TEMPLATE_F,
-    NODE_DATATYPE_VAR_F,
-    NODE_DECL,
-    NODE_DIMENSIONS,
-    NODE_DIMTYPE_CONST_F,
-    NODE_DIMTYPE_VAR_F,
-    NODE_DOMAIN,
-
-    NODE_EXPR_ARRAY_CONSTRUCTOR, /* { e1, e2, ..., en }      */
-    NODE_EXPR_BINARY_ADD,        /* expr + expr              */
-    NODE_EXPR_BINARY_ASSIGN,     /* expr = expr              */
-    NODE_EXPR_BINARY_ASSIGN_ADD, /* expr += expr             */
-    NODE_EXPR_BINARY_ASSIGN_AND, /* expr &= expr             */
-    NODE_EXPR_BINARY_ASSIGN_DIV, /* expr /= expr             */
-    NODE_EXPR_BINARY_ASSIGN_MOD, /* expr %= expr             */
-    NODE_EXPR_BINARY_ASSIGN_MUL, /* expr *= expr             */
-    NODE_EXPR_BINARY_ASSIGN_OR,  /* expr |= expr             */
-    NODE_EXPR_BINARY_ASSIGN_SUB, /* expr -= expr             */
-    NODE_EXPR_BINARY_ASSIGN_XOR, /* expr ^= expr             */
-    NODE_EXPR_BINARY_DIV,        /* expr / expr              */
-    NODE_EXPR_BINARY_EQ,         /* expr == expr             */
-    NODE_EXPR_BINARY_GE,         /* expr >= expr             */
-    NODE_EXPR_BINARY_GT,         /* expr > expr              */
-    NODE_EXPR_BINARY_LAND,       /* expr && expr             */
-    NODE_EXPR_BINARY_LE,         /* expr <= expr             */
-    NODE_EXPR_BINARY_LOR,        /* expr || expr             */
-    NODE_EXPR_BINARY_LT,         /* expr < expr              */
-    NODE_EXPR_BINARY_MATRIXMUL,  /* expr # expr              */
-    NODE_EXPR_BINARY_MOD,        /* expr % expr              */
-    NODE_EXPR_BINARY_MUL,        /* expr * expr              */
-    NODE_EXPR_BINARY_NE,         /* expr != expr             */
-    NODE_EXPR_BINARY_SHL,        /* e1 << e2                 */
-    NODE_EXPR_BINARY_SHR,        /* e1 >> e2                 */
-    NODE_EXPR_BINARY_SUB,        /* expr - expr              */
-    NODE_EXPR_BITWISE_AND,       /* expr & expr              */
-    NODE_EXPR_BITWISE_OR,        /* expr | expr              */
-    NODE_EXPR_BITWISE_XOR,       /* expr ^ expr              */
-    NODE_EXPR_BYTES_FROM_STRING, /* __bytes_from_string      */
-    NODE_EXPR_CAST,              /* (type) expr              */
-    NODE_EXPR_CAT,               /* cat(expr, expr {, expr}) */
-    NODE_EXPR_CLASSIFY,          /* classify(expr)           */
-    NODE_EXPR_DECLASSIFY,        /* declassify(expr)         */
-    NODE_EXPR_DOMAINID,          /* __domainid (expr)        */
-    NODE_EXPR_INDEX,             /* expr[expr,...]           */
-    NODE_EXPR_NONE,              /* void expression          */
-    NODE_EXPR_POSTFIX_DEC,       /* expr --                  */
-    NODE_EXPR_POSTFIX_INC,       /* expr ++                  */
-    NODE_EXPR_PREFIX_DEC,        /* -- expr                  */
-    NODE_EXPR_PREFIX_INC,        /* ++ expr                  */
-    NODE_EXPR_PROCCALL,          /* expr(), expr(expr, ...)  */
-    NODE_EXPR_RESHAPE,           /* reshape(expr, ...        */
-    NODE_EXPR_RVARIABLE,         /* x (R-value)              */
-    NODE_EXPR_SELECTION,         /* e.name                   */
-    NODE_EXPR_SHAPE,             /* shape(expr)              */
-    NODE_EXPR_SIZE,              /* size(expr)               */
-    NODE_EXPR_STRING_FROM_BYTES, /* __string_from_bytes      */
-    NODE_EXPR_STRLEN,            /* strlen(e)                */
-    NODE_EXPR_TERNIF,            /* expr ? expr : expr       */
-    NODE_EXPR_TOSTRING,          /* tostring(expr)           */
-    NODE_EXPR_TYPE_QUAL,         /* expr :: type             */
-    NODE_EXPR_UINV,              /* ~expr                    */
-    NODE_EXPR_UMINUS,            /* -expr                    */
-    NODE_EXPR_UNEG,              /* !expr                    */
-
-    NODE_IDENTIFIER,
-    NODE_IMPORT,
-    NODE_INDEX_INT,
-    NODE_INDEX_SLICE,
-    NODE_INTERNAL_USE,
-    NODE_KIND,
-    NODE_LITE_BOOL,
-    NODE_LITE_FLOAT,
-    NODE_LITE_INT,
-    NODE_LITE_STRING,
-
-    NODE_LVALUE_INDEX,
-    NODE_LVALUE_SELECT,
-    NODE_LVALUE_VARIABLE,
-
-    NODE_MODULE,
-    NODE_OPDEF,
-    NODE_PROCDEF,
-    NODE_PROGRAM,
-    NODE_PUSH,
-    NODE_PUSHCREF,
-    NODE_PUSHREF,
-    NODE_SECTYPE_PRIVATE_F,
-    NODE_SECTYPE_PUBLIC_F,
-
-    NODE_STMT_ASSERT,
-    NODE_STMT_BREAK,
-    NODE_STMT_COMPOUND,
-    NODE_STMT_CONTINUE,
-    NODE_STMT_DOWHILE,
-    NODE_STMT_EXPR,
-    NODE_STMT_FOR,
-    NODE_STMT_IF,
-    NODE_STMT_PRINT,
-    NODE_STMT_RETURN,
-    NODE_STMT_SYSCALL,
-    NODE_STMT_WHILE,
-
-    NODE_STRING_PART_FRAGMENT,
-    NODE_STRING_PART_IDENTIFIER,
-
-    NODE_STRUCT_DECL,
-    NODE_SUBSCRIPT,
-    NODE_SYSCALL_RETURN,
-
-    NODE_TEMPLATE_DECL,
-
-    NODE_TEMPLATE_QUANTIFIER_DATA,
-    NODE_TEMPLATE_QUANTIFIER_DIM,
-    NODE_TEMPLATE_QUANTIFIER_DOMAIN,
-
-    NODE_TYPE_ARG_DATA_TYPE_CONST,
-    NODE_TYPE_ARG_DIM_TYPE_CONST,
-    NODE_TYPE_ARG_PUBLIC,
-    NODE_TYPE_ARG_TEMPLATE,
-    NODE_TYPE_ARG_VAR,
-
-    NODE_TYPETYPE,
-    NODE_TYPEVAR,
-    NODE_TYPEVOID,
-    NODE_VAR_INIT
-};
-
 enum SecrecDataType {
     DATATYPE_UNDEFINED = 0x00,
     DATATYPE_UNIT,
@@ -197,6 +66,160 @@ enum SecrecDataType {
     DATATYPE_FLOAT32,
     DATATYPE_FLOAT64,
     NUM_DATATYPES
+};
+
+#define TYPE_ARG_LIST \
+    O(TYPE_ARG_DATA_TYPE_CONST,   TypeArgDataTypeConst) \
+    O(TYPE_ARG_DIM_TYPE_CONST,    TypeArgDimTypeConst) \
+    O(TYPE_ARG_PUBLIC,            TypeArgPublic) \
+    O(TYPE_ARG_TEMPLATE,          TypeArgTemplate) \
+    O(TYPE_ARG_VAR,               TypeArgVar)
+
+#define DATA_TYPE_LIST \
+    O(DATATYPE_TEMPLATE_F,        DataTypeTemplateF) \
+    O(DATATYPE_CONST_F,           DataTypeConstF) \
+    O(DATATYPE_VAR_F,             DataTypeVarF)
+
+#define DIM_TYPE_LIST \
+    O(DIMTYPE_CONST_F,            DimTypeConstF) \
+    O(DIMTYPE_VAR_F,              DimTypeVarF)
+
+#define DATATYPE_LIST \
+    DATA_TYPE_LIST \
+    DIM_TYPE_LIST \
+    O(SECTYPE_PRIVATE_F,          SecTypeF) \
+    O(SECTYPE_PUBLIC_F,           SecTypeF) \
+    O(TYPEVAR,                    TypeVarF)
+
+#define EXPR_LIST \
+    O(EXPR_ARRAY_CONSTRUCTOR,     ExprArrayConstructor) \
+    O(EXPR_BINARY_ADD,            ExprBinary) \
+    O(EXPR_BINARY_ASSIGN,         ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_ADD,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_AND,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_DIV,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_MOD,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_MUL,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_OR,      ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_SUB,     ExprAssign) \
+    O(EXPR_BINARY_ASSIGN_XOR,     ExprAssign) \
+    O(EXPR_BINARY_DIV,            ExprBinary) \
+    O(EXPR_BINARY_EQ,             ExprBinary) \
+    O(EXPR_BINARY_GE,             ExprBinary) \
+    O(EXPR_BINARY_GT,             ExprBinary) \
+    O(EXPR_BINARY_LAND,           ExprBinary) \
+    O(EXPR_BINARY_LE,             ExprBinary) \
+    O(EXPR_BINARY_LOR,            ExprBinary) \
+    O(EXPR_BINARY_LT,             ExprBinary) \
+    O(EXPR_BINARY_MATRIXMUL,      ExprBinary) \
+    O(EXPR_BINARY_MOD,            ExprBinary) \
+    O(EXPR_BINARY_MUL,            ExprBinary) \
+    O(EXPR_BINARY_NE,             ExprBinary) \
+    O(EXPR_BINARY_SHL,            ExprBinary) \
+    O(EXPR_BINARY_SHR,            ExprBinary) \
+    O(EXPR_BINARY_SUB,            ExprBinary) \
+    O(EXPR_BITWISE_AND,           ExprBinary) \
+    O(EXPR_BITWISE_OR,            ExprBinary) \
+    O(EXPR_BITWISE_XOR,           ExprBinary) \
+    O(EXPR_BYTES_FROM_STRING,     ExprBytesFromString) \
+    O(EXPR_CAST,                  ExprCast) \
+    O(EXPR_CAT,                   ExprCat) \
+    O(EXPR_CLASSIFY,              ExprClassify) \
+    O(EXPR_DECLASSIFY,            ExprDeclassify) \
+    O(EXPR_DOMAINID,              ExprDomainID) \
+    O(EXPR_INDEX,                 ExprIndex) \
+    O(EXPR_NONE,                  ExprNone) \
+    O(EXPR_POSTFIX_DEC,           ExprPostfix) \
+    O(EXPR_POSTFIX_INC,           ExprPostfix) \
+    O(EXPR_PREFIX_DEC,            ExprPrefix) \
+    O(EXPR_PREFIX_INC,            ExprPrefix) \
+    O(EXPR_PROCCALL,              ExprProcCall) \
+    O(EXPR_RESHAPE,               ExprReshape) \
+    O(EXPR_RVARIABLE,             ExprRVariable) \
+    O(EXPR_SELECTION,             ExprSelection) \
+    O(EXPR_SHAPE,                 ExprShape) \
+    O(EXPR_SIZE,                  ExprSize) \
+    O(EXPR_STRING_FROM_BYTES,     ExprStringFromBytes) \
+    O(EXPR_STRLEN,                ExprStrlen) \
+    O(EXPR_TERNIF,                ExprTernary) \
+    O(EXPR_TOSTRING,              ExprToString) \
+    O(EXPR_TYPE_QUAL,             ExprQualified) \
+    O(EXPR_UINV,                  ExprUnary) \
+    O(EXPR_UMINUS,                ExprUnary) \
+    O(EXPR_UNEG,                  ExprUnary) \
+    O(LITE_BOOL,                  ExprBool) \
+    O(LITE_FLOAT,                 ExprFloat) \
+    O(LITE_INT,                   ExprInt) \
+    O(LITE_STRING,                ExprString)
+
+#define STMT_LIST \
+    O(STMT_ASSERT,                StmtAssert) \
+    O(STMT_BREAK,                 StmtBreak) \
+    O(STMT_COMPOUND,              StmtCompound) \
+    O(STMT_CONTINUE,              StmtContinue) \
+    O(STMT_DOWHILE,               StmtDoWhile) \
+    O(STMT_EXPR,                  StmtExpr) \
+    O(STMT_FOR,                   StmtFor) \
+    O(STMT_IF,                    StmtIf) \
+    O(STMT_PRINT,                 StmtPrint) \
+    O(STMT_RETURN,                StmtReturn) \
+    O(STMT_SYSCALL,               StmtSyscall) \
+    O(STMT_WHILE,                 StmtWhile)
+
+#define LVALUE_LIST \
+    O(LVALUE_INDEX,               LIndex) \
+    O(LVALUE_SELECT,              LSelect) \
+    O(LVALUE_VARIABLE,            LVariable)
+
+#define QUANTIFIER_LIST \
+    O(TEMPLATE_QUANTIFIER_DATA,   QuantifierData) \
+    O(TEMPLATE_QUANTIFIER_DIM,    QuantifierDim) \
+    O(TEMPLATE_QUANTIFIER_DOMAIN, QuantifierDomain)
+
+#define STRING_PART_LIST \
+    O(STRING_PART_FRAGMENT,       StringPartFragment) \
+    O(STRING_PART_IDENTIFIER,     StringPartIdentifier)
+
+#define MISC_LIST \
+    O(ATTRIBUTE,                  Attribute) \
+    O(KIND,                       Kind) \
+    O(DOMAIN,                     Domain) \
+    O(STRUCT_DECL,                StructDecl) \
+    O(PROCDEF,                    ProcDef) \
+    O(OPDEF,                      OpDef) \
+    O(TEMPLATE_DECL,              Template) \
+    O(PROGRAM,                    Program) \
+    O(IMPORT,                     Import) \
+    O(MODULE,                     Module) \
+    O(VAR_INIT,                   VarInit) \
+    O(DECL,                       Decl) \
+    O(TYPEVOID,                   TypeVoid) \
+    O(TYPETYPE,                   TypeType) \
+    O(IDENTIFIER,                 Identifier) \
+    O(INDEX_SLICE,                IndexSlice) \
+    O(INTERNAL_USE,               InternalUse) \
+    O(DIMENSIONS,                 Dimensions) \
+    O(SUBSCRIPT,                  Subscript) \
+    O(INDEX_INT,                  IndexInt) \
+    O(PUSHCREF,                   SyscallParam) \
+    O(PUSHREF,                    SyscallParam) \
+    O(PUSH,                       SyscallParam) \
+    O(SYSCALL_RETURN,             SyscallParam)
+
+#define TREENODE_LIST \
+    TYPE_ARG_LIST \
+    DATATYPE_LIST \
+    EXPR_LIST \
+    STMT_LIST \
+    LVALUE_LIST \
+    QUANTIFIER_LIST \
+    STRING_PART_LIST \
+    MISC_LIST
+
+enum SecrecTreeNodeType {
+#define O(ENUM,CLASS) NODE_ ## ENUM ,
+    TREENODE_LIST
+#undef O
 };
 
 #ifdef __cplusplus
