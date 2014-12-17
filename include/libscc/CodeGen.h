@@ -364,6 +364,7 @@ private:
     void copyShapeFrom (CGResult& result, Symbol* sym);
     CGResult copyShape (Symbol* dest, Symbol* sym);
     CGResult cgAssign (SymbolSymbol* dest, Symbol* src);
+    Symbol* copyNonTemporary (CGResult& result, Symbol* sym);
 
     LoopInfo prepareLoopInfo (const SubscriptInfo& subscript);
 

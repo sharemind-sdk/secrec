@@ -756,32 +756,12 @@ void Compiler::cgParam (VMBlock& block, const Imop& imop) {
 
     VMDataType vmty = representationType (imop.dest ()->secrecType ());
     assert (vmty != VM_INVALID);
-
-    if (isPrivate (imop) && ! imop.dest ()->isArray ()) {
-        VMValue* temp = m_ra->temporaryReg ();
-        VMValue* d = find (imop.dest ());
-
-        block.push_new ()
-            << "mov cref"
-            << m_st.getImm (m_param ++)
-            << "0x0" // offset 0
-            << temp
-            << m_st.getImm (sizeInBytes (vmty));
-
-        TypeNonVoid* ty = imop.dest ()->secrecType ();
-        block.push_new () << "push" << getPD (m_scm, imop.dest ());
-        block.push_new () << "push" << temp;
-        block.push_new () << "push" << d;
-        emitSyscall (block, SyscallName::basic (ty, "assign"));
-    }
-    else {
-        block.push_new ()
-            << "mov cref"
-            << m_st.getImm (m_param ++)
-            << "0x0" // offset 0
-            << find (imop.dest ())
-            << m_st.getImm (sizeInBytes (vmty));
-    }
+    block.push_new ()
+        << "mov cref"
+        << m_st.getImm (m_param ++)
+        << "0x0" // offset 0
+        << find (imop.dest ())
+        << m_st.getImm (sizeInBytes (vmty));
 }
 
 void Compiler::cgReturn (VMBlock& block, const Imop& imop) {

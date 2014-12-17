@@ -33,14 +33,16 @@ void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
 
 // Initializes structure fields (and also associated size and shape symbols of the fields).
 // Note that this does not assign values to those symbols.
-void initFieldSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
+void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
     DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
     for (const auto& field : structType->fields ()) {
+        // The following is safe as a "." can not normally occur in a name
+        const auto name = sym->name () + "." + field.name.str ();
         TypeBasic* fieldType = field.type;
-        SymbolSymbol* fieldSymbol = st->appendTemporary (fieldType);
+        SymbolSymbol* fieldSymbol = new SymbolSymbol (*strTab.addString (name), fieldType);
         initShapeSymbols (cxt, st, fieldSymbol);
         if (fieldType->secrecDataType ()->isComposite ()) {
-            initFieldSymbols (cxt, st, fieldSymbol, fieldType);
+            initFieldSymbols (cxt, strTab, st, fieldSymbol, fieldType);
         }
 
         sym->appendField (fieldSymbol);
@@ -283,7 +285,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     initShapeSymbols (getContext (), m_st, ns);
 
     if (isStruct) {
-        initFieldSymbols (getContext (), m_st, ns, static_cast<TypeBasic*>(ty));
+        initFieldSymbols (getContext (), getStringTable (), m_st, ns, static_cast<TypeBasic*>(ty));
     }
 
     CGStmtResult result;
@@ -612,6 +614,8 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
         CGResult eResult = codeGen(e);
         append(result, eResult);
         Symbol* resultSym = eResult.symbol ();
+
+        // TODO: this is somewhat of a hack.
         if (resultSym->isConstant () && resultSym->secrecType ()->secrecDataType ()->isString ())
         {
             Symbol* copy = m_st->appendTemporary (resultSym->secrecType ());
@@ -621,12 +625,16 @@ CGStmtResult CodeGen::cgStmtReturn(TreeNodeStmtReturn * s) {
             eResult.setResult (resultSym);
         }
 
-        releaseProcVariables(result, resultSym);
+        std::vector<Symbol*> rets;
+        for (Symbol* sym : flattenSymbol (eResult.symbol ())) {
+            rets.push_back (copyNonTemporary (result, sym));
+        }
+
+        releaseProcVariables(result);
         if (result.isNotOk()) {
             return result;
         }
 
-        std::vector<Symbol*> rets = flattenSymbol (eResult.symbol ());
         Imop * i = newReturn(s, rets.begin(), rets.end());
         i->setDest(m_st->label(s->containingProcedure()->symbol()->target()));
         pushImopAfter(result, i);

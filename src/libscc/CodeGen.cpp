@@ -306,6 +306,35 @@ void CodeGen::codeGenSize(CGResult & result) {
     codeGenSize (result, result.symbol ());
 }
 
+Symbol* CodeGen::copyNonTemporary (CGResult& result, Symbol* sym) {
+    assert (sym != nullptr);
+    assert (! sym->secrecType ()->secrecDataType ()->isComposite ());
+
+    if (sym->isConstant ())
+        return sym;
+
+    assert (dynamic_cast<SymbolSymbol*>(sym) != nullptr);
+    SymbolSymbol* t = static_cast<SymbolSymbol*>(sym);
+    if (t->isTemporary ())
+        return t;
+
+    if (t->isArray ()) {
+        auto copy = m_st->appendTemporary (t->secrecType ());
+        // Note that we don't need to assign the shape.
+        emplaceImopAfter (result, m_node, Imop::COPY, copy, t, t->getSizeSym ());
+        return copy;
+    }
+
+    if (t->secrecType ()->secrecSecType ()->isPrivate ()) {
+        auto copy = m_st->appendTemporary (t->secrecType ());
+        emplaceImopAfter (result, m_node, Imop::DECLARE, copy);
+        emplaceImop (m_node, Imop::ASSIGN, copy, t);
+        return copy;
+    }
+
+    return t;
+}
+
 CGResult CodeGen::copyShape (Symbol* dest, Symbol* sym) {
     assert(dynamic_cast<SymbolSymbol *>(dest) != nullptr);
     assert (dynamic_cast<SymbolSymbol *>(sym) != nullptr);

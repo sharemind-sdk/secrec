@@ -104,14 +104,13 @@ CGResult CodeGen::cgExprCast(TreeNodeExprCast * e) {
     }
     SymbolSymbol * sym = generateResultSymbol(result, e->resultType());
     if (subExpr->resultType()->isScalar()) {
-        auto imop = new Imop(e, iType, sym, subResult.symbol());
-        pushImopAfter(result, imop);
+        emplaceImopAfter(result, e, Imop::DECLARE, sym);
+        emplaceImop(e, iType, sym, subResult.symbol());
     }
     else {
         copyShapeFrom(result, subResult.symbol());
         allocTemporaryResult(result);
-        auto imop = new Imop(e, iType, sym, subResult.symbol(), sym->getSizeSym());
-        pushImopAfter(result, imop);
+        emplaceImopAfter(result, e, iType, sym, subResult.symbol(), sym->getSizeSym());
     }
 
     releaseTemporary(result, subResult.symbol());
@@ -890,9 +889,10 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
             return result;
         }
 
-        Symbol * sym = argResult.symbol();
-        std::vector<Symbol*> temp = flattenSymbol (sym);
-        argList.insert (argList.end (), temp.begin (), temp.end ());
+        // Possibly copy arguments (if needed):
+        for (Symbol* sym : flattenSymbol (argResult.symbol ())) {
+            argList.push_back (copyNonTemporary (result, sym));
+        }
     }
 
     // prep return values:
@@ -907,9 +907,6 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     c->setArg2 (m_st->label (i));
     pushImopAfter (result, i);
     push_imop (c);
-    for (Symbol* sym : argList) {
-        releaseTemporary (result, sym);
-    }
 
     if (! returnType->isVoid ()) {
         codeGenSize (result);

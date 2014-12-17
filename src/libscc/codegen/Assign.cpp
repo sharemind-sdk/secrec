@@ -268,7 +268,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
             codeGenSize(result);
             emplaceImopAfter(result, e, Imop::ALLOC, resSym, arg2Result.symbol (), resSym->getSizeSym());
-            releaseResource(result, arg2Result.symbol ());
+            releaseTemporary(result, arg2Result.symbol ());
         }
 
         return result;
