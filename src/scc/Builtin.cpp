@@ -37,7 +37,15 @@ void BuiltinFunctions::insert (VMLabel* label, const BuiltinFunction& func) {
 }
 
 void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
-    for (Map::value_type& v : m_funtions) {
+    using value_type = std::pair<VMLabel*, BuiltinFunction*>;
+    std::vector<value_type> vs (m_funtions.begin (), m_funtions.end ());
+    std::sort (vs.begin (), vs.end (),
+        [](const value_type& x, const value_type& y) {
+            return x.first->name () < y.first->name ();
+        }
+    );
+
+    for (value_type& v : vs) {
         VMFunction function (v.first);
         v.second->generate (function, st);
         code.push_back (function);
