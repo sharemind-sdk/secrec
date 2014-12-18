@@ -653,18 +653,15 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
         emplaceImopAfter(result, m_node, Imop::PARAM, sym);
     }
     else {
-        SymbolSymbol * const tns = m_st->appendTemporary(sym->secrecType());
-
         // Pop parameters:
-        for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
-            emplaceImopAfter(result, m_node, Imop::PARAM, *di);
-        emplaceImopAfter(result, m_node, Imop::PARAM, tns);
+        for (auto symDim : dim_range (sym))
+            emplaceImopAfter(result, m_node, Imop::PARAM, symDim);
+        emplaceImopAfter(result, m_node, Imop::PARAM, sym);
 
         // Update size:
         emplaceImop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1));
-        for (dim_iterator di = dim_begin(sym), de = dim_end(sym); di != de; ++ di)
-            emplaceImop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), *di);
-        emplaceImop(m_node, Imop::COPY, sym, tns, sym->getSizeSym());
+        for (auto symDim : dim_range (sym))
+            emplaceImop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), symDim);
     }
 
     return result;
