@@ -7,3 +7,5 @@
 Makefile
 *.pro.user
 .clang_complete
+/qtcreator-build/
+/b/
