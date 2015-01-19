@@ -29,6 +29,15 @@
 
 namespace SecreCC {
 
+namespace {
+
+bool isSigned (SecreC::Symbol* sym) {
+    assert (sym != NULL);
+    return isSignedNumericDataType (sym->secrecType ()->secrecDataType ());
+}
+
+}
+
 /*******************************************************************************
   BuiltinFunctions
 *******************************************************************************/
@@ -202,6 +211,8 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         case Imop::BOR   : name = "btor"; break;
         case Imop::XOR   : name = "btxor"; break;
         case Imop::BAND  : name = "btand"; break;
+        case Imop::SHL   : name = "tshl0"; break;
+        case Imop::SHR   : name = isSigned (imop.dest ()) ? "tshr" : "tshr0"; break;
         default:
             assert (false && "Not an arithmetic instruction!");
         }
