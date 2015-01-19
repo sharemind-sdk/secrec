@@ -23,9 +23,10 @@
 #include "StringRef.h"
 #include "ParserEnums.h"
 
-#include <mpfr.h>
+// NOTE: cstddef needs to be included before mpfr.h to support gcc-4.9
 #include <cstddef>
 #include <cstdint>
+#include <mpfr.h>
 
 #if MPFR_VERSION >= 0x030000
 #define SECREC_CONSTANT_MPFR_RNDN MPFR_RNDN
