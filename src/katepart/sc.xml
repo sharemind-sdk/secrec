@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language name="SecreC" version="1.0" section="Sources" kateversion="2.5" extensions="*.sc;">
+  <highlighting>
+    <list name="keywords">
+      <item> __cref </item>
+      <item> __domainid </item>
+      <item> __ref </item>
+      <item> __return </item>
+      <item> __syscall </item>
+
+      <item> assert </item>
+      <item> break </item>
+      <item> cat </item>
+      <item> continue </item>
+      <item> declassify </item>
+      <item> dim </item>
+      <item> domain </item>
+      <item> do </item>
+      <item> else </item>
+      <item> false </item>
+      <item> for </item>
+      <item> if </item>
+      <item> import </item>
+      <item> kind </item>
+      <item> module </item>
+      <item> operator </item>
+      <item> print </item>
+      <item> reshape </item>
+      <item> return </item>
+      <item> shape </item>
+      <item> struct </item>
+      <item> size </item>
+      <item> template </item>
+      <item> tostring </item>
+      <item> true </item>
+      <item> type </item>
+      <item> while </item>
+    </list>
+    <list name="types">
+      <item> bool </item>
+      <item> float32 </item>
+      <item> float64 </item>
+      <item> float </item>
+      <item> int16 </item>
+      <item> int32 </item>
+      <item> int64 </item>
+      <item> int8 </item>
+      <item> int </item>
+      <item> public </item>
+      <item> string </item>
+      <item> uint16 </item>
+      <item> uint32 </item>
+      <item> uint64 </item>
+      <item> uint8 </item>
+      <item> uint </item>
+      <item> void </item>
+      <item> xor_uint16 </item>
+      <item> xor_uint32 </item>
+      <item> xor_uint64 </item>
+      <item> xor_uint8 </item>
+      <item> xor_uint </item>
+    </list>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
+        <DetectSpaces />
+        <StringDetect attribute="Region Marker" context="Region Marker" String="//BEGIN" beginRegion="Region1" firstNonSpace="true" />
+        <StringDetect attribute="Region Marker" context="Region Marker" String="//END" endRegion="Region1" firstNonSpace="true" />
+        <keyword attribute="Keyword" contect="#stay" String="keywords" />
+        <keyword attribute="Data Type" context="#stay" String="types" />
+        <HlCChar attribute="Char" context="#stay" />
+        <DetectChar attribute="String" context="String" String="&quot;" />
+        <Float attribute="Float" context="#stay">
+          <AnyChar String="fF" attribute="Float" context="#stay" />
+        </Float>
+        <HlCOct attribute="Octal" context="#stay" />
+        <HlCHex attribute="Hex" context="#stay" />
+        <Int attribute="Decimal" context="#stay" />
+        <IncludeRules context="##Doxygen" />
+        <Detect2Chars attribute="Comment" context="Comment 1" char="/" char1="/" />
+        <Detect2Chars attribute="Comment" context="Comment 2" char="/" char1="*" beginRegion="Comment" />
+        <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
+        <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
+        <AnyChar attribute="Symbol" context="#stay" String=":!&amp;()+,-/.*&lt;=&gt;?[]{|}~^&#59;" />
+      </context>
+
+      <context attribute="String" lineEndContext="#pop" name="String">
+        <LineContinue attribute="String" context="#stay" />
+        <HlCStringChar attribute="String Char" context="#stay" />
+        <DetectChar attribute="String" context="#pop" char="&quot;" />
+      </context>
+
+      <context attribute="Region Marker" lineEndContext="#pop" name="Region Marker">
+      </context>
+
+      <context attribute="Comment" lineEndContext="#pop" name="Comment 1">
+        <LineContinue attribute="Comment" context="#stay" />
+        <DetectSpaces />
+        <IncludeRules context="##Alerts" />
+        <DetectIdentifier />
+      </context>
+
+      <context attribute="Comment" lineEndContext="#stay" name="Comment 2">
+        <DetectSpaces />
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <IncludeRules context="##Alerts" />
+        <DetectIdentifier />
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text"  defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Keyword"      defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Data Type"    defStyleNum="dsDataType" spellChecking="false"/>
+      <itemData name="Decimal"      defStyleNum="dsDecVal" spellChecking="false"/>
+      <itemData name="Octal"        defStyleNum="dsBaseN" spellChecking="false"/>
+      <itemData name="Hex"          defStyleNum="dsBaseN" spellChecking="false"/>
+      <itemData name="Float"        defStyleNum="dsFloat" spellChecking="false"/>
+      <itemData name="Char"         defStyleNum="dsChar" spellChecking="false"/>
+      <itemData name="String"       defStyleNum="dsString"/>
+      <itemData name="String Char"  defStyleNum="dsChar"/>
+      <itemData name="Comment"      defStyleNum="dsComment"/>
+      <itemData name="Symbol"       defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Region Marker" defStyleNum="dsRegionMarker" spellChecking="false"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <comment name="singleLine" start="//" />
+      <comment name="multiLine" start="/*" end="*/" region="Comment"/>
+    </comments>
+    <keywords casesensitive="1" />
+  </general>
+</language>
