@@ -86,6 +86,7 @@ add_test_secrec_execute("scalars/54-Bug1478")
 add_test_secrec_execute("scalars/55-invalid-concat")
 add_test_secrec_execute("scalars/56-overlapping-instances")
 add_test_secrec_execute("scalars/57-strlen")
+add_test_secrec_execute("scalars/58-float-cast-bug")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
