@@ -12,7 +12,7 @@
 	<array>
 		<dict>
 			<key>comment</key>
-			<string>variable types.</string>
+			<string>Variable types</string>
 			<key>match</key>
 			<string>\b(bool|uint|uint8|uint16|uint32|uint64|int|int8|int16|int32|int64|float32|float64|xor_uint8|xor_uint16|xor_uint32|xor_uint64|float|void|string)\b</string>
 			<key>name</key>
@@ -20,7 +20,7 @@
 		</dict>
 		<dict>
 			<key>comment</key>
-			<string>Numeric constants</string>
+			<string>Control flow keywords</string>
 			<key>match</key>
 			<string>\b(break|continue|do|else|for|if|return|while)\b</string>
 			<key>name</key>
@@ -34,7 +34,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\b(template|domain|kind|dim|type|module|import|public)\b</string>
+			<string>\b(struct|template|domain|kind|dim|type|module|import|public)\b</string>
 			<key>name</key>
 			<string>storage.modifier.secrec</string>
 		</dict>
