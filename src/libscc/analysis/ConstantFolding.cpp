@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <list>
+#include <memory>
 #include <sstream>
 #include <vector>
 
