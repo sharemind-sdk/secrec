@@ -20,6 +20,8 @@
 #include "APInt.h"
 
 #include <ostream>
+#include <sharemind/abort.h>
+
 
 namespace SecreC {
 
@@ -131,6 +133,7 @@ APInt APInt::cmp (APInt x, APInt y, APInt::CmpMode mode) {
     case SGT: return x.signedBits () >  y.signedBits ();
     case SLE: return x.signedBits () <= y.signedBits ();
     case SGE: return x.signedBits () >= y.signedBits ();
+    default: SHAREMIND_ABORT("AIC %d", static_cast<int>(mode));
     }
 }
 

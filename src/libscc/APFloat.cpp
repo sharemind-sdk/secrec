@@ -21,7 +21,9 @@
 #include "DataType.h"
 
 #include <ostream>
+#include <sharemind/abort.h>
 #include <stdexcept>
+
 
 namespace SecreC {
 
@@ -37,6 +39,7 @@ inline mpfr_rnd_t mpfrRoundMode (APFloat::RoundMode mode) {
     case APFloat::RNDA:  return MPFR_RNDA;
     case APFloat::RNDF:  return MPFR_RNDF;
     case APFloat::RNDNA: return MPFR_RNDNA;
+    default: SHAREMIND_ABORT("mRM %d", static_cast<int>(mode));
     }
 }
 
@@ -177,6 +180,7 @@ bool APFloat::cmp (APFloat x, APFloat y, APFloat::CmpMode mode) {
     case GT: return mpfr_cmp (x.bits (), y.bits ()) > 0;
     case LE: return mpfr_cmp (x.bits (), y.bits ()) <= 0;
     case GE: return mpfr_cmp (x.bits (), y.bits ()) >= 0;
+    default: SHAREMIND_ABORT("AFC %d", static_cast<int>(mode));
     }
 }
 

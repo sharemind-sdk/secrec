@@ -19,11 +19,13 @@
 
 #include "TemplateChecker.h"
 
-#include "TreeNode.h"
+#include <sharemind/abort.h>
+#include "Log.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
-#include "Log.h"
+#include "TreeNode.h"
 #include "Visitor.h"
+
 
 namespace SecreC {
 
@@ -34,6 +36,7 @@ const char* kindAsString (TypeArgumentKind kind) {
     case TA_SEC: return "domain";
     case TA_DATA: return "data";
     case TA_DIM: return "dimensionality";
+    default: SHAREMIND_ABORT("kAS %d", static_cast<int>(kind));
     }
 }
 
@@ -42,6 +45,7 @@ SymbolCategory symbolCategory (TypeArgumentKind kind) {
     case TA_SEC: return SYM_DOMAIN;
     case TA_DATA: return SYM_TYPE;
     case TA_DIM: return SYM_DIM;
+    default: SHAREMIND_ABORT("sC %d", static_cast<int>(kind));
     }
 }
 

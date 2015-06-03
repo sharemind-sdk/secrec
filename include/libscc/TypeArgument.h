@@ -24,6 +24,7 @@
 
 #include <cassert>
 #include <iosfwd>
+#include <sharemind/abort.h>
 
 namespace SecreC {
 
@@ -134,6 +135,7 @@ inline bool operator == (const TypeArgument& a, const TypeArgument& b) {
     case TA_DIM:   return a.un_dimType  == b.un_dimType;
     case TA_SEC:   return a.un_secType  == b.un_secType;
     case TA_DATA:  return a.un_dataType == b.un_dataType;
+    default: SHAREMIND_ABORT("==TA %d", static_cast<int>(a.m_kind));
     }
 }
 
@@ -148,6 +150,7 @@ inline bool operator < (const TypeArgument& a, const TypeArgument& b) {
     case TA_DIM:   return a.un_dimType  < b.un_dimType;
     case TA_SEC:   return a.un_secType  < b.un_secType;
     case TA_DATA:  return a.un_dataType < b.un_dataType;
+    default: SHAREMIND_ABORT("TAC %d", static_cast<int>(a.m_kind));
     }
 }
 

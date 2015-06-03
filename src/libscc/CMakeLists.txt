@@ -17,6 +17,9 @@
 # For further information, please contact us at sharemind@cyber.ee.
 #
 
+FIND_PACKAGE(SharemindCHeaders REQUIRED)
+ADD_DEFINITIONS(${SharemindCHeaders_DEFINITIONS})
+
 ################################################################################
 # libscc
 ################################################################################
@@ -154,7 +157,8 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/src/libscc/"
     "${CMAKE_CURRENT_BINARY_DIR}"
     ${Boost_INCLUDE_DIRS}
-    ${MPFR_INCLUDE_DIRS})
+    ${MPFR_INCLUDE_DIRS}
+    ${SharemindCHeaders_INCLUDE_DIRS})
 
 IF(NOT SHAREMIND_LIBSCC_LINKING_MODE)
     SET(SHAREMIND_LIBSCC_LINKING_MODE SHARED)
@@ -174,7 +178,8 @@ TARGET_LINK_LIBRARIES("libscc"
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_THREAD_LIBRARY}
     ${Boost_FILESYSTEM_LIBRARY}
-    ${MPFR_LIBRARIES})
+    ${MPFR_LIBRARIES}
+    ${SharemindCHeaders_LIBRARIES})
 INSTALL(TARGETS "libscc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"

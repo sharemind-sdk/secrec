@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sharemind/abort.h>
 #include <sstream>
 
 namespace SecreC {
@@ -116,6 +117,7 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
 #define O(ENUM, CLASS) case NODE_ ## ENUM : return #ENUM;
     TREENODE_LIST
 #undef O
+    default: SHAREMIND_ABORT("TNtN %d", static_cast<int>(type));
     }
 }
 

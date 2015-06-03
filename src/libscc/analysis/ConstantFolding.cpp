@@ -32,6 +32,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <sharemind/abort.h>
 #include <sstream>
 #include <vector>
 
@@ -586,7 +587,8 @@ Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Valu
     }
 
     const bool isSigned = isSignedNumericDataType (imop.arg1 ()->secrecType ()->secrecDataType ());
-    switch (vs.at(0)->tag ()) {
+    ValueTag const valueTag = vs.at(0)->tag();
+    switch (valueTag) {
     case VINT:
         if (isSigned)
             return intEval (factory, imop, as<VINT>(vs));
@@ -595,6 +597,7 @@ Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Valu
     case VFLOAT: return floatEval (factory, imop, as<VFLOAT>(vs));
     case VSTR: return strEval (factory, imop, as<VSTR>(vs));
     case VARR: return arrEval (factory, imop, as<VARR>(vs));
+    default: SHAREMIND_ABORT("eV %d", static_cast<int>(valueTag));
     }
 }
 

@@ -19,6 +19,7 @@
 
 #include "TypeArgument.h"
 
+#include <sharemind/abort.h>
 #include "DataType.h"
 #include "Log.h"
 #include "SecurityType.h"
@@ -41,6 +42,7 @@ SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
     case TA_SEC:  return new SymbolDomain (name, secType ());
     case TA_DATA: return new SymbolDataType (name, dataType ());
     case TA_DIM:  return new SymbolDimensionality (name, dimType ());
+    default: SHAREMIND_ABORT("TAb %d", static_cast<int>(m_kind));
     }
 }
 
@@ -49,6 +51,7 @@ std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
     case TA_SEC:  os << *a.secType (); break;
     case TA_DATA: os << *a.dataType (); break;
     case TA_DIM:  os <<  a.dimType (); break;
+    default: SHAREMIND_ABORT("<<TA %d", static_cast<int>(a.m_kind));
     }
 
     return os;
