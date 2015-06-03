@@ -267,7 +267,6 @@ private: /* Fields: */
 
 RegisterAllocator::RegisterAllocator ()
     : m_st (0)
-    , m_lv (0)
     , m_inferenceGraph (0)
 { }
 
@@ -275,11 +274,13 @@ RegisterAllocator::~RegisterAllocator () {
     delete m_inferenceGraph;
 }
 
-void RegisterAllocator::init (VMSymbolTable& st, LVPtr lv) {
-    assert (m_st == NULL && m_lv.get () == NULL && m_inferenceGraph == NULL);
+void RegisterAllocator::init(VMSymbolTable & st, LVPtr && lv) {
+    assert(!m_st);
+    assert(!m_lv);
+    assert(!m_inferenceGraph);
+    m_inferenceGraph = new InferenceGraph{};
     m_st = &st;
-    m_lv = lv;
-    m_inferenceGraph = new InferenceGraph ();
+    m_lv = std::move(lv);
 }
 
 VMVReg* RegisterAllocator::temporaryReg () {

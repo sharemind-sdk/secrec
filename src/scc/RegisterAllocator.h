@@ -47,7 +47,7 @@ class VMFunction;
 class RegisterAllocator {
 public: /* Types: */
 
-    typedef std::auto_ptr<SecreC::LiveVariables > LVPtr;
+    typedef std::unique_ptr<SecreC::LiveVariables > LVPtr;
     typedef std::set<const SecreC::Symbol*> Symbols;
     typedef std::set<VMVReg*> RegSet;
     typedef std::vector<VMVReg*> RegStack;
@@ -57,7 +57,7 @@ public: /* Methods: */
     RegisterAllocator ();
     ~RegisterAllocator ();
 
-    void init (VMSymbolTable& st, LVPtr lv);
+    void init(VMSymbolTable & st, LVPtr && lv);
 
     VMVReg* temporaryReg ();
 

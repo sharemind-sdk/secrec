@@ -390,7 +390,7 @@ void Compiler::run (VMLinkingUnit& vmlu) {
             .run (m_code.program ());
 
     m_target = codeSec;
-    m_ra->init (m_st, lv);
+    m_ra->init(m_st, std::move(lv));
     m_scm->init (m_st, scSec, pdSec);
     m_strLit->init (m_st, rodataSec);
 
