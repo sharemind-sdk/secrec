@@ -133,7 +133,9 @@ APInt APInt::cmp (APInt x, APInt y, APInt::CmpMode mode) {
     case SGT: return x.signedBits () >  y.signedBits ();
     case SLE: return x.signedBits () <= y.signedBits ();
     case SGE: return x.signedBits () >= y.signedBits ();
+    #ifndef __clang__
     default: SHAREMIND_ABORT("AIC %d", static_cast<int>(mode));
+    #endif
     }
 }
 
