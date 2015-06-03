@@ -290,7 +290,9 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
     ScopedSetNode scopedSetNode (*this, varInit);
 
     const bool isScalar = ty->isScalar();
+    #ifndef NDEBUG
     const bool isString = ty->secrecDataType()->isString ();
+    #endif
     const bool isStruct = ty->secrecDataType ()->isComposite ();
 
     const auto ns = new SymbolSymbol(varInit->variableName(), ty);
