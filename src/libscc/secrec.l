@@ -46,10 +46,26 @@ void clearBuffer () {
         clearBuffer (); \
     } while (0)
 
+
+/* The following functions and macros are to work around compiler warnings for
+ * Flex-generated code: */
+
+void * yyalloc(yy_size_t  size, yyscan_t yyscanner)
+{ return ((void) yyscanner, malloc(size)); }
+
+void * yyrealloc(void * ptr, yy_size_t size, yyscan_t yyscanner)
+{ return ((void) yyscanner, realloc(ptr, size)); }
+
+void yyfree(void * ptr, yyscan_t yyscanner)
+{ return ((void) yyscanner, free(ptr)); }
+
+#define YY_EXIT_FAILURE (((void) yyscanner), 2)
+
 %}
 
 %option extra-type="TYPE_STRINGTABLE"
 %option bison-bridge bison-locations reentrant noyywrap nounput noinput
+%option noyyalloc noyyfree noyyrealloc
 
  /* =============================================================================
     Character classes
