@@ -98,7 +98,7 @@ inline bool operator != (Value x, Value y) {
   ConstantFolding
 *******************************************************************************/
 
-class ConstantFolding : public ForwardDataFlowAnalysis {
+class ConstantFolding final: public ForwardDataFlowAnalysis {
 public: /* Types: */
     using SVM = boost::container::flat_map<const Symbol*, Value>; // symbol to value map
     using BSVM = std::map<const Block*, SVM>; // block to symbol to value map
@@ -114,7 +114,7 @@ public: /* Methods: */
     void startBlock(const Block &b) override final;
     void inFrom(const Block &from, Edge::Label label, const Block &to) override final;
     bool finishBlock(const Block &b) override final;
-    void finish();
+    void finish() final override;
 
     size_t optimizeBlock(Context& cxt, StringTable& st, Block& block) const;
 
