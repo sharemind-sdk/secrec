@@ -380,7 +380,7 @@ void castValueDyn (DataType* dataType, Value& dest, const Value& from) {
  * Unary and binary regular and vectorized ops:
  */
 
-DECLOP1 (DECLARE, 0)
+DECLOP1 (DECLARE, (void) dest; (void) arg1)
 DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
 DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
