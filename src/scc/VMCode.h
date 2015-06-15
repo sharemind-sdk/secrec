@@ -247,7 +247,6 @@ public: /* Methods: */
 
     explicit VMDataSection (Type type)
         : VMSection (type == RODATA ? "RODATA" : "DATA")
-        , m_type (type)
     { }
 
     void addRecord (VMLabel* l, const char* t, const std::string& v) {
@@ -260,7 +259,6 @@ protected:
 
 private: /* Fields: */
 
-    const Type  m_type;
     Records     m_records;
 };
 
