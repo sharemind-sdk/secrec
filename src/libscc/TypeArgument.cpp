@@ -42,8 +42,13 @@ SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
     case TA_SEC:  return new SymbolDomain (name, secType ());
     case TA_DATA: return new SymbolDataType (name, dataType ());
     case TA_DIM:  return new SymbolDimensionality (name, dimType ());
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("TAb %d", static_cast<int>(m_kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 }
@@ -53,8 +58,13 @@ std::ostream& operator << (std::ostream& os, const TypeArgument& a) {
     case TA_SEC:  os << *a.secType (); break;
     case TA_DATA: os << *a.dataType (); break;
     case TA_DIM:  os <<  a.dimType (); break;
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("<<TA %d", static_cast<int>(a.m_kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 

@@ -39,8 +39,13 @@ inline mpfr_rnd_t mpfrRoundMode (APFloat::RoundMode mode) {
     case APFloat::RNDA:  return MPFR_RNDA;
     case APFloat::RNDF:  return MPFR_RNDF;
     case APFloat::RNDNA: return MPFR_RNDNA;
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("mRM %d", static_cast<int>(mode));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 }
@@ -182,8 +187,13 @@ bool APFloat::cmp (APFloat x, APFloat y, APFloat::CmpMode mode) {
     case GT: return mpfr_cmp (x.bits (), y.bits ()) > 0;
     case LE: return mpfr_cmp (x.bits (), y.bits ()) <= 0;
     case GE: return mpfr_cmp (x.bits (), y.bits ()) >= 0;
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("AFC %d", static_cast<int>(mode));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 }

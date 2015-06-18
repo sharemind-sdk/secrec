@@ -117,8 +117,13 @@ const char *TreeNode::typeName(SecrecTreeNodeType type) {
 #define O(ENUM, CLASS) case NODE_ ## ENUM : return #ENUM;
     TREENODE_LIST
 #undef O
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("TNtN %d", static_cast<int>(type));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 }

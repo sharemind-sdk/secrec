@@ -597,8 +597,13 @@ Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Valu
     case VFLOAT: return floatEval (factory, imop, as<VFLOAT>(vs));
     case VSTR: return strEval (factory, imop, as<VSTR>(vs));
     case VARR: return arrEval (factory, imop, as<VARR>(vs));
-    #ifndef __clang__
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
     default: SHAREMIND_ABORT("eV %d", static_cast<int>(valueTag));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
     #endif
     }
 }
