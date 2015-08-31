@@ -68,6 +68,7 @@ private: /* Fields: */
     VMSymbolTable*   m_st;
     VMDataSection*   m_dataSection;
     LitMap           m_literals;
+    size_t           m_uniq;
 };
 
 } // namespace SecreCC
