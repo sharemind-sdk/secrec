@@ -767,9 +767,8 @@ void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     VMDataType vmty = representationType (imop.dest ()->secrecType ());
     assert (vmty != VM_INVALID);
     block.push_new ()
-        << "mov cref"
-        << m_st.getImm (m_param ++)
-        << "0x0" // offset 0
+        << "mov cref" << (m_param ++)
+        << "imm 0x0" // offset 0
         << find (imop.dest ())
         << m_st.getImm (sizeInBytes (vmty));
 }
@@ -790,8 +789,9 @@ void Compiler::cgReturn (VMBlock& block, const Imop& imop) {
         assert (ty != VM_INVALID);
         block.push_new ()
             << "mov" << find (*it)
-            << "ref" << m_st.getImm (retCount ++ )
-            << "0x0" << m_st.getImm (sizeInBytes (ty));
+            << "ref" << (retCount ++ )
+            << "imm 0x0"
+            << m_st.getImm (sizeInBytes (ty));
     }
 
     block.push_new () << "return imm 0x0";
