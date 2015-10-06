@@ -200,6 +200,7 @@ add_test_secrec_execute("structs/11-template-domain-failure")
 add_test_secrec_execute("structs/12-template-argument")
 add_test_secrec_execute("structs/13-some")
 add_test_secrec_execute("structs/14-assign-bug")
+add_test_secrec_execute("structs/15-recursive-bug")
 
 SET_TESTS_PROPERTIES("structs/04-redeclaration"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,1\\)\\(4,15\\)")
