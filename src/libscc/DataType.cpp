@@ -346,12 +346,19 @@ DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType
 *******************************************************************************/
 
 void DataTypeStruct::print (std::ostream& os) const {
-    os << "struct " << m_name << " { ";
-    for (const auto & elem : m_fields) {
-        os << *elem.type << " " << elem.name << "; ";
-    }
+    os << "struct " << m_name;
 
-    os << "}";
+    if (!m_typeArgs.empty ()) {
+        os << "<";
+        bool first = true;
+        for (const auto & typeArg : m_typeArgs) {
+            if (!first)
+                os << ", ";
+            first = false;
+            os << typeArg;
+        }
+        os << ">";
+    }
 }
 
 DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
