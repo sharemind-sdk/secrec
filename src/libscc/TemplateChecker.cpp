@@ -122,6 +122,13 @@ bool TemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
         return false;
     }
 
+    if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
+        m_log.fatal() << "Template variable \'" << name
+                      << "\' overshadows previously definition of "
+                      <<  *sym << " at " << q->location () << '.';
+        return false;
+    }
+
     m_vars.insert (it, std::make_pair (name,
         TemplateTypeVar (q->typeVariable (), quantifierKind (*q))));
     return true;

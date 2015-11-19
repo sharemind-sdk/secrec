@@ -114,9 +114,9 @@ bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* data
 bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType) {
     assert (dataType != nullptr);
     const StringRef name = t->identifier ()->value ();
-//    if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
-//        return dataType->equals (sym->dataType ());
-//    }
+    if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
+        return dataType->equals (sym->dataType ());
+    }
 
     return bind (name, dataType);
 }
