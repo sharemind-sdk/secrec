@@ -115,13 +115,13 @@ bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType
     assert (dataType != nullptr);
     const StringRef name = t->identifier ()->value ();
 
-//    if (m_st->find<SYM_STRUCT>(name)) {
-//        TUGUARD(dataType->isComposite());
-//        const auto structType = static_cast<DataTypeStruct*>(dataType);
-//        TUGUARD(structType->typeArgs().empty());
-//        TUGUARD(name == structType->name());
-//        return false;
-//    }
+    if (m_st->find<SYM_STRUCT>(name)) {
+        TUGUARD(dataType->isComposite());
+        const auto structType = static_cast<DataTypeStruct*>(dataType);
+        TUGUARD(structType->typeArgs().empty());
+        TUGUARD(name == structType->name());
+        return true;
+    }
 
     return bind (name, dataType);
 }
