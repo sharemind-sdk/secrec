@@ -25,6 +25,7 @@
 #include "TreeNodeFwd.h"
 #include "TypeArgument.h"
 
+#include <utility>
 #include <vector>
 
 namespace SecreC {
@@ -54,6 +55,8 @@ struct InstanceInfo;
     } \
     while (false)
 #endif
+
+TypeNonVoid* upperTypeNonVoid(Context& context, TypeNonVoid* a, TypeNonVoid* b);
 
 /*******************************************************************************
   TypeChecker
@@ -153,6 +156,7 @@ public: /* Methods: */
 
     Status visitStructDecl(TreeNodeStructDecl* decl);
     Status visitProcDef(TreeNodeProcDef * proc, SymbolTable * localScope);
+    Status visitOpDef(TreeNodeOpDef * def, SymbolTable * localScope);
     Status visitTemplate(TreeNodeTemplate * templ);
 
     Status visitLValue(TreeNodeLValue* lvalue);
@@ -230,6 +234,20 @@ private:
                 const TypeContext& tyCxt,
                 TypeProc* argTypes) const;
 
+    bool unifyOperator (Instantiation& inst,
+                        TypeProc* argTypes) const;
+
+    Status findRegularOpDef(SymbolProcedure *& symProc,
+                            StringRef name,
+                            TypeProc* callTypeProc,
+                            const TreeNode * errorCxt);
+
+    Status findRegularProc(SymbolProcedure *& symProc,
+                           StringRef name,
+                           const TypeContext & tyCxt,
+                           TypeProc* argTypes,
+                           const TreeNode * errorCxt);
+
     /**
      * \brief Looks for a best matching procedure or template.
      *
@@ -247,6 +265,13 @@ private:
                                 const TypeContext & tyCxt,
                                 TypeProc* argTypes,
                                 const TreeNode * errorCxt);
+
+    Status findBestMatchingOpDef(SymbolProcedure *& symProc,
+                                 StringRef name,
+                                 TypeProc* callTypeProc,
+                                 const TreeNode * errorCxt);
+
+    Status checkRedefinitions(const TreeNodeProcDef& proc);
 
 private: /* Fields: */
 

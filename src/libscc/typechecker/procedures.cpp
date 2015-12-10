@@ -19,8 +19,11 @@
 
 #include "TypeChecker.h"
 
+#include "DataType.h"
 #include "Log.h"
 #include "ModuleInfo.h"
+#include "OperatorTypeUnifier.h"
+#include "SecurityType.h"
 #include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
@@ -33,6 +36,10 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
 #include <vector>
+
+#include <algorithm>
+using boost::adaptors::reverse;
+
 
 namespace SecreC {
 
@@ -80,21 +87,23 @@ findProcedures (SymbolTable* st, StringRef name, TypeProc* dt)
     return out;
 }
 
-std::vector<SymbolTemplate*>
+template <SymbolCategory symbolType>
+std::vector<typename SymbolTraits<symbolType>::Type*>
 findTemplates (SymbolTable* st, StringRef name)
 {
-    std::vector<SymbolTemplate*> out;
+    using T = typename SymbolTraits<symbolType>::Type;
+    std::vector<T*> out;
     const std::string actualName = name.str();
-    for (Symbol* _symTempl : st->findAll (SYM_TEMPLATE, actualName)) {
-        assert (dynamic_cast<SymbolTemplate*>(_symTempl) != nullptr);
-        SymbolTemplate* symTempl = static_cast<SymbolTemplate*>(_symTempl);
+    for (Symbol* _symTempl : st->findAll (symbolType, actualName)) {
+        assert (dynamic_cast<T*>(_symTempl) != nullptr);
+        T* symTempl = static_cast<T*>(_symTempl);
         out.push_back (symTempl);
     }
 
     return out;
 }
 
-bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt) {
+bool providesExpectedTypeContext (SymbolProcedureTemplate* sym, const TypeContext& tyCxt) {
     if (sym->expectsSecType () && !tyCxt.haveContextSecType ())
         return false;
 
@@ -105,6 +114,59 @@ bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt)
         return false;
 
     return true;
+}
+
+bool opSupportedType (TypeNonVoid* ty) {
+    if (ty->secrecDataType ()->isComposite ())
+        return false;
+
+    assert (dynamic_cast<DataTypePrimitive*> (ty->secrecDataType ()));
+    DataTypePrimitive* dataTy = static_cast<DataTypePrimitive*> (ty->secrecDataType ());
+
+    if (dataTy->secrecDataType () == DATATYPE_STRING)
+        return false;
+
+    SecrecDimType dim = ty->secrecDimType ();
+    if (!(dim == 0u || dim == 1u))
+        return false;
+
+    return true;
+}
+
+using OpWeight = std::tuple<unsigned, unsigned, unsigned>;
+
+OpWeight calculateOpWeight (Instantiation& inst,
+                            TypeProc* callTypeProc)
+{
+    SymbolTemplate* t_ = inst.getTemplate ();
+    assert (dynamic_cast<SymbolOperatorTemplate*> (t_) != nullptr);
+    SymbolOperatorTemplate* t = static_cast<SymbolOperatorTemplate*> (t_);
+
+    unsigned varCount = t->typeVariableCount ();
+    // Kind constraint is good, so we give lower weight (0) when it's
+    // present
+    unsigned kindConstraint = t->hasKindConstraint () ? 0 : 1;
+    unsigned score = 0;
+    TreeNodeProcDef* body = t->decl ()->body ();
+    unsigned count = body->params ().size ();
+
+    assert (callTypeProc->paramTypes ().size () == count);
+
+    unsigned i = 0;
+    for (TreeNodeStmtDecl param : body->params ()) {
+        TypeBasic* argTy = callTypeProc->paramTypes ()[i++];
+        TreeNodeType* paramTy = param.varType ();
+
+        if (! paramTy->secType ()->isPublic () &&
+            argTy->secrecSecType ()->isPublic ())
+            ++score;
+
+        if (paramTy->dimType ()->cachedType () !=
+            argTy->secrecDimType ())
+            ++score;
+    }
+
+    return std::make_tuple (varCount, kindConstraint, score);
 }
 
 } // anonymous namespace
@@ -138,6 +200,35 @@ TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & p
     return OK;
 }
 
+TypeChecker::Status TypeChecker::checkRedefinitions (const TreeNodeProcDef& proc)
+{
+    const std::string& shortName = proc.identifier ()->value ().str();
+    for (Symbol* sym : m_st->findAll (SYM_PROCEDURE, shortName)) {
+        if (sym->symbolType () == SYM_PROCEDURE) {
+            SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
+            if (t->decl ()->m_cachedType == proc.m_cachedType) {
+                m_log.fatal () << "Redefinition of procedure '"
+                               << proc.identifier()->value()
+                               << "' at "
+                               << proc.location () << '.'
+                               << " Conflicting with procedure '"
+                               << t->decl()->printableSignature()
+                               << "' declared at "
+                               << t->decl ()->location () << '.';
+                return E_TYPE;
+            }
+            if (proc.identifier()->value() == "main" && t->decl()->identifier()->value() == "main") {
+                m_log.fatal() << "Redefinition of procedure 'main' at "
+                              << proc.location () << " not allowed!";
+                m_log.fatal() << "Procedure 'main' already defined at "
+                              << t->decl ()->location () << '.';
+                return E_TYPE;
+            }
+        }
+    }
+
+    return OK;
+}
 
 /// Procedure definitions.
 TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
@@ -170,32 +261,73 @@ TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
     SymbolProcedure* procSym = appendProcedure (m_st, *proc);
     proc->setSymbol (procSym);
 
-    const std::string& shortName = proc->identifier ()->value ().str();
-    for (Symbol* sym : m_st->findAll (SYM_PROCEDURE, shortName)) {
-        if (sym->symbolType () == SYM_PROCEDURE) {
-            SymbolProcedure* t = static_cast<SymbolProcedure*>(sym);
-            if (t->decl ()->m_cachedType == proc->m_cachedType) {
-                m_log.fatal () << "Redefinition of procedure '"
-                               << proc->identifier()->value()
-                               << "' at "
-                               << proc->location () << '.'
-                               << " Conflicting with procedure '"
-                               << t->decl()->printableSignature()
-                               << "' declared at "
-                               << t->decl ()->location () << '.';
-                return E_TYPE;
-            }
-            if (proc->identifier()->value() == "main" && t->decl()->identifier()->value() == "main") {
-                m_log.fatal() << "Redefinition of procedure 'main' at "
-                              << proc->location () << " not allowed!";
-                m_log.fatal() << "Procedure 'main' already defined at "
-                              << t->decl ()->location () << '.';
-                return E_TYPE;
-            }
+    TCGUARD (checkRedefinitions (*proc));
+
+    return OK;
+}
+
+TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
+                                             SymbolTable* localScope)
+{
+    if (def->m_cachedType != nullptr) {
+        return OK;
+    }
+
+    std::swap (m_st, localScope);
+    TreeNodeType* rtNode = def->returnType ();
+    TCGUARD (visitType (rtNode));
+
+    std::vector<TypeBasic*> params;
+    TCGUARD (populateParamTypes(params, def));
+    TypeProc* opType = TypeProc::get (getContext (), params, rtNode->secrecType ());
+
+    std::swap (m_st, localScope);
+
+    Type* returnType = rtNode->m_cachedType;
+
+    if (returnType->isVoid ()) {
+        m_log.fatal () << "Operator definition at " << def->location ()
+                       << " does not return a value.";
+        return E_TYPE;
+    }
+
+    TypeNonVoid* rt = static_cast<TypeNonVoid*> (returnType);
+
+    if (! opSupportedType (rt)) {
+        m_log.fatal () << "Operator definition at " << def->location ()
+                       << " returns a value that is not a scalar or vector.";
+        return E_TYPE;
+    }
+
+    for (unsigned i = 0; i < params.size (); ++i) {
+        TypeBasic* ty = params[i];
+
+        if (! opSupportedType (ty)) {
+            m_log.fatal () << "Operator definition at " << def->location ()
+                           << " has an operand which is not a scalar or vector.";
+            return E_TYPE;
         }
     }
 
-    m_st->appendSymbol(new SymbolUserProcedure(shortName, proc));
+    TypeNonVoid* lub;
+    if (params.size () == 2u) {
+        lub = upperTypeNonVoid (getContext (), params[0u], params[1u]);
+    } else {
+        lub = static_cast<TypeNonVoid*> (params[0u]);
+    }
+
+    if (rt != lub) {
+        m_log.fatal () << "Return type of operator definition at " << def->location ()
+                       << " is not the least upper bound of the operand types.";
+        return E_TYPE;
+    }
+
+    def->m_cachedType = opType;
+
+    SymbolProcedure* procSym = appendProcedure (m_st, *def);
+    def->setSymbol (procSym);
+
+    TCGUARD (checkRedefinitions (*def));
 
     return OK;
 }
@@ -237,8 +369,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             do {
                 assert(dynamic_cast<SymbolProcedure *>(cs.back()) != nullptr);
                 SymbolProcedure * const p = static_cast<SymbolProcedure *>(cs.back());
-                if (p->shortOf() == nullptr)
-                    cps.push_back(p);
+                cps.push_back(p);
                 cs.pop_back();
             } while (!cs.empty());
             if (!cps.empty()) {
@@ -253,7 +384,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 }
             }
         }
-        cs = m_st->findPrefixed(SYM_TEMPLATE, name->value());
+        cs = m_st->findPrefixed(SYM_PROCEDURE_TEMPLATE, name->value());
         if (!cs.empty()) {
             if (!haveCandidatesLabel)
                 m_log.info() << "Candidates are:";
@@ -311,17 +442,15 @@ TypeChecker::Status TypeChecker::visitExprProcCall (TreeNodeExprProcCall * root)
     return OK;
 }
 
-TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
-                                                      StringRef name,
-                                                      const TypeContext & tyCxt,
-                                                      TypeProc* argTypes,
-                                                      const TreeNode * errorCxt)
+TypeChecker::Status TypeChecker::findRegularProc(SymbolProcedure *& symProc,
+                                                 StringRef name,
+                                                 const TypeContext & tyCxt,
+                                                 TypeProc* argTypes,
+                                                 const TreeNode * errorCxt)
 {
-    assert(errorCxt);
-
-    // Look for regular procedures:
     assert (argTypes != nullptr);
-    SymbolProcedure* procTempSymbol = nullptr;
+    symProc = nullptr;
+
     for (SymbolProcedure* s : findProcedures (m_st, name, argTypes)) {
         SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
         if (! _ty->isVoid ()) { // and procedure is non-void...
@@ -338,28 +467,43 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
             if (tyCxt.haveContextDimType ())  continue;
         }
 
-        if (procTempSymbol != nullptr) {
+        if (symProc != nullptr) {
+            symProc = nullptr;
             m_log.fatalInProc(errorCxt) << "Multiple matching procedures at "
                                         << errorCxt->location() << '.';
             return E_TYPE;
         }
 
-        procTempSymbol = s;
+        symProc = s;
     }
 
+    return OK;
+}
+
+TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
+                                                      StringRef name,
+                                                      const TypeContext & tyCxt,
+                                                      TypeProc* argTypes,
+                                                      const TreeNode * errorCxt)
+{
+    assert(errorCxt);
+
+    // Look for regular procedures:
+    SymbolProcedure* procTempSymbol = nullptr;
+    TCGUARD (findRegularProc (procTempSymbol, name, tyCxt, argTypes, errorCxt));
     if (procTempSymbol != nullptr) {
         symProc = procTempSymbol;
         return OK;
     }
 
     // Look for templates:
-    SymbolTemplate::Weight best;
+    SymbolProcedureTemplate::Weight best;
     std::vector<Instantiation> bestMatches;
-    for (SymbolTemplate* s : findTemplates (m_st, name)) {
+    for (SymbolProcedureTemplate* s : findTemplates<SYM_PROCEDURE_TEMPLATE> (m_st, name)) {
         assert (s->decl ()->containingModule () != nullptr);
         Instantiation inst (s);
         if (unify (inst, tyCxt, argTypes)) {
-            const SymbolTemplate::Weight& w = s->weight ();
+            const SymbolProcedureTemplate::Weight& w = s->weight ();
             if (w > best) continue;
             if (w < best) {
                 bestMatches.clear ();
@@ -370,7 +514,175 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
         }
     }
 
-    if (bestMatches.empty())
+    if (bestMatches.empty ())
+        return OK;
+
+    if (bestMatches.size () > 1) {
+        std::ostringstream os;
+        os << "Multiple matching templates: ";
+        for (const Instantiation& i : bestMatches) {
+            os << i.getTemplate ()->decl ()->location () << ' ';
+        }
+
+        m_log.fatalInProc(errorCxt) << os.str() << "at "
+                                    << errorCxt->location() << '.';
+        return E_TYPE;
+    }
+
+    return getInstance (symProc, bestMatches.front ());
+}
+
+// This is latticeLEQ which does not check dimensions
+bool latticeLeqOp(Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
+    if (a->kind () != b->kind ())
+        return false;
+
+    DataType* dataType = b->secrecDataType ();
+    if (b->secrecSecType ()->isPrivate () && a->secrecSecType ()->isPublic ()) {
+        dataType = dtypeDeclassify (cxt, dataType);
+    }
+
+    return latticeSecTypeLEQ (a->secrecSecType (), b->secrecSecType ())
+        && latticeDataTypeLEQ (a->secrecDataType (), dataType);
+}
+
+TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
+                                                  StringRef name,
+                                                  TypeProc* callTypeProc,
+                                                  const TreeNode * errorCxt)
+{
+    assert (callTypeProc != nullptr);
+    symProc = nullptr;
+
+    std::vector<SymbolProcedure*> ops = m_st->findAllProcedures (name);
+    std::vector<SymbolProcedure*> matching;
+    unsigned best = ~0u;
+
+    for (SymbolProcedure* op : ops) {
+        TypeProc* ty = op->decl ()->procedureType ();
+        const std::vector<TypeBasic*>& paramTypes = ty->paramTypes ();
+        const std::vector<TypeBasic*>& argTypes = callTypeProc->paramTypes ();
+        unsigned score = 0u;
+
+        if (paramTypes.size () != argTypes.size ())
+            continue;
+
+        bool bad = false;
+
+        // Check if parameters and arguments match
+        for (unsigned i = 0; i < argTypes.size (); ++i) {
+            TypeBasic* paramTy = paramTypes[i];
+            TypeBasic* argTy = argTypes[i];
+            SecurityType* paramSec = paramTy->secrecSecType ();
+            SecurityType* argSec = argTy->secrecSecType ();
+
+            // Check if the combination of security and data type are leq parameter type
+            if (! latticeLeqOp (getContext (), argTy, paramTy)) {
+                bad = true;
+                break;
+            }
+
+            // If the call has non-scalar but procedure expects a scalar
+            if (argTy->secrecDimType () > paramTy->secrecDimType () &&
+                paramTy->isScalar())
+            {
+                bad = true;
+                break;
+            }
+
+            // Increase score for implicit classify
+            if (argSec->isPublic () && paramSec->isPrivate ())
+                ++score;
+
+            // Increase score if reshape or scalar->vector is required
+            if (argTy->secrecDimType () != paramTy->secrecDimType ())
+                ++score;
+        }
+
+        // Check return type
+        Type* retTy = ty->returnType ();
+        assert (dynamic_cast<TypeNonVoid*> (retTy) != nullptr);
+
+        // This check is necessary to avoid using a private definition
+        // when we can use a public operation. It basically checks if
+        // lub(sec(call arguments)) == sec(return type)
+        if (argTypes.size () == 1u) {
+            if (argTypes[0u]->secrecSecType () != paramTypes[0u]->secrecSecType())
+                bad = true;
+        } else {
+            SecurityType* a = upperSecType (argTypes[0u]->secrecSecType (),
+                                            argTypes[1u]->secrecSecType ());
+            SecurityType* b = retTy->secrecSecType();
+
+            if (a != b)
+                bad = true;
+        }
+
+        if (!bad) {
+            if (score > best) continue;
+            if (score < best) {
+                matching.clear ();
+                best = score;
+            }
+            matching.push_back (op);
+        }
+    }
+
+    if (matching.size () > 1u) {
+        std::ostringstream os;
+        os << "Multiple matching operator definitions: ";
+        for (const SymbolProcedure* i : matching) {
+            os << i->decl ()->location () << ' ';
+        }
+
+        m_log.fatalInProc(errorCxt) << os.str() << "at "
+                                    << errorCxt->location() << '.';
+        return E_TYPE;
+    }
+
+    if (matching.size () == 1u) {
+        symProc = matching[0u];
+    }
+
+    return OK;
+}
+
+TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symProc,
+                                                       StringRef name,
+                                                       TypeProc* callTypeProc,
+                                                       const TreeNode * errorCxt)
+{
+    assert(errorCxt);
+
+    // Look for non-templated operator definitions:
+    TCGUARD (findRegularOpDef (symProc, name, callTypeProc, errorCxt));
+    if (symProc != nullptr)
+        return OK;
+
+    // Look for templates:
+    using Weight = std::tuple<unsigned, unsigned, unsigned>;
+    unsigned maxi = ~((unsigned) 0);
+    Weight best = std::make_tuple (maxi, maxi, maxi);
+    std::vector<Instantiation> bestMatches;
+
+    for (SymbolOperatorTemplate* s : findTemplates<SYM_OPERATOR_TEMPLATE> (m_st, name)) {
+        assert (s->decl ()->containingModule () != nullptr);
+        Instantiation inst (s);
+
+        if (unifyOperator (inst, callTypeProc)) {
+            Weight w = calculateOpWeight (inst, callTypeProc);
+            if (w > best)
+                continue;
+            if (w < best) {
+                bestMatches.clear ();
+                best = w;
+            }
+
+            bestMatches.push_back (inst);
+        }
+    }
+
+    if (bestMatches.empty ())
         return OK;
 
     if (bestMatches.size () > 1) {
@@ -392,7 +704,9 @@ bool TypeChecker::unify (Instantiation& inst,
                          const TypeContext& tyCxt,
                          TypeProc* argTypes) const
 {
-    SymbolTemplate* sym = inst.getTemplate ();
+    SymbolTemplate* sym_ = inst.getTemplate ();
+    assert (dynamic_cast<SymbolProcedureTemplate*> (sym_));
+    SymbolProcedureTemplate* sym = static_cast<SymbolProcedureTemplate*> (sym_);
     std::vector<TypeArgument>& params = inst.getParams ();
     const TreeNodeTemplate* t = sym->decl ();
 
@@ -470,6 +784,39 @@ bool TypeChecker::unify (Instantiation& inst,
     return true;
 }
 
+bool TypeChecker::unifyOperator (Instantiation& inst,
+                                 TypeProc* argTypes) const
+{
+    SymbolTemplate* sym = inst.getTemplate ();
+    std::vector<TypeArgument>& params = inst.getParams ();
+    const TreeNodeTemplate* t = sym->decl ();
+
+    params.clear ();
+
+    if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
+        return false;
+
+    OperatorTypeUnifier typeUnifier (getContext (), argTypes->paramTypes (), sym);
+
+    if (! typeUnifier.kindMatches ())
+        return false;
+
+    unsigned i = 0;
+    for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
+        TreeNodeType* argNodeTy = decl.varType ();
+        TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
+        if (! typeUnifier.visitType (argNodeTy, expectedTy))
+            return false;
+    }
+
+    if (! typeUnifier.checkSecLUB ())
+        return false;
+
+    typeUnifier.getTypeArguments (params);
+
+    return true;
+}
+
 TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
                                              const Instantiation & inst)
 {
@@ -489,6 +836,7 @@ TypeChecker::Status TypeChecker::getInstance(SymbolProcedure *& proc,
 
     body->setSymbol (proc);
     std::swap (m_st, moduleST);
+
     return OK;
 }
 

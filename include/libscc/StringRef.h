@@ -114,6 +114,10 @@ inline bool operator == (StringRef r1, StringRef r2) {
     return std::strncmp (r1.data(), r2.data(), r1.size()) == 0;
 }
 
+inline bool operator != (StringRef r1, StringRef r2) {
+    return !(r1 == r2);
+}
+
 inline bool operator < (StringRef r1, StringRef r2) {
     return std::lexicographical_compare (r1.begin(), r1.end(), r2.begin(), r2.end());
 }

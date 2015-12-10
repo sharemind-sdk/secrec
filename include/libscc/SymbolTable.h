@@ -95,6 +95,21 @@ public: /* Methods: */
     */
     std::vector<Symbol *> findFromCurrentScope (SymbolCategory symbolType, StringRef name) const;
 
+    /**
+       Find all procedures with the given name (regardless of type).
+       \param[in] name of the procedure to find.
+       \returns a vector of pointers to the matching symbols.
+    */
+    std::vector<SymbolProcedure*> findAllProcedures (StringRef name) const;
+
+    /**
+       Finds all procedures with the given name (regardless of type)
+       from the current scope, following imported modules.
+       \param[in] name of the procedure to find.
+       \returns a vector of pointers to the matching symbols.
+    */
+    std::vector<SymbolProcedure*> findAllProceduresFromCurrentScope (StringRef name) const;
+
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;
 
@@ -108,6 +123,7 @@ private:
     std::vector<Symbol *> findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const;
 
 private: /* Fields: */
+
     class OtherSymbols;
 
     Table                       m_table;    ///< Symbols.

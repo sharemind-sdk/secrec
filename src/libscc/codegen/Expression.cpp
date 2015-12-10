@@ -614,6 +614,232 @@ CGResult CodeGen::cgExprToString(TreeNodeExprToString * e) {
   TreeNodeExprBinary
 *******************************************************************************/
 
+void CodeGen::cgBinExprShapeCheck(TreeNodeExprBinary * e,
+                                  Symbol * e1result,
+                                  Symbol * e2result,
+                                  CGResult & result)
+{
+    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    std::stringstream ss;
+    ss << "Mismatching shapes in " << e->operatorLongString() << " at " << e->location();
+    Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
+    SymbolLabel * errLabel = m_st->label(err);
+    dim_iterator dj = dim_begin(e2result);
+    for (Symbol* dim : dim_range(e1result)) {
+        SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
+        emplaceImopAfter(result, e, Imop::NE, temp_bool, dim, *dj);
+        emplaceImop(e, Imop::JT, errLabel, temp_bool);
+        ++dj;
+    }
+
+    Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+    pushImopAfter(result, jmp);
+    result.addToNextList(jmp);
+    push_imop(err);
+}
+
+// e is used for the 'created by' comment
+Symbol* CodeGen::toVector(CGResult result,
+                          TreeNodeExpr * e,
+                          TreeNodeExpr * eArg,
+                          Symbol * eArgRes,
+                          Symbol * size)
+{
+    assert(dynamic_cast<TypeBasic*>(eArg->resultType()) != nullptr);
+    TypeBasic* eTy = static_cast<TypeBasic*>(eArg->resultType());
+    TypeBasic* eVecTy = TypeBasic::get(getContext(), eTy->secrecSecType(), eTy->secrecDataType(), 1u);
+    SymbolSymbol* tmp = m_st->appendTemporary(eVecTy);
+    SymbolSymbol* sizeSym;
+
+    initShapeSymbols(getContext(), m_st, tmp);
+    sizeSym = tmp->getSizeSym();
+
+    emplaceImopAfter(result, e, Imop::ASSIGN, sizeSym, size);
+    tmp->setDim(0u, sizeSym);
+
+    if (eTy->isScalar()) {
+        emplaceImop(e, Imop::ALLOC, tmp, eArgRes, sizeSym);
+    }
+    else {
+        SymbolConstant* def = defaultConstant(getContext(), eTy->secrecDataType());
+        emplaceImop(e, Imop::ALLOC, tmp, def, sizeSym);
+        emplaceImop(e, Imop::COPY, tmp, eArgRes, sizeSym);
+    }
+
+    releaseTemporary(result, eArgRes);
+
+    return tmp;
+}
+
+CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
+                                    std::vector<TreeNodeExpr*>& eArgs,
+                                    SymbolProcedure* symProc)
+{
+    assert(eArgs.size() == 1u || eArgs.size() == 2u);
+
+    TypeProc* procTy = symProc->decl()->procedureType();
+    const std::vector<TypeBasic*>& paramsTy = procTy->paramTypes();
+    Type* eResTy = e->resultType();
+    Type* callRetTy = nullptr;
+    bool unary = eArgs.size() == 1u;
+    CGResult result;
+
+    if (eResTy->isVoid ()) {
+        callRetTy = eResTy;
+    }
+    else {
+        callRetTy = procTy->returnType();
+    }
+
+    // Generate code for first child expression:
+    pushComment("Calculating operands:");
+    std::vector<Symbol*> eResults;
+
+    if (unary) {
+        const CGResult& argResult(codeGen(eArgs[0u]));
+        append(result, argResult);
+        if (result.isNotOk())
+            return result;
+        eResults.push_back(argResult.symbol());
+    }
+    else {
+        const CGResult& arg1Result(codeGen(eArgs[0u]));
+        append(result, arg1Result);
+        if (result.isNotOk())
+            return result;
+
+        const CGResult& arg2Result(codeGen(eArgs[1u]));
+        append(result, arg2Result);
+        if (result.isNotOk())
+            return result;
+
+        eResults.push_back(arg1Result.symbol());
+        eResults.push_back(arg2Result.symbol());
+    }
+
+    SymbolSymbol* resSy = generateResultSymbol(result, eResTy);
+    Symbol* resSizeSy;
+
+    if (unary) {
+        Type* eArgTy = eArgs[0u]->resultType();
+        resSizeSy =
+            (eArgTy->isScalar())
+            ? static_cast<Symbol*>(indexConstant(1u))
+            : static_cast<Symbol*>(resSy->getSizeSym());
+
+        // Shape of the result
+        if (!eResTy->isVoid() && !eArgTy->isScalar()) {
+            pushComment("Copying shape of the result from the argument:");
+            append(result, copyShape(resSy, eResults[0u]));
+        }
+
+        // Convert operand to vector if necessary
+        if (eArgTy->secrecDimType() != 1u && !paramsTy[0u]->isScalar()) {
+            pushComment("Converting operand to vector:");
+            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+        }
+    }
+    else {
+        SecrecDimType e1Dim = eArgs[0u]->resultType()->secrecDimType();
+        SecrecDimType e2Dim = eArgs[1u]->resultType()->secrecDimType();
+
+        if (e1Dim == e2Dim && e1Dim != 0u) {
+            pushComment("Checking if operand shapes match:");
+            assert(dynamic_cast<TreeNodeExprBinary*>(e) != nullptr);
+            cgBinExprShapeCheck(static_cast<TreeNodeExprBinary*>(e), eResults[0u], eResults[1u], result);
+        }
+
+        // Shape of the result
+        if (!eResTy->isVoid()) {
+            if (e1Dim == e2Dim && e1Dim == 0u) {
+                // Both are scalar
+                assert(eResTy->isScalar());
+                resSizeSy = indexConstant(1u);
+            } else if (e1Dim > e2Dim) {
+                pushComment("Shape of the result:");
+                append(result, copyShape(resSy, eResults[0u]));
+                resSizeSy = resSy->getSizeSym();
+            } else {
+                pushComment("Shape of the result:");
+                append(result, copyShape(resSy, eResults[1u]));
+                resSizeSy = resSy->getSizeSym();
+            }
+        }
+
+        // Convert operands to vectors if necessary. Note that the
+        // typechecker adds classify nodes if needed, so we don't need to
+        // classify.
+        if (e1Dim == 0u && paramsTy[0u]->secrecDimType() == 1u) {
+            // Stretch e1 to vector.
+            pushComment("Stretching first operand to vector:");
+            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+        }
+        else if (e1Dim > 1u) {
+            // Reshape e1 to vector
+            pushComment("Reshaping first operand to vector:");
+            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+        }
+
+        if (e2Dim == 0u && paramsTy[1u]->secrecDimType() == 1u) {
+            pushComment("Stretching second operand to vector:");
+            eResults[1u] = toVector(result, e, eArgs[1u], eResults[1u], resSizeSy);
+        }
+        else if (e2Dim > 1u) {
+            pushComment("Reshaping second operand to vector:");
+            eResults[1u] = toVector(result, e, eArgs[1u], eResults[1u], resSizeSy);
+        }
+    }
+
+    // Procedure call
+    pushComment("Procedure call:");
+    CGResult callRes(cgProcCall(symProc, callRetTy, eResults));
+    if (callRes.isNotOk())
+        return result;
+
+    append(result, callRes);
+
+    if (!callRetTy->isVoid() && !callRetTy->isScalar()) {
+        // Check result size
+        pushComment("Checking if procedure call result has the correct size:");
+        std::stringstream ss;
+        ss << "Operator definition at " << *symProc->location()
+           << " returned a value with incorrect size in expression at " << e->location();
+        Imop* err = newError(e, ConstantString::get(getContext(), ss.str()));
+        SymbolLabel* errLabel = m_st->label(err);
+
+        SymbolTemporary* tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
+        Symbol* callResSizeSy = static_cast<SymbolSymbol*>(callRes.symbol())->getSizeSym();
+        emplaceImopAfter(result, e, Imop::NE, tempBool, callResSizeSy, resSizeSy);
+        emplaceImop(e, Imop::JT, errLabel, tempBool);
+
+        Imop* jmp = new Imop(e, Imop::JUMP, nullptr);
+        push_imop(jmp);
+        result.addToNextList(jmp);
+
+        push_imop(err);
+    }
+
+    // Copy to result so that it would have the correct shape
+    if (callRetTy->secrecDimType() != eResTy->secrecDimType()) {
+        pushComment("Copying procedure call result to expression result:");
+
+        if (eResTy->isScalar()) {
+            // Assign first (only) element of call result vector to
+            // the scalar
+            emplaceImopAfter(result, e, Imop::DECLARE, resSy);
+            emplaceImop(e, Imop::ASSIGN, resSy, callRes.symbol(), indexConstant(0u));
+            releaseTemporary(result, callRes.symbol());
+        } else {
+            emplaceImopAfter(result, e, Imop::COPY, resSy, callRes.symbol(), resSizeSy);
+            releaseTemporary(result, callRes.symbol());
+        }
+    } else {
+        result.setResult(callRes.symbol());
+    }
+
+    return result;
+}
+
 CGResult TreeNodeExprBinary::codeGenWith(CodeGen & cg) {
     return cg.cgExprBinary(this);
 }
@@ -623,14 +849,13 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     if (m_tyChecker->visitExprBinary(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    if (e->isOverloaded()) {
+        std::vector<TreeNodeExpr*> eArgs {e->leftExpression(), e->rightExpression()};
+        return cgOverloadedExpr(e, eArgs, e->procSymbol());
+    }
+
     TreeNodeExpr * eArg1 = e->leftExpression();
     TreeNodeExpr * eArg2 = e->rightExpression();
-
-    if (e->isOverloaded()) {
-        const std::vector<TreeNodeExpr * > params {eArg1, eArg2};
-        return cgProcCall(e->procSymbol(), e->resultType(), params);
-    }
 
     /*
        If first sub-expression is public, then generate short-circuit code for
@@ -686,7 +911,6 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     Symbol * e2result = arg2Result.symbol();
 
     // Implicitly convert scalar to array if needed:
-    Imop * jmp = nullptr;
     if (eArg1->resultType()->secrecDimType() > eArg2->resultType()->secrecDimType()) {
         SymbolSymbol * tmpe1 = static_cast<SymbolSymbol *>(e1result);
         SymbolSymbol * tmpe2 = m_st->appendTemporary(static_cast<TypeNonVoid *>(eArg1->resultType()));
@@ -706,27 +930,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         releaseTemporary(result, arg1Result.symbol());
     }
     else {
-        std::stringstream ss;
-        ss << "Mismaching shapes in " << e->operatorLongString () << " at " << e->location();
-        Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
-        SymbolLabel * errLabel = m_st->label(err);
-        dim_iterator dj = dim_begin(e2result);
-        for (Symbol* dim : dim_range(e1result)) {
-            SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
-
-            auto i = new Imop(e, Imop::NE, temp_bool, dim, *dj);
-            pushImopAfter(result, i);
-
-            i = new Imop(e, Imop::JT, errLabel, temp_bool);
-            push_imop(i);
-
-            ++ dj;
-        }
-
-        jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
-        pushImopAfter(result, jmp);
-        result.addToNextList(jmp);
-        push_imop(err);
+        cgBinExprShapeCheck(e, e1result, e2result, result);
     }
 
     SymbolSymbol * resSym = generateResultSymbol(result, e);
@@ -892,22 +1096,16 @@ CGResult TreeNodeExprProcCall::codeGenWith(CodeGen & cg) {
 
 CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
                               SecreC::Type* returnType,
-                              const std::vector<TreeNodeExpr*>& args)
+                              const std::vector<Symbol*>& args)
 {
     CGResult result;
     SymbolSymbol* r = generateResultSymbol (result, returnType);
     std::vector<Symbol*> argList, retList;
 
     // Initialize arguments:
-    for (TreeNodeExpr * arg : args) {
-        const CGResult & argResult(codeGen(arg));
-        append(result, argResult);
-        if (result.isNotOk()) {
-            return result;
-        }
-
+    for (Symbol * arg : args) {
         // Possibly copy arguments (if needed):
-        for (Symbol* sym : flattenSymbol (argResult.symbol ())) {
+        for (Symbol* sym : flattenSymbol (arg)) {
             argList.push_back (copyNonTemporary (result, sym));
         }
     }
@@ -928,6 +1126,30 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
     if (! returnType->isVoid ()) {
         codeGenSize (result);
     }
+
+    return result;
+}
+
+CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
+                              SecreC::Type* returnType,
+                              const std::vector<TreeNodeExpr*>& args)
+{
+    CGResult result;
+    std::vector<Symbol*> argSyms;
+
+    // Initialize arguments:
+    for (TreeNodeExpr * arg : args) {
+        const CGResult & argResult(codeGen(arg));
+        append(result, argResult);
+        if (result.isNotOk()) {
+            return result;
+        }
+        argSyms.push_back(argResult.symbol());
+    }
+
+    CGResult call(cgProcCall(symProc, returnType, argSyms));
+    append(result, call);
+    result.setResult(call.symbol());
 
     return result;
 }
@@ -1719,9 +1941,8 @@ CGResult CodeGen::cgExprUnary(TreeNodeExprUnary * e) {
         return CGResult::ERROR_CONTINUE;
 
     if (e->isOverloaded()) {
-        std::vector<TreeNodeExpr * > params;
-        params.push_back(e->expression());
-        return cgProcCall(e->procSymbol(), e->resultType(), params);
+        std::vector<TreeNodeExpr*> eArgs {e->expression()};
+        return cgOverloadedExpr(e, eArgs, e->procSymbol());
     }
 
     // Generate code for child expression:

@@ -26,7 +26,8 @@ enum SymbolCategory {
     SYM_UNDEFINED,
     SYM_PROCEDURE,
     SYM_STRUCT,
-    SYM_TEMPLATE,
+    SYM_PROCEDURE_TEMPLATE,
+    SYM_OPERATOR_TEMPLATE,
     SYM_CONSTANT,
     SYM_LABEL,
     SYM_SYMBOL,
@@ -39,7 +40,8 @@ enum SymbolCategory {
 class Symbol;
 class SymbolProcedure;
 class SymbolStruct;
-class SymbolTemplate;
+class SymbolProcedureTemplate;
+class SymbolOperatorTemplate;
 class SymbolConstant;
 class SymbolLabel;
 class SymbolSymbol;
@@ -51,7 +53,8 @@ class SymbolDataType;
 template <SymbolCategory type> struct SymbolTraits;
 template <> struct SymbolTraits<SYM_PROCEDURE> { using Type = SymbolProcedure; };
 template <> struct SymbolTraits<SYM_STRUCT> { using Type = SymbolStruct; };
-template <> struct SymbolTraits<SYM_TEMPLATE> { using Type = SymbolTemplate; };
+template <> struct SymbolTraits<SYM_PROCEDURE_TEMPLATE> { using Type = SymbolProcedureTemplate; };
+template <> struct SymbolTraits<SYM_OPERATOR_TEMPLATE> { using Type = SymbolOperatorTemplate; };
 template <> struct SymbolTraits<SYM_CONSTANT> { using Type = SymbolConstant; };
 template <> struct SymbolTraits<SYM_LABEL> { using Type = SymbolLabel; };
 template <> struct SymbolTraits<SYM_SYMBOL> { using Type = SymbolSymbol; };

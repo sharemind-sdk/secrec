@@ -71,6 +71,8 @@ SET(LIBSCC_SOURCES
     "ModuleInfo.cpp"
     "ModuleInfo.h"
     "ModuleMap.cpp"
+    "OperatorTemplateChecker.cpp"
+    "OperatorTypeUnifier.cpp"
     "optimizer/ConstantFolding.cpp"
     "optimizer/CopyElimination.cpp"
     "Optimizer.cpp"

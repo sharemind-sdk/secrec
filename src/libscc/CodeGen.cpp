@@ -274,9 +274,8 @@ void CodeGen::releaseAllVariables(CGResult & result) {
 }
 
 void CodeGen::releaseResource(CGResult & result, Symbol * sym) {
-    if (isNontrivialResource(sym->secrecType())) {
+    if (isNontrivialResource(sym->secrecType()))
         pushImopAfter(result, new Imop(m_node, Imop::RELEASE, nullptr, sym));
-    }
 }
 
 void CodeGen::releaseTemporary(CGResult & result, Symbol * sym, Symbol* ex) {

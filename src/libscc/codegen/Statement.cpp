@@ -37,19 +37,6 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-// Initializes associated size and shape symbols. Does not assign values.
-void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
-    TypeBasic * const dimType = TypeBasic::getIndexType(cxt);
-    TypeNonVoid* ty = sym->secrecType ();
-    for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
-        sym->setDim(i, st->appendTemporary (dimType));
-    }
-
-    if (sym->isArray ()) { // set size symbol
-        sym->setSizeSym(st->appendTemporary (dimType));
-    }
-}
-
 // Initializes structure fields (and also associated size and shape symbols of the fields).
 // Note that this does not assign values to those symbols.
 void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
@@ -59,7 +46,7 @@ void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, Symbo
         const auto name = sym->name () + "." + field.name.str ();
         TypeBasic* fieldType = field.type;
         SymbolSymbol* fieldSymbol = new SymbolSymbol (*strTab.addString (name), fieldType);
-        initShapeSymbols (cxt, st, fieldSymbol);
+        SecreC::initShapeSymbols (cxt, st, fieldSymbol);
         if (fieldType->secrecDataType ()->isComposite ()) {
             initFieldSymbols (cxt, strTab, st, fieldSymbol, fieldType);
         }
@@ -89,6 +76,18 @@ void setSymbolGlobalScope (SymbolSymbol* sym) {
 
 } // namespace anonymous
 
+// Initializes associated size and shape symbols. Does not assign values.
+void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
+    TypeBasic * const dimType = TypeBasic::getIndexType(cxt);
+    TypeNonVoid* ty = sym->secrecType ();
+    for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
+        sym->setDim(i, st->appendTemporary (dimType));
+    }
+
+    if (sym->isArray ()) { // set size symbol
+        sym->setSizeSym(st->appendTemporary (dimType));
+    }
+}
 
 /*******************************************************************************
   TreeNodeStmtCompound

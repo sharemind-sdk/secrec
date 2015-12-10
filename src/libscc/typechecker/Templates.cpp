@@ -23,9 +23,12 @@
 #include "ModuleInfo.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
+#include "OperatorTemplateChecker.h"
 #include "TemplateChecker.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+
+#include <memory>
 
 namespace SecreC {
 
@@ -43,9 +46,20 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
 
-    auto varChecker = TemplateVarChecker {m_st, m_log};
+    bool isOperator = body->type () == NODE_OPDEF;
+    std::unique_ptr<TemplateVarChecker> varChecker;
+
+    if (isOperator) {
+        SecrecOperator op = static_cast<TreeNodeOpDef*> (body)->getOperator ();
+        varChecker.reset(
+            new OperatorTemplateVarChecker {m_st, m_log, op});
+    } else {
+        varChecker.reset(
+            new TemplateVarChecker {m_st, m_log});
+    }
+
     for (auto& quant : templ->quantifiers ()) {
-        if (! varChecker.visitQuantifier (&quant))
+        if (! varChecker->visitQuantifier (&quant))
             return E_TYPE;
 
         TCGUARD (visitQuantifier (&quant));
@@ -53,13 +67,20 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
 
     // We need to check return postion first in order for the parameters to
     // override the positional information of type variables.
-    varChecker.setArgPosition (ArgReturn);
-    if (! varChecker.visitType (body->returnType ()))
+    varChecker->setArgPosition (ArgReturn);
+    if (! varChecker->visitType (body->returnType ()))
         return E_TYPE;
 
-    varChecker.setArgPosition (ArgParameter);
+    varChecker->setArgPosition (ArgParameter);
     for (TreeNodeStmtDecl& decl : body->params ()) {
-        if (! varChecker.visitType (decl.varType ()))
+        if (! varChecker->visitType (decl.varType ()))
+            return E_TYPE;
+    }
+
+    if (isOperator) {
+        OperatorTemplateVarChecker* checker =
+            static_cast<OperatorTemplateVarChecker*> (varChecker.get ());
+        if (!checker->checkLUB (templ))
             return E_TYPE;
     }
 
@@ -68,7 +89,7 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     bool expectsDimType = false;
 
     std::vector<TreeNodeIdentifier*> unboundTVs;
-    for (const auto& v : varChecker.vars ()) {
+    for (const auto& v : varChecker->vars ()) {
         auto& tv = v.second;
         if (! tv.bound) {
             unboundTVs.push_back (tv.id);
@@ -96,7 +117,12 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
         return E_TYPE;
     }
 
-    auto s = new SymbolTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
+    SymbolTemplate* s;
+    if (isOperator)
+        s = new SymbolOperatorTemplate (templ);
+    else
+        s = new SymbolProcedureTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
+
     s->setName (id->value ());
     m_st->appendSymbol (s);
     return OK;

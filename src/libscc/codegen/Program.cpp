@@ -34,6 +34,7 @@
 
 #include <boost/filesystem/fstream.hpp>
 
+
 /**
  * Code generation for top level statements.
  */
@@ -115,12 +116,17 @@ struct ScopedSetSymbolTable {
     CodeGen & m_cg;
 };
 
-CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
+CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope, bool isOperator) {
     assert(localScope->parent() == m_st);
     assert(def != nullptr);
 
-    if (m_tyChecker->visitProcDef(def, localScope) != TypeChecker::OK)
+    if (isOperator) {
+        TreeNodeOpDef* opdef = static_cast<TreeNodeOpDef*>(def);
+        if (m_tyChecker->visitOpDef(opdef, localScope) != TypeChecker::OK)
+            return CGResult::ERROR_CONTINUE;
+    } else if (m_tyChecker->visitProcDef(def, localScope) != TypeChecker::OK) {
         return CGResult::ERROR_CONTINUE;
+    }
 
     CGStmtResult result;
     std::ostringstream os;
@@ -274,7 +280,7 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
             TreeNodeProcDef * procDef = static_cast<TreeNodeProcDef *>(decl);
             SymbolTable * localScope = m_st->newScope();
             localScope->setName("Procedure");
-            append(result, cgProcDef(procDef, localScope));
+            append(result, cgProcDef(procDef, localScope, decl->type () == NODE_OPDEF));
             assert(localScope->parent() == m_st);
             break;
         }

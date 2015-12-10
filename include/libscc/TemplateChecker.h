@@ -21,8 +21,10 @@
 #define SECREC_TEMPLATE_CHECKER_H
 
 #include "StringRef.h"
-#include "TypeArgument.h"
+#include "Symbol.h"
+#include "SymbolTable.h"
 #include "TreeNodeFwd.h"
+#include "TypeArgument.h"
 
 #include <map>
 
@@ -79,22 +81,22 @@ public: /* Methods: */
     TemplateVarChecker (TemplateVarChecker&&) = default;
     TemplateVarChecker& operator = (TemplateVarChecker&&) = default;
 
-    bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind);
+    virtual bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind);
 
-    bool visitQuantifier (TreeNodeQuantifier* q);
+    virtual bool visitQuantifier (TreeNodeQuantifier* q);
 
-    bool visitType (TreeNodeType* t);
+    virtual bool visitType (TreeNodeType* t);
 
-    bool visitSecTypeF (TreeNodeSecTypeF* t, TypeArgumentKind kind);
+    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, TypeArgumentKind kind);
 
     bool visitDataTypeF (TreeNodeDataTypeF* t, TypeArgumentKind kind);
-    bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t);
+    virtual bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t);
     bool visitDataTypeVarF (TreeNodeDataTypeVarF* t);
-    bool visitDataTypeConstF (TreeNodeDataTypeConstF* t);
+    virtual bool visitDataTypeConstF (TreeNodeDataTypeConstF* t);
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, TypeArgumentKind kind);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t);
-    bool visitDimTypeConstF (TreeNodeDimTypeConstF* t);
+    virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t);
 
     bool visitTypeArg (TreeNodeTypeArg* t, TypeArgumentKind kind);
     bool visitTypeArgVar (TreeNodeTypeArgVar* t, TypeArgumentKind kind);
@@ -107,18 +109,22 @@ public: /* Methods: */
 
     void setArgPosition (TemplateArgPos pos) { m_pos = pos; }
 
-private:
+protected:
 
     bool verifyKind (TypeArgumentKind expected,
                      TypeArgumentKind given,
                      const Location& loc);
 
-private: /* Fields: */
+protected: /* Fields: */
     SymbolTable*   m_st;
     CompileLog&    m_log;
     TemplateVarMap m_vars;
     TemplateArgPos m_pos;
 };
+
+const char* kindAsString (TypeArgumentKind kind);
+
+SymbolCategory symbolCategory (TypeArgumentKind kind);
 
 } /* namespace SecreC */
 

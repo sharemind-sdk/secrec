@@ -180,6 +180,22 @@ SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
     return r;
 }
 
+std::vector<SymbolProcedure*>
+SymbolTable::findAllProceduresFromCurrentScope (StringRef name) const {
+    std::vector<SymbolProcedure*> r;
+    for (SymbolTable* import : reverse (m_imports)) {
+        for (Symbol* s : reverse (import->m_table)) {
+            if (s->symbolType () == SYM_PROCEDURE) {
+                assert (dynamic_cast<SymbolProcedure*> (s) != nullptr);
+                auto sproc = static_cast<SymbolProcedure*> (s);
+                if (sproc->procedureName () == name)
+                    r.push_back (sproc);
+            }
+        }
+    }
+    return r;
+}
+
 std::vector<Symbol *>
 SymbolTable::findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const {
     std::vector<Symbol *> r;
@@ -241,24 +257,15 @@ Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
 
 std::vector<Symbol *>
 SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
-    std::vector<Symbol *> r;
+    std::vector<Symbol *> res;
     const SymbolTable * c = this;
     while (c != nullptr) {
-        for (Symbol * s2 : c->findPrefixedFromCurrentScope(type, prefix)) {
-            bool overridden = false;
-            for (Symbol * s : r)
-                if (s2->name() != s->name()) {
-                    overridden = true;
-                    break;
-                }
-            if (!overridden)
-                r.push_back(s2);
-        }
-
+        const std::vector<Symbol*>& syms = c->findPrefixedFromCurrentScope (type, prefix);
+        res.insert (res.end (), syms.begin (), syms.end ());
         c = c->m_parent;
     }
 
-    return r;
+    return res;
 }
 
 std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
@@ -268,6 +275,16 @@ std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name)
         out.insert (out.end (), syms.begin (), syms.end ());
     }
 
+    return out;
+}
+
+std::vector<SymbolProcedure*> SymbolTable::findAllProcedures (StringRef name) const {
+    std::vector<SymbolProcedure*> out;
+    for (const SymbolTable* st = this; st != nullptr; st = st->m_parent) {
+        const std::vector<SymbolProcedure*>& syms =
+            st->findAllProceduresFromCurrentScope (name);
+        out.insert (out.end (), syms.begin (), syms.end ());
+    }
     return out;
 }
 

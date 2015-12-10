@@ -348,7 +348,6 @@ public: /* Methods: */
     virtual StringRef procedureName () const { return name (); }
     virtual const TreeNodeProcDef * decl () const { assert (false); return nullptr; }
     virtual const Location * location () const override { return nullptr; }
-    virtual SymbolProcedure* shortOf () const { return nullptr; }
 
 protected:
     void print(std::ostream & os) const override;
@@ -366,20 +365,17 @@ class SymbolUserProcedure : public SymbolProcedure {
 public: /* Methods: */
 
     SymbolUserProcedure (StringRef name,
-                         const TreeNodeProcDef * decl,
-                         SymbolProcedure * shortOf = nullptr);
+                         const TreeNodeProcDef * decl);
 
     StringRef procedureName () const override;
     virtual const TreeNodeProcDef * decl () const override { return m_decl; }
     virtual const Location * location() const override;
-    virtual SymbolProcedure* shortOf () const override { return m_shortOf; }
 
 protected:
     void print(std::ostream & os) const override;
 
 private: /* Fields: */
     const TreeNodeProcDef * const  m_decl;
-    SymbolProcedure *              m_shortOf;
 };
 
 /*******************************************************************************
@@ -402,6 +398,27 @@ private: /* Fields: */
 *******************************************************************************/
 
 class SymbolTemplate: public Symbol {
+public: /* Methods: */
+    inline TreeNodeTemplate* decl() const { return m_templ; }
+    virtual const Location* location() const override;
+
+protected: /* Methods: */
+    SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ)
+        : Symbol (cat)
+        , m_templ (templ)
+        {};
+
+    void print(std::ostream & os) const override;
+
+protected: /* Fields: */
+    TreeNodeTemplate* const m_templ;
+};
+
+/*******************************************************************************
+  SymbolProcedureTemplate
+*******************************************************************************/
+
+class SymbolProcedureTemplate: public SymbolTemplate {
 public: /* Types: */
 
     struct Weight {
@@ -443,33 +460,51 @@ public: /* Types: */
         inline bool operator > (const Weight& other) const {
             return (other < *this);
         }
+
+        inline unsigned typeVariableCount () const {
+            return m_typeVariableCount;
+        }
     };
 
 public: /* Methods: */
-    SymbolTemplate (TreeNodeTemplate *templ,
-                    bool expectsSecType,
-                    bool expectsDataType,
-                    bool expectsDimType);
+    SymbolProcedureTemplate (TreeNodeTemplate *templ,
+                             bool expectsSecType,
+                             bool expectsDataType,
+                             bool expectsDimType);
 
-    inline TreeNodeTemplate *decl() const { return m_templ; }
-
-    virtual const Location * location() const override;
     inline bool expectsSecType () const { return m_expectsSecType; }
     inline bool expectsDimType () const { return m_expectsDimType; }
     inline bool expectsDataType () const { return m_expectsDataType; }
     const Weight& weight () const  { return m_weight; }
 
-protected:
-    void print(std::ostream & os) const override;
-
 private: /* Fields: */
-    TreeNodeTemplate*  const  m_templ;
     bool               const  m_expectsSecType; ///< Expects context to supply security type
     bool               const  m_expectsDataType; ///< Expects context to supply data type
     bool               const  m_expectsDimType; ///< Expects context to supply dimensionality type
     Weight             const  m_weight;
 };
 
+/*******************************************************************************
+  SymbolOperatorTemplate
+*******************************************************************************/
+
+class SymbolOperatorTemplate: public SymbolTemplate {
+
+public: /* Methods: */
+    SymbolOperatorTemplate (TreeNodeTemplate *templ);
+
+    inline unsigned typeVariableCount () const {
+        return m_typeVariableCount;
+    }
+
+    inline bool hasKindConstraint () const {
+        return m_kindConstraint;
+    }
+
+private: /* Fields: */
+    unsigned m_typeVariableCount;
+    bool m_kindConstraint;
+};
 
 /*******************************************************************************
   SymbolLabel

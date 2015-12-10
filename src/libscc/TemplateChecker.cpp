@@ -21,49 +21,11 @@
 
 #include <sharemind/abort.h>
 #include "Log.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
 #include "TreeNode.h"
 #include "Visitor.h"
 
 
 namespace SecreC {
-
-namespace /* anonymous */ {
-
-const char* kindAsString (TypeArgumentKind kind) {
-    switch (kind) {
-    case TA_SEC: return "domain";
-    case TA_DATA: return "data";
-    case TA_DIM: return "dimensionality";
-    #ifdef __clang__
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
-    #endif
-    default: SHAREMIND_ABORT("kAS %d", static_cast<int>(kind));
-    #ifdef __clang__
-    #pragma GCC diagnostic pop
-    #endif
-    }
-}
-
-SymbolCategory symbolCategory (TypeArgumentKind kind) {
-    switch (kind) {
-    case TA_SEC: return SYM_DOMAIN;
-    case TA_DATA: return SYM_TYPE;
-    case TA_DIM: return SYM_DIM;
-    #ifdef __clang__
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
-    #endif
-    default: SHAREMIND_ABORT("sC %d", static_cast<int>(kind));
-    #ifdef __clang__
-    #pragma GCC diagnostic pop
-    #endif
-    }
-}
-
-} // namespace anonymous
 
 /*******************************************************************************
   TemplateChecker
@@ -283,6 +245,38 @@ bool TemplateVarChecker::visitTypeArgDimTypeConst (TreeNodeTypeArgDimTypeConst* 
 bool TemplateVarChecker::visitTypeArgPublic (TreeNodeTypeArgPublic* t, TypeArgumentKind kind) {
     assert (t != nullptr);
     return verifyKind (TA_SEC, kind, t->location ());
+}
+
+const char* kindAsString (TypeArgumentKind kind) {
+    switch (kind) {
+    case TA_SEC: return "domain";
+    case TA_DATA: return "data";
+    case TA_DIM: return "dimensionality";
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
+    default: SHAREMIND_ABORT("kAS %d", static_cast<int>(kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
+    #endif
+    }
+}
+
+SymbolCategory symbolCategory (TypeArgumentKind kind) {
+    switch (kind) {
+    case TA_SEC: return SYM_DOMAIN;
+    case TA_DATA: return SYM_TYPE;
+    case TA_DIM: return SYM_DIM;
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
+    default: SHAREMIND_ABORT("sC %d", static_cast<int>(kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
+    #endif
+    }
 }
 
 } // namespace SecreC

@@ -213,7 +213,7 @@ public: /* Methods: */
     CGStmtResult cgDomain (TreeNodeDomain* dom);
     CGStmtResult cgKind (TreeNodeKind* kind);
     CGStmtResult cgImport (TreeNodeImport* imp, ModuleInfo* modContext);
-    CGStmtResult cgProcDef (TreeNodeProcDef* def, SymbolTable* localScope);
+    CGStmtResult cgProcDef (TreeNodeProcDef* def, SymbolTable* localScope, bool isOperator=false);
     CGStmtResult cgStructDecl (TreeNodeStructDecl* decl);
     /// \}
 
@@ -413,8 +413,10 @@ private:
 
     CGResult cgProcCall (SymbolProcedure* symProc,
                          SecreC::Type* returnType,
+                         const std::vector<Symbol*>& args);
+    CGResult cgProcCall (SymbolProcedure* symProc,
+                         SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);
-
 
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
@@ -427,6 +429,19 @@ private:
     CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
+
+    Symbol* toVector(CGResult result,
+                     TreeNodeExpr * e,
+                     TreeNodeExpr * eArg,
+                     Symbol * eArgRes,
+                     Symbol * size);
+    void cgBinExprShapeCheck(TreeNodeExprBinary * e,
+                             Symbol * e1result,
+                             Symbol * e2result,
+                             CGResult & result);
+    CGResult cgOverloadedExpr (TreeNodeExpr * e,
+                               std::vector<TreeNodeExpr*> & eArgs,
+                               SymbolProcedure * symProc);
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     SymbolConstant* indexConstant (uint64_t value);
@@ -536,6 +551,8 @@ public:
 private:
     CodeGen & m_codeGen;
 };
+
+void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym);
 
 } // namespace SecreC
 

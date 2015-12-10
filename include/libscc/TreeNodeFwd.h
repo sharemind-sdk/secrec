@@ -70,6 +70,7 @@ class TreeNodeLSelect;
 class TreeNodeLValue;
 class TreeNodeLVariable;
 class TreeNodeModule;
+class TreeNodeOpDef;
 class TreeNodeProcDef;
 class TreeNodeProgram;
 class TreeNodeQuantifier;

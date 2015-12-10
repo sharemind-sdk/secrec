@@ -31,6 +31,28 @@
 
 namespace SecreC {
 
+TypeNonVoid* upperTypeNonVoid (Context& context, TypeNonVoid* a, TypeNonVoid* b) {
+    SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
+    SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
+    DataType* dataType = upperDataType (context, a->secrecDataType (), b->secrecDataType ());
+
+    if (a->secrecSecType ()->isPrivate () && b->secrecSecType ()->isPublic () &&
+        dtypeDeclassify (context, a->secrecDataType ()) == b->secrecDataType ())
+    {
+        dataType = a->secrecDataType ();
+    }
+    else if (a->secrecSecType ()->isPublic () && b->secrecSecType ()->isPrivate () &&
+        dtypeDeclassify (context, b->secrecDataType ()) == a->secrecDataType ())
+    {
+        dataType = b->secrecDataType ();
+    }
+
+    if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
+        return nullptr;
+
+    return TypeBasic::get (context, secType, dataType, dimType);
+}
+
 /*******************************************************************************
   TypeChecker
 *******************************************************************************/

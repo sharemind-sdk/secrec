@@ -32,7 +32,7 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
+SymbolProcedureTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
     std::set<StringRef, StringRef::FastCmp > typeVariables;
 
     unsigned typeVariableCount = templ->quantifiers ().size ();
@@ -67,9 +67,9 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
         }
     }
 
-    return SymbolTemplate::Weight (typeVariableCount,
-                                   qualifiedTypeVariableCount,
-                                   quantifiedParamCount);
+    return SymbolProcedureTemplate::Weight (typeVariableCount,
+                                            qualifiedTypeVariableCount,
+                                            quantifiedParamCount);
 }
 
 void printProcDef(std::ostream & os, const TreeNodeProcDef * procDef) {
@@ -278,11 +278,9 @@ void SymbolProcedure::print(std::ostream & os) const {
 *******************************************************************************/
 
 SymbolUserProcedure::SymbolUserProcedure (StringRef name,
-                                          const TreeNodeProcDef * decl,
-                                          SymbolProcedure * shortOf)
+                                          const TreeNodeProcDef * decl)
     : SymbolProcedure (name, decl->procedureType ())
     , m_decl (decl)
-    , m_shortOf (shortOf)
 { }
 
 const Location * SymbolUserProcedure::location() const {
@@ -354,15 +352,6 @@ void SymbolStruct::print (std::ostream &os) const {
   SymbolTemplate
 *******************************************************************************/
 
-SymbolTemplate::SymbolTemplate(TreeNodeTemplate *templ, bool expectsSecType, bool expectsDataType, bool expectsDimType)
-    : Symbol (SYM_TEMPLATE)
-    , m_templ (templ)
-    , m_expectsSecType (expectsSecType)
-    , m_expectsDataType (expectsDataType)
-    , m_expectsDimType (expectsDimType)
-    , m_weight (computeTemplateWeight (templ))
-{ }
-
 const Location * SymbolTemplate::location() const {
     return &m_templ->location();
 }
@@ -379,6 +368,41 @@ void SymbolTemplate::print(std::ostream & os) const {
     }
 
     printProcDef(os << "> ", m_templ->body());
+}
+
+/*******************************************************************************
+  SymbolProcedureTemplate
+*******************************************************************************/
+
+SymbolProcedureTemplate::SymbolProcedureTemplate(TreeNodeTemplate *templ,
+                                                 bool expectsSecType,
+                                                 bool expectsDataType,
+                                                 bool expectsDimType)
+    : SymbolTemplate (SYM_PROCEDURE_TEMPLATE, templ)
+    , m_expectsSecType (expectsSecType)
+    , m_expectsDataType (expectsDataType)
+    , m_expectsDimType (expectsDimType)
+    , m_weight (computeTemplateWeight (templ))
+{ }
+
+/*******************************************************************************
+  SymbolOperatorTemplate
+*******************************************************************************/
+
+SymbolOperatorTemplate::SymbolOperatorTemplate(TreeNodeTemplate *templ)
+    : SymbolTemplate (SYM_OPERATOR_TEMPLATE, templ)
+    , m_typeVariableCount (templ->quantifiers ().size ())
+{
+    for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
+        if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
+            TreeNodeQuantifierDomain* dom = static_cast<TreeNodeQuantifierDomain*> (&quant);
+            TreeNodeIdentifier* kind = dom->kind ();
+            if (kind != nullptr) {
+                m_kindConstraint = true;
+                break;
+            }
+        }
+    }
 }
 
 }

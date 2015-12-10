@@ -31,6 +31,7 @@
 
 #include <boost/range.hpp>
 
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -90,14 +91,12 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, DataType* d1, DataType* d
     return DATATYPE_UNDEFINED;
 }
 
-TypeNonVoid* upperTypeNonVoid (Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
-    SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
-    SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
-    DataType* dataType = upperDataType (cxt, a->secrecDataType (), b->secrecDataType ());
-    if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
-        return nullptr;
+bool overloadedGood (const TypeBasic* ty) {
+    if (ty->secrecDataType ()->isComposite () ||
+        ty->secrecDataType ()->isString ())
+        return false;
 
-    return TypeBasic::get (cxt, secType, dataType, dimType);
+    return true;
 }
 
 } // namespace anonymous
@@ -528,6 +527,7 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     TreeNodeExpr * e1 = root->leftExpression ();
     TreeNodeExpr * e2 = root->rightExpression ();
     TypeBasic * eType1 = nullptr, *eType2 = nullptr;
+    TypeBasic * eType1Orig = nullptr, *eType2Orig = nullptr;
 
     //set context data type
     switch (root->type()) {
@@ -562,10 +562,17 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
             return E_TYPE;
     }
 
+    assert(dynamic_cast<TypeBasic *>(e1->resultType()) != nullptr);
+    eType1Orig = static_cast<TypeBasic *>(e1->resultType());
+
+    assert(dynamic_cast<TypeBasic *>(e2->resultType()) != nullptr);
+    eType2Orig = static_cast<TypeBasic *>(e2->resultType());
+
     {
         DataType* const lDType = e1->resultType()->secrecDataType();
         DataType* const rDType = e2->resultType()->secrecDataType();
         DataType* const uDType = upperDataType(getContext (), lDType, rDType);
+
         e1->instantiateDataType(getContext(), uDType);
         e2->instantiateDataType(getContext(), uDType);
 
@@ -576,63 +583,81 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
         eType2 = static_cast<TypeBasic *>(e2->resultType());
     }
 
-    {   // check if operator is overloaded
-        SymbolProcedure * match = nullptr;
-        std::vector<TypeBasic*> argumentDataTypes;
-        argumentDataTypes.push_back (eType1);
-        argumentDataTypes.push_back (eType2);
-        TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
-        TCGUARD (findBestMatchingProc(match, root->operatorName(),
-                                      *root, argTypes, root));
-
-        if (match != nullptr) { // overloaded operator
-            SecreC::Type* resultType = match->decl()->procedureType()->returnType ();
-            root->setResultType(resultType);
-            root->setProcSymbol(match);
-            return OK;
-        }
-    }
-
-
-    SecurityType * s1 = eType1->secrecSecType();
-    SecurityType * s2 = eType2->secrecSecType();
-    SecurityType * s0 = upperSecType(s1, s2);
-
-    // Add implicit classify nodes if needed:
-    e1 = classifyIfNeeded(e1, s0);
-    eType1 = static_cast<TypeBasic *>(e1->resultType());
-    e2 = classifyIfNeeded(e2, s0);
-    eType2 = static_cast<TypeBasic *>(e2->resultType());
-
-    DataType* d1 = eType1->secrecDataType();
-    DataType* d2 = eType2->secrecDataType();
     SecrecDimType n1 = eType1->secrecDimType();
     SecrecDimType n2 = eType2->secrecDimType();
-    SecrecDataType d0 = getResultDType(root->type(), d1, d2);
 
     if (n1 == 0 || n2 == 0 || n1 == n2) {
-        SecrecDimType n0 = upperDimType(n1,n2);
-        if (d0 != DATATYPE_UNDEFINED) {
-            switch (root->type()) {
-            case NODE_EXPR_BINARY_EQ:
-            case NODE_EXPR_BINARY_GE:
-            case NODE_EXPR_BINARY_GT:
-            case NODE_EXPR_BINARY_LE:
-            case NODE_EXPR_BINARY_LT:
-            case NODE_EXPR_BINARY_NE:
-                e1->instantiateDataType(getContext());
-                e2->instantiateDataType(getContext());
-            default:
-                break;
-            }
+        SecrecDimType n0 = upperDimType(n1, n2);
 
-            root->setResultType(TypeBasic::get (m_context, s0, d0, n0));
+        // Find user definition
+        SymbolProcedure* match = nullptr;
+        if (overloadedGood(eType1) && overloadedGood(eType2)) {
+            std::vector<TypeBasic*> argumentDataTypes;
+            argumentDataTypes.push_back(eType1);
+            argumentDataTypes.push_back(eType2);
+            TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
+            TCGUARD(findBestMatchingOpDef(match, root->operatorName(), argTypes, root));
+        }
+
+        if (match != nullptr) { // Overloaded operator
+            // Add implicit classify nodes if needed:
+            const std::vector<TypeBasic*>& params =
+                match->decl()->procedureType()->paramTypes();
+
+            e1->setContextDataType(params[0u]->secrecDataType());
+            e2->setContextDataType(params[1u]->secrecDataType());
+
+            e1 = classifyIfNeeded(e1, params[0u]->secrecSecType());
+            eType1 = static_cast<TypeBasic *>(e1->resultType());
+            e2 = classifyIfNeeded(e2, params[1u]->secrecSecType());
+            eType2 = static_cast<TypeBasic *>(e2->resultType());
+
+            Type* rtv = match->decl()->procedureType()->returnType();
+            assert(dynamic_cast<TypeBasic*>(rtv) != nullptr);
+            TypeBasic* rt = static_cast<TypeBasic*>(rtv);
+
+            root->setResultType(
+                TypeBasic::get(m_context, rt->secrecSecType(), rt->secrecDataType(), n0));
+            root->setProcSymbol(match);
+
             return OK;
+        } else { // Not overloaded
+            SecurityType * s1 = eType1->secrecSecType();
+            SecurityType * s2 = eType2->secrecSecType();
+            SecurityType * s0 = upperSecType(s1, s2);
+
+            // Add implicit classify nodes if needed:
+            e1 = classifyIfNeeded(e1, s0);
+            eType1 = static_cast<TypeBasic *>(e1->resultType());
+            e2 = classifyIfNeeded(e2, s0);
+            eType2 = static_cast<TypeBasic *>(e2->resultType());
+
+            DataType* d1 = eType1->secrecDataType();
+            DataType* d2 = eType2->secrecDataType();
+            SecrecDataType d0 = getResultDType(root->type(), d1, d2);
+
+            if (d0 != DATATYPE_UNDEFINED) {
+                switch (root->type()) {
+                    case NODE_EXPR_BINARY_EQ:
+                    case NODE_EXPR_BINARY_GE:
+                    case NODE_EXPR_BINARY_GT:
+                    case NODE_EXPR_BINARY_LE:
+                    case NODE_EXPR_BINARY_LT:
+                    case NODE_EXPR_BINARY_NE:
+                        e1->instantiateDataType(getContext());
+                        e2->instantiateDataType(getContext());
+                    default:
+                        break;
+                }
+
+                root->setResultType(TypeBasic::get (m_context, s0, d0, n0));
+                return OK;
+            }
         }
     }
 
     m_log.fatalInProc(root) << "Invalid binary operation " << root->operatorString()
-        << " between operands of type " << *eType1 << " and " << *eType2
+        << " between operands of type " << *eType1Orig << " and " << *eType2Orig
         << " at " << root->location() << '.';
     return E_TYPE;
 }
@@ -666,13 +691,21 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
             SymbolProcedure * match = nullptr;
             std::vector<TypeBasic *> argumentDataTypes;
             argumentDataTypes.push_back (et);
-            TypeProc* argTypes = TypeProc::get (getContext(), argumentDataTypes);
-            TCGUARD (findBestMatchingProc(match, root->operatorName(),
-                                          *root, argTypes, root));
+            TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
+            TCGUARD(findBestMatchingOpDef(match, root->operatorName(),
+                                          argTypes, root));
             if (match != nullptr) { // overloaded operator
-                SecreC::Type * resultType = match->decl()->procedureType()->returnType ();
-                root->setResultType (resultType);
-                root->setProcSymbol (match);
+                root->setProcSymbol(match);
+
+                Type* rtv = match->decl()->procedureType()->returnType();
+                assert(dynamic_cast<TypeBasic*>(rtv) != nullptr);
+                TypeBasic* rt = static_cast<TypeBasic*>(rtv);
+
+                root->setResultType(
+                    TypeBasic::get(m_context, rt->secrecSecType(),
+                                   rt->secrecDataType(),
+                                   et->secrecDimType()));
+
                 return OK;
             }
         }
@@ -879,6 +912,7 @@ TypeChecker::Status TypeChecker::visitExprDeclassify(TreeNodeExprDeclassify * ro
     root->setResultType(TypeBasic::get(getContext(),
                 dtypeDeclassify(getContext (), childType->secrecDataType()),
                 childType->secrecDimType()));
+
     return OK;
 }
 
@@ -1282,7 +1316,7 @@ TypeChecker::Status TypeChecker::visitExprPostfix(TreeNodeExprPostfix * root) {
   TreeNodeExprNone
 *******************************************************************************/
 
-void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
+void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) {}
 
 TypeChecker::Status TypeChecker::visitExprNone (TreeNodeExprNone *e) {
     m_log.fatalInProc (e) << "Invalid expression node at " << e->location () << ". "
@@ -1311,6 +1345,5 @@ TypeChecker::Status TypeChecker::visitExprStrlen(TreeNodeExprStrlen* e) {
     e->setResultType (TypeBasic::getIndexType (getContext ()));
     return OK;
 }
-
 
 } // namespace SecreC
