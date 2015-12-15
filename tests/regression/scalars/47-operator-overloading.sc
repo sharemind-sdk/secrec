@@ -24,7 +24,7 @@ void main () {
     private int x;
     private bool b;
 
-    //assert (declassify (x + x) == 0);
+    assert (declassify (x + x) == 0);
     assert (declassify (x + 0) == 1);
     assert (declassify (1 + x) == 2);
     assert (declassify (x - x) == 3);

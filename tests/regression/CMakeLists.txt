@@ -91,12 +91,26 @@ add_test_secrec_execute("scalars/59-float-cast-bug-2")
 add_test_secrec_execute("scalars/60-float-cast-bug-3")
 add_test_secrec_execute("scalars/61-float-cast-bug-4")
 add_test_secrec_execute("scalars/62-float-cast-bug-5")
+add_test_secrec_execute("scalars/63-operator-overloading-2")
+add_test_secrec_execute("scalars/64-operator-overloading-3")
+add_test_secrec_execute("scalars/65-operator-overloading-4")
+add_test_secrec_execute("scalars/66-operator-overloading-5")
+add_test_secrec_execute("scalars/67-operator-overloading-6")
+add_test_secrec_execute("scalars/68-operator-overloading-7")
+add_test_secrec_execute("scalars/69-operator-overloading-8")
+add_test_secrec_execute("scalars/70-operator-overloading-9")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
 SET_TESTS_PROPERTIES("scalars/53-for-loop-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,32\\)\\(3,37\\)")
 SET_TESTS_PROPERTIES("scalars/55-invalid-concat" PROPERTIES
   PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,26\\)\\(4,27\\)")
+SET_TESTS_PROPERTIES("scalars/64-operator-overloading-3" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,42\\)")
+SET_TESTS_PROPERTIES("scalars/65-operator-overloading-4" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,47\\)")
+SET_TESTS_PROPERTIES("scalars/66-operator-overloading-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,42\\)")
+SET_TESTS_PROPERTIES("scalars/67-operator-overloading-6" PROPERTIES PASS_REGULAR_EXPRESSION "Mismatching shapes in addition at.*\\(10,5\\)\\(10,10\\)")
+SET_TESTS_PROPERTIES("scalars/68-operator-overloading-7" PROPERTIES PASS_REGULAR_EXPRESSION "returned a value with incorrect size.*\\(9,5\\)\\(9,10\\)")
+SET_TESTS_PROPERTIES("scalars/69-operator-overloading-8" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,10\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
@@ -184,6 +198,7 @@ SET_TESTS_PROPERTIES("templates/15-unify-fail-bug"
 add_test_secrec_execute("templates/16-is-scalar")
 add_test_secrec_execute("templates/17-simple")
 add_test_secrec_execute("templates/18-overloading-on-struct-bug")
+add_test_secrec_execute("templates/19-operator-overloading-1")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
