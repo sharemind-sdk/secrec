@@ -86,6 +86,10 @@ public: /* Methods: */
         for (SymbolSymbol* s : m_temporaries) {
             delete s;
         }
+
+        for (Symbol* sym : m_table) {
+            delete sym;
+        }
     }
 
     SymbolLabel* label (Imop* imop) {
@@ -118,8 +122,13 @@ public: /* Methods: */
             os << '\t' << *s << '\n';
     }
 
-private: /* Fields: */
+    void appendSymbol (Symbol* symbol) {
+        assert (symbol != nullptr);
+        m_table.push_back (symbol);
+    }
 
+private: /* Fields: */
+    std::vector<Symbol *>                 m_table;
     std::map<const Imop*, SymbolLabel* >  m_labels;
     std::vector<SymbolSymbol* >           m_temporaries;
     unsigned                              m_tempCount;
@@ -233,6 +242,11 @@ std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) c
 void SymbolTable::appendSymbol (Symbol* symbol) {
     assert (symbol != nullptr);
     m_table.push_back (symbol);
+}
+
+void SymbolTable::appendOtherSymbol (Symbol* symbol) {
+    assert (symbol != nullptr);
+    m_other->appendSymbol (symbol);
 }
 
 SymbolLabel* SymbolTable::label (Imop* imop) {

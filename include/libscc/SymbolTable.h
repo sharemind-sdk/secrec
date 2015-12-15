@@ -53,6 +53,7 @@ public: /* Methods: */
     ~SymbolTable();
 
     void appendSymbol (Symbol* symbol);
+    void appendOtherSymbol (Symbol* symbol);
     SymbolSymbol* appendTemporary (TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 

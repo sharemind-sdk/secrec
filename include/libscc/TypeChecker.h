@@ -155,8 +155,8 @@ public: /* Methods: */
     Status visitStringPartIdentifier(TreeNodeStringPartIdentifier * p);
 
     Status visitStructDecl(TreeNodeStructDecl* decl);
-    Status visitProcDef(TreeNodeProcDef * proc, SymbolTable * localScope);
-    Status visitOpDef(TreeNodeOpDef * def, SymbolTable * localScope);
+    Status visitProcDef(TreeNodeProcDef * proc, SymbolTable * localScope, bool append=true);
+    Status visitOpDef(TreeNodeOpDef * def, SymbolTable * localScope, bool append=true);
     Status visitTemplate(TreeNodeTemplate * templ);
 
     Status visitLValue(TreeNodeLValue* lvalue);
@@ -177,7 +177,8 @@ public: /* Methods: */
     Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
-private:
+
+private: /* Methods: */
 
     Status checkTypeApplication (TreeNodeIdentifier* id,
                                  TreeNodeSeqView<TreeNodeTypeArg> args,

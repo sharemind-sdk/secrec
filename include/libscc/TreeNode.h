@@ -1882,6 +1882,10 @@ public:
         return m_cachedType;
     }
 
+    bool isOperator() const {
+        return m_type == NODE_OPDEF;
+    }
+
     TreeNodeIdentifier* identifier () const;
     TreeNodeType* returnType () const;
     TreeNodeStmt* body () const;

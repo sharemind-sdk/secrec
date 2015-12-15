@@ -41,14 +41,15 @@
 
 namespace SecreC {
 
-class SymbolTable;
-class ModuleInfo;
-class SymbolTemplate;
-class TypeNonVoid;
 class DataTypeProcedureVoid;
+class ModuleInfo;
 class SecurityType;
 class Symbol;
+class SymbolProcedure;
+class SymbolTable;
+class SymbolTemplate;
 class SymbolTypeVariable;
+class TypeNonVoid;
 
 
 using TemplateVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
@@ -113,6 +114,7 @@ class TemplateInstantiator {
 private: /* Types: */
 
     using InstanceInfoMap = std::map<Instantiation, InstanceInfo>;
+    using SymbolMap = std::map<Instantiation, SymbolProcedure*>;
 
 public: /* Methods: */
 
@@ -147,10 +149,24 @@ public: /* Methods: */
         return m_instanceInfo.find (i)->second;
     }
 
+    void addProcedure (const Instantiation& i, SymbolProcedure* proc) {
+        assert (m_procedures.find (i) == m_procedures.end ());
+        m_procedures.insert (std::make_pair (i, proc));
+    }
+
+    SymbolProcedure* getProcedure (const Instantiation& i) const {
+        auto it = m_procedures.find (i);
+        if (it == m_procedures.end ())
+            return nullptr;
+        else
+            return it->second;
+    }
+
 private: /* Fields: */
 
     std::set<Instantiation>     m_generated; ///< set of generated instances
     InstanceInfoMap             m_instanceInfo;
+    SymbolMap                   m_procedures;
     std::deque<Instantiation >  m_workList; ///<
 };
 

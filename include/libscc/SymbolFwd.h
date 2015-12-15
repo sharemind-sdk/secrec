@@ -40,6 +40,7 @@ enum SymbolCategory {
 class Symbol;
 class SymbolProcedure;
 class SymbolStruct;
+class SymbolTemplate;
 class SymbolProcedureTemplate;
 class SymbolOperatorTemplate;
 class SymbolConstant;
