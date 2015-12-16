@@ -19,17 +19,13 @@
 
 #include "SymbolTable.h"
 
-#include "Symbol.h"
 #include "TreeNode.h"
 
-#include <algorithm>
-#include <boost/range/adaptor/reversed.hpp>
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <sstream>
 
-using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -179,42 +175,6 @@ bool SymbolTable::addImport (SymbolTable* st) {
     return false;
 }
 
-std::vector<Symbol *>
-SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
-    std::vector<Symbol *> r;
-    for (SymbolTable* import : reverse (m_imports))
-        for (Symbol* s : reverse (import->m_table))
-            if (s->symbolType () == type && s->name () == name)
-                r.push_back (s);
-    return r;
-}
-
-std::vector<SymbolProcedure*>
-SymbolTable::findAllProceduresFromCurrentScope (StringRef name) const {
-    std::vector<SymbolProcedure*> r;
-    for (SymbolTable* import : reverse (m_imports)) {
-        for (Symbol* s : reverse (import->m_table)) {
-            if (s->symbolType () == SYM_PROCEDURE) {
-                assert (dynamic_cast<SymbolProcedure*> (s) != nullptr);
-                auto sproc = static_cast<SymbolProcedure*> (s);
-                if (sproc->procedureName () == name)
-                    r.push_back (sproc);
-            }
-        }
-    }
-    return r;
-}
-
-std::vector<Symbol *>
-SymbolTable::findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const {
-    std::vector<Symbol *> r;
-    for (SymbolTable * import : reverse (m_imports))
-        for(Symbol * s : reverse (import->m_table))
-            if (s->symbolType () == type && prefix.isPrefixOf(s->name()))
-                r.push_back(s);
-    return r;
-}
-
 std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
     for (Symbol* sym : reverse (m_table)) {
@@ -271,15 +231,10 @@ Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
 
 std::vector<Symbol *>
 SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
-    std::vector<Symbol *> res;
-    const SymbolTable * c = this;
-    while (c != nullptr) {
-        const std::vector<Symbol*>& syms = c->findPrefixedFromCurrentScope (type, prefix);
-        res.insert (res.end (), syms.begin (), syms.end ());
-        c = c->m_parent;
-    }
-
-    return res;
+    return findAll (
+        [=](Symbol* s) {
+            return s->symbolType () == type && prefix.isPrefixOf (s->name ());
+        });
 }
 
 std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
@@ -292,14 +247,11 @@ std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name)
     return out;
 }
 
-std::vector<SymbolProcedure*> SymbolTable::findAllProcedures (StringRef name) const {
-    std::vector<SymbolProcedure*> out;
-    for (const SymbolTable* st = this; st != nullptr; st = st->m_parent) {
-        const std::vector<SymbolProcedure*>& syms =
-            st->findAllProceduresFromCurrentScope (name);
-        out.insert (out.end (), syms.begin (), syms.end ());
-    }
-    return out;
+std::vector<Symbol*> SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
+    return findFromCurrentScope (
+        [=](Symbol* s) {
+            return s->symbolType () == type && s->name () == name;
+        });
 }
 
 SymbolTable *SymbolTable::newScope () {

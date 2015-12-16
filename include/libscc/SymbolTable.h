@@ -21,10 +21,14 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include "StringRef.h"
-#include "SymbolFwd.h"
+#include "Symbol.h"
 #include "TreeNodeFwd.h"
 
+#include <algorithm>
+#include <boost/range/adaptor/reversed.hpp>
 #include <vector>
+
+using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -69,10 +73,19 @@ public: /* Methods: */
       \param[in] prefix the name prefix of the symbols to find.
       \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol *> findPrefixed(SymbolCategory type, StringRef prefix) const;
-
+    std::vector<Symbol *> findPrefixed (SymbolCategory type, StringRef prefix) const;
 
     std::vector<Symbol* > findAll (SymbolCategory type, StringRef name) const;
+
+    template <typename Pred>
+    std::vector<Symbol* > findAll (Pred pred) const {
+        std::vector<Symbol* > out;
+        for (const SymbolTable* c = this; c != nullptr; c = c->m_parent) {
+            const std::vector<Symbol*>& syms = c->findFromCurrentScope (pred);
+            out.insert (out.end (), syms.begin (), syms.end ());
+        }
+        return out;
+    }
 
     SymbolTable* newScope ();
     SymbolTable* parent () const { return m_parent; }
@@ -90,38 +103,31 @@ public: /* Methods: */
     void print (std::ostream& os, unsigned level = 0, unsigned indent = 4) const;
 
     /**
-      Find a symbol in current scope given its name, following imported modules.
-      \param[in] name the name of the symbol to find.
-      \returns a pointer to the symbol or NULL no such symbol was found.
-    */
-    std::vector<Symbol *> findFromCurrentScope (SymbolCategory symbolType, StringRef name) const;
-
-    /**
-       Find all procedures with the given name (regardless of type).
-       \param[in] name of the procedure to find.
+       Find a symbol in the current scope given name and type,
+       following imported modules.
+       \param[in] type symbol type.
+       \param[in] name symbol name.
        \returns a vector of pointers to the matching symbols.
     */
-    std::vector<SymbolProcedure*> findAllProcedures (StringRef name) const;
+    std::vector<Symbol*> findFromCurrentScope (SymbolCategory type, StringRef name) const;
 
     /**
-       Finds all procedures with the given name (regardless of type)
-       from the current scope, following imported modules.
-       \param[in] name of the procedure to find.
+       Find a symbol in the current scope given a predicate, following imported modules.
+       \param[in] pred predicate function (Symbol* -> bool).
        \returns a vector of pointers to the matching symbols.
     */
-    std::vector<SymbolProcedure*> findAllProceduresFromCurrentScope (StringRef name) const;
+    template <typename Pred>
+    std::vector<Symbol*> findFromCurrentScope (Pred pred) const {
+        std::vector<Symbol*> r;
+        for (SymbolTable* import : reverse (m_imports)) {
+            auto x = reverse (import->m_table);
+            std::copy_if (x.begin (), x.end (), std::back_inserter (r), pred);
+        }
+        return r;
+    }
 
     std::vector<SymbolSymbol*> variablesUpTo (const SymbolTable* end) const;
     std::vector<SymbolSymbol*> variables () const;
-
-private:
-
-    /**
-      Finds symbols in current scope given their name prefix, following imported modules.
-      \param[in] prefix the name prefix of the symbol to find.
-      \returns a vector of pointers to the matching symbols.
-    */
-    std::vector<Symbol *> findPrefixedFromCurrentScope(SymbolCategory type, StringRef prefix) const;
 
 private: /* Fields: */
 

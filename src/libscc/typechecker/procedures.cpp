@@ -67,12 +67,6 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
     return ns;
 }
 
-SymbolProcedure*
-findProcedure (SymbolTable* st, StringRef name, TypeProc* dt)
-{
-    return st->find<SYM_PROCEDURE>(mangleProcedure (name.str(), dt));
-}
-
 std::vector<SymbolProcedure*>
 findProcedures (SymbolTable* st, StringRef name, TypeProc* dt)
 {
@@ -293,6 +287,13 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
 
     std::swap (m_st, localScope);
 
+    TypeNonVoid* lub;
+    if (params.size () == 2u) {
+        lub = upperTypeNonVoid (getContext (), params[0u], params[1u]);
+    } else {
+        lub = static_cast<TypeNonVoid*> (params[0u]);
+    }
+
     Type* returnType = rtNode->m_cachedType;
 
     if (returnType->isVoid ()) {
@@ -317,13 +318,6 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
                            << " has an operand which is not a scalar or vector.";
             return E_TYPE;
         }
-    }
-
-    TypeNonVoid* lub;
-    if (params.size () == 2u) {
-        lub = upperTypeNonVoid (getContext (), params[0u], params[1u]);
-    } else {
-        lub = static_cast<TypeNonVoid*> (params[0u]);
     }
 
     if (rt != lub) {
@@ -566,11 +560,19 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
     assert (callTypeProc != nullptr);
     symProc = nullptr;
 
-    std::vector<SymbolProcedure*> ops = m_st->findAllProcedures (name);
+    std::vector<Symbol*> ops = m_st->findAll (
+        [=](Symbol *s) {
+            if (s->symbolType () != SYM_PROCEDURE)
+                return false;
+            assert (dynamic_cast<SymbolProcedure*> (s) != nullptr);
+            return static_cast<SymbolProcedure*> (s)->procedureName () == name;
+        });
+
     std::vector<SymbolProcedure*> matching;
     unsigned best = ~0u;
 
-    for (SymbolProcedure* op : ops) {
+    for (Symbol* op_ : ops) {
+        SymbolProcedure* op = static_cast<SymbolProcedure*> (op_);
         TypeProc* ty = op->decl ()->procedureType ();
         const std::vector<TypeBasic*>& paramTypes = ty->paramTypes ();
         const std::vector<TypeBasic*>& argTypes = callTypeProc->paramTypes ();
