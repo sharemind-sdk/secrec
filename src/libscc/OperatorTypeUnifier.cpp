@@ -113,7 +113,8 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
             StringRef templPD = tsec->identifier ()->value ();
 
             // OK when: template param pd is D or == expected pd
-            if (templPD != m_domainVar->typeVariable ()->value () &&
+
+            if ((m_domainVar == nullptr || templPD != m_domainVar->typeVariable ()->value ()) &&
                 templPD != expectedPD)
             {
                 return false;
