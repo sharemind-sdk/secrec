@@ -294,6 +294,15 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         lub = static_cast<TypeNonVoid*> (params[0u]);
     }
 
+    SecrecOperator op = def->getOperator ();
+    if (lub->secrecSecType ()->isPrivate () &&
+        (op == SCOP_BIN_LAND || op == SCOP_BIN_LOR))
+    {
+        m_log.fatal () << "Logical and/or defined on private values at "
+                       << def->location() << ".";
+        return E_TYPE;
+    }
+
     Type* returnType = rtNode->m_cachedType;
 
     if (returnType->isVoid ()) {

@@ -14,8 +14,8 @@ private int operator <  (private int x, private int y)  { return  8; }
 private int operator <= (private int x, private int y)  { return  9; }
 private int operator >  (private int x, private int y)  { return 10; }
 private int operator >= (private int x, private int y)  { return 11; }
-private int operator && (private int x, private int y)  { return 12; }
-private int operator || (private int x, private int y)  { return 13; }
+private int operator & (private int x, private int y)  { return 12; }
+private int operator | (private int x, private int y)  { return 13; }
 
 private bool operator ! (private bool b) { return false; }
 private int operator - (private int x) { return 43; }
@@ -36,8 +36,8 @@ void main () {
     assert (declassify (x <= x) == 9);
     assert (declassify (x >  x) == 10);
     assert (declassify (x >= x) == 11);
-    assert (declassify (x && x) == 12);
-    assert (declassify (x || x) == 13);
+    assert (declassify (x & x) == 12);
+    assert (declassify (x | x) == 13);
 
     assert (declassify (! b) == false);
     assert (declassify (- x) == 43);
