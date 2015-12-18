@@ -199,6 +199,9 @@ add_test_secrec_execute("templates/16-is-scalar")
 add_test_secrec_execute("templates/17-simple")
 add_test_secrec_execute("templates/18-overloading-on-struct-bug")
 add_test_secrec_execute("templates/19-operator-overloading-1")
+add_test_secrec_execute("templates/20-operator-overloading-2")
+SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,21\\)\\(6,30\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
