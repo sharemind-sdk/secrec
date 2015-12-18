@@ -41,34 +41,35 @@ namespace SecreC {
   OperatorTypeUnifier
 *******************************************************************************/
 
-OperatorTypeUnifier::OperatorTypeUnifier (Context& context,
-                                          const std::vector<TypeBasic*>& argTypes,
+OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
                                           SymbolTemplate* sym)
     : m_sym (sym)
 {
-    TypeNonVoid* tynv = argTypes.size () == 1u
-        ? argTypes[0u]
-        : upperTypeNonVoid (context, argTypes[0u], argTypes[1u]);
+    m_securityType = argTypes.size () == 1u
+        ? argTypes[0u]->secrecSecType ()
+        : upperSecType (argTypes[0u]->secrecSecType (),
+                        argTypes[1u]->secrecSecType ());
 
-    TypeBasic* ty = static_cast<TypeBasic*> (tynv);
-    m_securityType = ty->secrecSecType ();
-    m_dataType = ty->secrecDataType ();
     m_domainVar = nullptr;
 
     for (TreeNodeQuantifier& quant : m_sym->decl ()-> quantifiers ()) {
         if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
             m_domainVar = static_cast<TreeNodeQuantifierDomain*> (&quant);
-            m_typeArgs.push_back (TypeArgument (m_securityType));
-        } else if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DATA) {
-            m_typeArgs.push_back (TypeArgument (m_dataType));
-        } else {
-            assert(false);
+            bind (quant.typeVariable ()->value (), m_securityType);
+            break;
         }
     }
 }
 
-bool OperatorTypeUnifier::kindMatches () {
+bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
+    auto it = m_names.find (name);
+    if (it != m_names.end () && it->second != arg)
+        return false;
+    m_names.insert (it, std::make_pair (name, arg));
+    return true;
+}
 
+bool OperatorTypeUnifier::kindMatches () {
     // Check if m_securityType kind matches the template's domain kind
     if (m_domainVar != nullptr) {
         TreeNodeIdentifier* kind = m_domainVar->kind ();
@@ -98,6 +99,7 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
 
     const auto tnv = static_cast<TypeNonVoid*>(type);
 
+    // Security type
     {
         assert (t->secType () != nullptr);
         assert (tnv->secrecSecType () != nullptr);
@@ -122,6 +124,7 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
         }
     }
 
+    // Data type
     {
         TreeNodeDataTypeF* tdata = t->dataType ();
         DataType* dataType = tnv->secrecDataType ();
@@ -143,9 +146,13 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
 
             if (a != b)
                 return false;
+        } else {
+            // template data type variable
+            OTUGUARD (bind (tdata->identifier ()->value (), dataType));
         }
     }
 
+    // Dim type
     OTUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
 
     return true;
@@ -204,7 +211,12 @@ bool OperatorTypeUnifier::checkSecLUB () {
 }
 
 void OperatorTypeUnifier::getTypeArguments (std::vector<TypeArgument>& params) {
-    params = m_typeArgs;
+    params.clear ();
+    for (TreeNodeQuantifier& quant : m_sym->decl ()-> quantifiers ()) {
+        auto it = m_names.find (quant.typeVariable ()->value ());
+        assert (it != m_names.end ());
+        params.push_back (it->second);
+    }
 }
 
 } // namespace SecreC

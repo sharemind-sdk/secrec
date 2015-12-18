@@ -35,7 +35,6 @@ public: /* Methods: */
     explicit OperatorTemplateVarChecker (SymbolTable* st, CompileLog& log, SecrecOperator op)
         : TemplateVarChecker (st, log)
         , m_op (op)
-        , m_seenDataTypeVar (false)
         , m_seenDomainVar (false)
     { }
 
@@ -53,8 +52,6 @@ public: /* Methods: */
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t) override;
 
-    bool checkLUB (TreeNodeTemplate* templ);
-
 private: /* Methods: */
 
     const char* thing ();
@@ -64,7 +61,6 @@ private: /* Methods: */
 private: /* Fields: */
 
     SecrecOperator m_op;
-    bool m_seenDataTypeVar;
     bool m_seenDomainVar;
 };
 

@@ -809,7 +809,7 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
-    OperatorTypeUnifier typeUnifier (getContext (), argTypes->paramTypes (), sym);
+    OperatorTypeUnifier typeUnifier (argTypes->paramTypes (), sym);
 
     if (! typeUnifier.kindMatches ())
         return false;

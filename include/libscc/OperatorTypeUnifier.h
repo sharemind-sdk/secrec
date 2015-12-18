@@ -39,14 +39,17 @@ class Type;
 
 class OperatorTypeUnifier {
 
-public: /* Types: */
+private: /* Types: */
+
+    using TypeVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
+
+public:
 
     using result_type = bool;
 
 public: /* Methods: */
 
-    OperatorTypeUnifier (Context& context,
-                         const std::vector<TypeBasic*>& argTypes,
+    OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
                          SymbolTemplate* sym);
     OperatorTypeUnifier (const OperatorTypeUnifier&) = delete;
     OperatorTypeUnifier& operator = (const OperatorTypeUnifier&) = delete;
@@ -59,23 +62,23 @@ public: /* Methods: */
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
-    bool visitDimTypeConstF(TreeNodeDimTypeConstF* t, SecrecDimType dimType);
+    bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
 
     bool checkSecLUB ();
 
     void getTypeArguments (std::vector<TypeArgument>& params);
 
+private:
+
+    bool bind (StringRef name, const TypeArgument& arg);
+
 private: /* Fields: */
 
     SymbolTemplate* m_sym;
-
-    // LUB of expression operands binds domain and type variables
+    // LUB of expression operands binds domain
     SecurityType* m_securityType;
-    DataType* m_dataType;
-
     TreeNodeQuantifierDomain* m_domainVar;
-
-    std::vector<TypeArgument> m_typeArgs;
+    TypeVarMap m_names;
 };
 
 } /* namespace SecreC */
