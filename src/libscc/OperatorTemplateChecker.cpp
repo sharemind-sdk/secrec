@@ -128,18 +128,6 @@ bool OperatorTemplateVarChecker::visitDataTypeConstF (TreeNodeDataTypeConstF* t)
     return true;
 }
 
-bool OperatorTemplateVarChecker::visitSecTypeF (TreeNodeSecTypeF* t, TypeArgumentKind kind) {
-    assert (t != nullptr);
-
-    if (! verifyKind (TA_SEC, kind, t->location ()))
-        return false;
-
-    if (t->isPublic ())
-        return true;
-
-    return visit (t->identifier (), TA_SEC);
-}
-
 bool OperatorTemplateVarChecker::visitDimTypeConstF (TreeNodeDimTypeConstF* t) {
     if (t->cachedType () != 0u && t->cachedType () != 1u) {
         badType (t);

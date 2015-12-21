@@ -48,8 +48,6 @@ public: /* Methods: */
 
     virtual bool visitDataTypeConstF (TreeNodeDataTypeConstF* t) override;
 
-    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, TypeArgumentKind kind) override;
-
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t) override;
 
     bool checkLUB (TreeNodeTemplate* templ);
