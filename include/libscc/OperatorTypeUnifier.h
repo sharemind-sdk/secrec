@@ -56,14 +56,12 @@ public: /* Methods: */
     OperatorTypeUnifier (OperatorTypeUnifier&&) = default;
     OperatorTypeUnifier& operator = (OperatorTypeUnifier&&) = default;
 
-    bool kindMatches ();
-
     bool visitType (TreeNodeType* t, Type* type);
-
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
     bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
 
+    bool checkKind ();
     bool checkSecLUB ();
 
     void getTypeArguments (std::vector<TypeArgument>& params);

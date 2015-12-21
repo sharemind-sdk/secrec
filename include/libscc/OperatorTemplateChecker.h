@@ -52,6 +52,8 @@ public: /* Methods: */
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t) override;
 
+    bool checkLUB (TreeNodeTemplate* templ);
+
 private: /* Methods: */
 
     const char* thing ();

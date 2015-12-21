@@ -148,4 +148,90 @@ bool OperatorTemplateVarChecker::visitDimTypeConstF (TreeNodeDimTypeConstF* t) {
     return true;
 }
 
+namespace {
+
+struct Domain {
+    bool isPublic;
+    StringRef name;
+};
+
+bool operator == (Domain a, Domain b) {
+    if (a.isPublic != b.isPublic)
+        return false;
+
+    if (!a.isPublic && a.name != b.name)
+        return false;
+
+    return true;
+}
+
+Domain getDomain (TreeNodeType* t) {
+    Domain res;
+
+    if (t->secType ()->isPublic ()) {
+        res.isPublic = true;
+    } else {
+        res.isPublic = false;
+        res.name = t->secType ()->identifier ()->value ();
+    }
+
+    return res;
+}
+
+bool join (Domain a, Domain b, Domain& res) {
+    // Domain
+    if (a.isPublic) {
+        if (b.isPublic) {
+            res.isPublic = true;
+        }
+        else {
+            res.isPublic = false;
+            res.name = b.name;
+        }
+    }
+    else {
+        res.isPublic = false;
+        if (b.isPublic || a.name == b.name) {
+            res.name = a.name;
+        }
+        else {
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace {
+
+bool OperatorTemplateVarChecker::checkLUB (TreeNodeTemplate* templ) {
+    Domain ret = getDomain (templ->body ()->returnType ());
+    std::vector<Domain> args;
+
+    for (TreeNodeStmtDecl& decl : templ->body ()->params ()) {
+        args.push_back (getDomain (decl.varType ()));
+    }
+
+    bool bad = false;
+
+    if (args.size () == 1u && !(args[0u] == ret))
+        bad = true;
+
+    if (args.size () == 2u) {
+        Domain lub;
+        if (! join (args[0u], args[1u], lub))
+            bad = true;
+        else if (! (lub == ret))
+            bad = true;
+    }
+
+    if (bad) {
+        m_log.fatal () << "Security type of return type of operator definition template at "
+                       << templ->location ()
+                       << " is not the least upper bound of operand security types.";
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace SecreC

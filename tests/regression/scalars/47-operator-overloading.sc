@@ -9,16 +9,17 @@ private int operator -  (private int x, private int y)  { return  3; }
 private int operator *  (private int x, private int y)  { return  4; }
 private int operator /  (private int x, private int y)  { return  5; }
 private int operator %  (private int x, private int y)  { return  6; }
-private int operator == (private int x, private int y)  { return  7; }
-private int operator <  (private int x, private int y)  { return  8; }
-private int operator <= (private int x, private int y)  { return  9; }
-private int operator >  (private int x, private int y)  { return 10; }
-private int operator >= (private int x, private int y)  { return 11; }
-private int operator & (private int x, private int y)  { return 12; }
-private int operator | (private int x, private int y)  { return 13; }
+private int operator & (private int x, private int y)   { return 7; }
+private int operator | (private int x, private int y)   { return 8; }
 
 private bool operator ! (private bool b) { return false; }
-private int operator - (private int x) { return 43; }
+private int  operator - (private int x)  { return 43; }
+
+private bool operator == (private int x, private int y) { return false; }
+private bool operator <  (private int x, private int y) { return true; }
+private bool operator <= (private int x, private int y) { return false; }
+private bool operator >  (private int x, private int y) { return true; }
+private bool operator >= (private int x, private int y) { return false; }
 
 void main () {
     private int x;
@@ -31,13 +32,14 @@ void main () {
     assert (declassify (x * x) == 4);
     assert (declassify (x / x) == 5);
     assert (declassify (x % x) == 6);
-    assert (declassify (x == x) == 7);
-    assert (declassify (x < x) == 8);
-    assert (declassify (x <= x) == 9);
-    assert (declassify (x >  x) == 10);
-    assert (declassify (x >= x) == 11);
-    assert (declassify (x & x) == 12);
-    assert (declassify (x | x) == 13);
+    assert (declassify (x & x) == 7);
+    assert (declassify (x | x) == 8);
+
+    assert (! declassify (x == x));
+    assert (declassify (x < x));
+    assert (! declassify (x <= x));
+    assert (declassify (x > x));
+    assert (! declassify (x >= x));
 
     assert (declassify (! b) == false);
     assert (declassify (- x) == 43);

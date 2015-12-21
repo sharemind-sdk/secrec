@@ -77,6 +77,13 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
             return E_TYPE;
     }
 
+    if (isOperator) {
+        OperatorTemplateVarChecker* checker =
+            static_cast<OperatorTemplateVarChecker*> (varChecker.get ());
+        if (!checker->checkLUB (templ))
+            return E_TYPE;
+    }
+
     bool expectsSecType = false;
     bool expectsDataType = false;
     bool expectsDimType = false;

@@ -69,24 +69,6 @@ bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
     return true;
 }
 
-bool OperatorTypeUnifier::kindMatches () {
-    // Check if m_securityType kind matches the template's domain kind
-    if (m_domainVar != nullptr) {
-        TreeNodeIdentifier* kind = m_domainVar->kind ();
-        if (kind != nullptr) {
-            const std::string& k = static_cast<PrivateSecType*> (m_securityType)->securityKind ()->name ();
-
-            if (m_securityType->isPublic ())
-                return false;
-
-            if (std::string (kind->value ().data ()) != k)
-                return false;
-        }
-    }
-
-    return true;
-}
-
 /*******************************************************************************
   TreeNodeType
 *******************************************************************************/
@@ -184,16 +166,35 @@ bool OperatorTypeUnifier::visitDimTypeVarF (TreeNodeDimTypeVarF*, SecrecDimType)
     return false;
 }
 
+bool OperatorTypeUnifier::checkKind () {
+    // Check if m_securityType kind matches the template's domain kind
+    if (m_domainVar != nullptr) {
+        TreeNodeIdentifier* kind = m_domainVar->kind ();
+        if (kind != nullptr) {
+            const std::string& k = static_cast<PrivateSecType*> (m_securityType)->securityKind ()->name ();
+
+            if (m_securityType->isPublic ())
+                return false;
+
+            if (std::string (kind->value ().data ()) != k)
+                return false;
+        }
+    }
+
+    return true;
+}
+
 bool OperatorTypeUnifier::checkSecLUB () {
     // This is the equivalent of the sec(lub(exprA, exprB)) ==
     // sec(definition return type) check of non-templated
-    // definitions. Note that we compute the LUB of the expression's
-    // operands to bind template variables. It's also required that
-    // LUB(templaten operands)==sec(template return type). So when a
+    // definitions.
+
+    // Note that we compute the LUB of the expression's operands to
+    // bind the template domain variable. It's also required that
+    // LUB(template operands)==sec(template return type). So when a
     // domain variable exists, it's definitely in the return type and
     // the condition becomes sec(lub(exprA, exprB)) == sec(lub(exprA,
     // exprB)) so there's nothing to check.
-
     if (m_domainVar != nullptr)
         return true;
 
@@ -204,10 +205,7 @@ bool OperatorTypeUnifier::checkSecLUB () {
 
     StringRef templPD = retTy->secType ()->identifier ()->value ();
 
-    if (templPD != static_cast<PrivateSecType*> (m_securityType)->name ())
-        return false;
-
-    return true;
+    return templPD == static_cast<PrivateSecType*> (m_securityType)->name ();
 }
 
 void OperatorTypeUnifier::getTypeArguments (std::vector<TypeArgument>& params) {

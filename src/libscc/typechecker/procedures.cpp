@@ -833,7 +833,7 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
 
     OperatorTypeUnifier typeUnifier (argTypes->paramTypes (), sym);
 
-    if (! typeUnifier.kindMatches ())
+    if (! typeUnifier.checkKind ())
         return false;
 
     unsigned i = 0;
