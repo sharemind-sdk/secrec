@@ -169,6 +169,20 @@ OpWeight calculateOpWeight (Instantiation& inst,
     return std::make_tuple (varCount, kindConstraint, score);
 }
 
+bool isRelational (SecrecOperator op) {
+    switch (op) {
+        case SCOP_BIN_EQ:
+        case SCOP_BIN_GE:
+        case SCOP_BIN_GT:
+        case SCOP_BIN_LE:
+        case SCOP_BIN_LT:
+        case SCOP_BIN_NE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 } // anonymous namespace
 
 /// Return symbol for the main procedure (if exists).
@@ -298,7 +312,7 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
     if (lub->secrecSecType ()->isPrivate () &&
         (op == SCOP_BIN_LAND || op == SCOP_BIN_LOR))
     {
-        m_log.fatal () << "Logical and/or defined on private values at "
+        m_log.fatal () << "Short-circuited logical and/or defined on private values at"
                        << def->location() << ".";
         return E_TYPE;
     }
@@ -319,6 +333,14 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         return E_TYPE;
     }
 
+    DataTypePrimitive* rtPrim = static_cast<DataTypePrimitive*> (rt->secrecDataType ());
+    bool isRel = isRelational (op);
+    if (isRel && rtPrim->secrecDataType () != DATATYPE_BOOL) {
+        m_log.fatal () << "Relational operator definition at " << def->location ()
+                       << " does not return a boolean.";
+        return E_TYPE;
+    }
+
     for (unsigned i = 0; i < params.size (); ++i) {
         TypeBasic* ty = params[i];
 
@@ -329,7 +351,7 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         }
     }
 
-    if (rt != lub) {
+    if (! isRel && rt != lub) {
         m_log.fatal () << "Return type of operator definition at " << def->location ()
                        << " is not the least upper bound of the operand types.";
         return E_TYPE;
