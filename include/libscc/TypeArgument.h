@@ -62,7 +62,7 @@ public: /* Methods: */
         , un_secType (secType)
     { }
 
-    TypeArgument (DataType* dataType)
+    TypeArgument (const DataType* dataType)
         : m_kind (TA_DATA)
         , un_dataType (dataType)
     { }
@@ -77,7 +77,7 @@ public: /* Methods: */
         return un_secType;
     }
 
-    DataType* dataType () const {
+    const DataType* dataType () const {
         assert (m_kind == TA_DATA);
         return un_dataType;
     }
@@ -100,7 +100,7 @@ public: /* Methods: */
 
     bool equals (SecrecDataType dataType) const;
 
-    bool equals (DataType* dataType) const {
+    bool equals (const DataType* dataType) const {
         if (m_kind != TA_DATA)
             return false;
         return un_dataType == dataType;
@@ -121,9 +121,9 @@ public: /* Methods: */
 private: /* Fields: */
     TypeArgumentKind m_kind;
     union {
-        SecrecDimType  un_dimType;
-        SecurityType*  un_secType;
-        DataType*      un_dataType;
+        SecrecDimType   un_dimType;
+        SecurityType*   un_secType;
+        const DataType* un_dataType;
     };
 };
 

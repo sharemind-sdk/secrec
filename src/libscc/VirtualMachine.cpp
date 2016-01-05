@@ -283,9 +283,9 @@ void storeSym (VMSym sym, Value val) {
 
 // Quick and dirty solution.
 template <SecrecDataType fromTy >
-void castValueDyn (DataType* dataType, Value& dest, const Value& from) {
+void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     assert (dataType != nullptr && dataType->isPrimitive ());
-    SecrecDataType toTy = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    SecrecDataType toTy = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     switch (toTy) {
     case DATATYPE_BOOL:   castValue<DATATYPE_BOOL,fromTy>(dest, from); break;
     case DATATYPE_INT8:   castValue<DATATYPE_INT8,fromTy>(dest, from); break;
@@ -645,18 +645,18 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::DECLASSIFY:
     case Imop::ASSIGN:
     case Imop::LOAD: {
-        DataType* dataType = imop.arg1()->secrecType()->secrecDataType();
+        const DataType* dataType = imop.arg1()->secrecType()->secrecDataType();
         assert (dataType != nullptr && dataType->isPrimitive ());
-        ty = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+        ty = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     }
     default:
         break;
     }
 
     if (imop.type () == Imop::STORE) {
-        DataType* dataType = imop.dest()->secrecType()->secrecDataType();
+        const DataType* dataType = imop.dest()->secrecType()->secrecDataType();
         assert (dataType != nullptr && dataType->isPrimitive ());
-        ty = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+        ty = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     }
 
     if (imop.type () == Imop::ASSIGN) {
@@ -739,9 +739,9 @@ void storeConstantInt (Value& out, const Symbol* c) {
 }
 
 void storeConstant (VMSym sym, const Symbol* c) {
-    DataType* dataType = c->secrecType ()->secrecDataType ();
+    const DataType* dataType = c->secrecType ()->secrecDataType ();
     assert (dataType != nullptr && dataType->isPrimitive ());
-    SecrecDataType dtype = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    SecrecDataType dtype = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     Value& out = store[sym.un_sym];
     switch (dtype) {

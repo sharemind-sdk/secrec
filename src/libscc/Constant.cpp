@@ -76,12 +76,12 @@ SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value
     return numericConstant (cxt, DataTypePrimitive::get (cxt, ty), value);
 }
 
-SymbolConstant* defaultConstant (Context& cxt, DataType* ty) {
+SymbolConstant* defaultConstant (Context& cxt, const DataType* ty) {
     assert (ty != nullptr && ! ty->isComposite ());
-    return defaultConstant (cxt, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+    return defaultConstant (cxt, static_cast<const DataTypePrimitive*>(ty)->secrecDataType ());
 }
 
-SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
+SymbolConstant* numericConstant (Context& cxt, const DataType* ty, uint64_t value) {
     assert (ty != nullptr && isNumericDataType (ty));
     if (isFloatingDataType (ty))
         return ConstantFloat::get (cxt, ty, value);
@@ -93,9 +93,9 @@ SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
   ConstantInt
 *******************************************************************************/
 
-ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
+ConstantInt* ConstantInt::get (Context& cxt, const DataType* type, uint64_t value) {
     assert (type != nullptr && type->isPrimitive ());
-    DataTypePrimitive* const primDataType = static_cast<DataTypePrimitive*>(type);
+    const auto primDataType = static_cast<const DataTypePrimitive*>(type);
     return ConstantInt::get (cxt, primDataType->secrecDataType (), value);
 }
 
@@ -116,7 +116,7 @@ ConstantInt* ConstantInt::getBool (Context& cxt, bool value) {
 }
 
 void ConstantInt::print (std::ostream &os) const {
-    const auto dataType = static_cast<DataTypePrimitive*>(secrecType ()->secrecDataType ());
+    const auto dataType = static_cast<const DataTypePrimitive*>(secrecType ()->secrecDataType ());
     const auto secrecDataType = dataType->secrecDataType ();
     if (isSignedNumericDataType (secrecDataType))
         m_value.sprint (os);
@@ -128,15 +128,15 @@ void ConstantInt::print (std::ostream &os) const {
   ConstantFloat
 *******************************************************************************/
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, uint64_t value) {
+ConstantFloat* ConstantFloat::get (Context& cxt, const DataType* type, uint64_t value) {
     return get (cxt, type, APFloat (floatPrec (type), value));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, StringRef str) {
+ConstantFloat* ConstantFloat::get (Context& cxt, const DataType* type, StringRef str) {
     return get (cxt, type, APFloat (floatPrec (type), str));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, const APFloat& value) {
+ConstantFloat* ConstantFloat::get (Context& cxt, const DataType* type, const APFloat& value) {
     auto& map = cxt.pImpl ()->m_floatConstants;
     auto it = map.find (value);
     if (it == map.end ()) {

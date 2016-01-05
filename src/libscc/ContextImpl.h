@@ -48,7 +48,7 @@ public: /* Types: */
 
     using PrivateSecTypeMap = std::map<StringRef, PrivateSecType*>;
     using TypeProcMap = std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*>;
-    using TypeBasicMap = std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*>;
+    using TypeBasicMap = std::map<std::tuple<SecurityType*, const DataType*, SecrecDimType>, TypeBasic*>;
 
     using ConstantStringMap = std::map<StringRef, ConstantString*>;
     using NumericConstantMap = std::map<APInt, ConstantInt*>;

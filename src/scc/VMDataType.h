@@ -67,10 +67,10 @@ inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     return VM_INVALID;
 }
 
-inline VMDataType secrecDTypeToVMDType (SecreC::DataType* dtype) {
+inline VMDataType secrecDTypeToVMDType (const SecreC::DataType* dtype) {
     assert (dtype != NULL);
     if (dtype->isPrimitive ()) {
-        return secrecDTypeToVMDType(static_cast<SecreC::DataTypePrimitive*>(dtype)->secrecDataType());
+        return secrecDTypeToVMDType(static_cast<const SecreC::DataTypePrimitive*>(dtype)->secrecDataType());
     }
 
     return VM_INVALID;

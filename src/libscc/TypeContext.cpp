@@ -90,7 +90,7 @@ bool TypeContext::matchSecType (SecurityType* secType) const {
     return secType == contextSecType ();
 }
 
-bool TypeContext::matchDataType (DataType* dataType) const {
+bool TypeContext::matchDataType (const DataType* dataType) const {
     assert (dataType != nullptr);
     if (! haveContextDataType ()) {
         return true;

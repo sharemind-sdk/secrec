@@ -63,8 +63,8 @@ bool isXorDataType (const DataType* dType);
 bool isSignedNumericDataType (const DataType* dType);
 bool isUnsignedNumericDataType (const DataType* dType);
 
-DataType* dtypeDeclassify (Context& cxt, DataType* dtype);
-DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
+const DataType* dtypeDeclassify (Context& cxt, const DataType* dtype);
+const DataType* upperDataType (Context& cxt, const DataType* a, const DataType* b);
 
 
 /*******************************************************************************
@@ -121,7 +121,7 @@ public: /* Methods: */
         , m_dataType (dataType)
     { }
 
-    static DataTypePrimitive* get (Context& cxt, SecrecDataType dataType);
+    static const DataTypePrimitive* get (Context& cxt, SecrecDataType dataType);
     SecrecDataType secrecDataType () const { return m_dataType; }
 
 protected:
@@ -154,11 +154,14 @@ public: /* Types: */
 public: /* Methods: */
 
     StringRef name () const { return m_name; }
-    static DataTypeStruct* find (Context& cxt, StringRef name,
+
+    static const DataTypeStruct* find (Context& cxt, StringRef name,
         const TypeArgumentList& typeArgs = TypeArgumentList());
-    static DataTypeStruct* get (Context& cxt, StringRef name,
+
+    static const DataTypeStruct* get (Context& cxt, StringRef name,
         const FieldList& fields,
         const TypeArgumentList& typeArgs = TypeArgumentList());
+
     const FieldList& fields () const { return m_fields; }
     const TypeArgumentList& typeArgs () const { return m_typeArgs; }
 

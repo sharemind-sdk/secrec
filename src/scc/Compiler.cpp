@@ -269,10 +269,10 @@ public: /* Methods: */
     }
 
 
-    SyscallName& operator << (DataType* ty) {
+    SyscallName& operator << (const DataType* ty) {
         assert (ty != NULL);
         assert (ty->isPrimitive ());
-        syscallMangleSecrecDataType (m_os, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+        syscallMangleSecrecDataType (m_os, static_cast<const DataTypePrimitive*>(ty)->secrecDataType ());
         return *this;
     }
 
@@ -283,7 +283,7 @@ public: /* Methods: */
     static std::string arithm (TypeNonVoid* ty, Imop::Type iType);
     static std::string cast (TypeNonVoid* from, TypeNonVoid* to);
     static std::string tostring (SecrecDataType dType);
-    static std::string tostring (DataType* dType);
+    static std::string tostring (const DataType* dType);
     static std::string basic (TypeNonVoid* ty, const char* name, bool needDataType = true, bool needVec = true);
 
 private: /* Fields: */
@@ -296,10 +296,10 @@ std::string SyscallName::tostring (SecrecDataType dType) {
     return scname.str ();
 }
 
-std::string SyscallName::tostring (DataType* dType) {
+std::string SyscallName::tostring (const DataType* dType) {
     assert (dType != NULL);
     assert (dType->isPrimitive ());
-    return tostring (static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+    return tostring (static_cast<const DataTypePrimitive*>(dType)->secrecDataType ());
 }
 
 
@@ -504,7 +504,7 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
 
     // type of arguments (if needed)
     if (imop.type () != Imop::JUMP) {
-        DataType* scTy = imop.arg1 ()->secrecType ()->secrecDataType ();
+        const DataType* scTy = imop.arg1 ()->secrecType ()->secrecDataType ();
         VMDataType ty = secrecDTypeToVMDType (scTy);
         assert (ty != VM_INVALID);
         instr << ty;
@@ -554,7 +554,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
 void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     VMLabel* target = NULL;
 
-    DataType* dType = imop.arg1 ()->secrecType ()->secrecDataType ();
+    const DataType* dType = imop.arg1 ()->secrecType ()->secrecDataType ();
     if (dType->isBool ()) {
         target = m_st.getLabel (":bool_to_string__");
         m_funcs->insert (target, BuiltinBoolToString (m_strLit));

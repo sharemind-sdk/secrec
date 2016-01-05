@@ -191,11 +191,11 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         TCGUARD (visitDataTypeF (tyNode->dataType ()));
 
         SecurityType* secType = secTyNode->cachedType ();
-        DataType* dataType = tyNode->dataType ()->cachedType ();
+        const DataType* dataType = tyNode->dataType ()->cachedType ();
         SecrecDimType dimType = tyNode->dimType ()->cachedType ();
 
         if (dataType->isPrimitive ()) {
-            SecrecDataType secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+            SecrecDataType secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
             if (secType->isPublic ()) {
                 switch (secrecDataType) {
                 case DATATYPE_XOR_UINT8:
@@ -236,7 +236,7 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
     if (t->cachedType () != nullptr)
         return OK;
 
-    DataTypeStruct* structType = nullptr;
+    const DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
     assert (structType != nullptr);
     t->setCachedType (structType);
@@ -246,7 +246,7 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
 TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
                                                        TreeNodeSeqView<TreeNodeTypeArg> args,
                                                        const Location& loc,
-                                                       DataTypeStruct*& result)
+                                                       const DataTypeStruct*& result)
 {
     assert (id != nullptr);
 

@@ -44,10 +44,10 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
     VMValue* imm = st.find (sym);
     if (imm == NULL) {
         uint64_t value = 0xdeadbeef;
-        DataType* dataType = sym->secrecType ()->secrecDataType ();
+        const DataType* dataType = sym->secrecType ()->secrecDataType ();
         assert (dataType);
         assert (dataType->isPrimitive ());
-        switch (static_cast<DataTypePrimitive*>(dataType)->secrecDataType ()) {
+        switch (static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ()) {
         case DATATYPE_FLOAT32:
             value = static_cast<const ConstantFloat*>(sym)->value ().ieee32bits ();
             break;

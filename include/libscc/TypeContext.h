@@ -58,7 +58,7 @@ public: /* Types: */
 public: /* Methods: */
 
     TypeContext (SecurityType* secType,
-                 DataType* dataType,
+                 const DataType* dataType,
                  SecrecDimType dimType)
         : m_contextSecType (secType)
         , m_contextDataType (dataType)
@@ -96,7 +96,7 @@ public: /* Methods: */
         m_contextSecType = secTy;
     }
 
-    void setContextDataType (DataType* dataType) {
+    void setContextDataType (const DataType* dataType) {
         m_contextDataType = dataType;
     }
 
@@ -108,7 +108,7 @@ public: /* Methods: */
         return m_contextSecType;
     }
 
-    DataType* contextDataType () const {
+    const DataType* contextDataType () const {
         return m_contextDataType;
     }
 
@@ -130,7 +130,7 @@ public: /* Methods: */
 
     bool matchType (TypeNonVoid* type) const;
     bool matchSecType (SecurityType* secType) const;
-    bool matchDataType (DataType* dataType) const;
+    bool matchDataType (const DataType* dataType) const;
 
     bool matchDimType (SecrecDimType dimType) const {
         if (! haveContextDimType ()) {
@@ -144,7 +144,7 @@ public: /* Methods: */
 
 protected: /* Fields: */
     SecurityType*    m_contextSecType;
-    DataType*        m_contextDataType;
+    const DataType*  m_contextDataType;
     SecrecDimType    m_contextDimType;
 };
 

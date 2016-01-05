@@ -53,11 +53,11 @@ private: /* Fields: */
 
 TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
                                               const Location& loc,
-                                              DataTypeStruct*& result,
+                                              const DataTypeStruct*& result,
                                               const std::vector<TypeArgument>& args)
 {
     TreeNodeIdentifier* id = decl->identifier ();
-    if (DataTypeStruct* t = DataTypeStruct::find (getContext (), id->value (), args)) {
+    if (const DataTypeStruct* t = DataTypeStruct::find (getContext (), id->value (), args)) {
         result = t;
         return OK;
     }
@@ -150,7 +150,7 @@ TypeChecker::Status TypeChecker::visitStructDecl (TreeNodeStructDecl* decl) {
     }
     else {
         // In case of monomorphic structures we also directly add the data type to symbol table:
-        DataTypeStruct* structType = nullptr;
+        const DataTypeStruct* structType = nullptr;
         TCGUARD (checkStruct (decl, decl->location (), structType));
         m_st->appendSymbol (new SymbolDataType (id->value (), structType));
     }

@@ -144,19 +144,19 @@ private: /* Fields: */
 class SymbolDataType : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDataType (StringRef name, DataType* dataType)
+    SymbolDataType (StringRef name, const DataType* dataType)
         : SymbolTypeVariable (SYM_TYPE, name)
         , m_dataType (dataType)
     { }
 
-    inline DataType* dataType () const { return m_dataType; }
+    inline const DataType* dataType () const { return m_dataType; }
 
 protected:
     void print(std::ostream & os) const override;
     void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
-    DataType* const m_dataType;
+    const DataType* const m_dataType;
 };
 
 /*******************************************************************************

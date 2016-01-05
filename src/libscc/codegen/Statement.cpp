@@ -53,7 +53,7 @@ void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
 // Initializes structure fields (and also associated size and shape symbols of the fields).
 // Note that this does not assign values to those symbols.
 void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+    const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
     for (const auto& field : structType->fields ()) {
         // The following is safe as a "." can not normally occur in a name
         const auto name = sym->name () + "." + field.name.str ();

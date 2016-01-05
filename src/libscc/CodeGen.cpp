@@ -58,7 +58,7 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
     }
 
     if (ty->secrecDataType ()->isComposite ()) {
-        DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+        const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
         for (const auto& field : structType->fields ()) {
             sym->appendField (generateSymbol (cxt, st, field.type));
         }

@@ -60,10 +60,10 @@ public: /* Methods: */
 
     bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType);
 
-    bool visitDataTypeF (TreeNodeDataTypeF* t, DataType* dataType);
-    bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, DataType* dataType);
-    bool visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType);
-    bool visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* dataType);
+    bool visitDataTypeF (TreeNodeDataTypeF* t, const DataType* dataType);
+    bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, const DataType* dataType);
+    bool visitDataTypeVarF (TreeNodeDataTypeVarF* t, const DataType* dataType);
+    bool visitDataTypeConstF (TreeNodeDataTypeConstF* t, const DataType* dataType);
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);

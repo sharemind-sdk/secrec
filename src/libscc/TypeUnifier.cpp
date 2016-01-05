@@ -102,22 +102,22 @@ bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, const DataType* dataType) {
     return dispatchDataTypeF (*this, t, dataType);
 }
 
-bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, const DataType* dataType) {
     assert (dataType != nullptr);
     return dataType->equals (t->secrecDataType ());
 }
 
-bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, const DataType* dataType) {
     assert (dataType != nullptr);
     const StringRef name = t->identifier ()->value ();
 
     if (m_st->find<SYM_STRUCT>(name)) {
         TUGUARD(dataType->isComposite());
-        const auto structType = static_cast<DataTypeStruct*>(dataType);
+        const auto structType = static_cast<const DataTypeStruct*>(dataType);
         TUGUARD(structType->typeArgs().empty());
         TUGUARD(name == structType->name());
         return true;
@@ -126,12 +126,12 @@ bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType
     return bind (name, dataType);
 }
 
-bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, const DataType* dataType) {
     assert (dataType != nullptr);
 
     TUGUARD (dataType->isComposite ());
 
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(dataType);
+    const auto structType = static_cast<const DataTypeStruct*>(dataType);
     const StringRef name = t->identifier ()-> value ();
     auto args = t->arguments ();
     const auto& expectedArgs = structType->typeArgs ();
@@ -185,7 +185,7 @@ bool TypeUnifier::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, const TypeAr
     TUGUARD (arg.isDataType ());
     TUGUARD (arg.dataType ()->isComposite ());
 
-    const auto structType = static_cast<DataTypeStruct*>(arg.dataType ());
+    const auto structType = static_cast<const DataTypeStruct*>(arg.dataType ());
     auto args = t->arguments ();
     const auto& expectedArgs = structType->typeArgs ();
     TUGUARD (structType->name () == t->identifier ()->value ());

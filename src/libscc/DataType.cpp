@@ -110,7 +110,7 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
     return best;
 }
 
-DataType* upperDataType (Context& cxt, DataType* a, DataType* b) {
+const DataType* upperDataType (Context& cxt, const DataType* a, const DataType* b) {
     if (a == nullptr || b == nullptr)
         return nullptr;
 
@@ -302,7 +302,7 @@ bool isUnsignedNumericDataType (const DataType* dType) {
     return isUnsignedNumericDataType (getSecrecDataType (dType));
 }
 
-DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
+const DataType* dtypeDeclassify (Context& cxt, const DataType* dType) {
     assert (dType != nullptr);
     if (dType->isPrimitive ()) {
         return DataTypePrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
@@ -330,7 +330,7 @@ void DataTypePrimitive::print (std::ostream& os) const {
     os << SecrecFundDataTypeToString (m_dataType);
 }
 
-DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
+const DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
     auto& map = cxt.pImpl ()->m_primitiveTypes;
     const auto index = dataType;
     auto i = map.find (index);
@@ -361,8 +361,8 @@ void DataTypeStruct::print (std::ostream& os) const {
     }
 }
 
-DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
-                                      const DataTypeStruct::TypeArgumentList& args)
+const DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
+                                            const DataTypeStruct::TypeArgumentList& args)
 {
     auto& map = cxt.pImpl ()->m_structTypes;
     const auto index = std::make_pair (name, args);
@@ -370,9 +370,9 @@ DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
     return i == map.end () ? nullptr : i->second;
 }
 
-DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
-                                     const DataTypeStruct::FieldList& fields,
-                                     const DataTypeStruct::TypeArgumentList& args)
+const DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
+                                           const DataTypeStruct::FieldList& fields,
+                                           const DataTypeStruct::TypeArgumentList& args)
 {
     auto& map = cxt.pImpl ()->m_structTypes;
     const auto index = std::make_pair (name, args);

@@ -383,10 +383,10 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
             m_resultType->secrecDimType());
 }
 
-void TreeNodeExpr::instantiateDataType (Context& cxt, DataType* dType) {
+void TreeNodeExpr::instantiateDataType (Context& cxt, const DataType* dType) {
     assert (dType != nullptr);
     if (dType->isPrimitive ()) {
-        instantiateDataType (cxt, static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+        instantiateDataType (cxt, static_cast<const DataTypePrimitive*>(dType)->secrecDataType ());
     }
 }
 

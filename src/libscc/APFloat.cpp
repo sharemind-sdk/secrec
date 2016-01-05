@@ -244,9 +244,9 @@ APFloat::prec_t floatPrec (SecrecDataType type) {
     }
 }
 
-APFloat::prec_t floatPrec (DataType* type) {
+APFloat::prec_t floatPrec (const DataType* type) {
     assert (type != nullptr && type->isPrimitive ());
-    return floatPrec (static_cast<DataTypePrimitive*>(type)->secrecDataType ());
+    return floatPrec (static_cast<const DataTypePrimitive*>(type)->secrecDataType ());
 }
 
 

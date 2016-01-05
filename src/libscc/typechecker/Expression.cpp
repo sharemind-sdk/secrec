@@ -80,20 +80,20 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
     return DATATYPE_UNDEFINED;
 }
 
-SecrecDataType getResultDType(SecrecTreeNodeType type, DataType* d1, DataType* d2) {
+SecrecDataType getResultDType(SecrecTreeNodeType type, const DataType* d1, const DataType* d2) {
     if (d1->isPrimitive () && d2->isPrimitive ()) {
         return getResultDType (type,
-            static_cast<DataTypePrimitive*>(d1)->secrecDataType (),
-            static_cast<DataTypePrimitive*>(d2)->secrecDataType ());
+            static_cast<const DataTypePrimitive*>(d1)->secrecDataType (),
+            static_cast<const DataTypePrimitive*>(d2)->secrecDataType ());
     }
 
     return DATATYPE_UNDEFINED;
 }
 
 TypeNonVoid* upperTypeNonVoid (Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
-    SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
-    SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
-    DataType* dataType = upperDataType (cxt, a->secrecDataType (), b->secrecDataType ());
+    SecurityType* const secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
+    const SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
+    const DataType* const dataType = upperDataType (cxt, a->secrecDataType (), b->secrecDataType ());
     if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
         return nullptr;
 
@@ -147,7 +147,7 @@ TypeNonVoid* TypeChecker::checkSelect (const Location& loc, Type* ty,
     }
 
     // Verify attribute access:
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+    const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
     StringRef fieldName = id->value ();
     TypeBasic* matchingFieldType = nullptr;
     for (const auto& field : structType->fields ()) {
@@ -241,7 +241,7 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
 
     TCGUARD (visitDataTypeF (root->dataType ()));
 
-    DataType* resultingDType = root->dataType()->cachedType ();;
+    const DataType* resultingDType = root->dataType()->cachedType ();;
     TreeNodeExpr * subExpr = root->expression();
     subExpr->setContextSecType(root->contextSecType());
     subExpr->setContextDimType(root->contextDimType());
@@ -249,7 +249,7 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
 
     subExpr->instantiateDataType(getContext());
     SecreC::Type * ty = subExpr->resultType();
-    DataType* givenDType = ty->secrecDataType();
+    const DataType* givenDType = ty->secrecDataType();
     if (! latticeExplicitLEQ(givenDType, resultingDType)) {
         m_log.fatalInProc(root) << "Unable to perform cast at "
             << root->location() << '.';
@@ -368,7 +368,9 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         }
     }
 
-    DataType* d0 = upperDataType(getContext (), eTypes[0]->secrecDataType(), eTypes[1]->secrecDataType());
+    const DataType* d0 = upperDataType(getContext (),
+                                       eTypes[0]->secrecDataType(),
+                                       eTypes[1]->secrecDataType());
     root->leftExpression()->instantiateDataType(getContext(), d0);
     root->rightExpression()->instantiateDataType(getContext(), d0);
 
@@ -563,9 +565,9 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     }
 
     {
-        DataType* const lDType = e1->resultType()->secrecDataType();
-        DataType* const rDType = e2->resultType()->secrecDataType();
-        DataType* const uDType = upperDataType(getContext (), lDType, rDType);
+        const DataType* const lDType = e1->resultType()->secrecDataType();
+        const DataType* const rDType = e2->resultType()->secrecDataType();
+        const DataType* const uDType = upperDataType(getContext (), lDType, rDType);
         e1->instantiateDataType(getContext(), uDType);
         e2->instantiateDataType(getContext(), uDType);
 
@@ -604,8 +606,8 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     e2 = classifyIfNeeded(e2, s0);
     eType2 = static_cast<TypeBasic *>(e2->resultType());
 
-    DataType* d1 = eType1->secrecDataType();
-    DataType* d2 = eType2->secrecDataType();
+    const DataType* d1 = eType1->secrecDataType();
+    const DataType* d2 = eType2->secrecDataType();
     SecrecDimType n1 = eType1->secrecDimType();
     SecrecDimType n2 = eType2->secrecDimType();
     SecrecDataType d0 = getResultDType(root->type(), d1, d2);
@@ -793,7 +795,7 @@ void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDat
 
 TypeChecker::Status TypeChecker::visitExprInt(TreeNodeExprInt * e) {
     if (! e->haveResultType()) {
-        DataType* dtype = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
+        const DataType* dtype = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
             dtype = dtypeDeclassify(getContext (), e->contextDataType());
             if (! isNumericDataType(dtype)) {
@@ -819,7 +821,7 @@ void TreeNodeExprInt::instantiateDataTypeV(Context & cxt, SecrecDataType dType) 
 
 TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
     if (!e->haveResultType()) {
-        DataType* dType = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
+        const DataType* dType = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
             dType = dtypeDeclassify(getContext (), e->contextDataType());
             if (! (isFloatingDataType (dType) || dType->equals (DATATYPE_NUMERIC))) {

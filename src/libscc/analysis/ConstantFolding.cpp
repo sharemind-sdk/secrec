@@ -67,7 +67,7 @@ public: /* Methods: */
 
     virtual ~AbstractValue () { }
     virtual std::string toString () const = 0;
-    virtual SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const = 0;
+    virtual SymbolConstant* toConstant (Context& cxt, StringTable& st, const DataType* t) const = 0;
     ValueTag tag () const { return m_tag; }
 
 private: /* Fields: */
@@ -102,7 +102,7 @@ public: /* Methods: */
 
     const APInt& getValue () const { return *this; }
     std::string toString () const override final;
-    SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable& st, const DataType* t) const override final;
 
 public: /* Methods: */
     const bool isSigned;
@@ -121,7 +121,7 @@ std::string IntValue::toString () const {
     return ss.str ();
 }
 
-SymbolConstant* IntValue::toConstant (Context& cxt, StringTable&, DataType* t) const  {
+SymbolConstant* IntValue::toConstant (Context& cxt, StringTable&, const DataType* t) const  {
     return ConstantInt::get (cxt, t, bits ());
 }
 
@@ -138,14 +138,14 @@ public: /* Methods: */
 
     const std::string& getValue () const { return *this; }
     std::string toString () const override final;
-    SymbolConstant* toConstant (Context& cxt, StringTable& st, DataType* t) const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable& st, const DataType* t) const override final;
 };
 
 std::string StringValue::toString () const {
     return *this;
 }
 
-SymbolConstant* StringValue::toConstant (Context& cxt, StringTable& st, DataType*) const {
+SymbolConstant* StringValue::toConstant (Context& cxt, StringTable& st, const DataType*) const {
     return ConstantString::get (cxt, *st.addString (*this));
 }
 
@@ -163,7 +163,7 @@ public: /* Methods: */
 
     const APFloat& getValue () const { return *this; }
     std::string toString () const override final;
-    SymbolConstant* toConstant (Context& cxt, StringTable&, DataType* t) const override final;
+    SymbolConstant* toConstant (Context& cxt, StringTable&, const DataType* t) const override final;
 };
 
 bool operator < (const FloatValue& x, const FloatValue& y) {
@@ -176,7 +176,7 @@ std::string FloatValue::toString () const {
     return os.str ();
 }
 
-SymbolConstant* FloatValue::toConstant (Context& cxt, StringTable&, DataType* t) const {
+SymbolConstant* FloatValue::toConstant (Context& cxt, StringTable&, const DataType* t) const {
     return ConstantFloat::get (cxt, t, *this);
 }
 
@@ -198,7 +198,7 @@ public: /* Methods: */
 
     const std::vector<Value>& getValue () const { return *this; }
     std::string toString () const override final;
-    SymbolConstant* toConstant (Context&, StringTable&, DataType*) const override final {
+    SymbolConstant* toConstant (Context&, StringTable&, const DataType*) const override final {
         return nullptr;
     }
 };
@@ -621,7 +621,7 @@ Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractV
 
 Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x) {
     const auto dataType = resultType->secrecDataType ();
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    const auto secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
 
     if (resultType->isFloat ()) {
         const auto prec = floatPrec (secrecDataType);
@@ -652,7 +652,7 @@ Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x
 
 Value castFloat (ValueFactory& factory, TypeNonVoid* resultType, const FloatValue& x) {
     const auto dataType = resultType->secrecDataType ();
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    const auto secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     if (resultType->isFloat ()) {
         const auto prec = floatPrec (secrecDataType);
         return factory.get (APFloat (prec, x));
@@ -713,7 +713,7 @@ void ConstantFolding::addConstant (const Symbol* sym) {
 
     const auto dataType = sym->secrecType ()->secrecDataType ();
     assert (dataType->isPrimitive () && "Non-primitive constant symbol!");
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    const auto secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     if (const auto s = dynamic_cast<const ConstantInt*>(sym)) {
         const bool isSigned = isSignedNumericDataType (secrecDataType);
         const auto v = IntValue (isSigned, s->value ());

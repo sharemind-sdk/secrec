@@ -62,7 +62,7 @@ public: /* Methods: */
 
     virtual SecurityType* secrecSecType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
-    virtual DataType* secrecDataType() const = 0;
+    virtual const DataType* secrecDataType() const = 0;
 
 protected: /* Methods: */
 
@@ -89,7 +89,7 @@ public: /* Methods: */
         return nullptr;
     }
 
-    DataType* secrecDataType() const override final {
+    const DataType* secrecDataType() const override final {
         assert (false && "TypeVoid::secrecDataType");
         return nullptr;
     }
@@ -136,17 +136,17 @@ public: /* Methods: */
 
     SecurityType* secrecSecType() const override final { return m_secType; }
     SecrecDimType secrecDimType() const override final { return m_dimType; }
-    DataType* secrecDataType() const override final { return m_dataType; }
+    const DataType* secrecDataType() const override final { return m_dataType; }
 
     static TypeBasic* get (Context& cxt, SecrecDataType dataType,
                            SecrecDimType dimType = 0);
-    static TypeBasic* get (Context& cxt, DataType* dataType,
+    static TypeBasic* get (Context& cxt, const DataType* dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* get (Context& cxt, SecurityType* secType,
                            SecrecDataType dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* get (Context& cxt, SecurityType* secType,
-                           DataType* dataType,
+                           const DataType* dataType,
                            SecrecDimType dimType = 0);
     static TypeBasic* getIndexType (Context& cxt);
     static TypeBasic* getPublicBoolType (Context& cxt);
@@ -154,7 +154,7 @@ public: /* Methods: */
 protected: /* Methods: */
 
     TypeBasic(SecurityType* secType,
-              DataType* dataType,
+              const DataType* dataType,
               SecrecDimType dim = 0)
         : TypeNonVoid (BASIC)
         , m_secType (secType)
@@ -166,7 +166,7 @@ protected: /* Methods: */
 
 private: /* Fields: */
     SecurityType*   const m_secType;
-    DataType*       const m_dataType;
+    const DataType* const m_dataType;
     SecrecDimType   const m_dimType;
 };
 
@@ -186,7 +186,7 @@ public: /* Methods: */
         return returnType ()->secrecSecType ();
     }
 
-    DataType* secrecDataType() const override final {
+    const DataType* secrecDataType() const override final {
         return returnType ()->secrecDataType ();
     }
 

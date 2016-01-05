@@ -532,12 +532,12 @@ public: /* Methods: */
         , m_dataType (nullptr)
     { }
 
-    inline DataType* cachedType () const { return m_dataType; }
-    inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
+    inline const DataType* cachedType () const { return m_dataType; }
+    inline void setCachedType (const DataType* dataType) { m_dataType = dataType; }
     void setTypeContext (TypeContext& cxt) const override final;
 
 private: /* Fields: */
-    DataType* m_dataType;
+    const DataType* m_dataType;
 };
 
 /******************************************************************
@@ -865,7 +865,7 @@ public: /* Methods: */
         , m_resultType (nullptr)
     { }
 
-    void instantiateDataType (Context& cxt, DataType* dType);
+    void instantiateDataType (Context& cxt, const DataType* dType);
 
     // If possible instantiate abstract data type to given concrete data type
     void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64);

@@ -178,11 +178,11 @@ private:
     Status checkTypeApplication (TreeNodeIdentifier* id,
                                  TreeNodeSeqView<TreeNodeTypeArg> args,
                                  const Location& loc,
-                                 DataTypeStruct*& result);
+                                 const DataTypeStruct*& result);
 
     Status checkStruct (TreeNodeStructDecl* decl,
                         const Location& loc,
-                        DataTypeStruct*& result,
+                        const DataTypeStruct*& result,
                         const std::vector<TypeArgument>& args
                             = std::vector<TypeArgument>());
 

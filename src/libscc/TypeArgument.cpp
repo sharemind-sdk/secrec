@@ -132,7 +132,7 @@ TypeChecker::Status TypeChecker::visitTypeArgVar(TreeNodeTypeArgVar* t) {
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t) {
-    DataTypeStruct* structType = nullptr;
+    const DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
     assert (structType != nullptr);
     t->setTypeArgument (structType);

@@ -86,7 +86,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
         return child;
 
     TreeNode * const parent = child->parent();
-    DataType* destDType = child->resultType()->secrecDataType();
+    const DataType* destDType = child->resultType()->secrecDataType();
     if (child->haveContextDataType()) {
         if (dtypeDeclassify (getContext (), child->contextDataType()) == destDType)
             destDType = child->contextDataType();
@@ -195,7 +195,7 @@ bool TypeChecker::canPrintValue (Type* ty) {
     if (! ty->isScalar ())
         return false;
 
-    DataType* dType = ty->secrecDataType ();
+    const DataType* dType = ty->secrecDataType ();
     if (! dType->isString () &&
         ! dType->isBool () &&
         ! isNumericDataType (dType))
