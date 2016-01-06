@@ -33,7 +33,7 @@ namespace SecreC {
   TypeChecker
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
+TypeChecker::Status TypeChecker::checkVarInit(const TypeNonVoid * ty,
                                               TreeNodeVarInit * varInit)
 {
     SecrecDimType shapeExpressions = 0;
@@ -71,7 +71,7 @@ TypeChecker::Status TypeChecker::checkVarInit(TypeNonVoid * ty,
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        if (!static_cast<TypeNonVoid*>(e->resultType())->latticeLEQ (getContext (), ty)) {
+        if (!static_cast<const TypeNonVoid*>(e->resultType())->latticeLEQ (getContext (), ty)) {
             m_log.fatalInProc(varInit) << "Illegal assignment at "
                                        << varInit->location() << '.';
             m_log.fatal() << "Got " << (*e->resultType())
@@ -145,9 +145,8 @@ TypeChecker::Status TypeChecker::visitStmtDecl(TreeNodeStmtDecl * decl) {
     TreeNodeType *type = decl->varType ();
     TCGUARD (visitType(type));
     assert (! type->secrecType()->isVoid());
-    assert (dynamic_cast<TypeNonVoid*>(type->secrecType()) != nullptr);
-    TypeNonVoid* justType = static_cast<TypeNonVoid*>(type->secrecType());
-    decl->setResultType (justType);
+    assert (dynamic_cast<const TypeNonVoid*>(type->secrecType()) != nullptr);
+    decl->setResultType (static_cast<const TypeNonVoid*>(type->secrecType()));
 
     if (decl->procParam ()) {
         // some sanity checks that parser did its work correctly.
@@ -192,7 +191,7 @@ TypeChecker::Status TypeChecker::visitStmtPrint(TreeNodeStmtPrint * stmt) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visitStmtReturn(TreeNodeStmtReturn * stmt) {
-    TypeProc* procType = stmt->containingProcedure ()->procedureType ();
+    const TypeProc* procType = stmt->containingProcedure ()->procedureType ();
     if (!stmt->hasExpression()) { // stmt = return;
         if (! procType->returnType ()->isVoid ()) {
             m_log.fatalInProc(stmt) << "Cannot return from non-void procedure "
@@ -212,8 +211,8 @@ TypeChecker::Status TypeChecker::visitStmtReturn(TreeNodeStmtReturn * stmt) {
         e->setContext (procType);
         TCGUARD (visitExpr(e));
         e = classifyIfNeeded(e, procType->secrecSecType());
-        TypeBasic* resultType = static_cast<TypeBasic*>(e->resultType ());
-        TypeBasic* returnType = static_cast<TypeBasic*>(procType->returnType ());
+        const auto resultType = static_cast<const TypeBasic*>(e->resultType ());
+        const auto returnType = static_cast<const TypeBasic*>(procType->returnType ());
         if (! resultType->latticeLEQ (getContext (), returnType) ||
               resultType->secrecDimType () != returnType->secrecDimType ())
         {

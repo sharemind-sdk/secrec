@@ -26,7 +26,6 @@
 
 #include <sstream>
 
-
 namespace SecreC {
 
 namespace /* anonymous */ {

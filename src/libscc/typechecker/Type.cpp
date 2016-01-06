@@ -190,9 +190,9 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         TCGUARD (visitDimTypeF (tyNode->dimType ()));
         TCGUARD (visitDataTypeF (tyNode->dataType ()));
 
-        SecurityType* secType = secTyNode->cachedType ();
-        const DataType* dataType = tyNode->dataType ()->cachedType ();
-        SecrecDimType dimType = tyNode->dimType ()->cachedType ();
+        const SecurityType* const secType = secTyNode->cachedType ();
+        const DataType* const dataType = tyNode->dataType ()->cachedType ();
+        const SecrecDimType dimType = tyNode->dimType ()->cachedType ();
 
         if (dataType->isPrimitive ()) {
             SecrecDataType secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
@@ -284,9 +284,9 @@ TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
                     mismatch = true;
                 }
                 else {
-                    auto kindSym = m_st->find<SYM_KIND>(kind->value ());
+                    const auto kindSym = m_st->find<SYM_KIND>(kind->value ());
                     assert (kindSym != nullptr);
-                    auto privateSecType = static_cast<PrivateSecType*>(typeArg.secType ());
+                    const auto privateSecType = static_cast<const PrivateSecType*>(typeArg.secType ());
                     if (privateSecType->securityKind () != kindSym) {
                         mismatch = true;
                     }

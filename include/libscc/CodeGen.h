@@ -412,7 +412,7 @@ private:
     CGResult cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape = false);
 
     CGResult cgProcCall (SymbolProcedure* symProc,
-                         SecreC::Type* returnType,
+                         const SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);
 
 
@@ -420,13 +420,13 @@ private:
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
     /// generate symbol for given type
-    SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
+    SymbolSymbol* generateResultSymbol (CGResult& result, const SecreC::Type* ty);
 
 
-    CGStmtResult cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
+    CGStmtResult cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgLocalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgProcParamInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     SymbolConstant* indexConstant (uint64_t value);

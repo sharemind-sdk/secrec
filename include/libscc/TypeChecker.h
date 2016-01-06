@@ -170,7 +170,7 @@ public: /* Methods: */
     /// Return symbol for the main procedure (if exists).
     SymbolProcedure* mainProcedure ();
 
-    Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
+    Status checkVarInit(const TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
 private:
@@ -186,10 +186,10 @@ private:
                         const std::vector<TypeArgument>& args
                             = std::vector<TypeArgument>());
 
-    TypeNonVoid* checkSelect (const Location& loc, Type* ty, TreeNodeIdentifier* id);
+    const TypeNonVoid* checkSelect (const Location& loc, const Type* ty, TreeNodeIdentifier* id);
 
 
-    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
+    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, const SecurityType * need);
 
     Symbol* findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const;
 
@@ -203,12 +203,12 @@ private:
                                     bool isInc);
     Status checkIndices(TreeNode * node, SecrecDimType & destDim);
     bool checkAndLogIfVoid (TreeNodeExpr * e);
-    Status populateParamTypes(std::vector<TypeBasic *> & params,
+    Status populateParamTypes(std::vector<const TypeBasic *> & params,
                               TreeNodeProcDef * proc);
     Status getInstance(SymbolProcedure *& proc,
                        const Instantiation & inst);
 
-    static bool canPrintValue (Type* ty);
+    static bool canPrintValue (const Type* ty);
 
     /**
      * \brief Type check a procedure, and classify parameters if needed.
@@ -221,14 +221,14 @@ private:
     Status checkProcCall(TreeNodeIdentifier * name,
                          const TreeNodeExprProcCall & tyCxt,
                          const TreeNodeSeqView<TreeNodeExpr>& arguments,
-                         SecreC::Type *& resultType,
+                         const SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);
 
     // Try to unify template with given parameter types. On success this
     // procedure returns true. No additional side effects are performed.
     bool unify (Instantiation &inst,
                 const TypeContext& tyCxt,
-                TypeProc* argTypes) const;
+                const TypeProc* argTypes) const;
 
     /**
      * \brief Looks for a best matching procedure or template.
@@ -245,7 +245,7 @@ private:
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 StringRef name,
                                 const TypeContext & tyCxt,
-                                TypeProc* argTypes,
+                                const TypeProc* argTypes,
                                 const TreeNode * errorCxt);
 
 private: /* Fields: */

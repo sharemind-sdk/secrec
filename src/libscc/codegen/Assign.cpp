@@ -133,8 +133,8 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     }
 
     SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
-    TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
-    TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
+    const TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     // struct to struct assignment
     if (destSym->secrecType ()->secrecDataType ()->isComposite ()) {
@@ -194,9 +194,9 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant(0));
 
         // Declare temporaries that might require allocation for the inner assignment:
-        TypeBasic * ty = TypeBasic::get(getContext(),
-            e->resultType()->secrecSecType(),
-            e->resultType()->secrecDataType());
+        const TypeBasic * ty = TypeBasic::get(getContext(),
+                                              e->resultType()->secrecSecType(),
+                                              e->resultType()->secrecDataType());
         Symbol * t1 = m_st->appendTemporary(ty);
         Symbol * t2 = m_st->appendTemporary(ty);
         emplaceImop(e, Imop::DECLARE, t1);

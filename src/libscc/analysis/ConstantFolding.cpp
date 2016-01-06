@@ -617,9 +617,9 @@ Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Valu
  * - intToIntCast
  * - arrayCast
  */
-Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractValue* arg);
+Value castValue (ValueFactory& factory, const TypeNonVoid* resultType, const AbstractValue* arg);
 
-Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x) {
+Value castInt (ValueFactory& factory, const TypeNonVoid* resultType, const IntValue& x) {
     const auto dataType = resultType->secrecDataType ();
     const auto secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
 
@@ -650,7 +650,7 @@ Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x
     }
 }
 
-Value castFloat (ValueFactory& factory, TypeNonVoid* resultType, const FloatValue& x) {
+Value castFloat (ValueFactory& factory, const TypeNonVoid* resultType, const FloatValue& x) {
     const auto dataType = resultType->secrecDataType ();
     const auto secrecDataType = static_cast<const DataTypePrimitive*>(dataType)->secrecDataType ();
     if (resultType->isFloat ()) {
@@ -665,7 +665,7 @@ Value castFloat (ValueFactory& factory, TypeNonVoid* resultType, const FloatValu
     }
 }
 
-Value castArr (ValueFactory& factory, TypeNonVoid* resultType, const ArrayValue& x) {
+Value castArr (ValueFactory& factory, const TypeNonVoid* resultType, const ArrayValue& x) {
     std::vector<Value> elems;
     elems.reserve (x.size ());
     for (const auto& v : x) {
@@ -677,7 +677,7 @@ Value castArr (ValueFactory& factory, TypeNonVoid* resultType, const ArrayValue&
     return factory.get (elems);
 }
 
-Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractValue* arg) {
+Value castValue (ValueFactory& factory, const TypeNonVoid* resultType, const AbstractValue* arg) {
     switch (arg->tag ()) {
     case VINT:   return castInt (factory, resultType, as<VINT>(arg));
     case VFLOAT: return castFloat (factory, resultType, as<VFLOAT>(arg));

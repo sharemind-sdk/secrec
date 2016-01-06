@@ -68,20 +68,20 @@ void TypeContext::setContextIndexType (Context& cxt) {
     setContextSecType (PublicSecType::get (cxt));
 }
 
-void TypeContext::setContext (TypeNonVoid* ty) {
+void TypeContext::setContext (const TypeNonVoid* ty) {
     assert (ty != nullptr);
     setContextDataType (ty->secrecDataType ());
     setContextSecType (ty->secrecSecType ());
     setContextDimType (ty->secrecDimType ());
 }
 
-bool TypeContext::matchType (TypeNonVoid* type) const {
+bool TypeContext::matchType (const TypeNonVoid* type) const {
     return matchSecType (type->secrecSecType ()) &&
            matchDataType (type->secrecDataType ()) &&
            matchDimType (type->secrecDimType ());
 }
 
-bool TypeContext::matchSecType (SecurityType* secType) const {
+bool TypeContext::matchSecType (const SecurityType* secType) const {
     assert (secType != nullptr);
     if (! haveContextSecType ()) {
         return true;

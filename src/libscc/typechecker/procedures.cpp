@@ -38,7 +38,7 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-std::string mangleProcedure (const std::string& name, TypeProc* dt)
+std::string mangleProcedure (const std::string& name, const TypeProc* dt)
 {
     std::ostringstream os;
     os << name << dt->mangle ();
@@ -47,7 +47,7 @@ std::string mangleProcedure (const std::string& name, TypeProc* dt)
 
 SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procdef)
 {
-    TypeProc* dt = procdef.procedureType();
+    const TypeProc* dt = procdef.procedureType();
     const std::string actualName = mangleProcedure (procdef.procedureName ().str(), dt);
     for (Symbol* _proc : st->findAll (SYM_PROCEDURE, actualName)) {
         SymbolProcedure* proc = static_cast<SymbolProcedure*>(_proc);
@@ -61,13 +61,13 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
 }
 
 SymbolProcedure*
-findProcedure (SymbolTable* st, StringRef name, TypeProc* dt)
+findProcedure (SymbolTable* st, StringRef name, const TypeProc* dt)
 {
     return st->find<SYM_PROCEDURE>(mangleProcedure (name.str(), dt));
 }
 
 std::vector<SymbolProcedure*>
-findProcedures (SymbolTable* st, StringRef name, TypeProc* dt)
+findProcedures (SymbolTable* st, StringRef name, const TypeProc* dt)
 {
     std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name.str(), dt);
@@ -112,7 +112,7 @@ bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt)
 /// Return symbol for the main procedure (if exists).
 SymbolProcedure* TypeChecker::mainProcedure ()
 {
-    TypeProc* ty = TypeProc::get (getContext (), std::vector<TypeBasic*>());
+    const TypeProc* ty = TypeProc::get (getContext (), std::vector<const TypeBasic*>());
     std::vector<SymbolProcedure *> ms = findProcedures (m_st, "main", ty);
     if (ms.size() > 1u) {
         m_log.fatal() << "Multiple definitions of main found!";
@@ -124,15 +124,15 @@ SymbolProcedure* TypeChecker::mainProcedure ()
     return ms.at(0u);
 }
 
-TypeChecker::Status TypeChecker::populateParamTypes(std::vector<TypeBasic *> & params,
+TypeChecker::Status TypeChecker::populateParamTypes(std::vector<const TypeBasic *> & params,
                                                     TreeNodeProcDef * proc)
 {
     params.clear ();
     params.reserve (proc->params ().size ());
     for (TreeNodeStmtDecl& decl : proc->params ()) {
         TCGUARD (visitStmtDecl (&decl));
-        assert (dynamic_cast<TypeBasic*>(decl.resultType()) != nullptr);
-        params.push_back (static_cast<TypeBasic*>(decl.resultType()));
+        assert (dynamic_cast<const TypeBasic*>(decl.resultType()) != nullptr);
+        params.push_back (static_cast<const TypeBasic*>(decl.resultType()));
     }
 
     return OK;
@@ -161,7 +161,7 @@ TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
         return E_TYPE;
     }
 
-    std::vector<TypeBasic*> params;
+    std::vector<const TypeBasic*> params;
     TCGUARD (populateParamTypes(params, proc));
     proc->m_cachedType = TypeProc::get (getContext (), params, rt->secrecType ());
 
@@ -208,10 +208,10 @@ TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
 TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                                                const TreeNodeExprProcCall & tyCxt,
                                                const TreeNodeSeqView<TreeNodeExpr>& arguments,
-                                               SecreC::Type *& resultType,
+                                               const SecreC::Type *& resultType,
                                                SymbolProcedure *& symProc)
 {
-    std::vector<TypeBasic*> argumentDataTypes;
+    std::vector<const TypeBasic*> argumentDataTypes;
 
     for (TreeNodeExpr& arg : arguments) {
         TCGUARD (visitExpr(&arg));
@@ -219,10 +219,10 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
             return E_TYPE;
         arg.instantiateDataType (getContext ());
         assert(arg.resultType ()->kind () == Type::BASIC);
-        argumentDataTypes.push_back (static_cast<TypeBasic*>(arg.resultType ()));
+        argumentDataTypes.push_back (static_cast<const TypeBasic*>(arg.resultType ()));
     }
 
-    TypeProc* argTypes = TypeProc::get (getContext (), argumentDataTypes);
+    const TypeProc* argTypes = TypeProc::get (getContext (), argumentDataTypes);
     TCGUARD (findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt));
 
     if (symProc == nullptr) {
@@ -270,13 +270,13 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         return E_TYPE;
     }
 
-    TypeProc* ft = symProc->decl()->procedureType();
+    const TypeProc* ft = symProc->decl()->procedureType();
 
     // Check security types of parameters:
     assert(ft->paramTypes().size() == arguments.size ());
     for (unsigned i = 0; i < ft->paramTypes().size(); i++) {
-        TypeBasic* need = ft->paramTypes()[i];
-        TypeBasic* have = argTypes->paramTypes()[i];
+        const TypeBasic* need = ft->paramTypes()[i];
+        const TypeBasic* have = argTypes->paramTypes()[i];
 
         if (need->secrecSecType ()->isPublic () && have->secrecSecType ()->isPrivate ()) {
             m_log.fatalInProc(&tyCxt) << "Argument " << (i + 1) << " to procedure "
@@ -302,7 +302,7 @@ TypeChecker::Status TypeChecker::visitExprProcCall (TreeNodeExprProcCall * root)
     if (root->haveResultType())
         return OK;
 
-    Type* resultType = nullptr;
+    const Type* resultType = nullptr;
     SymbolProcedure* symProc = nullptr;
     TreeNodeIdentifier *id = root->procName ();
     TCGUARD (checkProcCall(id, *root, root->params (), resultType, symProc));
@@ -314,7 +314,7 @@ TypeChecker::Status TypeChecker::visitExprProcCall (TreeNodeExprProcCall * root)
 TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
                                                       StringRef name,
                                                       const TypeContext & tyCxt,
-                                                      TypeProc* argTypes,
+                                                      const TypeProc* argTypes,
                                                       const TreeNode * errorCxt)
 {
     assert(errorCxt);
@@ -323,10 +323,10 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
     assert (argTypes != nullptr);
     SymbolProcedure* procTempSymbol = nullptr;
     for (SymbolProcedure* s : findProcedures (m_st, name, argTypes)) {
-        SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
+        const SecreC::Type* _ty = s->decl ()->returnType ()->secrecType ();
         if (! _ty->isVoid ()) { // and procedure is non-void...
-            assert (dynamic_cast<TypeNonVoid*>(_ty) != nullptr);
-            TypeNonVoid* ty = static_cast<TypeNonVoid*>(_ty);
+            assert (dynamic_cast<const TypeNonVoid*>(_ty) != nullptr);
+            const auto ty = static_cast<const TypeNonVoid*>(_ty);
             if (! tyCxt.matchSecType (ty->secrecSecType ()))   continue;
             if (! tyCxt.matchDataType (ty->secrecDataType ())) continue;
             if (! tyCxt.matchDimType (ty->secrecDimType ()))   continue;
@@ -390,7 +390,7 @@ TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc
 
 bool TypeChecker::unify (Instantiation& inst,
                          const TypeContext& tyCxt,
-                         TypeProc* argTypes) const
+                         const TypeProc* argTypes) const
 {
     SymbolTemplate* sym = inst.getTemplate ();
     std::vector<TypeArgument>& params = inst.getParams ();
@@ -409,7 +409,7 @@ bool TypeChecker::unify (Instantiation& inst,
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
-        TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
+        const TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
         if (! typeUnifier.visitType (argNodeTy, expectedTy)) {
             return false;
         }
@@ -456,7 +456,7 @@ bool TypeChecker::unify (Instantiation& inst,
                     return false;
                 else {
                     SymbolKind* sym = m_st->find<SYM_KIND>(domain->kind ()->value ());
-                    PrivateSecType* privArgTy = static_cast<PrivateSecType*>(param.secType ());
+                    const auto privArgTy = static_cast<const PrivateSecType*>(param.secType ());
                     if (sym != privArgTy->securityKind ()) {
                         return false;
                     }

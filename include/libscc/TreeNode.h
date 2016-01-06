@@ -282,8 +282,8 @@ public: /* Methods: */
         , m_secrecType (nullptr)
     { }
 
-    TypeNonVoid* secrecType () const { return m_secrecType; }
-    void setSecrecType (TypeNonVoid* type) {
+    const TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (const TypeNonVoid* type) {
         assert (type != nullptr);
         m_secrecType = type;
     }
@@ -292,7 +292,7 @@ public: /* Methods: */
                                   bool& isIndexed) = 0;
 
 private: /* Fields: */
-    TypeNonVoid* m_secrecType;
+    const TypeNonVoid* m_secrecType;
 };
 
 /******************************************************************
@@ -504,8 +504,8 @@ public: /* Methods: */
     { }
 
     inline bool isPublic () const { return m_type == NODE_SECTYPE_PUBLIC_F; }
-    SecurityType* cachedType () const { return m_cachedType; }
-    void setCachedType (SecurityType* ty);
+    const SecurityType* cachedType () const { return m_cachedType; }
+    void setCachedType (const SecurityType* ty);
 
     void setTypeContext (TypeContext& cxt) const override final;
 
@@ -517,7 +517,7 @@ protected:
     }
 
 private: /* Fields: */
-    SecurityType*  m_cachedType;
+    const SecurityType*  m_cachedType;
 };
 
 /******************************************************************
@@ -672,7 +672,7 @@ public: /* Methods: */
         , m_cachedType (nullptr)
     { }
 
-    Type* secrecType () const;
+    const Type* secrecType () const;
     TreeNodeSeqView<TreeNodeTypeF> types () const;
     TreeNodeSecTypeF* secType () const;
     TreeNodeDataTypeF* dataType () const;
@@ -687,7 +687,7 @@ protected:
 
 protected: /* Fields: */
 
-    Type* m_cachedType;
+    const Type* m_cachedType;
 };
 
 /******************************************************************
@@ -872,7 +872,7 @@ public: /* Methods: */
 
     bool haveResultType() const { return m_resultType != nullptr; }
     bool havePublicBoolType() const;
-    Type* resultType() const;
+    const Type* resultType() const;
 
     virtual CGResult codeGenWith (CodeGen& cg) = 0;
     virtual CGBranchResult codeGenBoolWith (CodeGen&);
@@ -883,12 +883,12 @@ protected: /* Methods: */
         assert ("ICE! data types should not be instantiated on given tree node type");
     }
 
-    void setResultType(Type *type);
+    void setResultType(const Type *type);
     void resetDataType (Context& cxt, SecrecDataType dType);
 
 protected: /* Fields: */
 
-    Type*   m_resultType; ///< Type of resulting value.
+    const Type* m_resultType; ///< Type of resulting value.
 };
 
 /******************************************************************
@@ -1289,7 +1289,7 @@ private: /* Fields: */
  */
 class TreeNodeExprClassify: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprClassify(SecurityType* ty,
+    inline TreeNodeExprClassify(const SecurityType* ty,
                                 const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
     {
@@ -1479,8 +1479,8 @@ public: /* Methods: */
     StringRef name () const { return m_name; }
     ConstantString* value () const { return m_value; }
     void setValue (ConstantString* value) { m_value = value; }
-    TypeNonVoid* secrecType () const { return m_secrecType; }
-    void setSecrecType (TypeNonVoid* secrecType) { m_secrecType = secrecType; }
+    const TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (const TypeNonVoid* secrecType) { m_secrecType = secrecType; }
 
     bool isConstant () const override final { return m_value != nullptr; }
     StringRef staticValue () const override final;
@@ -1497,7 +1497,7 @@ protected:
 public: /* Private: */
     const StringRef m_name;
     ConstantString* m_value;
-    TypeNonVoid*    m_secrecType;
+    const TypeNonVoid* m_secrecType;
 };
 
 /******************************************************************
@@ -1877,7 +1877,7 @@ public:
         return m_cachedType != nullptr;
     }
 
-    TypeProc* procedureType() const {
+    const TypeProc* procedureType() const {
         assert(m_cachedType != nullptr);
         return m_cachedType;
     }
@@ -1896,7 +1896,7 @@ protected: /* Methods: */
     }
 
 protected: /* Fields: */
-    TypeProc*         m_cachedType;
+    const TypeProc*   m_cachedType;
     SymbolProcedure*  m_procSymbol;
 };
 
@@ -2198,13 +2198,13 @@ public: /* Methods: */
 
     CGStmtResult codeGenWith (CodeGen& cg) override final;
 
-    inline TypeNonVoid* resultType() const {
+    inline const TypeNonVoid* resultType() const {
         assert(m_type != nullptr);
         return m_type;
     }
 
     inline bool haveResultType() const { return m_type != nullptr; }
-    void setResultType (TypeNonVoid* type) { m_type = type; }
+    void setResultType (const TypeNonVoid* type) { m_type = type; }
 
     inline bool global() const { return m_global; }
     inline void setGlobal(bool isGlobal = true) {
@@ -2230,7 +2230,7 @@ protected:
     }
 
 protected: /* Fields: */
-    TypeNonVoid *m_type;
+    const TypeNonVoid *m_type;
     bool m_global;
     bool m_procParam;
 };

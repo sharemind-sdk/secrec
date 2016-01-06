@@ -57,7 +57,7 @@ public: /* Methods: */
         , un_dimType (dimType)
     { }
 
-    TypeArgument (SecurityType* secType)
+    TypeArgument (const SecurityType* secType)
         : m_kind (TA_SEC)
         , un_secType (secType)
     { }
@@ -72,7 +72,7 @@ public: /* Methods: */
         return un_dimType;
     }
 
-    SecurityType* secType () const {
+    const SecurityType* secType () const {
         assert (m_kind == TA_SEC);
         return un_secType;
     }
@@ -92,7 +92,7 @@ public: /* Methods: */
         return un_dimType == dimType;
     }
 
-    bool equlas (SecurityType* secType) const {
+    bool equlas (const SecurityType* secType) const {
         if (m_kind != TA_SEC)
             return false;
         return un_secType == secType;
@@ -121,9 +121,9 @@ public: /* Methods: */
 private: /* Fields: */
     TypeArgumentKind m_kind;
     union {
-        SecrecDimType   un_dimType;
-        SecurityType*   un_secType;
-        const DataType* un_dataType;
+        SecrecDimType       un_dimType;
+        const SecurityType* un_secType;
+        const DataType*     un_dataType;
     };
 };
 

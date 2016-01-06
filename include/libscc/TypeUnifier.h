@@ -56,9 +56,9 @@ public: /* Methods: */
     TypeUnifier (TypeUnifier&&) = default;
     TypeUnifier& operator = (TypeUnifier&&) = default;
 
-    bool visitType (TreeNodeType* t, Type* type);
+    bool visitType (TreeNodeType* t, const Type* type);
 
-    bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType);
+    bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType);
 
     bool visitDataTypeF (TreeNodeDataTypeF* t, const DataType* dataType);
     bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, const DataType* dataType);

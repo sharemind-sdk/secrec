@@ -38,7 +38,7 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-bool canShortCircuit(SecrecTreeNodeType nodeTy, SecreC::Type * lhs, SecreC::Type * rhs) {
+bool canShortCircuit(SecrecTreeNodeType nodeTy, const SecreC::Type * lhs, const SecreC::Type * rhs) {
     return ((nodeTy == NODE_EXPR_BINARY_LAND || nodeTy == NODE_EXPR_BINARY_LOR) &&
             lhs->secrecSecType()->isPublic() &&
             rhs->secrecSecType()->isPublic() &&
@@ -210,7 +210,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     // 4. initialze required temporary symbols
     LoopInfo loopInfo = prepareLoopInfo (subscript);
     Context & cxt = getContext();
-    TypeBasic * pubIntTy = TypeBasic::getIndexType(cxt);
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType(cxt);
     Symbol * offset = m_st->appendTemporary(pubIntTy);
     Symbol * tmp_result = m_st->appendTemporary(TypeBasic::get(cxt,
                 e->resultType()->secrecSecType(), e->resultType()->secrecDataType()));
@@ -376,7 +376,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     SecrecDimType k = e->dimensionality()->value();
     SecrecDimType n = e->resultType()->secrecDimType();
@@ -423,7 +423,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Symbols for running indices:
     LoopInfo loopInfo;
-    TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
     for (SecrecDimType it = 0; it < n; ++ it) {
         loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     }
@@ -434,8 +434,9 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    TypeBasic * elemType = TypeBasic::get(getContext(),
-            e->resultType()->secrecSecType(), e->resultType()->secrecDataType());
+    const TypeBasic * elemType = TypeBasic::get(getContext(),
+                                                e->resultType()->secrecSecType(),
+                                                e->resultType()->secrecDataType());
     Symbol * offset = m_st->appendTemporary(pubIntTy);
     Symbol * tmpInt = m_st->appendTemporary(pubIntTy);
     Symbol * tmp_elem = m_st->appendTemporary(elemType);
@@ -601,7 +602,7 @@ CGResult CodeGen::cgExprToString(TreeNodeExprToString * e) {
         return result;
     }
 
-    TypeNonVoid * tnv = static_cast<TypeNonVoid *>(e->resultType());
+    const auto tnv = static_cast<const TypeNonVoid *>(e->resultType());
     SymbolTemporary * temp = m_st->appendTemporary(tnv);
     auto imop = new Imop(e, Imop::TOSTRING, temp, result.symbol());
     pushImopAfter(result, imop);
@@ -623,7 +624,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     if (m_tyChecker->visitExprBinary(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
     TreeNodeExpr * eArg1 = e->leftExpression();
     TreeNodeExpr * eArg2 = e->rightExpression();
 
@@ -689,7 +690,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     Imop * jmp = nullptr;
     if (eArg1->resultType()->secrecDimType() > eArg2->resultType()->secrecDimType()) {
         SymbolSymbol * tmpe1 = static_cast<SymbolSymbol *>(e1result);
-        SymbolSymbol * tmpe2 = m_st->appendTemporary(static_cast<TypeNonVoid *>(eArg1->resultType()));
+        SymbolSymbol * tmpe2 = m_st->appendTemporary(static_cast<const TypeNonVoid *>(eArg1->resultType()));
         tmpe2->inheritShape(tmpe1);
         e1result = tmpe1;
         e2result = tmpe2;
@@ -697,7 +698,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         releaseTemporary(result, arg2Result.symbol());
     }
     else if (eArg2->resultType()->secrecDimType() > eArg1->resultType()->secrecDimType()) {
-        SymbolSymbol * tmpe1 = m_st->appendTemporary(static_cast<TypeNonVoid *>(eArg2->resultType()));
+        SymbolSymbol * tmpe1 = m_st->appendTemporary(static_cast<const TypeNonVoid *>(eArg2->resultType()));
         SymbolSymbol * tmpe2 = static_cast<SymbolSymbol *>(e2result);
         tmpe1->inheritShape(tmpe2);
         e1result = tmpe1;
@@ -766,13 +767,13 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
     case NODE_EXPR_BINARY_LAND: // fall through
     case NODE_EXPR_BINARY_LOR:
         assert(!eArg1->resultType()->isVoid());
-        assert(dynamic_cast<TypeNonVoid *>(eArg1->resultType()) != nullptr);
+        assert(dynamic_cast<const TypeNonVoid *>(eArg1->resultType()) != nullptr);
 
         /*
            If first sub-expression is public, then generate short-circuit
            code for logical && and logical ||.
            */
-        if (static_cast<TypeNonVoid *>(eArg1->resultType())->secrecSecType()->isPublic()) {
+        if (static_cast<const TypeNonVoid *>(eArg1->resultType())->secrecSecType()->isPublic()) {
             // Generate code for first child expression:
             result = codeGenBranch(eArg1);
             if (result.isNotOk()) {
@@ -891,7 +892,7 @@ CGResult TreeNodeExprProcCall::codeGenWith(CodeGen & cg) {
 }
 
 CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
-                              SecreC::Type* returnType,
+                              const SecreC::Type* returnType,
                               const std::vector<TreeNodeExpr*>& args)
 {
     CGResult result;
@@ -999,8 +1000,8 @@ CGResult CodeGen::cgExprDomainID(TreeNodeExprDomainID * e) {
     if (m_tyChecker->visitExprDomainID(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    assert(dynamic_cast<TypeNonVoid *>(e->resultType()) != nullptr);
-    TypeNonVoid * resultType = static_cast<TypeNonVoid *>(e->resultType());
+    assert(dynamic_cast<const TypeNonVoid *>(e->resultType()) != nullptr);
+    const auto resultType = static_cast<const TypeNonVoid *>(e->resultType());
     SymbolSymbol * t = m_st->appendTemporary(resultType);
     Symbol * s = findIdentifier (SYM_DOMAIN, e->securityType()->identifier());
     if (s == nullptr || s->symbolType() != SYM_DOMAIN) {
@@ -1200,7 +1201,7 @@ CGResult CodeGen::cgStringPartIdentifier (TreeNodeStringPartIdentifier* p) {
         result.setResult (ConstantString::get (getContext (), p->staticValue ()));
     }
     else {
-        TypeNonVoid* stringType = TypeBasic::get (getContext (), DATATYPE_STRING);
+        const TypeNonVoid* stringType = TypeBasic::get (getContext (), DATATYPE_STRING);
         Symbol* argSymbol = m_st->find (SYM_SYMBOL, p->name ());
 
         if (argSymbol->secrecType () == stringType) {
@@ -1247,7 +1248,7 @@ CGResult CodeGen::cgExprString(TreeNodeExprString * e) {
     }
 
     std::vector<Symbol*> allocs; // temporary allocations
-    TypeNonVoid* stringType = static_cast<TypeNonVoid*>(e->resultType ());
+    const auto stringType = static_cast<const TypeNonVoid*>(e->resultType ());
 
     while (partResults.size () > 1) {
         std::vector<Symbol*> temp;
@@ -1327,7 +1328,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
     TreeNodeExpr * e1 = e->conditional();
     TreeNodeExpr * e2 = e->trueBranch();
     TreeNodeExpr * e3 = e->falseBranch();
-    TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
 
     if (e1->havePublicBoolType()) {
         generateResultSymbol(result, e);
@@ -1787,7 +1788,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
+    const  TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
     TreeNodeLValue * lval = e->lvalue ();
@@ -1830,9 +1831,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
         Symbol * offset = m_st->appendTemporary(pubIntTy);
-        TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                e->resultType()->secrecSecType(),
-                e->resultType()->secrecDataType());
+        const TypeNonVoid * elemType = TypeBasic::get(getContext(),
+                                                      e->resultType()->secrecSecType(),
+                                                      e->resultType()->secrecDataType());
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
         Symbol * tmpElem = m_st->appendTemporary(elemType);
@@ -1927,12 +1928,12 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // r = (++ x)
 
         if (! isScalar) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
             emplaceImopAfter(result, e, Imop::ALLOC, t, one, x->getSizeSym());
             one = t;
         }
         else if (isPrivate) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
             emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
             one = t;
         }
@@ -1971,7 +1972,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
+    const TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
     TreeNodeLValue * lval = e->lvalue ();
     Symbol* one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
@@ -2014,9 +2015,9 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
-        TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                e->resultType()->secrecSecType(),
-                e->resultType()->secrecDataType());
+        const TypeNonVoid * elemType = TypeBasic::get(getContext(),
+                                                      e->resultType()->secrecSecType(),
+                                                      e->resultType()->secrecDataType());
         Symbol * rhsOffset = m_st->appendTemporary(pubIntTy);
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
@@ -2114,12 +2115,12 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Construct the "1" value to add to the lvalue. The value could be private and/or array.
         if (! isScalar) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
             pushImopAfter(result, new Imop(e, Imop::ALLOC, t, one, lvalSym->getSizeSym()));
             one = t;
         }
         else if (isPrivate) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
+            SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
             pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
             one = t;
         }

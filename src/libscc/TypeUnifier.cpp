@@ -60,14 +60,14 @@ bool TypeUnifier::findName (StringRef name, TypeArgument& arg) const {
   TreeNodeType
 *******************************************************************************/
 
-bool TypeUnifier::visitType (TreeNodeType* t, Type* type) {
+bool TypeUnifier::visitType (TreeNodeType* t, const Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
 
     TUGUARD (t->isNonVoid () != type->isVoid ());
 
     if (t->isNonVoid ()) {
-        const auto tnv = static_cast<TypeNonVoid*>(type);
+        const auto tnv = static_cast<const TypeNonVoid*>(type);
         TUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
         TUGUARD (visitDataTypeF (t->dataType (), tnv->secrecDataType ()));
         TUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
@@ -82,7 +82,7 @@ bool TypeUnifier::visitType (TreeNodeType* t, Type* type) {
 
 // TODO: figure out why we have retained a domain symbols in the current
 // scope. This should definitely not happen.
-bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) {
     assert (t != nullptr);
     assert (secType != nullptr);
 

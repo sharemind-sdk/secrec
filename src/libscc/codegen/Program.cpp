@@ -162,7 +162,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     // Static checking:
     assert(ns->secrecType()->kind () == Type::PROCEDURE);
-    TypeProc * fType = static_cast<TypeProc*>(ns->secrecType());
+    const auto fType = static_cast<const TypeProc*>(ns->secrecType());
     if (! fType->returnType ()->isVoid ()) {
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {

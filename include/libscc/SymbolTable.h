@@ -53,7 +53,7 @@ public: /* Methods: */
     ~SymbolTable();
 
     void appendSymbol (Symbol* symbol);
-    SymbolSymbol* appendTemporary (TypeNonVoid* type);
+    SymbolSymbol* appendTemporary (const TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 
     Symbol* find (SymbolCategory symbolType, StringRef name) const;

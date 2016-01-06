@@ -102,7 +102,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
             return E_TYPE;
         }
 
-        TypeBasic* fieldType = static_cast<TypeBasic*>(type->secrecType ());
+        const auto fieldType = static_cast<const TypeBasic*>(type->secrecType ());
         StringRef name = attr.identifier ()->value ();
         fields.push_back (make_field (fieldType, name));
         delete type;

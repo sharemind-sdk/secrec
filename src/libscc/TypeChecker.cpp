@@ -74,12 +74,12 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
 
 // Potentially replaces the child in parent list. Does not invalidate iterators.
 TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
-                                             SecurityType * need)
+                                             const SecurityType * need)
 {
     if (need == nullptr)
         return child;
 
-    SecurityType * const haveSecType = child->resultType()->secrecSecType();
+    const SecurityType * const haveSecType = child->resultType()->secrecSecType();
     assert(!(need->isPrivate() && haveSecType->isPrivate()) || need == haveSecType);
 
     if (need->isPublic() || haveSecType->isPrivate())
@@ -93,7 +93,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
     }
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
-    TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
+    const TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
     const auto ec = new TreeNodeExprClassify(need, child->location());
     ec->appendChild(child);
     ec->resetParent(parent);
@@ -170,7 +170,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
             if (checkAndLogIfVoid(e))
                 return E_TYPE;
 
-            TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
+            const auto eTy = static_cast<const TypeNonVoid*>(e->resultType());
 
             if (! eTy->isPublicUIntScalar ()) {
                 m_log.fatalInProc(node) << "Invalid type for index at "
@@ -185,7 +185,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
     return OK;
 }
 
-bool TypeChecker::canPrintValue (Type* ty) {
+bool TypeChecker::canPrintValue (const Type* ty) {
     if (ty->isVoid ())
         return false;
 

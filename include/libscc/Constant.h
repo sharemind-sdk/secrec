@@ -46,7 +46,7 @@ SymbolConstant* numericConstant (Context& cxt, const DataType* ty, uint64_t valu
 
 class ConstantInt : public SymbolConstant {
 private: /* Methods: */
-    ConstantInt (TypeNonVoid* type, APInt value)
+    ConstantInt (const TypeNonVoid* type, APInt value)
         : SymbolConstant (type)
         , m_value (std::move(value))
     { }
@@ -73,7 +73,7 @@ private: /* Fields: */
 class ConstantFloat : public SymbolConstant {
 private: /* Methods: */
 
-    ConstantFloat (TypeNonVoid* type, const APFloat& value)
+    ConstantFloat (const TypeNonVoid* type, const APFloat& value)
         : SymbolConstant (type)
         , m_value (value)
     { }
@@ -100,7 +100,7 @@ private: /* Fields: */
 class ConstantString : public SymbolConstant {
 private: /* Methods: */
 
-    ConstantString (TypeNonVoid* type, StringRef value)
+    ConstantString (const TypeNonVoid* type, StringRef value)
         : SymbolConstant (type)
         , m_value (std::move(value))
     { }

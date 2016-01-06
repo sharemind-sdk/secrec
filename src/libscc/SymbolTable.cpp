@@ -104,7 +104,7 @@ public: /* Methods: */
         return label;
     }
 
-    SymbolSymbol* temporary (TypeNonVoid* type) {
+    SymbolSymbol* temporary (const TypeNonVoid* type) {
         std::ostringstream os;
         os << "{t}" << m_tempCount ++;
         SymbolSymbol * tmp = new SymbolSymbol(os.str(), type, true);
@@ -224,7 +224,7 @@ SymbolLabel* SymbolTable::label (Imop* imop) {
     return m_other->label (imop);
 }
 
-SymbolSymbol *SymbolTable::appendTemporary (TypeNonVoid* type) {
+SymbolSymbol *SymbolTable::appendTemporary (const TypeNonVoid* type) {
     return m_other->temporary (type);
 }
 

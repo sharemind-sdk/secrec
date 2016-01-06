@@ -139,10 +139,10 @@ class DataTypeStruct : public DataType {
 public: /* Types: */
 
     struct Field {
-        TypeBasic* type;
+        const TypeBasic* type;
         StringRef  name;
 
-        Field (TypeBasic* type, StringRef name)
+        Field (const TypeBasic* type, StringRef name)
             : type (type)
             , name (std::move(name))
         { }
@@ -181,7 +181,7 @@ private: /* Fields: */
     const FieldList        m_fields;
 };
 
-inline DataTypeStruct::Field make_field (TypeBasic* type, StringRef name) {
+inline DataTypeStruct::Field make_field (const TypeBasic* type, StringRef name) {
     return DataTypeStruct::Field(type, name);
 }
 

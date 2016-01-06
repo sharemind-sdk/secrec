@@ -182,7 +182,7 @@ void SymbolDomain::setTypeContext (TypeContext& cxt) const {
   SymbolSymbol
 *******************************************************************************/
 
-SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
+SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType(), nullptr)
@@ -193,7 +193,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     setName(name);
 }
 
-SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
+SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid * valueType, bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType (), nullptr)
@@ -227,7 +227,7 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
     assert (val != nullptr && val->secrecType () != nullptr);
 
-    TypeNonVoid* ty = val->secrecType ();
+    const TypeNonVoid* ty = val->secrecType ();
     if (ty->secrecDataType ()->isComposite ()) {
         const std::vector<DataTypeStruct::Field>& fields =
                 static_cast<const DataTypeStruct*>(ty->secrecDataType ())->fields ();
@@ -252,7 +252,7 @@ std::vector<Symbol*> flattenSymbol (Symbol* sym) {
 *******************************************************************************/
 
 SymbolProcedure::SymbolProcedure(StringRef name,
-                                 TypeProc* type)
+                                 const TypeProc* type)
     : Symbol(SYM_PROCEDURE, type)
     , m_target(nullptr)
 {
@@ -260,7 +260,7 @@ SymbolProcedure::SymbolProcedure(StringRef name,
 }
 
 void SymbolProcedure::print(std::ostream & os) const {
-    TypeProc* procType = static_cast<TypeProc*>(secrecType ());
+    const auto procType = static_cast<const TypeProc*>(secrecType ());
     os << PrettyPrint (procType->returnType ());
     os << ' ' << name () << '(';
     bool first = true;

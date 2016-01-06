@@ -191,7 +191,7 @@ TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
   TreeNodeSecTypeF
 *******************************************************************************/
 
-void TreeNodeSecTypeF::setCachedType(SecurityType * ty) {
+void TreeNodeSecTypeF::setCachedType(const SecurityType * ty) {
     assert(m_cachedType == nullptr);
     assert(ty != nullptr);
     m_cachedType = ty;
@@ -275,7 +275,7 @@ void TreeNodeDimTypeVarF::printXmlHelper (std::ostream & os) const {
   TreeNodeType
 *******************************************************************************/
 
-SecreC::Type * TreeNodeType::secrecType() const {
+const SecreC::Type * TreeNodeType::secrecType() const {
     assert(m_cachedType != nullptr);
     return m_cachedType;
 }
@@ -365,18 +365,18 @@ bool TreeNodeExpr::havePublicBoolType() const {
            && m_resultType->isScalar();
 }
 
-SecreC::Type * TreeNodeExpr::resultType() const {
+const SecreC::Type * TreeNodeExpr::resultType() const {
     assert(m_resultType != nullptr);
     return m_resultType;
 }
 
-void TreeNodeExpr::setResultType(SecreC::Type * type) {
+void TreeNodeExpr::setResultType(const SecreC::Type * type) {
     assert(m_resultType == nullptr);
     m_resultType = type;
 }
 
 void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
-    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != nullptr);
+    assert(dynamic_cast<const TypeNonVoid *>(m_resultType) != nullptr);
     m_resultType = TypeBasic::get(cxt,
             m_resultType->secrecSecType(),
             dType,

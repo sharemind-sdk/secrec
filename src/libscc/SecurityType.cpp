@@ -33,7 +33,7 @@ void PublicSecType::print (std::ostream & os) const {
     os << "public";
 }
 
-PublicSecType* PublicSecType::get (Context& cxt) {
+const PublicSecType* PublicSecType::get (Context& cxt) {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.publicType ();
 }
@@ -46,8 +46,8 @@ void PrivateSecType::print (std::ostream & os) const {
     os << m_name;
 }
 
-PrivateSecType* PrivateSecType::get (Context& cxt, StringRef name,
-                                     SymbolKind* kind)
+const PrivateSecType* PrivateSecType::get (Context& cxt, StringRef name,
+                                           SymbolKind* kind)
 {
     ContextImpl& impl = *cxt.pImpl ();
     return impl.privateType (name, kind);

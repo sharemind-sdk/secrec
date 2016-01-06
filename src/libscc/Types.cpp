@@ -117,26 +117,26 @@ void TypeBasic::printPrettyV (std::ostream& os) const {
         os << "[[" << secrecDimType () << "]]";
 }
 
-TypeBasic* TypeBasic::get (Context& cxt, SecrecDataType dataType,
-                           SecrecDimType dimType)
+const TypeBasic* TypeBasic::get (Context& cxt, SecrecDataType dataType,
+                                 SecrecDimType dimType)
 {
     return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
 }
 
-TypeBasic* TypeBasic::get (Context& cxt, const DataType* dataType, SecrecDimType dimType) {
+const TypeBasic* TypeBasic::get (Context& cxt, const DataType* dataType, SecrecDimType dimType) {
     return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
 }
 
-TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
-                           SecrecDataType dataType,
-                           SecrecDimType dimType)
+const TypeBasic* TypeBasic::get (Context& cxt, const SecurityType* secType,
+                                 SecrecDataType dataType,
+                                 SecrecDimType dimType)
 {
     return TypeBasic::get (cxt, secType, DataTypePrimitive::get (cxt, dataType), dimType);
 }
 
-TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
-                           const DataType* dataType,
-                           SecrecDimType dimType)
+const TypeBasic* TypeBasic::get (Context& cxt, const SecurityType* secType,
+                                 const DataType* dataType,
+                                 SecrecDimType dimType)
 {
     auto& map = cxt.pImpl ()->m_basicTypes;
     const auto index = std::make_tuple (secType, dataType, dimType);
@@ -148,12 +148,12 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
     return i->second;
 }
 
-TypeBasic* TypeBasic::getIndexType (Context& cxt)
+const TypeBasic* TypeBasic::getIndexType (Context& cxt)
 {
     return TypeBasic::get (cxt, PublicSecType::get (cxt), DATATYPE_UINT64);
 }
 
-TypeBasic* TypeBasic::getPublicBoolType (Context& cxt)
+const TypeBasic* TypeBasic::getPublicBoolType (Context& cxt)
 {
     return TypeBasic::get (cxt, PublicSecType::get (cxt), DATATYPE_BOOL);
 }
@@ -190,9 +190,9 @@ std::string TypeProc::mangle () const {
     return os.str();
 }
 
-TypeProc* TypeProc::get (Context& cxt,
-                         const std::vector<TypeBasic*>& params,
-                         Type* returnType)
+const TypeProc* TypeProc::get (Context& cxt,
+                               const std::vector<const TypeBasic*>& params,
+                               const Type* returnType)
 {
     if (returnType == nullptr)
         return TypeProc::get (cxt, params, TypeVoid::get (cxt));

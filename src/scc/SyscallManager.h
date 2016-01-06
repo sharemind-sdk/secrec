@@ -47,7 +47,7 @@ class SyscallManager {
 private: /* Types: */
 
     typedef std::map<std::string, VMLabel*> SCMap;
-    typedef std::map<SecreC::PrivateSecType*, VMLabel* > PDMap;
+    typedef std::map<const SecreC::PrivateSecType*, VMLabel* > PDMap;
 
 public: /* Methods: */
 
@@ -56,7 +56,7 @@ public: /* Methods: */
 
     void init (VMSymbolTable& st, VMBindingSection* sc, VMBindingSection* pd);
 
-    VMLabel* getPD (SecreC::PrivateSecType* secTy);
+    VMLabel* getPD (const SecreC::PrivateSecType* secTy);
 
     VMLabel* getSyscallBinding (const SecreC::ConstantString* str);
     VMLabel* getSyscallBinding (const std::string& name);
