@@ -137,4 +137,13 @@ struct hash<SecreC::StringRef> {
 
 } // namespace std
 
+namespace SecreC {
+
+inline size_t hash_value(StringRef sref) {
+  return std::hash<SecreC::StringRef>{}(sref);
+}
+
+} // namespace SecreC
+
+
 #endif /* SECREC_STRINGREF_H */

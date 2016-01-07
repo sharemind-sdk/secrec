@@ -29,6 +29,11 @@
 #include <iostream>
 #include <sstream>
 
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -82,22 +87,22 @@ void TypeVoid::printPrettyV (std::ostream& os) const {
     os << "void";
 }
 
-TypeVoid* TypeVoid::get (Context& cxt) {
-    ContextImpl& impl = *cxt.pImpl ();
-    return &impl.m_voidType;
+const TypeVoid* TypeVoid::get () {
+    static const TypeVoid voidType;
+    return &voidType;
 }
 
 /*******************************************************************************
   TypeNonVoid
 *******************************************************************************/
 
-bool TypeNonVoid::latticeLEQ (Context& cxt, const TypeNonVoid* other) const {
+bool TypeNonVoid::latticeLEQ (const TypeNonVoid* other) const {
     if (kind () != other->kind ())
         return false;
 
     const DataType* dataType = other->secrecDataType ();
     if (other->secrecSecType ()->isPrivate () && secrecSecType ()->isPublic ()) {
-        dataType = dtypeDeclassify (cxt, dataType);
+        dataType = dtypeDeclassify (dataType);
     }
 
     return     latticeSecTypeLEQ (secrecSecType (), other->secrecSecType ())
@@ -117,45 +122,49 @@ void TypeBasic::printPrettyV (std::ostream& os) const {
         os << "[[" << secrecDimType () << "]]";
 }
 
-const TypeBasic* TypeBasic::get (Context& cxt, SecrecDataType dataType,
+const TypeBasic* TypeBasic::get (SecrecDataType dataType,
                                  SecrecDimType dimType)
 {
-    return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
+    return TypeBasic::get (PublicSecType::get (), dataType, dimType);
 }
 
-const TypeBasic* TypeBasic::get (Context& cxt, const DataType* dataType, SecrecDimType dimType) {
-    return TypeBasic::get (cxt, PublicSecType::get (cxt), dataType, dimType);
+const TypeBasic* TypeBasic::get (const DataType* dataType, SecrecDimType dimType) {
+    return TypeBasic::get (PublicSecType::get (), dataType, dimType);
 }
 
-const TypeBasic* TypeBasic::get (Context& cxt, const SecurityType* secType,
+const TypeBasic* TypeBasic::get (const SecurityType* secType,
                                  SecrecDataType dataType,
                                  SecrecDimType dimType)
 {
-    return TypeBasic::get (cxt, secType, DataTypePrimitive::get (cxt, dataType), dimType);
+    return TypeBasic::get (secType, DataTypePrimitive::get (dataType), dimType);
 }
 
-const TypeBasic* TypeBasic::get (Context& cxt, const SecurityType* secType,
+const TypeBasic* TypeBasic::get (const SecurityType* secType,
                                  const DataType* dataType,
                                  SecrecDimType dimType)
 {
-    auto& map = cxt.pImpl ()->m_basicTypes;
-    const auto index = std::make_tuple (secType, dataType, dimType);
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new TypeBasic (secType, dataType, dimType)));
-    }
+    using namespace ::boost::flyweights;
+    using TypeBasicFlyweigh =
+        flyweight<
+            key_value<
+                std::tuple<const SecurityType*, const DataType*, SecrecDimType>,
+                TypeBasic
+            >,
+            no_tracking,
+            no_locking
+        >;
 
-    return i->second;
+    return &TypeBasicFlyweigh{secType, dataType, dimType}.get();
 }
 
-const TypeBasic* TypeBasic::getIndexType (Context& cxt)
+const TypeBasic* TypeBasic::getIndexType ()
 {
-    return TypeBasic::get (cxt, PublicSecType::get (cxt), DATATYPE_UINT64);
+    return TypeBasic::get (PublicSecType::get (), DATATYPE_UINT64);
 }
 
-const TypeBasic* TypeBasic::getPublicBoolType (Context& cxt)
+const TypeBasic* TypeBasic::getPublicBoolType ()
 {
-    return TypeBasic::get (cxt, PublicSecType::get (cxt), DATATYPE_BOOL);
+    return TypeBasic::get (PublicSecType::get (), DATATYPE_BOOL);
 }
 
 /*******************************************************************************
@@ -190,21 +199,24 @@ std::string TypeProc::mangle () const {
     return os.str();
 }
 
-const TypeProc* TypeProc::get (Context& cxt,
-                               const std::vector<const TypeBasic*>& params,
+const TypeProc* TypeProc::get (const std::vector<const TypeBasic*>& params,
                                const Type* returnType)
 {
     if (returnType == nullptr)
-        return TypeProc::get (cxt, params, TypeVoid::get (cxt));
+        return TypeProc::get (params, TypeVoid::get ());
 
-    auto& map = cxt.pImpl ()->m_procTypes;
-    const auto index = std::make_pair (returnType, params);
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new TypeProc (params, returnType)));
-    }
+    using namespace ::boost::flyweights;
+    using TypeProcFlyweigh =
+        flyweight<
+            key_value<
+                std::pair<const std::vector<const TypeBasic*>, const Type*>,
+                TypeProc
+            >,
+            no_tracking,
+            no_locking
+        >;
 
-    return i->second;
+    return &TypeProcFlyweigh{params, returnType}.get();
 }
 
 

@@ -94,7 +94,7 @@ TypeChecker::Status TypeChecker::visitSecTypeF(TreeNodeSecTypeF * ty) {
         return OK;
 
     if (ty->isPublic ()) {
-        ty->setCachedType (PublicSecType::get (getContext ()));
+        ty->setCachedType (PublicSecType::get ());
         return OK;
     }
 
@@ -124,7 +124,7 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
         return OK;
     }
 
-    ty->setCachedType (DataTypePrimitive::get (getContext (), ty->secrecDataType ()));
+    ty->setCachedType (DataTypePrimitive::get (ty->secrecDataType ()));
     return OK;
 }
 
@@ -217,11 +217,11 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
             }
         }
 
-        tyNode->m_cachedType = TypeBasic::get (m_context, secType, dataType, dimType);
+        tyNode->m_cachedType = TypeBasic::get (secType, dataType, dimType);
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != nullptr);
-        _ty->m_cachedType = TypeVoid::get (getContext ());
+        _ty->m_cachedType = TypeVoid::get();
     }
 
     return OK;

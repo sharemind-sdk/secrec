@@ -112,7 +112,7 @@ bool providesExpectedTypeContext (SymbolTemplate* sym, const TypeContext& tyCxt)
 /// Return symbol for the main procedure (if exists).
 SymbolProcedure* TypeChecker::mainProcedure ()
 {
-    const TypeProc* ty = TypeProc::get (getContext (), std::vector<const TypeBasic*>());
+    const TypeProc* ty = TypeProc::get (std::vector<const TypeBasic*>());
     std::vector<SymbolProcedure *> ms = findProcedures (m_st, "main", ty);
     if (ms.size() > 1u) {
         m_log.fatal() << "Multiple definitions of main found!";
@@ -163,7 +163,7 @@ TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
 
     std::vector<const TypeBasic*> params;
     TCGUARD (populateParamTypes(params, proc));
-    proc->m_cachedType = TypeProc::get (getContext (), params, rt->secrecType ());
+    proc->m_cachedType = TypeProc::get (params, rt->secrecType ());
 
     std::swap (m_st, localScope);
 
@@ -217,12 +217,12 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
         TCGUARD (visitExpr(&arg));
         if (checkAndLogIfVoid(&arg))
             return E_TYPE;
-        arg.instantiateDataType (getContext ());
+        arg.instantiateDataType ();
         assert(arg.resultType ()->kind () == Type::BASIC);
         argumentDataTypes.push_back (static_cast<const TypeBasic*>(arg.resultType ()));
     }
 
-    const TypeProc* argTypes = TypeProc::get (getContext (), argumentDataTypes);
+    const TypeProc* argTypes = TypeProc::get (argumentDataTypes);
     TCGUARD (findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt));
 
     if (symProc == nullptr) {

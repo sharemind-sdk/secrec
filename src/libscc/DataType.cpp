@@ -19,12 +19,15 @@
 
 #include "DataType.h"
 
-#include "Context.h"
-#include "ContextImpl.h"
 #include "Misc.h"
 #include "Symbol.h"
 
 #include <sstream>
+
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
 
 namespace SecreC {
 
@@ -109,7 +112,7 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
     return best;
 }
 
-const DataType* upperDataType (Context& cxt, const DataType* a, const DataType* b) {
+const DataType* upperDataType (const DataType* a, const DataType* b) {
     if (a == nullptr || b == nullptr)
         return nullptr;
 
@@ -117,7 +120,7 @@ const DataType* upperDataType (Context& cxt, const DataType* a, const DataType* 
         return a;
 
     if (a->isPrimitive () && b->isPrimitive ())
-        return DataTypePrimitive::get (cxt, upperDataType (getSecrecDataType (a), getSecrecDataType (b)));
+        return DataTypePrimitive::get (upperDataType (getSecrecDataType (a), getSecrecDataType (b)));
 
     return nullptr;
 }
@@ -301,10 +304,10 @@ bool isUnsignedNumericDataType (const DataType* dType) {
     return isUnsignedNumericDataType (getSecrecDataType (dType));
 }
 
-const DataType* dtypeDeclassify (Context& cxt, const DataType* dType) {
+const DataType* dtypeDeclassify (const DataType* dType) {
     assert (dType != nullptr);
     if (dType->isPrimitive ()) {
-        return DataTypePrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
+        return DataTypePrimitive::get (dtypeDeclassify (getSecrecDataType (dType)));
     }
 
     return dType;
@@ -329,15 +332,12 @@ void DataTypePrimitive::print (std::ostream& os) const {
     os << SecrecFundDataTypeToString (m_dataType);
 }
 
-const DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
-    auto& map = cxt.pImpl ()->m_primitiveTypes;
-    const auto index = dataType;
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new DataTypePrimitive (dataType)));
-    }
-
-    return i->second;
+const DataTypePrimitive* DataTypePrimitive::get (SecrecDataType dataType) {
+    using namespace ::boost::flyweights;
+    using fw_t = flyweight<
+        key_value<SecrecDataType, DataTypePrimitive>,
+        no_locking, no_tracking>;
+    return &fw_t{dataType}.get();
 }
 
 /*******************************************************************************
@@ -360,27 +360,23 @@ void DataTypeStruct::print (std::ostream& os) const {
     }
 }
 
-const DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
-                                            const DataTypeStruct::TypeArgumentList& args)
-{
-    auto& map = cxt.pImpl ()->m_structTypes;
-    const auto index = std::make_pair (name, args);
-    const auto i = map.find (index);
-    return i == map.end () ? nullptr : i->second;
-}
-
-const DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
+const DataTypeStruct* DataTypeStruct::get (StringRef name,
                                            const DataTypeStruct::FieldList& fields,
                                            const DataTypeStruct::TypeArgumentList& args)
 {
-    auto& map = cxt.pImpl ()->m_structTypes;
-    const auto index = std::make_pair (name, args);
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new DataTypeStruct (name, args, fields)));
+    using StructTypeMap = std::map<
+        std::pair<StringRef, std::vector<TypeArgument> >,
+        std::unique_ptr<const DataTypeStruct> >;
+    static StructTypeMap structTypes;
+
+    const auto index = std::make_pair(name, args);
+    auto it = structTypes.find(index);
+    if (it == structTypes.end()) {
+        it = structTypes.insert (it, std::make_pair (
+            index, std::unique_ptr<DataTypeStruct>{new DataTypeStruct {name, args, fields}}));
     }
 
-    return i->second;
+    return it->second.get();
 }
 
 } // namespace SecreC

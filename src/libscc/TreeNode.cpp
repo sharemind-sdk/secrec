@@ -375,28 +375,27 @@ void TreeNodeExpr::setResultType(const SecreC::Type * type) {
     m_resultType = type;
 }
 
-void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
+void TreeNodeExpr::resetDataType(SecrecDataType dType) {
     assert(dynamic_cast<const TypeNonVoid *>(m_resultType) != nullptr);
-    m_resultType = TypeBasic::get(cxt,
-            m_resultType->secrecSecType(),
-            dType,
-            m_resultType->secrecDimType());
+    m_resultType = TypeBasic::get(m_resultType->secrecSecType(),
+                                  dType,
+                                  m_resultType->secrecDimType());
 }
 
-void TreeNodeExpr::instantiateDataType (Context& cxt, const DataType* dType) {
+void TreeNodeExpr::instantiateDataType (const DataType* dType) {
     assert (dType != nullptr);
     if (dType->isPrimitive ()) {
-        instantiateDataType (cxt, static_cast<const DataTypePrimitive*>(dType)->secrecDataType ());
+        instantiateDataType (static_cast<const DataTypePrimitive*>(dType)->secrecDataType ());
     }
 }
 
 // If possible instantiate abstract data type to given concrete data type
-void TreeNodeExpr::instantiateDataType (Context& cxt, SecrecDataType dType) {
+void TreeNodeExpr::instantiateDataType (SecrecDataType dType) {
     assert (resultType () != nullptr);
     if ( ! resultType ()->isVoid ()
         && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
         && dType != DATATYPE_NUMERIC) {
-        instantiateDataTypeV (cxt, dType);
+        instantiateDataTypeV (dType);
     }
 }
 

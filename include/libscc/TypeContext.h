@@ -27,7 +27,6 @@
 
 namespace SecreC {
 
-class Context;
 class DataType;
 class SecurityType;
 class Type;
@@ -90,7 +89,7 @@ public: /* Methods: */
 
     void setContext (const TypeNonVoid* ty);
 
-    void setContextIndexType (Context& cxt);
+    void setContextIndexType ();
 
     void setContextSecType (const SecurityType* secTy) {
         m_contextSecType = secTy;

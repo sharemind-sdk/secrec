@@ -51,7 +51,7 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, const TypeNonVoid* 
     SymbolSymbol * sym = st->appendTemporary(ty);
 
     if (ty->secrecDimType() != 0) {
-        const TypeBasic * intTy = TypeBasic::getIndexType(cxt);
+        const TypeBasic * intTy = TypeBasic::getIndexType();
         for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i)
             sym->setDim(i, st->appendTemporary(intTy));
         sym->setSizeSym(st->appendTemporary(intTy));
@@ -381,7 +381,7 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
 LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
     LoopInfo loopInfo;
     const auto& spv = subscript.spv();
-    const auto pubIntTy = TypeBasic::getIndexType(getContext ());
+    const auto pubIntTy = TypeBasic::getIndexType();
     for (size_t i = 0; i < spv.size (); ++ i)
         loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     return loopInfo;
@@ -403,7 +403,7 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 }
 
 CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
-    const TypeBasic * ty = TypeBasic::getIndexType(getContext());
+    const TypeBasic * ty = TypeBasic::getIndexType();
     CGResult result;
     Symbol * tmp = strideInfo.symbol();
     const unsigned n = tmp->secrecType()->secrecDimType();
@@ -435,7 +435,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
     assert(dynamic_cast<SymbolSymbol *>(tmp) != nullptr);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     Symbol * zero = indexConstant(0);
-    const TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
     unsigned count = 0;
     for (Symbol * idx : loopInfo) {
         auto i = new Imop(m_node, Imop::ASSIGN, idx, zero);
@@ -457,7 +457,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
 
 CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv) {
     assert(loopInfo.empty());
-    const TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
     CGResult result;
     LoopInfo::const_iterator idxIt;
 
@@ -596,7 +596,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
 
-        const TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+        const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
         SymbolTemporary * temp_bool = m_st->appendTemporary(boolTy);
 
         dim_iterator dit = dim_begin(x);
@@ -730,7 +730,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     assert (m_node != nullptr);
 
     const TypeNonVoid* ty = lhs->secrecType ();
-    const TypeBasic* pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic* pubBoolTy = TypeBasic::getPublicBoolType();
     CGResult result;
     result.setResult (lhs);
 

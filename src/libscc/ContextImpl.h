@@ -46,16 +46,9 @@ private:
 
 public: /* Types: */
 
-    using PrivateSecTypeMap = std::map<StringRef, PrivateSecType*>;
-    using TypeProcMap = std::map<std::pair<const Type*, std::vector<const TypeBasic*> >, TypeProc*>;
-    using TypeBasicMap = std::map<std::tuple<const SecurityType*, const DataType*, SecrecDimType>, TypeBasic*>;
-
     using ConstantStringMap = std::map<StringRef, ConstantString*>;
     using NumericConstantMap = std::map<APInt, ConstantInt*>;
     using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
-
-    using StructTypeMap = std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*>;
-    using PrimitiveTypeMap = std::map<SecrecDataType, DataTypePrimitive*>;
 
 public: /* Methods: */
 
@@ -65,23 +58,10 @@ public: /* Methods: */
 
     StringTable& stringTable () { return m_stringTable; }
 
-    /* Security types: */
-    PublicSecType* publicType ();
-    PrivateSecType* privateType (StringRef domain, SymbolKind* kind);
-
 public: /* Fields: */
 
     /* Strings: */
     StringTable           m_stringTable;
-
-    /* All types: */
-    TypeVoid              m_voidType;
-    TypeProcMap           m_procTypes;
-    TypeBasicMap          m_basicTypes;
-    PublicSecType         m_pubSecType;
-    PrivateSecTypeMap     m_privSecTypes;
-    PrimitiveTypeMap      m_primitiveTypes;
-    StructTypeMap         m_structTypes;
 
     /* All constants: */
     ConstantStringMap     m_stringLiterals;

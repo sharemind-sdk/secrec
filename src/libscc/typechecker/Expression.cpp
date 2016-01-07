@@ -90,14 +90,14 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, const DataType* d1, const
     return DATATYPE_UNDEFINED;
 }
 
-const TypeNonVoid* upperTypeNonVoid (Context& cxt, const TypeNonVoid* a, const TypeNonVoid* b) {
+const TypeNonVoid* upperTypeNonVoid (const TypeNonVoid* a, const TypeNonVoid* b) {
     const SecurityType* const secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
     const SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
-    const DataType* const dataType = upperDataType (cxt, a->secrecDataType (), b->secrecDataType ());
+    const DataType* const dataType = upperDataType (a->secrecDataType (), b->secrecDataType ());
     if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
         return nullptr;
 
-    return TypeBasic::get (cxt, secType, dataType, dimType);
+    return TypeBasic::get (secType, dataType, dimType);
 }
 
 } // namespace anonymous
@@ -219,7 +219,7 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
         return E_TYPE;
 
     const auto srcType = static_cast<const TypeNonVoid *>(src->resultType());
-    if (! srcType->latticeLEQ(getContext (), lhsType)) {
+    if (! srcType->latticeLEQ(lhsType)) {
         m_log.fatalInProc(e) << "Invalid assignment from value of type " << *srcType
             << " to variable of type " << *lhsType << " at "
             << e->location() << '.';
@@ -248,7 +248,7 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     subExpr->setContextDimType(root->contextDimType());
     TCGUARD (visitExpr(subExpr));
 
-    subExpr->instantiateDataType(getContext());
+    subExpr->instantiateDataType();
     const SecreC::Type * ty = subExpr->resultType();
     const DataType* givenDType = ty->secrecDataType();
     if (! latticeExplicitLEQ(givenDType, resultingDType)) {
@@ -258,10 +258,9 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     }
 
     root->setResultType(
-            TypeBasic::get(getContext(),
-                ty->secrecSecType(),
-                resultingDType,
-                ty->secrecDimType()));
+            TypeBasic::get(ty->secrecSecType(),
+                           resultingDType,
+                           ty->secrecDimType()));
 
     return OK;
 }
@@ -293,14 +292,14 @@ TypeChecker::Status TypeChecker::visitExprIndex(TreeNodeExprIndex * root) {
 
     TCGUARD (checkIndices(root->indices(), k));
 
-    root->setResultType(TypeBasic::get(getContext(),
-                eType->secrecSecType(), eType->secrecDataType(), k));
+    root->setResultType(TypeBasic::get(eType->secrecSecType(),
+                                       eType->secrecDataType(), k));
     return OK;
 }
 
-void TreeNodeExprIndex::instantiateDataTypeV (Context &cxt, SecrecDataType dType) {
-    resetDataType (cxt, dType);
-    expression ()->instantiateDataType (cxt, dType);
+void TreeNodeExprIndex::instantiateDataTypeV (SecrecDataType dType) {
+    resetDataType (dType);
+    expression ()->instantiateDataType (dType);
 }
 
 /*******************************************************************************
@@ -313,8 +312,8 @@ TypeChecker::Status TypeChecker::visitExprSize(TreeNodeExprSize * root) {
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        e->instantiateDataType(getContext());
-        root->setResultType(TypeBasic::getIndexType(getContext()));
+        e->instantiateDataType();
+        root->setResultType(TypeBasic::getIndexType());
     }
 
     return OK;
@@ -330,8 +329,8 @@ TypeChecker::Status TypeChecker::visitExprShape(TreeNodeExprShape * root) {
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        e->instantiateDataType(getContext());
-        root->setResultType(TypeBasic::get(getContext(), DATATYPE_UINT64, 1));
+        e->instantiateDataType();
+        root->setResultType(TypeBasic::get(DATATYPE_UINT64, 1));
     }
 
     return OK;
@@ -369,11 +368,10 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         }
     }
 
-    const DataType* d0 = upperDataType(getContext (),
-                                       eTypes[0]->secrecDataType(),
+    const DataType* d0 = upperDataType(eTypes[0]->secrecDataType(),
                                        eTypes[1]->secrecDataType());
-    root->leftExpression()->instantiateDataType(getContext(), d0);
-    root->rightExpression()->instantiateDataType(getContext(), d0);
+    root->leftExpression()->instantiateDataType(d0);
+    root->rightExpression()->instantiateDataType(d0);
 
     {
         const SecurityType * lSecTy = eTypes[0]->secrecSecType();
@@ -417,7 +415,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
     // type checker actually allows for aribtrary expression here
     // but right now parser expects integer literals, this is OK
     TreeNodeExpr * e3 = root->dimensionality();
-    e3->setContextIndexType(getContext());
+    e3->setContextIndexType();
     TCGUARD (visitExpr(e3));
     if (checkAndLogIfVoid(e3))
         return E_TYPE;
@@ -430,17 +428,17 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         return E_TYPE;
     }
 
-    root->setResultType(TypeBasic::get(m_context,
-                resSecType,
-                eTypes[0]->secrecDataType(),
-                eTypes[0]->secrecDimType()));
+    root->setResultType(
+                TypeBasic::get(resSecType,
+                               eTypes[0]->secrecDataType(),
+                               eTypes[0]->secrecDimType()));
     return OK;
 }
 
-void TreeNodeExprCat::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    leftExpression()->instantiateDataType(cxt, dType);
-    rightExpression()->instantiateDataType(cxt, dType);
+void TreeNodeExprCat::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    leftExpression()->instantiateDataType(dType);
+    rightExpression()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -461,7 +459,7 @@ TypeChecker::Status TypeChecker::visitExprReshape(TreeNodeExprReshape * root) {
 
     const auto eType = static_cast<const TypeNonVoid *>(e->resultType());
     for (TreeNodeExpr& dim : root->dimensions()) {
-        dim.setContextIndexType (getContext());
+        dim.setContextIndexType ();
         TCGUARD (visitExpr(&dim));
 
         if (checkAndLogIfVoid(&dim))
@@ -481,14 +479,15 @@ TypeChecker::Status TypeChecker::visitExprReshape(TreeNodeExprReshape * root) {
         return E_TYPE;
     }
 
-    root->setResultType(TypeBasic::get(getContext(),
-                eType->secrecSecType(), eType->secrecDataType(), resDim));
+    root->setResultType(TypeBasic::get(eType->secrecSecType(),
+                                       eType->secrecDataType(),
+                                       resDim));
     return OK;
 }
 
-void TreeNodeExprReshape::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    reshapee()->instantiateDataType(cxt, dType);
+void TreeNodeExprReshape::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    reshapee()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -500,12 +499,12 @@ TypeChecker::Status TypeChecker::visitExprToString(TreeNodeExprToString * root) 
         return OK;
 
     TreeNodeExpr * e = root->expression();
-    e->setContextSecType(PublicSecType::get(getContext()));
+    e->setContextSecType(PublicSecType::get());
     e->setContextDimType(0);
     TCGUARD (visitExpr(e));
     if (checkAndLogIfVoid(e))
         return E_TYPE;
-    e->instantiateDataType(getContext());
+    e->instantiateDataType();
     const auto tnv = static_cast<const TypeNonVoid *>(e->resultType());
     if (tnv->secrecDimType() != 0
             || tnv->secrecSecType()->isPrivate()
@@ -515,7 +514,7 @@ TypeChecker::Status TypeChecker::visitExprToString(TreeNodeExprToString * root) 
         return E_TYPE;
     }
 
-    root->setResultType(TypeBasic::get(getContext(), DATATYPE_STRING));
+    root->setResultType(TypeBasic::get(DATATYPE_STRING));
 
     return OK;
 }
@@ -568,9 +567,9 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     {
         const DataType* const lDType = e1->resultType()->secrecDataType();
         const DataType* const rDType = e2->resultType()->secrecDataType();
-        const DataType* const uDType = upperDataType(getContext (), lDType, rDType);
-        e1->instantiateDataType(getContext(), uDType);
-        e2->instantiateDataType(getContext(), uDType);
+        const DataType* const uDType = upperDataType(lDType, rDType);
+        e1->instantiateDataType(uDType);
+        e2->instantiateDataType(uDType);
 
         assert(dynamic_cast<const TypeBasic *>(e1->resultType()) != nullptr);
         eType1 = static_cast<const TypeBasic *>(e1->resultType());
@@ -584,7 +583,7 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
         std::vector<const TypeBasic*> argumentDataTypes;
         argumentDataTypes.push_back (eType1);
         argumentDataTypes.push_back (eType2);
-        const TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
+        const TypeProc* argTypes = TypeProc::get(argumentDataTypes);
         TCGUARD (findBestMatchingProc(match, root->operatorName(),
                                       *root, argTypes, root));
 
@@ -623,13 +622,13 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
             case NODE_EXPR_BINARY_LE:
             case NODE_EXPR_BINARY_LT:
             case NODE_EXPR_BINARY_NE:
-                e1->instantiateDataType(getContext());
-                e2->instantiateDataType(getContext());
+                e1->instantiateDataType();
+                e2->instantiateDataType();
             default:
                 break;
             }
 
-            root->setResultType(TypeBasic::get (m_context, s0, d0, n0));
+            root->setResultType(TypeBasic::get (s0, d0, n0));
             return OK;
         }
     }
@@ -640,10 +639,10 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     return E_TYPE;
 }
 
-void TreeNodeExprBinary::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    leftExpression()->instantiateDataType(cxt, dType);
-    rightExpression()->instantiateDataType(cxt, dType);
+void TreeNodeExprBinary::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    leftExpression()->instantiateDataType(dType);
+    rightExpression()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -669,7 +668,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
             SymbolProcedure * match = nullptr;
             std::vector<const TypeBasic *> argumentDataTypes;
             argumentDataTypes.push_back (et);
-            const TypeProc* argTypes = TypeProc::get (getContext(), argumentDataTypes);
+            const TypeProc* argTypes = TypeProc::get (argumentDataTypes);
             TCGUARD (findBestMatchingProc(match, root->operatorName(),
                                           *root, argTypes, root));
             if (match != nullptr) { // overloaded operator
@@ -715,9 +714,9 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
     return E_TYPE;
 }
 
-void TreeNodeExprUnary::instantiateDataTypeV (Context &cxt, SecrecDataType dType) {
-    resetDataType (cxt, dType);
-    expression ()->instantiateDataType (cxt, dType);
+void TreeNodeExprUnary::instantiateDataTypeV (SecrecDataType dType) {
+    resetDataType (dType);
+    expression ()->instantiateDataType (dType);
 }
 
 /*******************************************************************************
@@ -726,7 +725,7 @@ void TreeNodeExprUnary::instantiateDataTypeV (Context &cxt, SecrecDataType dType
 
 TypeChecker::Status TypeChecker::visitExprBool(TreeNodeExprBool * e) {
     if (! e->haveResultType()) {
-        e->setResultType(TypeBasic::get(m_context, DATATYPE_BOOL));
+        e->setResultType(TypeBasic::get(DATATYPE_BOOL));
     }
 
     return OK;
@@ -764,7 +763,7 @@ TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayCons
             elemType = childType;
         }
         else {
-            elemType = upperTypeNonVoid (getContext (), childType, elemType);
+            elemType = upperTypeNonVoid (childType, elemType);
             if (elemType == nullptr) {
                 m_log.fatalInProc (e) << "Array element of invalid type at "
                                       << child.location () << ".";
@@ -778,15 +777,16 @@ TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayCons
     }
 
 
-    e->setResultType (TypeBasic::get (getContext (),
-        elemType->secrecSecType (), elemType->secrecDataType (), 1));
+    e->setResultType (TypeBasic::get (elemType->secrecSecType (),
+                                      elemType->secrecDataType (),
+                                      1));
     return OK;
 }
 
-void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType (cxt, dType);
+void TreeNodeExprArrayConstructor::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType (dType);
     for (TreeNodeExpr& child : expressions ()) {
-        child.instantiateDataType (cxt, dType);
+        child.instantiateDataType (dType);
     }
 }
 
@@ -796,9 +796,9 @@ void TreeNodeExprArrayConstructor::instantiateDataTypeV(Context & cxt, SecrecDat
 
 TypeChecker::Status TypeChecker::visitExprInt(TreeNodeExprInt * e) {
     if (! e->haveResultType()) {
-        const DataType* dtype = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
+        const DataType* dtype = DataTypePrimitive::get (DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
-            dtype = dtypeDeclassify(getContext (), e->contextDataType());
+            dtype = dtypeDeclassify(e->contextDataType());
             if (! isNumericDataType(dtype)) {
                 m_log.fatalInProc(e) << "Expecting numeric context at "
                                      << e->location() << '.';
@@ -806,14 +806,14 @@ TypeChecker::Status TypeChecker::visitExprInt(TreeNodeExprInt * e) {
             }
         }
 
-        e->setResultType(TypeBasic::get(getContext(), dtype));
+        e->setResultType(TypeBasic::get(dtype));
     }
 
     return OK;
 }
 
-void TreeNodeExprInt::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
+void TreeNodeExprInt::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
 }
 
 /*******************************************************************************
@@ -822,9 +822,9 @@ void TreeNodeExprInt::instantiateDataTypeV(Context & cxt, SecrecDataType dType) 
 
 TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
     if (!e->haveResultType()) {
-        const DataType* dType = DataTypePrimitive::get (getContext (), DATATYPE_NUMERIC); /* default */
+        const DataType* dType = DataTypePrimitive::get (DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
-            dType = dtypeDeclassify(getContext (), e->contextDataType());
+            dType = dtypeDeclassify(e->contextDataType());
             if (! (isFloatingDataType (dType) || dType->equals (DATATYPE_NUMERIC))) {
                 m_log.fatalInProc(e) << "Expecting floating point, got "
                     << dType << " at " << e->location() << '.';
@@ -832,15 +832,15 @@ TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
             }
         }
 
-        e->setResultType(TypeBasic::get(getContext(), dType));
+        e->setResultType(TypeBasic::get(dType));
     }
 
     return OK;
 }
 
-void TreeNodeExprFloat::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
+void TreeNodeExprFloat::instantiateDataTypeV(SecrecDataType dType) {
     assert (dType == DATATYPE_FLOAT32 || dType == DATATYPE_FLOAT64);
-    resetDataType(cxt, dType);
+    resetDataType(dType);
 }
 
 /*******************************************************************************
@@ -879,15 +879,14 @@ TypeChecker::Status TypeChecker::visitExprDeclassify(TreeNodeExprDeclassify * ro
         return E_TYPE;
     }
 
-    root->setResultType(TypeBasic::get(getContext(),
-                dtypeDeclassify(getContext (), childType->secrecDataType()),
-                childType->secrecDimType()));
+    root->setResultType(TypeBasic::get(dtypeDeclassify(childType->secrecDataType()),
+                                       childType->secrecDimType()));
     return OK;
 }
 
-void TreeNodeExprDeclassify::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    expression()->instantiateDataType(cxt, dType);
+void TreeNodeExprDeclassify::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    expression()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -936,7 +935,7 @@ TypeChecker::Status TypeChecker::visitExprString(TreeNodeExprString * e) {
         TCGUARD (visitStringPart (&part));
     }
 
-    e->setResultType(TypeBasic::get(m_context, DATATYPE_STRING));
+    e->setResultType(TypeBasic::get(DATATYPE_STRING));
     return OK;
 }
 
@@ -1028,8 +1027,8 @@ TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
         return OK;
 
     TreeNodeExpr * e1 = root->conditional();
-    e1->setContextSecType(PublicSecType::get(getContext()));
-    e1->setContextDataType(DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
+    e1->setContextSecType(PublicSecType::get());
+    e1->setContextDataType(DataTypePrimitive::get (DATATYPE_BOOL));
     TCGUARD (visitExpr(e1));
     if (checkAndLogIfVoid(e1))
         return E_TYPE;
@@ -1068,8 +1067,8 @@ TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
     }
 
     if (!eType2->isVoid()) {
-        e2->instantiateDataType(getContext(), e3->resultType()->secrecDataType());
-        e3->instantiateDataType(getContext(), e2->resultType()->secrecDataType());
+        e2->instantiateDataType(e3->resultType()->secrecDataType());
+        e3->instantiateDataType(e2->resultType()->secrecDataType());
         eType2 = e2->resultType();
         eType3 = e3->resultType();
 
@@ -1119,10 +1118,10 @@ TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
     return OK;
 }
 
-void TreeNodeExprTernary::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    trueBranch()->instantiateDataType(cxt, dType);
-    falseBranch()->instantiateDataType(cxt, dType);
+void TreeNodeExprTernary::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    trueBranch()->instantiateDataType(dType);
+    falseBranch()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -1140,7 +1139,7 @@ TypeChecker::Status TypeChecker::visitExprDomainID(TreeNodeExprDomainID * e) {
     }
 
     TCGUARD (visitSecTypeF (e->securityType()));
-    e->setResultType(TypeBasic::get(getContext(), DATATYPE_UINT64));
+    e->setResultType(TypeBasic::get(DATATYPE_UINT64));
     return OK;
 }
 
@@ -1200,9 +1199,9 @@ TypeChecker::Status TypeChecker::visitExprQualified(TreeNodeExprQualified * e) {
     return OK;
 }
 
-void TreeNodeExprQualified::instantiateDataTypeV(Context & cxt, SecrecDataType dType) {
-    resetDataType(cxt, dType);
-    expression()->instantiateDataType(cxt, dType);
+void TreeNodeExprQualified::instantiateDataTypeV(SecrecDataType dType) {
+    resetDataType(dType);
+    expression()->instantiateDataType(dType);
 }
 
 /*******************************************************************************
@@ -1214,8 +1213,8 @@ TypeChecker::Status TypeChecker::visitExprStringFromBytes(TreeNodeExprStringFrom
         return OK;
 
     TreeNodeExpr * subExpr = e->expression();
-    subExpr->setContextSecType(PublicSecType::get(getContext()));
-    subExpr->setContextDataType(DataTypePrimitive::get (getContext (), DATATYPE_UINT8));
+    subExpr->setContextSecType(PublicSecType::get());
+    subExpr->setContextDataType(DataTypePrimitive::get (DATATYPE_UINT8));
     subExpr->setContextDimType(1);
     TCGUARD (visitExpr(subExpr));
 
@@ -1229,8 +1228,7 @@ TypeChecker::Status TypeChecker::visitExprStringFromBytes(TreeNodeExprStringFrom
         return E_TYPE;
     }
 
-    const TypeBasic * resultType = TypeBasic::get(getContext(),
-            PublicSecType::get(getContext()), DATATYPE_STRING);
+    const TypeBasic * resultType = TypeBasic::get(PublicSecType::get(), DATATYPE_STRING);
     e->setResultType(resultType);
     return OK;
 }
@@ -1244,7 +1242,7 @@ TypeChecker::Status TypeChecker::visitExprBytesFromString(TreeNodeExprBytesFromS
         return OK;
 
     TreeNodeExpr * subExpr = e->expression();
-    subExpr->setContext(TypeBasic::get(getContext(), DATATYPE_STRING));
+    subExpr->setContext(TypeBasic::get(DATATYPE_STRING));
     TCGUARD (visitExpr(subExpr));
 
     const Type * ty = subExpr->resultType();
@@ -1257,8 +1255,7 @@ TypeChecker::Status TypeChecker::visitExprBytesFromString(TreeNodeExprBytesFromS
         return E_TYPE;
     }
 
-    const TypeBasic * resultType = TypeBasic::get(getContext(),
-            PublicSecType::get(getContext()), DATATYPE_UINT8, 1);
+    const TypeBasic * resultType = TypeBasic::get(PublicSecType::get(), DATATYPE_UINT8, 1);
     e->setResultType(resultType);
     return OK;
 }
@@ -1285,7 +1282,7 @@ TypeChecker::Status TypeChecker::visitExprPostfix(TreeNodeExprPostfix * root) {
   TreeNodeExprNone
 *******************************************************************************/
 
-void TreeNodeExprNone::instantiateDataTypeV (Context&, SecrecDataType) { }
+void TreeNodeExprNone::instantiateDataTypeV (SecrecDataType) { }
 
 TypeChecker::Status TypeChecker::visitExprNone (TreeNodeExprNone *e) {
     m_log.fatalInProc (e) << "Invalid expression node at " << e->location () << ". "
@@ -1302,7 +1299,7 @@ TypeChecker::Status TypeChecker::visitExprStrlen(TreeNodeExprStrlen* e) {
         return OK;
 
     auto subExpr = e->expression ();
-    auto stringType = TypeBasic::get(getContext(), DATATYPE_STRING);
+    auto stringType = TypeBasic::get(DATATYPE_STRING);
     subExpr->setContext(stringType);
     TCGUARD (visitExpr(subExpr));
     if (subExpr->resultType () != stringType) {
@@ -1311,7 +1308,7 @@ TypeChecker::Status TypeChecker::visitExprStrlen(TreeNodeExprStrlen* e) {
         return E_TYPE;
     }
 
-    e->setResultType (TypeBasic::getIndexType (getContext ()));
+    e->setResultType (TypeBasic::getIndexType ());
     return OK;
 }
 

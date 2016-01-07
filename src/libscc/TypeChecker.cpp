@@ -88,12 +88,12 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
     TreeNode * const parent = child->parent();
     const DataType* destDType = child->resultType()->secrecDataType();
     if (child->haveContextDataType()) {
-        if (dtypeDeclassify (getContext (), child->contextDataType()) == destDType)
+        if (dtypeDeclassify (child->contextDataType()) == destDType)
             destDType = child->contextDataType();
     }
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
-    const TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
+    const TypeBasic * const newTy = TypeBasic::get(need, destDType, dimDType);
     const auto ec = new TreeNodeExprClassify(need, child->location());
     ec->appendChild(child);
     ec->resetParent(parent);
@@ -107,7 +107,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
 
     // patch up context types just in case
     ec->setContext(child);
-    child->setContextSecType(PublicSecType::get(getContext()));
+    child->setContextSecType(PublicSecType::get());
     child->setContextDataType(destDType);
     child = ec;
     return child;
@@ -127,8 +127,8 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
 TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
     assert (e != nullptr);
     if (! e->haveResultType ()) {
-        e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDataType (DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
+        e->setContextSecType (PublicSecType::get ());
+        e->setContextDataType (DataTypePrimitive::get (DATATYPE_BOOL));
         e->setContextDimType (0);
 
         if (visitExpr (e) != OK)
@@ -164,7 +164,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
 
             assert (dynamic_cast<TreeNodeExpr*>(j) != nullptr);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
-            e->setContextIndexType (getContext ());
+            e->setContextIndexType ();
             TCGUARD (visitExpr(e));
 
             if (checkAndLogIfVoid(e))

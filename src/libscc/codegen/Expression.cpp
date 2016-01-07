@@ -209,11 +209,11 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // 4. initialze required temporary symbols
     LoopInfo loopInfo = prepareLoopInfo (subscript);
-    Context & cxt = getContext();
-    const TypeBasic * pubIntTy = TypeBasic::getIndexType(cxt);
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType();
     Symbol * offset = m_st->appendTemporary(pubIntTy);
-    Symbol * tmp_result = m_st->appendTemporary(TypeBasic::get(cxt,
-                e->resultType()->secrecSecType(), e->resultType()->secrecDataType()));
+    Symbol * tmp_result = m_st->appendTemporary(
+                TypeBasic::get(e->resultType()->secrecSecType(),
+                               e->resultType()->secrecDataType()));
     Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
 
     // 3. initialize strides
@@ -376,7 +376,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
 
     SecrecDimType k = e->dimensionality()->value();
     SecrecDimType n = e->resultType()->secrecDimType();
@@ -423,7 +423,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Symbols for running indices:
     LoopInfo loopInfo;
-    const TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType();
     for (SecrecDimType it = 0; it < n; ++ it) {
         loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     }
@@ -434,8 +434,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         return result;
     }
 
-    const TypeBasic * elemType = TypeBasic::get(getContext(),
-                                                e->resultType()->secrecSecType(),
+    const TypeBasic * elemType = TypeBasic::get(e->resultType()->secrecSecType(),
                                                 e->resultType()->secrecDataType());
     Symbol * offset = m_st->appendTemporary(pubIntTy);
     Symbol * tmpInt = m_st->appendTemporary(pubIntTy);
@@ -452,7 +451,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant (0));
 
     // IF (i_k >= d_k) GOTO T1;
-    SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
+    SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
     emplaceImop (e, Imop::GE, temp_bool, loopInfo.at(k), arg1ResultSymbol->getDim(k));
 
     auto i = new Imop(e, Imop::JT, nullptr, temp_bool);
@@ -558,7 +557,7 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         assert(dynamic_cast<SymbolSymbol *>(rhs) != nullptr);
         // Check that new and old sizes are equal:
         Symbol * sizeSymbol = static_cast<SymbolSymbol *>(rhs)->getSizeSym();
-        SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
+        SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
 
         emplaceImopAfter(result, e, Imop::EQ, temp_bool, sizeSymbol, resSym->getSizeSym());
 
@@ -624,7 +623,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
     if (m_tyChecker->visitExprBinary(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
     TreeNodeExpr * eArg1 = e->leftExpression();
     TreeNodeExpr * eArg2 = e->rightExpression();
 
@@ -861,7 +860,7 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
                 return result;
             }
 
-            SymbolSymbol * temp = m_st->appendTemporary(TypeBasic::getPublicBoolType(getContext()));
+            SymbolSymbol * temp = m_st->appendTemporary(TypeBasic::getPublicBoolType());
             pushImopAfter(result, new Imop(e, iType, temp, arg1Result.symbol(), arg2Result.symbol()));
             releaseTemporary(result, arg1Result.symbol());
             releaseTemporary(result, arg2Result.symbol());
@@ -1064,8 +1063,8 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
 
     Context & cxt = getContext();
     SymbolSymbol * arrSym = static_cast<SymbolSymbol *>(argResult.symbol());
-    Symbol * sizeSym = m_st->appendTemporary(TypeBasic::getIndexType(cxt));
-    Symbol * tempElem = m_st->appendTemporary(TypeBasic::get(cxt, DATATYPE_UINT8));
+    Symbol * sizeSym = m_st->appendTemporary(TypeBasic::getIndexType());
+    Symbol * tempElem = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT8));
 
     /**
      * Allocate memory for the string:
@@ -1082,7 +1081,7 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
      */
 
     LoopInfo loopInfo;
-    loopInfo.push_index(m_st->appendTemporary(TypeBasic::getIndexType(cxt)));
+    loopInfo.push_index(m_st->appendTemporary(TypeBasic::getIndexType()));
     append(result, enterLoop(loopInfo, arrSym));
     emplaceImop(e, Imop::LOAD, tempElem, arrSym, loopInfo.at(0));
     emplaceImop(e, Imop::STORE, resSym, loopInfo.at(0), tempElem);
@@ -1114,10 +1113,10 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     }
 
     Symbol * sizeSym = resSym->getDim(0);
-    Symbol * indexSym = m_st->appendTemporary(TypeBasic::getIndexType (cxt));
+    Symbol * indexSym = m_st->appendTemporary(TypeBasic::getIndexType ());
     Symbol * strSym = argResult.symbol();
-    Symbol * charSym = m_st->appendTemporary(TypeBasic::get(cxt, DATATYPE_UINT8));
-    Symbol * tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType(cxt));
+    Symbol * charSym = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT8));
+    Symbol * tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
     Symbol * zeroByte = ConstantInt::get(cxt, DATATYPE_UINT8, 0);
 
     /**
@@ -1201,7 +1200,7 @@ CGResult CodeGen::cgStringPartIdentifier (TreeNodeStringPartIdentifier* p) {
         result.setResult (ConstantString::get (getContext (), p->staticValue ()));
     }
     else {
-        const TypeNonVoid* stringType = TypeBasic::get (getContext (), DATATYPE_STRING);
+        const TypeNonVoid* stringType = TypeBasic::get (DATATYPE_STRING);
         Symbol* argSymbol = m_st->find (SYM_SYMBOL, p->name ());
 
         if (argSymbol->secrecType () == stringType) {
@@ -1328,7 +1327,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
     TreeNodeExpr * e1 = e->conditional();
     TreeNodeExpr * e2 = e->trueBranch();
     TreeNodeExpr * e3 = e->falseBranch();
-    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
 
     if (e1->havePublicBoolType()) {
         generateResultSymbol(result, e);
@@ -1449,14 +1448,13 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         // loop to set all values of resulting array
 
         // Set up some temporary scalars:
-        Context & cxt = getContext();
-        Symbol * counter = m_st->appendTemporary(TypeBasic::getIndexType(cxt));
-        Symbol * b = m_st->appendTemporary(TypeBasic::get(cxt,
-                    e1->resultType()->secrecSecType(),
-                    e1->resultType()->secrecDataType()));
-        Symbol * t = m_st->appendTemporary(TypeBasic::get(cxt,
-                    e->resultType()->secrecSecType(),
-                    e->resultType()->secrecDataType()));
+        Symbol * counter = m_st->appendTemporary(TypeBasic::getIndexType());
+        Symbol * b = m_st->appendTemporary(
+                    TypeBasic::get(e1->resultType()->secrecSecType(),
+                                   e1->resultType()->secrecDataType()));
+        Symbol * t = m_st->appendTemporary(
+                    TypeBasic::get(e->resultType()->secrecSecType(),
+                                   e->resultType()->secrecDataType()));
 
         // r = e1
         Imop * i = newAssign(e, resSym, e2Result.symbol());
@@ -1467,8 +1465,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         i = new Imop(e, Imop::ASSIGN, counter, indexConstant(0));
         push_imop(i);
 
-        SymbolTemporary * temp_bool = m_st->appendTemporary(
-                TypeBasic::getPublicBoolType(getContext()));
+        SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
         auto test = new Imop(e, Imop::GE, temp_bool, counter, resSym->getSizeSym());
         push_imop(test);
 
@@ -1788,7 +1785,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    const  TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
+    const  TypeNonVoid * pubIntTy = TypeBasic::getIndexType();
     Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
     TreeNodeLValue * lval = e->lvalue ();
@@ -1831,8 +1828,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
         Symbol * offset = m_st->appendTemporary(pubIntTy);
-        const TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                                                      e->resultType()->secrecSecType(),
+        const TypeNonVoid * elemType = TypeBasic::get(e->resultType()->secrecSecType(),
                                                       e->resultType()->secrecDataType());
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
@@ -1972,7 +1968,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    const TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
+    const TypeNonVoid * pubIntTy = TypeBasic::getIndexType();
     TreeNodeLValue * lval = e->lvalue ();
     Symbol* one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
@@ -2015,8 +2011,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
-        const TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                                                      e->resultType()->secrecSecType(),
+        const TypeNonVoid * elemType = TypeBasic::get(e->resultType()->secrecSecType(),
                                                       e->resultType()->secrecDataType());
         Symbol * rhsOffset = m_st->appendTemporary(pubIntTy);
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);

@@ -62,10 +62,10 @@ void TypeContext::prettyPrint (std::ostream& os) const {
         os << '*';
 }
 
-void TypeContext::setContextIndexType (Context& cxt) {
-    setContextDataType (DataTypePrimitive::get (cxt, DATATYPE_UINT64));
+void TypeContext::setContextIndexType () {
+    setContextDataType (DataTypePrimitive::get (DATATYPE_UINT64));
     setContextDimType (0);
-    setContextSecType (PublicSecType::get (cxt));
+    setContextSecType (PublicSecType::get());
 }
 
 void TypeContext::setContext (const TypeNonVoid* ty) {

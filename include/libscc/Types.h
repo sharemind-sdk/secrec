@@ -27,10 +27,10 @@
 #include <vector>
 #include <utility>
 #include <iosfwd>
+#include <tuple>
 
 namespace SecreC {
 
-class Context;
 class SecurityType;
 class DataType;
 
@@ -81,7 +81,7 @@ private: /* Fields: */
 class TypeVoid: public Type {
 public: /* Methods: */
 
-    static TypeVoid* get (Context& cxt);
+    static const TypeVoid* get ();
 
 
     const SecurityType* secrecSecType() const override final {
@@ -101,8 +101,6 @@ public: /* Methods: */
 
 protected: /* Methods: */
 
-    friend class ContextImpl;
-
     inline TypeVoid ()
         : Type (VOID)
     { }
@@ -117,8 +115,7 @@ protected: /* Methods: */
 class TypeNonVoid: public Type {
 public: /* Methods: */
 
-    // TODO: this is not pretty
-    bool latticeLEQ (Context& cxt, const TypeNonVoid* other) const;
+    bool latticeLEQ (const TypeNonVoid* other) const;
 
 protected: /* Methods: */
 
@@ -134,28 +131,38 @@ protected: /* Methods: */
 class TypeBasic : public TypeNonVoid {
 public: /* Methods: */
 
+    // For boost::flyweight
+    explicit TypeBasic(const std::tuple<const SecurityType*,
+                                        const DataType*,
+                                        SecrecDimType>& t)
+        : TypeNonVoid (BASIC)
+        , m_secType (std::get<0>(t))
+        , m_dataType (std::get<1>(t))
+        , m_dimType (std::get<2>(t))
+    { }
+
     const SecurityType* secrecSecType() const override final { return m_secType; }
     SecrecDimType secrecDimType() const override final { return m_dimType; }
     const DataType* secrecDataType() const override final { return m_dataType; }
 
-    static const TypeBasic* get (Context& cxt, SecrecDataType dataType,
+    static const TypeBasic* get (SecrecDataType dataType,
                                  SecrecDimType dimType = 0);
-    static const TypeBasic* get (Context& cxt, const DataType* dataType,
+    static const TypeBasic* get (const DataType* dataType,
                                  SecrecDimType dimType = 0);
-    static const TypeBasic* get (Context& cxt, const SecurityType* secType,
+    static const TypeBasic* get (const SecurityType* secType,
                                  SecrecDataType dataType,
                                  SecrecDimType dimType = 0);
-    static const TypeBasic* get (Context& cxt, const SecurityType* secType,
+    static const TypeBasic* get (const SecurityType* secType,
                                  const DataType* dataType,
                                  SecrecDimType dimType = 0);
-    static const TypeBasic* getIndexType (Context& cxt);
-    static const TypeBasic* getPublicBoolType (Context& cxt);
+    static const TypeBasic* getIndexType ();
+    static const TypeBasic* getPublicBoolType ();
 
 protected: /* Methods: */
 
-    TypeBasic(const SecurityType* secType,
-              const DataType* dataType,
-              SecrecDimType dim = 0)
+    explicit TypeBasic(const SecurityType* secType,
+                       const DataType* dataType,
+                       SecrecDimType dim)
         : TypeNonVoid (BASIC)
         , m_secType (secType)
         , m_dataType (dataType)
@@ -177,6 +184,14 @@ private: /* Fields: */
 class TypeProc : public TypeNonVoid {
 public: /* Methods: */
 
+    explicit TypeProc (const std::pair<
+                            std::vector<const TypeBasic*>,
+                            const Type*>& p)
+        : TypeNonVoid (PROCEDURE)
+        , m_params (p.first)
+        , m_returnType (p.second)
+    { }
+
     const Type* returnType () const { return m_returnType; }
     const std::vector<const TypeBasic*>& paramTypes() const { return m_params; }
     std::string mangle () const;
@@ -194,8 +209,7 @@ public: /* Methods: */
         return returnType ()->secrecDimType ();
     }
 
-    static const TypeProc* get (Context& cxt,
-                                const std::vector<const TypeBasic*>& params,
+    static const TypeProc* get (const std::vector<const TypeBasic*>& params,
                                 const Type* returnType = nullptr);
 
 protected: /* Methods: */

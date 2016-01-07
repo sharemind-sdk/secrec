@@ -73,7 +73,7 @@ SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
 }
 
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
-    return numericConstant (cxt, DataTypePrimitive::get (cxt, ty), value);
+    return numericConstant (cxt, DataTypePrimitive::get (ty), value);
 }
 
 SymbolConstant* defaultConstant (Context& cxt, const DataType* ty) {
@@ -104,7 +104,7 @@ ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value
     auto& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
     auto it = map.find (apvalue);
     if (it == map.end ()) {
-        auto cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
+        auto cvalue = new ConstantInt (TypeBasic::get (type), apvalue);
         it = map.insert (it, std::make_pair (apvalue, cvalue));
     }
 
@@ -140,7 +140,7 @@ ConstantFloat* ConstantFloat::get (Context& cxt, const DataType* type, const APF
     auto& map = cxt.pImpl ()->m_floatConstants;
     auto it = map.find (value);
     if (it == map.end ()) {
-        auto cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
+        auto cfloat = new ConstantFloat (TypeBasic::get (type), value);
         it = map.insert (it, std::make_pair (value, cfloat));
     }
 
@@ -159,7 +159,7 @@ ConstantString* ConstantString::get (Context& cxt, StringRef str) {
     if (it == map.end ()) {
         // Make sure that the string is allocated in the table
         StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
-        auto cstr = new ConstantString (TypeBasic::get (cxt, DATATYPE_STRING), val);
+        auto cstr = new ConstantString (TypeBasic::get (DATATYPE_STRING), val);
         it = map.insert (it, std::make_pair (val, cstr));
     }
 

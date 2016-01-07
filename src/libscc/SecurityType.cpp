@@ -19,9 +19,12 @@
 
 #include "SecurityType.h"
 
-#include "Context.h"
-#include "ContextImpl.h"
 #include "Symbol.h"
+
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
 
 namespace SecreC {
 
@@ -33,9 +36,9 @@ void PublicSecType::print (std::ostream & os) const {
     os << "public";
 }
 
-const PublicSecType* PublicSecType::get (Context& cxt) {
-    ContextImpl& impl = *cxt.pImpl ();
-    return impl.publicType ();
+const PublicSecType* PublicSecType::get () {
+    static const PublicSecType publicSecType;
+    return &publicSecType;
 }
 
 /*******************************************************************************
@@ -46,11 +49,18 @@ void PrivateSecType::print (std::ostream & os) const {
     os << m_name;
 }
 
-const PrivateSecType* PrivateSecType::get (Context& cxt, StringRef name,
+const PrivateSecType* PrivateSecType::get (StringRef name,
                                            SymbolKind* kind)
 {
-    ContextImpl& impl = *cxt.pImpl ();
-    return impl.privateType (name, kind);
+    using namespace ::boost::flyweights;
+    using PrivateSecTypeFlyweight =
+        flyweight<
+            key_value<std::pair<StringRef, SymbolKind*>, PrivateSecType>,
+            no_locking,
+            no_tracking
+        >;
+
+    return &PrivateSecTypeFlyweight{name, kind}.get();
 }
 
 

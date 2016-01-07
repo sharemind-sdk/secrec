@@ -28,6 +28,11 @@
 
 #include <set>
 
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -56,12 +61,6 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
                                               const DataTypeStruct*& result,
                                               const std::vector<TypeArgument>& args)
 {
-    TreeNodeIdentifier* id = decl->identifier ();
-    if (const DataTypeStruct* t = DataTypeStruct::find (getContext (), id->value (), args)) {
-        result = t;
-        return OK;
-    }
-
     if (args.size () != decl->quantifiers ().size ()) {
         m_log.fatal () << "Structure instantiated with invalid number of type arguments at " << loc << ".";
         return E_TYPE;
@@ -69,7 +68,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
 
     TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
 
-    {
+    if (! quants.empty ()) {
         std::set<StringRef> seen;
         for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visitQuantifier (&q));
@@ -108,7 +107,8 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
         delete type;
     }
 
-    result = DataTypeStruct::get (getContext (), id->value (), fields, args);
+    TreeNodeIdentifier* id = decl->identifier ();
+    result = DataTypeStruct::get (id->value (), fields, args);
     return OK;
 }
 

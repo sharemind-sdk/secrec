@@ -30,7 +30,6 @@
 
 namespace SecreC {
 
-class Context;
 class TypeBasic;
 class DataType;
 
@@ -63,8 +62,8 @@ bool isXorDataType (const DataType* dType);
 bool isSignedNumericDataType (const DataType* dType);
 bool isUnsignedNumericDataType (const DataType* dType);
 
-const DataType* dtypeDeclassify (Context& cxt, const DataType* dtype);
-const DataType* upperDataType (Context& cxt, const DataType* a, const DataType* b);
+const DataType* dtypeDeclassify (const DataType* dtype);
+const DataType* upperDataType (const DataType* a, const DataType* b);
 
 
 /*******************************************************************************
@@ -121,7 +120,7 @@ public: /* Methods: */
         , m_dataType (dataType)
     { }
 
-    static const DataTypePrimitive* get (Context& cxt, SecrecDataType dataType);
+    static const DataTypePrimitive* get (SecrecDataType dataType);
     SecrecDataType secrecDataType () const { return m_dataType; }
 
 protected:
@@ -155,10 +154,7 @@ public: /* Methods: */
 
     StringRef name () const { return m_name; }
 
-    static const DataTypeStruct* find (Context& cxt, StringRef name,
-        const TypeArgumentList& typeArgs = TypeArgumentList());
-
-    static const DataTypeStruct* get (Context& cxt, StringRef name,
+    static const DataTypeStruct* get (StringRef name,
         const FieldList& fields,
         const TypeArgumentList& typeArgs = TypeArgumentList());
 
@@ -166,6 +162,7 @@ public: /* Methods: */
     const TypeArgumentList& typeArgs () const { return m_typeArgs; }
 
 protected:
+
     void print (std::ostream& os) const override final;
 
     explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)

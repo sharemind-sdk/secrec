@@ -140,7 +140,7 @@ TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgDataTypeConst(TreeNodeTypeArgDataTypeConst* t) {
-    t->setTypeArgument (DataTypePrimitive::get (getContext (), t->secrecDataType ()));
+    t->setTypeArgument (DataTypePrimitive::get (t->secrecDataType ()));
     return OK;
 }
 
@@ -150,7 +150,7 @@ TypeChecker::Status TypeChecker::visitTypeArgDimTypeConst(TreeNodeTypeArgDimType
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgPublic(TreeNodeTypeArgPublic* t) {
-    t->setTypeArgument (PublicSecType::get (getContext ()));
+    t->setTypeArgument (PublicSecType::get ());
     return OK;
 }
 
