@@ -33,6 +33,7 @@
 #include <boost/flyweight/key_value.hpp>
 #include <boost/flyweight/no_locking.hpp>
 #include <boost/flyweight/no_tracking.hpp>
+#include <boost/functional/hash/extensions.hpp>
 
 namespace SecreC {
 
