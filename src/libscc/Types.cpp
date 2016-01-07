@@ -33,7 +33,7 @@
 #include <boost/flyweight/key_value.hpp>
 #include <boost/flyweight/no_locking.hpp>
 #include <boost/flyweight/no_tracking.hpp>
-#include <boost/functional/hash/extensions.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace SecreC {
 
@@ -115,6 +115,42 @@ bool TypeNonVoid::latticeLEQ (const TypeNonVoid* other) const {
   TypeBasic
 *******************************************************************************/
 
+struct TypeBasic::Key {
+
+    Key (const SecurityType* secType,
+         const DataType* dataType,
+         SecrecDimType dimType)
+        : secType {secType}
+        , dataType {dataType}
+        , dimType {dimType}
+    { }
+
+    inline friend bool operator == (const Key& k1, const Key& k2) {
+        return k1.secType == k2.secType &&
+                k1.dataType == k2.dataType &&
+                k1.dimType == k2.dimType;
+    }
+
+    const SecurityType* const secType;
+    const DataType* const dataType;
+    SecrecDimType const dimType;
+};
+
+inline size_t hash_value(const TypeBasic::Key& key) {
+    size_t seed = 0;
+    boost::hash_combine(seed, key.secType);
+    boost::hash_combine(seed, key.dataType);
+    boost::hash_combine(seed, key.dimType);
+    return seed;
+}
+
+TypeBasic::TypeBasic(const TypeBasic::Key& key)
+    : TypeNonVoid (BASIC)
+    , m_secType (key.secType)
+    , m_dataType (key.dataType)
+    , m_dimType (key.dimType)
+{ }
+
 void TypeBasic::printPrettyV (std::ostream& os) const {
     if (!secrecSecType ()->isPublic())
         os << *secrecSecType () << ' ';
@@ -146,14 +182,10 @@ const TypeBasic* TypeBasic::get (const SecurityType* secType,
 {
     using namespace ::boost::flyweights;
     using TypeBasicFlyweigh =
-        flyweight<
-            key_value<
-                std::tuple<const SecurityType*, const DataType*, SecrecDimType>,
-                TypeBasic
-            >,
-            no_tracking,
-            no_locking
-        >;
+        flyweight<key_value<TypeBasic::Key, TypeBasic>,
+        no_tracking,
+        no_locking
+    >;
 
     return &TypeBasicFlyweigh{secType, dataType, dimType}.get();
 }

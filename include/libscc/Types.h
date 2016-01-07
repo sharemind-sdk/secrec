@@ -129,17 +129,15 @@ protected: /* Methods: */
 *******************************************************************************/
 
 class TypeBasic : public TypeNonVoid {
+public: /* Types: */
+
+    struct Key;
+
 public: /* Methods: */
 
+
     // For boost::flyweight
-    explicit TypeBasic(const std::tuple<const SecurityType*,
-                                        const DataType*,
-                                        SecrecDimType>& t)
-        : TypeNonVoid (BASIC)
-        , m_secType (std::get<0>(t))
-        , m_dataType (std::get<1>(t))
-        , m_dimType (std::get<2>(t))
-    { }
+    explicit TypeBasic(const Key&);
 
     const SecurityType* secrecSecType() const override final { return m_secType; }
     SecrecDimType secrecDimType() const override final { return m_dimType; }
