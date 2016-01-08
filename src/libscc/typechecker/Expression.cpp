@@ -29,6 +29,7 @@
 #include "SecurityType.h"
 #include "Visitor.h"
 
+#include <array>
 #include <boost/range.hpp>
 
 namespace SecreC {
@@ -350,7 +351,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         root->appendChild(e);
     }
 
-    std::array<const TypeNonVoid*, 2> eTypes = {nullptr, nullptr};
+    std::array<const TypeNonVoid*, 2> eTypes = {{nullptr, nullptr}};
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
     for (int i = 0; i < 2; ++ i) {
