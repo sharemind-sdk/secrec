@@ -24,6 +24,7 @@
 #include "DataType.h"
 #include "Types.h"
 
+#include <array>
 #include <cstring>
 #include <sstream>
 #include <string>
