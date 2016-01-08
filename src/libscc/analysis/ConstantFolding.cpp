@@ -121,8 +121,8 @@ std::string IntValue::toString () const {
     return ss.str ();
 }
 
-SymbolConstant* IntValue::toConstant (Context& cxt, StringTable&, const DataType* t) const  {
-    return ConstantInt::get (cxt, t, bits ());
+SymbolConstant* IntValue::toConstant (Context&, StringTable&, const DataType* t) const  {
+    return ConstantInt::get (t, bits ());
 }
 
 /*******************************************************************************
@@ -176,8 +176,8 @@ std::string FloatValue::toString () const {
     return os.str ();
 }
 
-SymbolConstant* FloatValue::toConstant (Context& cxt, StringTable&, const DataType* t) const {
-    return ConstantFloat::get (cxt, t, *this);
+SymbolConstant* FloatValue::toConstant (Context&, StringTable&, const DataType* t) const {
+    return ConstantFloat::get (t, *this);
 }
 
 /*******************************************************************************

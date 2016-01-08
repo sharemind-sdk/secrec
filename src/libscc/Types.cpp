@@ -23,6 +23,7 @@
 #include "Context.h"
 #include "ContextImpl.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 
 #include <cassert>

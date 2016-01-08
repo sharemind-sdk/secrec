@@ -20,35 +20,15 @@
 #ifndef CONTEXT_IMPL_H
 #define CONTEXT_IMPL_H
 
-#include "ParserEnums.h"
-#include "Types.h"
-#include "Constant.h"
 #include "StringTable.h"
-#include "TypeArgument.h"
-#include "SecurityType.h"
-
-#include <map>
-#include <tuple>
 
 namespace SecreC {
-
-class DataType;
-class DataTypePrimitive;
-class DataTypeStruct;
-class PrivateSecType;
-class PublicSecType;
 
 class ContextImpl {
 private:
 
     ContextImpl (const ContextImpl&) = delete;
     ContextImpl& operator = (const ContextImpl&) = delete;
-
-public: /* Types: */
-
-    using ConstantStringMap = std::map<StringRef, ConstantString*>;
-    using NumericConstantMap = std::map<APInt, ConstantInt*>;
-    using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
 
 public: /* Methods: */
 
@@ -61,12 +41,7 @@ public: /* Methods: */
 public: /* Fields: */
 
     /* Strings: */
-    StringTable           m_stringTable;
-
-    /* All constants: */
-    ConstantStringMap     m_stringLiterals;
-    NumericConstantMap    m_numericConstants[2]; ///< 0 - unsigned, 1 - signed
-    FloatConstantMap      m_floatConstants;
+    StringTable m_stringTable;
 };
 
 } // namespace SecreC

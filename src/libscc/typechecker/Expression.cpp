@@ -906,7 +906,7 @@ TypeChecker::Status TypeChecker::visitExprRVariable (TreeNodeExprRVariable * e) 
         if (symDim == nullptr)
             return E_TYPE;
 
-        s = ConstantInt::get (getContext (), DATATYPE_UINT64, symDim->dimType ());
+        s = ConstantInt::get (DATATYPE_UINT64, symDim->dimType ());
     }
 
     e->setResultType(s->secrecType());

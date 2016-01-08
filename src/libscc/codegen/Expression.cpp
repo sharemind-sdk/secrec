@@ -1061,7 +1061,6 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
         return result;
     }
 
-    Context & cxt = getContext();
     SymbolSymbol * arrSym = static_cast<SymbolSymbol *>(argResult.symbol());
     Symbol * sizeSym = m_st->appendTemporary(TypeBasic::getIndexType());
     Symbol * tempElem = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT8));
@@ -1073,8 +1072,8 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     emplaceImopAfter(result, e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
 
     // XXX TODO: giant hack
-    emplaceImop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym); // allocates 1 byte more
-    emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0)); // initialize last byte to zero
+    emplaceImop(e, Imop::ALLOC, resSym, ConstantInt::get(DATATYPE_UINT8, 0), sizeSym); // allocates 1 byte more
+    emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(DATATYPE_UINT8, 0)); // initialize last byte to zero
 
     /**
      * Copy the data from array to the string:
@@ -1103,7 +1102,6 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     if (m_tyChecker->visitExprBytesFromString(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    Context & cxt = getContext();
     CGResult result;
     SymbolSymbol * resSym = generateResultSymbol(result, e);
     const CGResult & argResult = codeGen(e->expression());
@@ -1117,7 +1115,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     Symbol * strSym = argResult.symbol();
     Symbol * charSym = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT8));
     Symbol * tempBool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
-    Symbol * zeroByte = ConstantInt::get(cxt, DATATYPE_UINT8, 0);
+    Symbol * zeroByte = ConstantInt::get(DATATYPE_UINT8, 0);
 
     /**
      * Compute length of the array:
@@ -1305,8 +1303,8 @@ CGResult CodeGen::cgExprFloat(TreeNodeExprFloat * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    result.setResult(ConstantFloat::get (getContext(),
-        e->resultType()->secrecDataType(), e->value ()));
+    result.setResult(ConstantFloat::get (e->resultType()->secrecDataType(),
+                                         e->value ()));
     return result;
 }
 
@@ -1594,9 +1592,8 @@ CGResult CodeGen::cgExprInt(TreeNodeExprInt * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    result.setResult(
-            numericConstant(getContext(),
-                e->resultType()->secrecDataType(), e->value()));
+    result.setResult(numericConstant(e->resultType()->secrecDataType(),
+                                     e->value()));
     return result;
 }
 
@@ -1614,8 +1611,7 @@ CGResult CodeGen::cgExprBool(TreeNodeExprBool * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    Context & cxt = getContext();
-    result.setResult(ConstantInt::getBool (cxt, e->value()));
+    result.setResult(ConstantInt::getBool (e->value()));
     return result;
 }
 
@@ -1786,7 +1782,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
     CGResult result;
     const  TypeNonVoid * pubIntTy = TypeBasic::getIndexType();
-    Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
+    Symbol * one = numericConstant(e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
     TreeNodeLValue * lval = e->lvalue ();
     const bool isPrivate = e->resultType ()->secrecSecType()->isPrivate();
@@ -1970,7 +1966,7 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     CGResult result;
     const TypeNonVoid * pubIntTy = TypeBasic::getIndexType();
     TreeNodeLValue * lval = e->lvalue ();
-    Symbol* one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
+    Symbol* one = numericConstant(e->resultType()->secrecDataType(), 1);
     Symbol* const idxOne = indexConstant (1);
 
     // Generate code for the lvalue:

@@ -25,9 +25,11 @@
 #include "DataType.h"
 #include "Intermediate.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+#include "Types.h"
 
 namespace SecreC {
 
@@ -219,7 +221,7 @@ Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
 }
 
 SymbolConstant * CodeGen::indexConstant(uint64_t value) {
-    return ConstantInt::get(getContext(), DATATYPE_UINT64, value);
+    return ConstantInt::get(DATATYPE_UINT64, value);
 }
 
 Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
