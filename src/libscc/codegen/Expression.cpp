@@ -1854,7 +1854,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
         if (isPrivate) {
             Symbol * t = m_st->appendTemporary(elemType);
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -2040,7 +2041,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         // make the symbol "one" private if need be
         if (isPrivate) {
             Symbol * t = m_st->appendTemporary(elemType);
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
