@@ -828,7 +828,7 @@ TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
             dType = dtypeDeclassify(e->contextDataType());
             if (! (isFloatingDataType (dType) || dType->equals (DATATYPE_NUMERIC))) {
                 m_log.fatalInProc(e) << "Expecting floating point, got "
-                    << dType << " at " << e->location() << '.';
+                    << *dType << " at " << e->location() << '.';
                 return E_TYPE;
             }
         }
