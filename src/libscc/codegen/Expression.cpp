@@ -1927,7 +1927,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         }
         else if (isPrivate) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -1940,7 +1941,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
             emplaceImopAfter(result, e, Imop::COPY, r, x, x->getSizeSym());
         }
         else {
-            pushImopAfter(result, newAssign(e, r, x));
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+            push_imop(newAssign(e, r, x));
         }
 
         releaseTemporary(result, one);
@@ -2103,7 +2105,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
             emplaceImopAfter(result, e, Imop::COPY, r, lvalSym, lvalSym->getSizeSym());
         }
         else {
-            pushImopAfter(result, newAssign(e, r, lvalSym));
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+            push_imop(newAssign(e, r, lvalSym));
         }
 
         // Construct the "1" value to add to the lvalue. The value could be private and/or array.
@@ -2114,7 +2117,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         }
         else if (isPrivate) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<const TypeNonVoid *>(e->resultType()));
-            pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            push_imop(new Imop(e, Imop::CLASSIFY, t, one));
             one = t;
         }
 
