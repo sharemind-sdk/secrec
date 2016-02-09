@@ -750,6 +750,20 @@ TreeNodeExpr* TreeNodeExprAssign::rightHandSide () const {
     return expressionAt (this, 1);
 }
 
+SecrecOperator TreeNodeExprAssign::getOperatorV () const {
+    switch (type ()) {
+        case NODE_EXPR_BINARY_ASSIGN_MUL: return SCOP_BIN_MUL;
+        case NODE_EXPR_BINARY_ASSIGN_DIV: return SCOP_BIN_DIV;
+        case NODE_EXPR_BINARY_ASSIGN_MOD: return SCOP_BIN_MOD;
+        case NODE_EXPR_BINARY_ASSIGN_ADD: return SCOP_BIN_ADD;
+        case NODE_EXPR_BINARY_ASSIGN_SUB: return SCOP_BIN_SUB;
+        case NODE_EXPR_BINARY_ASSIGN_AND: return SCOP_BIN_BAND;
+        case NODE_EXPR_BINARY_ASSIGN_OR:  return SCOP_BIN_BOR;
+        case NODE_EXPR_BINARY_ASSIGN_XOR: return SCOP_BIN_XOR;
+        default:                          return SCOP_NONE;
+    }
+}
+
 /*******************************************************************************
   TreeNodeExprCast
 *******************************************************************************/

@@ -1001,28 +1001,6 @@ protected:
 };
 
 /******************************************************************
-  TreeNodeExprAssign
-******************************************************************/
-
-class TreeNodeExprAssign: public TreeNodeExpr {
-public: /* Methods: */
-    inline TreeNodeExprAssign(SecrecTreeNodeType type, const Location & loc)
-        : TreeNodeExpr(type, loc) {}
-
-    CGResult codeGenWith (CodeGen& cg) override final;
-    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
-
-    TreeNodeExpr* rightHandSide () const;
-    TreeNodeLValue* leftHandSide () const;
-
-protected:
-
-    TreeNode* cloneV () const override final {
-        return new TreeNodeExprAssign (m_type, m_location);
-    }
-};
-
-/******************************************************************
   TreeNodeExprCast
 ******************************************************************/
 
@@ -1630,6 +1608,31 @@ protected:
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprUnary (m_type, m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeExprAssign
+******************************************************************/
+
+class TreeNodeExprAssign: public TreeNodeExpr,
+                          public OverloadableOperator {
+public: /* Methods: */
+    inline TreeNodeExprAssign(SecrecTreeNodeType type, const Location & loc)
+        : TreeNodeExpr(type, loc) {}
+
+    CGResult codeGenWith (CodeGen& cg) override final;
+    CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
+
+    TreeNodeExpr* rightHandSide () const;
+    TreeNodeLValue* leftHandSide () const;
+
+protected:
+
+    SecrecOperator getOperatorV () const override final;
+
+    TreeNode* cloneV () const override final {
+        return new TreeNodeExprAssign (m_type, m_location);
     }
 };
 

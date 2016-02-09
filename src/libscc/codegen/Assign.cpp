@@ -121,7 +121,6 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         return result;
     }
 
-
     // Generate code for the left hand side;
     TreeNodeLValue* lval = e->leftHandSide ();
     SubscriptInfo cgSub;
@@ -146,12 +145,14 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         return result;
     }
 
+    bool isOverloaded = e->isOverloaded ();
+
     // x[e1,...,ek] = e
     if (isIndexed) {
         const SubscriptInfo::SPV & spv = cgSub.spv();
         const SubscriptInfo::SliceIndices & slices = cgSub.slices();
 
-        // 2. check that rhs has correct dimensions
+        // check that rhs has correct dimensions
         if (!eArg2->resultType()->isScalar()) {
             assert(static_cast<size_t>(eArg2->resultType()->secrecDimType()) == slices.size());
 
@@ -175,40 +176,69 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             push_imop(err);
         }
 
-        // 3. initialize stride
+        // initialize stride
         ArrayStrideInfo stride(destSym);
         append(result, codeGenStride(stride));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 4. initialze running indices
+        // initialze running indices
         LoopInfo loopInfo = prepareLoopInfo (cgSub);
 
-        // 6. initialze symbols for offsets and temporary results
+        // initialze symbols for offsets and temporary results
         Symbol * offset = m_st->appendTemporary(pubIntTy);
         Symbol * old_offset = m_st->appendTemporary(pubIntTy);
         Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
+        SymbolSymbol * r = generateResultSymbol(result, e);
+        Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
+        bool resultScalar = r->secrecType()->isScalar();
+
+        // compute the shape and the size of the result symbol "r"
+        {
+            unsigned count = 0;
+            for (unsigned k : cgSub.slices()) {
+                Symbol * sym = r->getDim(count);
+                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
+                ++ count;
+            }
+
+            codeGenSize(result);
+        }
+
+        // allocate memory for the result symbol "r"
+        if (!resultScalar) {
+            emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
+        }
+        else {
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+        }
+
+        // resultOffset = 0
+        pushImopAfter (result, newAssign (e, resultOffset, indexConstant (0)));
 
         // offset = 0
-        emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant(0));
+        pushImopAfter (result, newAssign (e, offset, indexConstant(0)));
 
         // Declare temporaries that might require allocation for the inner assignment:
         TypeBasic * ty = TypeBasic::get(getContext(),
-            e->resultType()->secrecSecType(),
-            e->resultType()->secrecDataType());
+                                        e->resultType()->secrecSecType(),
+                                        e->resultType()->secrecDataType());
+        TypeBasic * rTy = TypeBasic::get(getContext(),
+                                         eArg2->resultType()->secrecSecType(),
+                                         eArg2->resultType()->secrecDataType());
         Symbol * t1 = m_st->appendTemporary(ty);
         Symbol * t2 = m_st->appendTemporary(ty);
         emplaceImop(e, Imop::DECLARE, t1);
         emplaceImop(e, Imop::DECLARE, t2);
 
-        // 7. start
+        // start
         append(result, enterLoop(loopInfo, spv));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 8. compute offset for RHS
+        // compute offset for RHS
         {
             // old_ffset = 0
             emplaceImopAfter(result, e, Imop::ASSIGN, old_offset, indexConstant(0));
@@ -225,19 +255,32 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
         }
 
-        // 9. load and store
+        // load and store
         {
             if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
                 if (!eArg2->resultType()->isScalar()) {
                     emplaceImop(e, Imop::LOAD, t1, arg2Result.symbol(), offset);
                     emplaceImop(e, Imop::STORE, destSym, old_offset, t1);
+
+                    if (resultScalar) {
+                        emplaceImop(e, Imop::ASSIGN, r, t1);
+                    }
+                    else {
+                        emplaceImop(e, Imop::STORE, r, resultOffset, t1);
+                    }
                 }
                 else {
                     emplaceImop(e, Imop::STORE, destSym, old_offset, arg2Result.symbol());
+
+                    if (resultScalar) {
+                        emplaceImop(e, Imop::ASSIGN, r, arg2Result.symbol());
+                    }
+                    else {
+                        emplaceImop(e, Imop::STORE, r, resultOffset, arg2Result.symbol());
+                    }
                 }
             }
-            else {
-
+            else if (! isOverloaded) {
                 Imop::Type iType;
                 if (! getAssignBinImopType(e->type(), iType)) {
                     assert(false);  // shouldn't happen
@@ -256,43 +299,67 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                     emplaceImop(e, iType, t1, t1, arg2Result.symbol());
                     emplaceImop(e, Imop::STORE, destSym, old_offset, t1);
                 }
+
+                if (resultScalar) {
+                    emplaceImop(e, Imop::ASSIGN, r, t1);
+                }
+                else {
+                    emplaceImop(e, Imop::STORE, r, resultOffset, t1);
+                }
+            }
+            else {
+                // isOverloaded
+
+                Symbol * t1 = m_st->appendTemporary(ty);
+                Symbol * t2 = m_st->appendTemporary(rTy);
+
+                emplaceImop(e, Imop::DECLARE, t1);
+                emplaceImop(e, Imop::DECLARE, t2);
+                emplaceImop(e, Imop::LOAD, t1, destSym, old_offset);
+
+                if (!eArg2->resultType()->isScalar()) {
+                    emplaceImop(e, Imop::LOAD, t2, arg2Result.symbol(), offset);
+                }
+                else {
+                    emplaceImop(e, Imop::ASSIGN, t2, arg2Result.symbol());
+                }
+
+                std::vector<Symbol*> operands {t1, t2};
+                const CGResult& callRes(cgOverloadedExpr(e, ty, operands, e->procSymbol()));
+                append(result, callRes);
+                if (result.isNotOk())
+                    return result;
+
+                emplaceImop(e, Imop::STORE, destSym, old_offset, callRes.symbol());
+                if (resultScalar) {
+                    emplaceImop(e, Imop::ASSIGN, r, callRes.symbol());
+                }
+                else {
+                    emplaceImop(e, Imop::STORE, r, resultOffset, callRes.symbol());
+                }
             }
 
             // offset = offset + 1
             emplaceImop(e, Imop::ADD, offset, offset, indexConstant(1));
+            // resultOffset = resultOffset + 1
+            emplaceImop(e, Imop::ADD, resultOffset, resultOffset, indexConstant(1));
         }
 
-        // 9. loop exit
+        // loop exit
         append(result, exitLoop(loopInfo));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 10. Free temporaries
+        // Free temporaries
         releaseResource (result, t1);
         releaseResource (result, t2);
-
-        // 11. allocate the result (if needed)
-        if (e->resultType ()->isScalar () || !eArg2->resultType()->isScalar()) {
-            result.setResult (arg2Result.symbol ());
-        }
-        else {
-            SymbolSymbol * resSym = generateResultSymbol(result, e);
-            unsigned count = 0;
-            for (unsigned k : slices) {
-                Symbol * sym = resSym->getDim(count);
-                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
-                ++ count;
-            }
-
-            codeGenSize(result);
-            emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), arg2Result.symbol ());
-            releaseTemporary(result, arg2Result.symbol ());
-        }
 
         return result;
     }
     else {
+        // isIndexed = false
+
         result.setResult (destSym);
 
         // Generate code for regular x = e assignment
@@ -318,50 +385,66 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
         } else {
             // Arithmetic assignments
+            if (destSym->isArray() && !eArg2->resultType()->isScalar()) {
+                // Check shapes
+                std::stringstream ss;
+                ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
+                auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+                Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
+                SymbolLabel * errLabel = m_st->label(err);
+                SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
 
-            Imop::Type iType;
-            if (! getAssignBinImopType(e->type(), iType)) {
-                assert(false);  // shouldn't happen
-                result |= CGResult::ERROR_FATAL;
-                return result;
+                dim_iterator
+                    di = dim_begin(arg2ResultSymbol),
+                    dj = dim_begin(destSym),
+                    de = dim_end(arg2ResultSymbol);
+                for (; di != de; ++ di, ++ dj) {
+                    SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
+                    emplaceImop(e, Imop::NE, temp_bool, *di, *dj);
+                    emplaceImop(e, Imop::JT, errLabel, temp_bool);
+                }
+
+                push_imop(jmp);
+                result.addToNextList(jmp);
+                push_imop(err);
             }
 
-            if (destSym->isArray()) {
-                if (eArg2->resultType()->isScalar()) {
-                    Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
-                    emplaceImopAfter(result, e, Imop::ALLOC, rhsSym, destSym->getSizeSym(), arg2Result.symbol());
-                    emplaceImop(e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
-                    releaseTemporary(result, rhsSym);
-                    releaseTemporary(result, arg2Result.symbol());
-                }
-                else {
-                    std::stringstream ss;
-                    ss << "Shape of RHS doesn't match shape of LHS in assignment at " << e->location() << '.';
-                    auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
-                    Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
-                    SymbolLabel * errLabel = m_st->label(err);
-                    SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
+            if (isOverloaded) {
+                std::vector<Symbol*> operands {destSym, arg2Result.symbol()};
+                const CGResult& callRes(cgOverloadedExpr(e, e->resultType(), operands, e->procSymbol()));
+                append(result, callRes);
+                if (result.isNotOk())
+                    return result;
 
-                    dim_iterator
-                        di = dim_begin(arg2ResultSymbol),
-                           dj = dim_begin(destSym),
-                           de = dim_end(arg2ResultSymbol);
-                    for (; di != de; ++ di, ++ dj) {
-                        SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
-                        emplaceImop(e, Imop::NE, temp_bool, *di, *dj);
-                        emplaceImop(e, Imop::JT, errLabel, temp_bool);
-                    }
-
-                    push_imop(jmp);
-                    result.addToNextList(jmp);
-                    push_imop(err);
-                    emplaceImopAfter(result, e, iType, destSym, destSym, arg2Result.symbol(), destSym->getSizeSym());
-                    releaseTemporary(result, arg2Result.symbol ());
-                }
+                // Copy result
+                emplaceImopAfter(result, e, Imop::ASSIGN, destSym, callRes.symbol(), destSym->getSizeSym());
             }
             else {
-                emplaceImopAfter(result, e, iType, destSym, destSym, arg2Result.symbol());
-                releaseTemporary(result, arg2Result.symbol ());
+                // Not overloaded
+                Imop::Type iType;
+                if (! getAssignBinImopType(e->type(), iType)) {
+                    assert(false);  // shouldn't happen
+                    result |= CGResult::ERROR_FATAL;
+                    return result;
+                }
+
+                if (destSym->isArray()) {
+                    if (eArg2->resultType()->isScalar()) {
+                        Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
+                        emplaceImopAfter(result, e, Imop::ALLOC, rhsSym, destSym->getSizeSym(), arg2Result.symbol());
+                        emplaceImop(e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
+                        releaseTemporary(result, rhsSym);
+                        releaseTemporary(result, arg2Result.symbol());
+                    }
+                    else {
+                        emplaceImopAfter(result, e, iType, destSym, destSym, arg2Result.symbol(), destSym->getSizeSym());
+                        releaseTemporary(result, arg2Result.symbol ());
+                    }
+                }
+                else {
+                    emplaceImopAfter(result, e, iType, destSym, destSym, arg2Result.symbol());
+                    releaseTemporary(result, arg2Result.symbol ());
+                }
             }
         }
     }

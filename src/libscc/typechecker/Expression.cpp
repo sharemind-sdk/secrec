@@ -256,23 +256,6 @@ TypeChecker::Status TypeChecker::visitExprSelection (TreeNodeExprSelection * e) 
   TreeNodeExprAssign
 *******************************************************************************/
 
-bool getAssignOperator(SecrecTreeNodeType type, SecrecOperator& op) {
-    switch (type) {
-        case NODE_EXPR_BINARY_ASSIGN_MUL: op = SCOP_BIN_MUL;  break;
-        case NODE_EXPR_BINARY_ASSIGN_DIV: op = SCOP_BIN_DIV;  break;
-        case NODE_EXPR_BINARY_ASSIGN_MOD: op = SCOP_BIN_MOD;  break;
-        case NODE_EXPR_BINARY_ASSIGN_ADD: op = SCOP_BIN_ADD;  break;
-        case NODE_EXPR_BINARY_ASSIGN_SUB: op = SCOP_BIN_SUB;  break;
-        case NODE_EXPR_BINARY_ASSIGN_AND: op = SCOP_BIN_BAND; break;
-        case NODE_EXPR_BINARY_ASSIGN_OR:  op = SCOP_BIN_BOR;  break;
-        case NODE_EXPR_BINARY_ASSIGN_XOR: op = SCOP_BIN_XOR;  break;
-        default:
-            return false;
-    }
-
-    return false;
-}
-
 TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
     if (e->haveResultType())
         return OK;
@@ -298,6 +281,62 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
             << " to variable of type " << *lhsType << " at "
             << e->location() << '.';
         return E_TYPE;
+    }
+
+    // Search for overloaded operator
+    if (e->type() != NODE_EXPR_BINARY_ASSIGN) {
+        SecrecOperator op = e->getOperator();
+        assert(op != SCOP_NONE);
+
+        bool isIndexed = lval->type () == NODE_LVALUE_INDEX;
+        // If the lval is indexed, codegen will create a loop
+        // operating on scalars
+        SecrecDimType lDim = 0;
+        SecrecDimType rDim = 0;
+        if (! isIndexed)  {
+            lDim = lhsType->secrecDimType();
+            rDim = srcType->secrecDimType();
+        }
+
+        std::vector<TypeBasic*> argumentDataTypes;
+        TypeBasic* lType = TypeBasic::get(getContext(),
+                                          lhsType->secrecSecType(),
+                                          lhsType->secrecDataType(),
+                                          lDim);
+        TypeBasic* rType = TypeBasic::get(getContext(),
+                                          srcType->secrecSecType(),
+                                          srcType->secrecDataType(),
+                                          rDim);
+        argumentDataTypes.push_back(lType);
+        argumentDataTypes.push_back(rType);
+
+        SymbolProcedure* symProc;
+        TypeProc* callType = TypeProc::get (getContext(), argumentDataTypes);
+        TCGUARD (findBestMatchingOpDef(symProc,
+                                       e->operatorName(),
+                                       callType,
+                                       e));
+
+        if (symProc != nullptr) {
+            TypeProc* procType = static_cast<TypeProc*>(symProc->secrecType());
+            assert(procType->paramTypes().size() == 2);
+            if (procType->paramTypes()[1]->secrecSecType() !=
+                srcType->secrecSecType())
+            {
+                src->setContextDataType(lhsType->secrecDataType());
+                src = classifyIfNeeded(src, lhsType->secrecSecType());
+            }
+
+            e->setProcSymbol(symProc);
+            e->setResultType(lhsType);
+            return OK;
+        }
+        else if (lhsType->secrecSecType()->isPrivate()) {
+            m_log.fatalInProc(e)
+                << "Assignment at " << e->location()
+                << " can not be performed due to missing operator definition.";
+            return E_TYPE;
+        }
     }
 
     // Add implicit classify node if needed:
