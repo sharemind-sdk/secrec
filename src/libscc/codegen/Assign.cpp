@@ -30,7 +30,6 @@
 #include <sstream>
 #include <vector>
 
-
 /**
  * Code generation for assignment expression
  */
@@ -151,7 +150,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         const SubscriptInfo::SPV & spv = cgSub.spv();
         const SubscriptInfo::SliceIndices & slices = cgSub.slices();
 
-        // 2. check that rhs has correct dimensions
+        // check that rhs has correct dimensions
         if (!eArg2->resultType()->isScalar()) {
             assert(static_cast<size_t>(eArg2->resultType()->secrecDimType()) == slices.size());
 
@@ -175,23 +174,50 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             push_imop(err);
         }
 
-        // 3. initialize stride
+        // initialize stride
         ArrayStrideInfo stride(destSym);
         append(result, codeGenStride(stride));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 4. initialze running indices
+        // initialize running indices
         LoopInfo loopInfo = prepareLoopInfo (cgSub);
 
-        // 6. initialze symbols for offsets and temporary results
+        // initialze symbols for offsets and temporary results
         Symbol * offset = m_st->appendTemporary(pubIntTy);
         Symbol * old_offset = m_st->appendTemporary(pubIntTy);
         Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
+        SymbolSymbol * r = generateResultSymbol(result, e);
+        Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
+        bool resultScalar = r->secrecType()->isScalar();
+
+        // compute the shape and the size of the result symbol "r"
+        {
+            unsigned count = 0;
+            for (unsigned k : cgSub.slices()) {
+                Symbol * sym = r->getDim(count);
+                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
+                ++ count;
+            }
+
+            codeGenSize(result);
+        }
+
+        // allocate memory for the result symbol "r"
+        if (!resultScalar) {
+            Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+            emplaceImopAfter(result, e, Imop::ALLOC, r, def, r->getSizeSym());
+        }
+        else {
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+        }
+
+        // resultOffset = 0
+        pushImopAfter (result, newAssign (e, resultOffset, indexConstant (0)));
 
         // offset = 0
-        emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant(0));
+        pushImopAfter (result, newAssign (e, offset, indexConstant(0)));
 
         // Declare temporaries that might require allocation for the inner assignment:
         const TypeBasic * ty = TypeBasic::get(e->resultType()->secrecSecType(),
@@ -201,13 +227,13 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         emplaceImop(e, Imop::DECLARE, t1);
         emplaceImop(e, Imop::DECLARE, t2);
 
-        // 7. start
+        // start
         append(result, enterLoop(loopInfo, spv));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 8. compute offset for RHS
+        // compute offset for RHS
         {
             // old_ffset = 0
             emplaceImopAfter(result, e, Imop::ASSIGN, old_offset, indexConstant(0));
@@ -224,19 +250,32 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
         }
 
-        // 9. load and store
+        // load and store
         {
             if (e->type() == NODE_EXPR_BINARY_ASSIGN) {
                 if (!eArg2->resultType()->isScalar()) {
                     emplaceImop(e, Imop::LOAD, t1, arg2Result.symbol(), offset);
                     emplaceImop(e, Imop::STORE, destSym, old_offset, t1);
+
+                    if (resultScalar) {
+                        emplaceImop(e, Imop::ASSIGN, r, t1);
+                    }
+                    else {
+                        emplaceImop(e, Imop::STORE, r, resultOffset, t1);
+                    }
                 }
                 else {
                     emplaceImop(e, Imop::STORE, destSym, old_offset, arg2Result.symbol());
+
+                    if (resultScalar) {
+                        emplaceImop(e, Imop::ASSIGN, r, arg2Result.symbol());
+                    }
+                    else {
+                        emplaceImop(e, Imop::STORE, r, resultOffset, arg2Result.symbol());
+                    }
                 }
             }
             else {
-
                 Imop::Type iType;
                 if (! getAssignBinImopType(e->type(), iType)) {
                     assert(false);  // shouldn't happen
@@ -255,39 +294,29 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                     emplaceImop(e, iType, t1, t1, arg2Result.symbol());
                     emplaceImop(e, Imop::STORE, destSym, old_offset, t1);
                 }
+
+                if (resultScalar) {
+                    emplaceImop(e, Imop::ASSIGN, r, t1);
+                }
+                else {
+                    emplaceImop(e, Imop::STORE, r, resultOffset, t1);
+                }
             }
 
             // offset = offset + 1
             emplaceImop(e, Imop::ADD, offset, offset, indexConstant(1));
+            emplaceImop(e, Imop::ADD, resultOffset, resultOffset, indexConstant(1));
         }
 
-        // 9. loop exit
+        // loop exit
         append(result, exitLoop(loopInfo));
         if (result.isNotOk()) {
             return result;
         }
 
-        // 10. Free temporaries
+        // Free temporaries
         releaseResource (result, t1);
         releaseResource (result, t2);
-
-        // 11. allocate the result (if needed)
-        if (e->resultType ()->isScalar () || !eArg2->resultType()->isScalar()) {
-            result.setResult (arg2Result.symbol ());
-        }
-        else {
-            SymbolSymbol * resSym = generateResultSymbol(result, e);
-            unsigned count = 0;
-            for (unsigned k : slices) {
-                Symbol * sym = resSym->getDim(count);
-                emplaceImopAfter(result, e, Imop::SUB, sym, spv[k].second, spv[k].first);
-                ++ count;
-            }
-
-            codeGenSize(result);
-            emplaceImopAfter(result, e, Imop::ALLOC, resSym, arg2Result.symbol (), resSym->getSizeSym());
-            releaseTemporary(result, arg2Result.symbol ());
-        }
 
         return result;
     }
