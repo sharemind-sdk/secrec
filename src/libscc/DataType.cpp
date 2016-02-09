@@ -23,6 +23,7 @@
 #include "ContextImpl.h"
 #include "Misc.h"
 #include "Symbol.h"
+#include "Types.h"
 
 #include <sstream>
 
@@ -77,8 +78,8 @@ CastStyle getCastStyle (SecrecDataType from, SecrecDataType to) {
 }
 
 SecrecDataType getSecrecDataType (const DataType* dType) {
-    assert (dynamic_cast<const DataTypePrimitive*>(dType) != nullptr);
-    return static_cast<const DataTypePrimitive*>(dType)->secrecDataType ();
+    assert (dynamic_cast<const DataTypeBuiltinPrimitive*>(dType) != nullptr);
+    return static_cast<const DataTypeBuiltinPrimitive*>(dType)->secrecDataType ();
 }
 
 } // namespace anonymous
@@ -110,15 +111,55 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
     return best;
 }
 
-DataType* upperDataType (Context& cxt, DataType* a, DataType* b) {
+/*
+ * If you have a private and a public type, this is supposed to check
+ * whether the public type classifies to the private type. We need to
+ * use upperDataType because one argument could be DATATYPE_NUMERIC.
+ */
+bool leqDeclassify (Context& cxt, TypeBasic* a, TypeBasic* b) {
+    if (! (a->secrecSecType ()->isPrivate () && b->secrecSecType ()->isPublic ()))
+        return false;
+
+    DataType* x = dtypeDeclassify (cxt, a->secrecSecType (), a->secrecDataType ());
+    if (x == nullptr)
+        return false;
+
+    auto adata = static_cast<DataTypeBuiltinPrimitive*> (x)->secrecDataType ();
+    auto bdata = static_cast<DataTypeBuiltinPrimitive*> (b->secrecDataType ())->secrecDataType ();
+
+    if (upperDataType (adata, bdata) == adata)
+        return true;
+
+    return false;
+}
+
+DataType* upperDataType (Context& cxt, TypeBasic* a, TypeBasic* b) {
     if (a == nullptr || b == nullptr)
         return nullptr;
 
-    if (a == b)
-        return a;
+    auto adata = a->secrecDataType ();
+    auto bdata = b->secrecDataType ();
 
-    if (a->isPrimitive () && b->isPrimitive ())
-        return DataTypePrimitive::get (cxt, upperDataType (getSecrecDataType (a), getSecrecDataType (b)));
+    if (adata == bdata)
+        return adata;
+
+    if (leqDeclassify (cxt, a, b))
+        return adata;
+
+    if (leqDeclassify (cxt, b, a))
+        return bdata;
+
+    if (adata->isBuiltinPrimitive () && bdata->isBuiltinPrimitive ()) {
+        auto upper = upperDataType (getSecrecDataType (adata),
+                                    getSecrecDataType (bdata));
+        return DataTypeBuiltinPrimitive::get (cxt, upper);
+    }
+
+    if (adata->isUserPrimitive () && bdata->isUserPrimitive () &&
+        adata == bdata)
+    {
+        return adata;
+    }
 
     return nullptr;
 }
@@ -247,6 +288,12 @@ bool latticeDataTypeLEQ (const DataType* a, const DataType* b) {
     if (a->isComposite () != b->isComposite ())
         return false;
 
+    if (a->isUserPrimitive () && b->isUserPrimitive ())
+        return a == b;
+
+    if (a->isBuiltinPrimitive () != b->isBuiltinPrimitive ())
+        return false;
+
     return latticeDataTypeLEQ (getSecrecDataType (a), getSecrecDataType (b));
 }
 
@@ -259,12 +306,18 @@ bool latticeExplicitLEQ (const DataType* a, const DataType* b) {
     if (a->isComposite () != b->isComposite ())
         return false;
 
+    if (a->isUserPrimitive () && b->isUserPrimitive ())
+        return a == b;
+
+    if (a->isBuiltinPrimitive () != b->isBuiltinPrimitive ())
+        return false;
+
     return latticeExplicitLEQ (getSecrecDataType (a), getSecrecDataType (b));
 }
 
 bool isFloatingDataType (const DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isComposite ())
+    if (! dType->isBuiltinPrimitive ())
         return false;
 
     return isFloatingDataType (getSecrecDataType (dType));
@@ -272,7 +325,7 @@ bool isFloatingDataType (const DataType* dType) {
 
 bool isNumericDataType (const DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isComposite ())
+    if (! dType->isBuiltinPrimitive ())
         return false;
 
     return isNumericDataType (getSecrecDataType (dType));
@@ -280,7 +333,7 @@ bool isNumericDataType (const DataType* dType) {
 
 bool isXorDataType (const DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isComposite ())
+    if (! dType->isBuiltinPrimitive ())
         return false;
 
     return isXorDataType (getSecrecDataType (dType));
@@ -288,7 +341,7 @@ bool isXorDataType (const DataType* dType) {
 
 bool isSignedNumericDataType (const DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isComposite ())
+    if (! dType->isBuiltinPrimitive ())
         return false;
 
     return isSignedNumericDataType (getSecrecDataType (dType));
@@ -296,16 +349,39 @@ bool isSignedNumericDataType (const DataType* dType) {
 
 bool isUnsignedNumericDataType (const DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isComposite ())
+    if (! dType->isBuiltinPrimitive ())
         return false;
 
     return isUnsignedNumericDataType (getSecrecDataType (dType));
 }
 
-DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
-    assert (dType != nullptr);
-    if (dType->isPrimitive ()) {
-        return DataTypePrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
+DataType* dtypeDeclassify (Context& cxt,
+                           SecurityType* secType,
+                           DataType* dType)
+{
+    if (dType == nullptr)
+        return dType;
+
+    if (dType->isBuiltinPrimitive ()) {
+        return DataTypeBuiltinPrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
+    }
+    else if (dType->isUserPrimitive ()) {
+        if (secType == nullptr || secType->isPublic ())
+            return nullptr;
+
+        assert (secType->isPrivate ());
+
+        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
+        DataTypeUserPrimitive *dtPrim = static_cast<DataTypeUserPrimitive*> (dType);
+
+        if (! dtPrim->inKind (kind))
+            return nullptr;
+
+        auto publicType = dtPrim->publicType (kind);
+        if (! publicType)
+            return nullptr;
+
+        return *publicType;
     }
 
     return dType;
@@ -316,29 +392,133 @@ DataType* dtypeDeclassify (Context& cxt, DataType* dType) {
 *******************************************************************************/
 
 bool DataType::equals (SecrecDataType other) const {
-    if (! isPrimitive ())
+    if (! isBuiltinPrimitive ())
         return false;
 
     return getSecrecDataType (this) == other;
 }
 
 /*******************************************************************************
-  DataTypePrimitive
+  DataTypeBuiltinPrimitive
 *******************************************************************************/
 
-void DataTypePrimitive::print (std::ostream& os) const {
+void DataTypeBuiltinPrimitive::print (std::ostream& os) const {
     os << SecrecFundDataTypeToString (m_dataType);
 }
 
-DataTypePrimitive* DataTypePrimitive::get (Context& cxt, SecrecDataType dataType) {
-    auto& map = cxt.pImpl ()->m_primitiveTypes;
+DataTypeBuiltinPrimitive* DataTypeBuiltinPrimitive::get (Context& cxt, SecrecDataType dataType) {
+    auto& map = cxt.pImpl ()->m_builtinPrimitiveTypes;
     const auto index = dataType;
     auto i = map.find (index);
     if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new DataTypePrimitive (dataType)));
+        i = map.insert (i, std::make_pair (index, new DataTypeBuiltinPrimitive (dataType)));
     }
 
     return i->second;
+}
+
+bool DataTypeBuiltinPrimitive::equals (const DataType* other) const {
+    assert (other != nullptr);
+
+    if (! other->isPrimitive ()) {
+        return false;
+    }
+    else if (other->isBuiltinPrimitive ()) {
+        return this == other;
+    }
+    else if (other->isUserPrimitive ()) {
+        return static_cast<const DataTypeUserPrimitive*> (other)->equals (m_dataType);
+    }
+
+    return false;
+}
+
+/*******************************************************************************
+  DataTypeUserPrimitive
+*******************************************************************************/
+
+void DataTypeUserPrimitive::print (std::ostream& os) const {
+    os << m_name;
+}
+
+DataTypeUserPrimitive* DataTypeUserPrimitive::get (Context& cxt,
+                                                   StringRef name)
+{
+    auto& map = cxt.pImpl ()->m_userPrimitiveTypes;
+    auto i = map.find (name);
+    if (i == map.end ()) {
+        auto ty = new DataTypeUserPrimitive (name);
+        i = map.insert (i, std::make_pair (name, ty));
+    }
+
+    return i->second;
+}
+
+bool DataTypeUserPrimitive::equals (SecrecDataType type) const {
+    StringRef tyStr = SecrecFundDataTypeToString (type);
+    return tyStr == m_name;
+}
+
+bool DataTypeUserPrimitive::equals (const DataType* other) const {
+    assert (other != nullptr);
+
+    if (! other->isPrimitive ()) {
+        return false;
+    }
+    else if (other->isBuiltinPrimitive ()) {
+        return equals (static_cast<const DataTypeBuiltinPrimitive*> (other)->secrecDataType ());
+    }
+    else if (other->isUserPrimitive ()) {
+        return this == other;
+    }
+
+    return false;
+}
+
+void DataTypeUserPrimitive::addParameters (SymbolKind* kind,
+                                           boost::optional<DataTypeBuiltinPrimitive*> publicType,
+                                           boost::optional<uint64_t> size)
+{
+    assert (kind != nullptr);
+    m_parameters.insert (std::make_pair (kind, Parameters {publicType, size}));
+}
+
+bool DataTypeUserPrimitive::inKind (SymbolKind* kind) const {
+    assert (kind != nullptr);
+    return m_parameters.find (kind) != m_parameters.end ();
+}
+
+boost::optional<DataTypeBuiltinPrimitive*>
+DataTypeUserPrimitive::publicType (SymbolKind* kind) const {
+    assert (kind != nullptr);
+
+    boost::optional<DataTypeBuiltinPrimitive*> res = boost::none;
+    auto it = m_parameters.find (kind);
+
+    if (it != m_parameters.end ()) {
+        res = it->second.publicType;
+    }
+
+    return res;
+}
+
+boost::optional<uint64_t> DataTypeUserPrimitive::size (SymbolKind* kind) const {
+    assert (kind != nullptr);
+
+    boost::optional<uint64_t> res = boost::none;
+    auto it = m_parameters.find (kind);
+
+    if (it != m_parameters.end ()) {
+        res = it->second.size;
+    }
+
+    return res;
+}
+
+bool DataTypeUserPrimitive::Compare::operator() (const SymbolKind* const k1,
+                                                 const SymbolKind* const k2) const
+{
+    return k1->name () < k2->name ();
 }
 
 /*******************************************************************************

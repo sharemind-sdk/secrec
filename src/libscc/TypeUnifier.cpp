@@ -27,6 +27,7 @@
 #include "Types.h"
 #include "Visitor.h"
 
+
 #define TUGUARD(expr) \
     do { \
         if (! (expr)) \
@@ -108,22 +109,40 @@ bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, DataType* dataType) {
 
 bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* dataType) {
     assert (dataType != nullptr);
+
+    if (dataType->isUserPrimitive ()) {
+        // We have to do this because uint in "D uint x" will be
+        // parsed as TreeNodeDataTypeConstF.
+        return static_cast<DataTypeUserPrimitive*> (dataType)->equals (t->secrecDataType ());
+    }
+
     return dataType->equals (t->secrecDataType ());
 }
 
 bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType) {
     assert (dataType != nullptr);
-    const StringRef name = t->identifier ()->value ();
 
-    if (m_st->find<SYM_STRUCT>(name)) {
-        TUGUARD(dataType->isComposite());
-        const auto structType = static_cast<DataTypeStruct*>(dataType);
-        TUGUARD(structType->typeArgs().empty());
-        TUGUARD(name == structType->name());
+    const StringRef name = t->identifier ()->value ();
+    auto dataQuants = m_sym->dataTypeQuantifiers ();
+
+    // We don't have to worry about the variable being a constant type
+    // (e.g. uint) because constant types are not parsed as variables.
+
+    if (dataQuants.find (name) != dataQuants.end ()) {
+        return bind (name, dataType);
+    }
+    else if (dataType->isUserPrimitive ()) {
+        return name == static_cast<DataTypeUserPrimitive*> (dataType)->name ();
+    }
+    else if (m_st->find<SYM_STRUCT> (name)) {
+        TUGUARD (dataType->isComposite ());
+        const auto structType = static_cast<DataTypeStruct*> (dataType);
+        TUGUARD (structType->typeArgs ().empty ());
+        TUGUARD (name == structType->name ());
         return true;
     }
 
-    return bind (name, dataType);
+    return false;
 }
 
 bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, DataType* dataType) {

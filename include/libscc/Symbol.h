@@ -28,17 +28,20 @@
 #include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <iterator>
+#include <map>
+#include <set>
 #include <vector>
 
 namespace SecreC {
 
 class Block;
 class DataType;
+class DataTypeUserPrimitive;
 class Imop;
-class SecurityType;
-class TypeNonVoid;
-class TypeContext;
 class Location;
+class SecurityType;
+class TypeContext;
+class TypeNonVoid;
 class TypeProc;
 
 /*******************************************************************************
@@ -189,14 +192,25 @@ private: /* Fields: */
 *******************************************************************************/
 
 class SymbolKind : public Symbol {
+
+public: /* Types: */
+    using TypeMap = std::map<StringRef, DataTypeUserPrimitive*>;
+
 public: /* Methods: */
 
-    SymbolKind(StringRef name)
+    SymbolKind (StringRef name)
         : Symbol (SYM_KIND, name)
     { }
 
+    DataTypeUserPrimitive* findType (StringRef name) const;
+
+    void addType (DataTypeUserPrimitive* type);
+
 protected:
-    void print(std::ostream & os) const override;
+    void print (std::ostream & os) const override;
+
+private: /* Fields: */
+    TypeMap m_types;
 };
 
 /*******************************************************************************
@@ -401,17 +415,16 @@ class SymbolTemplate: public Symbol {
 public: /* Methods: */
     inline TreeNodeTemplate* decl() const { return m_templ; }
     virtual const Location* location() const override;
+    const std::set<StringRef>& dataTypeQuantifiers () const { return m_dataTypeQuantifiers; }
 
 protected: /* Methods: */
-    SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ)
-        : Symbol (cat)
-        , m_templ (templ)
-        {};
+    SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ);
 
     void print(std::ostream & os) const override;
 
 protected: /* Fields: */
     TreeNodeTemplate* const m_templ;
+    std::set<StringRef> m_dataTypeQuantifiers;
 };
 
 /*******************************************************************************

@@ -28,9 +28,10 @@
 
 namespace SecreC {
 
-class Type;
 class Location;
 class SymbolTable;
+class SymbolTemplate;
+class Type;
 
 /*******************************************************************************
   TypeUnifier
@@ -47,8 +48,10 @@ public:
 
 public: /* Methods: */
 
-    explicit TypeUnifier (SymbolTable* st)
+    explicit TypeUnifier (SymbolTable* st,
+                          SymbolTemplate* sym)
         : m_st {st}
+        , m_sym {sym}
     { }
 
     TypeUnifier (const TypeUnifier&) = delete;
@@ -85,6 +88,7 @@ private:
 
 private: /* Fields: */
     SymbolTable* m_st;
+    SymbolTemplate* m_sym;
     TypeVarMap m_names;
 };
 

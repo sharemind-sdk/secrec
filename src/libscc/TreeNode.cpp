@@ -354,6 +354,16 @@ std::string OverloadableOperator::operatorName() const {
     return os.str();
 }
 
+SecrecOperator OverloadableOperator::getOperator() const {
+    if (m_operator == SCOP_NONE) { // unlikeley
+        m_operator = getOperatorV();
+        assert((m_operator != SCOP_NONE) &&
+               "getOperatorV returned undefined operator.");
+    }
+
+    return m_operator;
+}
+
 /*******************************************************************************
   TreeNodeExpr
 *******************************************************************************/
@@ -385,8 +395,8 @@ void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
 
 void TreeNodeExpr::instantiateDataType (Context& cxt, DataType* dType) {
     assert (dType != nullptr);
-    if (dType->isPrimitive ()) {
-        instantiateDataType (cxt, static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+    if (dType->isBuiltinPrimitive ()) {
+        instantiateDataType (cxt, static_cast<DataTypeBuiltinPrimitive*>(dType)->secrecDataType ());
     }
 }
 
@@ -422,6 +432,14 @@ TreeNodeLValue* TreeNodeExprPrefix::lvalue () const {
     return childAt<TreeNodeLValue>(this, 0);
 }
 
+SecrecOperator TreeNodeExprPrefix::getOperatorV () const {
+    switch (type ()) {
+        case NODE_EXPR_PREFIX_DEC: return SCOP_BIN_SUB;
+        case NODE_EXPR_PREFIX_INC: return SCOP_BIN_ADD;
+        default:                   return SCOP_NONE;
+    }
+}
+
 /*******************************************************************************
   TreeNodeExprPostfix
 *******************************************************************************/
@@ -429,6 +447,14 @@ TreeNodeLValue* TreeNodeExprPrefix::lvalue () const {
 TreeNodeLValue* TreeNodeExprPostfix::lvalue () const {
     assert (children ().size () == 1);
     return childAt<TreeNodeLValue>(this, 0);
+}
+
+SecrecOperator TreeNodeExprPostfix::getOperatorV () const {
+    switch (type ()) {
+        case NODE_EXPR_POSTFIX_DEC: return SCOP_BIN_SUB;
+        case NODE_EXPR_POSTFIX_INC: return SCOP_BIN_ADD;
+        default:                    return SCOP_NONE;
+    }
 }
 
 /*******************************************************************************
@@ -447,20 +473,6 @@ SecrecOperator TreeNodeExprUnary::getOperatorV() const {
         case NODE_EXPR_UMINUS: return SCOP_UN_MINUS;
         default:               return SCOP_NONE;
     }
-}
-
-/*******************************************************************************
-  OverloadableOperator
-*******************************************************************************/
-
-SecrecOperator OverloadableOperator::getOperator() const {
-    if (m_operator == SCOP_NONE) { // unlikeley
-        m_operator = getOperatorV();
-        assert((m_operator != SCOP_NONE) &&
-               "getOperatorV returned undefined operator.");
-    }
-
-    return m_operator;
 }
 
 /*******************************************************************************
@@ -1280,8 +1292,13 @@ TreeNodeExpr* TreeNodeSyscallParam::expression () const {
 *******************************************************************************/
 
 TreeNodeIdentifier* TreeNodeKind::identifier () const {
-    assert (children ().size () == 1);
+    assert (children ().size () == 2);
     return childAt<TreeNodeIdentifier>(this, 0);
+}
+
+TreeNodeSeqView<TreeNodeDataTypeDecl> TreeNodeKind::types () const {
+    assert (children ().size () == 2);
+    return TreeNodeSeqView<TreeNodeDataTypeDecl> (children ().at (1)->children ());
 }
 
 /*******************************************************************************
@@ -1384,6 +1401,16 @@ TreeNodeIdentifier* TreeNodeTypeArgTemplate::identifier () const {
 TreeNodeSeqView<TreeNodeTypeArg> TreeNodeTypeArgTemplate::arguments () const {
     assert (children ().size () > 1);
     return TreeNodeSeqView<TreeNodeTypeArg>(children().begin() + 1, children().end());
+}
+
+/*******************************************************************************
+  TreeNodeDataTypeDecl
+*******************************************************************************/
+
+TreeNodeSeqView<TreeNodeDataTypeDeclParam> TreeNodeDataTypeDecl::parameters () const {
+    assert (children ().size () == 1);
+    auto child = childAt<TreeNodeInternalUse>(this, 0);
+    return TreeNodeSeqView<TreeNodeDataTypeDeclParam>(child->children ());
 }
 
 } // namespace SecreC
@@ -1632,4 +1659,22 @@ TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLT
 
 TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc) {
     return (TreeNode *) new SecreC::TreeNodeTypeArgDimTypeConst(dimType, *loc);
+}
+
+TreeNode *treenode_init_dataTypeDecl (TYPE_STRINGREF name, YYLTYPE *loc) {
+    return (TreeNode *) new SecreC::TreeNodeDataTypeDecl(*name, *loc);
+}
+
+TreeNode *treenode_init_dataTypeDeclParamPublic (enum SecrecDataType dataType, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeDataTypeDeclParamPublic(dataType, *loc);
+}
+
+TreeNode *treenode_init_dataTypeDeclParamSize (uint64_t size, YYLTYPE * loc) {
+    return (TreeNode *) new SecreC::TreeNodeDataTypeDeclParamSize(size, *loc);
+}
+
+TYPE_STRINGREF secrec_fund_datatype_to_string (TYPE_STRINGTABLE table, SecrecDataType ty)
+{
+    const char *str = SecrecFundDataTypeToString(ty);
+    return table->addString(str, strlen(str));
 }

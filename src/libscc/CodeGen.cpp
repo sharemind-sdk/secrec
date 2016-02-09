@@ -29,6 +29,7 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -229,15 +230,28 @@ Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* 
 void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
     assert(dynamic_cast<SymbolSymbol *>(result.symbol()) != nullptr);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(result.symbol());
+    bool noVal = val == nullptr;
+    auto dt = sym->secrecType()->secrecDataType();
 
     if (result.symbol()->secrecType()->isScalar()) {
         emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
     }
-    else {
-        if (val == nullptr)
-            val = defaultConstant(getContext(), sym->secrecType()->secrecDataType());
+    else if (dt->isUserPrimitive()) {
+        auto pubTy = dtypeDeclassify(getContext(), sym->secrecType()->secrecSecType(),
+                                     sym->secrecType()->secrecDataType());
+        if (noVal && pubTy != nullptr)
+            val = defaultConstant(getContext(), pubTy);
 
-        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, val, sym->getSizeSym());
+        if (val != nullptr)
+            emplaceImopAfter(result, m_node, Imop::ALLOC, sym, sym->getSizeSym(), val);
+        else
+            emplaceImopAfter(result, m_node, Imop::ALLOC, sym, sym->getSizeSym());
+    }
+    else {
+        if (noVal) {
+            val = defaultConstant(getContext(), sym->secrecType()->secrecDataType());
+        }
+        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, sym->getSizeSym(), val);
     }
 }
 
@@ -685,7 +699,23 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     return result;
 }
 
-CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
+CGResult CodeGen::cgInitializeToConstant (SymbolSymbol* sym, SymbolConstant* def) {
+    TypeNonVoid* ty = sym->secrecType ();
+    CGResult result;
+
+    if (ty->isScalar ()) {
+        Imop::Type iType = ty->secrecSecType ()->isPrivate () ? Imop::CLASSIFY : Imop::ASSIGN;
+        emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
+        emplaceImopAfter(result, m_node, iType, sym, def);
+    }
+    else {
+        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, getSizeOr(sym, 0), def);
+    }
+
+    return result;
+}
+
+CGResult CodeGen::cgInitializeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     assert (sym != nullptr && sym->secrecType () != nullptr);
 
     TypeNonVoid* ty = sym->secrecType ();
@@ -693,7 +723,7 @@ CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
 
     if (ty->secrecDataType ()->isComposite ()) {
         for (SymbolSymbol* field : sym->fields ()) {
-            append (result, cgInitalizeToDefaultValue (field, false));
+            append (result, cgInitializeToDefaultValue (field, false));
             if (result.isNotOk ())
                 return result;
         }
@@ -707,17 +737,28 @@ CGResult CodeGen::cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
         emplaceImopAfter(result, m_node, Imop::ASSIGN, sym->getSizeSym(), defIdx);
         for (SecrecDimType it = 0; it < ty->secrecDimType(); ++it)
             emplaceImop(m_node, Imop::ASSIGN, sym->getDim(it), defIdx);
-
     }
 
-    SymbolConstant* def = defaultConstant (getContext (), ty->secrecDataType ());
-    if (ty->isScalar ()) {
-        Imop::Type iType = ty->secrecSecType ()->isPrivate () ? Imop::CLASSIFY : Imop::ASSIGN;
-        emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
-        emplaceImopAfter(result, m_node, iType, sym, def);
+    if (ty->secrecDataType ()->isUserPrimitive ()) {
+        assert (ty->secrecSecType ()->isPrivate ());
+        DataType* publicType = dtypeDeclassify (getContext (), ty->secrecSecType (),
+                                                ty->secrecDataType ());
+
+        if (publicType) {
+            SymbolConstant* def =
+                defaultConstant (getContext (), publicType);
+            append (result, cgInitializeToConstant (sym, def));
+        }
+        else if (ty->isScalar ()) {
+            emplaceImopAfter (result, m_node, Imop::DECLARE, sym);
+        }
+        else {
+            emplaceImopAfter(result, m_node, Imop::ALLOC, sym, getSizeOr (sym, 0));
+        }
     }
     else {
-        emplaceImopAfter(result, m_node, Imop::ALLOC, sym, def, getSizeOr(sym, 0));
+        SymbolConstant* def = defaultConstant (getContext (), ty->secrecDataType ());
+        append (result, cgInitializeToConstant (sym, def));
     }
 
     return result;
@@ -749,7 +790,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     if (hasShape) { // type[[n>0]] x(i_1,...,i_n) = foo;
         if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
             // fill lhs with constant value
-            emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym());
+            emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, lhs->getSizeSym(), rhs);
             releaseTemporary(result, rhs);
         }
         else {
@@ -777,7 +818,7 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     } else {
         if (ty->secrecDimType() > 0) { // type[[>0]] x = foo;
             if (ty->secrecDimType() > rhs->secrecType()->secrecDimType()) {
-                emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, rhs, lhs->getSizeSym());
+                emplaceImopAfter(result, m_node, Imop::ALLOC, lhs, lhs->getSizeSym(), rhs);
                 releaseTemporary(result, rhs);
             } else {
                 assert(ty->secrecDimType() == rhs->secrecType()->secrecDimType());

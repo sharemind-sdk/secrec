@@ -93,7 +93,7 @@ CGResult CodeGen::cgAssign (SymbolSymbol* dest, Symbol* src) {
             emplaceImopAfter (result, m_node, Imop::RELEASE, nullptr, dest);
 
             if (src->secrecType ()->isScalar ())
-                emplaceImop (m_node, Imop::ALLOC, dest, src, dest->getSizeSym());
+                emplaceImop (m_node, Imop::ALLOC, dest, dest->getSizeSym(), src);
             else
                 emplaceImop (m_node, Imop::COPY, dest, src, dest->getSizeSym());
         } else {
@@ -286,7 +286,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             }
 
             codeGenSize(result);
-            emplaceImopAfter(result, e, Imop::ALLOC, resSym, arg2Result.symbol (), resSym->getSizeSym());
+            emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), arg2Result.symbol ());
             releaseTemporary(result, arg2Result.symbol ());
         }
 
@@ -308,7 +308,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             if (destSym->isArray()) {
                 emplaceImopAfter(result, e, Imop::RELEASE, nullptr, destSym);
                 if (eArg2->resultType()->isScalar())
-                    emplaceImop(e, Imop::ALLOC, destSym, arg2Result.symbol(), destSym->getSizeSym());
+                    emplaceImop(e, Imop::ALLOC, destSym, destSym->getSizeSym(), arg2Result.symbol());
                 else
                     emplaceImop(e, Imop::COPY, destSym, arg2Result.symbol(), destSym->getSizeSym());
                 releaseTemporary (result, arg2Result.symbol());
@@ -329,7 +329,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
             if (destSym->isArray()) {
                 if (eArg2->resultType()->isScalar()) {
                     Symbol * rhsSym = m_st->appendTemporary(destSym->secrecType());
-                    emplaceImopAfter(result, e, Imop::ALLOC, rhsSym, arg2Result.symbol(), destSym->getSizeSym());
+                    emplaceImopAfter(result, e, Imop::ALLOC, rhsSym, destSym->getSizeSym(), arg2Result.symbol());
                     emplaceImop(e, iType, destSym, destSym, rhsSym, destSym->getSizeSym());
                     releaseTemporary(result, rhsSym);
                     releaseTemporary(result, arg2Result.symbol());

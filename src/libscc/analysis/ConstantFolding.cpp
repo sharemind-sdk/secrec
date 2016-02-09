@@ -621,7 +621,8 @@ Value castValue (ValueFactory& factory, TypeNonVoid* resultType, const AbstractV
 
 Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x) {
     const auto dataType = resultType->secrecDataType ();
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    assert (dataType->isBuiltinPrimitive ());
+    const auto secrecDataType = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
 
     if (resultType->isFloat ()) {
         const auto prec = floatPrec (secrecDataType);
@@ -652,7 +653,8 @@ Value castInt (ValueFactory& factory, TypeNonVoid* resultType, const IntValue& x
 
 Value castFloat (ValueFactory& factory, TypeNonVoid* resultType, const FloatValue& x) {
     const auto dataType = resultType->secrecDataType ();
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    assert (dataType->isBuiltinPrimitive ());
+    const auto secrecDataType = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
     if (resultType->isFloat ()) {
         const auto prec = floatPrec (secrecDataType);
         return factory.get (APFloat (prec, x));
@@ -712,8 +714,8 @@ void ConstantFolding::addConstant (const Symbol* sym) {
         return;
 
     const auto dataType = sym->secrecType ()->secrecDataType ();
-    assert (dataType->isPrimitive () && "Non-primitive constant symbol!");
-    const auto secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+    assert (dataType->isBuiltinPrimitive () && "Non-primitive constant symbol!");
+    const auto secrecDataType = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
     if (const auto s = dynamic_cast<const ConstantInt*>(sym)) {
         const bool isSigned = isSignedNumericDataType (secrecDataType);
         const auto v = IntValue (isSigned, s->value ());
@@ -811,14 +813,16 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
     }
 
     if (iType == Imop::ALLOC) {
-        const auto e = getVal (val, imop.arg1 ());
-        const auto s = getVal (val, imop.arg2 ());
-        if (s.isConst ()) {
-            auto r = ArrayValue (as<VINT>(s.value ()).bits (), e);
-            setVal (val, imop.dest (), factory.get (r));
+        if (imop.nArgs () == 3) {
+            const auto e = getVal (val, imop.arg2 ());
+            const auto s = getVal (val, imop.arg1 ());
+            if (s.isConst ()) {
+                auto r = ArrayValue (as<VINT>(s.value ()).bits (), e);
+                setVal (val, imop.dest (), factory.get (r));
+            }
+            else
+                setVal (val, imop.dest (), s);
         }
-        else
-            setVal (val, imop.dest (), s);
         return;
     }
 
@@ -955,7 +959,7 @@ size_t ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
         case Imop::DECLASSIFY:
         case Imop::CLASSIFY:
         case Imop::ALLOC:
-            if (imop.arg1 ()->isConstant ())
+            if (imop.nArgs () == 3 && imop.arg1 ()->isConstant ())
                 continue;
         default:
             break;

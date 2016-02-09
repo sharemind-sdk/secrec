@@ -55,10 +55,10 @@ uint8_t maximumEntropy(SecrecDataType dtype) {
 
 uint8_t maximumEntropy(DataType* dtype) {
     // Composite types are public
-    if (dtype->isComposite ())
+    if (! dtype->isBuiltinPrimitive ())
         return 0;
 
-    return maximumEntropy (static_cast<DataTypePrimitive*>(dtype)->secrecDataType ());
+    return maximumEntropy (static_cast<DataTypeBuiltinPrimitive*>(dtype)->secrecDataType ());
 }
 
 } // namespace anonymous
@@ -131,7 +131,7 @@ void ReachingDeclassify::transferImop(const Imop & imop, PDefs & out) const {
         }
 
     case Imop::ALLOC:
-        if (imop.arg1()->secrecType()->secrecSecType()->isPublic()) {
+        if (imop.nArgs () == 3 && imop.arg2()->secrecType()->secrecSecType()->isPublic()) {
     case Imop::CLASSIFY:
             d.setToNonsensitive(&imop);
             d.trivial = true;

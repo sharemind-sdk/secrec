@@ -160,6 +160,20 @@ void SymbolDataType::setTypeContext (TypeContext& cxt) const {
   SymbolKind
 *******************************************************************************/
 
+DataTypeUserPrimitive* SymbolKind::findType (StringRef name) const {
+    auto it = m_types.find (name);
+    if (it == m_types.end ())
+        return nullptr;
+    else
+        return it->second;
+}
+
+void SymbolKind::addType (DataTypeUserPrimitive* type) {
+    StringRef name = type->name ();
+    assert (m_types.find (name) == m_types.end ());
+    m_types.insert (std::make_pair (name, type));
+}
+
 void SymbolKind::print(std::ostream & os) const {
     os << "kind " << name ();
 }
@@ -351,6 +365,16 @@ void SymbolStruct::print (std::ostream &os) const {
 /*******************************************************************************
   SymbolTemplate
 *******************************************************************************/
+
+SymbolTemplate::SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ)
+    : Symbol (cat)
+    , m_templ (templ)
+{
+    for (const TreeNodeQuantifier& quant : templ->quantifiers ()) {
+        if (quant.isDataTypeQuantifier ())
+            m_dataTypeQuantifiers.insert (quant.typeVariable ()->value ());
+    }
+}
 
 const Location * SymbolTemplate::location() const {
     return &m_templ->location();

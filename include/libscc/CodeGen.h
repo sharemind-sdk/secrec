@@ -395,12 +395,20 @@ private:
     CGResult cgProcParam (SymbolSymbol* sym);
 
     /**
-     * @brief CodeGen::cgInitalizeToDefaultValue Initialize the given symbol to the default value.
-     * @param sym The symbol that need to be initialized.
+     * @brief CodeGen::cgInitializeToConstant Initialize the given symbol to the given constant.
+     * @param sym The symbol that needs to be initialized.
+     * @param def Symbol of the constant.
+     * @return Code generatoin result.
+     */
+    CGResult cgInitializeToConstant (SymbolSymbol* sym, SymbolConstant* def);
+
+    /**
+     * @brief CodeGen::cgInitializeToDefaultValue Initialize the given symbol to the default value.
+     * @param sym The symbol that needs to be initialized.
      * @param hasShape If the shape of the array has already been computed.
      * @return Code generation result.
      */
-    CGResult cgInitalizeToDefaultValue (SymbolSymbol* sym, bool hasShape = false);
+    CGResult cgInitializeToDefaultValue (SymbolSymbol* sym, bool hasShape = false);
 
     /**
      * @brief cgInitializeToSymbol Initialize the lhs to the value of rhs.
@@ -432,16 +440,20 @@ private:
 
     Symbol* toVector(CGResult result,
                      TreeNodeExpr * e,
-                     TreeNodeExpr * eArg,
                      Symbol * eArgRes,
                      Symbol * size);
-    void cgBinExprShapeCheck(TreeNodeExprBinary * e,
+    void cgBinExprShapeCheck(TreeNodeExpr * e,
                              Symbol * e1result,
                              Symbol * e2result,
                              CGResult & result);
     CGResult cgOverloadedExpr (TreeNodeExpr * e,
-                               std::vector<TreeNodeExpr*> & eArgs,
+                               Type * resTy,
+                               std::vector<Symbol*> & operands,
                                SymbolProcedure * symProc);
+    CGResult cgOverloadedPrefixPostfix(TreeNodeExpr* e,
+                                       SymbolProcedure* procSymbol,
+                                       Symbol* x,
+                                       Symbol* one);
 
     Symbol* getSizeOr (Symbol* sym, uint64_t val);
     SymbolConstant* indexConstant (uint64_t value);

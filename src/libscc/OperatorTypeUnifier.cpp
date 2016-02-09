@@ -20,6 +20,7 @@
 #include "OperatorTypeUnifier.h"
 
 #include "DataType.h"
+#include "Misc.h"
 #include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
@@ -35,6 +36,7 @@
             return false; \
     } while (false)
 
+
 namespace SecreC {
 
 /*******************************************************************************
@@ -42,8 +44,10 @@ namespace SecreC {
 *******************************************************************************/
 
 OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
-                                          SymbolTemplate* sym)
+                                          SymbolTemplate* sym,
+                                          Context& cxt)
     : m_sym (sym)
+    , m_cxt (cxt)
 {
     m_securityType = argTypes.size () == 1u
         ? argTypes[0u]->secrecSecType ()
@@ -53,7 +57,7 @@ OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argType
     m_domainVar = nullptr;
 
     for (TreeNodeQuantifier& quant : m_sym->decl ()-> quantifiers ()) {
-        if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
+        if (quant.isDomainQuantifier ()) {
             m_domainVar = static_cast<TreeNodeQuantifierDomain*> (&quant);
             bind (quant.typeVariable ()->value (), m_securityType);
             break;
@@ -63,8 +67,9 @@ OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argType
 
 bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
     auto it = m_names.find (name);
-    if (it != m_names.end () && it->second != arg)
+    if (it != m_names.end () && it->second != arg) {
         return false;
+    }
     m_names.insert (it, std::make_pair (name, arg));
     return true;
 }
@@ -77,67 +82,140 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
 
-    OTUGUARD (!type->isVoid ());
+    OTUGUARD (! type->isVoid ());
 
     const auto tnv = static_cast<TypeNonVoid*>(type);
 
-    // Security type
-    {
-        assert (t->secType () != nullptr);
-        assert (tnv->secrecSecType () != nullptr);
-
-        TreeNodeSecTypeF* tsec = t->secType ();
-        SecurityType* secType = tnv->secrecSecType ();
-
-        if (tsec->isPublic () && ! secType->isPublic ())
-            return false;
-
-        if (! secType->isPublic ()) {
-            StringRef expectedPD = static_cast<PrivateSecType*> (secType)->name ();
-            StringRef templPD = tsec->identifier ()->value ();
-
-            // OK when: template param pd is D or == expected pd
-
-            if ((m_domainVar == nullptr || templPD != m_domainVar->typeVariable ()->value ()) &&
-                templPD != expectedPD)
-            {
-                return false;
-            }
-        }
-    }
-
-    // Data type
-    {
-        TreeNodeDataTypeF* tdata = t->dataType ();
-        DataType* dataType = tnv->secrecDataType ();
-
-        assert (tdata->type () != NODE_DATATYPE_TEMPLATE_F);
-
-        if (tdata->type () == NODE_DATATYPE_CONST_F) {
-            assert (dynamic_cast<DataTypePrimitive*> (dataType) != nullptr);
-            assert (dynamic_cast<TreeNodeDataTypeConstF*> (tdata) != nullptr);
-
-            SecrecDataType a = static_cast<DataTypePrimitive*> (dataType)->secrecDataType ();
-            SecrecDataType b = static_cast<TreeNodeDataTypeConstF*> (tdata)->secrecDataType ();
-
-            if (! t->secType ()->isPublic () &&
-                tnv->secrecSecType ()->isPublic ())
-            {
-                b = dtypeDeclassify (b);
-            }
-
-            if (a != b)
-                return false;
-        } else {
-            // template data type variable
-            OTUGUARD (bind (tdata->identifier ()->value (), dataType));
-        }
-    }
-
-    // Dim type
+    OTUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
+    OTUGUARD (visitDataTypeF (t, tnv));
     OTUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
 
     return true;
+}
+
+/*******************************************************************************
+  TreeNodeSecTypeF
+*******************************************************************************/
+
+bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+    assert (secType != nullptr);
+    assert (t != nullptr);
+
+    if (t->isPublic () && ! secType->isPublic ())
+        return false;
+
+    if (! secType->isPublic ()) {
+        StringRef expectedPD = static_cast<PrivateSecType*> (secType)->name ();
+        StringRef templPD = t->identifier ()->value ();
+
+        // OK when: template param pd is D or == expected pd
+        if ((m_domainVar == nullptr || templPD != m_domainVar->typeVariable ()->value ()) &&
+            templPD != expectedPD)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/*******************************************************************************
+  TreeNodeDataTypeF
+*******************************************************************************/
+
+bool OperatorTypeUnifier::visitDataTypeF (TreeNodeType* t, TypeNonVoid* type) {
+    return dispatchDataTypeF (*this, t->dataType (), t, type);
+}
+
+bool OperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
+                                               TreeNodeType* t,
+                                               TypeNonVoid* type)
+{
+    SecrecDataType treeSc = tconst->secrecDataType ();
+    DataType* argData = type->secrecDataType ();
+
+    if (! t->secType ()->isPublic () &&
+        type->secrecSecType ()->isPublic ())
+    {
+        treeSc = dtypeDeclassify (treeSc);
+    }
+
+    if (argData->isBuiltinPrimitive ()) {
+        SecrecDataType argSc = static_cast<DataTypeBuiltinPrimitive*> (argData)->secrecDataType ();
+        if (treeSc != argSc)
+            return false;
+    }
+    else if (argData->isUserPrimitive ()) {
+        assert (type->secrecSecType ()->isPrivate ());
+
+        if (! static_cast<DataTypeUserPrimitive*> (argData)->equals (treeSc))
+            return false;
+    }
+    else {
+        // No structs in operator definitions
+        assert (false);
+    }
+
+    return true;
+}
+
+bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
+                                             TreeNodeType* t,
+                                             TypeNonVoid* type)
+{
+    auto dataQuants = m_sym->dataTypeQuantifiers ();
+    StringRef var = tvar->identifier ()->value ();
+    DataType* argData = type->secrecDataType ();
+
+    if (dataQuants.find (var) != dataQuants.end ()) {
+        // bind template quantifier variable
+        OTUGUARD (bind (var, argData));
+    }
+    else if (m_securityType->isPrivate ()) {
+        // Check if the protection domain has this type
+        SymbolKind* kind = static_cast<PrivateSecType*> (m_securityType)->securityKind ();
+        DataTypeUserPrimitive* tyPrim = kind->findType (var);
+        DataType* ty;
+
+        OTUGUARD (tyPrim != nullptr);
+
+        if (! t->secType ()->isPublic () &&
+            type->secrecSecType ()->isPublic ())
+        {
+            auto publicType = tyPrim->publicType (kind);
+            if (publicType)
+                ty = *publicType;
+            else
+                ty = tyPrim;
+        }
+        else {
+            ty = tyPrim;
+        }
+
+        if (argData->isPrimitive ()) {
+            OTUGUARD (ty->equals (argData));
+        }
+        else {
+            // No structs in operator definitions
+            assert (false);
+        }
+    }
+    else {
+        // The variable is a struct which is not supported
+        return false;
+    }
+
+    return true;
+}
+
+bool OperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
+                                                  TreeNodeType* t,
+                                                  TypeNonVoid* type)
+{
+    (void) ttemplate;
+    (void) t;
+    (void) type;
+    assert (false);
 }
 
 /*******************************************************************************

@@ -62,6 +62,12 @@ TreeNode *treenode_init_lvalue (TreeNode* node, YYLTYPE *loc);
 TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLTYPE * loc);
 TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc);
 
+TreeNode *treenode_init_dataTypeDecl (TYPE_STRINGREF name, YYLTYPE *loc);
+TreeNode *treenode_init_dataTypeDeclParamPublic (enum SecrecDataType dataType, YYLTYPE * loc);
+TreeNode *treenode_init_dataTypeDeclParamSize (uint64_t size, YYLTYPE * loc);
+
+TYPE_STRINGREF secrec_fund_datatype_to_string (TYPE_STRINGTABLE table, enum SecrecDataType ty);
+
 #ifdef __cplusplus
 } /* namespace SecreC */
 #endif /* __cplusplus */

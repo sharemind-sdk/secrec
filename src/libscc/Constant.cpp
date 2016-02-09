@@ -73,16 +73,16 @@ SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
 }
 
 SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
-    return numericConstant (cxt, DataTypePrimitive::get (cxt, ty), value);
+    return numericConstant (cxt, DataTypeBuiltinPrimitive::get (cxt, ty), value);
 }
 
 SymbolConstant* defaultConstant (Context& cxt, DataType* ty) {
-    assert (ty != nullptr && ! ty->isComposite ());
-    return defaultConstant (cxt, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+    assert (ty != nullptr && ty->isBuiltinPrimitive ());
+    return defaultConstant (cxt, static_cast<DataTypeBuiltinPrimitive*>(ty)->secrecDataType ());
 }
 
 SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
-    assert (ty != nullptr && isNumericDataType (ty));
+    assert (ty != nullptr && isNumericDataType (ty) && ty->isBuiltinPrimitive ());
     if (isFloatingDataType (ty))
         return ConstantFloat::get (cxt, ty, value);
     else
@@ -94,8 +94,8 @@ SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
 *******************************************************************************/
 
 ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
-    assert (type != nullptr && type->isPrimitive ());
-    DataTypePrimitive* const primDataType = static_cast<DataTypePrimitive*>(type);
+    assert (type != nullptr && type->isBuiltinPrimitive ());
+    DataTypeBuiltinPrimitive* const primDataType = static_cast<DataTypeBuiltinPrimitive*>(type);
     return ConstantInt::get (cxt, primDataType->secrecDataType (), value);
 }
 
@@ -116,7 +116,7 @@ ConstantInt* ConstantInt::getBool (Context& cxt, bool value) {
 }
 
 void ConstantInt::print (std::ostream &os) const {
-    const auto dataType = static_cast<DataTypePrimitive*>(secrecType ()->secrecDataType ());
+    const auto dataType = static_cast<DataTypeBuiltinPrimitive*>(secrecType ()->secrecDataType ());
     const auto secrecDataType = dataType->secrecDataType ();
     if (isSignedNumericDataType (secrecDataType))
         m_value.sprint (os);

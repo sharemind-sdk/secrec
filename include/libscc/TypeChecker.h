@@ -35,6 +35,7 @@ class Context;
 class DataTypeStruct;
 class Instantiation;
 class Location;
+class OverloadableOperator;
 class SecurityType;
 class StringRef;
 class SymbolTable;
@@ -56,7 +57,7 @@ struct InstanceInfo;
     while (false)
 #endif
 
-TypeNonVoid* upperTypeNonVoid(Context& context, TypeNonVoid* a, TypeNonVoid* b);
+TypeBasic* upperTypeBasic(Context& context, TypeBasic* a, TypeBasic* b);
 
 /*******************************************************************************
   TypeChecker
@@ -118,10 +119,13 @@ public: /* Methods: */
 
     Status visitType(TreeNodeType * _ty);
     Status visitTypeVarF(TreeNodeTypeVarF* ty);
-    Status visitDataTypeF(TreeNodeDataTypeF* ty);
+    Status visitDataTypeF(TreeNodeDataTypeF* ty, SecurityType* secType);
     Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty);
+    Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty, SecurityType* secType);
     Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t);
+    Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t, SecurityType* secType);
     Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty);
+    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, SecurityType* secType);
     Status visitDimTypeConstF(TreeNodeDimTypeConstF *);
     Status visitDimTypeF(TreeNodeDimTypeF* ty);
     Status visitDimTypeVarF(TreeNodeDimTypeVarF * ty);
@@ -204,6 +208,7 @@ private: /* Methods: */
     }
 
     Status checkPostfixPrefixIncDec(TreeNodeExpr * root,
+                                    OverloadableOperator * op,
                                     bool isPrefix,
                                     bool isInc);
     Status checkIndices(TreeNode * node, SecrecDimType & destDim);

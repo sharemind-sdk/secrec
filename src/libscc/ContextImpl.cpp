@@ -44,7 +44,8 @@ ContextImpl::~ContextImpl () {
     deleteValues (m_stringLiterals);
     deleteValues (m_numericConstants[0]);
     deleteValues (m_numericConstants[1]);
-    deleteValues (m_primitiveTypes);
+    deleteValues (m_builtinPrimitiveTypes);
+    deleteValues (m_userPrimitiveTypes);
     deleteValues (m_structTypes);
     deleteValues (m_floatConstants);
 }

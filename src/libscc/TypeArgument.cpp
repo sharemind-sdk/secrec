@@ -140,7 +140,7 @@ TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgDataTypeConst(TreeNodeTypeArgDataTypeConst* t) {
-    t->setTypeArgument (DataTypePrimitive::get (getContext (), t->secrecDataType ()));
+    t->setTypeArgument (DataTypeBuiltinPrimitive::get (getContext (), t->secrecDataType ()));
     return OK;
 }
 

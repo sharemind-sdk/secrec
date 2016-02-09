@@ -24,15 +24,19 @@
 #include "StringRef.h"
 #include "TypeArgument.h"
 
+#include <boost/optional.hpp>
 #include <iosfwd>
-#include <vector>
+#include <map>
 #include <utility>
+#include <vector>
 
 namespace SecreC {
 
 class Context;
-class TypeBasic;
 class DataType;
+class SymbolKind;
+class TypeBasic;
+class SecurityType;
 
 /*******************************************************************************
  SecrecDataType related operations
@@ -63,8 +67,8 @@ bool isXorDataType (const DataType* dType);
 bool isSignedNumericDataType (const DataType* dType);
 bool isUnsignedNumericDataType (const DataType* dType);
 
-DataType* dtypeDeclassify (Context& cxt, DataType* dtype);
-DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
+DataType* dtypeDeclassify (Context& cxt, SecurityType* secType, DataType* dType);
+DataType* upperDataType (Context& cxt, TypeBasic* a, TypeBasic* b);
 
 
 /*******************************************************************************
@@ -74,7 +78,7 @@ DataType* upperDataType (Context& cxt, DataType* a, DataType* b);
 class DataType {
 protected: /* Types: */
 
-    enum Kind { COMPOSITE, PRIMITIVE };
+    enum Kind { COMPOSITE, BUILTIN_PRIMITIVE, USER_PRIMITIVE };
 
 public: /* Methods: */
 
@@ -83,13 +87,17 @@ public: /* Methods: */
     virtual ~DataType () { }
 
     bool isComposite () const { return m_kind == COMPOSITE; }
-    bool isPrimitive () const { return m_kind == PRIMITIVE; }
+    bool isPrimitive () const {
+        return m_kind == BUILTIN_PRIMITIVE || m_kind == USER_PRIMITIVE;
+    }
+    bool isBuiltinPrimitive () const { return m_kind == BUILTIN_PRIMITIVE; }
+    bool isUserPrimitive () const { return m_kind == USER_PRIMITIVE; }
 
     bool isString () const { return equals (DATATYPE_STRING); }
     bool isBool () const { return equals (DATATYPE_BOOL); }
 
-    bool equals (const DataType* other) const { return this == other; }
-    bool equals (SecrecDataType other) const;
+    virtual bool equals (const DataType* other) const { return this == other; };
+    virtual bool equals (SecrecDataType other) const;
 
 protected:
 
@@ -110,25 +118,84 @@ inline std::ostream& operator<<(std::ostream &out, const DataType& type) {
 }
 
 /*******************************************************************************
-  DataTypePrimitive
+  DataTypeBuiltinPrimitive
 *******************************************************************************/
 
-class DataTypePrimitive : public DataType {
+class DataTypeBuiltinPrimitive : public DataType {
 public: /* Methods: */
 
-    explicit DataTypePrimitive (SecrecDataType dataType)
-        : DataType (PRIMITIVE)
+    explicit DataTypeBuiltinPrimitive (SecrecDataType dataType)
+        : DataType (BUILTIN_PRIMITIVE)
         , m_dataType (dataType)
     { }
 
-    static DataTypePrimitive* get (Context& cxt, SecrecDataType dataType);
+    static DataTypeBuiltinPrimitive* get (Context& cxt, SecrecDataType dataType);
     SecrecDataType secrecDataType () const { return m_dataType; }
+    bool equals (const DataType* other) const override final;
 
 protected:
     void print (std::ostream& os) const override final;
 
 private: /* Fields: */
     const SecrecDataType m_dataType;
+};
+
+/*******************************************************************************
+  DataTypeUserPrimitive
+*******************************************************************************/
+
+class DataTypeUserPrimitive : public DataType {
+
+private: /* Types: */
+
+    struct Compare {
+        bool operator() (const SymbolKind* const k1, const SymbolKind* const k2) const;
+    };
+
+public: /* Types: */
+
+    struct Parameters {
+        const boost::optional<DataTypeBuiltinPrimitive*> publicType;
+        const boost::optional<uint64_t> size;
+
+        Parameters (boost::optional<DataTypeBuiltinPrimitive*> publicType,
+                    boost::optional<uint64_t> size)
+            : publicType (publicType)
+            , size (size)
+            { }
+    };
+
+public: /* Methods: */
+
+    explicit DataTypeUserPrimitive (StringRef name)
+        : DataType (USER_PRIMITIVE)
+        , m_name (name)
+    { }
+
+    static DataTypeUserPrimitive* get (Context& cxt, StringRef name);
+
+    StringRef name () const { return m_name; }
+
+    void addParameters (SymbolKind* kind,
+                        boost::optional<DataTypeBuiltinPrimitive*> publicType,
+                        boost::optional<uint64_t> size);
+
+    bool inKind (SymbolKind* kind) const;
+
+    boost::optional<DataTypeBuiltinPrimitive*> publicType (SymbolKind* kind) const;
+
+    boost::optional<uint64_t> size (SymbolKind* kind) const;
+
+    bool equals (SecrecDataType type) const override final;
+
+    bool equals (const DataType* other) const override final;
+
+protected:
+    void print (std::ostream& os) const override final;
+
+private: /* Fields: */
+    const StringRef m_name;
+    std::map<SymbolKind*, Parameters, Compare> m_parameters;
 };
 
 /*******************************************************************************

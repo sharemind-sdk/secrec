@@ -19,6 +19,7 @@
 
 #include "CodeGen.h"
 #include "CodeGenResult.h"
+#include "DataType.h"
 #include "Log.h"
 #include "Misc.h"
 #include "ModuleInfo.h"
@@ -33,6 +34,7 @@
 #include "typechecker/Templates.h"
 
 #include <boost/filesystem/fstream.hpp>
+#include <boost/optional.hpp>
 
 
 /**
@@ -55,7 +57,68 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         return CGResult::ERROR_CONTINUE;
     }
 
-    st->appendSymbol(new SymbolKind(id->value()));
+    SymbolKind * skind = new SymbolKind (id->value ());
+
+    for (const TreeNodeDataTypeDecl& tyDecl : kind->types ()) {
+        if (skind->findType (tyDecl.typeName ()) != nullptr) {
+            m_log.error () << "Redefinition of type '" << tyDecl.typeName ()
+                           << "' of kind '" << id->value () << "' at "
+                           << tyDecl.location () << "'";
+            return CGResult::ERROR_CONTINUE;
+        }
+
+        // GCC claims that the boost::optional values are
+        // uninitialized
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuninitialized"
+        #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+        boost::optional<DataTypeBuiltinPrimitive*> publicType = boost::none;
+        boost::optional<uint64_t> size = boost::none;
+        #pragma GCC diagnostic pop
+
+        for (const TreeNodeDataTypeDeclParam& param : tyDecl.parameters()) {
+            if (param.isPublicParam ()) {
+                if (publicType) {
+                    m_log.error () << "Multiple public type parameters of declaration of type '"
+                                   << tyDecl.typeName () << "' at " << param.location () << '.';
+                    return CGResult::ERROR_CONTINUE;
+                }
+
+                SecrecDataType ty = static_cast<const TreeNodeDataTypeDeclParamPublic*> (&param)->secrecDataType ();
+                publicType = DataTypeBuiltinPrimitive::get (getContext (), ty);
+            }
+            else {
+                if (size) {
+                    m_log.error () << "Multiple size parameters of declaration of type '"
+                                   << tyDecl.typeName () << "' at " << param.location () << '.';
+                    return CGResult::ERROR_CONTINUE;
+                }
+
+                uint64_t s = static_cast<const TreeNodeDataTypeDeclParamSize*> (&param)->size ();
+
+                if (s == 0 || (s != 1 && s % 8 != 0)) {
+                    m_log.error () << "Size parameter of declaration of type '"
+                                   << tyDecl.typeName () << "' at " << param.location ()
+                                   << " is not one or a multiple of eight.";
+                    return CGResult::ERROR_CONTINUE;
+                }
+
+                size = s;
+            }
+        }
+
+        DataTypeUserPrimitive* dt =
+            DataTypeUserPrimitive::get (getContext (), tyDecl.typeName ());
+        dt->addParameters (skind, publicType, size);
+        skind->addType (dt);
+
+        SymbolDataType* sym = st->find<SYM_TYPE> (tyDecl.typeName ());
+        if (sym == nullptr) {
+            st->appendSymbol (new SymbolDataType (tyDecl.typeName (), dt));
+        }
+    }
+
+    st->appendSymbol(skind);
     return CGStmtResult();
 }
 

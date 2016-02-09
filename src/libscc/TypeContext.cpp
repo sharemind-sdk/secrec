@@ -63,7 +63,7 @@ void TypeContext::prettyPrint (std::ostream& os) const {
 }
 
 void TypeContext::setContextIndexType (Context& cxt) {
-    setContextDataType (DataTypePrimitive::get (cxt, DATATYPE_UINT64));
+    setContextDataType (DataTypeBuiltinPrimitive::get (cxt, DATATYPE_UINT64));
     setContextDimType (0);
     setContextSecType (PublicSecType::get (cxt));
 }
@@ -96,7 +96,7 @@ bool TypeContext::matchDataType (DataType* dataType) const {
         return true;
     }
 
-    return dataType == m_contextDataType;
+    return dataType->equals (m_contextDataType);
 }
 
 } // namespace SecreC

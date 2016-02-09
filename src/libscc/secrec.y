@@ -230,6 +230,10 @@
 %type <treenode> structure_declaration
 %type <treenode> attribute_list
 %type <treenode> attribute
+%type <treenode> datatype_declaration_list
+%type <treenode> datatype_declaration
+%type <treenode> datatype_declaration_param_list
+%type <treenode> datatype_declaration_param
 
 %type <treenode> template_struct_datatype_specifier
 %type <treenode> type_arguments type_argument
@@ -237,6 +241,7 @@
 %type <secrec_operator> binop
 %type <secrec_datatype> primitive_datatype
 %type <integer_literal> int_literal_helper
+%type <str> datatype_identifier
 %type <nothing> module
 
  /* Starting nonterminal: */
@@ -317,19 +322,80 @@ import_declaration
 global_declaration
  : variable_declaration ';'
  | domain_declaration ';'
- | kind_declaration ';'
+ | kind_declaration
  | procedure_definition
  | structure_declaration
  | template_declaration
  ;
 
 kind_declaration
- : KIND identifier
+ : KIND identifier '{' datatype_declaration_list '}'
    {
      $$ = treenode_init (NODE_KIND, &@$);
      treenode_appendChild($$, $2);
+     treenode_appendChild($$, $4);
    }
  ;
+
+datatype_declaration_list
+ : datatype_declaration_list datatype_declaration
+   {
+     $$ = $1;
+     treenode_setLocation ($$, &@$);
+     treenode_appendChild ($$, $2);
+   }
+ | datatype_declaration
+   {
+     $$ = treenode_init (NODE_INTERNAL_USE, &@$);
+     treenode_appendChild ($$, $1);
+   }
+
+datatype_declaration
+ : TYPE datatype_identifier ';'
+   {
+     $$ = treenode_init_dataTypeDecl ($2, &@$);
+     treenode_appendChild ($$, treenode_init (NODE_INTERNAL_USE, &@$));
+   }
+ | TYPE datatype_identifier '{' datatype_declaration_param_list '}' ';'
+ {
+     $$ = treenode_init_dataTypeDecl ($2, &@$);
+     treenode_appendChild ($$, $4);
+ }
+
+/* We want to allow uint8 as well which will not parse as an identifier */
+datatype_identifier
+ : IDENTIFIER
+ | primitive_datatype
+   {
+     $$ = secrec_fund_datatype_to_string(table, $1);
+   }
+
+datatype_declaration_param_list
+ : datatype_declaration_param_list ',' datatype_declaration_param
+   {
+     $$ = $1;
+     treenode_setLocation ($$, &@$);
+     treenode_appendChild ($$, $3);
+   }
+ | datatype_declaration_param
+  {
+    $$ = treenode_init (NODE_INTERNAL_USE, &@$);
+    treenode_appendChild ($$, $1);
+  }
+
+datatype_declaration_param
+ : PUBLIC '=' primitive_datatype
+   {
+     $$ = treenode_init_dataTypeDeclParamPublic ($3, &@$);
+   }
+/* This will be used in the future for values whose memory is managed
+ * by the virtual machine
+
+ | SIZE '=' int_literal_helper
+   {
+     $$ = treenode_init_dataTypeDeclParamSize ($3, &@$);
+   }
+*/
 
 domain_declaration
  : DOMAIN identifier identifier

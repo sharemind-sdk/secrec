@@ -29,23 +29,13 @@
 
 #include <boost/range.hpp>
 
+
 namespace SecreC {
 
-TypeNonVoid* upperTypeNonVoid (Context& context, TypeNonVoid* a, TypeNonVoid* b) {
+TypeBasic* upperTypeBasic (Context& context, TypeBasic* a, TypeBasic* b) {
     SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
     SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
-    DataType* dataType = upperDataType (context, a->secrecDataType (), b->secrecDataType ());
-
-    if (a->secrecSecType ()->isPrivate () && b->secrecSecType ()->isPublic () &&
-        dtypeDeclassify (context, a->secrecDataType ()) == b->secrecDataType ())
-    {
-        dataType = a->secrecDataType ();
-    }
-    else if (a->secrecSecType ()->isPublic () && b->secrecSecType ()->isPrivate () &&
-        dtypeDeclassify (context, b->secrecDataType ()) == a->secrecDataType ())
-    {
-        dataType = b->secrecDataType ();
-    }
+    DataType* dataType = upperDataType (context, a, b);
 
     if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
         return nullptr;
@@ -109,9 +99,11 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
 
     TreeNode * const parent = child->parent();
     DataType* destDType = child->resultType()->secrecDataType();
-    if (child->haveContextDataType()) {
-        if (dtypeDeclassify (getContext (), child->contextDataType()) == destDType)
-            destDType = child->contextDataType();
+    if (child->haveContextDataType() &&
+        dtypeDeclassify (getContext (), need, child->contextDataType())
+        == destDType)
+    {
+        destDType = child->contextDataType();
     }
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
@@ -150,7 +142,7 @@ TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
     assert (e != nullptr);
     if (! e->haveResultType ()) {
         e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDataType (DataTypePrimitive::get (getContext (), DATATYPE_BOOL));
+        e->setContextDataType (DataTypeBuiltinPrimitive::get (getContext (), DATATYPE_BOOL));
         e->setContextDimType (0);
 
         if (visitExpr (e) != OK)

@@ -48,15 +48,6 @@ bool TemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind kind) {
         tv.bound = true;
         tv.pos = m_pos;
     }
-    else {
-        Symbol* sym = m_st->find (symbolCategory (kind), name);
-        if (sym == nullptr) {
-            m_log.fatal () << "Unable to find " << kindAsString (kind)
-                           << " type variable \'" << name
-                           << "\' at " << id->location () << ". ";
-            return false;
-        }
-    }
 
     return true;
 }
@@ -86,7 +77,7 @@ bool TemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
 
     if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
         m_log.fatal() << "Template variable \'" << name
-                      << "\' overshadows previously definition of "
+                      << "\' overshadows previous definition of "
                       <<  *sym << " at " << q->location () << '.';
         return false;
     }

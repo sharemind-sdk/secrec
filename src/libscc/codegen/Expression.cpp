@@ -20,15 +20,15 @@
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "Constant.h"
+#include "DataType.h"
 #include "Log.h"
 #include "Misc.h"
 #include "ModuleInfo.h"
+#include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
-#include "SecurityType.h"
-
 
 /**
  * Code generation for expressions.
@@ -199,8 +199,14 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     // r = ALLOC def size (r = def)
     {
         if (!isScalar) {
-            Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-            emplaceImopAfter(result, e, Imop::ALLOC, resSym, def, resSym->getSizeSym());
+            if (resSym->secrecType()->secrecDataType()->isUserPrimitive()) {
+                assert(resSym->secrecType()->secrecSecType()->isPrivate());
+                emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym());
+            }
+            else {
+                Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+                emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), def);
+            }
         }
         else {
             emplaceImopAfter(result, e, Imop::DECLARE, resSym);
@@ -333,7 +339,7 @@ CGResult CodeGen::cgExprShape(TreeNodeExprShape * e) {
     }
 
     Symbol * n = indexConstant(eArg->resultType()->secrecDimType());
-    emplaceImopAfter(result, e, Imop::ALLOC, resSym, indexConstant(0), n);
+    emplaceImopAfter(result, e, Imop::ALLOC, resSym, n, indexConstant(0));
     emplaceImop(e, Imop::ASSIGN, resSym->getDim(0), n);
 
     unsigned count = 0;
@@ -550,10 +556,9 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
 
     // Compute new size:
     codeGenSize(result);
-    Imop::Type iType;
+    Imop* i;
 
     if (!eArg->resultType()->isScalar()) {
-        iType = Imop::COPY;
         assert(dynamic_cast<SymbolSymbol *>(rhs) != nullptr);
         // Check that new and old sizes are equal:
         Symbol * sizeSymbol = static_cast<SymbolSymbol *>(rhs)->getSizeSym();
@@ -569,13 +574,14 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         ss << "ERROR: Mismatching sizes in reshape at " << e->location() << '.';
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         push_imop(err);
+
+        i = new Imop(e, Imop::COPY, resSym, rhs, resSym->getSizeSym ());
     }
     else {
-        iType = Imop::ALLOC;
+        i = new Imop(e, Imop::ALLOC, resSym, resSym->getSizeSym (), rhs);
     }
 
-    // Copy result:
-    auto i = new Imop(e, iType, resSym, rhs, resSym->getSizeSym());
+    // Copy/alloc result:
     pushImopAfter(result, i);
     releaseTemporary (result, rhs);
     return result;
@@ -614,14 +620,14 @@ CGResult CodeGen::cgExprToString(TreeNodeExprToString * e) {
   TreeNodeExprBinary
 *******************************************************************************/
 
-void CodeGen::cgBinExprShapeCheck(TreeNodeExprBinary * e,
+void CodeGen::cgBinExprShapeCheck(TreeNodeExpr * e,
                                   Symbol * e1result,
                                   Symbol * e2result,
                                   CGResult & result)
 {
     TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType(getContext());
     std::stringstream ss;
-    ss << "Mismatching shapes in " << e->operatorLongString() << " at " << e->location();
+    ss << "Mismatching shapes in arithmetic expression at " << e->location();
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
     dim_iterator dj = dim_begin(e2result);
@@ -641,12 +647,11 @@ void CodeGen::cgBinExprShapeCheck(TreeNodeExprBinary * e,
 // e is used for the 'created by' comment
 Symbol* CodeGen::toVector(CGResult result,
                           TreeNodeExpr * e,
-                          TreeNodeExpr * eArg,
                           Symbol * eArgRes,
                           Symbol * size)
 {
-    assert(dynamic_cast<TypeBasic*>(eArg->resultType()) != nullptr);
-    TypeBasic* eTy = static_cast<TypeBasic*>(eArg->resultType());
+    assert(dynamic_cast<TypeBasic*>(eArgRes->secrecType()) != nullptr);
+    TypeBasic* eTy = static_cast<TypeBasic*>(eArgRes->secrecType());
     TypeBasic* eVecTy = TypeBasic::get(getContext(), eTy->secrecSecType(), eTy->secrecDataType(), 1u);
     SymbolSymbol* tmp = m_st->appendTemporary(eVecTy);
     SymbolSymbol* sizeSym;
@@ -658,11 +663,9 @@ Symbol* CodeGen::toVector(CGResult result,
     tmp->setDim(0u, sizeSym);
 
     if (eTy->isScalar()) {
-        emplaceImop(e, Imop::ALLOC, tmp, eArgRes, sizeSym);
+        emplaceImop(e, Imop::ALLOC, tmp, sizeSym, eArgRes);
     }
     else {
-        SymbolConstant* def = defaultConstant(getContext(), eTy->secrecDataType());
-        emplaceImop(e, Imop::ALLOC, tmp, def, sizeSym);
         emplaceImop(e, Imop::COPY, tmp, eArgRes, sizeSym);
     }
 
@@ -672,96 +675,69 @@ Symbol* CodeGen::toVector(CGResult result,
 }
 
 CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
-                                    std::vector<TreeNodeExpr*>& eArgs,
+                                    Type * resTy,
+                                    std::vector<Symbol*>& operands,
                                     SymbolProcedure* symProc)
 {
-    assert(eArgs.size() == 1u || eArgs.size() == 2u);
+    assert(operands.size() == 1u || operands.size() == 2u);
 
     TypeProc* procTy = symProc->decl()->procedureType();
     const std::vector<TypeBasic*>& paramsTy = procTy->paramTypes();
-    Type* eResTy = e->resultType();
     Type* callRetTy = nullptr;
-    bool unary = eArgs.size() == 1u;
+    bool unary = operands.size() == 1u;
     CGResult result;
 
-    if (eResTy->isVoid ()) {
-        callRetTy = eResTy;
+    if (resTy->isVoid ()) {
+        callRetTy = resTy;
     }
     else {
         callRetTy = procTy->returnType();
     }
 
-    // Generate code for first child expression:
-    pushComment("Calculating operands:");
-    std::vector<Symbol*> eResults;
-
-    if (unary) {
-        const CGResult& argResult(codeGen(eArgs[0u]));
-        append(result, argResult);
-        if (result.isNotOk())
-            return result;
-        eResults.push_back(argResult.symbol());
-    }
-    else {
-        const CGResult& arg1Result(codeGen(eArgs[0u]));
-        append(result, arg1Result);
-        if (result.isNotOk())
-            return result;
-
-        const CGResult& arg2Result(codeGen(eArgs[1u]));
-        append(result, arg2Result);
-        if (result.isNotOk())
-            return result;
-
-        eResults.push_back(arg1Result.symbol());
-        eResults.push_back(arg2Result.symbol());
-    }
-
-    SymbolSymbol* resSy = generateResultSymbol(result, eResTy);
+    SymbolSymbol* resSy = generateResultSymbol(result, resTy);
     Symbol* resSizeSy;
 
     if (unary) {
-        Type* eArgTy = eArgs[0u]->resultType();
+        Type* eArgTy = operands[0u]->secrecType();
         resSizeSy =
             (eArgTy->isScalar())
             ? static_cast<Symbol*>(indexConstant(1u))
             : static_cast<Symbol*>(resSy->getSizeSym());
 
         // Shape of the result
-        if (!eResTy->isVoid() && !eArgTy->isScalar()) {
+        if (!resTy->isVoid() && !eArgTy->isScalar()) {
             pushComment("Copying shape of the result from the argument:");
-            append(result, copyShape(resSy, eResults[0u]));
+            append(result, copyShape(resSy, operands[0u]));
         }
 
         // Convert operand to vector if necessary
         if (eArgTy->secrecDimType() != 1u && !paramsTy[0u]->isScalar()) {
             pushComment("Converting operand to vector:");
-            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+            operands[0u] = toVector(result, e, operands[0u], resSizeSy);
         }
     }
     else {
-        SecrecDimType e1Dim = eArgs[0u]->resultType()->secrecDimType();
-        SecrecDimType e2Dim = eArgs[1u]->resultType()->secrecDimType();
+        SecrecDimType e1Dim = operands[0u]->secrecType()->secrecDimType();
+        SecrecDimType e2Dim = operands[1u]->secrecType()->secrecDimType();
 
         if (e1Dim == e2Dim && e1Dim != 0u) {
             pushComment("Checking if operand shapes match:");
-            assert(dynamic_cast<TreeNodeExprBinary*>(e) != nullptr);
-            cgBinExprShapeCheck(static_cast<TreeNodeExprBinary*>(e), eResults[0u], eResults[1u], result);
+            cgBinExprShapeCheck(e, operands[0u], operands[1u], result);
         }
 
         // Shape of the result
-        if (!eResTy->isVoid()) {
+        if (!resTy->isVoid()) {
             if (e1Dim == e2Dim && e1Dim == 0u) {
                 // Both are scalar
-                assert(eResTy->isScalar());
+                assert(resTy->isScalar());
                 resSizeSy = indexConstant(1u);
             } else if (e1Dim > e2Dim) {
                 pushComment("Shape of the result:");
-                append(result, copyShape(resSy, eResults[0u]));
+                append(result, copyShape(resSy, operands[0u]));
                 resSizeSy = resSy->getSizeSym();
             } else {
                 pushComment("Shape of the result:");
-                append(result, copyShape(resSy, eResults[1u]));
+                append(result, copyShape(resSy, operands[1u]));
                 resSizeSy = resSy->getSizeSym();
             }
         }
@@ -772,31 +748,30 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
         if (e1Dim == 0u && paramsTy[0u]->secrecDimType() == 1u) {
             // Stretch e1 to vector.
             pushComment("Stretching first operand to vector:");
-            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+            operands[0u] = toVector(result, e, operands[0u], resSizeSy);
         }
         else if (e1Dim > 1u) {
             // Reshape e1 to vector
             pushComment("Reshaping first operand to vector:");
-            eResults[0u] = toVector(result, e, eArgs[0u], eResults[0u], resSizeSy);
+            operands[0u] = toVector(result, e, operands[0u], resSizeSy);
         }
 
         if (e2Dim == 0u && paramsTy[1u]->secrecDimType() == 1u) {
             pushComment("Stretching second operand to vector:");
-            eResults[1u] = toVector(result, e, eArgs[1u], eResults[1u], resSizeSy);
+            operands[1u] = toVector(result, e, operands[1u], resSizeSy);
         }
         else if (e2Dim > 1u) {
             pushComment("Reshaping second operand to vector:");
-            eResults[1u] = toVector(result, e, eArgs[1u], eResults[1u], resSizeSy);
+            operands[1u] = toVector(result, e, operands[1u], resSizeSy);
         }
     }
 
     // Procedure call
     pushComment("Procedure call:");
-    CGResult callRes(cgProcCall(symProc, callRetTy, eResults));
-    if (callRes.isNotOk())
-        return result;
-
+    CGResult callRes(cgProcCall(symProc, callRetTy, operands));
     append(result, callRes);
+    if (result.isNotOk())
+        return result;
 
     if (!callRetTy->isVoid() && !callRetTy->isScalar()) {
         // Check result size
@@ -820,10 +795,10 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
     }
 
     // Copy to result so that it would have the correct shape
-    if (callRetTy->secrecDimType() != eResTy->secrecDimType()) {
+    if (callRetTy->secrecDimType() != resTy->secrecDimType()) {
         pushComment("Copying procedure call result to expression result:");
 
-        if (eResTy->isScalar()) {
+        if (resTy->isScalar()) {
             // Assign first (only) element of call result vector to
             // the scalar
             emplaceImopAfter(result, e, Imop::DECLARE, resSy);
@@ -850,8 +825,24 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         return CGResult::ERROR_CONTINUE;
 
     if (e->isOverloaded()) {
-        std::vector<TreeNodeExpr*> eArgs {e->leftExpression(), e->rightExpression()};
-        return cgOverloadedExpr(e, eArgs, e->procSymbol());
+        CGResult result;
+
+        const CGResult& arg1Result(codeGen(e->leftExpression()));
+        append(result, arg1Result);
+        if (result.isNotOk())
+            return result;
+
+        const CGResult& arg2Result(codeGen(e->rightExpression()));
+        append(result, arg2Result);
+        if (result.isNotOk())
+            return result;
+
+        std::vector<Symbol*> operands {arg1Result.symbol(), arg2Result.symbol()};
+        const CGResult& callRes(cgOverloadedExpr(e, e->resultType(), operands, e->procSymbol()));
+        append(result, callRes);
+        result.setResult(callRes.symbol());
+
+        return result;
     }
 
     TreeNodeExpr * eArg1 = e->leftExpression();
@@ -917,7 +908,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         tmpe2->inheritShape(tmpe1);
         e1result = tmpe1;
         e2result = tmpe2;
-        emplaceImopAfter(result, e, Imop::ALLOC, e2result, arg2Result.symbol(), tmpe1->getSizeSym());
+        emplaceImopAfter(result, e, Imop::ALLOC, e2result, tmpe1->getSizeSym(), arg2Result.symbol());
         releaseTemporary(result, arg2Result.symbol());
     }
     else if (eArg2->resultType()->secrecDimType() > eArg1->resultType()->secrecDimType()) {
@@ -926,7 +917,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         tmpe1->inheritShape(tmpe2);
         e1result = tmpe1;
         e2result = tmpe2;
-        emplaceImopAfter(result, e, Imop::ALLOC, e1result, arg1Result.symbol(), tmpe2->getSizeSym());
+        emplaceImopAfter(result, e, Imop::ALLOC, e1result, tmpe2->getSizeSym(), arg1Result.symbol());
         releaseTemporary(result, arg1Result.symbol());
     }
     else {
@@ -1295,7 +1286,7 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
     emplaceImopAfter(result, e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
 
     // XXX TODO: giant hack
-    emplaceImop(e, Imop::ALLOC, resSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0), sizeSym); // allocates 1 byte more
+    emplaceImop(e, Imop::ALLOC, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0)); // allocates 1 byte more
     emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(cxt, DATATYPE_UINT8, 0)); // initialize last byte to zero
 
     /**
@@ -1349,7 +1340,7 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
     emplaceImopAfter(result, e, Imop::STRLEN, sizeSym, strSym);
 
     // r = ALLOC 0 i
-    emplaceImop(e, Imop::ALLOC, resSym, zeroByte, sizeSym);
+    emplaceImop(e, Imop::ALLOC, resSym, sizeSym, zeroByte);
 
     /**
      * Copy the data:
@@ -1575,9 +1566,17 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
                 if (eTrueResult.isNotOk ())
                     return result;
 
-                emplaceImopAfter(eTrueResult, e, Imop::ALLOC, resultSymbol,
-                    defaultConstant(getContext(), eTrueResult.symbol()->secrecType()->secrecDataType()),
-                    resultSymbol->getSizeSym());
+                if (eTrueResult.symbol()->secrecType()->secrecSecType()->isPrivate()) {
+                    emplaceImopAfter(eTrueResult, e, Imop::ALLOC, resultSymbol,
+                                     resultSymbol->getSizeSym());
+                }
+                else {
+                    Symbol * def =
+                        defaultConstant(getContext(),
+                                        eTrueResult.symbol()->secrecType()->secrecDataType());
+                    emplaceImopAfter(eTrueResult, e, Imop::ALLOC, resultSymbol,
+                                     resultSymbol->getSizeSym(), def);
+                }
             }
 
             pushImopAfter(eTrueResult, newAssign(e, result.symbol(), eTrueResult.symbol()));
@@ -1605,9 +1604,17 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
                 if (eFalseResult.isNotOk ())
                     return result;
 
-                emplaceImopAfter(eFalseResult, e, Imop::ALLOC, resultSymbol,
-                    defaultConstant(getContext(), eFalseResult.symbol()->secrecType()->secrecDataType()),
-                    resultSymbol->getSizeSym());
+                if (eFalseResult.symbol()->secrecType()->secrecSecType()->isPrivate()) {
+                    emplaceImopAfter(eFalseResult, e, Imop::ALLOC, resultSymbol,
+                                     resultSymbol->getSizeSym());
+                }
+                else {
+                    Symbol * def =
+                        defaultConstant(getContext(),
+                                        eFalseResult.symbol()->secrecType()->secrecDataType());
+                    emplaceImopAfter(eFalseResult, e, Imop::ALLOC, resultSymbol,
+                                     resultSymbol->getSizeSym(), def);
+                }
             }
 
             pushImopAfter(eFalseResult, newAssign(e, result.symbol(), eFalseResult.symbol()));
@@ -1914,6 +1921,7 @@ CGResult CodeGen::cgExprDeclassify(TreeNodeExprDeclassify * e) {
 
     // Generate temporary for the result of the classification, if needed:
     Symbol * argSym = result.symbol();
+    assert(argSym != nullptr);
     SymbolSymbol * resSym = generateResultSymbol(result, e);
     resSym->inheritShape(argSym);
     allocTemporaryResult(result);
@@ -1941,8 +1949,19 @@ CGResult CodeGen::cgExprUnary(TreeNodeExprUnary * e) {
         return CGResult::ERROR_CONTINUE;
 
     if (e->isOverloaded()) {
-        std::vector<TreeNodeExpr*> eArgs {e->expression()};
-        return cgOverloadedExpr(e, eArgs, e->procSymbol());
+        CGResult result;
+
+        const CGResult& argResult(codeGen(e->expression ()));
+        append(result, argResult);
+        if (result.isNotOk())
+            return result;
+
+        std::vector<Symbol*> operands {argResult.symbol ()};
+        const CGResult& callRes(cgOverloadedExpr(e, e->resultType(), operands, e->procSymbol()));
+        append(result, callRes);
+        result.setResult(callRes.symbol());
+
+        return result;
     }
 
     // Generate code for child expression:
@@ -1998,6 +2017,46 @@ CGBranchResult CodeGen::cgBoolExprUnary(TreeNodeExprUnary * e) {
   TreeNodeExprPrefix
 ******************************************************************/
 
+CGResult CodeGen::cgOverloadedPrefixPostfix(TreeNodeExpr* e,
+                                            SymbolProcedure* procSymbol,
+                                            Symbol* x,
+                                            Symbol* one)
+{
+    CGResult result;
+    Symbol* firstArg;
+    Symbol* secondArg;
+
+    // Copy arguments for the procedure call
+    if (x->secrecType()->secrecSecType()->isPublic()) {
+        firstArg = x;
+    }
+    else {
+        assert(dynamic_cast<SymbolSymbol*>(x) != nullptr);
+        SymbolSymbol* xSym = static_cast<SymbolSymbol*>(x);
+        firstArg = m_st->appendTemporary(xSym->secrecType());
+        emplaceImopAfter(result, e, Imop::DECLARE, firstArg);
+        emplaceImop(e, Imop::ASSIGN, firstArg, xSym);
+    }
+
+    if (one->secrecType()->secrecSecType()->isPublic()) {
+        secondArg = one;
+    }
+    else {
+        assert(dynamic_cast<SymbolSymbol*>(one) != nullptr);
+        SymbolSymbol* oneSym = static_cast<SymbolSymbol*>(one);
+        secondArg = m_st->appendTemporary(oneSym->secrecType());
+        emplaceImopAfter(result, e, Imop::DECLARE, secondArg);
+        emplaceImop(e, Imop::ASSIGN, secondArg, oneSym);
+    }
+
+    std::vector<Symbol*> args {firstArg, secondArg};
+    CGResult callRes(cgOverloadedExpr(e, firstArg->secrecType(), args, procSymbol));
+    append(result, callRes);
+    result.setResult(callRes.symbol());
+
+    return result;
+}
+
 CGResult TreeNodeExprPrefix::codeGenWith(CodeGen & cg) {
     return cg.cgExprPrefix(this);
 }
@@ -2008,12 +2067,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         return CGResult::ERROR_CONTINUE;
 
     CGResult result;
-    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
-    Symbol * one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
-    Symbol* const idxOne = indexConstant (1);
     TreeNodeLValue * lval = e->lvalue ();
-    const bool isPrivate = e->resultType ()->secrecSecType()->isPrivate();
     const bool isScalar = e->resultType ()->isScalar ();
+    const bool isOverloaded = e->isOverloaded ();
 
     // Generate code for the lvalue:
     SubscriptInfo subscript;
@@ -2026,6 +2082,24 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
     SymbolSymbol * x = static_cast<SymbolSymbol*>(lvalResult.symbol ());
     SymbolSymbol * r = generateResultSymbol(result, e);
+    TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
+
+    assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != nullptr);
+    TypeNonVoid * resTy = static_cast<TypeNonVoid*>(e->resultType());
+    DataType * pubResTy = dtypeDeclassify(getContext(),
+                                          resTy->secrecSecType(),
+                                          resTy->secrecDataType());
+    Symbol * one = numericConstant(getContext(), pubResTy, 1);
+    Symbol* const idxOne = indexConstant (1);
+    bool classifyOverloaded = false;
+
+    if (isOverloaded) {
+        SymbolProcedure* symProc = e->procSymbol ();
+        TypeProc* tyProc = symProc->decl ()->procedureType ();
+        assert (tyProc->paramTypes ().size () == 2u);
+        if (tyProc->paramTypes ()[1u]->secrecSecType ()->isPrivate ())
+            classifyOverloaded = true;
+    }
 
     // either use ADD or SUB
     Imop::Type iType;
@@ -2071,18 +2145,25 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         }
 
         // allocate memory for the result symbol "r"
-        if (!isScalar) {
-            Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-            emplaceImopAfter(result, e, Imop::ALLOC, r, def, r->getSizeSym());
-            emplaceImopAfter(result, e, Imop::DECLARE, tmpElem);
+        if (! isScalar) {
+            if (e->resultType()->secrecSecType()->isPrivate()) {
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
+            }
+            else {
+                Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym(), def);
+            }
         }
         else {
             emplaceImopAfter(result, e, Imop::DECLARE, r);
         }
 
-        if (isPrivate) {
+        emplaceImopAfter(result, e, Imop::DECLARE, tmpElem);
+
+        if (classifyOverloaded) {
             Symbol * t = m_st->appendTemporary(elemType);
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -2105,29 +2186,34 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
                 emplaceImop(e, Imop::ADD, offset, offset, tmpResult);
             }
 
-            // increment the value:
-            if (isScalar) {
-                // r = x[offset]
-                emplaceImop(e, Imop::LOAD, r, x, offset);
+            // t = x[offset]
+            emplaceImop(e, Imop::LOAD, tmpElem, x, offset);
 
-                // r = r + 1
-                emplaceImop(e, iType, r, r, one);
+            // t = t + 1
+            if (isOverloaded) {
+                const CGResult& callRes(cgOverloadedPrefixPostfix(e, e->procSymbol(),
+                                                                  tmpElem, one));
+                append(result, callRes);
+                if (result.isNotOk())
+                    return result;
 
-                // x[offset] = r
-                emplaceImop(e, Imop::STORE, x, offset, r);
+                // Copy result
+                emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol());
             }
             else {
-                // t = x[offset]
-                emplaceImop(e, Imop::LOAD, tmpElem, x, offset);
-
-                // t = t + 1
                 emplaceImop(e, iType, tmpElem, tmpElem, one);
+            }
 
-                // r[resultOffset] = t
-                emplaceImop(e, Imop::STORE, r, resultOffset, tmpElem);
+            // x[offset] = t
+            emplaceImop(e, Imop::STORE, x, offset, tmpElem);
 
-                // x[offset] = t
-                emplaceImop(e, Imop::STORE, x, offset, tmpElem);
+            if (isScalar) {
+                // r = t
+                emplaceImop(e, Imop::ASSIGN, r, tmpElem);
+            }
+            else{
+                // r[offset] = t
+                emplaceImop(e, Imop::STORE, r, offset, tmpElem);
             }
 
             // Increment the result "r" offset
@@ -2137,8 +2223,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
-        releaseTemporary (result, one);
-        if (!isScalar) {
+        if (!isOverloaded) {
+            // If the type is overloaded the procedure call will release it
+            releaseTemporary (result, one);
             releaseTemporary (result, tmpElem);
         }
 
@@ -2147,30 +2234,69 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     else {
         // r = (++ x)
 
-        if (! isScalar) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            emplaceImopAfter(result, e, Imop::ALLOC, t, one, x->getSizeSym());
+        if (!isScalar) {
+            TypeNonVoid* ty = static_cast<TypeNonVoid *>(e->resultType());
+            if (!classifyOverloaded) {
+                // public
+                ty = TypeBasic::get(getContext(),
+                                    dtypeDeclassify(getContext(),
+                                                    ty->secrecSecType(),
+                                                    ty->secrecDataType()),
+                                    ty->secrecDimType());
+            }
+
+            SymbolSymbol * t = m_st->appendTemporary(ty);
+            initShapeSymbols(getContext(), m_st, t);
+            emplaceImopAfter(result, e, Imop::ALLOC, t, x->getSizeSym(), one);
+            emplaceImop(e, Imop::ASSIGN, t->getSizeSym(), x->getSizeSym());
+            t->setDim(0u, t->getSizeSym());
             one = t;
         }
-        else if (isPrivate) {
+        else if (classifyOverloaded) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
         // x = x `iType` 1
-        pushImopAfter(result, newBinary(e, iType, x, x, one));
+        if (isOverloaded) {
+            std::vector<Symbol*> args {x, one};
+            const CGResult& callRes(cgOverloadedExpr(e, e->resultType(),
+                                                     args, e->procSymbol ()));
+            append(result, callRes);
+            if (result.isNotOk())
+                return result;
+
+            // Copy result
+            if (isScalar) {
+                if (callRes.symbol()->secrecType()->secrecDimType() != 0u)
+                    emplaceImopAfter(result, e, Imop::ASSIGN, x, callRes.symbol(), indexConstant(0u));
+                else
+                    emplaceImopAfter(result, e, Imop::ASSIGN, x, callRes.symbol());
+            }
+            else {
+                emplaceImopAfter(result, e, Imop::COPY, x, callRes.symbol(), x->getSizeSym());
+            }
+        }
+        else {
+            pushImopAfter(result, newBinary(e, iType, x, x, one));
+        }
 
         // Copy the value of e to the result "r"
-        if (! isScalar) {
+        if (!isScalar) {
             copyShapeFrom(result, x);
             emplaceImopAfter(result, e, Imop::COPY, r, x, x->getSizeSym());
         }
         else {
-            pushImopAfter(result, newAssign(e, r, x));
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+            push_imop(newAssign(e, r, x));
         }
 
-        releaseTemporary(result, one);
+        if (!isOverloaded)
+            // If the type is overloaded the procedure call will release it
+            releaseTemporary(result, one);
+
         return result;
     }
 }
@@ -2194,8 +2320,24 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
     CGResult result;
     TypeNonVoid * pubIntTy = TypeBasic::getIndexType(getContext());
     TreeNodeLValue * lval = e->lvalue ();
-    Symbol* one = numericConstant(getContext(), e->resultType()->secrecDataType(), 1);
+
+    assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != nullptr);
+    TypeNonVoid * resTy = static_cast<TypeNonVoid*>(e->resultType());
+    DataType * pubResTy = dtypeDeclassify(getContext(),
+                                          resTy->secrecSecType(),
+                                          resTy->secrecDataType());
+    Symbol* one = numericConstant(getContext(), pubResTy, 1);
     Symbol* const idxOne = indexConstant (1);
+    bool classifyOverloaded = false;
+    bool isOverloaded = e->isOverloaded();
+
+    if (isOverloaded) {
+        SymbolProcedure* symProc = e->procSymbol ();
+        TypeProc* tyProc = symProc->decl ()->procedureType ();
+        assert (tyProc->paramTypes ().size () == 2u);
+        if (tyProc->paramTypes ()[1u]->secrecSecType ()->isPrivate ())
+            classifyOverloaded = true;
+    }
 
     // Generate code for the lvalue:
     SubscriptInfo subscript;
@@ -2220,7 +2362,6 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         return result;
     }
 
-    const bool isPrivate = e->resultType ()->secrecSecType ()->isPrivate ();
     const bool isScalar = e->resultType ()->isScalar ();
 
     if (isIndexed) {
@@ -2256,9 +2397,14 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         }
 
         // allocate memory for the result symbol "r"
-        if (!isScalar) {
-            Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-            emplaceImopAfter(result, e, Imop::ALLOC, r, def, r->getSizeSym());
+        if (! isScalar) {
+            if (e->resultType()->secrecSecType()->isPrivate()) {
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
+            }
+            else {
+                Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym(), def);
+            }
         }
         else {
             emplaceImopAfter(result, e, Imop::DECLARE, r);
@@ -2267,9 +2413,10 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         emplaceImopAfter(result, e, Imop::DECLARE, tmpElem);
 
         // make the symbol "one" private if need be
-        if (isPrivate) {
+        if (classifyOverloaded) {
             Symbol * t = m_st->appendTemporary(elemType);
-            emplaceImopAfter(result, e, Imop::CLASSIFY, t, one);
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
@@ -2305,7 +2452,23 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
             }
 
             // t = t + 1
-            emplaceImop(e, iType, tmpElem, tmpElem, one);
+            if (isOverloaded) {
+                CGResult callRes(cgOverloadedPrefixPostfix(e, e->procSymbol(), tmpElem, one));
+                append(result, callRes);
+                if (result.isNotOk())
+                    return result;
+
+                // Copy the result of the call to tmpElem
+                if (callRes.symbol()->secrecType()->secrecDimType() != 0u) {
+                    emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol(), indexConstant(0u));
+                }
+                else {
+                    emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol());
+                }
+            }
+            else {
+                emplaceImop(e, iType, tmpElem, tmpElem, one);
+            }
 
             // x[rhsOffset] = t
             emplaceImop(e, Imop::STORE, lvalSym, rhsOffset, tmpElem);
@@ -2317,8 +2480,11 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
-        releaseTemporary(result, one);
-        releaseTemporary(result, tmpElem);
+        if (!isOverloaded) {
+            // If the type is overloaded the procedure call will release it
+            releaseTemporary(result, one);
+            releaseTemporary(result, tmpElem);
+        }
         return result;
     }
     else {
@@ -2330,24 +2496,61 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
             emplaceImopAfter(result, e, Imop::COPY, r, lvalSym, lvalSym->getSizeSym());
         }
         else {
-            pushImopAfter(result, newAssign(e, r, lvalSym));
+            emplaceImopAfter(result, e, Imop::DECLARE, r);
+            push_imop(newAssign(e, r, lvalSym));
         }
 
         // Construct the "1" value to add to the lvalue. The value could be private and/or array.
         if (! isScalar) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            pushImopAfter(result, new Imop(e, Imop::ALLOC, t, one, lvalSym->getSizeSym()));
+            TypeNonVoid* ty = static_cast<TypeNonVoid *>(e->resultType());
+            if (!classifyOverloaded) {
+                // public
+                ty = TypeBasic::get(getContext(),
+                                    dtypeDeclassify(getContext(),
+                                                    ty->secrecSecType(),
+                                                    ty->secrecDataType()),
+                                    ty->secrecDimType());
+            }
+
+            SymbolSymbol * t = m_st->appendTemporary(ty);
+            initShapeSymbols(getContext(), m_st, t);
+            emplaceImopAfter(result, e, Imop::ALLOC, t, lvalSym->getSizeSym(), one);
+            emplaceImop(e, Imop::ASSIGN, t->getSizeSym(), lvalSym->getSizeSym());
+            t->setDim(0u, t->getSizeSym());
             one = t;
         }
-        else if (isPrivate) {
+        else if (classifyOverloaded) {
             SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            pushImopAfter(result, new Imop(e, Imop::CLASSIFY, t, one));
+            emplaceImopAfter(result, e, Imop::DECLARE, t);
+            emplaceImop(e, Imop::CLASSIFY, t, one);
             one = t;
         }
 
         // x = x `iType` 1
-        push_imop(newBinary(e, iType, lvalSym, lvalSym, one));
-        releaseTemporary(result, one);
+        if (isOverloaded) {
+            std::vector<Symbol*> args {lvalSym, one};
+            CGResult callRes(cgOverloadedExpr(e, e->resultType(), args, e->procSymbol ()));
+            append(result, callRes);
+            if (result.isNotOk())
+                return result;
+
+            // Copy result
+            if (isScalar) {
+                if (callRes.symbol()->secrecType()->secrecDimType() != 0u)
+                    emplaceImopAfter(result, e, Imop::ASSIGN, lvalSym, callRes.symbol(), indexConstant(0u));
+                else
+                    emplaceImopAfter(result, e, Imop::ASSIGN, lvalSym, callRes.symbol());
+            }
+            else {
+                emplaceImopAfter(result, e, Imop::COPY, lvalSym, callRes.symbol(), lvalSym->getSizeSym());
+            }
+        }
+        else {
+            pushImopAfter(result, newBinary(e, iType, lvalSym, lvalSym, one));
+        }
+
+        if (!isOverloaded)
+            releaseTemporary(result, one);
 
         return result;
     }

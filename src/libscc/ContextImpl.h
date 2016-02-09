@@ -33,10 +33,12 @@
 namespace SecreC {
 
 class DataType;
-class DataTypePrimitive;
+class DataTypeBuiltinPrimitive;
+class DataTypeUserPrimitive;
 class DataTypeStruct;
 class PrivateSecType;
 class PublicSecType;
+class SymbolKind;
 
 class ContextImpl {
 private:
@@ -55,7 +57,8 @@ public: /* Types: */
     using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
 
     using StructTypeMap = std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*>;
-    using PrimitiveTypeMap = std::map<SecrecDataType, DataTypePrimitive*>;
+    using BuiltinPrimitiveTypeMap = std::map<SecrecDataType, DataTypeBuiltinPrimitive*>;
+    using UserPrimitiveTypeMap = std::map<StringRef, DataTypeUserPrimitive*>;
 
 public: /* Methods: */
 
@@ -75,13 +78,14 @@ public: /* Fields: */
     StringTable           m_stringTable;
 
     /* All types: */
-    TypeVoid              m_voidType;
-    TypeProcMap           m_procTypes;
-    TypeBasicMap          m_basicTypes;
-    PublicSecType         m_pubSecType;
-    PrivateSecTypeMap     m_privSecTypes;
-    PrimitiveTypeMap      m_primitiveTypes;
-    StructTypeMap         m_structTypes;
+    TypeVoid                m_voidType;
+    TypeProcMap             m_procTypes;
+    TypeBasicMap            m_basicTypes;
+    PublicSecType           m_pubSecType;
+    PrivateSecTypeMap       m_privSecTypes;
+    BuiltinPrimitiveTypeMap m_builtinPrimitiveTypes;
+    UserPrimitiveTypeMap    m_userPrimitiveTypes;
+    StructTypeMap           m_structTypes;
 
     /* All constants: */
     ConstantStringMap     m_stringLiterals;

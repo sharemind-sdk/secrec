@@ -19,6 +19,7 @@
 
 #include "DataType.h"
 #include "Log.h"
+#include "Misc.h"
 #include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
@@ -26,6 +27,7 @@
 #include "TypeChecker.h"
 #include "Types.h"
 #include "Visitor.h"
+
 
 namespace SecreC {
 
@@ -73,6 +75,7 @@ TypeChecker::Status TypeChecker::visitTypeVarF(TreeNodeTypeVarF* ty) {
         m_log.fatalInProc(ty) << "Identifier '" << name
                               << "' at " << ty->identifier ()->location()
                               << " not in scope.";
+
         return E_TYPE;
     }
 
@@ -115,16 +118,35 @@ void TreeNodeSecTypeF::setTypeContext (TypeContext& cxt) const {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty) {
-    return dispatchDataTypeF (*this, ty);
+TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty, SecurityType* secType) {
+    return dispatchDataTypeF (*this, ty, secType);
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty) {
+    return visitDataTypeConstF (ty, PublicSecType::get (getContext ()));
+}
+
+TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty,
+                                                      SecurityType* secType)
+{
     if (ty->cachedType () != nullptr) {
         return OK;
     }
 
-    ty->setCachedType (DataTypePrimitive::get (getContext (), ty->secrecDataType ()));
+    if (secType->isPrivate ()) {
+        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
+        StringRef typeName (SecrecFundDataTypeToString (ty->secrecDataType ()));
+        DataTypeUserPrimitive* dt = kind->findType (typeName);
+        if (dt == nullptr) {
+            m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
+                                   << typeName << "'.";
+            return E_TYPE;
+        }
+        ty->setCachedType (dt);
+        return OK;
+    }
+
+    ty->setCachedType (DataTypeBuiltinPrimitive::get (getContext (), ty->secrecDataType ()));
     return OK;
 }
 
@@ -133,13 +155,37 @@ void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty) {
+    return visitDataTypeVarF (ty, PublicSecType::get (getContext ()));
+}
+
+TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
+                                                    SecurityType* secType)
+{
     if (ty->cachedType () != nullptr) {
         return OK;
     }
 
     SymbolDataType* s = nullptr;
-    if ((s = findIdentifier<SYM_TYPE>(ty->identifier ())) == nullptr)
+    s = findIdentifier<SYM_TYPE> (ty->identifier ());
+    if (s == nullptr)
         return E_TYPE;
+
+    if (s->dataType ()->isUserPrimitive ()) {
+        StringRef typeName = ty->identifier ()->value ();
+        if (secType->isPublic ()) {
+            m_log.fatalInProc (ty) << "Kind 'public' does not have type '"
+                                   << typeName << "'.";
+            return E_TYPE;
+        }
+
+        auto dt = static_cast<DataTypeUserPrimitive*> (s->dataType ());
+        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
+        if (! dt->inKind (kind)) {
+            m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
+                                   << typeName << "'.";
+            return E_TYPE;
+        }
+    }
 
     ty->setCachedType (s->dataType ());
     return OK;
@@ -186,16 +232,18 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         assert (dynamic_cast<TreeNodeTypeType*>(_ty) != nullptr);
         TreeNodeTypeType* tyNode = static_cast<TreeNodeTypeType*>(_ty);
         TreeNodeSecTypeF* secTyNode = tyNode->secType ();
-        TCGUARD (visitSecTypeF (secTyNode));
-        TCGUARD (visitDimTypeF (tyNode->dimType ()));
-        TCGUARD (visitDataTypeF (tyNode->dataType ()));
 
+        TCGUARD (visitSecTypeF (secTyNode));
         SecurityType* secType = secTyNode->cachedType ();
+
+        TCGUARD (visitDimTypeF (tyNode->dimType ()));
+        TCGUARD (visitDataTypeF (tyNode->dataType (), secType));
+
         DataType* dataType = tyNode->dataType ()->cachedType ();
         SecrecDimType dimType = tyNode->dimType ()->cachedType ();
 
-        if (dataType->isPrimitive ()) {
-            SecrecDataType secrecDataType = static_cast<DataTypePrimitive*>(dataType)->secrecDataType ();
+        if (dataType->isBuiltinPrimitive ()) {
+            SecrecDataType secrecDataType = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
             if (secType->isPublic ()) {
                 switch (secrecDataType) {
                 case DATATYPE_XOR_UINT8:
@@ -210,7 +258,10 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
                 }
             }
         }
-        else {
+        else if (dataType->isUserPrimitive ()) {
+            assert (secType->isPrivate ());
+        }
+        else if (dataType->isComposite ()) {
             if (secType->isPrivate () || dimType > 0) {
                 m_log.fatal () << "Non-primitive types may not be private or non-scalar. Error at " << _ty->location () << ".";
                 return E_TYPE;
@@ -233,6 +284,7 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
 
 TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t) {
     assert (t != nullptr);
+
     if (t->cachedType () != nullptr)
         return OK;
 
@@ -241,6 +293,13 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
     assert (structType != nullptr);
     t->setCachedType (structType);
     return OK;
+}
+
+TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t,
+                                                         SecurityType* secType)
+{
+    (void) secType;
+    return visitDataTypeTemplateF (t);
 }
 
 TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,

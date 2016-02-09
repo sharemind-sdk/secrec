@@ -364,7 +364,7 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
         return result;
     }
     else {
-        append (result, cgInitalizeToDefaultValue (ns, shapeExpressions > 0));
+        append (result, cgInitializeToDefaultValue (ns, shapeExpressions > 0));
         return result;
     }
 }
@@ -795,6 +795,7 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     }
 
     CGStmtResult result;
+
     using NodeSymbolPair = std::pair<TreeNodeSyscallParam*, Symbol*>;
     std::vector<NodeSymbolPair> results;
     for (TreeNodeSyscallParam& param : s->params()) {

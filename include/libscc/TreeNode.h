@@ -1557,7 +1557,8 @@ protected:
 ******************************************************************/
 
 /// Prefix increment and decrement.
-class TreeNodeExprPrefix: public TreeNodeExpr {
+class TreeNodeExprPrefix: public TreeNodeExpr,
+                          public OverloadableOperator {
 public: /* Methods: */
     inline TreeNodeExprPrefix(SecrecTreeNodeType type,
                               const Location & loc)
@@ -1570,6 +1571,8 @@ public: /* Methods: */
 
 protected:
 
+    SecrecOperator getOperatorV () const override final;
+
     TreeNode* cloneV () const override final {
         return new TreeNodeExprPrefix (m_type, m_location);
     }
@@ -1580,7 +1583,8 @@ protected:
 ******************************************************************/
 
 /// Postfix increment and decrement.
-class TreeNodeExprPostfix: public TreeNodeExpr {
+class TreeNodeExprPostfix: public TreeNodeExpr,
+                           public OverloadableOperator {
 public: /* Methods: */
     inline TreeNodeExprPostfix(SecrecTreeNodeType type,
                                const Location & loc)
@@ -1592,6 +1596,8 @@ public: /* Methods: */
     TreeNodeLValue* lvalue () const;
 
 protected:
+
+    SecrecOperator getOperatorV () const override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprPostfix (m_type, m_location);
@@ -1744,6 +1750,8 @@ public: /* Methods: */
         : TreeNode (NODE_KIND, loc) { }
 
     TreeNodeIdentifier* identifier () const;
+
+    TreeNodeSeqView<TreeNodeDataTypeDecl> types () const;
 
 protected:
 
@@ -1945,6 +1953,10 @@ public: /* Methods: */
     virtual void printQuantifier (std::ostream& os) const = 0;
 
     TreeNodeIdentifier* typeVariable () const;
+
+    bool isDataTypeQuantifier () const { return m_type == NODE_TEMPLATE_QUANTIFIER_DATA; }
+
+    bool isDomainQuantifier () const { return m_type == NODE_TEMPLATE_QUANTIFIER_DOMAIN; }
 
 protected:
     virtual TreeNode* cloneV () const = 0;
@@ -2451,6 +2463,90 @@ protected:
     TreeNode* cloneV () const override final {
         return new TreeNodeStmtSyscall  (m_location);
     }
+};
+
+/******************************************************************
+  TreeNodeDataTypeDecl
+******************************************************************/
+
+class TreeNodeDataTypeDecl : public TreeNode {
+public: /* Methods: */
+
+    explicit inline TreeNodeDataTypeDecl (StringRef typeName, const Location & loc)
+        : TreeNode (NODE_DATATYPE_DECL, loc)
+        , m_typeName (typeName)
+        {}
+
+    StringRef typeName () const { return m_typeName; }
+
+    TreeNodeSeqView<TreeNodeDataTypeDeclParam> parameters () const;
+
+protected:
+    TreeNode* cloneV () const override final {
+        return new TreeNodeDataTypeDecl (m_typeName, m_location);
+    }
+
+private: /* Fields: */
+    StringRef m_typeName;
+};
+
+/******************************************************************
+  TreeNodeDataTypeDeclParam
+******************************************************************/
+
+class TreeNodeDataTypeDeclParam : public TreeNode {
+public: /* Methods: */
+
+    explicit inline TreeNodeDataTypeDeclParam (SecrecTreeNodeType ty, const Location & loc)
+        : TreeNode (ty, loc) {}
+
+    bool isPublicParam () const { return type () == NODE_DATATYPE_DECL_PARAM_PUBLIC; }
+};
+
+/******************************************************************
+  TreeNodeDataTypeDeclParamPublic
+******************************************************************/
+
+class TreeNodeDataTypeDeclParamPublic : public TreeNodeDataTypeDeclParam {
+public: /* Methods: */
+
+    explicit inline TreeNodeDataTypeDeclParamPublic (SecrecDataType ty, const Location & loc)
+        : TreeNodeDataTypeDeclParam (NODE_DATATYPE_DECL_PARAM_PUBLIC, loc)
+        , m_dataType (ty)
+        {}
+
+    SecrecDataType secrecDataType () const { return m_dataType; }
+
+protected:
+    TreeNode* cloneV () const override final {
+        return new TreeNodeDataTypeDeclParamPublic (m_dataType, m_location);
+    }
+
+private: /* Fields: */
+    const SecrecDataType m_dataType;
+};
+
+/******************************************************************
+  TreeNodeDataTypeDeclParamSize
+******************************************************************/
+
+class TreeNodeDataTypeDeclParamSize : public TreeNodeDataTypeDeclParam {
+public: /* Methods: */
+
+    explicit inline TreeNodeDataTypeDeclParamSize (uint64_t size, const Location & loc)
+        : TreeNodeDataTypeDeclParam (NODE_DATATYPE_DECL_PARAM_SIZE, loc)
+        , m_size (size)
+        {}
+
+    uint64_t size () const { return m_size; }
+
+protected:
+    TreeNode* cloneV () const override final {
+        return new TreeNodeDataTypeDeclParamSize (m_size, m_location);
+    }
+
+private: /* Fields: */
+    const uint64_t m_size;
 };
 
 } /* namespace SecreC */

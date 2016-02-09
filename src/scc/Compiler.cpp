@@ -272,7 +272,14 @@ public: /* Methods: */
     SyscallName& operator << (DataType* ty) {
         assert (ty != NULL);
         assert (ty->isPrimitive ());
-        syscallMangleSecrecDataType (m_os, static_cast<DataTypePrimitive*>(ty)->secrecDataType ());
+
+        if (ty->isBuiltinPrimitive ()) {
+            syscallMangleSecrecDataType (m_os, static_cast<DataTypeBuiltinPrimitive*>(ty)->secrecDataType ());
+        }
+        else {
+            m_os << static_cast<DataTypeUserPrimitive*> (ty)-> name ();
+        }
+
         return *this;
     }
 
@@ -298,8 +305,8 @@ std::string SyscallName::tostring (SecrecDataType dType) {
 
 std::string SyscallName::tostring (DataType* dType) {
     assert (dType != NULL);
-    assert (dType->isPrimitive ());
-    return tostring (static_cast<DataTypePrimitive*>(dType)->secrecDataType ());
+    assert (dType->isBuiltinPrimitive ());
+    return tostring (static_cast<DataTypeBuiltinPrimitive*>(dType)->secrecDataType ());
 }
 
 
@@ -534,8 +541,11 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    block.push_new () << "push" << find (imop.arg1 ());
+    // Public values should have default value argument
+    assert (imop.nArgs () == 3);
+
     block.push_new () << "push" << find (imop.arg2 ());
+    block.push_new () << "push" << find (imop.arg1 ());
 
     VMLabel* target = NULL;
     VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
@@ -912,13 +922,13 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
-    assert (ty != VM_INVALID);
-
     if (isPrivate (imop)) {
         cgPrivateArithm (block, imop);
         return;
     }
+
+    VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+    assert (ty != VM_INVALID);
 
     if (imop.isVectorized ()) {
         for (const Symbol* sym : imop.operands ()) {
@@ -1200,8 +1210,28 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
     assert (imop.dest ()->secrecType ()->secrecSecType ()->isPublic ());
     assert (imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ());
     TypeNonVoid* ty = imop.arg1 ()->secrecType ();
-    VMDataType dataTy = secrecDTypeToVMDType (ty->secrecDataType ());
-    unsigned size = sizeInBytes (dataTy);
+
+    unsigned size = 0;
+    if (ty->secrecDataType ()->isBuiltinPrimitive ()) {
+        VMDataType dataTy = secrecDTypeToVMDType (ty->secrecDataType ());
+        size = sizeInBytes (dataTy);
+    }
+    else if (ty->secrecDataType ()->isUserPrimitive ()) {
+        assert (ty->secrecSecType ()->isPrivate ());
+        auto dt = static_cast<DataTypeUserPrimitive*> (ty->secrecDataType ());
+        SymbolKind* kind = static_cast<PrivateSecType*> (ty->secrecSecType ())->securityKind ();
+        assert (dt->inKind (kind));
+        auto publicType = dt->publicType (kind);
+
+        if (publicType)
+            size = sizeInBytes (secrecDTypeToVMDType (*publicType));
+        else
+            assert (false);
+    }
+    else {
+        assert (false);
+    }
+
     block.push_new () << "push" << getPD (m_scm, imop.arg1 ());
     block.push_new () << "push" << find (imop.arg1 ());
     if (imop.isVectorized ()) {
@@ -1259,12 +1289,16 @@ void Compiler::cgPrivateArithm (VMBlock& block, const Imop& imop) {
 void Compiler::cgPrivateAlloc (VMBlock& block, const Imop& imop) {
     TypeNonVoid* ty = imop.dest ()->secrecType ();
     VMLabel* pd = getPD (m_scm, imop.dest ());
-    cgNewPrivate (block, imop.dest (), imop.arg2 ());
-    block.push_new () << "push" << pd;
-    block.push_new () << "push" << find (imop.arg1 ());
-    block.push_new () << "push" << find (imop.dest ());
-    const bool privateArg = imop.arg1 ()->secrecType ()->secrecSecType ()->isPrivate ();
-    emitSyscall (block, SyscallName::basic (ty, privateArg ? "fill" : "init"));
+    cgNewPrivate (block, imop.dest (), imop.arg1 ());
+
+    if (imop.nArgs () == 3) {
+        // Has default value
+        block.push_new () << "push" << pd;
+        block.push_new () << "push" << find (imop.arg2 ());
+        block.push_new () << "push" << find (imop.dest ());
+        const bool privateArg = imop.arg2 ()->secrecType ()->secrecSecType ()->isPrivate ();
+        emitSyscall (block, SyscallName::basic (ty, privateArg ? "fill" : "init"));
+    }
 }
 
 void Compiler::cgPrivateRelease (VMBlock& block, const Imop& imop) {

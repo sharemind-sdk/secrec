@@ -40,7 +40,6 @@
 #include <algorithm>
 using boost::adaptors::reverse;
 
-
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -110,12 +109,15 @@ bool providesExpectedTypeContext (SymbolProcedureTemplate* sym, const TypeContex
     return true;
 }
 
-bool opSupportedType (TypeNonVoid* ty) {
+bool opSupportedType (TypeBasic* ty) {
     if (ty->secrecDataType ()->isComposite ())
         return false;
 
-    assert (dynamic_cast<DataTypePrimitive*> (ty->secrecDataType ()));
-    DataTypePrimitive* dataTy = static_cast<DataTypePrimitive*> (ty->secrecDataType ());
+    if (ty->secrecDataType ()->isUserPrimitive ())
+        return true;
+
+    assert (dynamic_cast<DataTypeBuiltinPrimitive*> (ty->secrecDataType ()));
+    DataTypeBuiltinPrimitive* dataTy = static_cast<DataTypeBuiltinPrimitive*> (ty->secrecDataType ());
 
     if (dataTy->secrecDataType () == DATATYPE_STRING)
         return false;
@@ -301,11 +303,11 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
 
     std::swap (m_st, localScope);
 
-    TypeNonVoid* lub;
+    TypeBasic* lub;
     if (params.size () == 2u) {
-        lub = upperTypeNonVoid (getContext (), params[0u], params[1u]);
+        lub = upperTypeBasic (getContext (), params[0u], params[1u]);
     } else {
-        lub = static_cast<TypeNonVoid*> (params[0u]);
+        lub = params[0u];
     }
 
     SecrecOperator op = def->getOperator ();
@@ -325,7 +327,7 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         return E_TYPE;
     }
 
-    TypeNonVoid* rt = static_cast<TypeNonVoid*> (returnType);
+    TypeBasic* rt = static_cast<TypeBasic*> (returnType);
 
     if (! opSupportedType (rt)) {
         m_log.fatal () << "Operator definition at " << def->location ()
@@ -333,12 +335,24 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         return E_TYPE;
     }
 
-    DataTypePrimitive* rtPrim = static_cast<DataTypePrimitive*> (rt->secrecDataType ());
     bool isRel = isRelational (op);
-    if (isRel && rtPrim->secrecDataType () != DATATYPE_BOOL) {
-        m_log.fatal () << "Relational operator definition at " << def->location ()
-                       << " does not return a boolean.";
-        return E_TYPE;
+    if (isRel) {
+        bool bad = false;
+
+        if (rt->secrecDataType ()->isUserPrimitive ()) {
+            bad = true;
+        }
+        else {
+            DataTypeBuiltinPrimitive* rtPrim = static_cast<DataTypeBuiltinPrimitive*> (rt->secrecDataType ());
+            if (rtPrim->secrecDataType () != DATATYPE_BOOL)
+                bad = true;
+        }
+
+        if (bad) {
+            m_log.fatal () << "Relational operator definition at " << def->location ()
+                           << " does not return a boolean.";
+            return E_TYPE;
+        }
     }
 
     for (unsigned i = 0; i < params.size (); ++i) {
@@ -392,7 +406,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     }
 
     TypeProc* argTypes = TypeProc::get (getContext (), argumentDataTypes);
-    TCGUARD (findBestMatchingProc(symProc, name->value(), tyCxt, argTypes, &tyCxt));
+    TCGUARD (findBestMatchingProc (symProc, name->value(), tyCxt, argTypes, &tyCxt));
 
     if (symProc == nullptr) {
         m_log.fatalInProc(&tyCxt) << "No matching procedure definitions for:";
@@ -576,7 +590,7 @@ bool latticeLeqOp(Context& cxt, TypeNonVoid* a, TypeNonVoid* b) {
 
     DataType* dataType = b->secrecDataType ();
     if (b->secrecSecType ()->isPrivate () && a->secrecSecType ()->isPublic ()) {
-        dataType = dtypeDeclassify (cxt, dataType);
+        dataType = dtypeDeclassify (cxt, b->secrecSecType (), dataType);
     }
 
     return latticeSecTypeLEQ (a->secrecSecType (), b->secrecSecType ())
@@ -652,7 +666,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
                 bad = true;
         }
 
-        if (!bad) {
+        if (! bad) {
             unsigned score = calculateOpScore (callTypeProc, op->decl ());
 
             if (score > best) continue;
@@ -753,15 +767,14 @@ bool TypeChecker::unify (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
-    TypeUnifier typeUnifier {m_st};
+    TypeUnifier typeUnifier {m_st, sym};
 
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
-        if (! typeUnifier.visitType (argNodeTy, expectedTy)) {
+        if (! typeUnifier.visitType (argNodeTy, expectedTy))
             return false;
-        }
     }
 
     TreeNodeType* retNodeTy = t->body ()->returnType ();
@@ -787,9 +800,8 @@ bool TypeChecker::unify (Instantiation& inst,
     }
     else {
         // this is not very pretty either...
-        if (tyCxt.haveContextDataType ()) {
+        if (tyCxt.haveContextDataType ())
             return false;
-        }
     }
 
 
@@ -831,7 +843,7 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
-    OperatorTypeUnifier typeUnifier (argTypes->paramTypes (), sym);
+    OperatorTypeUnifier typeUnifier {argTypes->paramTypes (), sym, getContext ()};
 
     if (! typeUnifier.checkKind ())
         return false;

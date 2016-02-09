@@ -49,6 +49,7 @@ using imop_auto_unlink_hook =
  * - Destination is always denoted with letter d.
  * - RETURN instruction is now only used to return non-arrays, to return arrays
  *   one must use stack.
+ * - ALLOC takes a size parameter and an optional default value.
  *
  * \todo instead of "newing" instructions all the constructors should be
  *       private and there should be special functions for creating new

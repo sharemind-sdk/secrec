@@ -214,7 +214,10 @@ enum SecrecDataType {
     O(PUSHCREF,                   SyscallParam) \
     O(PUSHREF,                    SyscallParam) \
     O(PUSH,                       SyscallParam) \
-    O(SYSCALL_RETURN,             SyscallParam)
+    O(SYSCALL_RETURN,             SyscallParam) \
+    O(DATATYPE_DECL,              DataTypeDecl) \
+    O(DATATYPE_DECL_PARAM_PUBLIC, DataTypeDeclParamPublic) \
+    O(DATATYPE_DECL_PARAM_SIZE,   DataTypeDeclParamSize)
 
 #define TREENODE_LIST \
     TYPE_ARG_LIST \

@@ -97,7 +97,7 @@ bool TypeNonVoid::latticeLEQ (Context& cxt, const TypeNonVoid* other) const {
 
     DataType* dataType = other->secrecDataType ();
     if (other->secrecSecType ()->isPrivate () && secrecSecType ()->isPublic ()) {
-        dataType = dtypeDeclassify (cxt, dataType);
+        dataType = dtypeDeclassify (cxt, other->secrecSecType (), other->secrecDataType ());
     }
 
     return     latticeSecTypeLEQ (secrecSecType (), other->secrecSecType ())
@@ -131,7 +131,7 @@ TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,
                            SecrecDataType dataType,
                            SecrecDimType dimType)
 {
-    return TypeBasic::get (cxt, secType, DataTypePrimitive::get (cxt, dataType), dimType);
+    return TypeBasic::get (cxt, secType, DataTypeBuiltinPrimitive::get (cxt, dataType), dimType);
 }
 
 TypeBasic* TypeBasic::get (Context& cxt, SecurityType* secType,

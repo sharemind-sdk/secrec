@@ -59,11 +59,6 @@ bool OperatorTemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind
         tv.bound = true;
         tv.pos = m_pos;
     }
-    else if (kind == TA_DATA) {
-        // Structs are not allowed
-        badType (id);
-        return false;
-    }
 
     return true;
 }
