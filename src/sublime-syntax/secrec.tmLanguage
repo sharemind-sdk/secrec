@@ -14,7 +14,7 @@
 			<key>comment</key>
 			<string>Variable types</string>
 			<key>match</key>
-			<string>\b(bool|uint|uint8|uint16|uint32|uint64|int|int8|int16|int32|int64|float32|float64|xor_uint8|xor_uint16|xor_uint32|xor_uint64|float|void|string)\b</string>
+			<string>\b(bool|uint|uint8|uint16|uint32|uint64|int|int8|int16|int32|int64|float|float32|float64|xor_uint|xor_uint8|xor_uint16|xor_uint32|xor_uint64|void|string)\b</string>
 			<key>name</key>
 			<string>storage.type.secrec</string>
 		</dict>
@@ -125,7 +125,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>(\-|\+|\*|\/|%)</string>
+			<string>(\-|\+|\*|\/|%|~|&amp;|\||\^|)</string>
 			<key>name</key>
 			<string>keyword.operator.arithmetic.secrec</string>
 		</dict>
