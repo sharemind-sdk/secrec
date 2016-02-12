@@ -23,6 +23,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <locale>
 
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
@@ -324,6 +325,15 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
 
 
 int main (int argc, char *argv[]) {
+    try {
+        std::locale("");
+    } catch (std::exception const & e) {
+        std::cerr << "Invalid default locale from environment: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::cerr << "Invalid default locale from environment!" << std::endl;
+        return EXIT_FAILURE;
+    }
     ProgramOptions opts;
 
     if (!readProgramOptions(argc, argv, opts))

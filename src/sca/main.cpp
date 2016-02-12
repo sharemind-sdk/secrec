@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <locale>
 #include <memory>
 
 #include <boost/optional/optional.hpp>
@@ -255,6 +256,16 @@ int run (const Configuration& cfg) {
 }
 
 int main(int argc, char *argv[]) {
+    try {
+        std::locale("");
+    } catch (std::exception const & e) {
+        std::cerr << "Invalid default locale from environment: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::cerr << "Invalid default locale from environment!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     po::options_description desc ("Available options");
     desc.add_options ()
             ("help,h",    "Display this help message")
