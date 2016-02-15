@@ -2213,7 +2213,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
             }
             else{
                 // r[offset] = t
-                emplaceImop(e, Imop::STORE, r, offset, tmpElem);
+                emplaceImop(e, Imop::STORE, r, resultOffset, tmpElem);
             }
 
             // Increment the result "r" offset
