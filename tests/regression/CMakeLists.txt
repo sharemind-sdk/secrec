@@ -220,3 +220,7 @@ SET_TESTS_PROPERTIES("afl/01-index-scalar-bug"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,.*\\)\\(4,.*\\)")
 
 add_test_secrec_execute("afl/02-global-struct-init-bug")
+
+add_test_secrec_execute("afl/03-compare-struct-and-int-bug")
+SET_TESTS_PROPERTIES("afl/03-compare-struct-and-int-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,.*\\)\\(6,.*\\)")
