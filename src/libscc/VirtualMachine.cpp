@@ -646,8 +646,19 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::ASSIGN:
     case Imop::LOAD: {
         DataType* dataType = imop.arg1()->secrecType()->secrecDataType();
-        assert (dataType != nullptr && dataType->isBuiltinPrimitive ());
-        ty = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
+        assert (dataType != nullptr);
+
+        if (dataType->isBuiltinPrimitive()) {
+            ty = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType();
+        }
+        else if (dataType->isUserPrimitive()) {
+            SecurityType* sec = imop.arg1()->secrecType()->secrecSecType();
+            assert(sec->isPrivate());
+            SymbolKind* kind = static_cast<PrivateSecType*>(sec)->securityKind();
+            auto pubTy = static_cast<DataTypeUserPrimitive*>(dataType)->publicType(kind);
+            assert(pubTy && "how to emulate private-only values?");
+            ty = (*pubTy)->secrecDataType();
+        }
     }
     default:
         break;
@@ -655,8 +666,19 @@ CallbackTy getCallback (const Imop& imop) {
 
     if (imop.type () == Imop::STORE) {
         DataType* dataType = imop.dest()->secrecType()->secrecDataType();
-        assert (dataType != nullptr && dataType->isBuiltinPrimitive ());
-        ty = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
+        assert (dataType != nullptr && dataType->isPrimitive ());
+
+        if (dataType->isBuiltinPrimitive ()) {
+            ty = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
+        }
+        else {
+            SecurityType* sec = imop.dest()->secrecType()->secrecSecType();
+            assert (sec->isPrivate ());
+            SymbolKind* kind = static_cast<PrivateSecType*>(sec)->securityKind();
+            auto pubTy = static_cast<DataTypeUserPrimitive*>(dataType)->publicType(kind);
+            assert (pubTy && "how to emulate private-only values?");
+            ty = (*pubTy)->secrecDataType();
+        }
     }
 
     if (imop.type () == Imop::ASSIGN) {
@@ -664,6 +686,7 @@ CallbackTy getCallback (const Imop& imop) {
             std::cerr << imop << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
             std::cerr << *imop.dest ()->secrecType () << std::endl;
             std::cerr << *imop.arg1 ()->secrecType () << std::endl;
+
             assert (false);
         }
     }
