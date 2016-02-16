@@ -218,3 +218,5 @@ SET_TESTS_PROPERTIES("afl/00-integer-literal-overflow"
 add_test_secrec_execute("afl/01-index-scalar-bug")
 SET_TESTS_PROPERTIES("afl/01-index-scalar-bug"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,.*\\)\\(4,.*\\)")
+
+add_test_secrec_execute("afl/02-global-struct-init-bug")
