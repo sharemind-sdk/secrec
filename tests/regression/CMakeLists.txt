@@ -214,3 +214,7 @@ SET_TESTS_PROPERTIES("structs/11-template-domain-failure"
 add_test_secrec_execute("afl/00-integer-literal-overflow")
 SET_TESTS_PROPERTIES("afl/00-integer-literal-overflow"
     PROPERTIES PASS_REGULAR_EXPRESSION ".*\\(3,16\\)-\\(3,43\\).*")
+
+add_test_secrec_execute("afl/01-index-scalar-bug")
+SET_TESTS_PROPERTIES("afl/01-index-scalar-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,.*\\)\\(4,.*\\)")
