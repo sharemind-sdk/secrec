@@ -32,8 +32,12 @@
 static char secrec_strbuf[STRBUF_SIZE];
 static unsigned secrec_strbuflen;
 
-void bufferChar (char c) {
+int bufferChar (char c) {
+    if (STRBUF_SIZE == 0 || secrec_strbuflen >= STRBUF_SIZE - 1)
+        return 0;
+
     secrec_strbuf[secrec_strbuflen ++] = c;
+    return 1;
 }
 
 void clearBuffer () {
@@ -114,11 +118,11 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 \"                 { BEGIN(STATE_STRING); stepChar(yyget_lloc(yyscanner)); clearBuffer (); }
 <STATE_STRING>\"   { BEGIN(INITIAL); stepChar(yyget_lloc(yyscanner)); saveString(yyscanner); return STR_FRAGMENT; }
 <STATE_STRING>\$   { BEGIN(STATE_STRING_VARIABLE); stepChar(yyget_lloc(yyscanner)); saveString(yyscanner); return STR_FRAGMENT; }
-<STATE_STRING>\\n  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\n'); }
-<STATE_STRING>\\t  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\t'); }
-<STATE_STRING>\\r  { stepLen(yyget_lloc(yyscanner), 2); bufferChar ('\r'); }
-<STATE_STRING>\\.  { stepLen(yyget_lloc(yyscanner), 2); bufferChar (yyget_text(yyscanner)[1]); }
-<STATE_STRING>.    { stepChar(yyget_lloc(yyscanner)); bufferChar (yyget_text(yyscanner)[0]); }
+<STATE_STRING>\\n  { stepLen(yyget_lloc(yyscanner), 2); if (! bufferChar ('\n')) return INVALID_STRING; }
+<STATE_STRING>\\t  { stepLen(yyget_lloc(yyscanner), 2); if (! bufferChar ('\t')) return INVALID_STRING; }
+<STATE_STRING>\\r  { stepLen(yyget_lloc(yyscanner), 2); if (! bufferChar ('\r')) return INVALID_STRING; }
+<STATE_STRING>\\.  { stepLen(yyget_lloc(yyscanner), 2); if (! bufferChar (yyget_text(yyscanner)[1])) return INVALID_STRING; }
+<STATE_STRING>.    { stepChar(yyget_lloc(yyscanner)); if (! bufferChar (yyget_text(yyscanner)[0])) return INVALID_STRING; }
 
  /* String identifier: */
 <STATE_STRING_VARIABLE>{IDENTIFIER} { BEGIN(STATE_STRING); saveText(yyscanner); return STR_IDENTIFIER; }
