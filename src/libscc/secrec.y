@@ -22,9 +22,13 @@
       return 0;
   }
 
-  uint64_t convert_to_base(TYPE_STRINGREF input, uint64_t base)
+  uint64_t convert_to_base(TYPE_STRINGREF input,
+                           uint64_t base,
+                           int* does_overflow)
   {
+      assert (does_overflow);
       const char* begin = stringref_begin(input);
+      assert (begin);
       size_t length = stringref_length(input);
 
       assert(base == 2 || base == 8 || base == 10 || base == 16);
@@ -41,7 +45,9 @@
           uint64_t digit = char_to_digit(begin[offset]);
           assert(digit < base);
           uint64_t new_out = out*base + digit;
-          assert(new_out >= out);
+          if (new_out < out)
+              *does_overflow = 1;
+
           out = new_out;
       }
 
@@ -1488,10 +1494,42 @@ primary_expression
  ;
 
 int_literal_helper
- : BIN_LITERAL { $$ = convert_to_base ($1,  2); }
- | OCT_LITERAL { $$ = convert_to_base ($1,  8); }
- | DEC_LITERAL { $$ = convert_to_base ($1, 10); }
- | HEX_LITERAL { $$ = convert_to_base ($1, 16); }
+ : BIN_LITERAL {
+    int does_overflow = 0;
+    $$ = convert_to_base($1, 2, &does_overflow);
+    if (does_overflow) {
+        yyerror(&@$, yyscanner, NULL, @$.filename, table,
+                "Binary literal overflows 64 bits.");
+        YYERROR;
+    }
+ }
+ | OCT_LITERAL {
+    int does_overflow = 0;
+    $$ = convert_to_base($1,  8, &does_overflow);
+    if (does_overflow) {
+        yyerror(&@$, yyscanner, NULL, @$.filename, table,
+                "Octal literal overflows 64 bits..");
+        YYERROR;
+    }
+ }
+ | DEC_LITERAL {
+    int does_overflow = 0;
+    $$ = convert_to_base($1, 10, &does_overflow);
+    if (does_overflow) {
+        yyerror(&@$, yyscanner, NULL, @$.filename, table,
+                "Decimal literal overflows 64 bits.");
+        YYERROR;
+    }
+ }
+ | HEX_LITERAL {
+    int does_overflow = 0;
+    $$ = convert_to_base($1, 16, &does_overflow);
+    if (does_overflow) {
+        yyerror(&@$, yyscanner, NULL, @$.filename, table,
+                "Hexadecimal literal overflows 64 bits.");
+        YYERROR;
+    }
+ }
  ;
 
 int_literal
