@@ -303,15 +303,19 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
 
     std::swap (m_st, localScope);
 
-    TypeBasic* lub;
+    TypeBasic* lub = nullptr;
     if (params.size () == 2u) {
         lub = upperTypeBasic (getContext (), params[0u], params[1u]);
-    } else {
+    }
+    else if (params.size () == 1u) {
         lub = params[0u];
+    }
+    else {
+        assert (false);
     }
 
     SecrecOperator op = def->getOperator ();
-    if (lub->secrecSecType ()->isPrivate () &&
+    if (lub != nullptr && lub->secrecSecType ()->isPrivate () &&
         (op == SCOP_BIN_LAND || op == SCOP_BIN_LOR))
     {
         m_log.fatal () << "Short-circuited logical and/or defined on private values at"
@@ -335,26 +339,6 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         return E_TYPE;
     }
 
-    bool isRel = isRelational (op);
-    if (isRel) {
-        bool bad = false;
-
-        if (rt->secrecDataType ()->isUserPrimitive ()) {
-            bad = true;
-        }
-        else {
-            DataTypeBuiltinPrimitive* rtPrim = static_cast<DataTypeBuiltinPrimitive*> (rt->secrecDataType ());
-            if (rtPrim->secrecDataType () != DATATYPE_BOOL)
-                bad = true;
-        }
-
-        if (bad) {
-            m_log.fatal () << "Relational operator definition at " << def->location ()
-                           << " does not return a boolean.";
-            return E_TYPE;
-        }
-    }
-
     for (unsigned i = 0; i < params.size (); ++i) {
         TypeBasic* ty = params[i];
 
@@ -365,7 +349,21 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         }
     }
 
-    if (! isRel && rt != lub) {
+    if (isRelational (op)) {
+        if (lub == nullptr) {
+            m_log.fatal () << "Operator definition at " << def->location ()
+                           << " has operand types which have no least upper bound.";
+            return E_TYPE;
+        }
+
+        if (lub->secrecSecType () != rt->secrecSecType ()) {
+            m_log.fatal () << "Domain of return type of operator definition at "
+                           << def->location ()
+                           << " is not the least upper bound of domains of operand types.";
+            return E_TYPE;
+        }
+    }
+    else if (rt != lub) {
         m_log.fatal () << "Return type of operator definition at " << def->location ()
                        << " is not the least upper bound of the operand types.";
         return E_TYPE;
