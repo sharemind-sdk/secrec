@@ -30,6 +30,7 @@
 #include "TypeChecker.h"
 #include "Types.h"
 
+
 /**
  * Code generation for expressions.
  */
@@ -802,7 +803,7 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
             // Assign first (only) element of call result vector to
             // the scalar
             emplaceImopAfter(result, e, Imop::DECLARE, resSy);
-            emplaceImop(e, Imop::ASSIGN, resSy, callRes.symbol(), indexConstant(0u));
+            emplaceImop(e, Imop::LOAD, resSy, callRes.symbol(), indexConstant(0u));
             releaseTemporary(result, callRes.symbol());
         } else {
             emplaceImopAfter(result, e, Imop::COPY, resSy, callRes.symbol(), resSizeSy);
@@ -2212,7 +2213,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
                 emplaceImop(e, Imop::ASSIGN, r, tmpElem);
             }
             else{
-                // r[offset] = t
+                // r[resultOffset] = t
                 emplaceImop(e, Imop::STORE, r, resultOffset, tmpElem);
             }
 
