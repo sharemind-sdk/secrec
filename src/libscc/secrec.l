@@ -216,4 +216,4 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 {NEWLINE}    { newline(yyget_lloc(yyscanner)); }
 {WHITESPACE} { stepChar(yyget_lloc(yyscanner)); }
 
-. { /* Ignore bad characters */ }
+. { return INVALID_CHARACTER; }

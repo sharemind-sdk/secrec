@@ -106,6 +106,8 @@
 }
 %destructor { treenode_free($$); } <treenode>
 
+ /* Invalid character: */
+%token INVALID_CHARACTER
 
  /* Keywords: */
 %token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
