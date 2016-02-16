@@ -209,3 +209,8 @@ SET_TESTS_PROPERTIES("structs/04-redeclaration"
 
 SET_TESTS_PROPERTIES("structs/11-template-domain-failure"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,.*\\)\\(7,.*\\)")
+
+# Regressions found by AFL (american fuzzy lop).
+add_test_secrec_execute("afl/00-integer-literal-overflow")
+SET_TESTS_PROPERTIES("afl/00-integer-literal-overflow"
+    PROPERTIES PASS_REGULAR_EXPRESSION ".*\\(3,16\\)-\\(3,43\\).*")
