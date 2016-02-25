@@ -123,7 +123,7 @@ TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty, Security
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty) {
-    return visitDataTypeConstF (ty, PublicSecType::get (getContext ()));
+    return visitDataTypeConstF (ty, nullptr);
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty,
@@ -132,6 +132,9 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
     if (ty->cachedType () != nullptr) {
         return OK;
     }
+
+    if (secType == nullptr)
+        secType = PublicSecType::get (getContext ());
 
     if (secType->isPrivate ()) {
         SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();

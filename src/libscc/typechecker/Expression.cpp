@@ -91,7 +91,7 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, DataType* d1, DataType* d
     return DATATYPE_UNDEFINED;
 }
 
-bool overloadedGood (const TypeBasic* ty) {
+bool overloadedOpGood (const TypeBasic* ty) {
     if (ty->secrecDataType ()->isComposite () ||
         ty->secrecDataType ()->isString ())
         return false;
@@ -758,7 +758,7 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
 
         // Find user definition
         SymbolProcedure* match = nullptr;
-        if (overloadedGood(eType1) && overloadedGood(eType2)) {
+        if (overloadedOpGood(eType1) && overloadedOpGood(eType2)) {
             std::vector<TypeBasic*> argumentDataTypes;
             argumentDataTypes.push_back(eType1);
             argumentDataTypes.push_back(eType2);
