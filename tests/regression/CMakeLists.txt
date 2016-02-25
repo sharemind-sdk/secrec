@@ -99,6 +99,9 @@ add_test_secrec_execute("scalars/67-operator-overloading-6")
 add_test_secrec_execute("scalars/68-operator-overloading-7")
 add_test_secrec_execute("scalars/69-operator-overloading-8")
 add_test_secrec_execute("scalars/70-operator-overloading-9")
+add_test_secrec_execute("scalars/71-user-defined-types-1")
+add_test_secrec_execute("scalars/72-user-defined-types-2")
+
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
@@ -111,6 +114,7 @@ SET_TESTS_PROPERTIES("scalars/66-operator-overloading-5" PROPERTIES PASS_REGULAR
 SET_TESTS_PROPERTIES("scalars/67-operator-overloading-6" PROPERTIES PASS_REGULAR_EXPRESSION "Mismatching shapes in arithmetic expression at.*\\(10,5\\)\\(10,10\\)")
 SET_TESTS_PROPERTIES("scalars/68-operator-overloading-7" PROPERTIES PASS_REGULAR_EXPRESSION "returned a value with incorrect size.*\\(9,5\\)\\(9,10\\)")
 SET_TESTS_PROPERTIES("scalars/69-operator-overloading-8" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,10\\)")
+SET_TESTS_PROPERTIES("scalars/71-user-defined-types-1" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,19\\)\\(9,20\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
