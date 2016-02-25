@@ -1,8 +1,12 @@
 
-kind shared3p;
+kind shared3p {
+    type int { public = int };
+}
 domain s3p shared3p;
 
-kind shared2p;
+kind shared2p {
+    type int { public = int };
+}
 domain s2p shared2p;
 
 int operator + (int x, int y) {
@@ -24,8 +28,8 @@ D T operator + (D T x, D T y) {
     return 4;
 }
 
-template <type T, domain D : shared3p>
-D T operator + (D T x, T y) {
+template <type T, type Pub, domain D : shared3p>
+D T operator + (D T x, Pub y) {
     return 5;
 }
 

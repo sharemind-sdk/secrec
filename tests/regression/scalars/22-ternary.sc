@@ -1,4 +1,6 @@
-kind additive3pp;
+kind additive3pp {
+    type int { public = int };
+}
 domain sharemind_test_pd additive3pp;
 
 int val = 0;
@@ -16,8 +18,8 @@ void main () {
 
   sharemind_test_pd int one = 1;
   sharemind_test_pd int two = 2;
-  assert ( declassify ((t ? one : two) == one) );
-  assert ( declassify ((f ? one : two) == two) );
+  assert ( declassify (t ? one : two) == 1 );
+  assert ( declassify (f ? one : two) == 2 );
 
   t ? load_one() : load_two();
   assert (val == 1);

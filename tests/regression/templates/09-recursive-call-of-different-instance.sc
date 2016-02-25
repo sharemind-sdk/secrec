@@ -1,5 +1,7 @@
 
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 domain private a3p;
 
 template <domain dom>

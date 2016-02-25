@@ -1,4 +1,6 @@
-kind test;
+kind test {
+    type int { public = int };
+}
 
 template <domain T1 : test, domain T2>
 void bad (T1 int x,  T2 int y) { return; }

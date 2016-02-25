@@ -1,5 +1,7 @@
 
-kind additive3pp;
+kind additive3pp {
+    type int { public = int };
+}
 domain p1 additive3pp;
 domain p2 additive3pp;
 

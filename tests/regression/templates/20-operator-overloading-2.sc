@@ -1,5 +1,7 @@
 
-kind shared3p;
+kind shared3p {
+    type int { public = int };
+}
 
 domain pd_shared3p shared3p;
 

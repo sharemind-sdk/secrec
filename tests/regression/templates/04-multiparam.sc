@@ -3,7 +3,10 @@ template <domain dom>
 void foo (dom int x, dom int y) { }
 
 
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
+
 domain p1 a3p;
 
 void main () {

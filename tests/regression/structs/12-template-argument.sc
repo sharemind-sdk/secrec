@@ -1,5 +1,23 @@
-kind additive3p;
+kind additive3p {
+    type bool { public = bool };
+    type uint { public = uint };
+}
 domain pd_a3p additive3p;
+
+template <domain D : additive3p>
+D uint operator * (D uint x, D uint y) {
+    return declassify (x) * declassify (y);
+}
+
+template <domain D : additive3p>
+D uint operator + (D uint x, D uint y) {
+    return declassify (x) + declassify (y);
+}
+
+template <domain D : additive3p>
+D bool operator == (D uint x, D uint y) {
+    return declassify (x) == declassify (y);
+}
 
 template <domain D>
 struct point {

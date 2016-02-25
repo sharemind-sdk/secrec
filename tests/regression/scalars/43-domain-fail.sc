@@ -1,4 +1,6 @@
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 domain p1 a3p;
 domain p2 a3p;
 void main () {

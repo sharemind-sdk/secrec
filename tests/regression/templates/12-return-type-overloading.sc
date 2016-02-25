@@ -1,4 +1,6 @@
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 
 template <domain d1 : a3p, domain d2 : a3p >
 d2 int reclassify (d1 int x) { return 0; }

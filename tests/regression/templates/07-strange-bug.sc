@@ -5,7 +5,9 @@ template <domain dom>
 void do_nothing2 (dom int n) { }
 
 
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 domain private a3p;
 
 void main () {

@@ -101,14 +101,14 @@ add_test_secrec_execute("scalars/69-operator-overloading-8")
 add_test_secrec_execute("scalars/70-operator-overloading-9")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
-SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
+SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
 SET_TESTS_PROPERTIES("scalars/53-for-loop-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,32\\)\\(3,37\\)")
 SET_TESTS_PROPERTIES("scalars/55-invalid-concat" PROPERTIES
   PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,26\\)\\(4,27\\)")
 SET_TESTS_PROPERTIES("scalars/64-operator-overloading-3" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,42\\)")
 SET_TESTS_PROPERTIES("scalars/65-operator-overloading-4" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,47\\)")
 SET_TESTS_PROPERTIES("scalars/66-operator-overloading-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,1\\)\\(2,42\\)")
-SET_TESTS_PROPERTIES("scalars/67-operator-overloading-6" PROPERTIES PASS_REGULAR_EXPRESSION "Mismatching shapes in addition at.*\\(10,5\\)\\(10,10\\)")
+SET_TESTS_PROPERTIES("scalars/67-operator-overloading-6" PROPERTIES PASS_REGULAR_EXPRESSION "Mismatching shapes in arithmetic expression at.*\\(10,5\\)\\(10,10\\)")
 SET_TESTS_PROPERTIES("scalars/68-operator-overloading-7" PROPERTIES PASS_REGULAR_EXPRESSION "returned a value with incorrect size.*\\(9,5\\)\\(9,10\\)")
 SET_TESTS_PROPERTIES("scalars/69-operator-overloading-8" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,10\\)")
 
@@ -173,12 +173,12 @@ add_test_secrec_execute("templates/00-trivial")
 add_test_secrec_execute("templates/01-recursion")
 add_test_secrec_execute("templates/02-kind-fail")
 SET_TESTS_PROPERTIES("templates/02-kind-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,5\\)\\(8,19\\).")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,19\\).")
 add_test_secrec_execute("templates/03-kind")
 add_test_secrec_execute("templates/04-multiparam")
 add_test_secrec_execute("templates/05-multiparam-fail")
 SET_TESTS_PROPERTIES("templates/05-multiparam-fail"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(12,5\\)\\(12,15\\).")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(15,5\\)\\(15,15\\).")
 add_test_secrec_execute("templates/06-instantiation-fail")
 SET_TESTS_PROPERTIES("templates/06-instantiation-fail"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,9\\)\\(4,10\\)")
@@ -191,7 +191,7 @@ add_test_secrec_execute("templates/12-return-type-overloading")
 add_test_secrec_execute("templates/13-various")
 add_test_secrec_execute("templates/14-ambiguous-lookup")
 SET_TESTS_PROPERTIES("templates/14-ambiguous-lookup"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(14,5\\)\\(14,15\\)")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(16,5\\)\\(16,15\\)")
 add_test_secrec_execute("templates/15-unify-fail-bug")
 SET_TESTS_PROPERTIES("templates/15-unify-fail-bug"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,18\\)\\(1,19\\)")
@@ -201,7 +201,7 @@ add_test_secrec_execute("templates/18-overloading-on-struct-bug")
 add_test_secrec_execute("templates/19-operator-overloading-1")
 add_test_secrec_execute("templates/20-operator-overloading-2")
 SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,21\\)\\(6,30\\)")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,21\\)\\(8,30\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
@@ -225,4 +225,4 @@ SET_TESTS_PROPERTIES("structs/04-redeclaration"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,1\\)\\(4,15\\)")
 
 SET_TESTS_PROPERTIES("structs/11-template-domain-failure"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,.*\\)\\(7,.*\\)")
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,.*\\)\\(9,.*\\)")

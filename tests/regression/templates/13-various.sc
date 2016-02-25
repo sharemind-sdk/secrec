@@ -1,4 +1,6 @@
-kind test;
+kind test {
+    type int { public = int };
+}
 domain private test;
 domain protected test;
 

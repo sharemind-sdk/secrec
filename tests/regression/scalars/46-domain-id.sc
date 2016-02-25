@@ -1,4 +1,4 @@
-kind additive3pp;
+kind additive3pp { type foo; }
 domain d1 additive3pp;
 domain d2 additive3pp;
 

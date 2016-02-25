@@ -1,4 +1,6 @@
-kind shared3p;
+kind shared3p {
+    type int { public = int };
+}
 domain s3p shared3p;
 
 bool all (bool[[1]] vec) {

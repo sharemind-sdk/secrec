@@ -1,7 +1,9 @@
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 
 template <domain dom>
-void nothing (dom int x) { 
+void nothing (dom int x) {
     return;
 }
 

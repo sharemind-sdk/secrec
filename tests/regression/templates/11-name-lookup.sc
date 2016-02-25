@@ -1,4 +1,6 @@
-kind a3p;
+kind a3p {
+    type int { public = int };
+}
 
 template <domain dom>
 void foo (dom int x) {

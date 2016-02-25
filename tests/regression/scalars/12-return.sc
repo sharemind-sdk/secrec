@@ -1,4 +1,6 @@
-kind additive3pp;
+kind additive3pp {
+    type bool { public = bool };
+}
 domain sharemind_test_pd additive3pp;
 
 int one () { return 1; }
@@ -13,5 +15,5 @@ void ret () {
 void main() {
   ret ();
   assert (one() == 1);
-  assert (declassify (ft() == true));
+  assert (declassify (ft()) == true);
 }

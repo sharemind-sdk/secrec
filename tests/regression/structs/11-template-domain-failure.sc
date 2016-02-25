@@ -1,4 +1,6 @@
-kind a3p;
+kind a3p {
+    type foo;
+}
 
 template <domain D : a3p>
 struct test { }

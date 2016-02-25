@@ -1,4 +1,6 @@
-kind additive3pp;
+kind additive3pp {
+    type uint { public = uint };
+}
 domain sharemind_test_pd additive3pp;
 
 void main () {

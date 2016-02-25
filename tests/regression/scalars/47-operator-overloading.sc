@@ -1,4 +1,7 @@
-kind additive3pp;
+kind additive3pp {
+    type bool { public = bool };
+    type int { public = int };
+}
 domain private additive3pp;
 
 private int operator +  (private int x, private int y)  { return  0; }
