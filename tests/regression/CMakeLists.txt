@@ -91,12 +91,14 @@ add_test_secrec_execute("scalars/59-float-cast-bug-2")
 add_test_secrec_execute("scalars/60-float-cast-bug-3")
 add_test_secrec_execute("scalars/61-float-cast-bug-4")
 add_test_secrec_execute("scalars/62-float-cast-bug-5")
+add_test_secrec_execute("scalars/63-void-cast-bug")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,12\\)")
 SET_TESTS_PROPERTIES("scalars/53-for-loop-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,32\\)\\(3,37\\)")
 SET_TESTS_PROPERTIES("scalars/55-invalid-concat" PROPERTIES
   PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,26\\)\\(4,27\\)")
+SET_TESTS_PROPERTIES("scalars/63-void-cast-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,5\\)\\(3,15\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")

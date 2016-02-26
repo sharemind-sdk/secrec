@@ -251,6 +251,13 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
 
     subExpr->instantiateDataType();
     const SecreC::Type * ty = subExpr->resultType();
+
+    if (ty->isVoid()) {
+        m_log.fatalInProc(root) << "Unable to cast from void at "
+                                << root->location() << '.';
+        return E_TYPE;
+    }
+
     const DataType* givenDType = ty->secrecDataType();
     if (! latticeExplicitLEQ(givenDType, resultingDType)) {
         m_log.fatalInProc(root) << "Unable to perform cast at "
