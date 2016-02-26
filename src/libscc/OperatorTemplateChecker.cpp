@@ -41,28 +41,6 @@ void OperatorTemplateVarChecker::badType (TreeNode* t) {
                    << t->location() << " is not a vector or scalar.";
 }
 
-bool OperatorTemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind kind) {
-    const StringRef name = id->value ();
-    const auto it = m_vars.find (name);
-
-    if (it != m_vars.end ()) {
-        TemplateTypeVar& tv = it->second;
-        if (tv.kind != kind) {
-            m_log.fatal () << "Unexpected " << kindAsString (kind)
-                           << " type variable \'" << name
-                           << "\' at " << id->location () << ". "
-                           << "Expecting " <<  kindAsString (tv.kind)
-                           << " type variable.";
-            return false;
-        }
-
-        tv.bound = true;
-        tv.pos = m_pos;
-    }
-
-    return true;
-}
-
 bool OperatorTemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
     const StringRef name = q->typeVariable ()->value ();
     auto it = m_vars.find (name);

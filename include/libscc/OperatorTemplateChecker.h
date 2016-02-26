@@ -26,7 +26,7 @@
 namespace SecreC {
 
 /**
- * @brief Type checking of template operator declaration.
+ * @brief Type checking of operator definition template.
  */
 class OperatorTemplateVarChecker: public TemplateVarChecker {
 
@@ -37,8 +37,6 @@ public: /* Methods: */
         , m_op (op)
         , m_seenDomainVar (false)
     { }
-
-    virtual bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind) override;
 
     virtual bool visitQuantifier (TreeNodeQuantifier* q) override;
 
