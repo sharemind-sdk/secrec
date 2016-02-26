@@ -78,8 +78,6 @@ bool OperatorTemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
         return false;
     }
 
-    TemplateTypeVar typeVar (q->typeVariable (), quantifierKind (*q));
-
     if (quantifierKind (*q) == TA_SEC) {
         if (m_seenDomainVar) {
             m_log.fatal () << "Operator definition template has more than one domain variable at "
