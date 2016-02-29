@@ -48,6 +48,15 @@ bool TemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind kind) {
         tv.bound = true;
         tv.pos = m_pos;
     }
+    else {
+        Symbol* sym = m_st->find (symbolCategory (kind), name);
+        if (sym == nullptr) {
+            m_log.fatal () << "Unable to find " << kindAsString (kind)
+                           << " type variable \'" << name
+                           << "\' at " << id->location () << ". ";
+            return false;
+        }
+    }
 
     return true;
 }
@@ -236,6 +245,12 @@ bool TemplateVarChecker::visitTypeArgDimTypeConst (TreeNodeTypeArgDimTypeConst* 
 bool TemplateVarChecker::visitTypeArgPublic (TreeNodeTypeArgPublic* t, TypeArgumentKind kind) {
     assert (t != nullptr);
     return verifyKind (TA_SEC, kind, t->location ());
+}
+
+const char* TemplateVarChecker::thing () {
+    return m_pos == ArgReturn
+        ? "return value"
+        : "operand";
 }
 
 const char* kindAsString (TypeArgumentKind kind) {

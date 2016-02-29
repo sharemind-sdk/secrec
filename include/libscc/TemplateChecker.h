@@ -81,7 +81,7 @@ public: /* Methods: */
     TemplateVarChecker (TemplateVarChecker&&) = default;
     TemplateVarChecker& operator = (TemplateVarChecker&&) = default;
 
-    virtual bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind);
+    bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind);
 
     virtual bool visitQuantifier (TreeNodeQuantifier* q);
 
@@ -109,11 +109,13 @@ public: /* Methods: */
 
     void setArgPosition (TemplateArgPos pos) { m_pos = pos; }
 
-protected:
+protected: /* Methods: */
 
     bool verifyKind (TypeArgumentKind expected,
                      TypeArgumentKind given,
                      const Location& loc);
+
+    const char* thing ();
 
 protected: /* Fields: */
     SymbolTable*   m_st;
