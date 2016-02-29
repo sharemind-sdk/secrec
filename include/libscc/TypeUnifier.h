@@ -47,8 +47,9 @@ public:
 
 public: /* Methods: */
 
-    explicit TypeUnifier (SymbolTable* st)
+    explicit TypeUnifier (SymbolTable* st, const TreeNodeTemplate* t)
         : m_st {st}
+        , m_template {t}
     { }
 
     TypeUnifier (const TypeUnifier&) = delete;
@@ -85,6 +86,7 @@ private:
 
 private: /* Fields: */
     SymbolTable* m_st;
+    const TreeNodeTemplate* m_template;
     TypeVarMap m_names;
 };
 

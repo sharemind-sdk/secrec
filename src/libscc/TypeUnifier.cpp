@@ -91,11 +91,18 @@ bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secTyp
     }
 
     const StringRef name = t->identifier ()->value ();
-//    if (SymbolDomain* s = m_st->find<SYM_DOMAIN>(name)) {
-//        return s->securityType () == secType;
-//    }
 
-    return bind (name, secType);
+    for (TreeNodeQuantifier& quant : m_template->quantifiers ()) {
+        if (quant.typeVariable ()->value () == name) {
+            // Domain variable, not domain
+            return bind (name, secType);
+        }
+    }
+
+    SymbolDomain* s = m_st->find<SYM_DOMAIN>(name);
+    assert (s != nullptr); // TemplateVarChecker checks that domains exists
+
+    return s->securityType () == secType;
 }
 
 /*******************************************************************************

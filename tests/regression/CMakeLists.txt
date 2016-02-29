@@ -187,6 +187,9 @@ SET_TESTS_PROPERTIES("templates/15-unify-fail-bug"
 add_test_secrec_execute("templates/16-is-scalar")
 add_test_secrec_execute("templates/17-simple")
 add_test_secrec_execute("templates/18-overloading-on-struct-bug")
+add_test_secrec_execute("templates/19-protection-domain-bug")
+SET_TESTS_PROPERTIES("templates/19-protection-domain-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(5,10\\)\\(5,21\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")

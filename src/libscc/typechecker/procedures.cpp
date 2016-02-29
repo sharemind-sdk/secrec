@@ -404,7 +404,7 @@ bool TypeChecker::unify (Instantiation& inst,
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
         return false;
 
-    TypeUnifier typeUnifier {m_st};
+    TypeUnifier typeUnifier {m_st, t};
 
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
