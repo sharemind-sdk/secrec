@@ -179,15 +179,21 @@ struct ScopedSetSymbolTable {
     CodeGen & m_cg;
 };
 
-CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope, bool isOperator) {
+CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope) {
     assert(localScope->parent() == m_st);
     assert(def != nullptr);
 
-    if (isOperator) {
+    if (def->isOperator()) {
         TreeNodeOpDef* opdef = static_cast<TreeNodeOpDef*>(def);
         if (m_tyChecker->visitOpDef(opdef, localScope) != TypeChecker::OK)
             return CGResult::ERROR_CONTINUE;
-    } else if (m_tyChecker->visitProcDef(def, localScope) != TypeChecker::OK) {
+    }
+    else if (def->isCast()) {
+        TreeNodeCastDef* castdef = static_cast<TreeNodeCastDef*>(def);
+        if (m_tyChecker->visitCastDef(castdef, localScope) != TypeChecker::OK)
+            return CGResult::ERROR_CONTINUE;
+    }
+    else if (m_tyChecker->visitProcDef(def, localScope) != TypeChecker::OK) {
         return CGResult::ERROR_CONTINUE;
     }
 
@@ -338,12 +344,13 @@ CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
     ScopedStateUse use(*this, mod->codeGenState());
     for (TreeNode* decl : prog->children()) {
         switch (decl->type()) {
+        case NODE_CASTDEF:
         case NODE_PROCDEF:
         case NODE_OPDEF: {
             TreeNodeProcDef * procDef = static_cast<TreeNodeProcDef *>(decl);
             SymbolTable * localScope = m_st->newScope();
             localScope->setName("Procedure");
-            append(result, cgProcDef(procDef, localScope, decl->type () == NODE_OPDEF));
+            append(result, cgProcDef(procDef, localScope));
             assert(localScope->parent() == m_st);
             break;
         }

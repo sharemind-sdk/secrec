@@ -362,19 +362,44 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     TCGUARD (visitExpr(subExpr));
 
     subExpr->instantiateDataType(getContext());
-    SecreC::Type * ty = subExpr->resultType();
-    DataType* givenDType = ty->secrecDataType();
-    if (! latticeExplicitLEQ(givenDType, resultingDType)) {
-        m_log.fatalInProc(root) << "Unable to perform cast at "
-            << root->location() << '.';
+
+    if (subExpr->resultType()->isVoid()) {
+        m_log.fatalInProc(root) << "Unable to cast from void at "
+                                << root->location() << '.';
         return E_TYPE;
     }
 
-    root->setResultType(
-            TypeBasic::get(getContext(),
-                ty->secrecSecType(),
-                resultingDType,
-                ty->secrecDimType()));
+    assert(dynamic_cast<TypeBasic*>(subExpr->resultType()) != nullptr);
+    TypeBasic * ty = static_cast<TypeBasic*>(subExpr->resultType());
+    DataType * givenDType = ty->secrecDataType();
+    TypeBasic * want = TypeBasic::get(getContext(),
+                                      ty->secrecSecType(),
+                                      resultingDType,
+                                      ty->secrecDimType());
+
+    if (root->haveContextSecType() && root->contextSecType()->isPrivate()) {
+        SymbolProcedure * symProc;
+        TCGUARD(findBestMatchingCastDef(symProc, ty, want, root));
+
+        if (! symProc) {
+            m_log.fatalInProc(root)
+                << "Unable to perform cast at " << root->location()
+                << " due to missing cast definition.";
+            return E_TYPE;
+        }
+
+        root->setResultType(want);
+        root->setProcSymbol(symProc);
+
+        return OK;
+    }
+    else if (! latticeExplicitLEQ(givenDType, resultingDType)) {
+        m_log.fatalInProc(root) << "Unable to perform cast at "
+                                << root->location() << '.';
+        return E_TYPE;
+    }
+
+    root->setResultType(want);
 
     return OK;
 }

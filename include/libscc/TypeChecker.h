@@ -161,6 +161,7 @@ public: /* Methods: */
     Status visitStructDecl(TreeNodeStructDecl* decl);
     Status visitProcDef(TreeNodeProcDef * proc, SymbolTable * localScope, bool append=true);
     Status visitOpDef(TreeNodeOpDef * def, SymbolTable * localScope, bool append=true);
+    Status visitCastDef(TreeNodeCastDef * def, SymbolTable * localScope, bool append=true);
     Status visitTemplate(TreeNodeTemplate * templ);
 
     Status visitLValue(TreeNodeLValue* lvalue);
@@ -243,6 +244,10 @@ private: /* Methods: */
     bool unifyOperator (Instantiation& inst,
                         TypeProc* argTypes) const;
 
+    bool unifyCast (Instantiation& inst,
+                    TypeBasic* arg,
+                    TypeBasic* want) const;
+
     Status findRegularOpDef(SymbolProcedure *& symProc,
                             StringRef name,
                             TypeProc* callTypeProc,
@@ -269,13 +274,18 @@ private: /* Methods: */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 StringRef name,
                                 const TypeContext & tyCxt,
-                                TypeProc* argTypes,
+                                TypeProc * argTypes,
                                 const TreeNode * errorCxt);
 
     Status findBestMatchingOpDef(SymbolProcedure *& symProc,
                                  StringRef name,
-                                 TypeProc* callTypeProc,
+                                 TypeProc * callTypeProc,
                                  const TreeNode * errorCxt);
+
+    Status findBestMatchingCastDef(SymbolProcedure *& symProc,
+                                   TypeBasic * arg,
+                                   TypeBasic * want,
+                                   const TreeNode * errorCxt);
 
     Status checkRedefinitions(const TreeNodeProcDef& proc);
 

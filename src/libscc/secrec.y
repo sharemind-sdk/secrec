@@ -108,7 +108,7 @@
 
 
  /* Keywords: */
-%token ASSERT BOOL BREAK BYTESFROMSTRING CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
+%token ASSERT BOOL BREAK BYTESFROMSTRING CAST CAT CONTINUE CREF DECLASSIFY DIMENSIONALITY
 %token DO DOMAIN DOMAINID ELSE FALSE_B FLOAT FLOAT32 FLOAT64 FOR IF IMPORT INT INT16
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
@@ -154,6 +154,7 @@
 %type <treenode> bitwise_or_expression
 %type <treenode> bitwise_xor_expression
 %type <treenode> bool_literal
+%type <treenode> cast_definition
 %type <treenode> cast_expression
 %type <treenode> cat_expression
 %type <treenode> compound_statement
@@ -760,6 +761,7 @@ return_type_specifier
 
 procedure_definition
  : operator_definition
+ | cast_definition
  | return_type_specifier identifier '(' ')' compound_statement
    {
      $$ = treenode_init(NODE_PROCDEF, &@$);
@@ -841,6 +843,15 @@ operator_definition
  |  return_type_specifier OPERATOR '-' unop_def_helper    { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '!' unop_def_helper    { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
  ;
+
+cast_definition
+ : return_type_specifier CAST unop_def_helper
+   {
+     $$ = treenode_init_castdef(table, &@$);
+     treenode_appendChild($$, $1);
+     treenode_moveChildren($3, $$);
+     treenode_free($3);
+   }
 
  /*******************************************************************************
   * Statements:                                                                 *

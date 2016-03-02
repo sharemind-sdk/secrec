@@ -127,6 +127,7 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "assert"     { stepLen(yyget_lloc(yyscanner), 6);  return ASSERT; }
 "bool"       { stepLen(yyget_lloc(yyscanner), 4);  return BOOL; }
 "break"      { stepLen(yyget_lloc(yyscanner), 5);  return BREAK; }
+"cast"       { stepLen(yyget_lloc(yyscanner), 4);  return CAST; }
 "cat"        { stepLen(yyget_lloc(yyscanner), 3);  return CAT; }
 "continue"   { stepLen(yyget_lloc(yyscanner), 8);  return CONTINUE; }
 "declassify" { stepLen(yyget_lloc(yyscanner), 8);  return DECLASSIFY; }

@@ -1011,7 +1011,9 @@ protected:
 class TreeNodeExprCast: public TreeNodeExpr {
 public: /* Methods: */
     inline TreeNodeExprCast (const Location & loc)
-        : TreeNodeExpr(NODE_EXPR_CAST, loc) {}
+        : TreeNodeExpr(NODE_EXPR_CAST, loc)
+        , m_symbolProcedure (nullptr)
+        {}
 
     CGResult codeGenWith (CodeGen& cg) override final;
     CGBranchResult codeGenBoolWith (CodeGen& cg) override final;
@@ -1019,11 +1021,27 @@ public: /* Methods: */
     TreeNodeExpr* expression () const;
     TreeNodeDataTypeF* dataType () const;
 
-protected:
+    bool isOverloaded () const {
+        return m_symbolProcedure != nullptr;
+    }
+
+    SymbolProcedure* procSymbol () const {
+        return m_symbolProcedure;
+    }
+
+    void setProcSymbol (SymbolProcedure* proc) {
+        m_symbolProcedure = proc;
+    }
+
+protected: /* Methods: */
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprCast (m_location);
     }
+
+private: /* Fields: */
+
+    SymbolProcedure* m_symbolProcedure;
 };
 
 /******************************************************************
@@ -1897,6 +1915,10 @@ public:
         return m_type == NODE_OPDEF;
     }
 
+    bool isCast() const {
+        return m_type == NODE_CASTDEF;
+    }
+
     TreeNodeIdentifier* identifier () const;
     TreeNodeType* returnType () const;
     TreeNodeStmt* body () const;
@@ -1930,8 +1952,6 @@ public: /* Methods: */
 
     SecrecOperator getOperator () const { return m_operator; }
 
-    CGStmtResult codeGenWith (CodeGen& cg);
-
 protected: /* Methods: */
 
     friend class TypeChecker;
@@ -1942,6 +1962,23 @@ protected: /* Methods: */
 
 protected: /* Fields: */
     const SecrecOperator m_operator;
+};
+
+/******************************************************************
+  TreeNodeCastDef
+******************************************************************/
+
+class TreeNodeCastDef: public TreeNodeProcDef {
+public: /* Methods: */
+
+    explicit inline TreeNodeCastDef(const Location & loc)
+        : TreeNodeProcDef (NODE_CASTDEF, loc)
+        { }
+
+protected: /* Methods: */
+    TreeNode* cloneV () const override final {
+        return new TreeNodeCastDef (m_location);
+    }
 };
 
 /******************************************************************

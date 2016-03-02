@@ -17,24 +17,22 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#ifndef SECREC_OPERATOR_TEMPLATE_CHECKER_H
-#define SECREC_OPERATOR_TEMPLATE_CHECKER_H
+#ifndef SECREC_CAST_TEMPLATE_CHECKER_H
+#define SECREC_CAST_TEMPLATE_CHECKER_H
 
-#include "ParserEnums.h"
 #include "TemplateChecker.h"
 
 namespace SecreC {
 
 /**
- * @brief Type checking of operator definition template.
+ * @brief Type checking of cast definition template.
  */
-class OperatorTemplateVarChecker: public TemplateVarChecker {
+class CastTemplateVarChecker: public TemplateVarChecker {
 
 public: /* Methods: */
 
-    explicit OperatorTemplateVarChecker (SymbolTable* st, CompileLog& log, SecrecOperator op)
+    explicit CastTemplateVarChecker (SymbolTable * st, CompileLog & log)
         : TemplateVarChecker (st, log)
-        , m_op (op)
         , m_seenDomainVar (false)
     { }
 
@@ -48,18 +46,15 @@ public: /* Methods: */
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t) override;
 
-    bool checkLUB (TreeNodeTemplate* templ);
-
 private: /* Methods: */
 
     void badType (TreeNode* t);
 
 private: /* Fields: */
 
-    SecrecOperator m_op;
     bool m_seenDomainVar;
 };
 
 } /* namespace SecreC */
 
-#endif /* SECREC_OPERATOR_TEMPLATE_CHECKER_H */
+#endif /* SECREC_CAST_TEMPLATE_CHECKER_H */

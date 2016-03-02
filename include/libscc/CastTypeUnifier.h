@@ -17,28 +17,25 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#ifndef SECREC_OPERATOR_TYPE_UNIFIER_H
-#define SECREC_OPERATOR_TYPE_UNIFIER_H
+#ifndef SECREC_CAST_TYPE_UNIFIER_H
+#define SECREC_CAST_TYPE_UNIFIER_H
 
-#include "Log.h"
 #include "StringRef.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "TreeNodeFwd.h"
 #include "TypeArgument.h"
 #include "Types.h"
+#include "SymbolTable.h"
+#include "Context.h"
+#include "TreeNodeFwd.h"
 
 #include <map>
 
 namespace SecreC {
 
-class Type;
-
 /*******************************************************************************
-  OperatorTypeUnifier
+  CastTypeUnifier
 *******************************************************************************/
 
-class OperatorTypeUnifier {
+class CastTypeUnifier {
 
 private: /* Types: */
 
@@ -50,15 +47,15 @@ public:
 
 public: /* Methods: */
 
-    OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
-                         SymbolTable* st,
-                         SymbolTemplate* sym,
-                         Context& cxt);
+    CastTypeUnifier (const TypeBasic* argType,
+                     SymbolTable* st,
+                     SymbolTemplate* sym,
+                     Context& cxt);
 
-    OperatorTypeUnifier (const OperatorTypeUnifier&) = delete;
-    OperatorTypeUnifier& operator = (const OperatorTypeUnifier&) = delete;
-    OperatorTypeUnifier (OperatorTypeUnifier&&) = default;
-    OperatorTypeUnifier& operator = (OperatorTypeUnifier&&) = default;
+    CastTypeUnifier (const CastTypeUnifier&) = delete;
+    CastTypeUnifier& operator = (const CastTypeUnifier&) = delete;
+    CastTypeUnifier (CastTypeUnifier&&) = default;
+    CastTypeUnifier& operator = (CastTypeUnifier&&) = default;
 
     bool visitType (TreeNodeType* t, Type* type);
 
@@ -81,7 +78,6 @@ public: /* Methods: */
     bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType);
 
     bool checkKind ();
-    bool checkSecLUB ();
 
     void getTypeArguments (std::vector<TypeArgument>& params);
 
@@ -94,13 +90,11 @@ private: /* Fields: */
     SymbolTemplate* m_sym;
     Context& m_cxt;
 
-    // LUB of expression operands binds domain
     SecurityType* m_securityType;
     TreeNodeQuantifierDomain* m_domainVar;
     TypeVarMap m_names;
 };
 
-} /* namespace SecreC */
+}; /* namespace SecreC */
 
-#endif /* SECREC_OPERATOR_TYPE_UNIFIER_H */
-
+#endif /* SECREC_CAST_TYPE_UNIFIER_H */

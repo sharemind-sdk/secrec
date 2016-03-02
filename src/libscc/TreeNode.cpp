@@ -1450,6 +1450,7 @@ TreeNodeSeqView<TreeNodeDataTypeDeclParam> TreeNodeDataTypeDecl::parameters () c
 TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     switch (type) {
 
+    SELECTNODE(CASTDEF, CastDef);
     SELECTNODE(PROGRAM, Program);
     SELECTNODE(PROCDEF, ProcDef);
     SELECTNODE(DECL, StmtDecl);
@@ -1656,6 +1657,13 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
     std::ostringstream os;
     os << "__operator" << op;
     treenode_appendChild(node, treenode_init_identifier(table->addString (os.str()), loc));
+    return node;
+}
+
+TreeNode * treenode_init_castdef(TYPE_STRINGTABLE table, YYLTYPE * loc) {
+    TreeNode * node = (TreeNode *) new SecreC::TreeNodeCastDef(*loc);
+    static std::string castStr = "__cast";
+    treenode_appendChild(node, treenode_init_identifier(table->addString(castStr), loc));
     return node;
 }
 

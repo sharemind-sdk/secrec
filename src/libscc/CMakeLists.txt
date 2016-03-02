@@ -49,6 +49,8 @@ SET(LIBSCC_SOURCES
     "APInt.cpp"
     "APFloat.cpp"
     "Blocks.cpp"
+    "CastTemplateChecker.cpp"
+    "CastTypeUnifier.cpp"
     "CodeGen.cpp"
     "CodeGenResult.cpp"
     "codegen/Assign.cpp"

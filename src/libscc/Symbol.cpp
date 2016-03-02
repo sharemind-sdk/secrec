@@ -373,6 +373,8 @@ SymbolTemplate::SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ)
     for (const TreeNodeQuantifier& quant : templ->quantifiers ()) {
         if (quant.isDataTypeQuantifier ())
             m_dataTypeQuantifiers.insert (quant.typeVariable ()->value ());
+        else if (quant.isDomainQuantifier ())
+            m_domainQuantifiers.insert (quant.typeVariable ()->value ());
     }
 }
 

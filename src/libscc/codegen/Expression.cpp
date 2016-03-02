@@ -117,23 +117,34 @@ CGResult CodeGen::cgExprCast(TreeNodeExprCast * e) {
     TreeNodeExpr * subExpr = e->expression();
     const CGResult & subResult = codeGen(subExpr);
     append(result, subResult);
-    Imop::Type iType = Imop::CAST;
-    if (e->resultType()->secrecDataType() ==
-            subExpr->resultType()->secrecDataType()) {
-        iType = Imop::ASSIGN;
-    }
-    SymbolSymbol * sym = generateResultSymbol(result, e->resultType());
-    if (subExpr->resultType()->isScalar()) {
-        emplaceImopAfter(result, e, Imop::DECLARE, sym);
-        emplaceImop(e, iType, sym, subResult.symbol());
+
+    if (e->isOverloaded()) {
+        SymbolProcedure* proc = e->procSymbol();
+        std::vector<Symbol*> operands { subResult.symbol() };
+        CGResult callRes(cgOverloadedExpr(e, e->resultType(), operands, proc));
+        append(result, callRes);
+        result.setResult(callRes.symbol());
+        releaseTemporary(result, subResult.symbol());
     }
     else {
-        copyShapeFrom(result, subResult.symbol());
-        allocTemporaryResult(result);
-        emplaceImopAfter(result, e, iType, sym, subResult.symbol(), sym->getSizeSym());
-    }
+        Imop::Type iType = Imop::CAST;
+        if (e->resultType()->secrecDataType() ==
+            subExpr->resultType()->secrecDataType()) {
+            iType = Imop::ASSIGN;
+        }
+        SymbolSymbol * sym = generateResultSymbol(result, e->resultType());
+        if (subExpr->resultType()->isScalar()) {
+            emplaceImopAfter(result, e, Imop::DECLARE, sym);
+            emplaceImop(e, iType, sym, subResult.symbol());
+        }
+        else {
+            copyShapeFrom(result, subResult.symbol());
+            allocTemporaryResult(result);
+            emplaceImopAfter(result, e, iType, sym, subResult.symbol(), sym->getSizeSym());
+        }
 
-    releaseTemporary(result, subResult.symbol());
+        releaseTemporary(result, subResult.symbol());
+    }
 
     return result;
 }
@@ -680,12 +691,15 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
                                     std::vector<Symbol*>& operands,
                                     SymbolProcedure* symProc)
 {
-    assert(operands.size() == 1u || operands.size() == 2u);
+    assert(operands.size() == 1 || operands.size() == 2);
+    assert(symProc != nullptr);
+    assert(e != nullptr);
+    assert(resTy != nullptr);
 
     TypeProc* procTy = symProc->decl()->procedureType();
     const std::vector<TypeBasic*>& paramsTy = procTy->paramTypes();
     Type* callRetTy = nullptr;
-    bool unary = operands.size() == 1u;
+    bool unary = operands.size() == 1;
     CGResult result;
 
     if (resTy->isVoid ()) {
@@ -778,7 +792,7 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
         // Check result size
         pushComment("Checking if procedure call result has the correct size:");
         std::stringstream ss;
-        ss << "Operator definition at " << *symProc->location()
+        ss << "Procedure at " << *symProc->location()
            << " returned a value with incorrect size in expression at " << e->location();
         Imop* err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel* errLabel = m_st->label(err);

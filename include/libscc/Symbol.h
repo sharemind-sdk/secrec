@@ -416,6 +416,7 @@ public: /* Methods: */
     inline TreeNodeTemplate* decl() const { return m_templ; }
     virtual const Location* location() const override;
     const std::set<StringRef>& dataTypeQuantifiers () const { return m_dataTypeQuantifiers; }
+    const std::set<StringRef>& domainQuantifiers () const { return m_domainQuantifiers; }
 
 protected: /* Methods: */
     SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ);
@@ -425,6 +426,7 @@ protected: /* Methods: */
 protected: /* Fields: */
     TreeNodeTemplate* const m_templ;
     std::set<StringRef> m_dataTypeQuantifiers;
+    std::set<StringRef> m_domainQuantifiers;
 };
 
 /*******************************************************************************
@@ -501,6 +503,7 @@ private: /* Fields: */
   SymbolOperatorTemplate
 *******************************************************************************/
 
+// Note: also used for casts (what would be a common name for casts and operators?)
 class SymbolOperatorTemplate: public SymbolTemplate {
 
 public: /* Methods: */

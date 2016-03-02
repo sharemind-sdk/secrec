@@ -197,6 +197,7 @@ enum SecrecDataType {
     O(STRUCT_DECL,                StructDecl) \
     O(PROCDEF,                    ProcDef) \
     O(OPDEF,                      OpDef) \
+    O(CASTDEF,                    CastDef) \
     O(TEMPLATE_DECL,              Template) \
     O(PROGRAM,                    Program) \
     O(IMPORT,                     Import) \

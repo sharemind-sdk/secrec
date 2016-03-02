@@ -19,11 +19,12 @@
 
 #include "typechecker/Templates.h"
 
+#include "CastTemplateChecker.h"
 #include "Log.h"
 #include "ModuleInfo.h"
+#include "OperatorTemplateChecker.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
-#include "OperatorTemplateChecker.h"
 #include "TemplateChecker.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
@@ -45,16 +46,19 @@ namespace SecreC {
 TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     TreeNodeProcDef* body = templ->body ();
     TreeNodeIdentifier* id = body->identifier ();
-
-    bool isOperator = body->type () == NODE_OPDEF;
     std::unique_ptr<TemplateVarChecker> varChecker;
 
-    if (isOperator) {
+    if (body->isOperator ()) {
         SecrecOperator op = static_cast<TreeNodeOpDef*> (body)->getOperator ();
-        varChecker.reset(
+        varChecker.reset (
             new OperatorTemplateVarChecker {m_st, m_log, op});
-    } else {
-        varChecker.reset(
+    }
+    else if (body->isCast ()) {
+        varChecker.reset (
+            new CastTemplateVarChecker {m_st, m_log});
+    }
+    else {
+        varChecker.reset (
             new TemplateVarChecker {m_st, m_log});
     }
 
@@ -73,11 +77,12 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
 
     varChecker->setArgPosition (ArgParameter);
     for (TreeNodeStmtDecl& decl : body->params ()) {
-        if (! varChecker->visitType (decl.varType ()))
+        if (! varChecker->visitType (decl.varType ())) {
             return E_TYPE;
+        }
     }
 
-    if (isOperator) {
+    if (body->isOperator ()) {
         OperatorTemplateVarChecker* checker =
             static_cast<OperatorTemplateVarChecker*> (varChecker.get ());
         if (!checker->checkLUB (templ))
@@ -118,7 +123,7 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     }
 
     SymbolTemplate* s;
-    if (isOperator)
+    if (body->isOperator () || body->isCast ())
         s = new SymbolOperatorTemplate (templ);
     else
         s = new SymbolProcedureTemplate (templ, expectsSecType, expectsDataType, expectsDimType);

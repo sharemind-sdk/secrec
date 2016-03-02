@@ -30,12 +30,6 @@ namespace SecreC {
   OperatorTemplateVarChecker
 *******************************************************************************/
 
-const char* OperatorTemplateVarChecker::thing () {
-    return m_pos == ArgReturn
-        ? "return value"
-        : "operand";
-}
-
 void OperatorTemplateVarChecker::badType (TreeNode* t) {
     m_log.fatal () << "Operator definition template " << thing () << " at "
                    << t->location() << " is not a vector or scalar.";
@@ -52,14 +46,14 @@ bool OperatorTemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
 
     if (quantifierKind (*q) == TA_DIM) {
         m_log.fatal() << "Operator definition template has dimension variable at "
-                      << q->location() << ".";
+                      << q->location () << ".";
         return false;
     }
 
     if (quantifierKind (*q) == TA_SEC) {
         if (m_seenDomainVar) {
             m_log.fatal () << "Operator definition template has more than one domain variable at "
-                           << q->location() << ".";
+                           << q->location () << ".";
             return false;
         }
         m_seenDomainVar = true;

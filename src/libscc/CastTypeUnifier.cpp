@@ -17,41 +17,36 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "OperatorTypeUnifier.h"
+#include "CastTypeUnifier.h"
 
 #include "DataType.h"
 #include "Misc.h"
 #include "SecurityType.h"
 #include "TreeNode.h"
-#include "TypeChecker.h"
 #include "Visitor.h"
 
 
-#define OTUGUARD(expr) \
+#define CTUGUARD(expr) \
     do { \
         if (! (expr)) \
             return false; \
     } while (false)
 
-
 namespace SecreC {
 
 /*******************************************************************************
-  OperatorTypeUnifier
+  CastTypeUnifier
 *******************************************************************************/
 
-OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
-                                          SymbolTable* st,
-                                          SymbolTemplate* sym,
-                                          Context& cxt)
+CastTypeUnifier::CastTypeUnifier (const TypeBasic* argType,
+                                  SymbolTable* st,
+                                  SymbolTemplate* sym,
+                                  Context& cxt)
     : m_st {st}
     , m_sym {sym}
     , m_cxt {cxt}
 {
-    m_securityType = argTypes.size () == 1u
-        ? argTypes[0u]->secrecSecType ()
-        : upperSecType (argTypes[0u]->secrecSecType (),
-                        argTypes[1u]->secrecSecType ());
+    m_securityType = argType->secrecSecType ();
 
     m_domainVar = nullptr;
 
@@ -64,7 +59,7 @@ OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argType
     }
 }
 
-bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
+bool CastTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg) {
         return false;
@@ -77,17 +72,17 @@ bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
   TreeNodeType
 *******************************************************************************/
 
-bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
+bool CastTypeUnifier::visitType (TreeNodeType* t, Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
 
-    OTUGUARD (! type->isVoid ());
+    CTUGUARD (! type->isVoid ());
 
     const auto tnv = static_cast<TypeNonVoid*>(type);
 
-    OTUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
-    OTUGUARD (visitDataTypeF (t, tnv));
-    OTUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
+    CTUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
+    CTUGUARD (visitDataTypeF (t, tnv));
+    CTUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
 
     return true;
 }
@@ -96,7 +91,7 @@ bool OperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
   TreeNodeSecTypeF
 *******************************************************************************/
 
-bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool CastTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
     assert (secType != nullptr);
     assert (t != nullptr);
 
@@ -113,20 +108,20 @@ bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secT
     SymbolDomain* s = m_st->find<SYM_DOMAIN>(name);
     assert (s != nullptr); // TemplateVarChecker checks that domains exists
 
-    return secType->isPublic () || (s->securityType () == secType);
+    return s->securityType () == secType;
 }
 
 /*******************************************************************************
   TreeNodeDataTypeF
 *******************************************************************************/
 
-bool OperatorTypeUnifier::visitDataTypeF (TreeNodeType* t, TypeNonVoid* type) {
+bool CastTypeUnifier::visitDataTypeF (TreeNodeType* t, TypeNonVoid* type) {
     return dispatchDataTypeF (*this, t->dataType (), t, type);
 }
 
-bool OperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
-                                               TreeNodeType* t,
-                                               TypeNonVoid* type)
+bool CastTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
+                                           TreeNodeType* t,
+                                           TypeNonVoid* type)
 {
     SecrecDataType treeSc = tconst->secrecDataType ();
     DataType* argData = type->secrecDataType ();
@@ -149,16 +144,16 @@ bool OperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
             return false;
     }
     else {
-        // No structs in operator definitions
+        // No structs in cast definitions
         assert (false);
     }
 
     return true;
 }
 
-bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
-                                             TreeNodeType* t,
-                                             TypeNonVoid* type)
+bool CastTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
+                                         TreeNodeType* t,
+                                         TypeNonVoid* type)
 {
     auto dataQuants = m_sym->dataTypeQuantifiers ();
     StringRef var = tvar->identifier ()->value ();
@@ -166,7 +161,7 @@ bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
 
     if (dataQuants.find (var) != dataQuants.end ()) {
         // bind template quantifier variable
-        OTUGUARD (bind (var, argData));
+        CTUGUARD (bind (var, argData));
     }
     else if (m_securityType->isPrivate ()) {
         // Check if the protection domain has this type
@@ -174,7 +169,7 @@ bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
         DataTypeUserPrimitive* tyPrim = kind->findType (var);
         DataType* ty;
 
-        OTUGUARD (tyPrim != nullptr);
+        CTUGUARD (tyPrim != nullptr);
 
         if (! t->secType ()->isPublic () &&
             type->secrecSecType ()->isPublic ())
@@ -190,7 +185,7 @@ bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
         }
 
         if (argData->isPrimitive ()) {
-            OTUGUARD (ty->equals (argData));
+            CTUGUARD (ty->equals (argData));
         }
         else {
             // No structs in operator definitions
@@ -205,9 +200,9 @@ bool OperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
     return true;
 }
 
-bool OperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
-                                                  TreeNodeType* t,
-                                                  TypeNonVoid* type)
+bool CastTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
+                                              TreeNodeType* t,
+                                              TypeNonVoid* type)
 {
     (void) ttemplate;
     (void) t;
@@ -219,54 +214,24 @@ bool OperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* tte
   TreeNodeDimTypeF
 *******************************************************************************/
 
-bool OperatorTypeUnifier::visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType) {
+bool CastTypeUnifier::visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType) {
     return dispatchDimTypeF (*this, t, dimType);
 }
 
-bool OperatorTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) {
-    if (dimType == 0u)
-        return true;
-
-    SecrecDimType templateDim = t->cachedType ();
-    if (dimType > templateDim && templateDim == 0u)
-        return false;
-
+bool CastTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) {
+    (void) t;
+    (void) dimType;
     return true;
 }
 
-bool OperatorTypeUnifier::visitDimTypeVarF (TreeNodeDimTypeVarF*, SecrecDimType) {
-    // Dim variables are not allowed in operator definitions so this
+bool CastTypeUnifier::visitDimTypeVarF (TreeNodeDimTypeVarF*, SecrecDimType) {
+    // Dim variables are not allowed in cast definitions so this
     // should never happen.
     assert(false);
     return false;
 }
 
-bool OperatorTypeUnifier::checkSecLUB () {
-    // This is the equivalent of the sec(lub(exprA, exprB)) ==
-    // sec(definition return type) check of non-templated
-    // definitions.
-
-    // Note that we compute the LUB of the expression's operands to
-    // bind the template domain variable. It's also required that
-    // LUB(template operands)==sec(template return type). So when a
-    // domain variable exists, it's definitely in the return type and
-    // the condition becomes sec(lub(exprA, exprB)) == sec(lub(exprA,
-    // exprB)) so there's nothing to check.
-    if (m_domainVar != nullptr)
-        return true;
-
-    TreeNodeType* retTy = m_sym->decl ()->body ()->returnType ();
-
-    if (m_securityType->isPublic ())
-        return retTy->secType ()->isPublic ();
-
-    StringRef templPD = retTy->secType ()->identifier ()->value ();
-
-    return templPD == static_cast<PrivateSecType*> (m_securityType)->name ();
-}
-
-
-bool OperatorTypeUnifier::checkKind () {
+bool CastTypeUnifier::checkKind () {
     // Check if m_securityType kind matches the template's domain kind
     if (m_domainVar != nullptr) {
         TreeNodeIdentifier* kind = m_domainVar->kind ();
@@ -284,7 +249,7 @@ bool OperatorTypeUnifier::checkKind () {
     return true;
 }
 
-void OperatorTypeUnifier::getTypeArguments (std::vector<TypeArgument>& params) {
+void CastTypeUnifier::getTypeArguments (std::vector<TypeArgument>& params) {
     params.clear ();
     for (TreeNodeQuantifier& quant : m_sym->decl ()-> quantifiers ()) {
         auto it = m_names.find (quant.typeVariable ()->value ());
@@ -293,4 +258,4 @@ void OperatorTypeUnifier::getTypeArguments (std::vector<TypeArgument>& params) {
     }
 }
 
-} // namespace SecreC
+} /* namespace SecreC */
