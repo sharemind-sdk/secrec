@@ -866,19 +866,18 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
             TypeBasic* param = static_cast<TypeBasic*> (ty->paramTypes ()[0u]);
 
             // Check arg
-            if (! latticeLeqOp (getContext (), arg, param))
+            if (arg->secrecSecType () != param->secrecSecType () ||
+                arg->secrecDataType () != param->secrecDataType ())
+            {
                 continue;
+            }
 
             // Check return type
             assert (dynamic_cast<TypeBasic*> (ty->returnType ()) != nullptr);
             TypeBasic* retTy = static_cast<TypeBasic*> (ty->returnType ());
-            if (! latticeLeqOp (getContext (), retTy, want))
+            if (retTy->secrecDataType () != want->secrecDataType ()) {
                 continue;
-
-            // This check is necessary to avoid using a private definition
-            // when we can use a public operation.
-            if (arg->secrecSecType () != param->secrecSecType())
-                continue;
+            }
 
             unsigned score = 0u;
             if (arg->secrecDimType () != param->secrecDimType ())

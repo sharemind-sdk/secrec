@@ -20,6 +20,7 @@
 #ifndef SECREC_OPERATOR_TYPE_UNIFIER_H
 #define SECREC_OPERATOR_TYPE_UNIFIER_H
 
+#include "AbstractOperatorTypeUnifier.h"
 #include "Log.h"
 #include "StringRef.h"
 #include "Symbol.h"
@@ -38,15 +39,7 @@ class Type;
   OperatorTypeUnifier
 *******************************************************************************/
 
-class OperatorTypeUnifier {
-
-private: /* Types: */
-
-    using TypeVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
-
-public:
-
-    using result_type = bool;
+class OperatorTypeUnifier: public AbstractOperatorTypeUnifier {
 
 public: /* Methods: */
 
@@ -60,44 +53,11 @@ public: /* Methods: */
     OperatorTypeUnifier (OperatorTypeUnifier&&) = default;
     OperatorTypeUnifier& operator = (OperatorTypeUnifier&&) = default;
 
-    bool visitType (TreeNodeType* t, Type* type);
+    virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
 
-    bool visitDataTypeF (TreeNodeType* t,
-                         TypeNonVoid* type);
-    bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
-                                 TreeNodeType* t,
-                                 TypeNonVoid* type);
-    bool visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
-                            TreeNodeType* t,
-                            TypeNonVoid* type);
-    bool visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
-                              TreeNodeType* t,
-                              TypeNonVoid* dataType);
+    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) override;
 
-    bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
-    bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
-    bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
-
-    bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType);
-
-    bool checkKind ();
     bool checkSecLUB ();
-
-    void getTypeArguments (std::vector<TypeArgument>& params);
-
-private:
-
-    bool bind (StringRef name, const TypeArgument& arg);
-
-private: /* Fields: */
-    SymbolTable* m_st;
-    SymbolTemplate* m_sym;
-    Context& m_cxt;
-
-    // LUB of expression operands binds domain
-    SecurityType* m_securityType;
-    TreeNodeQuantifierDomain* m_domainVar;
-    TypeVarMap m_names;
 };
 
 } /* namespace SecreC */

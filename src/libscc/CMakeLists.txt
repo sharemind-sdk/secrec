@@ -46,6 +46,7 @@ SET(LIBSCC_SOURCES
     "analysis/ReachingDeclassify.cpp"
     "analysis/ReachingDefinitions.cpp"
     "analysis/ReachingJumps.cpp"
+    "AbstractOperatorTypeUnifier.cpp"
     "APInt.cpp"
     "APFloat.cpp"
     "Blocks.cpp"
