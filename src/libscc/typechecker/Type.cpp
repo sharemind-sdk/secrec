@@ -158,12 +158,15 @@ void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty) {
-    return visitDataTypeVarF (ty, PublicSecType::get (getContext ()));
+    return visitDataTypeVarF (ty, nullptr);
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
                                                     SecurityType* secType)
 {
+    if (secType == nullptr)
+        secType = PublicSecType::get (getContext ());
+
     if (ty->cachedType () != nullptr) {
         return OK;
     }
