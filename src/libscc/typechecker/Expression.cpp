@@ -21,12 +21,13 @@
 #include "DataType.h"
 #include "Imop.h"
 #include "Log.h"
+#include "Misc.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
-#include "SecurityType.h"
 #include "Visitor.h"
 
 #include <boost/range.hpp>
@@ -372,12 +373,32 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     assert(dynamic_cast<TypeBasic*>(subExpr->resultType()) != nullptr);
     TypeBasic * ty = static_cast<TypeBasic*>(subExpr->resultType());
     DataType * givenDType = ty->secrecDataType();
-    TypeBasic * want = TypeBasic::get(getContext(),
-                                      ty->secrecSecType(),
-                                      resultingDType,
-                                      ty->secrecDimType());
 
-    if (root->haveContextSecType() && root->contextSecType()->isPrivate()) {
+    if (ty->secrecSecType()->isPrivate()) {
+
+        // Check if the kind has the type that we are casting to
+        SymbolKind* kind = static_cast<PrivateSecType*>(ty->secrecSecType())->securityKind();
+        StringRef name;
+
+        if (resultingDType->isBuiltinPrimitive()) {
+            name = SecrecFundDataTypeToString(static_cast<DataTypeBuiltinPrimitive*>(resultingDType)->secrecDataType());
+        }
+        else {
+            name = static_cast<DataTypeUserPrimitive*>(resultingDType)->name();
+        }
+
+        DataTypeUserPrimitive* resultUserPrim = kind->findType(name);
+        if (resultUserPrim == nullptr) {
+            m_log.fatalInProc(root)
+                << "Kind " << *kind << " does not have data type " << *resultingDType
+                << " at " << root->location() << '.';
+            return E_TYPE;
+        }
+
+        TypeBasic* want = TypeBasic::get(getContext(),
+                                         ty->secrecSecType(),
+                                         resultUserPrim,
+                                         ty->secrecDimType());
         SymbolProcedure * symProc;
         TCGUARD(findBestMatchingCastDef(symProc, ty, want, root));
 
@@ -398,6 +419,11 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
                                 << root->location() << '.';
         return E_TYPE;
     }
+
+    TypeBasic * want = TypeBasic::get(getContext(),
+                                      ty->secrecSecType(),
+                                      resultingDType,
+                                      ty->secrecDimType());
 
     root->setResultType(want);
 
