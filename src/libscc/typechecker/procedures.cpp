@@ -38,15 +38,9 @@
 #include <sstream>
 #include <vector>
 
-
-
-#include <iostream>
-using namespace std;
-
-
-
 #include <algorithm>
 using boost::adaptors::reverse;
+
 
 namespace SecreC {
 

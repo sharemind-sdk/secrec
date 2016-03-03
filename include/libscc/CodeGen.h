@@ -438,7 +438,7 @@ private:
     CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
     CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
 
-    Symbol* toVector(CGResult result,
+    Symbol* toVector(CGResult & result,
                      TreeNodeExpr * e,
                      Symbol * eArgRes,
                      Symbol * size);

@@ -657,14 +657,14 @@ void CodeGen::cgBinExprShapeCheck(TreeNodeExpr * e,
 }
 
 // e is used for the 'created by' comment
-Symbol* CodeGen::toVector(CGResult result,
+Symbol* CodeGen::toVector(CGResult & result,
                           TreeNodeExpr * e,
                           Symbol * eArgRes,
                           Symbol * size)
 {
     assert(dynamic_cast<TypeBasic*>(eArgRes->secrecType()) != nullptr);
     TypeBasic* eTy = static_cast<TypeBasic*>(eArgRes->secrecType());
-    TypeBasic* eVecTy = TypeBasic::get(getContext(), eTy->secrecSecType(), eTy->secrecDataType(), 1u);
+    TypeBasic* eVecTy = TypeBasic::get(getContext(), eTy->secrecSecType(), eTy->secrecDataType(), 1);
     SymbolSymbol* tmp = m_st->appendTemporary(eVecTy);
     SymbolSymbol* sizeSym;
 
