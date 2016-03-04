@@ -101,7 +101,11 @@ add_test_secrec_execute("scalars/69-operator-overloading-8")
 add_test_secrec_execute("scalars/70-operator-overloading-9")
 add_test_secrec_execute("scalars/71-user-defined-types-1")
 add_test_secrec_execute("scalars/72-user-defined-types-2")
-
+add_test_secrec_execute("scalars/73-cast-definitions-1")
+add_test_secrec_execute("scalars/74-cast-definitions-2")
+add_test_secrec_execute("scalars/75-cast-definitions-3")
+add_test_secrec_execute("scalars/76-cast-definitions-4")
+add_test_secrec_execute("scalars/77-cast-definitions-5")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
@@ -115,6 +119,10 @@ SET_TESTS_PROPERTIES("scalars/67-operator-overloading-6" PROPERTIES PASS_REGULAR
 SET_TESTS_PROPERTIES("scalars/68-operator-overloading-7" PROPERTIES PASS_REGULAR_EXPRESSION "returned a value with incorrect size.*\\(9,5\\)\\(9,10\\)")
 SET_TESTS_PROPERTIES("scalars/69-operator-overloading-8" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,5\\)\\(9,10\\)")
 SET_TESTS_PROPERTIES("scalars/71-user-defined-types-1" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,19\\)\\(9,20\\)")
+SET_TESTS_PROPERTIES("scalars/74-cast-definitions-2" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(15,19\\)\\(15,29\\)")
+SET_TESTS_PROPERTIES("scalars/75-cast-definitions-3" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,1\\)\\(11,2\\)")
+SET_TESTS_PROPERTIES("scalars/76-cast-definitions-4" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,24\\)\\(10,34\\)")
+SET_TESTS_PROPERTIES("scalars/77-cast-definitions-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,4\\)\\(7,10\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
@@ -205,7 +213,8 @@ add_test_secrec_execute("templates/18-overloading-on-struct-bug")
 add_test_secrec_execute("templates/19-operator-overloading-1")
 add_test_secrec_execute("templates/20-operator-overloading-2")
 SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,21\\)\\(8,30\\)")
+  PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,21\\)\\(8,30\\)")
+add_test_secrec_execute("templates/21-cast-definitions")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
