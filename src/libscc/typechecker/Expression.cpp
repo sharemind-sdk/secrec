@@ -814,10 +814,18 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
             root->setProcSymbol(match);
 
             return OK;
-        } else { // Not overloaded
+        }
+        else { // Not overloaded
             SecurityType * s1 = eType1->secrecSecType();
             SecurityType * s2 = eType2->secrecSecType();
             SecurityType * s0 = upperSecType(s1, s2);
+
+            if (s0->isPrivate()) {
+                m_log.fatalInProc(root) << "Binary expression on private operands at "
+                                        << root->location()
+                                        << " has no matching operator definition.";
+                return E_TYPE;
+            }
 
             // Add implicit classify nodes if needed:
             e1 = classifyIfNeeded(e1, s0);
@@ -900,6 +908,12 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
                                    et->secrecDimType()));
 
                 return OK;
+            }
+            else if (et->secrecSecType()->isPrivate()) {
+                m_log.fatalInProc(root) << "Unary expression on private operand at "
+                                        << root->location()
+                                        << " has no matching operator definition.";
+                return E_TYPE;
             }
         }
 
