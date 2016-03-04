@@ -123,6 +123,8 @@ CGResult CodeGen::cgExprCast(TreeNodeExprCast * e) {
         std::vector<Symbol*> operands { subResult.symbol() };
         CGResult callRes(cgOverloadedExpr(e, e->resultType(), operands, proc));
         append(result, callRes);
+        if (result.isNotOk())
+            return result;
         result.setResult(callRes.symbol());
         releaseTemporary(result, subResult.symbol());
     }
@@ -855,6 +857,7 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         std::vector<Symbol*> operands {arg1Result.symbol(), arg2Result.symbol()};
         const CGResult& callRes(cgOverloadedExpr(e, e->resultType(), operands, e->procSymbol()));
         append(result, callRes);
+        if (result.isNotOk()) return result;
         result.setResult(callRes.symbol());
 
         return result;
@@ -1974,6 +1977,7 @@ CGResult CodeGen::cgExprUnary(TreeNodeExprUnary * e) {
         std::vector<Symbol*> operands {argResult.symbol ()};
         const CGResult& callRes(cgOverloadedExpr(e, e->resultType(), operands, e->procSymbol()));
         append(result, callRes);
+        if (result.isNotOk()) return result;
         result.setResult(callRes.symbol());
 
         return result;
@@ -2067,6 +2071,7 @@ CGResult CodeGen::cgOverloadedPrefixPostfix(TreeNodeExpr* e,
     std::vector<Symbol*> args {firstArg, secondArg};
     CGResult callRes(cgOverloadedExpr(e, firstArg->secrecType(), args, procSymbol));
     append(result, callRes);
+    if (result.isNotOk()) return result;
     result.setResult(callRes.symbol());
 
     return result;
