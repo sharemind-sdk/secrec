@@ -44,6 +44,13 @@ bool OperatorTemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
         return false;
     }
 
+    if (SymbolDataType* sym = m_st->find<SYM_TYPE>(name)) {
+        m_log.fatal() << "Template variable \'" << name
+                      << "\' overshadows previous definition of "
+                      <<  *sym << " at " << q->location () << '.';
+        return false;
+    }
+
     if (quantifierKind (*q) == TA_DIM) {
         m_log.fatal() << "Operator definition template has dimension variable at "
                       << q->location () << ".";
