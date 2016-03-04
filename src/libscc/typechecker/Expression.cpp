@@ -354,9 +354,6 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     if (root->haveResultType())
         return OK;
 
-    TCGUARD (visitDataTypeF (root->dataType (), root->contextSecType ()));
-
-    DataType* resultingDType = root->dataType()->cachedType ();
     TreeNodeExpr * subExpr = root->expression();
     subExpr->setContextSecType(root->contextSecType());
     subExpr->setContextDimType(root->contextDimType());
@@ -374,31 +371,14 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
     TypeBasic * ty = static_cast<TypeBasic*>(subExpr->resultType());
     DataType * givenDType = ty->secrecDataType();
 
+    TCGUARD (visitDataTypeF (root->dataType (), ty->secrecSecType ()));
+    DataType* resultingDType = root->dataType()->cachedType ();
+    TypeBasic* want = TypeBasic::get(getContext(),
+                                     ty->secrecSecType(),
+                                     resultingDType,
+                                     ty->secrecDimType());
+
     if (ty->secrecSecType()->isPrivate()) {
-
-        // Check if the kind has the type that we are casting to
-        SymbolKind* kind = static_cast<PrivateSecType*>(ty->secrecSecType())->securityKind();
-        StringRef name;
-
-        if (resultingDType->isBuiltinPrimitive()) {
-            name = SecrecFundDataTypeToString(static_cast<DataTypeBuiltinPrimitive*>(resultingDType)->secrecDataType());
-        }
-        else {
-            name = static_cast<DataTypeUserPrimitive*>(resultingDType)->name();
-        }
-
-        DataTypeUserPrimitive* resultUserPrim = kind->findType(name);
-        if (resultUserPrim == nullptr) {
-            m_log.fatalInProc(root)
-                << "Kind " << *kind << " does not have data type " << *resultingDType
-                << " at " << root->location() << '.';
-            return E_TYPE;
-        }
-
-        TypeBasic* want = TypeBasic::get(getContext(),
-                                         ty->secrecSecType(),
-                                         resultUserPrim,
-                                         ty->secrecDimType());
         SymbolProcedure * symProc;
         TCGUARD(findBestMatchingCastDef(symProc, ty, want, root));
 
@@ -419,11 +399,6 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
                                 << root->location() << '.';
         return E_TYPE;
     }
-
-    TypeBasic * want = TypeBasic::get(getContext(),
-                                      ty->secrecSecType(),
-                                      resultingDType,
-                                      ty->secrecDimType());
 
     root->setResultType(want);
 

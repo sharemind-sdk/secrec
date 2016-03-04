@@ -164,12 +164,12 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty) {
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
                                                     SecurityType* secType)
 {
-    if (secType == nullptr)
-        secType = PublicSecType::get (getContext ());
-
     if (ty->cachedType () != nullptr) {
         return OK;
     }
+
+    if (secType == nullptr)
+        secType = PublicSecType::get (getContext ());
 
     SymbolDataType* s = nullptr;
     s = findIdentifier<SYM_TYPE> (ty->identifier ());
