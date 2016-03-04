@@ -8,6 +8,11 @@ D int operator - (D int x) {
     return - declassify (x);
 }
 
+template <domain D : additive3pp>
+D bool operator ! (D bool x) {
+    return ! declassify (x);
+}
+
 domain sharemind_test_pd additive3pp;
 
 void main () {
