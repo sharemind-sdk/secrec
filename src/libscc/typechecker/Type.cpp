@@ -142,7 +142,7 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
         DataTypeUserPrimitive* dt = kind->findType (typeName);
         if (dt == nullptr) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
-                                   << typeName << "'.";
+                                   << typeName << "' at " << ty->location () << '.';
             return E_TYPE;
         }
         ty->setCachedType (dt);
@@ -180,7 +180,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         StringRef typeName = ty->identifier ()->value ();
         if (secType->isPublic ()) {
             m_log.fatalInProc (ty) << "Kind 'public' does not have type '"
-                                   << typeName << "'.";
+                                   << typeName << "' at " << ty->location () << '.';
             return E_TYPE;
         }
 
@@ -188,7 +188,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
         if (! dt->inKind (kind)) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
-                                   << typeName << "'.";
+                                   << typeName << "' at " << ty->location () << '.';
             return E_TYPE;
         }
     }
