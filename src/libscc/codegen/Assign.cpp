@@ -317,7 +317,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         // Free temporaries
         releaseResource (result, t1);
         releaseResource (result, t2);
-
+        releaseTemporary (result, arg2Result.symbol());
         return result;
     }
     else {
