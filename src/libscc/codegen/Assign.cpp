@@ -208,7 +208,15 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // allocate memory for the result symbol "r"
         if (!resultScalar) {
-            emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
+            DataType* dt = e->resultType()->secrecDataType();
+            if (dt->isUserPrimitive()) {
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
+            }
+            else {
+                SecrecDataType prim = static_cast<DataTypeBuiltinPrimitive*>(dt)->secrecDataType();
+                emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym(),
+                                 defaultConstant(getContext(), prim));
+            }
         }
         else {
             emplaceImopAfter(result, e, Imop::DECLARE, r);
@@ -354,6 +362,8 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         // Free temporaries
         releaseResource (result, t1);
         releaseResource (result, t2);
+
+        releaseTemporary (result, arg2Result.symbol());
 
         return result;
     }
