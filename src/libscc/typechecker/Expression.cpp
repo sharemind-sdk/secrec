@@ -159,6 +159,14 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
                                              eType->secrecDataType (),
                                              dim);
 
+        // check that we are operating on numeric types
+        if (! isNumericDataType (publicDataType)) {
+            m_log.fatalInProc (root)
+                << m1 << m2 << " operator expects numeric type, given "
+                << *eType << " at " << root->location () << '.';
+            return E_TYPE;
+        }
+
         argumentDataTypes.push_back (varType);
         argumentDataTypes.push_back (publicType);
 
@@ -182,14 +190,7 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
         }
     }
 
-    // check that we are operating on numeric types
-    if (! isNumericDataType (eType->secrecDataType ())) {
-        m_log.fatalInProc (root) << m1 << m2
-            << " operator expects numeric type, given "
-            << *eType << " at " << root->location () << '.';
-        return E_TYPE;
-    }
-
+    // Built-in operator on public type
     root->setResultType (eType);
     return OK;
 }
