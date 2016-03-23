@@ -101,6 +101,12 @@ bool OperatorTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDi
     return true;
 }
 
+bool OperatorTypeUnifier::checkDomainQuantifier () {
+    OTUGUARD (m_securityType != nullptr);
+    OTUGUARD (checkKind ());
+    return true;
+}
+
 bool OperatorTypeUnifier::checkSecLUB () {
     // This is the equivalent of the sec(lub(exprA, exprB)) ==
     // sec(definition return type) check of non-templated

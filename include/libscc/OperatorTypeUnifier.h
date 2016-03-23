@@ -57,6 +57,8 @@ public: /* Methods: */
 
     virtual bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) override;
 
+    bool checkDomainQuantifier ();
+
     bool checkSecLUB ();
 };
 

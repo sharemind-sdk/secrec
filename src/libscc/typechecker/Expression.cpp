@@ -170,7 +170,7 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
         argumentDataTypes.push_back (varType);
         argumentDataTypes.push_back (publicType);
 
-        SymbolProcedure* symProc;
+        SymbolProcedure* symProc = nullptr;
         TypeProc* callType = TypeProc::get (getContext (), argumentDataTypes);
         TCGUARD (findBestMatchingOpDef (symProc,
                                         op->operatorName (),
@@ -312,7 +312,7 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
         argumentDataTypes.push_back(lType);
         argumentDataTypes.push_back(rType);
 
-        SymbolProcedure* symProc;
+        SymbolProcedure* symProc = nullptr;
         TypeProc* callType = TypeProc::get (getContext(), argumentDataTypes);
         TCGUARD (findBestMatchingOpDef(symProc,
                                        e->operatorName(),
@@ -821,7 +821,7 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
             SecurityType * s2 = eType2->secrecSecType();
             SecurityType * s0 = upperSecType(s1, s2);
 
-            if (s0->isPrivate()) {
+            if (s0 == nullptr || s0->isPrivate()) {
                 m_log.fatalInProc(root) << "Binary expression on private operands at "
                                         << root->location()
                                         << " has no matching operator definition.";

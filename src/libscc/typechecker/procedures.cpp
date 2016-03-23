@@ -1049,22 +1049,19 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
 
     OperatorTypeUnifier typeUnifier {argTypes->paramTypes (), m_st, sym, getContext ()};
 
-    if (! typeUnifier.checkKind ()) {
+    if (! typeUnifier.checkDomainQuantifier ())
         return false;
-    }
 
     unsigned i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
-        if (! typeUnifier.visitType (argNodeTy, expectedTy)) {
+        if (! typeUnifier.visitType (argNodeTy, expectedTy))
             return false;
-        }
     }
 
-    if (! typeUnifier.checkSecLUB ()) {
+    if (! typeUnifier.checkSecLUB ())
         return false;
-    }
 
     typeUnifier.getTypeArguments (params);
 
