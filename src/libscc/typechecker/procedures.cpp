@@ -1133,6 +1133,7 @@ TypeChecker::Status TypeChecker::getInstance (SymbolProcedure *& proc,
     body->setSymbol (proc);
     moduleST->appendOtherSymbol (proc);
     m_instantiator->addProcedure (inst, proc);
+    m_instantiator->addToWorkList (inst);
 
     return OK;
 }

@@ -149,6 +149,10 @@ public: /* Methods: */
         return m_instanceInfo.find (i)->second;
     }
 
+    void addToWorkList (const Instantiation& i) {
+        m_workList.push_back (i);
+    }
+
     void addProcedure (const Instantiation& i, SymbolProcedure* proc) {
         assert (m_procedures.find (i) == m_procedures.end ());
         m_procedures.insert (std::make_pair (i, proc));

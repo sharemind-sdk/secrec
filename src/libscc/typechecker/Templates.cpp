@@ -147,7 +147,6 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         InstanceInfo info;
         SymbolTable* local = mod.codeGenState ().st ()->newScope ();
         local->setName ("Template " + i.getTemplate ()->name ());
-        m_workList.push_back (i);
         info.m_generatedBody = cloned;
         info.m_moduleInfo = &mod;
         info.m_localScope = local;
