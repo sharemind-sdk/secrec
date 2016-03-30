@@ -71,6 +71,31 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
                 ++ quantifiedParamCount;
             }
         }
+
+        if (t->dataType ()->type () == NODE_DATATYPE_TEMPLATE_F) {
+            TreeNodeDataTypeTemplateF* templ = static_cast<TreeNodeDataTypeTemplateF*> (t->dataType ());
+            std::vector<TreeNodeTypeArg*> typeArgs;
+
+            for (TreeNodeTypeArg& arg : templ->arguments ()) {
+                typeArgs.push_back (&arg);
+            }
+
+            while (! typeArgs.empty ()) {
+                TreeNodeTypeArg* arg = typeArgs.back ();
+                typeArgs.pop_back ();
+                if (arg->type () == NODE_TYPE_ARG_VAR) {
+                    TreeNodeTypeArgVar* argVar = static_cast<TreeNodeTypeArgVar*> (arg);
+                    if (typeVariables.count (argVar->identifier ()->value ()) > 0)
+                        ++ quantifiedParamCount;
+                }
+                else if (arg->type () == NODE_TYPE_ARG_TEMPLATE) {
+                    TreeNodeTypeArgTemplate* argTempl = static_cast<TreeNodeTypeArgTemplate*> (arg);
+                    for (TreeNodeTypeArg& child : argTempl->arguments ()) {
+                        typeArgs.push_back (&child);
+                    }
+                }
+            }
+        }
     }
 
     return SymbolTemplate::Weight (typeVariableCount,
