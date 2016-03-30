@@ -47,6 +47,8 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
                 ++ qualifiedTypeVariableCount;
         case NODE_TEMPLATE_QUANTIFIER_DIM:
             typeVariables.insert (quant.typeVariable ()->value ());
+        case NODE_TEMPLATE_QUANTIFIER_DATA:
+            typeVariables.insert (quant.typeVariable ()->value ());
         default:
             break;
         }
@@ -64,6 +66,13 @@ SymbolTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
 
         if (t->dimType ()->isVariable ()) {
             ++ quantifiedParamCount;
+        }
+
+        if (t->dataType ()->isVariable ()) {
+            TreeNodeIdentifier* id = t->dataType ()->identifier ();
+            if (typeVariables.count (id->value ()) > 0) {
+                ++ quantifiedParamCount;
+            }
         }
     }
 
