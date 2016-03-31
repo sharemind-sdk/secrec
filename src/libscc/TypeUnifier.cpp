@@ -185,6 +185,24 @@ bool TypeUnifier::visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg) {
 }
 
 bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
+    const StringRef name = t->identifier ()->value ();
+
+    if (m_st->find<SYM_STRUCT> (name)) {
+        TUGUARD (arg.isDataType ());
+        TUGUARD (arg.dataType ()->isComposite ());
+        const auto structType = static_cast<const DataTypeStruct*> (arg.dataType ());
+        TUGUARD (name == structType->name ());
+        return true;
+    }
+
+    if (m_st->find<SYM_DOMAIN> (name)) {
+        TUGUARD (arg.isSecType ());
+        TUGUARD (arg.secType ()->isPrivate ());
+        const auto privSec = static_cast<const PrivateSecType*> (arg.secType ());
+        TUGUARD (name == privSec->name ());
+        return true;
+    }
+
     return bind (t->identifier ()->value (), arg);
 }
 

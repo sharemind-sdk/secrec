@@ -305,8 +305,39 @@ bool TreeNodeType::isNonVoid() const {
     return ! children().empty();
 }
 
-void TreeNodeType::typeString(std::ostream& os) const {
+void printTypeArg(std::ostream& os, const TreeNodeTypeArg& arg) {
+    if (arg.type () == NODE_TYPE_ARG_VAR) {
+        os << static_cast<const TreeNodeTypeArgVar*> (&arg)->identifier ()->value ();
+    }
+    else if (arg.type () == NODE_TYPE_ARG_TEMPLATE) {
+        const TreeNodeTypeArgTemplate* templ =
+            static_cast<const TreeNodeTypeArgTemplate*> (&arg);
+        os << "struct " << templ->identifier ()->value () << '<';
+        bool first = true;
+        for (TreeNodeTypeArg& typeArg : templ->arguments ()) {
+            if (! first)
+                os << ", ";
+            first = false;
+            printTypeArg (os, typeArg);
+        }
+        os << '>';
+    }
+    else if (arg.type () == NODE_TYPE_ARG_DATA_TYPE_CONST) {
+        const TreeNodeTypeArgDataTypeConst* constTy =
+            static_cast<const TreeNodeTypeArgDataTypeConst*> (&arg);
+        os << SecrecFundDataTypeToString (constTy->secrecDataType ());
+    }
+    else if (arg.type () == NODE_TYPE_ARG_DIM_TYPE_CONST) {
+        const TreeNodeTypeArgDimTypeConst* dim =
+            static_cast<const TreeNodeTypeArgDimTypeConst*> (&arg);
+        os << dim->secrecDimType();
+    }
+    else if (arg.type () == NODE_TYPE_ARG_PUBLIC) {
+        os << "public";
+    }
+}
 
+void TreeNodeType::typeString(std::ostream& os) const {
     if (!isNonVoid()) {
         os << "void";
         return;
@@ -324,8 +355,22 @@ void TreeNodeType::typeString(std::ostream& os) const {
 
     // Data type:
     if (! dataType ()->isVariable ()) {
-        TreeNodeDataTypeConstF* constDataType = static_cast<TreeNodeDataTypeConstF*>(dataType ());
-        os << SecrecFundDataTypeToString (constDataType->secrecDataType ());
+        if (dataType ()->type () == NODE_DATATYPE_CONST_F) {
+            TreeNodeDataTypeConstF* constDataType = static_cast<TreeNodeDataTypeConstF*>(dataType ());
+            os << SecrecFundDataTypeToString (constDataType->secrecDataType ());
+        }
+        else if (dataType ()->type () == NODE_DATATYPE_TEMPLATE_F) {
+            TreeNodeDataTypeTemplateF* templDataTy = static_cast<TreeNodeDataTypeTemplateF*>(dataType ());
+            os << "struct " << templDataTy->identifier ()->value () << '<';
+            bool first = true;
+            for (TreeNodeTypeArg& typeArg : templDataTy->arguments ()) {
+                if (! first)
+                    os << ", ";
+                first = false;
+                printTypeArg(os, typeArg);
+            }
+            os << '>';
+        }
     }
     else {
         TreeNodeDataTypeVarF* varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());
