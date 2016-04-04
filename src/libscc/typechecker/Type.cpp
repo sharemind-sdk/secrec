@@ -177,18 +177,18 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         return E_TYPE;
 
     if (s->dataType ()->isUserPrimitive ()) {
-        StringRef typeName = ty->identifier ()->value ();
+        DataType* dt = s->dataType ();
         if (secType->isPublic ()) {
             m_log.fatalInProc (ty) << "Kind 'public' does not have type '"
-                                   << typeName << "' at " << ty->location () << '.';
+                                   << *dt << "' at " << ty->location () << '.';
             return E_TYPE;
         }
 
-        auto dt = static_cast<DataTypeUserPrimitive*> (s->dataType ());
+        auto dtPrim = static_cast<DataTypeUserPrimitive*> (s->dataType ());
         SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
-        if (! dt->inKind (kind)) {
+        if (! dtPrim->inKind (kind)) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
-                                   << typeName << "' at " << ty->location () << '.';
+                                   << *dt << "' at " << ty->location () << '.';
             return E_TYPE;
         }
     }
