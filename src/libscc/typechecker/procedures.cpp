@@ -155,8 +155,8 @@ unsigned calculateOpScore (const TypeProc* callTypeProc,
     return score;
 }
 
-// Tuple of: number of variables, has kind constraint?, number of
-// implicit classifies and reshapes
+// Tuple of: has kind constraint?, number of quantifier occurences in
+// parameters, number of implicit classifies and reshapes
 using OpWeight = std::tuple<unsigned, unsigned, unsigned>;
 
 OpWeight calculateOpWeight (Instantiation& inst,
@@ -166,13 +166,13 @@ OpWeight calculateOpWeight (Instantiation& inst,
     assert (dynamic_cast<SymbolOperatorTemplate*> (t_) != nullptr);
     SymbolOperatorTemplate* t = static_cast<SymbolOperatorTemplate*> (t_);
 
-    unsigned varCount = t->typeVariableCount ();
+    unsigned quantParamCount = t->quantifiedParamCount ();
     // Kind constraint is good, so we give lower weight (0) when it's
     // present
-    unsigned kindConstraint = t->hasKindConstraint () ? 0 : 1;
+    unsigned domainWeight = t->domainWeight ();
     unsigned score = calculateOpScore (callTypeProc, t->decl ()->body ());
 
-    return std::make_tuple (varCount, kindConstraint, score);
+    return std::make_tuple (domainWeight, quantParamCount, score);
 }
 
 bool isRelational (SecrecOperator op) {
@@ -785,6 +785,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
 
 TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symProc,
                                                        StringRef name,
+                                                       const TypeContext & tyCxt,
                                                        TypeProc* callTypeProc,
                                                        const TreeNode * errorCxt)
 {
@@ -804,7 +805,7 @@ TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symPro
         assert (s->decl ()->containingModule () != nullptr);
         Instantiation inst (s);
 
-        if (unifyOperator (inst, callTypeProc)) {
+        if (unifyOperator (inst, tyCxt, callTypeProc)) {
             OpWeight w = calculateOpWeight (inst, callTypeProc);
             if (w > best)
                 continue;
@@ -1036,15 +1037,21 @@ bool TypeChecker::unify (Instantiation& inst,
 }
 
 bool TypeChecker::unifyOperator (Instantiation& inst,
+                                 const TypeContext& tyCxt,
                                  TypeProc* argTypes) const
 {
-    SymbolTemplate* sym = inst.getTemplate ();
+    SymbolTemplate* sym_ = inst.getTemplate ();
+    assert (dynamic_cast<SymbolOperatorTemplate*> (sym_) != nullptr);
+    SymbolOperatorTemplate* sym = static_cast<SymbolOperatorTemplate*> (sym_);
     std::vector<TypeArgument>& params = inst.getParams ();
     const TreeNodeTemplate* t = sym->decl ();
 
     params.clear ();
 
     if (t->body ()->params ().size () != argTypes->paramTypes ().size ())
+        return false;
+
+    if (sym->expectsDataType () && ! tyCxt.haveContextDataType ())
         return false;
 
     OperatorTypeUnifier typeUnifier {argTypes->paramTypes (), m_st, sym, getContext ()};
@@ -1058,6 +1065,17 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
         TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
         if (! typeUnifier.visitType (argNodeTy, expectedTy))
             return false;
+    }
+
+    TreeNodeType* retNodeTy = t->body ()->returnType ();
+    assert (retNodeTy->isNonVoid ());
+
+    if (tyCxt.haveContextDataType () &&
+        ! typeUnifier.checkReturnDataType (getContext (),
+                                           retNodeTy,
+                                           tyCxt.contextDataType ()))
+    {
+        return false;
     }
 
     if (! typeUnifier.checkSecLUB ())

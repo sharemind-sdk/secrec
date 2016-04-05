@@ -91,7 +91,7 @@ public: /* Methods: */
 
 protected:
 
-    bool bind (StringRef name, const TypeArgument& arg);
+    virtual bool bind (StringRef name, const TypeArgument& arg, SecurityType* sec = nullptr);
 
 protected: /* Fields: */
 

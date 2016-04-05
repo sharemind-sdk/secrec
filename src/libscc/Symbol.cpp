@@ -32,24 +32,12 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-SymbolProcedureTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
+unsigned countQuantifiedParams (TreeNodeTemplate* templ) {
     std::set<StringRef, StringRef::FastCmp > typeVariables;
-
-    unsigned typeVariableCount = templ->quantifiers ().size ();
-    unsigned qualifiedTypeVariableCount = 0;
     unsigned quantifiedParamCount = 0;
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
-        switch (quant.type ()) {
-        case NODE_TEMPLATE_QUANTIFIER_DOMAIN:
-            assert (dynamic_cast<TreeNodeQuantifierDomain*>(&quant) != nullptr);
-            if (static_cast<TreeNodeQuantifierDomain&>(quant).kind () == nullptr)
-                ++ qualifiedTypeVariableCount;
-        case NODE_TEMPLATE_QUANTIFIER_DIM:
-            typeVariables.insert (quant.typeVariable ()->value ());
-        default:
-            break;
-        }
+        typeVariables.insert (quant.typeVariable ()->value ());
     }
 
     TreeNodeProcDef* body = templ->body ();
@@ -64,6 +52,29 @@ SymbolProcedureTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) 
 
         if (t->dimType ()->isVariable ()) {
             ++ quantifiedParamCount;
+        }
+
+        if (t->dataType ()->isVariable ()) {
+            TreeNodeIdentifier* id = t->dataType ()->identifier ();
+            if (typeVariables.count (id->value ()) > 0) {
+                ++ quantifiedParamCount;
+            }
+        }
+    }
+
+    return quantifiedParamCount;
+}
+
+SymbolProcedureTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
+    unsigned typeVariableCount = templ->quantifiers ().size ();
+    unsigned qualifiedTypeVariableCount = 0;
+    unsigned quantifiedParamCount = countQuantifiedParams (templ);
+
+    for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
+        if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
+            assert (dynamic_cast<TreeNodeQuantifierDomain*>(&quant) != nullptr);
+            if (static_cast<TreeNodeQuantifierDomain&>(quant).kind () == nullptr)
+                ++ qualifiedTypeVariableCount;
         }
     }
 
@@ -415,20 +426,28 @@ SymbolProcedureTemplate::SymbolProcedureTemplate(TreeNodeTemplate *templ,
   SymbolOperatorTemplate
 *******************************************************************************/
 
-SymbolOperatorTemplate::SymbolOperatorTemplate(TreeNodeTemplate *templ)
+SymbolOperatorTemplate::SymbolOperatorTemplate(TreeNodeTemplate *templ,
+                                               bool expectsDataType)
     : SymbolTemplate (SYM_OPERATOR_TEMPLATE, templ)
-    , m_typeVariableCount (templ->quantifiers ().size ())
+    , m_expectsDataType (expectsDataType)
 {
+    bool hasDomainQuant = false;
+    bool hasConstraint = false;
+
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
             TreeNodeQuantifierDomain* dom = static_cast<TreeNodeQuantifierDomain*> (&quant);
             TreeNodeIdentifier* kind = dom->kind ();
+            hasDomainQuant = true;
             if (kind != nullptr) {
-                m_kindConstraint = true;
-                break;
+                hasConstraint = true;
             }
+            break;
         }
     }
+
+    m_domainWeight = (!hasDomainQuant) ? 0 : (hasConstraint ? 1 : 2);
+    m_quantifiedParamCount = countQuantifiedParams (templ);
 }
 
 }

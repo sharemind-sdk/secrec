@@ -124,7 +124,7 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
 
     SymbolTemplate* s;
     if (body->isOperator () || body->isCast ())
-        s = new SymbolOperatorTemplate (templ);
+        s = new SymbolOperatorTemplate (templ, expectsDataType);
     else
         s = new SymbolProcedureTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
 

@@ -174,6 +174,7 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
         TypeProc* callType = TypeProc::get (getContext (), argumentDataTypes);
         TCGUARD (findBestMatchingOpDef (symProc,
                                         op->operatorName (),
+                                        *root,
                                         callType,
                                         root));
 
@@ -316,6 +317,7 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
         TypeProc* callType = TypeProc::get (getContext(), argumentDataTypes);
         TCGUARD (findBestMatchingOpDef(symProc,
                                        e->operatorName(),
+                                       *e,
                                        callType,
                                        e));
 
@@ -790,7 +792,7 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
             argumentDataTypes.push_back(eType1);
             argumentDataTypes.push_back(eType2);
             TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
-            TCGUARD(findBestMatchingOpDef(match, root->operatorName(), argTypes, root));
+            TCGUARD(findBestMatchingOpDef(match, root->operatorName(), *root, argTypes, root));
         }
 
         if (match != nullptr) { // Overloaded operator
@@ -894,7 +896,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
             std::vector<TypeBasic *> argumentDataTypes;
             argumentDataTypes.push_back (et);
             TypeProc* argTypes = TypeProc::get(getContext(), argumentDataTypes);
-            TCGUARD(findBestMatchingOpDef(match, root->operatorName(),
+            TCGUARD(findBestMatchingOpDef(match, root->operatorName(), *root,
                                           argTypes, root));
             if (match != nullptr) { // overloaded operator
                 root->setProcSymbol(match);

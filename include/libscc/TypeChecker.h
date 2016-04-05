@@ -242,6 +242,7 @@ private: /* Methods: */
                 TypeProc* argTypes) const;
 
     bool unifyOperator (Instantiation& inst,
+                        const TypeContext& tyCxt,
                         TypeProc* argTypes) const;
 
     bool unifyCast (Instantiation& inst,
@@ -279,6 +280,7 @@ private: /* Methods: */
 
     Status findBestMatchingOpDef(SymbolProcedure *& symProc,
                                  StringRef name,
+                                 const TypeContext & tyCxt,
                                  TypeProc * callTypeProc,
                                  const TreeNode * errorCxt);
 

@@ -37,7 +37,7 @@ namespace SecreC {
   AbstractOperatorTypeUnifier
 *******************************************************************************/
 
-bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg) {
+bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, SecurityType*) {
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg) {
         return false;
@@ -115,7 +115,7 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
 
     if (dataQuants.find (var) != dataQuants.end ()) {
         // bind template quantifier variable
-        AOTUGUARD (bind (var, argData));
+        AOTUGUARD (bind (var, argData, type->secrecSecType ()));
     }
     else if (m_securityType->isPrivate ()) {
         // Check if the protection domain has this type

@@ -43,5 +43,6 @@ void main () {
     assert (x2 + x2 == 2);
     assert (declassify (x3 + x3) == 3);
     assert (declassify (x4 + x4) == 4);
+    assert (declassify (x3 + x1) == 3);
     assert (declassify (x4 + x1) == 5);
 }

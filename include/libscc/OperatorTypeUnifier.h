@@ -53,13 +53,21 @@ public: /* Methods: */
     OperatorTypeUnifier (OperatorTypeUnifier&&) = default;
     OperatorTypeUnifier& operator = (OperatorTypeUnifier&&) = default;
 
-    virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
+    virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) override;
 
     virtual bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) override;
 
     bool checkDomainQuantifier ();
 
     bool checkSecLUB ();
+
+    bool checkReturnDataType (Context& cxt, TreeNodeType* retNodeTy, DataType* dt);
+
+protected:
+
+    virtual bool bind (StringRef name,
+                       const TypeArgument& arg,
+                       SecurityType* sec = nullptr) override;
 };
 
 } /* namespace SecreC */

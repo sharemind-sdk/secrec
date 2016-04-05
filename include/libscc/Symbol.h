@@ -507,19 +507,24 @@ private: /* Fields: */
 class SymbolOperatorTemplate: public SymbolTemplate {
 
 public: /* Methods: */
-    SymbolOperatorTemplate (TreeNodeTemplate *templ);
+    SymbolOperatorTemplate (TreeNodeTemplate *templ, bool expectsDataType);
 
-    inline unsigned typeVariableCount () const {
-        return m_typeVariableCount;
+    inline unsigned quantifiedParamCount () const {
+        return m_quantifiedParamCount;
     }
 
-    inline bool hasKindConstraint () const {
-        return m_kindConstraint;
+    inline unsigned domainWeight () const {
+        return m_domainWeight;
+    }
+
+    inline bool expectsDataType () const {
+        return m_expectsDataType;
     }
 
 private: /* Fields: */
-    unsigned m_typeVariableCount;
-    bool m_kindConstraint;
+    bool m_expectsDataType;
+    unsigned m_quantifiedParamCount;
+    unsigned m_domainWeight;
 };
 
 /*******************************************************************************
