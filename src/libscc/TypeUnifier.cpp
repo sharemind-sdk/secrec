@@ -187,6 +187,13 @@ bool TypeUnifier::visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg) {
 bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
     const StringRef name = t->identifier ()->value ();
 
+    for (TreeNodeQuantifier& quant : m_template->quantifiers ()) {
+        if (quant.typeVariable ()->value () == name) {
+            // Quantifier variable, not a struct or a domain
+            return bind (t->identifier ()->value (), arg);
+        }
+    }
+
     if (m_st->find<SYM_STRUCT> (name)) {
         TUGUARD (arg.isDataType ());
         TUGUARD (arg.dataType ()->isComposite ());
@@ -203,7 +210,7 @@ bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& ar
         return true;
     }
 
-    return bind (t->identifier ()->value (), arg);
+    return false;
 }
 
 bool TypeUnifier::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, const TypeArgument& arg) {
