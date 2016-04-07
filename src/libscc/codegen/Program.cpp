@@ -74,7 +74,6 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
         boost::optional<DataTypeBuiltinPrimitive*> publicType = boost::none;
         boost::optional<uint64_t> size = boost::none;
-        #pragma GCC diagnostic pop
 
         for (const TreeNodeDataTypeDeclParam& param : tyDecl.parameters()) {
             if (param.isPublicParam ()) {
@@ -84,8 +83,8 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
                     return CGResult::ERROR_CONTINUE;
                 }
 
-                SecrecDataType ty = static_cast<const TreeNodeDataTypeDeclParamPublic*> (&param)->secrecDataType ();
-                publicType = DataTypeBuiltinPrimitive::get (getContext (), ty);
+                SecrecDataType pubFund = static_cast<const TreeNodeDataTypeDeclParamPublic*> (&param)->secrecDataType ();
+                publicType = DataTypeBuiltinPrimitive::get (getContext (), pubFund);
             }
             else {
                 if (size) {
@@ -106,6 +105,25 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
                 size = s;
             }
         }
+
+        // If the private type has the name of a public type, the
+        // corresponding public type must be the same
+        SecrecDataType tyFund = stringToSecrecFundDataType (tyDecl.typeName ().data ());
+        if (tyFund != DATATYPE_UNDEFINED) {
+            DataTypeBuiltinPrimitive* ty = DataTypeBuiltinPrimitive::get (getContext (), tyFund);
+            if (! publicType) {
+                publicType = ty;
+            }
+            else {
+                if (*publicType != ty) {
+                    m_log.error () << "A private type with the name of a built-in type must"
+                                   << " have the built-in type as the corresponding public type"
+                                   << " at " << tyDecl.location () << '.';
+                    return CGResult::ERROR_CONTINUE;
+                }
+            }
+        }
+        #pragma GCC diagnostic pop
 
         DataTypeUserPrimitive* dt =
             DataTypeUserPrimitive::get (getContext (), tyDecl.typeName ());

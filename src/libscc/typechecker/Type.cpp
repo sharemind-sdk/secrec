@@ -157,10 +157,6 @@ void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
     cxt.setContextDataType (cachedType ());
 }
 
-TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty) {
-    return visitDataTypeVarF (ty, nullptr);
-}
-
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
                                                     SecurityType* secType)
 {
@@ -168,8 +164,9 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         return OK;
     }
 
-    if (secType == nullptr)
+    if (secType == nullptr) {
         secType = PublicSecType::get (getContext ());
+    }
 
     SymbolDataType* s = nullptr;
     s = findIdentifier<SYM_TYPE> (ty->identifier ());
@@ -178,13 +175,23 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
 
     if (s->dataType ()->isUserPrimitive ()) {
         DataType* dt = s->dataType ();
+        auto dtPrim = static_cast<DataTypeUserPrimitive*> (s->dataType ());
+
         if (secType->isPublic ()) {
+            StringRef name = dtPrim->name ();
+            SecrecDataType scdt = stringToSecrecFundDataType (name.data ());
+
+            if (scdt != DATATYPE_UNDEFINED) {
+                ty->setCachedType (DataTypeBuiltinPrimitive::get (getContext (), scdt));
+                return OK;
+            }
+
             m_log.fatalInProc (ty) << "Kind 'public' does not have type '"
                                    << *dt << "' at " << ty->location () << '.';
             return E_TYPE;
         }
 
-        auto dtPrim = static_cast<DataTypeUserPrimitive*> (s->dataType ());
+
         SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
         if (! dtPrim->inKind (kind)) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"

@@ -124,8 +124,7 @@ public: /* Methods: */
     Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty, SecurityType* secType);
     Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t);
     Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t, SecurityType* secType);
-    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty);
-    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, SecurityType* secType);
+    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, SecurityType* secType = nullptr);
     Status visitDimTypeConstF(TreeNodeDimTypeConstF *);
     Status visitDimTypeF(TreeNodeDimTypeF* ty);
     Status visitDimTypeVarF(TreeNodeDimTypeVarF * ty);

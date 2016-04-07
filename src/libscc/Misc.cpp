@@ -92,3 +92,41 @@ const char * SecrecFundDataTypeToString(SecrecDataType dataType) {
 
     return nullptr;
 }
+
+SecrecDataType stringToSecrecFundDataType(const char * in) {
+    SecrecDataType ty = DATATYPE_UNDEFINED;
+    std::string name = in;
+
+    if (name == "bool")
+        ty = DATATYPE_BOOL;
+    else if (name == "uint8")
+        ty = DATATYPE_UINT8;
+    else if (name == "uint16")
+        ty = DATATYPE_UINT16;
+    else if (name == "uint32")
+        ty = DATATYPE_UINT32;
+    else if (name == "uint64")
+        ty = DATATYPE_UINT64;
+    else if (name == "xor_uint8")
+        ty = DATATYPE_XOR_UINT8;
+    else if (name == "xor_uint16")
+        ty = DATATYPE_XOR_UINT16;
+    else if (name == "xor_uint32")
+        ty = DATATYPE_XOR_UINT32;
+    else if (name == "xor_uint64")
+        ty = DATATYPE_XOR_UINT64;
+    else if (name == "int8")
+        ty = DATATYPE_INT8;
+    else if (name == "int16")
+        ty = DATATYPE_INT16;
+    else if (name == "int32")
+        ty = DATATYPE_INT32;
+    else if (name == "int64")
+        ty = DATATYPE_INT64;
+    else if (name == "float32")
+        ty = DATATYPE_FLOAT32;
+    else if (name == "float64")
+        ty = DATATYPE_FLOAT64;
+
+    return ty;
+}

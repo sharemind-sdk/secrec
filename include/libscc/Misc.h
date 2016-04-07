@@ -31,4 +31,6 @@ std::string xmlEncode(const std::string &input);
 
 const char * SecrecFundDataTypeToString(SecrecDataType dataType);
 
+SecrecDataType stringToSecrecFundDataType(const char * in);
+
 #endif // MISC_H
