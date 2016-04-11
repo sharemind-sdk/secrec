@@ -2036,6 +2036,8 @@ CGBranchResult CodeGen::cgBoolExprUnary(TreeNodeExprUnary * e) {
   TreeNodeExprPrefix
 ******************************************************************/
 
+// Used in the loop when the expression is overloaded and indexed
+// (e.g. x[a:b]++)
 CGResult CodeGen::cgOverloadedPrefixPostfix(TreeNodeExpr* e,
                                             SymbolProcedure* procSymbol,
                                             Symbol* x,
@@ -2109,6 +2111,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     DataType * pubResTy = dtypeDeclassify(getContext(),
                                           resTy->secrecSecType(),
                                           resTy->secrecDataType());
+    TypeNonVoid * elemType = TypeBasic::get(getContext(),
+                                            e->resultType()->secrecSecType(),
+                                            e->resultType()->secrecDataType());
     Symbol * one = numericConstant(getContext(), pubResTy, 1);
     Symbol* const idxOne = indexConstant (1);
     bool classifyOverloaded = false;
@@ -2145,9 +2150,6 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
         Symbol * offset = m_st->appendTemporary(pubIntTy);
-        TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                e->resultType()->secrecSecType(),
-                e->resultType()->secrecDataType());
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
         Symbol * tmpElem = m_st->appendTemporary(elemType);
@@ -2254,28 +2256,18 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
     else {
         // r = (++ x)
 
-        if (!isScalar) {
-            TypeNonVoid* ty = static_cast<TypeNonVoid *>(e->resultType());
-            if (!classifyOverloaded) {
-                // public
-                ty = TypeBasic::get(getContext(),
-                                    dtypeDeclassify(getContext(),
-                                                    ty->secrecSecType(),
-                                                    ty->secrecDataType()),
-                                    ty->secrecDimType());
+        if (isOverloaded) {
+            if (classifyOverloaded) {
+                // elemType - scalar in x
+                SymbolSymbol * t = m_st->appendTemporary(elemType);
+                emplaceImopAfter(result, e, Imop::DECLARE, t);
+                emplaceImop(e, Imop::CLASSIFY, t, one);
+                one = t;
             }
-
-            SymbolSymbol * t = m_st->appendTemporary(ty);
-            initShapeSymbols(getContext(), m_st, t);
-            emplaceImopAfter(result, e, Imop::ALLOC, t, x->getSizeSym(), one);
-            emplaceImop(e, Imop::ASSIGN, t->getSizeSym(), x->getSizeSym());
-            t->setDim(0u, t->getSizeSym());
-            one = t;
         }
-        else if (classifyOverloaded) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            emplaceImopAfter(result, e, Imop::DECLARE, t);
-            emplaceImop(e, Imop::CLASSIFY, t, one);
+        else if (!isScalar) {
+            SymbolSymbol * t = m_st->appendTemporary(resTy);
+            emplaceImopAfter(result, e, Imop::ALLOC, t, x->getSizeSym(), one);
             one = t;
         }
 
@@ -2343,6 +2335,9 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
     assert(dynamic_cast<TypeNonVoid*>(e->resultType()) != nullptr);
     TypeNonVoid * resTy = static_cast<TypeNonVoid*>(e->resultType());
+    TypeNonVoid * elemType = TypeBasic::get(getContext(),
+                                            e->resultType()->secrecSecType(),
+                                            e->resultType()->secrecDataType());
     DataType * pubResTy = dtypeDeclassify(getContext(),
                                           resTy->secrecSecType(),
                                           resTy->secrecDataType());
@@ -2396,9 +2391,6 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Initialize required temporary symbols:
         LoopInfo loopInfo = prepareLoopInfo (subscript);
-        TypeNonVoid * elemType = TypeBasic::get(getContext(),
-                e->resultType()->secrecSecType(),
-                e->resultType()->secrecDataType());
         Symbol * rhsOffset = m_st->appendTemporary(pubIntTy);
         Symbol * resultOffset = m_st->appendTemporary (pubIntTy);
         Symbol * tmpResult = m_st->appendTemporary(pubIntTy);
@@ -2521,28 +2513,17 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
         }
 
         // Construct the "1" value to add to the lvalue. The value could be private and/or array.
-        if (! isScalar) {
-            TypeNonVoid* ty = static_cast<TypeNonVoid *>(e->resultType());
-            if (!classifyOverloaded) {
-                // public
-                ty = TypeBasic::get(getContext(),
-                                    dtypeDeclassify(getContext(),
-                                                    ty->secrecSecType(),
-                                                    ty->secrecDataType()),
-                                    ty->secrecDimType());
+        if (isOverloaded) {
+            if (classifyOverloaded) {
+                SymbolSymbol * t = m_st->appendTemporary(elemType);
+                emplaceImopAfter(result, e, Imop::DECLARE, t);
+                emplaceImop(e, Imop::CLASSIFY, t, one);
+                one = t;
             }
-
-            SymbolSymbol * t = m_st->appendTemporary(ty);
-            initShapeSymbols(getContext(), m_st, t);
-            emplaceImopAfter(result, e, Imop::ALLOC, t, lvalSym->getSizeSym(), one);
-            emplaceImop(e, Imop::ASSIGN, t->getSizeSym(), lvalSym->getSizeSym());
-            t->setDim(0u, t->getSizeSym());
-            one = t;
         }
-        else if (classifyOverloaded) {
-            SymbolSymbol * t = m_st->appendTemporary(static_cast<TypeNonVoid *>(e->resultType()));
-            emplaceImopAfter(result, e, Imop::DECLARE, t);
-            emplaceImop(e, Imop::CLASSIFY, t, one);
+        else if (!isScalar) {
+            SymbolSymbol * t = m_st->appendTemporary(resTy);
+            emplaceImopAfter(result, e, Imop::ALLOC, t, lvalSym->getSizeSym(), one);
             one = t;
         }
 
