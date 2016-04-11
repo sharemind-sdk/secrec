@@ -689,7 +689,7 @@ Symbol* CodeGen::toVector(CGResult & result,
 }
 
 CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
-                                    Type * resTy,
+                                    Type* resTy,
                                     std::vector<Symbol*>& operands,
                                     SymbolProcedure* symProc)
 {
@@ -703,26 +703,21 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
     Type* callRetTy = nullptr;
     bool unary = operands.size() == 1;
     CGResult result;
-
-    if (resTy->isVoid ()) {
-        callRetTy = resTy;
-    }
-    else {
-        callRetTy = procTy->returnType();
-    }
-
     SymbolSymbol* resSy = generateResultSymbol(result, resTy);
     Symbol* resSizeSy;
+
+    assert(!resTy->isVoid());
+    callRetTy = procTy->returnType();
 
     if (unary) {
         Type* eArgTy = operands[0u]->secrecType();
         resSizeSy =
-            (eArgTy->isScalar())
+            eArgTy->isScalar()
             ? static_cast<Symbol*>(indexConstant(1u))
             : static_cast<Symbol*>(resSy->getSizeSym());
 
         // Shape of the result
-        if (!resTy->isVoid() && !eArgTy->isScalar()) {
+        if (!eArgTy->isScalar()) {
             pushComment("Copying shape of the result from the argument:");
             append(result, copyShape(resSy, operands[0u]));
         }
@@ -743,20 +738,19 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
         }
 
         // Shape of the result
-        if (!resTy->isVoid()) {
-            if (e1Dim == e2Dim && e1Dim == 0u) {
-                // Both are scalar
-                assert(resTy->isScalar());
-                resSizeSy = indexConstant(1u);
-            } else if (e1Dim > e2Dim) {
-                pushComment("Shape of the result:");
-                append(result, copyShape(resSy, operands[0u]));
-                resSizeSy = resSy->getSizeSym();
-            } else {
-                pushComment("Shape of the result:");
-                append(result, copyShape(resSy, operands[1u]));
-                resSizeSy = resSy->getSizeSym();
-            }
+        assert (!resTy->isVoid());
+        if (e1Dim == e2Dim && e1Dim == 0u) {
+            // Both are scalar
+            assert(resTy->isScalar());
+            resSizeSy = indexConstant(1u);
+        } else if (e1Dim > e2Dim) {
+            pushComment("Shape of the result:");
+            append(result, copyShape(resSy, operands[0u]));
+            resSizeSy = resSy->getSizeSym();
+        } else {
+            pushComment("Shape of the result:");
+            append(result, copyShape(resSy, operands[1u]));
+            resSizeSy = resSy->getSizeSym();
         }
 
         // Convert operands to vectors if necessary. Note that the
