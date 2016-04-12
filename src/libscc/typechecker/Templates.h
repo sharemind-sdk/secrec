@@ -158,7 +158,7 @@ public: /* Methods: */
         m_procedures.insert (std::make_pair (i, proc));
     }
 
-    SymbolProcedure* getProcedure (const Instantiation& i) const {
+    inline SymbolProcedure* getProcedure (const Instantiation& i) const {
         auto it = m_procedures.find (i);
         if (it == m_procedures.end ())
             return nullptr;
