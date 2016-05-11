@@ -740,7 +740,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
 
         // This check is necessary to avoid using a private definition
         // when we can use a public operation. It basically checks if
-        // lub(sec(call arguments)) == sec(return type)
+        // sec(lub(call arguments)) == sec(return type)
         if (argTypes.size () == 1u) {
             if (argTypes[0u]->secrecSecType () != paramTypes[0u]->secrecSecType())
                 bad = true;
