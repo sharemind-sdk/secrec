@@ -262,11 +262,14 @@ CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* v
 
     Imop* callImop = newCall (varInit, retList.begin (), retList.end (), argList.begin (), argList.end ());
     auto cleanImop = new Imop (varInit, Imop::RETCLEAN, nullptr, nullptr, nullptr);
+    m_callsTo[procSym].insert(callImop);
     cleanImop->setArg2 (m_st->label (callImop));
     skip->setDest (m_st->label (callImop));
     callImop->setDest (procSym);
     push_imop (callImop);
     push_imop (cleanImop);
+    result.setResult(ns);
+    codeGenSize(result);
     return result;
 }
 
