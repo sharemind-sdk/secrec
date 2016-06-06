@@ -191,7 +191,7 @@ TreeNodeIdentifier* TreeNodeTypeF::identifier () const {
   TreeNodeSecTypeF
 *******************************************************************************/
 
-void TreeNodeSecTypeF::setCachedType(SecurityType * ty) {
+void TreeNodeSecTypeF::setCachedType(const SecurityType * ty) {
     assert(m_cachedType == nullptr);
     assert(ty != nullptr);
     m_cachedType = ty;
@@ -275,7 +275,7 @@ void TreeNodeDimTypeVarF::printXmlHelper (std::ostream & os) const {
   TreeNodeType
 *******************************************************************************/
 
-SecreC::Type * TreeNodeType::secrecType() const {
+const SecreC::Type * TreeNodeType::secrecType() const {
     assert(m_cachedType != nullptr);
     return m_cachedType;
 }
@@ -305,6 +305,38 @@ bool TreeNodeType::isNonVoid() const {
     return ! children().empty();
 }
 
+void printTypeArg(std::ostream& os, const TreeNodeTypeArg& arg) {
+    if (arg.type () == NODE_TYPE_ARG_VAR) {
+        os << static_cast<const TreeNodeTypeArgVar*> (&arg)->identifier ()->value ();
+    }
+    else if (arg.type () == NODE_TYPE_ARG_TEMPLATE) {
+        const TreeNodeTypeArgTemplate* templ =
+            static_cast<const TreeNodeTypeArgTemplate*> (&arg);
+        os << "struct " << templ->identifier ()->value () << '<';
+        bool first = true;
+        for (TreeNodeTypeArg& typeArg : templ->arguments ()) {
+            if (! first)
+                os << ", ";
+            first = false;
+            printTypeArg (os, typeArg);
+        }
+        os << '>';
+    }
+    else if (arg.type () == NODE_TYPE_ARG_DATA_TYPE_CONST) {
+        const TreeNodeTypeArgDataTypeConst* constTy =
+            static_cast<const TreeNodeTypeArgDataTypeConst*> (&arg);
+        os << SecrecFundDataTypeToString (constTy->secrecDataType ());
+    }
+    else if (arg.type () == NODE_TYPE_ARG_DIM_TYPE_CONST) {
+        const TreeNodeTypeArgDimTypeConst* dim =
+            static_cast<const TreeNodeTypeArgDimTypeConst*> (&arg);
+        os << dim->secrecDimType();
+    }
+    else if (arg.type () == NODE_TYPE_ARG_PUBLIC) {
+        os << "public";
+    }
+}
+
 void TreeNodeType::typeString(std::ostream& os) const {
 
     if (!isNonVoid()) {
@@ -324,8 +356,22 @@ void TreeNodeType::typeString(std::ostream& os) const {
 
     // Data type:
     if (! dataType ()->isVariable ()) {
-        TreeNodeDataTypeConstF* constDataType = static_cast<TreeNodeDataTypeConstF*>(dataType ());
-        os << SecrecFundDataTypeToString (constDataType->secrecDataType ());
+        if (dataType ()->type () == NODE_DATATYPE_CONST_F) {
+            TreeNodeDataTypeConstF* constDataType = static_cast<TreeNodeDataTypeConstF*>(dataType ());
+            os << SecrecFundDataTypeToString (constDataType->secrecDataType ());
+        }
+        else if (dataType ()->type () == NODE_DATATYPE_TEMPLATE_F) {
+            TreeNodeDataTypeTemplateF* templDataTy = static_cast<TreeNodeDataTypeTemplateF*>(dataType ());
+            os << "struct " << templDataTy->identifier ()->value () << '<';
+            bool first = true;
+            for (TreeNodeTypeArg& typeArg : templDataTy->arguments ()) {
+                if (! first)
+                    os << ", ";
+                first = false;
+                printTypeArg(os, typeArg);
+            }
+            os << '>';
+        }
     }
     else {
         TreeNodeDataTypeVarF* varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());
@@ -375,38 +421,37 @@ bool TreeNodeExpr::havePublicBoolType() const {
            && m_resultType->isScalar();
 }
 
-SecreC::Type * TreeNodeExpr::resultType() const {
+const SecreC::Type * TreeNodeExpr::resultType() const {
     assert(m_resultType != nullptr);
     return m_resultType;
 }
 
-void TreeNodeExpr::setResultType(SecreC::Type * type) {
+void TreeNodeExpr::setResultType(const SecreC::Type * type) {
     assert(m_resultType == nullptr);
     m_resultType = type;
 }
 
-void TreeNodeExpr::resetDataType(Context & cxt, SecrecDataType dType) {
-    assert(dynamic_cast<TypeNonVoid *>(m_resultType) != nullptr);
-    m_resultType = TypeBasic::get(cxt,
-            m_resultType->secrecSecType(),
-            dType,
-            m_resultType->secrecDimType());
+void TreeNodeExpr::resetDataType(SecrecDataType dType) {
+    assert(dynamic_cast<const TypeNonVoid *>(m_resultType) != nullptr);
+    m_resultType = TypeBasic::get(m_resultType->secrecSecType(),
+                                  dType,
+                                  m_resultType->secrecDimType());
 }
 
-void TreeNodeExpr::instantiateDataType (Context& cxt, DataType* dType) {
+void TreeNodeExpr::instantiateDataType (const DataType* dType) {
     assert (dType != nullptr);
     if (dType->isBuiltinPrimitive ()) {
-        instantiateDataType (cxt, static_cast<DataTypeBuiltinPrimitive*>(dType)->secrecDataType ());
+        instantiateDataType (static_cast<const DataTypeBuiltinPrimitive*>(dType)->secrecDataType ());
     }
 }
 
 // If possible instantiate abstract data type to given concrete data type
-void TreeNodeExpr::instantiateDataType (Context& cxt, SecrecDataType dType) {
+void TreeNodeExpr::instantiateDataType (SecrecDataType dType) {
     assert (resultType () != nullptr);
     if ( ! resultType ()->isVoid ()
         && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
         && dType != DATATYPE_NUMERIC) {
-        instantiateDataTypeV (cxt, dType);
+        instantiateDataTypeV (dType);
     }
 }
 

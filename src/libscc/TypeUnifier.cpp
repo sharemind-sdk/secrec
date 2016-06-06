@@ -27,7 +27,6 @@
 #include "Types.h"
 #include "Visitor.h"
 
-
 #define TUGUARD(expr) \
     do { \
         if (! (expr)) \
@@ -61,14 +60,14 @@ bool TypeUnifier::findName (StringRef name, TypeArgument& arg) const {
   TreeNodeType
 *******************************************************************************/
 
-bool TypeUnifier::visitType (TreeNodeType* t, Type* type) {
+bool TypeUnifier::visitType (TreeNodeType* t, const Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
 
     TUGUARD (t->isNonVoid () != type->isVoid ());
 
     if (t->isNonVoid ()) {
-        const auto tnv = static_cast<TypeNonVoid*>(type);
+        const auto tnv = static_cast<const TypeNonVoid*>(type);
         TUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
         TUGUARD (visitDataTypeF (t->dataType (), tnv->secrecDataType ()));
         TUGUARD (visitDimTypeF (t->dimType (), tnv->secrecDimType ()));
@@ -83,7 +82,7 @@ bool TypeUnifier::visitType (TreeNodeType* t, Type* type) {
 
 // TODO: figure out why we have retained a domain symbols in the current
 // scope. This should definitely not happen.
-bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) {
     assert (t != nullptr);
     assert (secType != nullptr);
 
@@ -109,23 +108,23 @@ bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeF (TreeNodeDataTypeF* t, const DataType* dataType) {
     return dispatchDataTypeF (*this, t, dataType);
 }
 
-bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, const DataType* dataType) {
     assert (dataType != nullptr);
 
     if (dataType->isUserPrimitive ()) {
         // We have to do this because uint in "D uint x" will be
         // parsed as TreeNodeDataTypeConstF.
-        return static_cast<DataTypeUserPrimitive*> (dataType)->equals (t->secrecDataType ());
+        return static_cast<const DataTypeUserPrimitive*> (dataType)->equals (t->secrecDataType ());
     }
 
     return dataType->equals (t->secrecDataType ());
 }
 
-bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, const DataType* dataType) {
     assert (dataType != nullptr);
 
     const StringRef name = t->identifier ()->value ();
@@ -138,11 +137,11 @@ bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType
         return bind (name, dataType);
     }
     else if (dataType->isUserPrimitive ()) {
-        return name == static_cast<DataTypeUserPrimitive*> (dataType)->name ();
+        return name == static_cast<const DataTypeUserPrimitive*> (dataType)->name ();
     }
     else if (m_st->find<SYM_STRUCT> (name)) {
         TUGUARD (dataType->isComposite ());
-        const auto structType = static_cast<DataTypeStruct*> (dataType);
+        const auto structType = static_cast<const DataTypeStruct*> (dataType);
         TUGUARD (structType->typeArgs ().empty ());
         TUGUARD (name == structType->name ());
         return true;
@@ -151,12 +150,12 @@ bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, DataType* dataType
     return false;
 }
 
-bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, DataType* dataType) {
+bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, const DataType* dataType) {
     assert (dataType != nullptr);
 
     TUGUARD (dataType->isComposite ());
 
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(dataType);
+    const auto structType = static_cast<const DataTypeStruct*>(dataType);
     const StringRef name = t->identifier ()-> value ();
     auto args = t->arguments ();
     const auto& expectedArgs = structType->typeArgs ();
@@ -203,14 +202,39 @@ bool TypeUnifier::visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg) {
 }
 
 bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
-    return bind (t->identifier ()->value (), arg);
+    const StringRef name = t->identifier ()->value ();
+
+    for (TreeNodeQuantifier& quant : m_sym->decl ()->quantifiers ()) {
+        if (quant.typeVariable ()->value () == name) {
+            // Quantifier variable, not a struct or a domain
+            return bind (t->identifier ()->value (), arg);
+        }
+    }
+
+    if (m_st->find<SYM_STRUCT> (name)) {
+        TUGUARD (arg.isDataType ());
+        TUGUARD (arg.dataType ()->isComposite ());
+        const auto structType = static_cast<const DataTypeStruct*> (arg.dataType ());
+        TUGUARD (name == structType->name ());
+        return true;
+    }
+
+    if (m_st->find<SYM_DOMAIN> (name)) {
+        TUGUARD (arg.isSecType ());
+        TUGUARD (arg.secType ()->isPrivate ());
+        const auto privSec = static_cast<const PrivateSecType*> (arg.secType ());
+        TUGUARD (name == privSec->name ());
+        return true;
+    }
+
+    return false;
 }
 
 bool TypeUnifier::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, const TypeArgument& arg) {
     TUGUARD (arg.isDataType ());
     TUGUARD (arg.dataType ()->isComposite ());
 
-    const auto structType = static_cast<DataTypeStruct*>(arg.dataType ());
+    const auto structType = static_cast<const DataTypeStruct*>(arg.dataType ());
     auto args = t->arguments ();
     const auto& expectedArgs = structType->typeArgs ();
     TUGUARD (structType->name () == t->identifier ()->value ());

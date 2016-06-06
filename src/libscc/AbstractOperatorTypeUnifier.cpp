@@ -37,7 +37,7 @@ namespace SecreC {
   AbstractOperatorTypeUnifier
 *******************************************************************************/
 
-bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, SecurityType*) {
+bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, const SecurityType*) {
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg) {
         return false;
@@ -50,13 +50,13 @@ bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg,
   TreeNodeType
 *******************************************************************************/
 
-bool AbstractOperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
+bool AbstractOperatorTypeUnifier::visitType (TreeNodeType* t, const Type* type) {
     assert (t != nullptr);
     assert (type != nullptr);
 
     AOTUGUARD (! type->isVoid ());
 
-    const auto tnv = static_cast<TypeNonVoid*>(type);
+    const auto tnv = static_cast<const TypeNonVoid*>(type);
 
     AOTUGUARD (visitSecTypeF (t->secType (), tnv->secrecSecType ()));
     AOTUGUARD (visitDataTypeF (t, tnv));
@@ -69,16 +69,16 @@ bool AbstractOperatorTypeUnifier::visitType (TreeNodeType* t, Type* type) {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-bool AbstractOperatorTypeUnifier::visitDataTypeF (TreeNodeType* t, TypeNonVoid* type) {
+bool AbstractOperatorTypeUnifier::visitDataTypeF (TreeNodeType* t, const TypeNonVoid* type) {
     return dispatchDataTypeF (*this, t->dataType (), t, type);
 }
 
 bool AbstractOperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
                                                        TreeNodeType* t,
-                                                       TypeNonVoid* type)
+                                                       const TypeNonVoid* type)
 {
     SecrecDataType treeSc = tconst->secrecDataType ();
-    DataType* argData = type->secrecDataType ();
+    const DataType* argData = type->secrecDataType ();
 
     if (! t->secType ()->isPublic () &&
         type->secrecSecType ()->isPublic ())
@@ -87,14 +87,14 @@ bool AbstractOperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t
     }
 
     if (argData->isBuiltinPrimitive ()) {
-        SecrecDataType argSc = static_cast<DataTypeBuiltinPrimitive*> (argData)->secrecDataType ();
+        SecrecDataType argSc = static_cast<const DataTypeBuiltinPrimitive*> (argData)->secrecDataType ();
         if (treeSc != argSc)
             return false;
     }
     else if (argData->isUserPrimitive ()) {
         assert (type->secrecSecType ()->isPrivate ());
 
-        if (! static_cast<DataTypeUserPrimitive*> (argData)->equals (treeSc))
+        if (! static_cast<const DataTypeUserPrimitive*> (argData)->equals (treeSc))
             return false;
     }
     else {
@@ -107,11 +107,11 @@ bool AbstractOperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t
 
 bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
                                                      TreeNodeType* t,
-                                                     TypeNonVoid* type)
+                                                     const TypeNonVoid* type)
 {
     auto dataQuants = m_sym->dataTypeQuantifiers ();
     StringRef var = tvar->identifier ()->value ();
-    DataType* argData = type->secrecDataType ();
+    const DataType* argData = type->secrecDataType ();
 
     if (dataQuants.find (var) != dataQuants.end ()) {
         // bind template quantifier variable
@@ -119,9 +119,9 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
     }
     else if (m_securityType->isPrivate ()) {
         // Check if the protection domain has this type
-        SymbolKind* kind = static_cast<PrivateSecType*> (m_securityType)->securityKind ();
-        DataTypeUserPrimitive* tyPrim = kind->findType (var);
-        DataType* ty;
+        SymbolKind* kind = static_cast<const PrivateSecType*> (m_securityType)->securityKind ();
+        const DataTypeUserPrimitive* tyPrim = kind->findType (var);
+        const DataType* ty;
 
         AOTUGUARD (tyPrim != nullptr);
 
@@ -156,7 +156,7 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
 
 bool AbstractOperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
                                                           TreeNodeType* t,
-                                                          TypeNonVoid* type)
+                                                          const TypeNonVoid* type)
 {
     (void) ttemplate;
     (void) t;
@@ -184,7 +184,9 @@ bool AbstractOperatorTypeUnifier::checkKind () {
     if (m_domainVar != nullptr) {
         TreeNodeIdentifier* kind = m_domainVar->kind ();
         if (kind != nullptr) {
-            const std::string& k = static_cast<PrivateSecType*> (m_securityType)->securityKind ()->name ();
+            const std::string& k =
+                static_cast<const PrivateSecType*> (m_securityType)
+                ->securityKind ()->name ();
 
             if (m_securityType->isPublic ())
                 return false;

@@ -20,24 +20,13 @@
 #ifndef CONTEXT_IMPL_H
 #define CONTEXT_IMPL_H
 
-#include "ParserEnums.h"
-#include "Types.h"
-#include "Constant.h"
 #include "StringTable.h"
-#include "TypeArgument.h"
-#include "SecurityType.h"
 
 #include <map>
-#include <tuple>
 
 namespace SecreC {
 
-class DataType;
-class DataTypeBuiltinPrimitive;
 class DataTypeUserPrimitive;
-class DataTypeStruct;
-class PrivateSecType;
-class PublicSecType;
 class SymbolKind;
 
 class ContextImpl {
@@ -48,16 +37,6 @@ private:
 
 public: /* Types: */
 
-    using PrivateSecTypeMap = std::map<StringRef, PrivateSecType*>;
-    using TypeProcMap = std::map<std::pair<Type*, std::vector<TypeBasic*> >, TypeProc*>;
-    using TypeBasicMap = std::map<std::tuple<SecurityType*, DataType*, SecrecDimType>, TypeBasic*>;
-
-    using ConstantStringMap = std::map<StringRef, ConstantString*>;
-    using NumericConstantMap = std::map<APInt, ConstantInt*>;
-    using FloatConstantMap = std::map<APFloat, ConstantFloat*, APFloat::BitwiseCmp>;
-
-    using StructTypeMap = std::map<std::pair<StringRef, std::vector<TypeArgument> >, DataTypeStruct*>;
-    using BuiltinPrimitiveTypeMap = std::map<SecrecDataType, DataTypeBuiltinPrimitive*>;
     using UserPrimitiveTypeMap = std::map<StringRef, DataTypeUserPrimitive*>;
 
 public: /* Methods: */
@@ -68,29 +47,12 @@ public: /* Methods: */
 
     StringTable& stringTable () { return m_stringTable; }
 
-    /* Security types: */
-    PublicSecType* publicType ();
-    PrivateSecType* privateType (StringRef domain, SymbolKind* kind);
-
 public: /* Fields: */
 
     /* Strings: */
-    StringTable           m_stringTable;
+    StringTable m_stringTable;
 
-    /* All types: */
-    TypeVoid                m_voidType;
-    TypeProcMap             m_procTypes;
-    TypeBasicMap            m_basicTypes;
-    PublicSecType           m_pubSecType;
-    PrivateSecTypeMap       m_privSecTypes;
-    BuiltinPrimitiveTypeMap m_builtinPrimitiveTypes;
-    UserPrimitiveTypeMap    m_userPrimitiveTypes;
-    StructTypeMap           m_structTypes;
-
-    /* All constants: */
-    ConstantStringMap     m_stringLiterals;
-    NumericConstantMap    m_numericConstants[2]; ///< 0 - unsigned, 1 - signed
-    FloatConstantMap      m_floatConstants;
+    UserPrimitiveTypeMap m_userPrimitiveTypes;
 };
 
 } // namespace SecreC

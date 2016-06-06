@@ -72,7 +72,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuninitialized"
         #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-        boost::optional<DataTypeBuiltinPrimitive*> publicType = boost::none;
+        boost::optional<const DataTypeBuiltinPrimitive*> publicType = boost::none;
         boost::optional<uint64_t> size = boost::none;
 
         for (const TreeNodeDataTypeDeclParam& param : tyDecl.parameters()) {
@@ -84,7 +84,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
                 }
 
                 SecrecDataType pubFund = static_cast<const TreeNodeDataTypeDeclParamPublic*> (&param)->secrecDataType ();
-                publicType = DataTypeBuiltinPrimitive::get (getContext (), pubFund);
+                publicType = DataTypeBuiltinPrimitive::get (pubFund);
             }
             else {
                 if (size) {
@@ -110,7 +110,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         // corresponding public type must be the same
         SecrecDataType tyFund = stringToSecrecFundDataType (tyDecl.typeName ().data ());
         if (tyFund != DATATYPE_UNDEFINED) {
-            DataTypeBuiltinPrimitive* ty = DataTypeBuiltinPrimitive::get (getContext (), tyFund);
+            const DataTypeBuiltinPrimitive* ty = DataTypeBuiltinPrimitive::get (tyFund);
             if (! publicType) {
                 publicType = ty;
             }
@@ -163,7 +163,7 @@ CGStmtResult CodeGen::cgDomain(TreeNodeDomain * dom) {
 
     st->appendSymbol(new SymbolDomain(
                          idDomain->value(),
-                         PrivateSecType::get(getContext(), idDomain->value(), kind),
+                         PrivateSecType::get(idDomain->value(), kind),
                          &idDomain->location ()));
     return CGStmtResult();
 }
@@ -255,7 +255,7 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 
     // Static checking:
     assert(ns->secrecType()->kind () == Type::PROCEDURE);
-    TypeProc * fType = static_cast<TypeProc*>(ns->secrecType());
+    const auto fType = static_cast<const TypeProc*>(ns->secrecType());
     if (! fType->returnType ()->isVoid ()) {
         if (bodyResult.flags() != CGStmtResult::RETURN) {
             if ((bodyResult.flags() & CGStmtResult::BREAK) != 0x0) {

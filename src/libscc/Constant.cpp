@@ -22,10 +22,13 @@
 #include "Context.h"
 #include "ContextImpl.h"
 #include "DataType.h"
+#include "Types.h"
 
+#include <array>
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <map>
 
 namespace SecreC {
 
@@ -61,62 +64,68 @@ unsigned widthInBits (SecrecDataType type) {
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty) {
     switch (ty) {
-    case DATATYPE_BOOL: return ConstantInt::getBool (cxt, false);
+    case DATATYPE_BOOL: return ConstantInt::getBool (false);
     case DATATYPE_STRING: return ConstantString::get (cxt, "");
     default:
         if (isNumericDataType (ty)) {
-            return numericConstant (cxt, ty, 0);
+            return numericConstant (ty, 0);
         }
     }
 
     return nullptr;
 }
 
-SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value) {
-    return numericConstant (cxt, DataTypeBuiltinPrimitive::get (cxt, ty), value);
+SymbolConstant* numericConstant (SecrecDataType ty, uint64_t value) {
+    return numericConstant (DataTypeBuiltinPrimitive::get (ty), value);
 }
 
-SymbolConstant* defaultConstant (Context& cxt, DataType* ty) {
-    assert (ty != nullptr && ty->isBuiltinPrimitive ());
-    return defaultConstant (cxt, static_cast<DataTypeBuiltinPrimitive*>(ty)->secrecDataType ());
+SymbolConstant* defaultConstant (Context& cxt, const DataType* ty) {
+    assert (ty != nullptr && ! ty->isComposite ());
+    return defaultConstant (cxt, static_cast<const DataTypeBuiltinPrimitive*>(ty)->secrecDataType ());
 }
 
-SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value) {
-    assert (ty != nullptr && isNumericDataType (ty) && ty->isBuiltinPrimitive ());
+SymbolConstant* numericConstant (const DataType* ty, uint64_t value) {
+    assert (ty != nullptr && isNumericDataType (ty));
     if (isFloatingDataType (ty))
-        return ConstantFloat::get (cxt, ty, value);
+        return ConstantFloat::get (ty, value);
     else
-        return ConstantInt::get (cxt, ty, value);
+        return ConstantInt::get (ty, value);
 }
 
 /*******************************************************************************
   ConstantInt
 *******************************************************************************/
 
-ConstantInt* ConstantInt::get (Context& cxt, DataType* type, uint64_t value) {
-    assert (type != nullptr && type->isBuiltinPrimitive ());
-    DataTypeBuiltinPrimitive* const primDataType = static_cast<DataTypeBuiltinPrimitive*>(type);
-    return ConstantInt::get (cxt, primDataType->secrecDataType (), value);
+ConstantInt* ConstantInt::get (const DataType* type, uint64_t value) {
+    assert (type != nullptr && type->isPrimitive ());
+    const auto primDataType = static_cast<const DataTypeBuiltinPrimitive*>(type);
+    return ConstantInt::get (primDataType->secrecDataType (), value);
 }
 
-ConstantInt* ConstantInt::get (Context& cxt, SecrecDataType type, uint64_t value) {
+// TODO: use flyweight
+// TODO: const correctness
+ConstantInt* ConstantInt::get (SecrecDataType type, uint64_t value) {
+    using NumericConstantMap = std::map<APInt, ConstantInt>;
+    static std::array<NumericConstantMap, 2> numericConstants; // 0 - unsigned, 1 - signed
+
+    NumericConstantMap& map = numericConstants[isSignedNumericDataType(type)];
     const APInt apvalue (widthInBits (type), value);
-    auto& map = cxt.pImpl ()->m_numericConstants[isSignedNumericDataType (type)];
     auto it = map.find (apvalue);
     if (it == map.end ()) {
-        auto cvalue = new ConstantInt (TypeBasic::get (cxt, type), apvalue);
+        const auto cvalue = ConstantInt (TypeBasic::get (type), apvalue);
         it = map.insert (it, std::make_pair (apvalue, cvalue));
     }
 
-    return it->second;
+    // Note that insert does not invalidate references to elements!
+    return &it->second;
 }
 
-ConstantInt* ConstantInt::getBool (Context& cxt, bool value) {
-    return ConstantInt::get (cxt, DATATYPE_BOOL, value);
+ConstantInt* ConstantInt::getBool (bool value) {
+    return ConstantInt::get (DATATYPE_BOOL, value);
 }
 
 void ConstantInt::print (std::ostream &os) const {
-    const auto dataType = static_cast<DataTypeBuiltinPrimitive*>(secrecType ()->secrecDataType ());
+    const auto dataType = static_cast<const DataTypeBuiltinPrimitive*>(secrecType ()->secrecDataType ());
     const auto secrecDataType = dataType->secrecDataType ();
     if (isSignedNumericDataType (secrecDataType))
         m_value.sprint (os);
@@ -128,23 +137,28 @@ void ConstantInt::print (std::ostream &os) const {
   ConstantFloat
 *******************************************************************************/
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, uint64_t value) {
-    return get (cxt, type, APFloat (floatPrec (type), value));
+ConstantFloat* ConstantFloat::get (const DataType* type, uint64_t value) {
+    return get (type, APFloat (floatPrec (type), value));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, StringRef str) {
-    return get (cxt, type, APFloat (floatPrec (type), str));
+ConstantFloat* ConstantFloat::get (const DataType* type, StringRef str) {
+    return get (type, APFloat (floatPrec (type), str));
 }
 
-ConstantFloat* ConstantFloat::get (Context& cxt, DataType* type, const APFloat& value) {
-    auto& map = cxt.pImpl ()->m_floatConstants;
-    auto it = map.find (value);
-    if (it == map.end ()) {
-        auto cfloat = new ConstantFloat (TypeBasic::get (cxt, type), value);
-        it = map.insert (it, std::make_pair (value, cfloat));
+// TODO: use flyweight
+// TODO: const correctness
+ConstantFloat* ConstantFloat::get (const DataType* type, const APFloat& value) {
+    using FloatConstantMap = std::map<APFloat, ConstantFloat, APFloat::BitwiseCmp>;
+    static FloatConstantMap floatConstants;
+
+    auto it = floatConstants.find (value);
+    if (it == floatConstants.end ()) {
+        const auto f = ConstantFloat (TypeBasic::get (type), value);
+        it = floatConstants.insert (it, std::make_pair (value, f));
     }
 
-    return it->second;
+    // Note that insert does not invalidate references to elements!
+    return &it->second;
 }
 
 void ConstantFloat::print (std::ostream &os) const { os << m_value; }
@@ -153,17 +167,22 @@ void ConstantFloat::print (std::ostream &os) const { os << m_value; }
   ConstantString
 *******************************************************************************/
 
+// TODO: use flyweight
+// TODO: const correctness
 ConstantString* ConstantString::get (Context& cxt, StringRef str) {
-    auto& map = cxt.pImpl ()->m_stringLiterals;
-    auto it = map.find (str);
-    if (it == map.end ()) {
+    using ConstantStringMap = std::map<StringRef, ConstantString>;
+    static ConstantStringMap stringLiterals;
+
+    auto it = stringLiterals.find (str);
+    if (it == stringLiterals.end ()) {
         // Make sure that the string is allocated in the table
-        StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
-        auto cstr = new ConstantString (TypeBasic::get (cxt, DATATYPE_STRING), val);
-        it = map.insert (it, std::make_pair (val, cstr));
+        const StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
+        const auto cstr = ConstantString (TypeBasic::get (DATATYPE_STRING), val);
+        it = stringLiterals.insert (it, std::make_pair (val, cstr));
     }
 
-    return it->second;
+    // Note that insert does not invalidate references to elements!
+    return &it->second;
 }
 
 void ConstantString::print (std::ostream &os) const {

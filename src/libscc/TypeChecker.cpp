@@ -32,15 +32,15 @@
 
 namespace SecreC {
 
-TypeBasic* upperTypeBasic (Context& context, TypeBasic* a, TypeBasic* b) {
-    SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
+const TypeBasic* upperTypeBasic (const TypeBasic* a, const TypeBasic* b) {
+    const SecurityType* secType = upperSecType (a->secrecSecType (), b->secrecSecType ());
     SecrecDimType dimType = upperDimType (a->secrecDimType (), b->secrecDimType ());
-    DataType* dataType = upperDataType (context, a, b);
+    const DataType* dataType = upperDataType (a, b);
 
     if (secType == nullptr || dimType == (~ SecrecDimType(0)) || dataType == nullptr)
         return nullptr;
 
-    return TypeBasic::get (context, secType, dataType, dimType);
+    return TypeBasic::get (secType, dataType, dimType);
 }
 
 /*******************************************************************************
@@ -86,28 +86,27 @@ SymbolSymbol* TypeChecker::getSymbol (TreeNodeIdentifier *id) {
 
 // Potentially replaces the child in parent list. Does not invalidate iterators.
 TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
-                                             SecurityType * need)
+                                             const SecurityType * need)
 {
     if (need == nullptr)
         return child;
 
-    SecurityType * const haveSecType = child->resultType()->secrecSecType();
+    const SecurityType * const haveSecType = child->resultType()->secrecSecType();
     assert(!(need->isPrivate() && haveSecType->isPrivate()) || need == haveSecType);
 
     if (need->isPublic() || haveSecType->isPrivate())
         return child;
 
     TreeNode * const parent = child->parent();
-    DataType* destDType = child->resultType()->secrecDataType();
+    const DataType* destDType = child->resultType()->secrecDataType();
     if (child->haveContextDataType() &&
-        dtypeDeclassify (getContext (), need, child->contextDataType())
-        == destDType)
+        dtypeDeclassify (need, child->contextDataType()) == destDType)
     {
         destDType = child->contextDataType();
     }
 
     const SecrecDimType dimDType = child->resultType()->secrecDimType();
-    TypeBasic * const newTy = TypeBasic::get(getContext(), need, destDType, dimDType);
+    const TypeBasic * const newTy = TypeBasic::get(need, destDType, dimDType);
     const auto ec = new TreeNodeExprClassify(need, child->location());
     ec->appendChild(child);
     ec->resetParent(parent);
@@ -121,7 +120,7 @@ TreeNodeExpr * TypeChecker::classifyIfNeeded(TreeNodeExpr * child,
 
     // patch up context types just in case
     ec->setContext(child);
-    child->setContextSecType(PublicSecType::get(getContext()));
+    child->setContextSecType(PublicSecType::get());
     child->setContextDataType(destDType);
     child = ec;
     return child;
@@ -141,8 +140,8 @@ bool TypeChecker::checkAndLogIfVoid (TreeNodeExpr* e) {
 TypeChecker::Status TypeChecker::checkPublicBooleanScalar (TreeNodeExpr * e) {
     assert (e != nullptr);
     if (! e->haveResultType ()) {
-        e->setContextSecType (PublicSecType::get (getContext ()));
-        e->setContextDataType (DataTypeBuiltinPrimitive::get (getContext (), DATATYPE_BOOL));
+        e->setContextSecType (PublicSecType::get ());
+        e->setContextDataType (DataTypeBuiltinPrimitive::get (DATATYPE_BOOL));
         e->setContextDimType (0);
 
         if (visitExpr (e) != OK)
@@ -178,13 +177,13 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
 
             assert (dynamic_cast<TreeNodeExpr*>(j) != nullptr);
             TreeNodeExpr* e = static_cast<TreeNodeExpr*>(j);
-            e->setContextIndexType (getContext ());
+            e->setContextIndexType ();
             TCGUARD (visitExpr(e));
 
             if (checkAndLogIfVoid(e))
                 return E_TYPE;
 
-            TypeNonVoid* eTy = static_cast<TypeNonVoid*>(e->resultType());
+            const auto eTy = static_cast<const TypeNonVoid*>(e->resultType());
 
             if (! eTy->isPublicUIntScalar ()) {
                 m_log.fatalInProc(node) << "Invalid type for index at "
@@ -199,7 +198,7 @@ TypeChecker::Status TypeChecker::checkIndices(TreeNode * node,
     return OK;
 }
 
-bool TypeChecker::canPrintValue (Type* ty) {
+bool TypeChecker::canPrintValue (const Type* ty) {
     if (ty->isVoid ())
         return false;
 
@@ -209,7 +208,7 @@ bool TypeChecker::canPrintValue (Type* ty) {
     if (! ty->isScalar ())
         return false;
 
-    DataType* dType = ty->secrecDataType ();
+    const DataType* dType = ty->secrecDataType ();
     if (! dType->isString () &&
         ! dType->isBool () &&
         ! isNumericDataType (dType))

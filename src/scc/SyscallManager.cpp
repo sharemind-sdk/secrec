@@ -45,7 +45,7 @@ void SyscallManager::init (VMSymbolTable& st,
     m_pdSection = pd;
 }
 
-VMLabel* SyscallManager::getPD (SecreC::PrivateSecType* secTy) {
+VMLabel* SyscallManager::getPD (const SecreC::PrivateSecType* secTy) {
     PDMap::iterator i = m_pds.find (secTy);
     if (i == m_pds.end ()) {
         std::ostringstream ss;

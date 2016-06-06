@@ -97,7 +97,7 @@ TypeChecker::Status TypeChecker::visitSecTypeF(TreeNodeSecTypeF * ty) {
         return OK;
 
     if (ty->isPublic ()) {
-        ty->setCachedType (PublicSecType::get (getContext ()));
+        ty->setCachedType (PublicSecType::get ());
         return OK;
     }
 
@@ -118,7 +118,9 @@ void TreeNodeSecTypeF::setTypeContext (TypeContext& cxt) const {
   TreeNodeDataTypeF
 *******************************************************************************/
 
-TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty, SecurityType* secType) {
+TypeChecker::Status TypeChecker::visitDataTypeF (TreeNodeDataTypeF *ty,
+                                                 const SecurityType* secType)
+{
     return dispatchDataTypeF (*this, ty, secType);
 }
 
@@ -127,19 +129,19 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty,
-                                                      SecurityType* secType)
+                                                      const SecurityType* secType)
 {
     if (ty->cachedType () != nullptr) {
         return OK;
     }
 
     if (secType == nullptr)
-        secType = PublicSecType::get (getContext ());
+        secType = PublicSecType::get ();
 
     if (secType->isPrivate ()) {
-        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
+        SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
         StringRef typeName (SecrecFundDataTypeToString (ty->secrecDataType ()));
-        DataTypeUserPrimitive* dt = kind->findType (typeName);
+        const DataTypeUserPrimitive* dt = kind->findType (typeName);
         if (dt == nullptr) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
                                    << typeName << "' at " << ty->location () << '.';
@@ -149,7 +151,7 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
         return OK;
     }
 
-    ty->setCachedType (DataTypeBuiltinPrimitive::get (getContext (), ty->secrecDataType ()));
+    ty->setCachedType (DataTypeBuiltinPrimitive::get (ty->secrecDataType ()));
     return OK;
 }
 
@@ -158,14 +160,14 @@ void TreeNodeDataTypeF::setTypeContext (TypeContext& cxt) const {
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
-                                                    SecurityType* secType)
+                                                    const SecurityType* secType)
 {
     if (ty->cachedType () != nullptr) {
         return OK;
     }
 
     if (secType == nullptr) {
-        secType = PublicSecType::get (getContext ());
+        secType = PublicSecType::get ();
     }
 
     SymbolDataType* s = nullptr;
@@ -174,15 +176,15 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         return E_TYPE;
 
     if (s->dataType ()->isUserPrimitive ()) {
-        DataType* dt = s->dataType ();
-        auto dtPrim = static_cast<DataTypeUserPrimitive*> (s->dataType ());
+        const DataType* dt = s->dataType ();
+        auto dtPrim = static_cast<const DataTypeUserPrimitive*> (s->dataType ());
 
         if (secType->isPublic ()) {
             StringRef name = dtPrim->name ();
             SecrecDataType scdt = stringToSecrecFundDataType (name.data ());
 
             if (scdt != DATATYPE_UNDEFINED) {
-                ty->setCachedType (DataTypeBuiltinPrimitive::get (getContext (), scdt));
+                ty->setCachedType (DataTypeBuiltinPrimitive::get (scdt));
                 return OK;
             }
 
@@ -192,7 +194,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         }
 
 
-        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
+        SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
         if (! dtPrim->inKind (kind)) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
                                    << *dt << "' at " << ty->location () << '.';
@@ -247,16 +249,17 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         TreeNodeSecTypeF* secTyNode = tyNode->secType ();
 
         TCGUARD (visitSecTypeF (secTyNode));
-        SecurityType* secType = secTyNode->cachedType ();
+        const SecurityType* secType = secTyNode->cachedType ();
 
         TCGUARD (visitDimTypeF (tyNode->dimType ()));
         TCGUARD (visitDataTypeF (tyNode->dataType (), secType));
 
-        DataType* dataType = tyNode->dataType ()->cachedType ();
+        const DataType* dataType = tyNode->dataType ()->cachedType ();
         SecrecDimType dimType = tyNode->dimType ()->cachedType ();
 
         if (dataType->isBuiltinPrimitive ()) {
-            SecrecDataType secrecDataType = static_cast<DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
+            SecrecDataType secrecDataType =
+                static_cast<const DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
             if (secType->isPublic ()) {
                 switch (secrecDataType) {
                 case DATATYPE_XOR_UINT8:
@@ -281,11 +284,11 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
             }
         }
 
-        tyNode->m_cachedType = TypeBasic::get (m_context, secType, dataType, dimType);
+        tyNode->m_cachedType = TypeBasic::get (secType, dataType, dimType);
     }
     else {
         assert (dynamic_cast<TreeNodeTypeVoid*>(_ty) != nullptr);
-        _ty->m_cachedType = TypeVoid::get (getContext ());
+        _ty->m_cachedType = TypeVoid::get ();
     }
 
     return OK;
@@ -301,7 +304,7 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
     if (t->cachedType () != nullptr)
         return OK;
 
-    DataTypeStruct* structType = nullptr;
+    const DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
     assert (structType != nullptr);
     t->setCachedType (structType);
@@ -309,7 +312,7 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
 }
 
 TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t,
-                                                         SecurityType* secType)
+                                                         const SecurityType* secType)
 {
     (void) secType;
     return visitDataTypeTemplateF (t);
@@ -318,7 +321,7 @@ TypeChecker::Status TypeChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplat
 TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
                                                        TreeNodeSeqView<TreeNodeTypeArg> args,
                                                        const Location& loc,
-                                                       DataTypeStruct*& result)
+                                                       const DataTypeStruct*& result)
 {
     assert (id != nullptr);
 
@@ -356,9 +359,9 @@ TypeChecker::Status TypeChecker::checkTypeApplication (TreeNodeIdentifier* id,
                     mismatch = true;
                 }
                 else {
-                    auto kindSym = m_st->find<SYM_KIND>(kind->value ());
+                    const auto kindSym = m_st->find<SYM_KIND>(kind->value ());
                     assert (kindSym != nullptr);
-                    auto privateSecType = static_cast<PrivateSecType*>(typeArg.secType ());
+                    const auto privateSecType = static_cast<const PrivateSecType*>(typeArg.secType ());
                     if (privateSecType->securityKind () != kindSym) {
                         mismatch = true;
                     }

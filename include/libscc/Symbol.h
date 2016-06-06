@@ -55,7 +55,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    inline Symbol(Type symbolType, TypeNonVoid* valueType)
+    inline Symbol(Type symbolType, const TypeNonVoid* valueType)
         : m_symbolType (symbolType)
         , m_type (valueType)
     { }
@@ -77,7 +77,7 @@ public: /* Methods: */
     inline Type symbolType() const { return m_symbolType; }
     inline const std::string &name() const { return m_name; }
     inline void setName(StringRef name) { m_name = name.str(); }
-    inline TypeNonVoid* secrecType() const { return m_type; }
+    inline const TypeNonVoid* secrecType() const { return m_type; }
 
     bool isGlobal () const;
     bool isArray () const;
@@ -89,9 +89,9 @@ protected:
     virtual void print(std::ostream & os) const = 0;
 
 private: /* Fields: */
-    Type          const  m_symbolType;  ///< Type of the symbol.
-    TypeNonVoid*  const  m_type;        ///< Type of the symbol or NULL.
-    std::string          m_name;        ///< Name of the symbol.
+    Type const m_symbolType; ///< Type of the symbol.
+    const TypeNonVoid* const m_type; ///< Type of the symbol or NULL.
+    std::string m_name; ///< Name of the symbol.
 };
 
 /*******************************************************************************
@@ -100,7 +100,7 @@ private: /* Fields: */
 
 class SymbolConstant : public Symbol {
 public: /* Methods: */
-    explicit SymbolConstant(TypeNonVoid* valueType)
+    explicit SymbolConstant(const TypeNonVoid* valueType)
         : Symbol(SYM_CONSTANT, valueType)
     { }
 };
@@ -147,19 +147,19 @@ private: /* Fields: */
 class SymbolDataType : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDataType (StringRef name, DataType* dataType)
+    SymbolDataType (StringRef name, const DataType* dataType)
         : SymbolTypeVariable (SYM_TYPE, name)
         , m_dataType (dataType)
     { }
 
-    inline DataType* dataType () const { return m_dataType; }
+    inline const DataType* dataType () const { return m_dataType; }
 
 protected:
     void print(std::ostream & os) const override;
     void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
-    DataType* const m_dataType;
+    const DataType* const m_dataType;
 };
 
 /*******************************************************************************
@@ -169,13 +169,15 @@ private: /* Fields: */
 class SymbolDomain : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDomain(StringRef name, SecurityType * secType, const Location* loc = nullptr)
+    SymbolDomain(StringRef name,
+                 const SecurityType * secType,
+                 const Location* loc = nullptr)
         : SymbolTypeVariable (SYM_DOMAIN, name)
         , m_secType (secType)
         , m_location (loc)
     { }
 
-    SecurityType* securityType () const { return m_secType; }
+    const SecurityType* securityType () const { return m_secType; }
     const Location* location() const override final { return m_location; }
 
 protected:
@@ -183,7 +185,7 @@ protected:
     void setTypeContext (TypeContext& cxt) const override;
 
 private: /* Fields: */
-    SecurityType* const m_secType;
+    const SecurityType* const m_secType;
     const Location* m_location;
 };
 
@@ -224,9 +226,9 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit SymbolSymbol(StringRef name, TypeNonVoid * valueType);
+    explicit SymbolSymbol(StringRef name, const TypeNonVoid * valueType);
 
-    explicit SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool);
+    explicit SymbolSymbol(StringRef name, const TypeNonVoid * valueType, bool);
 
     inline ScopeType scopeType() const { return m_scopeType; }
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
@@ -354,7 +356,7 @@ inline boost::iterator_range<dim_const_iterator> dim_range (const Symbol* symbol
 // TODO: initialize global variables in procedures
 class SymbolProcedure: public Symbol {
 public: /* Methods: */
-    SymbolProcedure(StringRef name, TypeProc* type);
+    SymbolProcedure(StringRef name, const TypeProc* type);
 
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }

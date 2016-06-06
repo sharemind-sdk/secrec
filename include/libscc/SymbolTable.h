@@ -21,7 +21,7 @@
 #define SECREC_SYMBOLTABLE_H
 
 #include "StringRef.h"
-#include "Symbol.h"
+#include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 
 #include <algorithm>
@@ -58,7 +58,7 @@ public: /* Methods: */
 
     void appendSymbol (Symbol* symbol);
     void appendOtherSymbol (Symbol* symbol);
-    SymbolSymbol* appendTemporary (TypeNonVoid* type);
+    SymbolSymbol* appendTemporary (const TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 
     Symbol* find (SymbolCategory symbolType, StringRef name) const;
@@ -130,7 +130,6 @@ public: /* Methods: */
     std::vector<SymbolSymbol*> variables () const;
 
 private: /* Fields: */
-
     class OtherSymbols;
 
     Table                       m_table;    ///< Symbols.

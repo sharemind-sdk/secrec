@@ -40,9 +40,8 @@ namespace SecreC {
 
 CastTypeUnifier::CastTypeUnifier (const TypeBasic* argType,
                                   SymbolTable* st,
-                                  SymbolTemplate* sym,
-                                  Context& cxt)
-    : AbstractOperatorTypeUnifier {st, sym, cxt}
+                                  SymbolTemplate* sym)
+    : AbstractOperatorTypeUnifier {st, sym}
 {
     m_securityType = argType->secrecSecType ();
 
@@ -61,7 +60,7 @@ CastTypeUnifier::CastTypeUnifier (const TypeBasic* argType,
   TreeNodeSecTypeF
 *******************************************************************************/
 
-bool CastTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool CastTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) {
     assert (secType != nullptr);
     assert (t != nullptr);
 

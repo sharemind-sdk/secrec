@@ -30,7 +30,6 @@
 #include <sstream>
 #include <vector>
 
-
 /**
  * Code generation for assignment expression
  */
@@ -121,6 +120,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         return result;
     }
 
+
     // Generate code for the left hand side;
     TreeNodeLValue* lval = e->leftHandSide ();
     SubscriptInfo cgSub;
@@ -132,8 +132,8 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
     }
 
     SymbolSymbol * destSym = static_cast<SymbolSymbol*>(lvalResult.symbol ());
-    TypeBasic * pubIntTy = TypeBasic::getIndexType(getContext());
-    TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * pubIntTy = TypeBasic::getIndexType();
+    const TypeBasic * pubBoolTy = TypeBasic::getPublicBoolType();
 
     // struct to struct assignment
     if (destSym->secrecType ()->secrecDataType ()->isComposite ()) {
@@ -208,12 +208,12 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // allocate memory for the result symbol "r"
         if (!resultScalar) {
-            DataType* dt = e->resultType()->secrecDataType();
+            const DataType* dt = e->resultType()->secrecDataType();
             if (dt->isUserPrimitive()) {
                 emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym());
             }
             else {
-                SecrecDataType prim = static_cast<DataTypeBuiltinPrimitive*>(dt)->secrecDataType();
+                SecrecDataType prim = static_cast<const DataTypeBuiltinPrimitive*>(dt)->secrecDataType();
                 emplaceImopAfter(result, e, Imop::ALLOC, r, r->getSizeSym(),
                                  defaultConstant(getContext(), prim));
             }
@@ -229,11 +229,9 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         pushImopAfter (result, newAssign (e, offset, indexConstant(0)));
 
         // Declare temporaries that might require allocation for the inner assignment:
-        TypeBasic * ty = TypeBasic::get(getContext(),
-                                        e->resultType()->secrecSecType(),
+        const TypeBasic * ty = TypeBasic::get(e->resultType()->secrecSecType(),
                                         e->resultType()->secrecDataType());
-        TypeBasic * rTy = TypeBasic::get(getContext(),
-                                         eArg2->resultType()->secrecSecType(),
+        const TypeBasic * rTy = TypeBasic::get(eArg2->resultType()->secrecSecType(),
                                          eArg2->resultType()->secrecDataType());
         Symbol * t1 = m_st->appendTemporary(ty);
         Symbol * t2 = m_st->appendTemporary(ty);
@@ -362,9 +360,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
         // Free temporaries
         releaseResource (result, t1);
         releaseResource (result, t2);
-
         releaseTemporary (result, arg2Result.symbol());
-
         return result;
     }
     else {

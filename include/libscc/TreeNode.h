@@ -282,8 +282,8 @@ public: /* Methods: */
         , m_secrecType (nullptr)
     { }
 
-    TypeNonVoid* secrecType () const { return m_secrecType; }
-    void setSecrecType (TypeNonVoid* type) {
+    const TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (const TypeNonVoid* type) {
         assert (type != nullptr);
         m_secrecType = type;
     }
@@ -292,7 +292,7 @@ public: /* Methods: */
                                   bool& isIndexed) = 0;
 
 private: /* Fields: */
-    TypeNonVoid* m_secrecType;
+    const TypeNonVoid* m_secrecType;
 };
 
 /******************************************************************
@@ -504,8 +504,8 @@ public: /* Methods: */
     { }
 
     inline bool isPublic () const { return m_type == NODE_SECTYPE_PUBLIC_F; }
-    SecurityType* cachedType () const { return m_cachedType; }
-    void setCachedType (SecurityType* ty);
+    const SecurityType* cachedType () const { return m_cachedType; }
+    void setCachedType (const SecurityType* ty);
 
     void setTypeContext (TypeContext& cxt) const override final;
 
@@ -517,7 +517,7 @@ protected:
     }
 
 private: /* Fields: */
-    SecurityType*  m_cachedType;
+    const SecurityType*  m_cachedType;
 };
 
 /******************************************************************
@@ -532,12 +532,12 @@ public: /* Methods: */
         , m_dataType (nullptr)
     { }
 
-    inline DataType* cachedType () const { return m_dataType; }
-    inline void setCachedType (DataType* dataType) { m_dataType = dataType; }
+    inline const DataType* cachedType () const { return m_dataType; }
+    inline void setCachedType (const DataType* dataType) { m_dataType = dataType; }
     void setTypeContext (TypeContext& cxt) const override final;
 
 private: /* Fields: */
-    DataType* m_dataType;
+    const DataType* m_dataType;
 };
 
 /******************************************************************
@@ -672,7 +672,7 @@ public: /* Methods: */
         , m_cachedType (nullptr)
     { }
 
-    Type* secrecType () const;
+    const Type* secrecType () const;
     TreeNodeSeqView<TreeNodeTypeF> types () const;
     TreeNodeSecTypeF* secType () const;
     TreeNodeDataTypeF* dataType () const;
@@ -687,7 +687,7 @@ protected:
 
 protected: /* Fields: */
 
-    Type* m_cachedType;
+    const Type* m_cachedType;
 };
 
 /******************************************************************
@@ -865,30 +865,30 @@ public: /* Methods: */
         , m_resultType (nullptr)
     { }
 
-    void instantiateDataType (Context& cxt, DataType* dType);
+    void instantiateDataType (const DataType* dType);
 
     // If possible instantiate abstract data type to given concrete data type
-    void instantiateDataType (Context& cxt, SecrecDataType dType = DATATYPE_INT64);
+    void instantiateDataType (SecrecDataType dType = DATATYPE_INT64);
 
     bool haveResultType() const { return m_resultType != nullptr; }
     bool havePublicBoolType() const;
-    Type* resultType() const;
+    const Type* resultType() const;
 
     virtual CGResult codeGenWith (CodeGen& cg) = 0;
     virtual CGBranchResult codeGenBoolWith (CodeGen&);
 
 protected: /* Methods: */
 
-    virtual void instantiateDataTypeV (Context&, SecrecDataType) {
+    virtual void instantiateDataTypeV (SecrecDataType) {
         assert ("ICE! data types should not be instantiated on given tree node type");
     }
 
-    void setResultType(Type *type);
-    void resetDataType (Context& cxt, SecrecDataType dType);
+    void setResultType(const Type *type);
+    void resetDataType (SecrecDataType dType);
 
 protected: /* Fields: */
 
-    Type*   m_resultType; ///< Type of resulting value.
+    const Type* m_resultType; ///< Type of resulting value.
 };
 
 /******************************************************************
@@ -905,7 +905,7 @@ public: /* Methods: */
     CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
     TreeNode* cloneV () const override final {
         return new TreeNodeExprNone (m_location);
     }
@@ -945,7 +945,7 @@ protected:
         return new TreeNodeExprArrayConstructor (m_location);
     }
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 };
 
 /******************************************************************
@@ -969,7 +969,7 @@ protected:
         return new TreeNodeExprInt (m_value, m_location);
     }
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
 private: /* Fields: */
     uint64_t m_value;
@@ -1061,7 +1061,7 @@ public:
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprIndex (m_location);
@@ -1127,7 +1127,7 @@ public:
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprCat (m_location);
@@ -1151,7 +1151,7 @@ public:
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprReshape (m_location);
@@ -1239,7 +1239,7 @@ public: /* Methods: */
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     SecrecOperator getOperatorV () const override final;
 
@@ -1285,7 +1285,7 @@ private: /* Fields: */
  */
 class TreeNodeExprClassify: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprClassify(SecurityType* ty,
+    inline TreeNodeExprClassify(const SecurityType* ty,
                                 const Location & loc)
         : TreeNodeExpr(NODE_EXPR_CLASSIFY, loc)
     {
@@ -1317,7 +1317,7 @@ public: /* Methods: */
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprDeclassify (m_location);
@@ -1475,8 +1475,8 @@ public: /* Methods: */
     StringRef name () const { return m_name; }
     ConstantString* value () const { return m_value; }
     void setValue (ConstantString* value) { m_value = value; }
-    TypeNonVoid* secrecType () const { return m_secrecType; }
-    void setSecrecType (TypeNonVoid* secrecType) { m_secrecType = secrecType; }
+    const TypeNonVoid* secrecType () const { return m_secrecType; }
+    void setSecrecType (const TypeNonVoid* secrecType) { m_secrecType = secrecType; }
 
     bool isConstant () const override final { return m_value != nullptr; }
     StringRef staticValue () const override final;
@@ -1493,7 +1493,7 @@ protected:
 public: /* Private: */
     const StringRef m_name;
     ConstantString* m_value;
-    TypeNonVoid*    m_secrecType;
+    const TypeNonVoid* m_secrecType;
 };
 
 /******************************************************************
@@ -1512,7 +1512,7 @@ public: /* Methods: */
     CGResult codeGenWith (CodeGen & cg) override final;
 
 protected:
-    void instantiateDataTypeV(Context & cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV(SecrecDataType dType) override final;
     bool printHelper(std::ostream & os) const override final;
     void printXmlHelper (std::ostream & os) const override final;
     TreeNode * cloneV () const override final {
@@ -1541,7 +1541,7 @@ public: /* Methods: */
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprTernary (m_location);
@@ -1620,7 +1620,7 @@ public: /* Methods: */
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     SecrecOperator getOperatorV () const override final;
 
@@ -1692,7 +1692,7 @@ public: /* Methods: */
 
 protected:
 
-    void instantiateDataTypeV (Context &cxt, SecrecDataType dType) override final;
+    void instantiateDataTypeV (SecrecDataType dType) override final;
 
     TreeNode* cloneV () const override final {
         return new TreeNodeExprQualified (m_location);
@@ -1906,7 +1906,7 @@ public:
         return m_cachedType != nullptr;
     }
 
-    TypeProc* procedureType() const {
+    const TypeProc* procedureType() const {
         assert(m_cachedType != nullptr);
         return m_cachedType;
     }
@@ -1933,7 +1933,7 @@ protected: /* Methods: */
     }
 
 protected: /* Fields: */
-    TypeProc*         m_cachedType;
+    const TypeProc*   m_cachedType;
     SymbolProcedure*  m_procSymbol;
 };
 
@@ -2254,13 +2254,13 @@ public: /* Methods: */
 
     CGStmtResult codeGenWith (CodeGen& cg) override final;
 
-    inline TypeNonVoid* resultType() const {
+    inline const TypeNonVoid* resultType() const {
         assert(m_type != nullptr);
         return m_type;
     }
 
     inline bool haveResultType() const { return m_type != nullptr; }
-    void setResultType (TypeNonVoid* type) { m_type = type; }
+    void setResultType (const TypeNonVoid* type) { m_type = type; }
 
     inline bool global() const { return m_global; }
     inline void setGlobal(bool isGlobal = true) {
@@ -2286,7 +2286,7 @@ protected:
     }
 
 protected: /* Fields: */
-    TypeNonVoid *m_type;
+    const TypeNonVoid *m_type;
     bool m_global;
     bool m_procParam;
 };

@@ -35,10 +35,10 @@ namespace SecreC {
 class Context;
 
 SymbolConstant* defaultConstant (Context& cxt, SecrecDataType ty);
-SymbolConstant* numericConstant (Context& cxt, SecrecDataType ty, uint64_t value);
+SymbolConstant* numericConstant (SecrecDataType ty, uint64_t value);
 
-SymbolConstant* defaultConstant (Context& cxt, DataType* ty);
-SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value);
+SymbolConstant* defaultConstant (Context& cxt, const DataType* ty);
+SymbolConstant* numericConstant (const DataType* ty, uint64_t value);
 
 /******************************************************************
   ConstantInt
@@ -46,16 +46,16 @@ SymbolConstant* numericConstant (Context& cxt, DataType* ty, uint64_t value);
 
 class ConstantInt : public SymbolConstant {
 private: /* Methods: */
-    ConstantInt (TypeNonVoid* type, APInt value)
+    ConstantInt (const TypeNonVoid* type, APInt value)
         : SymbolConstant (type)
         , m_value (std::move(value))
     { }
 
 public:
 
-    static ConstantInt* get (Context& cxt, SecrecDataType type, uint64_t value);
-    static ConstantInt* get (Context& cxt, DataType* type, uint64_t value);
-    static ConstantInt* getBool (Context& cxt, bool value);
+    static ConstantInt* get (SecrecDataType type, uint64_t value);
+    static ConstantInt* get (const DataType* type, uint64_t value);
+    static ConstantInt* getBool (bool value);
 
     const APInt& value () const { return m_value; }
 
@@ -73,16 +73,16 @@ private: /* Fields: */
 class ConstantFloat : public SymbolConstant {
 private: /* Methods: */
 
-    ConstantFloat (TypeNonVoid* type, const APFloat& value)
+    ConstantFloat (const TypeNonVoid* type, const APFloat& value)
         : SymbolConstant (type)
         , m_value (value)
     { }
 
 public:
 
-    static ConstantFloat* get (Context& cxt, DataType* type, uint64_t value);
-    static ConstantFloat* get (Context& cxt, DataType* type, StringRef str);
-    static ConstantFloat* get (Context& cxt, DataType* type, const APFloat& value);
+    static ConstantFloat* get (const DataType* type, uint64_t value);
+    static ConstantFloat* get (const DataType* type, StringRef str);
+    static ConstantFloat* get (const DataType* type, const APFloat& value);
 
     const APFloat& value () const { return m_value; }
 
@@ -100,7 +100,7 @@ private: /* Fields: */
 class ConstantString : public SymbolConstant {
 private: /* Methods: */
 
-    ConstantString (TypeNonVoid* type, StringRef value)
+    ConstantString (const TypeNonVoid* type, StringRef value)
         : SymbolConstant (type)
         , m_value (std::move(value))
     { }

@@ -25,9 +25,11 @@
 #include "DataType.h"
 #include "Intermediate.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "TypeChecker.h"
+#include "Types.h"
 
 
 namespace SecreC {
@@ -39,27 +41,27 @@ namespace /* anonymous */ {
  * @param tnv The type of the resource.
  * @return Wether a resource of the given type requires memory allocation to store.
  */
-bool isNontrivialResource (TypeNonVoid* tnv) {
+bool isNontrivialResource (const TypeNonVoid* tnv) {
     return tnv->secrecDimType () != 0
         || tnv->secrecSecType ()->isPrivate ()
         || tnv->secrecDataType ()->isString ();
 }
 
 // TODO: this is not quite correct place for this function.
-SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
+SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, const TypeNonVoid* ty) {
     assert (st != nullptr && ty != nullptr);
 
     SymbolSymbol * sym = st->appendTemporary(ty);
 
     if (ty->secrecDimType() != 0) {
-        TypeBasic * intTy = TypeBasic::getIndexType(cxt);
+        const TypeBasic * intTy = TypeBasic::getIndexType();
         for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i)
             sym->setDim(i, st->appendTemporary(intTy));
         sym->setSizeSym(st->appendTemporary(intTy));
     }
 
     if (ty->secrecDataType ()->isComposite ()) {
-        DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+        const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
         for (const auto& field : structType->fields ()) {
             sym->appendField (generateSymbol (cxt, st, field.type));
         }
@@ -68,11 +70,11 @@ SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, TypeNonVoid* ty) {
     return sym;
 }
 
-SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, Type* ty) {
+SymbolSymbol* generateSymbol (Context& cxt, SymbolTable* st, const Type* ty) {
     if (ty->isVoid())
         return nullptr;
     else
-        return generateSymbol(cxt, st, static_cast<TypeNonVoid*>(ty));
+        return generateSymbol(cxt, st, static_cast<const TypeNonVoid*>(ty));
 }
 
 void collectTemporariesLoop (std::vector<SymbolSymbol*>& acc, SymbolSymbol* sym) {
@@ -220,7 +222,7 @@ Symbol * CodeGen::getSizeOr(Symbol * sym, uint64_t val) {
 }
 
 SymbolConstant * CodeGen::indexConstant(uint64_t value) {
-    return ConstantInt::get(getContext(), DATATYPE_UINT64, value);
+    return ConstantInt::get(DATATYPE_UINT64, value);
 }
 
 Symbol* CodeGen::findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const {
@@ -237,7 +239,7 @@ void CodeGen::allocTemporaryResult(CGResult & result, Symbol * val) {
         emplaceImopAfter(result, m_node, Imop::DECLARE, sym);
     }
     else if (dt->isUserPrimitive()) {
-        auto pubTy = dtypeDeclassify(getContext(), sym->secrecType()->secrecSecType(),
+        auto pubTy = dtypeDeclassify(sym->secrecType()->secrecSecType(),
                                      sym->secrecType()->secrecDataType());
         if (noVal && pubTy != nullptr)
             val = defaultConstant(getContext(), pubTy);
@@ -394,14 +396,14 @@ void CodeGen::copyShapeFrom(CGResult & result, Symbol * tmp) {
 LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
     LoopInfo loopInfo;
     const auto& spv = subscript.spv();
-    const auto pubIntTy = TypeBasic::getIndexType(getContext ());
+    const auto pubIntTy = TypeBasic::getIndexType();
     for (size_t i = 0; i < spv.size (); ++ i)
         loopInfo.push_index(m_st->appendTemporary(pubIntTy));
     return loopInfo;
 }
 
 
-SymbolSymbol * CodeGen::generateResultSymbol(CGResult& result, SecreC::Type* ty) {
+SymbolSymbol * CodeGen::generateResultSymbol(CGResult& result, const SecreC::Type* ty) {
     SymbolSymbol* sym = generateSymbol (getContext (), m_st, ty);
     if (sym != nullptr) {
         result.setResult(sym);
@@ -416,7 +418,7 @@ SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* nod
 }
 
 CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
-    TypeBasic * ty = TypeBasic::getIndexType(getContext());
+    const TypeBasic * ty = TypeBasic::getIndexType();
     CGResult result;
     Symbol * tmp = strideInfo.symbol();
     const unsigned n = tmp->secrecType()->secrecDimType();
@@ -448,7 +450,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
     assert(dynamic_cast<SymbolSymbol *>(tmp) != nullptr);
     SymbolSymbol * sym = static_cast<SymbolSymbol *>(tmp);
     Symbol * zero = indexConstant(0);
-    TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
     unsigned count = 0;
     for (Symbol * idx : loopInfo) {
         auto i = new Imop(m_node, Imop::ASSIGN, idx, zero);
@@ -470,7 +472,7 @@ CGResult CodeGen::enterLoop(LoopInfo & loopInfo, Symbol * tmp) {
 
 CGResult CodeGen::enterLoop(LoopInfo & loopInfo, const SubscriptInfo::SPV & spv) {
     assert(loopInfo.empty());
-    TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
     CGResult result;
     LoopInfo::const_iterator idxIt;
 
@@ -609,7 +611,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
 
-        TypeBasic * boolTy = TypeBasic::getPublicBoolType(getContext());
+        const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
         SymbolTemporary * temp_bool = m_st->appendTemporary(boolTy);
 
         dim_iterator dit = dim_begin(x);
@@ -668,7 +670,7 @@ SymbolTable * CodeGen::loopST() const {
 CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     assert (sym != nullptr && sym->secrecType () != nullptr);
 
-    TypeNonVoid* ty = sym->secrecType ();
+    const TypeNonVoid* ty = sym->secrecType ();
     CGResult result;
 
     if (ty->secrecDataType ()->isComposite ()) {
@@ -700,7 +702,7 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
 }
 
 CGResult CodeGen::cgInitializeToConstant (SymbolSymbol* sym, SymbolConstant* def) {
-    TypeNonVoid* ty = sym->secrecType ();
+    const TypeNonVoid* ty = sym->secrecType ();
     CGResult result;
 
     if (ty->isScalar ()) {
@@ -718,7 +720,7 @@ CGResult CodeGen::cgInitializeToConstant (SymbolSymbol* sym, SymbolConstant* def
 CGResult CodeGen::cgInitializeToDefaultValue (SymbolSymbol* sym, bool hasShape) {
     assert (sym != nullptr && sym->secrecType () != nullptr);
 
-    TypeNonVoid* ty = sym->secrecType ();
+    const TypeNonVoid* ty = sym->secrecType ();
     CGResult result;
 
     if (ty->secrecDataType ()->isComposite ()) {
@@ -741,8 +743,7 @@ CGResult CodeGen::cgInitializeToDefaultValue (SymbolSymbol* sym, bool hasShape) 
 
     if (ty->secrecDataType ()->isUserPrimitive ()) {
         assert (ty->secrecSecType ()->isPrivate ());
-        DataType* publicType = dtypeDeclassify (getContext (), ty->secrecSecType (),
-                                                ty->secrecDataType ());
+        const DataType* publicType = dtypeDeclassify (ty->secrecSecType (), ty->secrecDataType ());
 
         if (publicType) {
             SymbolConstant* def =
@@ -769,8 +770,8 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
     assert (rhs != nullptr && rhs->secrecType () != nullptr);
     assert (m_node != nullptr);
 
-    TypeNonVoid* ty = lhs->secrecType ();
-    TypeBasic* pubBoolTy = TypeBasic::getPublicBoolType(getContext());
+    const TypeNonVoid* ty = lhs->secrecType ();
+    const TypeBasic* pubBoolTy = TypeBasic::getPublicBoolType();
     CGResult result;
     result.setResult (lhs);
 

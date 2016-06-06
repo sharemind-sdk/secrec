@@ -57,7 +57,7 @@ struct InstanceInfo;
     while (false)
 #endif
 
-TypeBasic* upperTypeBasic(Context& context, TypeBasic* a, TypeBasic* b);
+const TypeBasic* upperTypeBasic(const TypeBasic* a, const TypeBasic* b);
 
 /*******************************************************************************
   TypeChecker
@@ -119,12 +119,12 @@ public: /* Methods: */
 
     Status visitType(TreeNodeType * _ty);
     Status visitTypeVarF(TreeNodeTypeVarF* ty);
-    Status visitDataTypeF(TreeNodeDataTypeF* ty, SecurityType* secType);
+    Status visitDataTypeF(TreeNodeDataTypeF* ty, const SecurityType* secType);
     Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty);
-    Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty, SecurityType* secType);
+    Status visitDataTypeConstF(TreeNodeDataTypeConstF * ty, const SecurityType* secType);
     Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t);
-    Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t, SecurityType* secType);
-    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, SecurityType* secType = nullptr);
+    Status visitDataTypeTemplateF(TreeNodeDataTypeTemplateF* t, const SecurityType* secType);
+    Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, const SecurityType* secType = nullptr);
     Status visitDimTypeConstF(TreeNodeDimTypeConstF *);
     Status visitDimTypeF(TreeNodeDimTypeF* ty);
     Status visitDimTypeVarF(TreeNodeDimTypeVarF * ty);
@@ -178,7 +178,7 @@ public: /* Methods: */
     /// Return symbol for the main procedure (if exists).
     SymbolProcedure* mainProcedure ();
 
-    Status checkVarInit(TypeNonVoid * ty, TreeNodeVarInit * varInit);
+    Status checkVarInit(const TypeNonVoid * ty, TreeNodeVarInit * varInit);
 
     Status checkPublicBooleanScalar (TreeNodeExpr* e);
 
@@ -187,18 +187,18 @@ private: /* Methods: */
     Status checkTypeApplication (TreeNodeIdentifier* id,
                                  TreeNodeSeqView<TreeNodeTypeArg> args,
                                  const Location& loc,
-                                 DataTypeStruct*& result);
+                                 const DataTypeStruct*& result);
 
     Status checkStruct (TreeNodeStructDecl* decl,
                         const Location& loc,
-                        DataTypeStruct*& result,
+                        const DataTypeStruct*& result,
                         const std::vector<TypeArgument>& args
                             = std::vector<TypeArgument>());
 
-    TypeNonVoid* checkSelect (const Location& loc, Type* ty, TreeNodeIdentifier* id);
+    const TypeNonVoid* checkSelect (const Location& loc, const Type* ty, TreeNodeIdentifier* id);
 
 
-    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, SecurityType * need);
+    TreeNodeExpr* classifyIfNeeded(TreeNodeExpr * child, const SecurityType * need);
 
     Symbol* findIdentifier (SymbolCategory type, const TreeNodeIdentifier* id) const;
 
@@ -213,12 +213,12 @@ private: /* Methods: */
                                     bool isInc);
     Status checkIndices(TreeNode * node, SecrecDimType & destDim);
     bool checkAndLogIfVoid (TreeNodeExpr * e);
-    Status populateParamTypes(std::vector<TypeBasic *> & params,
+    Status populateParamTypes(std::vector<const TypeBasic *> & params,
                               TreeNodeProcDef * proc);
     Status getInstance(SymbolProcedure *& proc,
                        const Instantiation & inst);
 
-    static bool canPrintValue (Type* ty);
+    static bool canPrintValue (const Type* ty);
 
     /**
      * \brief Type check a procedure, and classify parameters if needed.
@@ -230,33 +230,33 @@ private: /* Methods: */
      */
     Status checkProcCall(TreeNodeIdentifier * name,
                          const TreeNodeExprProcCall & tyCxt,
-                         const TreeNodeSeqView<TreeNodeExpr>& arguments,
-                         SecreC::Type *& resultType,
+                         const TreeNodeSeqView<TreeNodeExpr> & arguments,
+                         const SecreC::Type *& resultType,
                          SymbolProcedure *& symProc);
 
     // Try to unify template with given parameter types. On success this
     // procedure returns true. No additional side effects are performed.
-    bool unify (Instantiation &inst,
-                const TypeContext& tyCxt,
-                TypeProc* argTypes) const;
+    bool unify (Instantiation & inst,
+                const TypeContext & tyCxt,
+                const TypeProc * argTypes) const;
 
-    bool unifyOperator (Instantiation& inst,
-                        const TypeContext& tyCxt,
-                        TypeProc* argTypes) const;
+    bool unifyOperator (Instantiation & inst,
+                        const TypeContext & tyCxt,
+                        const TypeProc * argTypes) const;
 
-    bool unifyCast (Instantiation& inst,
-                    TypeBasic* arg,
-                    TypeBasic* want) const;
+    bool unifyCast (Instantiation & inst,
+                    const TypeBasic * arg,
+                    const TypeBasic * want) const;
 
     Status findRegularOpDef(SymbolProcedure *& symProc,
                             StringRef name,
-                            TypeProc* callTypeProc,
+                            const TypeProc * callTypeProc,
                             const TreeNode * errorCxt);
 
     Status findRegularProc(SymbolProcedure *& symProc,
                            StringRef name,
                            const TypeContext & tyCxt,
-                           TypeProc* argTypes,
+                           const TypeProc * argTypes,
                            const TreeNode * errorCxt);
 
     /**
@@ -274,18 +274,18 @@ private: /* Methods: */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 StringRef name,
                                 const TypeContext & tyCxt,
-                                TypeProc * argTypes,
+                                const TypeProc* argTypes,
                                 const TreeNode * errorCxt);
 
     Status findBestMatchingOpDef(SymbolProcedure *& symProc,
                                  StringRef name,
                                  const TypeContext & tyCxt,
-                                 TypeProc * callTypeProc,
+                                 const TypeProc * callTypeProc,
                                  const TreeNode * errorCxt);
 
     Status findBestMatchingCastDef(SymbolProcedure *& symProc,
-                                   TypeBasic * arg,
-                                   TypeBasic * want,
+                                   const TypeBasic * arg,
+                                   const TypeBasic * want,
                                    const TreeNode * errorCxt);
 
     Status checkRedefinitions(const TreeNodeProcDef& proc);

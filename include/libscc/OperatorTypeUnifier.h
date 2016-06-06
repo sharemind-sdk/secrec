@@ -43,10 +43,9 @@ class OperatorTypeUnifier: public AbstractOperatorTypeUnifier {
 
 public: /* Methods: */
 
-    OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
+    OperatorTypeUnifier (const std::vector<const TypeBasic*>& argTypes,
                          SymbolTable* st,
-                         SymbolTemplate* sym,
-                         Context& cxt);
+                         SymbolTemplate* sym);
 
     OperatorTypeUnifier (const OperatorTypeUnifier&) = delete;
     OperatorTypeUnifier& operator = (const OperatorTypeUnifier&) = delete;
@@ -55,19 +54,19 @@ public: /* Methods: */
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) override;
 
-    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) override;
+    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) override;
 
     bool checkDomainQuantifier ();
 
     bool checkSecLUB ();
 
-    bool checkReturnDataType (Context& cxt, TreeNodeType* retNodeTy, DataType* dt);
+    bool checkReturnDataType (TreeNodeType* retNodeTy, const DataType* dt);
 
 protected:
 
     virtual bool bind (StringRef name,
                        const TypeArgument& arg,
-                       SecurityType* sec = nullptr) override;
+                       const SecurityType* sec = nullptr) override;
 };
 
 } /* namespace SecreC */

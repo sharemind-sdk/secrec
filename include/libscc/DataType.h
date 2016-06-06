@@ -67,8 +67,8 @@ bool isXorDataType (const DataType* dType);
 bool isSignedNumericDataType (const DataType* dType);
 bool isUnsignedNumericDataType (const DataType* dType);
 
-DataType* dtypeDeclassify (Context& cxt, SecurityType* secType, DataType* dType);
-DataType* upperDataType (Context& cxt, TypeBasic* a, TypeBasic* b);
+const DataType* dtypeDeclassify (const SecurityType* secType, const DataType* dType);
+const DataType* upperDataType (const TypeBasic* a, const TypeBasic* b);
 
 
 /*******************************************************************************
@@ -129,7 +129,7 @@ public: /* Methods: */
         , m_dataType (dataType)
     { }
 
-    static DataTypeBuiltinPrimitive* get (Context& cxt, SecrecDataType dataType);
+    static const DataTypeBuiltinPrimitive* get (SecrecDataType dataType);
     SecrecDataType secrecDataType () const { return m_dataType; }
     bool equals (const DataType* other) const override final;
 
@@ -155,10 +155,10 @@ private: /* Types: */
 public: /* Types: */
 
     struct Parameters {
-        const boost::optional<DataTypeBuiltinPrimitive*> publicType;
+        const boost::optional<const DataTypeBuiltinPrimitive*> publicType;
         const boost::optional<uint64_t> size;
 
-        Parameters (boost::optional<DataTypeBuiltinPrimitive*> publicType,
+        Parameters (boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                     boost::optional<uint64_t> size)
             : publicType (publicType)
             , size (size)
@@ -177,12 +177,12 @@ public: /* Methods: */
     StringRef name () const { return m_name; }
 
     void addParameters (SymbolKind* kind,
-                        boost::optional<DataTypeBuiltinPrimitive*> publicType,
+                        boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                         boost::optional<uint64_t> size);
 
     bool inKind (SymbolKind* kind) const;
 
-    boost::optional<DataTypeBuiltinPrimitive*> publicType (SymbolKind* kind) const;
+    boost::optional<const DataTypeBuiltinPrimitive*> publicType (SymbolKind* kind) const;
 
     boost::optional<uint64_t> size (SymbolKind* kind) const;
 
@@ -206,10 +206,10 @@ class DataTypeStruct : public DataType {
 public: /* Types: */
 
     struct Field {
-        TypeBasic* type;
+        const TypeBasic* type;
         StringRef  name;
 
-        Field (TypeBasic* type, StringRef name)
+        Field (const TypeBasic* type, StringRef name)
             : type (type)
             , name (std::move(name))
         { }
@@ -221,15 +221,16 @@ public: /* Types: */
 public: /* Methods: */
 
     StringRef name () const { return m_name; }
-    static DataTypeStruct* find (Context& cxt, StringRef name,
-        const TypeArgumentList& typeArgs = TypeArgumentList());
-    static DataTypeStruct* get (Context& cxt, StringRef name,
+
+    static const DataTypeStruct* get (StringRef name,
         const FieldList& fields,
         const TypeArgumentList& typeArgs = TypeArgumentList());
+
     const FieldList& fields () const { return m_fields; }
     const TypeArgumentList& typeArgs () const { return m_typeArgs; }
 
 protected:
+
     void print (std::ostream& os) const override final;
 
     explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)
@@ -245,7 +246,7 @@ private: /* Fields: */
     const FieldList        m_fields;
 };
 
-inline DataTypeStruct::Field make_field (TypeBasic* type, StringRef name) {
+inline DataTypeStruct::Field make_field (const TypeBasic* type, StringRef name) {
     return DataTypeStruct::Field(type, name);
 }
 

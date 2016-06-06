@@ -28,6 +28,11 @@
 
 #include <set>
 
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -53,15 +58,9 @@ private: /* Fields: */
 
 TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
                                               const Location& loc,
-                                              DataTypeStruct*& result,
+                                              const DataTypeStruct*& result,
                                               const std::vector<TypeArgument>& args)
 {
-    TreeNodeIdentifier* id = decl->identifier ();
-    if (DataTypeStruct* t = DataTypeStruct::find (getContext (), id->value (), args)) {
-        result = t;
-        return OK;
-    }
-
     if (args.size () != decl->quantifiers ().size ()) {
         m_log.fatal () << "Structure instantiated with invalid number of type arguments at " << loc << ".";
         return E_TYPE;
@@ -69,7 +68,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
 
     TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
 
-    {
+    if (! quants.empty ()) {
         std::set<StringRef> seen;
         for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visitQuantifier (&q));
@@ -102,13 +101,14 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
             return E_TYPE;
         }
 
-        TypeBasic* fieldType = static_cast<TypeBasic*>(type->secrecType ());
+        const auto fieldType = static_cast<const TypeBasic*>(type->secrecType ());
         StringRef name = attr.identifier ()->value ();
         fields.push_back (make_field (fieldType, name));
         delete type;
     }
 
-    result = DataTypeStruct::get (getContext (), id->value (), fields, args);
+    TreeNodeIdentifier* id = decl->identifier ();
+    result = DataTypeStruct::get (id->value (), fields, args);
     return OK;
 }
 
@@ -150,7 +150,7 @@ TypeChecker::Status TypeChecker::visitStructDecl (TreeNodeStructDecl* decl) {
     }
     else {
         // In case of monomorphic structures we also directly add the data type to symbol table:
-        DataTypeStruct* structType = nullptr;
+        const DataTypeStruct* structType = nullptr;
         TCGUARD (checkStruct (decl, decl->location (), structType));
         m_st->appendSymbol (new SymbolDataType (id->value (), structType));
     }

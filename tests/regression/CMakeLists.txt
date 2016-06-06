@@ -106,6 +106,7 @@ add_test_secrec_execute("scalars/74-cast-definitions-2")
 add_test_secrec_execute("scalars/75-cast-definitions-3")
 add_test_secrec_execute("scalars/76-cast-definitions-4")
 add_test_secrec_execute("scalars/77-cast-definitions-5")
+add_test_secrec_execute("scalars/78-void-cast-bug")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
@@ -123,6 +124,7 @@ SET_TESTS_PROPERTIES("scalars/74-cast-definitions-2" PROPERTIES PASS_REGULAR_EXP
 SET_TESTS_PROPERTIES("scalars/75-cast-definitions-3" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,1\\)\\(11,2\\)")
 SET_TESTS_PROPERTIES("scalars/76-cast-definitions-4" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,24\\)\\(10,34\\)")
 SET_TESTS_PROPERTIES("scalars/77-cast-definitions-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,4\\)\\(7,10\\)")
+SET_TESTS_PROPERTIES("scalars/78-void-cast-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,5\\)\\(3,15\\)")
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
@@ -179,6 +181,8 @@ add_test_secrec_execute("arrays/50-slice-assign-bug")
 add_test_secrec_execute("arrays/51-seq-assign-bug")
 add_test_secrec_execute("arrays/52-inc-bug-3")
 add_test_secrec_execute("arrays/53-if-expression-bug")
+add_test_secrec_execute("arrays/54-arith-assignment-bug")
+add_test_secrec_execute("arrays/55-global-array-size-bug")
 
 # Tests for templates:
 add_test_secrec_execute("templates/00-trivial")
@@ -215,6 +219,9 @@ add_test_secrec_execute("templates/20-operator-overloading-2")
 SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
   PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,21\\)\\(8,30\\)")
 add_test_secrec_execute("templates/21-cast-definitions")
+add_test_secrec_execute("templates/22-protection-domain-bug")
+SET_TESTS_PROPERTIES("templates/22-protection-domain-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,10\\)\\(7,21\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")

@@ -41,11 +41,10 @@ namespace SecreC {
   OperatorTypeUnifier
 *******************************************************************************/
 
-OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argTypes,
+OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<const TypeBasic*>& argTypes,
                                           SymbolTable* st,
-                                          SymbolTemplate* sym,
-                                          Context& cxt)
-    : AbstractOperatorTypeUnifier {st, sym, cxt}
+                                          SymbolTemplate* sym)
+    : AbstractOperatorTypeUnifier {st, sym}
 {
     m_securityType = argTypes.size () == 1u
         ? argTypes[0u]->secrecSecType ()
@@ -63,7 +62,7 @@ OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<TypeBasic*>& argType
     }
 }
 
-bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, SecurityType* sec) {
+bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, const SecurityType* sec) {
     auto it = m_names.find (name);
     if (it != m_names.end ()) {
         TypeArgument& bound = it->second;
@@ -82,16 +81,16 @@ bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, Securit
 
         OTUGUARD (arg.isDataType ());
         assert (sec != nullptr);
-        DataType* boundDT = bound.dataType ();
-        DataType* argDT = arg.dataType ();
+        const DataType* boundDT = bound.dataType ();
+        const DataType* argDT = arg.dataType ();
 
-        SecurityType* boundSec = boundDT->isUserPrimitive ()
+        const SecurityType* boundSec = boundDT->isUserPrimitive ()
             ? m_securityType
-            : PublicSecType::get (m_cxt);
+            : PublicSecType::get ();
 
-        TypeBasic* boundTy = TypeBasic::get (m_cxt, boundSec, boundDT);
-        TypeBasic* argTy = TypeBasic::get (m_cxt, sec, argDT);
-        TypeBasic* upper = upperTypeBasic (m_cxt, boundTy, argTy);
+        const TypeBasic* boundTy = TypeBasic::get (boundSec, boundDT);
+        const TypeBasic* argTy = TypeBasic::get (sec, argDT);
+        const TypeBasic* upper = upperTypeBasic (boundTy, argTy);
         OTUGUARD (upper != nullptr);
         m_names.insert (it, std::make_pair (name, TypeArgument (upper->secrecDataType ())));
     }
@@ -103,7 +102,7 @@ bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, Securit
   TreeNodeSecTypeF
 *******************************************************************************/
 
-bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) {
+bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) {
     assert (secType != nullptr);
     assert (t != nullptr);
 
@@ -138,17 +137,16 @@ bool OperatorTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDi
     return true;
 }
 
-bool OperatorTypeUnifier::checkReturnDataType (Context& cxt,
-                                               TreeNodeType* retNodeTy,
-                                               DataType* dt)
+bool OperatorTypeUnifier::checkReturnDataType (TreeNodeType* retNodeTy,
+                                               const DataType* dt)
 {
     // Domain variable is bound differently, we can use
     // m_securityType here
-    SecurityType* sec = m_securityType;
+    const SecurityType* sec = m_securityType;
     // Dimension variables are not allowed in operators
     assert (retNodeTy->dimType ()->type () == NODE_DIMTYPE_CONST_F);
     SecrecDimType dim = retNodeTy->dimType ()->cachedType ();
-    TypeBasic* type = TypeBasic::get (cxt, sec, dt, dim);
+    const TypeBasic* type = TypeBasic::get (sec, dt, dim);
     OTUGUARD (visitType (retNodeTy, type));
     return true;
 }
@@ -180,7 +178,7 @@ bool OperatorTypeUnifier::checkSecLUB () {
 
     StringRef templPD = retTy->secType ()->identifier ()->value ();
 
-    return templPD == static_cast<PrivateSecType*> (m_securityType)->name ();
+    return templPD == static_cast<const PrivateSecType*> (m_securityType)->name ();
 }
 
 } // namespace SecreC

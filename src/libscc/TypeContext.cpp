@@ -62,26 +62,26 @@ void TypeContext::prettyPrint (std::ostream& os) const {
         os << '*';
 }
 
-void TypeContext::setContextIndexType (Context& cxt) {
-    setContextDataType (DataTypeBuiltinPrimitive::get (cxt, DATATYPE_UINT64));
+void TypeContext::setContextIndexType () {
+    setContextDataType (DataTypeBuiltinPrimitive::get (DATATYPE_UINT64));
     setContextDimType (0);
-    setContextSecType (PublicSecType::get (cxt));
+    setContextSecType (PublicSecType::get());
 }
 
-void TypeContext::setContext (TypeNonVoid* ty) {
+void TypeContext::setContext (const TypeNonVoid* ty) {
     assert (ty != nullptr);
     setContextDataType (ty->secrecDataType ());
     setContextSecType (ty->secrecSecType ());
     setContextDimType (ty->secrecDimType ());
 }
 
-bool TypeContext::matchType (TypeNonVoid* type) const {
+bool TypeContext::matchType (const TypeNonVoid* type) const {
     return matchSecType (type->secrecSecType ()) &&
            matchDataType (type->secrecDataType ()) &&
            matchDimType (type->secrecDimType ());
 }
 
-bool TypeContext::matchSecType (SecurityType* secType) const {
+bool TypeContext::matchSecType (const SecurityType* secType) const {
     assert (secType != nullptr);
     if (! haveContextSecType ()) {
         return true;
@@ -90,7 +90,7 @@ bool TypeContext::matchSecType (SecurityType* secType) const {
     return secType == contextSecType ();
 }
 
-bool TypeContext::matchDataType (DataType* dataType) const {
+bool TypeContext::matchDataType (const DataType* dataType) const {
     assert (dataType != nullptr);
     if (! haveContextDataType ()) {
         return true;

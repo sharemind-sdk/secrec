@@ -42,17 +42,16 @@ public: /* Methods: */
 
     CastTypeUnifier (const TypeBasic* argType,
                      SymbolTable* st,
-                     SymbolTemplate* sym,
-                     Context& cxt);
+                     SymbolTemplate* sym);
 
     CastTypeUnifier (const CastTypeUnifier&) = delete;
     CastTypeUnifier& operator = (const CastTypeUnifier&) = delete;
     CastTypeUnifier (CastTypeUnifier&&) = default;
     CastTypeUnifier& operator = (CastTypeUnifier&&) = default;
 
-    bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType);
+    bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) override;
 
-    bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType);
+    bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) override;
 };
 
 }; /* namespace SecreC */

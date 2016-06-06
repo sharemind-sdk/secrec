@@ -22,11 +22,16 @@
 #include "Context.h"
 #include "ContextImpl.h"
 #include "Misc.h"
+#include "SecurityType.h"
 #include "Symbol.h"
 #include "Types.h"
 
 #include <sstream>
 
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/key_value.hpp>
+#include <boost/flyweight/no_locking.hpp>
+#include <boost/flyweight/no_tracking.hpp>
 
 namespace SecreC {
 
@@ -116,16 +121,18 @@ SecrecDataType upperDataType (SecrecDataType a, SecrecDataType b) {
  * whether the public type classifies to the private type. We need to
  * use upperDataType because one argument could be DATATYPE_NUMERIC.
  */
-bool leqDeclassify (Context& cxt, TypeBasic* a, TypeBasic* b) {
+bool leqDeclassify (const TypeBasic* a, const TypeBasic* b) {
     if (! (a->secrecSecType ()->isPrivate () && b->secrecSecType ()->isPublic ()))
         return false;
 
-    DataType* x = dtypeDeclassify (cxt, a->secrecSecType (), a->secrecDataType ());
+    const DataType* x = dtypeDeclassify (a->secrecSecType (), a->secrecDataType ());
     if (x == nullptr)
         return false;
 
-    auto adata = static_cast<DataTypeBuiltinPrimitive*> (x)->secrecDataType ();
-    auto bdata = static_cast<DataTypeBuiltinPrimitive*> (b->secrecDataType ())->secrecDataType ();
+    auto adata =
+        static_cast<const DataTypeBuiltinPrimitive*> (x)->secrecDataType ();
+    auto bdata =
+        static_cast<const DataTypeBuiltinPrimitive*> (b->secrecDataType ())->secrecDataType ();
 
     if (upperDataType (adata, bdata) == adata)
         return true;
@@ -133,7 +140,7 @@ bool leqDeclassify (Context& cxt, TypeBasic* a, TypeBasic* b) {
     return false;
 }
 
-DataType* upperDataType (Context& cxt, TypeBasic* a, TypeBasic* b) {
+const DataType* upperDataType (const TypeBasic* a, const TypeBasic* b) {
     if (a == nullptr || b == nullptr)
         return nullptr;
 
@@ -143,16 +150,16 @@ DataType* upperDataType (Context& cxt, TypeBasic* a, TypeBasic* b) {
     if (adata == bdata)
         return adata;
 
-    if (leqDeclassify (cxt, a, b))
+    if (leqDeclassify (a, b))
         return adata;
 
-    if (leqDeclassify (cxt, b, a))
+    if (leqDeclassify (b, a))
         return bdata;
 
     if (adata->isBuiltinPrimitive () && bdata->isBuiltinPrimitive ()) {
         auto upper = upperDataType (getSecrecDataType (adata),
                                     getSecrecDataType (bdata));
-        return DataTypeBuiltinPrimitive::get (cxt, upper);
+        return DataTypeBuiltinPrimitive::get (upper);
     }
 
     if (adata->isUserPrimitive () && bdata->isUserPrimitive () &&
@@ -355,15 +362,14 @@ bool isUnsignedNumericDataType (const DataType* dType) {
     return isUnsignedNumericDataType (getSecrecDataType (dType));
 }
 
-DataType* dtypeDeclassify (Context& cxt,
-                           SecurityType* secType,
-                           DataType* dType)
+const DataType* dtypeDeclassify (const SecurityType* secType,
+                                 const DataType* dType)
 {
     if (dType == nullptr)
         return dType;
 
     if (dType->isBuiltinPrimitive ()) {
-        return DataTypeBuiltinPrimitive::get (cxt, dtypeDeclassify (getSecrecDataType (dType)));
+        return DataTypeBuiltinPrimitive::get (dtypeDeclassify (getSecrecDataType (dType)));
     }
     else if (dType->isUserPrimitive ()) {
         if (secType == nullptr || secType->isPublic ())
@@ -371,8 +377,8 @@ DataType* dtypeDeclassify (Context& cxt,
 
         assert (secType->isPrivate ());
 
-        SymbolKind* kind = static_cast<PrivateSecType*> (secType)->securityKind ();
-        DataTypeUserPrimitive *dtPrim = static_cast<DataTypeUserPrimitive*> (dType);
+        SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
+        const DataTypeUserPrimitive *dtPrim = static_cast<const DataTypeUserPrimitive*> (dType);
 
         if (! dtPrim->inKind (kind))
             return nullptr;
@@ -406,15 +412,12 @@ void DataTypeBuiltinPrimitive::print (std::ostream& os) const {
     os << SecrecFundDataTypeToString (m_dataType);
 }
 
-DataTypeBuiltinPrimitive* DataTypeBuiltinPrimitive::get (Context& cxt, SecrecDataType dataType) {
-    auto& map = cxt.pImpl ()->m_builtinPrimitiveTypes;
-    const auto index = dataType;
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new DataTypeBuiltinPrimitive (dataType)));
-    }
-
-    return i->second;
+const DataTypeBuiltinPrimitive* DataTypeBuiltinPrimitive::get (SecrecDataType dataType) {
+    using namespace ::boost::flyweights;
+    using fw_t = flyweight<
+        key_value<SecrecDataType, DataTypeBuiltinPrimitive>,
+        no_locking, no_tracking>;
+    return &fw_t{dataType}.get();
 }
 
 bool DataTypeBuiltinPrimitive::equals (const DataType* other) const {
@@ -441,8 +444,7 @@ void DataTypeUserPrimitive::print (std::ostream& os) const {
     os << m_name;
 }
 
-DataTypeUserPrimitive* DataTypeUserPrimitive::get (Context& cxt,
-                                                   StringRef name)
+DataTypeUserPrimitive* DataTypeUserPrimitive::get (Context& cxt, StringRef name)
 {
     auto& map = cxt.pImpl ()->m_userPrimitiveTypes;
     auto i = map.find (name);
@@ -476,7 +478,7 @@ bool DataTypeUserPrimitive::equals (const DataType* other) const {
 }
 
 void DataTypeUserPrimitive::addParameters (SymbolKind* kind,
-                                           boost::optional<DataTypeBuiltinPrimitive*> publicType,
+                                           boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                                            boost::optional<uint64_t> size)
 {
     assert (kind != nullptr);
@@ -488,11 +490,11 @@ bool DataTypeUserPrimitive::inKind (SymbolKind* kind) const {
     return m_parameters.find (kind) != m_parameters.end ();
 }
 
-boost::optional<DataTypeBuiltinPrimitive*>
+boost::optional<const DataTypeBuiltinPrimitive*>
 DataTypeUserPrimitive::publicType (SymbolKind* kind) const {
     assert (kind != nullptr);
 
-    boost::optional<DataTypeBuiltinPrimitive*> res = boost::none;
+    boost::optional<const DataTypeBuiltinPrimitive*> res = boost::none;
     auto it = m_parameters.find (kind);
 
     if (it != m_parameters.end ()) {
@@ -541,27 +543,23 @@ void DataTypeStruct::print (std::ostream& os) const {
     }
 }
 
-DataTypeStruct* DataTypeStruct::find (Context& cxt, StringRef name,
-                                      const DataTypeStruct::TypeArgumentList& args)
+const DataTypeStruct* DataTypeStruct::get (StringRef name,
+                                           const DataTypeStruct::FieldList& fields,
+                                           const DataTypeStruct::TypeArgumentList& args)
 {
-    auto& map = cxt.pImpl ()->m_structTypes;
-    const auto index = std::make_pair (name, args);
-    const auto i = map.find (index);
-    return i == map.end () ? nullptr : i->second;
-}
+    using StructTypeMap = std::map<
+        std::pair<StringRef, std::vector<TypeArgument> >,
+        std::unique_ptr<const DataTypeStruct> >;
+    static StructTypeMap structTypes;
 
-DataTypeStruct* DataTypeStruct::get (Context& cxt, StringRef name,
-                                     const DataTypeStruct::FieldList& fields,
-                                     const DataTypeStruct::TypeArgumentList& args)
-{
-    auto& map = cxt.pImpl ()->m_structTypes;
-    const auto index = std::make_pair (name, args);
-    auto i = map.find (index);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (index, new DataTypeStruct (name, args, fields)));
+    const auto index = std::make_pair(name, args);
+    auto it = structTypes.find(index);
+    if (it == structTypes.end()) {
+        it = structTypes.insert (it, std::make_pair (
+            index, std::unique_ptr<DataTypeStruct>{new DataTypeStruct {name, args, fields}}));
     }
 
-    return i->second;
+    return it->second.get();
 }
 
 } // namespace SecreC

@@ -132,7 +132,7 @@ TypeChecker::Status TypeChecker::visitTypeArgVar(TreeNodeTypeArgVar* t) {
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t) {
-    DataTypeStruct* structType = nullptr;
+    const DataTypeStruct* structType = nullptr;
     TCGUARD (checkTypeApplication (t->identifier (), t->arguments (), t->location (), structType));
     assert (structType != nullptr);
     t->setTypeArgument (structType);
@@ -140,7 +140,7 @@ TypeChecker::Status TypeChecker::visitTypeArgTemplate(TreeNodeTypeArgTemplate* t
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgDataTypeConst(TreeNodeTypeArgDataTypeConst* t) {
-    t->setTypeArgument (DataTypeBuiltinPrimitive::get (getContext (), t->secrecDataType ()));
+    t->setTypeArgument (DataTypeBuiltinPrimitive::get (t->secrecDataType ()));
     return OK;
 }
 
@@ -150,7 +150,7 @@ TypeChecker::Status TypeChecker::visitTypeArgDimTypeConst(TreeNodeTypeArgDimType
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgPublic(TreeNodeTypeArgPublic* t) {
-    t->setTypeArgument (PublicSecType::get (getContext ()));
+    t->setTypeArgument (PublicSecType::get ());
     return OK;
 }
 

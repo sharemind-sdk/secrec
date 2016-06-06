@@ -27,10 +27,10 @@
 #include <vector>
 #include <utility>
 #include <iosfwd>
+#include <tuple>
 
 namespace SecreC {
 
-class Context;
 class SecurityType;
 class DataType;
 
@@ -60,9 +60,9 @@ public: /* Methods: */
     bool isString () const;
     bool isFloat () const;
 
-    virtual SecurityType* secrecSecType() const = 0;
+    virtual const SecurityType* secrecSecType() const = 0;
     virtual SecrecDimType secrecDimType() const = 0;
-    virtual DataType* secrecDataType() const = 0;
+    virtual const DataType* secrecDataType() const = 0;
 
 protected: /* Methods: */
 
@@ -81,15 +81,15 @@ private: /* Fields: */
 class TypeVoid: public Type {
 public: /* Methods: */
 
-    static TypeVoid* get (Context& cxt);
+    static const TypeVoid* get ();
 
 
-    SecurityType* secrecSecType() const override final {
+    const SecurityType* secrecSecType() const override final {
         assert (false && "TypeVoid::secrecSecType");
         return nullptr;
     }
 
-    DataType* secrecDataType() const override final {
+    const DataType* secrecDataType() const override final {
         assert (false && "TypeVoid::secrecDataType");
         return nullptr;
     }
@@ -100,8 +100,6 @@ public: /* Methods: */
     }
 
 protected: /* Methods: */
-
-    friend class ContextImpl;
 
     inline TypeVoid ()
         : Type (VOID)
@@ -117,8 +115,7 @@ protected: /* Methods: */
 class TypeNonVoid: public Type {
 public: /* Methods: */
 
-    // TODO: this is not pretty
-    bool latticeLEQ (Context& cxt, const TypeNonVoid* other) const;
+    bool latticeLEQ (const TypeNonVoid* other) const;
 
 protected: /* Methods: */
 
@@ -132,30 +129,38 @@ protected: /* Methods: */
 *******************************************************************************/
 
 class TypeBasic : public TypeNonVoid {
+public: /* Types: */
+
+    struct Key;
+
 public: /* Methods: */
 
-    SecurityType* secrecSecType() const override final { return m_secType; }
-    SecrecDimType secrecDimType() const override final { return m_dimType; }
-    DataType* secrecDataType() const override final { return m_dataType; }
 
-    static TypeBasic* get (Context& cxt, SecrecDataType dataType,
-                           SecrecDimType dimType = 0);
-    static TypeBasic* get (Context& cxt, DataType* dataType,
-                           SecrecDimType dimType = 0);
-    static TypeBasic* get (Context& cxt, SecurityType* secType,
-                           SecrecDataType dataType,
-                           SecrecDimType dimType = 0);
-    static TypeBasic* get (Context& cxt, SecurityType* secType,
-                           DataType* dataType,
-                           SecrecDimType dimType = 0);
-    static TypeBasic* getIndexType (Context& cxt);
-    static TypeBasic* getPublicBoolType (Context& cxt);
+    // For boost::flyweight
+    explicit TypeBasic(const Key&);
+
+    const SecurityType* secrecSecType() const override final { return m_secType; }
+    SecrecDimType secrecDimType() const override final { return m_dimType; }
+    const DataType* secrecDataType() const override final { return m_dataType; }
+
+    static const TypeBasic* get (SecrecDataType dataType,
+                                 SecrecDimType dimType = 0);
+    static const TypeBasic* get (const DataType* dataType,
+                                 SecrecDimType dimType = 0);
+    static const TypeBasic* get (const SecurityType* secType,
+                                 SecrecDataType dataType,
+                                 SecrecDimType dimType = 0);
+    static const TypeBasic* get (const SecurityType* secType,
+                                 const DataType* dataType,
+                                 SecrecDimType dimType = 0);
+    static const TypeBasic* getIndexType ();
+    static const TypeBasic* getPublicBoolType ();
 
 protected: /* Methods: */
 
-    TypeBasic(SecurityType* secType,
-              DataType* dataType,
-              SecrecDimType dim = 0)
+    explicit TypeBasic(const SecurityType* secType,
+                       const DataType* dataType,
+                       SecrecDimType dim)
         : TypeNonVoid (BASIC)
         , m_secType (secType)
         , m_dataType (dataType)
@@ -165,9 +170,9 @@ protected: /* Methods: */
     void printPrettyV (std::ostream &os) const override;
 
 private: /* Fields: */
-    SecurityType*   const m_secType;
-    DataType*       const m_dataType;
-    SecrecDimType   const m_dimType;
+    const SecurityType* const m_secType;
+    const DataType* const m_dataType;
+    SecrecDimType const m_dimType;
 };
 
 /*******************************************************************************
@@ -177,16 +182,24 @@ private: /* Fields: */
 class TypeProc : public TypeNonVoid {
 public: /* Methods: */
 
-    Type* returnType () const { return m_returnType; }
-    const std::vector<TypeBasic*>& paramTypes() const { return m_params; }
+    explicit TypeProc (const std::pair<
+                            std::vector<const TypeBasic*>,
+                            const Type*>& p)
+        : TypeNonVoid (PROCEDURE)
+        , m_params (p.first)
+        , m_returnType (p.second)
+    { }
+
+    const Type* returnType () const { return m_returnType; }
+    const std::vector<const TypeBasic*>& paramTypes() const { return m_params; }
     std::string mangle () const;
     std::string paramsToNormalString () const;
 
-    SecurityType* secrecSecType() const override final {
+    const SecurityType* secrecSecType() const override final {
         return returnType ()->secrecSecType ();
     }
 
-    DataType* secrecDataType() const override final {
+    const DataType* secrecDataType() const override final {
         return returnType ()->secrecDataType ();
     }
 
@@ -194,14 +207,13 @@ public: /* Methods: */
         return returnType ()->secrecDimType ();
     }
 
-    static TypeProc* get (Context& cxt,
-                          const std::vector<TypeBasic*>& params,
-                          Type* returnType = nullptr);
+    static const TypeProc* get (const std::vector<const TypeBasic*>& params,
+                                const Type* returnType = nullptr);
 
 protected: /* Methods: */
 
-    explicit TypeProc (std::vector<TypeBasic*> params,
-                       Type* returnType)
+    explicit TypeProc (std::vector<const TypeBasic*> params,
+                       const Type* returnType)
         : TypeNonVoid (PROCEDURE)
         , m_params (std::move(params))
         , m_returnType (returnType)
@@ -210,8 +222,8 @@ protected: /* Methods: */
     void printPrettyV (std::ostream &os) const override;
 
 private: /* Fields: */
-    std::vector<TypeBasic*> const m_params;
-    Type* const m_returnType;
+    std::vector<const TypeBasic*> const m_params;
+    const Type* const m_returnType;
 };
 
 

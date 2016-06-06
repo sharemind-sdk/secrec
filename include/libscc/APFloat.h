@@ -110,7 +110,7 @@ private: /* Fields: */
 };
 
 APFloat::prec_t floatPrec (SecrecDataType type);
-APFloat::prec_t floatPrec (DataType* type);
+APFloat::prec_t floatPrec (const DataType* type);
 
 // TODO: respect float formatting?
 std::ostream& operator << (std::ostream& os, const APFloat& apf);

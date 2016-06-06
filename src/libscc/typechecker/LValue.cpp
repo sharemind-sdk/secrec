@@ -47,7 +47,7 @@ TypeChecker::Status TypeChecker::visitLVariable (TreeNodeLVariable* lvar) {
         return OK;
 
     if (SymbolSymbol* sym = getSymbol (lvar->identifier ())) {
-        TypeNonVoid* eType = sym->secrecType ();
+        const TypeNonVoid* eType = sym->secrecType ();
         lvar->setSecrecType (eType);
         return OK;
     }
@@ -73,7 +73,7 @@ TypeChecker::Status TypeChecker::visitLSelect (TreeNodeLSelect* lselect) {
     // Check subexpression:
     TreeNodeLValue* lval = lselect->lvalue ();
     TCGUARD (visitLValue (lval));
-    TypeNonVoid* fieldType = checkSelect (lval->location (), lval->secrecType (), lselect->identifier ());
+    const TypeNonVoid* fieldType = checkSelect (lval->location (), lval->secrecType (), lselect->identifier ());
     if (fieldType != nullptr) {
         lselect->setSecrecType (fieldType);
         return OK;
@@ -104,11 +104,12 @@ TypeChecker::Status TypeChecker::visitLIndex(TreeNodeLIndex* lindex) {
 
     TreeNodeLValue* lval = lindex->lvalue ();
     TCGUARD (visitLValue (lval));
-    TypeNonVoid* lvalType = lval->secrecType ();
+    const TypeNonVoid* lvalType = lval->secrecType ();
     SecrecDimType destDim = 0;
     TCGUARD (checkIndices(lindex->indices (), destDim));
-    lindex->setSecrecType (TypeBasic::get (getContext (),
-        lvalType->secrecSecType (), lvalType->secrecDataType (), destDim));
+    lindex->setSecrecType (TypeBasic::get (lvalType->secrecSecType (),
+                                           lvalType->secrecDataType (),
+                                           destDim));
     return OK;
 }
 

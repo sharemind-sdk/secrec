@@ -51,13 +51,11 @@ public:
 public: /* Methods: */
 
     AbstractOperatorTypeUnifier (SymbolTable* st,
-                                 SymbolTemplate* sym,
-                                 Context& cxt)
+                                 SymbolTemplate* sym)
         : m_st {st}
         , m_sym {sym}
         , m_securityType {nullptr}
         , m_domainVar {nullptr}
-        , m_cxt {cxt}
         { }
 
     AbstractOperatorTypeUnifier (const AbstractOperatorTypeUnifier&) = delete;
@@ -65,21 +63,21 @@ public: /* Methods: */
     AbstractOperatorTypeUnifier (AbstractOperatorTypeUnifier&&) = default;
     AbstractOperatorTypeUnifier& operator = (AbstractOperatorTypeUnifier&&) = default;
 
-    bool visitType (TreeNodeType* t, Type* type);
+    bool visitType (TreeNodeType* t, const Type* type);
 
-    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, SecurityType* secType) = 0;
+    virtual bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) = 0;
 
     bool visitDataTypeF (TreeNodeType* t,
-                         TypeNonVoid* type);
+                         const TypeNonVoid* type);
     bool visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
                                  TreeNodeType* t,
-                                 TypeNonVoid* type);
+                                 const TypeNonVoid* type);
     bool visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
                             TreeNodeType* t,
-                            TypeNonVoid* type);
+                            const TypeNonVoid* type);
     bool visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
                               TreeNodeType* t,
-                              TypeNonVoid* dataType);
+                              const TypeNonVoid* dataType);
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
@@ -91,15 +89,14 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool bind (StringRef name, const TypeArgument& arg, SecurityType* sec = nullptr);
+    virtual bool bind (StringRef name, const TypeArgument& arg, const SecurityType* sec = nullptr);
 
 protected: /* Fields: */
 
     SymbolTable* m_st;
     SymbolTemplate* m_sym;
-    SecurityType* m_securityType;
+    const SecurityType* m_securityType;
     TreeNodeQuantifierDomain* m_domainVar;
-    Context& m_cxt;
     TypeVarMap m_names;
 };
 

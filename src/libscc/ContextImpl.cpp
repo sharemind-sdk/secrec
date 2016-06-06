@@ -20,8 +20,6 @@
 #include "ContextImpl.h"
 
 #include "DataType.h"
-#include "Misc.h"
-#include "Types.h"
 
 #include <map>
 
@@ -34,37 +32,10 @@ void deleteValues (const std::map<Key, T*, Cmp>& m) {
 }
 } // anonymous namespace
 
-
 namespace SecreC {
 
 ContextImpl::~ContextImpl () {
-    deleteValues (m_privSecTypes);
-    deleteValues (m_procTypes);
-    deleteValues (m_basicTypes);
-    deleteValues (m_stringLiterals);
-    deleteValues (m_numericConstants[0]);
-    deleteValues (m_numericConstants[1]);
-    deleteValues (m_builtinPrimitiveTypes);
     deleteValues (m_userPrimitiveTypes);
-    deleteValues (m_structTypes);
-    deleteValues (m_floatConstants);
-}
-
-/* Security types: */
-PublicSecType* ContextImpl::publicType () {
-    return &m_pubSecType;
-}
-
-PrivateSecType* ContextImpl::privateType (StringRef name,
-                                          SymbolKind* kind)
-{
-    auto i = m_privSecTypes.find (name);
-    if (i == m_privSecTypes.end ()) {
-        i = m_privSecTypes.insert (i,
-            PrivateSecTypeMap::value_type (name, new PrivateSecType (name, kind)));
-    }
-
-    return i->second;
 }
 
 }

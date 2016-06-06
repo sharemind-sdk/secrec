@@ -27,7 +27,6 @@
 
 namespace SecreC {
 
-class Context;
 class SymbolKind;
 
 /*******************************************************************************
@@ -71,7 +70,7 @@ public: /* Methods: */
         : SecurityType (true)
     { }
 
-    static PublicSecType* get (Context& cxt);
+    static const PublicSecType* get ();
 
 protected:
     void print (std::ostream & os) const override;
@@ -83,6 +82,14 @@ protected:
 
 class PrivateSecType : public SecurityType {
 public: /* Methods: */
+
+    // For boost::flyweight
+    PrivateSecType(const std::pair<StringRef, SymbolKind*>& p)
+        : SecurityType (false)
+        , m_name (p.first)
+        , m_kind (p.second)
+    { }
+
     PrivateSecType (StringRef name,
                     SymbolKind* kind)
         : SecurityType (false)
@@ -93,7 +100,7 @@ public: /* Methods: */
     inline StringRef name () const { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
 
-    static PrivateSecType* get (Context& cxt, StringRef name, SymbolKind* kind);
+    static const PrivateSecType* get (StringRef name, SymbolKind* kind);
 
 protected:
     void print (std::ostream & os) const override;
@@ -103,14 +110,14 @@ private: /* Fields: */
     SymbolKind* const m_kind;
 };
 
-inline bool latticeSecTypeLEQ (SecurityType* a, SecurityType* b) {
+inline bool latticeSecTypeLEQ (const SecurityType* a, const SecurityType* b) {
     if (a->isPublic ()) return true;
     if (b->isPublic ()) return false;
     return a == b;
 }
 
 /// \retval 0 if the upper security type is not defined
-inline SecurityType* upperSecType (SecurityType* a, SecurityType* b) {
+inline const SecurityType* upperSecType (const SecurityType* a, const SecurityType* b) {
     if (a->isPublic ()) return b;
     if (b->isPublic ()) return a;
     if (a == b) return a;

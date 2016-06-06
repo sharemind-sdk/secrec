@@ -27,7 +27,6 @@
 
 namespace SecreC {
 
-class Context;
 class DataType;
 class SecurityType;
 class Type;
@@ -57,8 +56,8 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    TypeContext (SecurityType* secType,
-                 DataType* dataType,
+    TypeContext (const SecurityType* secType,
+                 const DataType* dataType,
                  SecrecDimType dimType)
         : m_contextSecType (secType)
         , m_contextDataType (dataType)
@@ -88,15 +87,15 @@ public: /* Methods: */
         m_contextDimType = cxt->m_contextDimType;
     }
 
-    void setContext (TypeNonVoid* ty);
+    void setContext (const TypeNonVoid* ty);
 
-    void setContextIndexType (Context& cxt);
+    void setContextIndexType ();
 
-    void setContextSecType (SecurityType* secTy) {
+    void setContextSecType (const SecurityType* secTy) {
         m_contextSecType = secTy;
     }
 
-    void setContextDataType (DataType* dataType) {
+    void setContextDataType (const DataType* dataType) {
         m_contextDataType = dataType;
     }
 
@@ -104,11 +103,11 @@ public: /* Methods: */
         m_contextDimType = dimType;
     }
 
-    SecurityType* contextSecType () const {
+    const SecurityType* contextSecType () const {
         return m_contextSecType;
     }
 
-    DataType* contextDataType () const {
+    const DataType* contextDataType () const {
         return m_contextDataType;
     }
 
@@ -128,9 +127,9 @@ public: /* Methods: */
         return m_contextDimType != ~ SecrecDimType (0);
     }
 
-    bool matchType (TypeNonVoid* type) const;
-    bool matchSecType (SecurityType* secType) const;
-    bool matchDataType (DataType* dataType) const;
+    bool matchType (const TypeNonVoid* type) const;
+    bool matchSecType (const SecurityType* secType) const;
+    bool matchDataType (const DataType* dataType) const;
 
     bool matchDimType (SecrecDimType dimType) const {
         if (! haveContextDimType ()) {
@@ -143,9 +142,9 @@ public: /* Methods: */
     void prettyPrint (std::ostream& os) const;
 
 protected: /* Fields: */
-    SecurityType*    m_contextSecType;
-    DataType*        m_contextDataType;
-    SecrecDimType    m_contextDimType;
+    const SecurityType* m_contextSecType;
+    const DataType*     m_contextDataType;
+    SecrecDimType       m_contextDimType;
 };
 
 inline std::ostream& operator << (std::ostream& os, const TypeContext::PrettyPrint& pp) {

@@ -24,6 +24,7 @@
 #include "TreeNode.h"
 #include "Parser.h"
 
+#include <iostream>
 #include <boost/filesystem.hpp>
 
 using namespace boost;

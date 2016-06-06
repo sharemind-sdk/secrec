@@ -29,7 +29,6 @@
 #include "TypeChecker.h"
 #include "Types.h"
 
-
 /**
  * Code generation for statements.
  */
@@ -40,16 +39,16 @@ namespace /* anonymous */ {
 
 // Initializes structure fields (and also associated size and shape symbols of the fields).
 // Note that this does not assign values to those symbols.
-void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, SymbolSymbol* sym, TypeBasic* ty) {
-    DataTypeStruct* structType = static_cast<DataTypeStruct*>(ty->secrecDataType ());
+void initFieldSymbols (StringTable& strTab, SymbolTable* st, SymbolSymbol* sym, const TypeBasic* ty) {
+    const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
     for (const auto& field : structType->fields ()) {
         // The following is safe as a "." can not normally occur in a name
         const auto name = sym->name () + "." + field.name.str ();
-        TypeBasic* fieldType = field.type;
+        const TypeBasic* fieldType = field.type;
         SymbolSymbol* fieldSymbol = new SymbolSymbol (*strTab.addString (name), fieldType);
-        SecreC::initShapeSymbols (cxt, st, fieldSymbol);
+        initShapeSymbols (st, fieldSymbol);
         if (fieldType->secrecDataType ()->isComposite ()) {
-            initFieldSymbols (cxt, strTab, st, fieldSymbol, fieldType);
+            initFieldSymbols (strTab, st, fieldSymbol, fieldType);
         }
 
         sym->appendField (fieldSymbol);
@@ -58,7 +57,7 @@ void initFieldSymbols (Context& cxt, StringTable& strTab, SymbolTable* st, Symbo
 
 // Mark the given symbol, and associated temporaries, as global symbols.
 void setSymbolGlobalScope (SymbolSymbol* sym) {
-    TypeNonVoid* ty = sym->secrecType ();
+    const TypeNonVoid* ty = sym->secrecType ();
     sym->setScopeType (SymbolSymbol::GLOBAL);
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         setSymbolGlobalScope (sym->getDim (i));
@@ -78,9 +77,9 @@ void setSymbolGlobalScope (SymbolSymbol* sym) {
 } // namespace anonymous
 
 // Initializes associated size and shape symbols. Does not assign values.
-void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym) {
-    TypeBasic * const dimType = TypeBasic::getIndexType(cxt);
-    TypeNonVoid* ty = sym->secrecType ();
+void initShapeSymbols (SymbolTable* st, SymbolSymbol* sym) {
+    const TypeBasic * const dimType = TypeBasic::getIndexType();
+    const TypeNonVoid* ty = sym->secrecType ();
     for (SecrecDimType i = 0; i < ty->secrecDimType(); ++ i) {
         sym->setDim(i, st->appendTemporary (dimType));
     }
@@ -201,7 +200,7 @@ CGStmtResult CodeGen::cgStmtContinue(TreeNodeStmtContinue * s) {
   TreeNodeStmtDecl
 *******************************************************************************/
 
-CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
+CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit)
 {
     if (m_tyChecker->checkVarInit(ty, varInit) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
@@ -217,7 +216,7 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
     push_imop (skip);
 
     const auto ns = new SymbolSymbol(varInit->variableName(), ty);
-    initShapeSymbols (getContext (), m_st, ns);
+    initShapeSymbols (m_st, ns);
     setSymbolGlobalScope (ns);
     m_st->appendSymbol (ns);
 
@@ -229,7 +228,7 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
         ss << "__global_init_" << varInit->variableName ();
 
         const StringRef procName = *getStringTable ().addString (ss.str ());
-        TypeProc* procType = TypeProc::get (getContext (), std::vector<TypeBasic*>(), ty);
+        const TypeProc* procType = TypeProc::get (std::vector<const TypeBasic*>(), ty);
         procSym = new SymbolProcedure (procName, procType);
         m_st->appendSymbol (procSym);
 
@@ -262,25 +261,28 @@ CGStmtResult CodeGen::cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit
 
     Imop* callImop = newCall (varInit, retList.begin (), retList.end (), argList.begin (), argList.end ());
     auto cleanImop = new Imop (varInit, Imop::RETCLEAN, nullptr, nullptr, nullptr);
+    m_callsTo[procSym].insert(callImop);
     cleanImop->setArg2 (m_st->label (callImop));
     skip->setDest (m_st->label (callImop));
     callImop->setDest (procSym);
     push_imop (callImop);
     push_imop (cleanImop);
+    result.setResult(ns);
+    codeGenSize(result);
     return result;
 }
 
-CGStmtResult CodeGen::cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
+CGStmtResult CodeGen::cgLocalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit)
 {
     return cgVarInit (ty, varInit, false);
 }
 
-CGStmtResult CodeGen::cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit)
+CGStmtResult CodeGen::cgProcParamInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit)
 {
     return cgVarInit (ty, varInit, true);
 }
 
-CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
+CGStmtResult CodeGen::cgVarInit (const TypeNonVoid* ty,
                                  TreeNodeVarInit* varInit,
                                  bool isProcParam)
 {
@@ -303,10 +305,10 @@ CGStmtResult CodeGen::cgVarInit (TypeNonVoid* ty,
            && "ICE: string arrays should be forbidden by the type checker!");
 
     // Initialize shape:
-    initShapeSymbols (getContext (), m_st, ns);
+    initShapeSymbols (m_st, ns);
 
     if (isStruct) {
-        initFieldSymbols (getContext (), getStringTable (), m_st, ns, static_cast<TypeBasic*>(ty));
+        initFieldSymbols (getStringTable (), m_st, ns, static_cast<const TypeBasic*>(ty));
     }
 
     CGStmtResult result;
@@ -747,7 +749,7 @@ CGStmtResult CodeGen::cgStmtPrint(TreeNodeStmtPrint * s) {
     if (m_tyChecker->visitStmtPrint(s) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    TypeBasic * strTy = TypeBasic::get(getContext(), DATATYPE_STRING);
+    const TypeBasic * strTy = TypeBasic::get(DATATYPE_STRING);
 
     CGStmtResult result;
     Symbol * accum = nullptr;
@@ -796,7 +798,6 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
     }
 
     CGStmtResult result;
-
     using NodeSymbolPair = std::pair<TreeNodeSyscallParam*, Symbol*>;
     std::vector<NodeSymbolPair> results;
     for (TreeNodeSyscallParam& param : s->params()) {
@@ -939,7 +940,7 @@ CGStmtResult CodeGen::cgStmtExpr(TreeNodeStmtExpr * s) {
     if (m_tyChecker->visitExpr (s->expression ()) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
-    s->expression ()->instantiateDataType (getContext ());
+    s->expression ()->instantiateDataType ();
     CGStmtResult result = codeGen(s->expression());
     if (result.symbol() != nullptr) {
         releaseTemporary(result, result.symbol());

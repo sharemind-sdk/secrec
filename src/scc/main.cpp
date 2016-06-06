@@ -23,6 +23,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <locale>
 
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
@@ -123,6 +124,7 @@ struct ProgramOptions {
     bool                     verbose;
     bool                     assembleOnly;
     bool                     optimize;
+    bool                     syntaxOnly;
     boost::optional<string>  output; // nothing if cout
     boost::optional<string>  input; // nothing if cin
     vector<string>           includes;
@@ -149,6 +151,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
             ("input", po::value<string>(), "Input file.")
             ("no-stdlib", "Do not look for standard library imports.")
             ("optimize,O", "Optimize the generated code.")
+            ("syntax-only", "Parse and type check only. Do not generate code.")
             ;
     po::positional_options_description p;
     p.add("input", -1);
@@ -173,6 +176,7 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
         opts.verbose = vm.count("verbose");
         opts.assembleOnly = vm.count("assemble");
         opts.optimize = vm.count ("optimize");
+        opts.syntaxOnly = vm.count("syntax-only");
 
         if (vm.count("output"))
             opts.output = vm["output"].as<string>();
@@ -324,6 +328,15 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
 
 
 int main (int argc, char *argv[]) {
+    try {
+        std::locale("");
+    } catch (std::exception const & e) {
+        std::cerr << "Invalid default locale from environment: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::cerr << "Invalid default locale from environment!" << std::endl;
+        return EXIT_FAILURE;
+    }
     ProgramOptions opts;
 
     if (!readProgramOptions(argc, argv, opts))
@@ -349,6 +362,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
+    /* TODO: We should split type checking and compilation entirely. */
     /* Translate to intermediate code: */
     icode.compile (parseTree);
     if (icode.status () != SecreC::ICode::OK) {
@@ -356,6 +370,9 @@ int main (int argc, char *argv[]) {
         cerr << icode.compileLog () << endl;
         return EXIT_FAILURE;
     }
+
+    if (opts.syntaxOnly)
+        return EXIT_SUCCESS;
 
     /* Compile: */
     VMLinkingUnit vmlu;

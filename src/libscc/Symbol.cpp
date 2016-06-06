@@ -60,6 +60,31 @@ unsigned countQuantifiedParams (TreeNodeTemplate* templ) {
                 ++ quantifiedParamCount;
             }
         }
+
+        if (t->dataType ()->type () == NODE_DATATYPE_TEMPLATE_F) {
+            TreeNodeDataTypeTemplateF* templ = static_cast<TreeNodeDataTypeTemplateF*> (t->dataType ());
+            std::vector<TreeNodeTypeArg*> typeArgs;
+
+            for (TreeNodeTypeArg& arg : templ->arguments ()) {
+                typeArgs.push_back (&arg);
+            }
+
+            while (! typeArgs.empty ()) {
+                TreeNodeTypeArg* arg = typeArgs.back ();
+                typeArgs.pop_back ();
+                if (arg->type () == NODE_TYPE_ARG_VAR) {
+                    TreeNodeTypeArgVar* argVar = static_cast<TreeNodeTypeArgVar*> (arg);
+                    if (typeVariables.count (argVar->identifier ()->value ()) > 0)
+                        ++ quantifiedParamCount;
+                }
+                else if (arg->type () == NODE_TYPE_ARG_TEMPLATE) {
+                    TreeNodeTypeArgTemplate* argTempl = static_cast<TreeNodeTypeArgTemplate*> (arg);
+                    for (TreeNodeTypeArg& child : argTempl->arguments ()) {
+                        typeArgs.push_back (&child);
+                    }
+                }
+            }
+        }
     }
 
     return quantifiedParamCount;
@@ -207,7 +232,7 @@ void SymbolDomain::setTypeContext (TypeContext& cxt) const {
   SymbolSymbol
 *******************************************************************************/
 
-SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
+SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType(), nullptr)
@@ -218,7 +243,7 @@ SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid* valueType)
     setName(name);
 }
 
-SymbolSymbol::SymbolSymbol(StringRef name, TypeNonVoid * valueType, bool)
+SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid * valueType, bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType (), nullptr)
@@ -252,9 +277,10 @@ void SymbolSymbol::inheritShape (Symbol* from) {
 SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
     assert (val != nullptr && val->secrecType () != nullptr);
 
-    TypeNonVoid* ty = val->secrecType ();
+    const TypeNonVoid* ty = val->secrecType ();
     if (ty->secrecDataType ()->isComposite ()) {
-        const std::vector<DataTypeStruct::Field>& fields = static_cast<DataTypeStruct*>(ty->secrecDataType ())->fields ();
+        const std::vector<DataTypeStruct::Field>& fields =
+                static_cast<const DataTypeStruct*>(ty->secrecDataType ())->fields ();
         for (size_t i = 0; i < fields.size (); ++ i) {
             if (fields[i].name == fieldName) {
                 return val->fields ().at (i);
@@ -276,7 +302,7 @@ std::vector<Symbol*> flattenSymbol (Symbol* sym) {
 *******************************************************************************/
 
 SymbolProcedure::SymbolProcedure(StringRef name,
-                                 TypeProc* type)
+                                 const TypeProc* type)
     : Symbol(SYM_PROCEDURE, type)
     , m_target(nullptr)
 {
@@ -284,7 +310,7 @@ SymbolProcedure::SymbolProcedure(StringRef name,
 }
 
 void SymbolProcedure::print(std::ostream & os) const {
-    TypeProc* procType = static_cast<TypeProc*>(secrecType ());
+    const auto procType = static_cast<const TypeProc*>(secrecType ());
     os << PrettyPrint (procType->returnType ());
     os << ' ' << name () << '(';
     bool first = true;

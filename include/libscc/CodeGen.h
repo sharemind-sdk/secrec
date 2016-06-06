@@ -420,23 +420,24 @@ private:
     CGResult cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool hasShape = false);
 
     CGResult cgProcCall (SymbolProcedure* symProc,
-                         SecreC::Type* returnType,
+                         const SecreC::Type* returnType,
                          const std::vector<Symbol*>& args);
     CGResult cgProcCall (SymbolProcedure* symProc,
-                         SecreC::Type* returnType,
+                         const SecreC::Type* returnType,
                          const std::vector<TreeNodeExpr*>& args);
+
 
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
     /// generate symbol for given type
-    SymbolSymbol* generateResultSymbol (CGResult& result, SecreC::Type* ty);
+    SymbolSymbol* generateResultSymbol (CGResult& result, const SecreC::Type* ty);
 
 
-    CGStmtResult cgGlobalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgLocalVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgProcParamInit (TypeNonVoid* ty, TreeNodeVarInit* varInit);
-    CGStmtResult cgVarInit (TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
+    CGStmtResult cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgLocalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgProcParamInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit);
+    CGStmtResult cgVarInit (const TypeNonVoid* ty, TreeNodeVarInit* varInit, bool isProcParam);
 
     Symbol* toVector(CGResult & result,
                      TreeNodeExpr * e,
@@ -447,7 +448,7 @@ private:
                              Symbol * e2result,
                              CGResult & result);
     CGResult cgOverloadedExpr (TreeNodeExpr * e,
-                               Type * resTy,
+                               const Type * resTy,
                                std::vector<Symbol*> & operands,
                                SymbolProcedure * symProc);
     CGResult cgOverloadedPrefixPostfix(TreeNodeExpr* e,
@@ -564,7 +565,7 @@ private:
     CodeGen & m_codeGen;
 };
 
-void initShapeSymbols (Context& cxt, SymbolTable* st, SymbolSymbol* sym);
+void initShapeSymbols (SymbolTable* st, SymbolSymbol* sym);
 
 } // namespace SecreC
 
