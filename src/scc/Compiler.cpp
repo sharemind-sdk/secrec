@@ -32,7 +32,6 @@
 #include <libscc/analysis/LiveVariables.h>
 
 #include "Builtin.h"
-#include "CopyElimination.h"
 #include "RegisterAllocator.h"
 #include "StringLiterals.h"
 #include "SyscallManager.h"
