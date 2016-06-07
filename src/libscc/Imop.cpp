@@ -355,7 +355,11 @@ void Imop::print(std::ostream & os) const {
         os << dname << " = TOSTRING " << a1name;
         break;
     case ALLOC:
-        os << dname << " = ALLOC " << a1name << " " << a2name;
+        if (nArgs () == 3) {
+            os << dname << " = ALLOC " << a1name << " " << a2name;
+        } else {
+            os << dname << " = ALLOC " << a1name << " UNDEF";
+        }
         break;
     case COPY:
         os << dname << " = COPY " << a1name << " " << a2name;
