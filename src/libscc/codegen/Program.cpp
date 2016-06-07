@@ -125,10 +125,8 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         }
         #pragma GCC diagnostic pop
 
-        DataTypeUserPrimitive* dt =
-            DataTypeUserPrimitive::get (getContext (), tyDecl.typeName ());
-        dt->addParameters (skind, publicType, size);
-        skind->addType (dt);
+        const DataTypeUserPrimitive* dt = DataTypeUserPrimitive::get (tyDecl.typeName ());
+        skind->addType (dt, publicType, size);
 
         SymbolDataType* sym = st->find<SYM_TYPE> (tyDecl.typeName ());
         if (sym == nullptr) {

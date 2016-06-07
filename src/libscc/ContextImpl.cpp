@@ -19,23 +19,8 @@
 
 #include "ContextImpl.h"
 
-#include "DataType.h"
-
-#include <map>
-
-namespace /* anonymous */ {
-template <typename Key, typename T, typename Cmp >
-void deleteValues (const std::map<Key, T*, Cmp>& m) {
-    for (const auto& p : m) {
-        delete p.second;
-    }
-}
-} // anonymous namespace
-
 namespace SecreC {
 
-ContextImpl::~ContextImpl () {
-    deleteValues (m_userPrimitiveTypes);
-}
+ContextImpl::~ContextImpl () { }
 
 }

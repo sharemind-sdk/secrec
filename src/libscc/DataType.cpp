@@ -380,10 +380,10 @@ const DataType* dtypeDeclassify (const SecurityType* secType,
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
         const DataTypeUserPrimitive *dtPrim = static_cast<const DataTypeUserPrimitive*> (dType);
 
-        if (! dtPrim->inKind (kind))
+        if (kind->findType (dtPrim->name ()) == nullptr)
             return nullptr;
 
-        auto publicType = dtPrim->publicType (kind);
+        auto publicType = kind->findType (dtPrim->name ())->publicType;
         if (! publicType)
             return nullptr;
 
@@ -444,16 +444,12 @@ void DataTypeUserPrimitive::print (std::ostream& os) const {
     os << m_name;
 }
 
-DataTypeUserPrimitive* DataTypeUserPrimitive::get (Context& cxt, StringRef name)
+const DataTypeUserPrimitive* DataTypeUserPrimitive::get (StringRef name)
 {
-    auto& map = cxt.pImpl ()->m_userPrimitiveTypes;
-    auto i = map.find (name);
-    if (i == map.end ()) {
-        auto ty = new DataTypeUserPrimitive (name);
-        i = map.insert (i, std::make_pair (name, ty));
-    }
-
-    return i->second;
+    using namespace ::boost::flyweights;
+    using fw_t = flyweight<key_value<StringRef, DataTypeUserPrimitive>,
+                           no_locking, no_tracking>;
+    return &fw_t{name}.get();
 }
 
 bool DataTypeUserPrimitive::equals (SecrecDataType type) const {
@@ -475,52 +471,6 @@ bool DataTypeUserPrimitive::equals (const DataType* other) const {
     }
 
     return false;
-}
-
-void DataTypeUserPrimitive::addParameters (SymbolKind* kind,
-                                           boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                                           boost::optional<uint64_t> size)
-{
-    assert (kind != nullptr);
-    m_parameters.insert (std::make_pair (kind, Parameters {publicType, size}));
-}
-
-bool DataTypeUserPrimitive::inKind (SymbolKind* kind) const {
-    assert (kind != nullptr);
-    return m_parameters.find (kind) != m_parameters.end ();
-}
-
-boost::optional<const DataTypeBuiltinPrimitive*>
-DataTypeUserPrimitive::publicType (SymbolKind* kind) const {
-    assert (kind != nullptr);
-
-    boost::optional<const DataTypeBuiltinPrimitive*> res = boost::none;
-    auto it = m_parameters.find (kind);
-
-    if (it != m_parameters.end ()) {
-        res = it->second.publicType;
-    }
-
-    return res;
-}
-
-boost::optional<uint64_t> DataTypeUserPrimitive::size (SymbolKind* kind) const {
-    assert (kind != nullptr);
-
-    boost::optional<uint64_t> res = boost::none;
-    auto it = m_parameters.find (kind);
-
-    if (it != m_parameters.end ()) {
-        res = it->second.size;
-    }
-
-    return res;
-}
-
-bool DataTypeUserPrimitive::Compare::operator() (const SymbolKind* const k1,
-                                                 const SymbolKind* const k2) const
-{
-    return k1->name () < k2->name ();
 }
 
 /*******************************************************************************

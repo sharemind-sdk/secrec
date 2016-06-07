@@ -196,7 +196,8 @@ void SymbolDataType::setTypeContext (TypeContext& cxt) const {
   SymbolKind
 *******************************************************************************/
 
-DataTypeUserPrimitive* SymbolKind::findType (StringRef name) const {
+const SymbolKind::Parameters*
+SymbolKind::findType (StringRef name) const {
     auto it = m_types.find (name);
     if (it == m_types.end ())
         return nullptr;
@@ -204,10 +205,14 @@ DataTypeUserPrimitive* SymbolKind::findType (StringRef name) const {
         return it->second;
 }
 
-void SymbolKind::addType (DataTypeUserPrimitive* type) {
+void SymbolKind::addType (const DataTypeUserPrimitive* type,
+                          boost::optional<const DataTypeBuiltinPrimitive*> publicType,
+                          boost::optional<uint64_t> size)
+{
     StringRef name = type->name ();
     assert (m_types.find (name) == m_types.end ());
-    m_types.insert (std::make_pair (name, type));
+    auto params = new Parameters (type, publicType, size);
+    m_types.insert (std::make_pair (name, params));
 }
 
 void SymbolKind::print(std::ostream & os) const {

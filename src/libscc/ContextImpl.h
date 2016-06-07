@@ -22,22 +22,13 @@
 
 #include "StringTable.h"
 
-#include <map>
-
 namespace SecreC {
-
-class DataTypeUserPrimitive;
-class SymbolKind;
 
 class ContextImpl {
 private:
 
     ContextImpl (const ContextImpl&) = delete;
     ContextImpl& operator = (const ContextImpl&) = delete;
-
-public: /* Types: */
-
-    using UserPrimitiveTypeMap = std::map<StringRef, DataTypeUserPrimitive*>;
 
 public: /* Methods: */
 
@@ -51,8 +42,6 @@ public: /* Fields: */
 
     /* Strings: */
     StringTable m_stringTable;
-
-    UserPrimitiveTypeMap m_userPrimitiveTypes;
 };
 
 } // namespace SecreC

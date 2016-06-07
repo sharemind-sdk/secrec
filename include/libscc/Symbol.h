@@ -25,6 +25,7 @@
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 
+#include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <iterator>
@@ -36,6 +37,7 @@ namespace SecreC {
 
 class Block;
 class DataType;
+class DataTypeBuiltinPrimitive;
 class DataTypeUserPrimitive;
 class Imop;
 class Location;
@@ -196,7 +198,23 @@ private: /* Fields: */
 class SymbolKind : public Symbol {
 
 public: /* Types: */
-    using TypeMap = std::map<StringRef, DataTypeUserPrimitive*>;
+
+    struct Parameters {
+        const DataTypeUserPrimitive* type;
+        const boost::optional<const DataTypeBuiltinPrimitive*> publicType;
+        const boost::optional<uint64_t> size;
+
+        Parameters (const DataTypeUserPrimitive* type,
+                    boost::optional<const DataTypeBuiltinPrimitive*> publicType,
+                    boost::optional<uint64_t> size)
+            : type (type)
+            , publicType (publicType)
+            , size (size)
+            { }
+    };
+
+private: /* Types: */
+    using TypeMap = std::map<StringRef, const Parameters*>;
 
 public: /* Methods: */
 
@@ -204,9 +222,16 @@ public: /* Methods: */
         : Symbol (SYM_KIND, name)
     { }
 
-    DataTypeUserPrimitive* findType (StringRef name) const;
+    ~SymbolKind () {
+        for (auto it : m_types)
+            delete it.second;
+    }
 
-    void addType (DataTypeUserPrimitive* type);
+    const Parameters* findType (StringRef name) const;
+
+    void addType (const DataTypeUserPrimitive* type,
+                  boost::optional<const DataTypeBuiltinPrimitive*> publicType,
+                  boost::optional<uint64_t> size);
 
 protected:
     void print (std::ostream & os) const override;

@@ -131,8 +131,8 @@ TypeChecker::Status TypeChecker::checkPostfixPrefixIncDec(TreeNodeExpr * root,
 
         SymbolKind* kind =
             static_cast<const PrivateSecType*> (eType->secrecSecType ())->securityKind ();
-        assert (dt->inKind (kind));
-        auto publicType = dt->publicType (kind);
+        assert (kind->findType (dt->name ()) != nullptr);
+        auto publicType = kind->findType (dt->name ())->publicType;
 
         if (! publicType) {
             m_log.fatalInProc (root)
@@ -671,8 +671,8 @@ bool checkUserPrimPublic (const TypeBasic* lType, const TypeBasic* rType) {
         SymbolKind* kind =
             static_cast<const PrivateSecType*> (lType->secrecSecType ())->securityKind ();
 
-        assert (lPrim->inKind (kind));
-        auto publicType = lPrim->publicType (kind);
+        assert (kind->findType (lPrim->name ()) != nullptr);
+        auto publicType = kind->findType (lPrim->name ())->publicType;
 
         if (! publicType && rType->secrecSecType ()->isPublic ())
             return false;
@@ -1128,8 +1128,8 @@ TypeChecker::Status TypeChecker::visitExprDeclassify(TreeNodeExprDeclassify * ro
         auto dt = static_cast<const DataTypeUserPrimitive*> (childType->secrecDataType ());
         SymbolKind* kind =
             static_cast<const PrivateSecType*> (childType->secrecSecType ())->securityKind ();
-        assert (dt->inKind (kind));
-        auto publicType = dt->publicType (kind);
+        assert (kind->findType (dt->name ()) != nullptr);
+        auto publicType = kind->findType (dt->name ())->publicType;
 
         if (! publicType) {
             m_log.fatalInProc (root)

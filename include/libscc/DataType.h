@@ -24,7 +24,6 @@
 #include "StringRef.h"
 #include "TypeArgument.h"
 
-#include <boost/optional.hpp>
 #include <iosfwd>
 #include <map>
 #include <utility>
@@ -146,25 +145,6 @@ private: /* Fields: */
 
 class DataTypeUserPrimitive : public DataType {
 
-private: /* Types: */
-
-    struct Compare {
-        bool operator() (const SymbolKind* const k1, const SymbolKind* const k2) const;
-    };
-
-public: /* Types: */
-
-    struct Parameters {
-        const boost::optional<const DataTypeBuiltinPrimitive*> publicType;
-        const boost::optional<uint64_t> size;
-
-        Parameters (boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                    boost::optional<uint64_t> size)
-            : publicType (publicType)
-            , size (size)
-            { }
-    };
-
 public: /* Methods: */
 
     explicit DataTypeUserPrimitive (StringRef name)
@@ -172,19 +152,9 @@ public: /* Methods: */
         , m_name (name)
     { }
 
-    static DataTypeUserPrimitive* get (Context& cxt, StringRef name);
+    static const DataTypeUserPrimitive* get (StringRef name);
 
     StringRef name () const { return m_name; }
-
-    void addParameters (SymbolKind* kind,
-                        boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                        boost::optional<uint64_t> size);
-
-    bool inKind (SymbolKind* kind) const;
-
-    boost::optional<const DataTypeBuiltinPrimitive*> publicType (SymbolKind* kind) const;
-
-    boost::optional<uint64_t> size (SymbolKind* kind) const;
 
     bool equals (SecrecDataType type) const override final;
 
@@ -195,7 +165,6 @@ protected:
 
 private: /* Fields: */
     const StringRef m_name;
-    std::map<SymbolKind*, Parameters, Compare> m_parameters;
 };
 
 /*******************************************************************************

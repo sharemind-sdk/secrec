@@ -120,22 +120,22 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
     else if (m_securityType->isPrivate ()) {
         // Check if the protection domain has this type
         SymbolKind* kind = static_cast<const PrivateSecType*> (m_securityType)->securityKind ();
-        const DataTypeUserPrimitive* tyPrim = kind->findType (var);
+        const SymbolKind::Parameters* tyParams = kind->findType (var);
         const DataType* ty;
 
-        AOTUGUARD (tyPrim != nullptr);
+        AOTUGUARD (tyParams != nullptr);
 
         if (! t->secType ()->isPublic () &&
             type->secrecSecType ()->isPublic ())
         {
-            auto publicType = tyPrim->publicType (kind);
+            auto publicType = tyParams->publicType;
             if (publicType)
                 ty = *publicType;
             else
-                ty = tyPrim;
+                ty = tyParams->type;
         }
         else {
-            ty = tyPrim;
+            ty = tyParams->type;
         }
 
         if (argData->isPrimitive ()) {

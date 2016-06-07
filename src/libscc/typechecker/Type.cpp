@@ -141,13 +141,13 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
     if (secType->isPrivate ()) {
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
         StringRef typeName (SecrecFundDataTypeToString (ty->secrecDataType ()));
-        const DataTypeUserPrimitive* dt = kind->findType (typeName);
-        if (dt == nullptr) {
+        const SymbolKind::Parameters* params = kind->findType (typeName);
+        if (params == nullptr) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
                                    << typeName << "' at " << ty->location () << '.';
             return E_TYPE;
         }
-        ty->setCachedType (dt);
+        ty->setCachedType (params->type);
         return OK;
     }
 
@@ -195,7 +195,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
 
 
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
-        if (! dtPrim->inKind (kind)) {
+        if (kind->findType (dtPrim->name ()) == nullptr) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
                                    << *dt << "' at " << ty->location () << '.';
             return E_TYPE;

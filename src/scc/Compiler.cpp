@@ -1179,8 +1179,8 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
         auto dt = static_cast<const DataTypeUserPrimitive*> (ty->secrecDataType ());
         SymbolKind* kind =
             static_cast<const PrivateSecType*> (ty->secrecSecType ())->securityKind ();
-        assert (dt->inKind (kind));
-        auto publicType = dt->publicType (kind);
+        assert (kind->findType (dt->name ()) != nullptr);
+        auto publicType = kind->findType (dt->name ())->publicType;
 
         if (publicType)
             size = sizeInBytes (secrecDTypeToVMDType (*publicType));
