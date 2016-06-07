@@ -822,6 +822,8 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
             }
             else
                 setVal (val, imop.dest (), s);
+        } else {
+            setVal (val, imop.dest (), Value::undef ());
         }
         return;
     }
@@ -959,7 +961,7 @@ size_t ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
         case Imop::DECLASSIFY:
         case Imop::CLASSIFY:
         case Imop::ALLOC:
-            if (imop.nArgs () == 3 && imop.arg1 ()->isConstant ())
+            if (imop.nArgs () == 3 && imop.arg2 ()->isConstant ())
                 continue;
         default:
             break;
