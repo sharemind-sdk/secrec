@@ -2224,6 +2224,7 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
                 // Copy result
                 emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol());
+                releaseTemporary(result, callRes.symbol());
             }
             else {
                 emplaceImop(e, iType, tmpElem, tmpElem, one);
@@ -2248,11 +2249,9 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
-        if (!isOverloaded) {
-            // If the type is overloaded the procedure call will release it
-            releaseTemporary (result, one);
-            releaseTemporary (result, tmpElem);
-        }
+
+        releaseTemporary (result, tmpElem);
+        releaseTemporary (result, one);
 
         return result;
     }
@@ -2293,6 +2292,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
             else {
                 emplaceImopAfter(result, e, Imop::COPY, x, callRes.symbol(), x->getSizeSym());
             }
+
+            releaseTemporary(result, callRes.symbol());
         }
         else {
             pushImopAfter(result, newBinary(e, iType, x, x, one));
@@ -2472,12 +2473,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
                     return result;
 
                 // Copy the result of the call to tmpElem
-                if (callRes.symbol()->secrecType()->secrecDimType() != 0u) {
-                    emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol(), indexConstant(0u));
-                }
-                else {
-                    emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol());
-                }
+                emplaceImopAfter(result, e, Imop::ASSIGN, tmpElem, callRes.symbol());
+                releaseTemporary(result, callRes.symbol());
             }
             else {
                 emplaceImop(e, iType, tmpElem, tmpElem, one);
@@ -2493,11 +2490,10 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
 
         // Exit the loop:
         append(result, exitLoop(loopInfo));
-        if (!isOverloaded) {
-            // If the type is overloaded the procedure call will release it
-            releaseTemporary(result, one);
-            releaseTemporary(result, tmpElem);
-        }
+
+        releaseTemporary(result, tmpElem);
+        releaseTemporary(result, one);
+
         return result;
     }
     else {
@@ -2546,6 +2542,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
             else {
                 emplaceImopAfter(result, e, Imop::COPY, lvalSym, callRes.symbol(), lvalSym->getSizeSym());
             }
+
+            releaseTemporary(result, callRes.symbol());
         }
         else {
             pushImopAfter(result, newBinary(e, iType, lvalSym, lvalSym, one));
