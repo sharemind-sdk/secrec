@@ -688,7 +688,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
         }
 
         if (root->type() == NODE_EXPR_UINV) {
-            if (isNumericDataType(et->secrecDataType ())
+            if (isUnsignedNumericDataType(et->secrecDataType ())
                     || isXorDataType(et->secrecDataType ())
                     || et->secrecDataType ()->equals (DATATYPE_NUMERIC)
                     || et->secrecDataType ()->isBool ())
