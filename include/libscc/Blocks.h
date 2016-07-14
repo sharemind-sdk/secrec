@@ -200,6 +200,7 @@ public: /* Methods: */
     void removeCallFrom (Block& block) { m_callFrom.erase (&block); }
     void removeReturnTo (Block& block) { m_returnTo.erase (&block); }
 
+    //using auto_unlink_hook::unlink();
     using BlockList::back;
     using BlockList::begin;
     using BlockList::empty;

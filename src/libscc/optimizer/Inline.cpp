@@ -25,6 +25,10 @@
 #include "Types.h"
 
 
+#include<iostream>
+using namespace std;
+
+
 namespace {
 
 static const unsigned inlineThreshold = 50;
@@ -217,7 +221,7 @@ private: /* Methods: */
 
             ++fromBlockIt;
 
-            // Skip unreachableblocks.
+            // Skip unreachable blocks.
             while (fromBlockIt != m_proc->end () && ! fromBlockIt->reachable ())
                 ++fromBlockIt;
 
@@ -499,7 +503,21 @@ void inlineCalls (ICode& code) {
         inlineCall (todo, code);
     }
 
-    // Fix imop indexes
+    // Remove unused procedures.
+    std::vector<Procedure*> remove;
+    for (auto& proc : code.program ()) {
+        // TODO: how to identify the START procedure? Currently we use
+        // "name != NULL". Not sure if it's ideal.
+        if (proc.name () != nullptr && proc.callFrom ().empty ())
+            remove.push_back (&proc);
+    }
+
+    for (Procedure* proc : remove) {
+        proc->unlink ();
+        delete proc;
+    }
+
+    // Fix imop indexes.
     unsigned long index = 0;
 
     for (auto& proc : code.program ()) {

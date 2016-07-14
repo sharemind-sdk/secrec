@@ -336,6 +336,7 @@ void Program::propagate (Procedure& proc, bool visitCalls) {
             if (visitCalls)
                 todo.insert (next);
             Block::addEdge (*cur, Edge::Call, *next);
+            callTarget->addCallFrom (*cur);
 
             Procedure::iterator cleanBlock = cur;
             ++ cleanBlock;
