@@ -282,6 +282,13 @@ private: /* Methods: */
             m_destBlock->push_back (*op);
         }
 
+        // Copy return nodes since these will not be calculated when
+        // reconstructing the CFG of the procedure.
+        for (auto succ : m_returnBlock->successors ()) {
+            if (succ.second == Edge::Ret)
+                Block::addEdge (*m_destBlock, succ.second, *succ.first);
+        }
+
         m_returnBlock->unlink ();
         delete m_returnBlock;
     }
