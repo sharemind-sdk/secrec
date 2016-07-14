@@ -74,6 +74,10 @@ public:
             succ.first->removePred (self ());
     }
 
+    void removeSucc (NodeType& succ) { m_successors.erase (&succ); }
+
+    void removePred (NodeType& pred) { m_predecessors.erase (&pred); }
+
 protected:
 
 
@@ -86,10 +90,6 @@ private:
 
     NodeType& self () { return *static_cast<NodeType*>(this); }
     const NodeType& self () const { return *static_cast<const NodeType*>(this); }
-
-    void removeSucc (NodeType& succ) { m_successors.erase (&succ); }
-
-    void removePred (NodeType& pred) { m_predecessors.erase (&pred); }
 
     static void addEdgeTo (NeighbourMap& ns, NodeType& node, LabelType label) {
         LabelType& oldLabel = ns[&node];

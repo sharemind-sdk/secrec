@@ -103,15 +103,16 @@ public: /* Methods: */
 
     ~Block ();
 
-    using ImopList::empty;
+    using ImopList::back;
     using ImopList::begin;
+    using ImopList::empty;
     using ImopList::end;
+    using ImopList::erase;
+    using ImopList::front;
+    using ImopList::insert;
     using ImopList::rbegin;
     using ImopList::rend;
-    using ImopList::front;
-    using ImopList::back;
     using ImopList::s_iterator_to;
-    using ImopList::insert;
 
     void push_back (Imop& imop) {
         ImopList::push_back (imop);
@@ -196,11 +197,15 @@ public: /* Methods: */
     void addReturnTo (Block& block) { m_returnTo.insert (&block); }
     void addExit (Block& block) { m_exits.insert (&block); }
 
+    void removeCallFrom (Block& block) { m_callFrom.erase (&block); }
+    void removeReturnTo (Block& block) { m_returnTo.erase (&block); }
+
+    using BlockList::back;
     using BlockList::begin;
+    using BlockList::empty;
     using BlockList::end;
     using BlockList::front;
-    using BlockList::back;
-    using BlockList::empty;
+    using BlockList::insert;
     using BlockList::s_iterator_to;
 
     void push_back (Block& block) {
@@ -254,11 +259,14 @@ public: /* Methods: */
     const Block* entryBlock () const;
     const Block* exitBlock () const;
 
+    void buildProcedureCFG (Procedure& proc);
+
 private:
 
     void assignToBlocks (ICodeList& imops);
-    void propagate ();
+    void propagate (Procedure& proc, bool visitCalls);
     void numberBlocks ();
+
 };
 
 inline std::ostream &operator<<(std::ostream& out, const Program& proc) {

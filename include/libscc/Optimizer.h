@@ -39,6 +39,8 @@ bool eliminateDeadVariables (ICode& code);
 bool eliminateConstantExpressions (ICode& code);
 bool removeUnreachableBlocks (ICode& code);
 
+bool inlineCalls (ICode& code);
+
 bool optimizeCode (ICode& code);
 
 } /* namespace SecreCC { */

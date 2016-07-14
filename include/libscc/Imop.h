@@ -103,7 +103,7 @@ public: /* Types: */
         //-------------------
         STORE,      //    d[arg1] = arg2;
         LOAD,       //    d = arg1[arg2];
-        ALLOC,      //    d = ALLOC (arg1, arg2)
+        ALLOC,      //    d = ALLOC (arg1 {, arg2})
         COPY,       //    d = COPY arg1 arg2
         RELEASE,    //    RELEASE arg1 (marks the end of lifetime)
 

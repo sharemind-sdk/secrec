@@ -960,8 +960,11 @@ size_t ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
         case Imop::ASSIGN:
         case Imop::DECLASSIFY:
         case Imop::CLASSIFY:
+            if (imop.arg1 ()->isConstant ())
+                continue;
+            break;
         case Imop::ALLOC:
-            if (imop.nArgs () == 3 && imop.arg2 ()->isConstant ())
+            if (imop.nArgs () == 2 || imop.arg2 ()->isConstant ())
                 continue;
         default:
             break;

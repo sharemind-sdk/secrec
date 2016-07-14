@@ -36,9 +36,10 @@ bool optimizeCode (ICode& code) {
     runner.addAnalysis (lva)
           .addAnalysis (cf);
 
+    inlineCalls (code);
+
     bool changes = false;
     while (true) {
-
         if (removeUnreachableBlocks (code)) {
             changes = true;
             continue;

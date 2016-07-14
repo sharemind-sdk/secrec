@@ -318,7 +318,7 @@ CGStmtResult CodeGen::cgVarInit (const TypeNonVoid* ty,
     if (! varInit->shape().empty()) {
         if (!isScalar)
             emplaceImopAfter(result, varInit, Imop::ASSIGN,
-                ns->getSizeSym(), indexConstant(1));
+                             ns->getSizeSym(), indexConstant(1));
 
         for (TreeNodeExpr& e : varInit->shape()) {
 
@@ -329,17 +329,17 @@ CGStmtResult CodeGen::cgVarInit (const TypeNonVoid* ty,
                 return result;
 
             emplaceImopAfter(result, varInit, Imop::ASSIGN,
-                ns->getDim(shapeExpressions), eResult.symbol());
+                             ns->getDim(shapeExpressions), eResult.symbol());
 
             emplaceImop(varInit, Imop::MUL, ns->getSizeSym(),
-                ns->getSizeSym(), eResult.symbol());
+                        ns->getSizeSym(), eResult.symbol());
 
             ++shapeExpressions;
         }
 
         // TypeChecker::checkVarInit() should ensure this:
         assert(shapeExpressions == ty->secrecDimType());
-    } else {
+    } else if (! isProcParam) {
         if (!isScalar)
             emplaceImopAfter(result, varInit, Imop::ASSIGN, ns->getSizeSym(), indexConstant(0));
 

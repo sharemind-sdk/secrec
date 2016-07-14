@@ -231,7 +231,7 @@ const Block* Program::exitBlock () const {
 void Program::init (ICodeList &code) {
     code.resetIndexes ();
     assignToBlocks (code);
-    propagate ();
+    propagate (front (), true);
     numberBlocks ();
 }
 
@@ -317,9 +317,9 @@ struct BlockCmp {
     }
 };
 
-void Program::propagate () {
+void Program::propagate (Procedure& proc, bool visitCalls) {
     std::set<Procedure::iterator, BlockCmp > visited, todo;
-    todo.insert (front ().begin ());
+    todo.insert (proc.begin ());
 
     while (!todo.empty ()) {
         Procedure::iterator cur = *todo.begin ();
@@ -333,7 +333,8 @@ void Program::propagate () {
         if (lastImop.type () == Imop::CALL) {
             Procedure* callTarget = lastImop.callDest ()->block ()->proc ();
             Procedure::iterator next = procIterator (*lastImop.callDest ()->block ());
-            todo.insert (next);
+            if (visitCalls)
+                todo.insert (next);
             Block::addEdge (*cur, Edge::Call, *next);
 
             Procedure::iterator cleanBlock = cur;
@@ -381,7 +382,6 @@ void Program::propagate () {
             case Imop::JF:   label = Edge::False; break;
             default:         assert (false);      break;
             }
-
             Block::addEdge (*cur, label, *next);
         }
 
@@ -422,6 +422,11 @@ void Program::numberBlocks () {
             }
         }
     }
+}
+
+void Program::buildProcedureCFG (Procedure& proc) {
+    propagate (proc, true);
+    numberBlocks ();
 }
 
 std::ostream & Program::print(std::ostream & os) const {
