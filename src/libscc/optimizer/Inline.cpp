@@ -282,7 +282,7 @@ private: /* Methods: */
             m_destBlock->push_back (*op);
         }
 
-        // Copy return nodes since these will not be calculated when
+        // Copy return edges since these will not be calculated when
         // reconstructing the CFG of the procedure.
         for (auto succ : m_returnBlock->successors ()) {
             if (succ.second == Edge::Ret)
