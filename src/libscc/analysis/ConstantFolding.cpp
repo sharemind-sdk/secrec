@@ -36,6 +36,7 @@
 #include <sstream>
 #include <vector>
 
+
 namespace SecreC {
 
 /*******************************************************************************
@@ -980,13 +981,15 @@ size_t ConstantFolding::optimizeBlock (Context& cxt, StringTable& st,
         if (dest.value ()->tag () == VARR)
             continue;
 
-        const auto dataType = symb->secrecType ()->secrecDataType ();
+        auto dataType = symb->secrecType ()->secrecDataType ();
+        bool isPrivate = symb->secrecType ()->secrecSecType ()->isPrivate ();
+        if (isPrivate)
+            dataType = dtypeDeclassify (symb->secrecType ()->secrecSecType (), dataType);
 
         if (SymbolConstant* c = dest.value ()->toConstant (cxt, st, dataType)) {
             Imop::Type iType = Imop::ASSIGN;
-            if (symb->secrecType ()->secrecSecType ()->isPrivate ())
+            if (isPrivate)
                 iType = Imop::CLASSIFY;
-
             Imop* newImop = new Imop (imop.creator (), iType, symb, c);
             replace.emplace_back (std::unique_ptr<Imop>(&imop), newImop);
         }
