@@ -55,11 +55,13 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
     Program& program = code.program ();
     std::set<const Imop*> releases;
     std::set<const Imop*> copies = lmem.deadCopies (program);
+    std::map<const Symbol*, Symbol*> map;
 
     for (const Imop* copy : copies) {
         ReachableReleases::Values after = getReleases (copy, rr);
         releases += after[copy->dest ()];
         releases += after[copy->arg1 ()];
+        map.insert (std::make_pair (copy->dest (), copy->arg1 ()));
     }
 
     size_t changes = 0;
@@ -71,11 +73,20 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
         }
     }
 
-    for (const Imop* imop : copies) {
-        Imop* assign = new Imop (imop->creator (), Imop::ASSIGN, imop->dest (), imop->arg1 ());
-        const_cast<Imop*>(imop)->replaceWith (*assign);
-        delete imop;
-        ++ changes;
+    for (const Imop* copy : copies) {
+        copy->block ()->erase (blockIterator (*copy));
+        delete copy;
+
+        for (auto& block : *copy->block ()->proc ()) {
+            for (auto& op : block) {
+                for (unsigned i = 0; i < op.nArgs (); ++i) {
+                    Symbol* arg = op.arg (i);
+                    if (arg != nullptr && map.count (arg) != 0) {
+                        op.setArg (i, map[arg]);
+                    }
+                }
+            }
+        }
     }
 
     return changes > 0;

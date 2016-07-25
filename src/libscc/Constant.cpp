@@ -97,7 +97,7 @@ SymbolConstant* numericConstant (const DataType* ty, uint64_t value) {
 *******************************************************************************/
 
 ConstantInt* ConstantInt::get (const DataType* type, uint64_t value) {
-    assert (type != nullptr && type->isPrimitive ());
+    assert (type != nullptr && type->isBuiltinPrimitive ());
     const auto primDataType = static_cast<const DataTypeBuiltinPrimitive*>(type);
     return ConstantInt::get (primDataType->secrecDataType (), value);
 }

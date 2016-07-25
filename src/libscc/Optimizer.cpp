@@ -24,6 +24,8 @@
 #include "Symbol.h"
 #include "analysis/ConstantFolding.h"
 #include "analysis/LiveVariables.h"
+#include "analysis/LiveMemory.h"
+#include "analysis/ReachableReleases.h"
 
 
 namespace SecreC {
@@ -32,9 +34,13 @@ bool optimizeCode (ICode& code) {
     DataFlowAnalysisRunner runner;
     LiveVariables lva;
     ConstantFolding cf;
+    LiveMemory lmem;
+    ReachableReleases rr;
 
     runner.addAnalysis (lva)
-          .addAnalysis (cf);
+          .addAnalysis (cf)
+          .addAnalysis (lmem)
+          .addAnalysis (rr);
 
     inlineCalls (code);
 
@@ -48,7 +54,8 @@ bool optimizeCode (ICode& code) {
         runner.run (code.program ());
 
         if (eliminateConstantExpressions (cf, code) ||
-            eliminateDeadVariables (lva, code))
+            eliminateDeadVariables (lva, code) ||
+            eliminateRedundantCopies (rr, lmem, code))
         {
             changes = true;
             continue;
