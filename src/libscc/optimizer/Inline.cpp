@@ -25,10 +25,6 @@
 #include "Types.h"
 
 
-#include<iostream>
-using namespace std;
-
-
 namespace {
 
 static const unsigned inlineThreshold = 50;
@@ -44,6 +40,7 @@ public: /* Methods: */
     Inliner (std::vector<Imop*>& todo, Imop* call, ICode& code)
         : m_todo (todo)
         , m_call (call)
+        , m_caller (call->block ()->proc ())
         , m_code (code)
         , m_paramIdx (0)
         , m_returnBlock (nullptr)
@@ -63,6 +60,12 @@ public: /* Methods: */
                     break;
                 }
             }
+
+            // CALL was removed. It is possible that the CALL block is
+            // empty and will be removed so we may have to reset the
+            // destination of a jump preceding the CALL.
+            m_blockMap.insert (std::make_pair (m_destBlock, m_destBlock));
+
             assert (m_returnBlock != nullptr);
         }
 
@@ -76,7 +79,7 @@ public: /* Methods: */
         fixJumps ();
 
         // Fix CFG.
-        m_code.program ().buildProcedureCFG (*m_call->block ()->proc ());
+        m_code.program ().buildProcedureCFG (*m_caller);
 
         delete m_call;
     }
@@ -144,7 +147,21 @@ private: /* Methods: */
         }
         else if (ty == Imop::PARAM) {
             Symbol* s = m_suppliedArgs[m_paramIdx++];
-            m_symMap.insert (std::make_pair (imop.dest (), s));
+            if (s->secrecType ()->isScalar () &&
+                ! s->secrecType ()->secrecSecType ()->isPrivate ())
+            {
+                Symbol* newSym = symbols.appendTemporary (s->secrecType ());
+                Imop* i = new Imop (nullptr, Imop::DECLARE, newSym);
+                i->setBlock (m_destBlock);
+                m_destBlock->insert (m_destBlockIt, *i);
+                i = new Imop (nullptr, Imop::ASSIGN, newSym, s);
+                i->setBlock (m_destBlock);
+                m_destBlock->insert (m_destBlockIt, *i);
+                m_symMap.insert (std::make_pair (imop.dest (), newSym));
+            }
+            else {
+                m_symMap.insert (std::make_pair (imop.dest (), s));
+            }
         }
         else if (ty == Imop::DOMAINID) {
             Symbol* newSym = symbols.appendTemporary (imop.dest ()->secrecType ());
@@ -155,12 +172,10 @@ private: /* Methods: */
             // nothing
         }
         else if (ty == Imop::JT || ty == Imop::JF) {
-            i = new Imop (imop.creator (), imop.type (), nullptr, getSymbol (imop.arg1 ()));
-            m_jumps.push_back (std::make_pair (&imop, i));
+            i = new Imop (imop.creator (), imop.type (), imop.dest (), getSymbol (imop.arg1 ()));
         }
         else if (ty == Imop::JUMP) {
-            i = new Imop (imop.creator (), Imop::JUMP, nullptr);
-            m_jumps.push_back (std::make_pair (&imop, i));
+            i = new Imop (imop.creator (), Imop::JUMP, imop.dest ());
         }
         else {
             assert (false);
@@ -297,6 +312,7 @@ private: /* Methods: */
     // RETURN.
     void removeEmptyBlocks () {
         Procedure::iterator blockIt = procIterator (*m_call->block ());
+        std::vector<Block*> todo;
         while (blockIt != m_call->block ()->proc ()->end ()) {
             Block* block = &*blockIt;
             ++blockIt;
@@ -311,26 +327,32 @@ private: /* Methods: */
                         m_blockMap[pair.first] = nextBlock;
                 }
 
-                block->unlink ();
-                delete block;
+                todo.push_back (block);
             }
+        }
+
+        for (Block* block : todo) {
+            block->unlink ();
+            delete block;
         }
     }
 
     void fixJumps () {
         SymbolTable& symbols = m_code.symbols ();
-        for (const auto& it : m_jumps) {
-            const Imop* oldJ = it.first;
-            Imop* newJ = it.second;
-            SymbolLabel* l = oldJ->jumpDest ();
+        for (auto& block : *m_caller) {
+            for (auto& imop : block) {
+                if (imop.isJump ()) {
+                    SymbolLabel* l = imop.jumpDest ();
+                    assert (l->block () != nullptr);
 
-            assert (l->block () != nullptr);
-            assert (m_blockMap.count (l->block ()) > 0);
-            Imop* destImop = &(m_blockMap[l->block ()]->front ());
-
-            SymbolLabel* newL = symbols.label (destImop);
-            newL->setBlock (destImop->block ());
-            newJ->setDest (newL);
+                    if (m_blockMap.count (l->block ()) > 0) {
+                        Imop* destImop = &(m_blockMap[l->block ()]->front ());
+                        SymbolLabel* newL = symbols.label (destImop);
+                        newL->setBlock (destImop->block ());
+                        imop.setDest (newL);
+                    }
+                }
+            }
         }
     }
 
@@ -435,11 +457,11 @@ private: /* Fields: */
 
     std::vector<Imop*>& m_todo;
     Imop* m_call;
+    Procedure* m_caller;
     ICode& m_code;
     std::map<const Symbol*, Symbol*> m_symMap;
     std::map<const Imop*, Imop*> m_imopMap;
     std::map<const Block*, Block*> m_blockMap;
-    std::vector<std::pair<const Imop*, Imop*>> m_jumps;
     unsigned m_paramIdx;
     std::vector<Symbol*> m_suppliedArgs;
     Block* m_returnBlock;
