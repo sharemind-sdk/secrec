@@ -424,7 +424,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
                 // Copy result
                 if (destSym->isArray()) {
-                    emplaceImopAfter(result, e, Imop::ASSIGN, destSym, callRes.symbol(), destSym->getSizeSym());
+                    emplaceImopAfter(result, e, Imop::COPY, destSym, callRes.symbol(), destSym->getSizeSym());
                 }
                 else {
                     emplaceImopAfter(result, e, Imop::ASSIGN, destSym, callRes.symbol());

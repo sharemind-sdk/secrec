@@ -94,28 +94,6 @@ private: /* Methods: */
         if (isCopyable (imop)) {
             i = copyImop (imop);
         }
-        else if (ty == Imop::ASSIGN) {
-            if (imop.nArgs () > 2) {
-                assert (false);
-            }
-            else {
-                Symbol* oldDest = imop.dest ();
-                Symbol* oldArg = imop.arg1 ();
-                Symbol* newDest;
-
-                if (m_symMap.count (oldDest) != 0) {
-                    newDest = m_symMap[oldDest];
-                }
-                else {
-                    newDest = symbols.appendTemporary (oldDest->secrecType ());
-                    m_symMap.insert (std::make_pair (oldDest, newDest));
-                }
-
-                assert (oldArg != nullptr);
-                Symbol* newArg = getSymbol (oldArg);
-                i = newAssign (imop.creator (), newDest, newArg);
-            }
-        }
         else if (ty == Imop::RELEASE) {
             Symbol* arg = getSymbol (imop.arg1 ());
             if (! arg->isConstant ())
@@ -390,6 +368,7 @@ private: /* Methods: */
 
     bool isCopyable (const Imop& imop) {
         switch (imop.type ()) {
+            case Imop::ASSIGN:
             case Imop::DECLARE:
             case Imop::CAST:
             case Imop::CLASSIFY:
@@ -436,7 +415,7 @@ private: /* Methods: */
 
     Imop* copyImop (const Imop& imop) {
         for (Symbol* s : imop.defRange ()) {
-            if (m_symMap.count (s) == 0) {
+            if (m_symMap.count (s) == 0 && ! s->isGlobal ()) {
                 Symbol* newSym = m_code.symbols ().appendTemporary (s->secrecType ());
                 m_symMap.insert (std::make_pair (s, newSym));
             }
