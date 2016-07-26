@@ -57,6 +57,7 @@ bool optimizeCode (ICode& code) {
             eliminateDeadVariables (lva, code) ||
             eliminateRedundantCopies (rr, lmem, code))
         {
+            removeEmptyBlocks (code);
             changes = true;
             continue;
         }

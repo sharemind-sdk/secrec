@@ -81,6 +81,7 @@ SET(LIBSCC_SOURCES
     "optimizer/CopyElimination.cpp"
     "optimizer/DeadVariableElimination.cpp"
     "optimizer/Inline.cpp"
+    "optimizer/RemoveEmptyBlocks.cpp"
     "optimizer/RemoveUnreachableBlocks.cpp"
     "SecurityType.cpp"
     "StringRef.cpp"

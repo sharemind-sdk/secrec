@@ -26,7 +26,9 @@ class ConstantFolding;
 class ICode;
 class LiveMemory;
 class LiveVariables;
+class Procedure;
 class ReachableReleases;
+class SymbolTable;
 
 bool eliminateDeadVariables (const LiveVariables& lva, ICode& code);
 bool eliminateConstantExpressions (const ConstantFolding& cf, ICode& code);
@@ -38,6 +40,8 @@ bool eliminateRedundantCopies (ICode& code);
 bool eliminateDeadVariables (ICode& code);
 bool eliminateConstantExpressions (ICode& code);
 bool removeUnreachableBlocks (ICode& code);
+bool removeEmptyBlocks (ICode& code);
+bool removeEmptyBlocks (SymbolTable& symbols, Procedure& proc);
 
 bool inlineCalls (ICode& code);
 
