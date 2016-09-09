@@ -299,14 +299,16 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
 
 void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     VMImm* srcSize = st.getImm (sizeInBytes (m_src));
-    VMImm* destSize = st.getImm (sizeInBytes (
-        secrecDTypeToVMDType (DATATYPE_BOOL)));
+    VMImm* destElemSize = st.getImm(sizeInBytes(
+        secrecDTypeToVMDType(DATATYPE_BOOL)));
+
     VMStack* dest = st.getStack (0);
     VMStack* src = st.getStack (1);
     VMStack* size = st.getStack (2);
     VMStack* srcOff = st.getStack (3);
     VMStack* destOff = st.getStack (4);
     VMStack* temp = st.getStack (5);
+    VMStack* boolTemp = st.getStack(6);
 
     VMLabel* middleL = st.getUniqLabel ();
     VMLabel* exitL = st.getUniqLabel ();
@@ -314,7 +316,7 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     ///////////////
     // Entry block:
     VMBlock entryB (0, 0);
-    entryB.push_new () << "resizestack" << 6;
+    entryB.push_new () << "resizestack" << 7;
     entryB.push_new () << "mov" << st.getImm (0) << srcOff;
     entryB.push_new () << "mov" << st.getImm (0) << destOff;
     entryB.push_new () << "bmul uint64" << size << srcSize;
@@ -322,10 +324,10 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
 
     VMBlock middleB (middleL, 0);
     middleB.push_new () << "mov" << "mem" << src << srcOff << temp << srcSize;
-    middleB.push_new () << "bgt" << m_src << temp << st.getImm (0);
-    middleB.push_new () << "mov" << temp << "mem" << dest << destOff << destSize;
+    middleB.push_new () << "tne" << m_src << boolTemp << temp << st.getImm (0);
+    middleB.push_new () << "mov" << boolTemp << "mem" << dest << destOff << destElemSize;
     middleB.push_new () << "badd uint64" << srcOff << srcSize;
-    middleB.push_new () << "badd uint64" << destOff << destSize;
+    middleB.push_new () << "badd uint64" << destOff << destElemSize;
     middleB.push_new () << "jlt" << middleL << "uint64" << srcOff << size;
 
     VMBlock exitB (exitL, 0);

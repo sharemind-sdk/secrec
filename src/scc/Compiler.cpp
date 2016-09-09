@@ -690,7 +690,8 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         VMInstruction instr;
         if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
-            instr << "tgt" << destTy << find (imop.dest ())
+            instr << "tne"
+                  << srcTy << find (imop.dest ())
                   << arg << m_st.getImm (0);
         }
         else
