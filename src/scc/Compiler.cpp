@@ -687,25 +687,35 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         }
     }
     else {
-        VMInstruction instr;
         if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
-            instr << "tne"
-                  << srcTy << find (imop.dest ())
-                  << arg << m_st.getImm (0);
+            block.push_new() << "tne"
+                             << srcTy << find (imop.dest ())
+                             << arg << m_st.getImm (0);
         }
         else
         if (destTy != srcTy) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
-            instr << "convert"
-                  << srcTy << arg
-                  << destTy << find (imop.dest ());
+
+            if (isFloating(srcTy) && (isSigned(destTy) || isUnsigned(destTy))) {
+                std::stringstream ss;
+                ss << ":cast_" << destTy << "_" << srcTy;
+                VMLabel* target = m_st.getLabel(ss.str());
+                m_funcs->insert (target, BuiltinFloatToInt(destTy, srcTy));
+                block.push_new() << "push" << arg;
+                block.push_new() << "call" << target << find(imop.dest());
+            }
+            else {
+                block.push_new() << "convert"
+                                 << srcTy << arg
+                                 << destTy << find (imop.dest ());
+            }
         }
         else {
-            instr << "mov" << find (imop.arg1 ()) << find (imop.dest ());
+            block.push_new() << "mov"
+                             << find (imop.arg1 ())
+                             << find (imop.dest ());
         }
-
-        block.push_back (instr);
     }
 }
 

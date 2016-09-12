@@ -24,6 +24,7 @@
 #include <libscc/Symbol.h>
 
 #include "VMDataType.h"
+#include "VMFpu.h"
 #include "StringLiterals.h"
 
 
@@ -131,7 +132,6 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
 /*******************************************************************************
   BuiltinVArith
 *******************************************************************************/
-
 
 void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     using namespace SecreC;
@@ -250,26 +250,84 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 }
 
 /*******************************************************************************
+  BuiltinFloatToInt
+*******************************************************************************/
+
+void BuiltinFloatToInt::generate (VMFunction& function, VMSymbolTable& st) {
+    assert (isFloating(m_src));
+    assert (isSigned(m_dest) || isUnsigned(m_dest));
+
+    VMStack* arg = st.getStack(0);
+    VMStack* dest = st.getStack(1);
+    VMStack* prevFpuState = st.getStack(2);
+    VMStack* fpuState = st.getStack(3);
+
+    VMBlock block (0, 0);
+    block.push_new () << "resizestack" << 4;
+
+    // Set proper FPU state:
+    fpuGetState(block, prevFpuState);
+    block.push_new() << "mov" << prevFpuState << fpuState;
+    fpuSetRoundingMode(block, st, fpuState, FpuRoundingMode::TOWARDZERO);
+    fpuSetState(block, fpuState);
+
+    // Do the deed:
+    block.push_new () << "convert" << m_src << arg << m_dest << dest;
+
+    // Restore the previous FPU state:
+    fpuSetState(block, prevFpuState);
+
+    block.push_new () << "return" << dest;
+
+    function.push_back(block);
+}
+
+
+
+/*******************************************************************************
   BuiltinVCast
 *******************************************************************************/
 
 void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
     VMImm* srcSize = st.getImm (sizeInBytes (m_src));
     VMImm* destSize = st.getImm (sizeInBytes (m_dest));
-    VMStack* dest = st.getStack (0);
-    VMStack* src = st.getStack (1);
-    VMStack* size = st.getStack (2);
-    VMStack* srcOff = st.getStack (3);
-    VMStack* destOff = st.getStack (4);
-    VMStack* temp = st.getStack (5);
+
+    size_t stackSize = 0;
+    auto nextOnStack = [&stackSize, &st]() {
+        return st.getStack(stackSize ++);
+    };
+
+    VMStack* dest = nextOnStack();
+    VMStack* src = nextOnStack();
+    VMStack* size =  nextOnStack();
+    VMStack* srcOff = nextOnStack();
+    VMStack* destOff = nextOnStack();
+    VMStack* temp = nextOnStack();
 
     VMLabel* middleL = st.getUniqLabel ();
     VMLabel* exitL = st.getUniqLabel ();
 
+    const bool needToRoundToZero = isFloating(m_src) && ! isFloating(m_dest);
+    VMStack* prevFpuState = nullptr;
+    VMStack* fpuState = nullptr;
+    if (needToRoundToZero) {
+        prevFpuState = nextOnStack();
+        fpuState = nextOnStack();
+    }
+
     ///////////////
     // Entry block:
     VMBlock entryB (0, 0);
-    entryB.push_new () << "resizestack" << 6;
+
+    entryB.push_new () << "resizestack" << stackSize;
+
+    if (needToRoundToZero) {
+        fpuGetState(entryB, prevFpuState);
+        entryB.push_new() << "mov" << prevFpuState << fpuState;
+        fpuSetRoundingMode(entryB, st, fpuState, FpuRoundingMode::TOWARDZERO);
+        fpuSetState(entryB, fpuState);
+    }
+
     entryB.push_new () << "mov" << st.getImm (0) << srcOff;
     entryB.push_new () << "mov" << st.getImm (0) << destOff;
     entryB.push_new () << "bmul" << VM_UINT64 << size << srcSize;
@@ -285,6 +343,11 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
     middleB.push_new () << "jlt" << middleL << VM_UINT64 << srcOff << size;
 
     VMBlock exitB (exitL, 0);
+
+    if (needToRoundToZero) {
+        fpuSetState(exitB, prevFpuState);
+    }
+
     exitB.push_new () << "return imm 0x0";
 
     function.push_back (entryB)
