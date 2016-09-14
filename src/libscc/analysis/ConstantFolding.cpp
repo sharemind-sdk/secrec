@@ -512,6 +512,9 @@ Value strEval (ValueFactory& f, const Imop& imop, const std::vector<const String
         return makeUnsigned (f, strCmp (imop.type (), *args[0], *args[1]));
     case Imop::ADD:
         return f.get (strAdd (*args[0], *args[1]));
+    case Imop::STRLEN:
+        return makeUnsigned (f, APInt(64, args[0]->getValue ().size ()));
+
     default:
         assert (false && "Invalid string operation.");
         return Value::nac ();
