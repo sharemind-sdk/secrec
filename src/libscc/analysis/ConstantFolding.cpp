@@ -414,27 +414,8 @@ Value valueStore (ValueFactory& factory, Value a, Value i, Value v) {
     return factory.get (arrStore (*av, *iv, v));
 }
 
-Value valueLoad (ValueFactory& factory, Value a, Value i) {
-    if (a.isUndef () || a.isNac ()) return a;
-    assert (a.value ()->tag () == VARR);
-    const auto av = static_cast<const ArrayValue*>(a.value ());
-    const std::vector<Value>& elems = *av;
-
-    // For undefined, or non-constant indices return meet of all values
-    // TODO: not sure if this is correct.
-    if (i.isUndef () || i.isNac ())
-        return meetRange (factory, elems.begin (), elems.end ());
-
-    assert (i.value ()->tag () == VINT);
-    const auto iv = static_cast<const IntValue*>(i.value ());
-    return arrLoad (*av, *iv);
-}
-
 /**
  */
-
-Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Value>& args);
-
 inline Value makeSigned (ValueFactory& factory, const APInt& x) {
     return factory.get (IntValue (true, x));
 }
@@ -442,6 +423,49 @@ inline Value makeSigned (ValueFactory& factory, const APInt& x) {
 inline Value makeUnsigned (ValueFactory& factory, const APInt& x) {
     return factory.get (IntValue (false, x));
 }
+
+Value valueLoad (ValueFactory& factory, Value a, Value i) {
+    if (a.isUndef () || a.isNac ()) return a;
+    assert (a.value ()->tag () == VARR || a.value ()->tag () == VSTR);
+
+    if (a.value ()->tag () == VARR) {
+        const auto av = static_cast<const ArrayValue*>(a.value ());
+        const std::vector<Value>& elems = *av;
+
+        // For undefined, or non-constant indices return meet of all values
+        // TODO: not sure if this is correct.
+        if (i.isUndef () || i.isNac ())
+            return meetRange (factory, elems.begin (), elems.end ());
+
+        assert (i.value ()->tag () == VINT);
+        const auto iv = static_cast<const IntValue*>(i.value ());
+        return arrLoad (*av, *iv);
+    } else { // VSTR
+        const auto strVal = static_cast<const StringValue*>(a.value ());
+        const std::string& str = strVal->getValue ();
+
+        if (i.isUndef () || i.isNac ()) {
+            // If all elements are equal, return the first
+            // element. Otherwise nac.
+
+            if (str.size () == 0)
+                return Value::nac ();
+
+            for (unsigned j = 1; j < str.size (); ++j) {
+                if (str[j] != str[j - 1])
+                    return Value::nac ();
+            }
+
+            return makeUnsigned (factory, APInt (8, str[0]));
+        }
+
+        assert (i.value ()->tag () == VINT);
+        APInt::value_type idx = static_cast<const IntValue*>(i.value ())->getValue ().bits ();
+        return makeUnsigned (factory, APInt (8, str[idx]));
+    }
+}
+
+Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Value>& args);
 
 Value intEval (ValueFactory& f, const Imop& imop, const std::vector<const IntValue*>& args) {
     switch (imop.type ()) {
