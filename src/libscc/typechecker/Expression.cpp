@@ -760,13 +760,21 @@ TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayCons
 
         const auto childType = static_cast<const TypeNonVoid*>(child.resultType ());
 
+        assert (childType != nullptr);
+
         if (! childType->isScalar ()) {
             m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at "
                                   << child.location () << ".";
             return E_TYPE;
         }
 
-        assert (childType != nullptr);
+        if (childType->isString()) {
+            m_log.fatalInProc(e)
+                    << "Array of strings declared at " << child.location() << ".";
+            m_log.fatal() << "This feature is currently not supported.";
+            return E_TYPE;
+        }
+
         if (elemType == nullptr) {
             elemType = childType;
         }

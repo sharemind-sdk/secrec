@@ -58,6 +58,13 @@ TypeChecker::Status TypeChecker::checkVarInit(const TypeNonVoid * ty,
         ++shapeExpressions;
     }
 
+    if (ty->isString() && ! ty->isScalar()) {
+        m_log.fatalInProc(varInit)
+                << "Array of strings declared at " << varInit->location() << ".";
+        m_log.fatal() << "This feature is currently not supported.";
+        return E_TYPE;
+    }
+
     if (shapeExpressions > 0 && shapeExpressions != ty->secrecDimType()) {
         m_log.fatalInProc(varInit) << "Mismatching number of shape components "
                                       "in declaration at "
