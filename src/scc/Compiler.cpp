@@ -63,10 +63,12 @@ bool isSigned (SecreC::Symbol* sym) {
 }
 
 const char* imopToVMName (const Imop& imop) {
+    const bool isBool = imop.arg1()->secrecType()->secrecDataType()->isBool();
+
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
     case Imop::UNEG  : return "bnot";
-    case Imop::UINV  : return "binv";
+    case Imop::UINV  : return isBool ? "bnot" : "binv";
     case Imop::MUL   : return "tmul";
     case Imop::DIV   : return "tdiv";
     case Imop::MOD   : return "tmod";

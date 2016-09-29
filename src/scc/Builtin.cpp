@@ -139,11 +139,12 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     const unsigned n = imop.nArgs ();
     assert (n > 0);
     assert (imop.isVectorized ());
-    VMDataType argTy = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
-    VMDataType destTy = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
+    const bool isBool = imop.arg1()->secrecType()->secrecDataType()->isBool();
+    const VMDataType argTy = secrecDTypeToVMDType (imop.arg1()->secrecType()->secrecDataType());
+    const VMDataType destTy = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
     assert (argTy != VM_INVALID && destTy != VM_INVALID);
-    VMImm* argSize = st.getImm (sizeInBytes (argTy));
-    VMImm* destSize = st.getImm (sizeInBytes (destTy));
+    VMImm* const argSize = st.getImm (sizeInBytes (argTy));
+    VMImm* const destSize = st.getImm (sizeInBytes (destTy));
 
     VMBlock entryB (0, 0);
 
@@ -194,7 +195,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         switch (imop.type ()) {
         case Imop::UMINUS: name = "bneg"; break;
         case Imop::UNEG  : name = "bnot"; break;
-        case Imop::UINV  : name = "binv"; break;
+        case Imop::UINV  : name = isBool ? "bnot" : "binv"; break;
         case Imop::MUL   : name = "tmul"; break;
         case Imop::DIV   : name = "tdiv"; break;
         case Imop::MOD   : name = "tmod"; break;
