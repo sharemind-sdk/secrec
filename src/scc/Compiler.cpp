@@ -598,7 +598,7 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
     }
 
     // We allow for public scalar to be freed (which is a nop).
-    if (imop.arg1()->isArray ()) {
+    if (imop.arg1()->isArray() || imop.arg1()->isString()) {
         block.push_new () << "free" << find (imop.arg1 ());
         return;
     }
