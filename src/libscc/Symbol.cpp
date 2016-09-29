@@ -163,6 +163,18 @@ bool Symbol::isArray () const {
     return false;
 }
 
+bool Symbol::isString() const {
+    switch (symbolType()) {
+    case SYM_SYMBOL:
+        if (static_cast<const SymbolSymbol*>(this)->secrecType()->secrecDataType()->isString())
+            return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
 /*******************************************************************************
   SymbolDimensionality
 *******************************************************************************/
