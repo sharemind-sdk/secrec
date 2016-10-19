@@ -23,6 +23,7 @@
 #include "Symbol.h"
 #include "analysis/LiveMemory.h"
 #include "analysis/ReachableReleases.h"
+#include "analysis/ReachableUses.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -46,46 +47,63 @@ ReachableReleases::Values getReleases (const Imop* i, const ReachableReleases& r
     return after;
 }
 
+ReachableUses::SymbolUses getUses (const Imop* i, const ReachableUses& ru) {
+    const Block& block = *i->block ();
+    ReachableUses::SymbolUses after = ru.usesOnExit (block);
+    for (const Imop& imop : reverse (block)) {
+        if (&imop == i)
+            break;
+
+        ReachableUses::update (imop, after);
+    }
+
+    return after;
+}
+
 } // namespace anonymous
 
 bool eliminateRedundantCopies (const ReachableReleases& rr,
+                               const ReachableUses& ru,
                                const LiveMemory& lmem,
                                ICode& code)
 {
     Program& program = code.program ();
     std::set<const Imop*> releases;
     std::set<const Imop*> copies = lmem.deadCopies (program);
-    std::map<const Symbol*, Symbol*> map;
 
     for (const Imop* copy : copies) {
         ReachableReleases::Values after = getReleases (copy, rr);
         releases += after[copy->dest ()];
         releases += after[copy->arg1 ()];
-        map.insert (std::make_pair (copy->dest (), copy->arg1 ()));
     }
 
     size_t changes = 0;
+
+    for (const Imop* copy : copies) {
+        const Symbol* dest = copy->dest ();
+        Symbol* newArg = copy->arg1 ();
+        copy->block ()->erase (blockIterator (*copy));
+        delete copy;
+        ++ changes;
+
+        ReachableUses::SymbolUses uses = getUses (copy, ru);
+        for (Imop* use : uses[dest]) {
+            if (use->type () == Imop::RELEASE)
+                continue;
+
+            for (unsigned i = 1; i < use->nArgs (); ++i) {
+                Symbol* arg = use->arg (i);
+                if (arg != nullptr && arg == dest) {
+                    use->setArg (i, newArg);
+                }
+            }
+        }
+    }
 
     for (const Imop* imop : releases) {
         if (imop->type () == Imop::RELEASE) {
             delete imop;
             ++ changes;
-        }
-    }
-
-    for (const Imop* copy : copies) {
-        copy->block ()->erase (blockIterator (*copy));
-        delete copy;
-
-        for (auto& block : *copy->block ()->proc ()) {
-            for (auto& op : block) {
-                for (unsigned i = 0; i < op.nArgs (); ++i) {
-                    Symbol* arg = op.arg (i);
-                    if (arg != nullptr && map.count (arg) != 0) {
-                        op.setArg (i, map[arg]);
-                    }
-                }
-            }
         }
     }
 
@@ -96,14 +114,16 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
 bool eliminateRedundantCopies (ICode& code) {
     Program& program = code.program ();
     ReachableReleases reachableReleases;
+    ReachableUses reachableUses;
     LiveMemory liveMemory;
 
     DataFlowAnalysisRunner ()
             .addAnalysis (reachableReleases)
+            .addAnalysis (reachableUses)
             .addAnalysis (liveMemory)
             .run (program);
 
-    return eliminateRedundantCopies (reachableReleases, liveMemory, code);
+    return eliminateRedundantCopies (reachableReleases, reachableUses, liveMemory, code);
 }
 
 } // namespace SecreCC

@@ -42,6 +42,7 @@
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/LiveVariables.h>
 #include <libscc/analysis/ReachableReleases.h>
+#include <libscc/analysis/ReachableUses.h>
 #include <libscc/analysis/ReachingDeclassify.h>
 #include <libscc/analysis/ReachingDefinitions.h>
 #include <libscc/analysis/ReachingJumps.h>
@@ -136,6 +137,10 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "rr") {
         return new SecreC::ReachableReleases ();
+    }
+
+    if (name == "ru") {
+        return new SecreC::ReachableUses ();
     }
 
     if (name == "lv") {
@@ -288,6 +293,7 @@ int main(int argc, char *argv[]) {
              "\t\"rj\"  -- reaching jumps\n"
              "\t\"rdc\" -- reaching declassify\n"
              "\t\"rr\"  -- reachable releases\n"
+             "\t\"ru\"  -- reachable uses\n"
              "\t\"lm\"  -- live memory\n"
              "\t\"lv\"  -- live variables\n"
              "\t\"cf\"  -- constant folding\n"

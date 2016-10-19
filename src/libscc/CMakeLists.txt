@@ -43,6 +43,7 @@ SET(LIBSCC_SOURCES
     "analysis/LiveMemory.cpp"
     "analysis/LiveVariables.cpp"
     "analysis/ReachableReleases.cpp"
+    "analysis/ReachableUses.cpp"
     "analysis/ReachingDeclassify.cpp"
     "analysis/ReachingDefinitions.cpp"
     "analysis/ReachingJumps.cpp"

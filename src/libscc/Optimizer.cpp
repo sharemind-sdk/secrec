@@ -26,21 +26,24 @@
 #include "analysis/LiveVariables.h"
 #include "analysis/LiveMemory.h"
 #include "analysis/ReachableReleases.h"
+#include "analysis/ReachableUses.h"
 
 
 namespace SecreC {
 
 bool optimizeCode (ICode& code) {
-    DataFlowAnalysisRunner runner;
-    LiveVariables lva;
     ConstantFolding cf;
+    DataFlowAnalysisRunner runner;
     LiveMemory lmem;
+    LiveVariables lva;
     ReachableReleases rr;
+    ReachableUses ru;
 
     runner.addAnalysis (lva)
           .addAnalysis (cf)
           .addAnalysis (lmem)
-          .addAnalysis (rr);
+          .addAnalysis (rr)
+          .addAnalysis (ru);
 
     inlineCalls (code);
 
@@ -55,7 +58,7 @@ bool optimizeCode (ICode& code) {
 
         if (eliminateConstantExpressions (cf, code) ||
             eliminateDeadVariables (lva, code) ||
-            eliminateRedundantCopies (rr, lmem, code))
+            eliminateRedundantCopies (rr, ru, lmem, code))
         {
             removeEmptyBlocks (code);
             changes = true;

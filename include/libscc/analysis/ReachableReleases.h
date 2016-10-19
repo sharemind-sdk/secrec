@@ -25,13 +25,13 @@
 namespace SecreC {
 
 class ReachableReleases : public BackwardDataFlowAnalysis {
-public: /* Methods: */
+public: /* Types: */
     using Domain = std::set<const Imop*>;
     using Values = std::map<const Symbol*, Domain>;
     using BV = std::map<const Block*, Values>;
     using Symbols = std::set<const Symbol*>;
 
-public: /* Types: */
+public: /* Methods: */
 
     std::string toString(const Program &pr) const override;
 
