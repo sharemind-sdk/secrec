@@ -24,6 +24,7 @@
 #include "TreeNode.h"
 #include "Types.h"
 
+#include <boost/interprocess/containers/flat_set.hpp>
 
 namespace {
 
@@ -451,8 +452,43 @@ private: /* Fields: */
 
 }; /* class Inliner { */
 
+bool isRecursive (Imop* call) {
+    boost::container::flat_set<Procedure*> visited;
+    std::vector<Procedure*> todo;
+
+    todo.push_back (call->callDest ()->block ()->proc ());
+
+    while (todo.size () > 0) {
+        Procedure* proc = &*todo.back ();
+        todo.pop_back ();
+
+        if (visited.count (proc) != 0)
+            continue;
+
+        visited.insert (proc);
+
+        for (const auto& block : *proc) {
+            if (!block.reachable ())
+                continue;
+
+            for (const auto& imop : block) {
+                if (imop.type () == Imop::CALL) {
+                    if (imop.dest () == call->dest ())
+                        return true;
+                    todo.push_back (imop.callDest ()->block ()->proc ());
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 bool shouldInline (Imop* call) {
     if (static_cast<const SymbolProcedure*> (call->dest ())->procedureName () == "main")
+        return false;
+
+    if (isRecursive (call))
         return false;
 
     unsigned cost = 0;
@@ -464,23 +500,17 @@ bool shouldInline (Imop* call) {
 
     const Imop* procImop = call->callDest ();
     assert (procImop != nullptr);
-
     for (const auto& block : *procImop->block ()->proc ()) {
+        if (!block.reachable ())
+            continue;
+
         for (const auto& imop : block) {
-            // Check if the call is recursive
-            if (imop.type () == Imop::CALL &&
-                procImop == imop.callDest ())
-            {
-                return false;
-            }
+            (void) imop;
             ++cost;
         }
     }
 
-    if (cost < inlineThreshold)
-        return true;
-
-    return false;
+    return cost < inlineThreshold;
 }
 
 void inlineCall (std::vector<Imop*>& todo, ICode& code) {
@@ -499,6 +529,9 @@ void inlineCalls (ICode& code) {
 
     for (auto& proc : code.program ()) {
         for (auto& block : proc) {
+            if (!block.reachable ())
+                continue;
+
             for (auto& imop : block) {
                 if (imop.type () == Imop::CALL) {
                     todo.push_back (&imop);
