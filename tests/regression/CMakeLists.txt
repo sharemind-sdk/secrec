@@ -191,6 +191,9 @@ add_test_secrec_execute("templates/18-overloading-on-struct-bug")
 add_test_secrec_execute("templates/19-protection-domain-bug")
 SET_TESTS_PROPERTIES("templates/19-protection-domain-bug"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(5,10\\)\\(5,21\\)")
+add_test_secrec_execute("templates/20-index-into-N-dimensional-array")
+SET_TESTS_PROPERTIES("templates/20-index-into-N-dimensional-array"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,.*\\)\\(10,.*\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
