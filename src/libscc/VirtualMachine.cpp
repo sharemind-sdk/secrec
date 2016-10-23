@@ -604,7 +604,6 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
 
 bool matchTypes (const Type* ty1, const Type* ty2) {
     return ty1->secrecDataType () == ty2->secrecDataType () &&
-           ty1->secrecDimType () == ty2->secrecDimType () &&
            ty1->secrecSecType () == ty2->secrecSecType ();
 }
 

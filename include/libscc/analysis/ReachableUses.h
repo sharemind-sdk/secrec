@@ -37,6 +37,7 @@ class ReachableUses : public BackwardDataFlowAnalysis {
 public: /* Types: */
 
     using Symbols = boost::container::flat_set<const Symbol*>;
+    using Uses = boost::container::flat_set<Imop*>;
     using SymbolUses = std::map<const Symbol*, boost::container::flat_set<Imop*>>;
 
     struct BlockInfo {

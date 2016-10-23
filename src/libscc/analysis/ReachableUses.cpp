@@ -98,6 +98,14 @@ void ReachableUses::start(const Program& pr) {
     FOREACH_BLOCK (bi, pr) {
         const Block& block = *bi;
         BlockInfo& blockInfo = m_blocks[&block];
+
+        // If the analysis is run multiple times we don't want to keep
+        // information from previous runs.
+        blockInfo.in.clear();
+        blockInfo.out.clear();
+        blockInfo.gen.clear();
+        blockInfo.kill.clear();
+
         CollectGenKill collector(blockInfo.gen, blockInfo.kill);
         for (const Imop& imop : reverse(block)) {
             visitImop(imop, collector);
@@ -147,6 +155,7 @@ void ReachableUses::finish() {}
 std::string ReachableUses::toString(const Program& pr) const {
     std::stringstream ss;
     ss << "Reachable uses:\n";
+
     FOREACH_BLOCK (bi, pr) {
         SymbolUses after;
         auto i = m_blocks.find(&*bi);
@@ -157,7 +166,15 @@ std::string ReachableUses::toString(const Program& pr) const {
 
         for (const Imop& imop : reverse(*bi)) {
             for (const Symbol* dest : imop.defRange()) {
-                ss << imop.index() << ": " << imop << " // " << imop.creator()->location() << "\n";
+                TreeNode* creator = imop.creator();
+
+                ss << imop.index() << ": " << imop;
+
+                if (creator != nullptr)
+                    ss << " // creator " << imop.creator()->location();
+
+                ss << '\n';
+
                 for (const Imop* use : after[dest]) {
                     ss << '\t' << use->index() << ": " << *use << '\n';
                 }

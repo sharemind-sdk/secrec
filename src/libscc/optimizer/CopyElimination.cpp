@@ -62,6 +62,11 @@ ReachableUses::SymbolUses getUses (const Imop* i, const ReachableUses& ru) {
 
 } // namespace anonymous
 
+bool compareImop (const Imop* a, const Imop* b) {
+    return (a->block ()->dfn () < b->block ()->dfn () ||
+            a->index () < b->index ());
+}
+
 bool eliminateRedundantCopies (const ReachableReleases& rr,
                                const ReachableUses& ru,
                                const LiveMemory& lmem,
@@ -69,7 +74,10 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
 {
     Program& program = code.program ();
     std::set<const Imop*> releases;
-    std::set<const Imop*> copies = lmem.deadCopies (program);
+    std::set<const Imop*> copySet = lmem.deadCopies (program);
+    std::vector<const Imop*> copies (copySet.begin (), copySet.end ());
+
+    std::sort (copies.begin (), copies.end (), compareImop);
 
     for (const Imop* copy : copies) {
         ReachableReleases::Values after = getReleases (copy, rr);
@@ -82,11 +90,8 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
     for (const Imop* copy : copies) {
         const Symbol* dest = copy->dest ();
         Symbol* newArg = copy->arg1 ();
-        copy->block ()->erase (blockIterator (*copy));
-        delete copy;
-        ++ changes;
-
         ReachableUses::SymbolUses uses = getUses (copy, ru);
+
         for (Imop* use : uses[dest]) {
             if (use->type () == Imop::RELEASE)
                 continue;
@@ -100,6 +105,12 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
         }
     }
 
+    for (const Imop* copy : copies) {
+        copy->block ()->erase (blockIterator (*copy));
+        delete copy;
+        ++ changes;
+    }
+
     for (const Imop* imop : releases) {
         if (imop->type () == Imop::RELEASE) {
             delete imop;
@@ -109,7 +120,6 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
 
     return changes > 0;
 }
-
 
 bool eliminateRedundantCopies (ICode& code) {
     Program& program = code.program ();
