@@ -565,12 +565,20 @@ Value floatEval (ValueFactory& f, const Imop& imop, const std::vector<const Floa
 }
 
 Value arrEval (ValueFactory& factory, const Imop& imop, const std::vector<const ArrayValue*>& args) {
+    ArrayValue::size_type firstLen = args.at (0)->size ();
     std::vector<Value> vs;
-    std::vector<Value> elems (args.at(0)->size ());
+    std::vector<Value> elems (firstLen);
+
+    for (size_t i = 1; i < args.size (); ++ i) {
+        if (args.at (i)->size () != firstLen)
+            return Value::undef ();
+    }
+
     for (size_t i = 0; i < elems.size (); ++ i) {
         vs.clear ();
-        for (auto arg : args)
+        for (auto arg : args) {
             vs.push_back (arg->at (i));
+        }
 
         elems[i] = exprValue (factory, imop, vs);
     }
