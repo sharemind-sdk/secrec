@@ -17,6 +17,7 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "Constant.h"
 #include "Imop.h"
 #include "Intermediate.h"
 #include "SecurityType.h"
@@ -45,7 +46,7 @@ public: /* Methods: */
         , m_code (code)
         , m_paramIdx (0)
         , m_returnBlock (nullptr)
-        , m_returnOp (nullptr)
+        , m_returnLabel (nullptr)
         , m_proc (m_call->callDest ()->block ()->proc ())
         , m_destBlock (m_call->block ())
         , m_destBlockIt (m_destBlock->erase (blockIterator (*m_call)))
@@ -62,20 +63,18 @@ public: /* Methods: */
                 }
             }
 
+            assert (m_returnBlock != nullptr);
+
             // CALL was removed. It is possible that the CALL block is
             // empty and will be removed so we may have to reset the
             // destination of a jump preceding the CALL.
             m_blockMap.insert (std::make_pair (m_destBlock, m_destBlock));
-
-            assert (m_returnBlock != nullptr);
         }
 
     void run () {
         removeRetClean ();
         removeCallEdges ();
         copyImops ();
-        replaceReturnVars ();
-        mergeCallSucc ();
         removeEmptyBlocks ();
         fixJumps ();
 
@@ -102,8 +101,34 @@ private: /* Methods: */
         }
         else if (ty == Imop::RETURN) {
             if (imop.nArgs() > 1) {
-                m_returnOp = &imop;
+                Imop::OperandConstRange range = m_call->defRange ();
+                Imop::OperandConstIterator callIt = range.begin ();
+                Imop::OperandConstIterator retIt = ++imop.operandsBegin ();
+
+                while (retIt != imop.operandsEnd ()) {
+                    const TypeNonVoid* ty = (*retIt)->secrecType ();
+                    Imop* copy;
+
+                    if (ty->secrecDimType () > 0) {
+                        Symbol* sizeSym = static_cast<SymbolSymbol*> (*retIt)->getSizeSym ();
+                        assert(sizeSym != nullptr);
+                        copy = new Imop (imop.creator (), Imop::COPY,
+                                         *callIt, getSymbol (*retIt),
+                                         getSymbol (sizeSym));
+                    } else {
+                        copy = new Imop (imop.creator (), Imop::ASSIGN,
+                                         *callIt, getSymbol (*retIt));
+                    }
+
+                    m_destBlock->insert (m_destBlockIt, *copy);
+                    copy->setBlock (m_destBlock);
+
+                    ++retIt;
+                    ++callIt;
+                }
             }
+
+            i = new Imop (imop.creator (), Imop::JUMP, m_returnLabel);
         }
         else if (ty == Imop::ALLOC) {
             Symbol* newSym = symbols.appendTemporary (imop.dest ()->secrecType ());
@@ -169,13 +194,17 @@ private: /* Methods: */
 
     void removeRetClean () {
         ImopList::iterator it = m_returnBlock->begin ();
-        while (it != m_returnBlock->end () && it->type() != Imop::RETCLEAN)
+        while (it != m_returnBlock->end () && it->type () != Imop::RETCLEAN)
             ++it;
-
         assert (it != m_returnBlock->end ());
+
         Imop* retClean = &*it;
-        m_returnBlock->erase (it);
-        delete retClean;
+        StringRef str ("Inlined procedure call landing pad");
+        Imop* comment = new Imop (nullptr, Imop::COMMENT, nullptr,
+                                  ConstantString::get (m_code.context (), str));
+        retClean->replaceWith (*comment);
+        m_returnLabel = m_code.symbols ().label (retClean);
+        m_returnLabel->setBlock (m_returnBlock);
     }
 
     void removeCallEdges () {
@@ -230,61 +259,6 @@ private: /* Methods: */
                 m_destBlockIt = newBlock->end ();
             }
         }
-    }
-
-    void replaceReturnVars () {
-        if (m_returnOp != nullptr) {
-            std::map<const Symbol*, Symbol*> map;
-            Imop::OperandConstRange range = m_call->defRange ();
-            Imop::OperandConstIterator callIt = range.begin ();
-            Imop::OperandConstIterator retIt = ++m_returnOp->operandsBegin ();
-
-            while (retIt != m_returnOp->operandsEnd ()) {
-                Symbol* callSym = *callIt;
-                Symbol* retSym = *retIt;
-                map.insert (std::make_pair (callSym, getSymbol (retSym)));
-                ++retIt;
-                ++callIt;
-            }
-
-            assert (callIt == range.end ());
-
-            Procedure::iterator blockIt = procIterator (*m_call->block ());
-            for (; blockIt != m_call->block ()->proc ()->end (); ++blockIt) {
-                Block::iterator opIt = blockIt->begin ();
-                for (; opIt != blockIt->end (); ++opIt) {
-                    Imop& op = *opIt;
-                    for (unsigned i = 0; i < op.nArgs (); ++i) {
-                        Symbol* arg = op.arg (i);
-                        if (arg != nullptr && map.count (arg) != 0) {
-                            op.setArg (i, map[arg]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Merge the block following the call, it doesn't have to be a
-    // separate block anymore.
-    void mergeCallSucc () {
-        ImopList::iterator it = m_returnBlock->begin ();
-
-        while (it != m_returnBlock->end ()) {
-            Imop* op = &*it;
-            it = m_returnBlock->erase (it);
-            m_destBlock->push_back (*op);
-        }
-
-        // Copy return edges since these will not be calculated when
-        // reconstructing the CFG of the procedure.
-        for (auto succ : m_returnBlock->successors ()) {
-            if (succ.second == Edge::Ret)
-                Block::addEdge (*m_destBlock, succ.second, *succ.first);
-        }
-
-        m_returnBlock->unlink ();
-        delete m_returnBlock;
     }
 
     // Empty blocks can happen because we don't copy comments and
@@ -445,7 +419,7 @@ private: /* Fields: */
     unsigned m_paramIdx;
     std::vector<Symbol*> m_suppliedArgs;
     Block* m_returnBlock;
-    const Imop* m_returnOp;
+    SymbolLabel* m_returnLabel;
     Procedure* m_proc; // the procedure we are inlining
     Block* m_destBlock; // the block we are copying ops to
     Block::const_iterator m_destBlockIt; // used to insert into m_destBlock
