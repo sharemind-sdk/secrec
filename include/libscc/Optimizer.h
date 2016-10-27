@@ -27,15 +27,13 @@ class ICode;
 class LiveMemory;
 class LiveVariables;
 class Procedure;
-class ReachableReleases;
 class ReachableUses;
 class SymbolTable;
 
 bool eliminateDeadVariables (const LiveVariables& lva, ICode& code);
 bool eliminateDeadStores (const LiveMemory& lmem, ICode& code);
 bool eliminateConstantExpressions (const ConstantFolding& cf, ICode& code);
-bool eliminateRedundantCopies (const ReachableReleases& rr,
-                               const ReachableUses& ru,
+bool eliminateRedundantCopies (const ReachableUses& ru,
                                const LiveMemory& lmem,
                                ICode& code);
 
