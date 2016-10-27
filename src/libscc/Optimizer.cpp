@@ -28,7 +28,6 @@
 #include "analysis/ReachableReleases.h"
 #include "analysis/ReachableUses.h"
 
-
 namespace SecreC {
 
 bool optimizeCode (ICode& code) {
@@ -58,6 +57,7 @@ bool optimizeCode (ICode& code) {
 
         if (eliminateConstantExpressions (cf, code) ||
             eliminateDeadVariables (lva, code) ||
+            eliminateDeadStores (lmem, code) ||
             eliminateRedundantCopies (rr, ru, lmem, code))
         {
             removeEmptyBlocks (code);

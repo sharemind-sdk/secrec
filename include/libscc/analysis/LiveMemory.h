@@ -54,8 +54,8 @@ public: /* Methods: */
      * @param block
      * @return the abstract values
      */
-    const Values& liveOnExit (const Block& block) {
-        return m_outs[&block];
+    const Values& liveOnExit (const Block& block) const {
+        return m_outs.at (&block);
     }
 
     /**
