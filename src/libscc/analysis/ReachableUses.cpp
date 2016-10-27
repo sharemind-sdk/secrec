@@ -95,17 +95,11 @@ void ReachableUses::update(const Imop& imop, SymbolUses& vals) {
 }
 
 void ReachableUses::start(const Program& pr) {
+    m_blocks.clear();
+
     FOREACH_BLOCK (bi, pr) {
         const Block& block = *bi;
         BlockInfo& blockInfo = m_blocks[&block];
-
-        // If the analysis is run multiple times we don't want to keep
-        // information from previous runs.
-        blockInfo.in.clear();
-        blockInfo.out.clear();
-        blockInfo.gen.clear();
-        blockInfo.kill.clear();
-
         CollectGenKill collector(blockInfo.gen, blockInfo.kill);
         for (const Imop& imop : reverse(block)) {
             visitImop(imop, collector);
@@ -141,11 +135,11 @@ bool ReachableUses::finishBlock(const Block& b) {
     const SymbolUses& out = blockInfo.out;
     in = out;
 
-    in += blockInfo.gen;
-
     for (const Symbol* s : blockInfo.kill) {
         in.erase(s);
     }
+
+    in += blockInfo.gen;
 
     return old != in;
 }

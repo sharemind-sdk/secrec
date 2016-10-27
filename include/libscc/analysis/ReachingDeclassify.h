@@ -70,10 +70,7 @@ public: /* Methods: */
 
 protected:
 
-    virtual void start (const Program& pr) override {
-        // Initialize the OUT set of the entry block:
-        makeOuts (*pr.entryBlock (), m_ins[pr.entryBlock ()], m_outs[pr.entryBlock ()]);
-    }
+    virtual void start (const Program& pr) override;
 
     virtual void startBlock (const Block& b) override { m_ins[&b].clear (); }
     virtual void inFrom (const Block& from, Edge::Label label, const Block& to) override;

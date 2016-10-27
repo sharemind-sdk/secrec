@@ -27,7 +27,12 @@ namespace SecreC {
   ReachingJumps
 *******************************************************************************/
 
-void ReachingJumps::start(const Program &) { }
+void ReachingJumps::start(const Program &) {
+    m_inPos.clear();
+    m_inNeg.clear();
+    m_outPos.clear();
+    m_outNeg.clear();
+}
 
 void ReachingJumps::startBlock(const Block & b) {
     m_inNeg[&b].clear();

@@ -206,6 +206,15 @@ bool ReachingDeclassify::makeOuts(const Block & b, const PDefs & in, PDefs & out
     return old != out;
 }
 
+void ReachingDeclassify::start (const Program& pr) {
+    m_ins.clear ();
+    m_outs.clear ();
+    m_ds.clear ();
+
+    // Initialize the OUT set of the entry block:
+    makeOuts (*pr.entryBlock (), m_ins[pr.entryBlock ()], m_outs[pr.entryBlock ()]);
+}
+
 void ReachingDeclassify::finish() {
     m_outs.clear();
     m_ins.clear();

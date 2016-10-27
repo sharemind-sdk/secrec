@@ -31,6 +31,12 @@ namespace SecreC {
   ReachingDefinitions
 *******************************************************************************/
 
+void ReachingDefinitions::start(const Program &pr) {
+    m_ins.clear();
+    m_outs.clear();
+    makeOuts(*pr.entryBlock(), m_ins[pr.entryBlock()], m_outs[pr.entryBlock()]);
+}
+
 void ReachingDefinitions::updateSDefs(const Imop & imop, ReachingDefinitions::SDefs & defs) {
     for (const Symbol * symbol : imop.defRange()) {
         ReachingDefinitions::Defs & d = defs[symbol];

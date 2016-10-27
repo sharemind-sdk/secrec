@@ -99,6 +99,11 @@ void ReachableReleases::update(const Imop & imop, Values & vals) {
 }
 
 void ReachableReleases::start(const Program & pr) {
+    m_gen.clear();
+    m_kill.clear();
+    m_ins.clear();
+    m_outs.clear();
+
     FOREACH_BLOCK (bi, pr) {
         CollectGenKill collector(m_gen[&*bi], m_kill[&*bi]);
         for (const Imop& imop : reverse (*bi)) {

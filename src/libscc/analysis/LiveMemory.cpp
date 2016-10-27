@@ -74,7 +74,6 @@ struct UpdateValues {
 
 template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
-
     if (imop.isVectorized()) {
         for (const Symbol * arg : imop.useRange()) {
             visitor.gen(arg, LiveMemory::Read);
@@ -132,6 +131,11 @@ void LiveMemory::update(const Imop & imop, Values & vals) {
 }
 
 void LiveMemory::start(const Program & pr) {
+    m_gen.clear();
+    m_kill.clear();
+    m_outs.clear();
+    m_ins.clear();
+
     FOREACH_BLOCK (bi, pr) {
         CollectGenKill collector(m_gen[&*bi], m_kill[&*bi]);
         for (const Imop & imop : reverse (*bi)) {
@@ -147,6 +151,7 @@ void LiveMemory::startBlock(const Block & b) {
 void LiveMemory::outToLocal(const Block & from, const Block & to) {
     Values & dest = m_outs[&to];
     const Values & src = m_ins[&from];
+
     for (Values::const_reference sv : src) {
         dest[sv.first] |= sv.second;
     }
@@ -167,6 +172,7 @@ bool LiveMemory::finishBlock(const Block & b) {
     const Values old = in;
     const Values & out = m_outs[&b];
     in = out;
+
     for (Symbols::const_reference sym : m_kill[&b]) {
         in.erase(sym);
     }

@@ -911,6 +911,10 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
 }
 
 void ConstantFolding::start (const Program& program) {
+    m_ins.clear ();
+    m_outs.clear ();
+    m_constants.clear ();
+
     for (const auto& proc : program)
         for (const auto& block : proc)
             for (const auto& imop : block)

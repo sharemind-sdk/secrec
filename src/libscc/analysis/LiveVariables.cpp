@@ -70,7 +70,6 @@ private: /* Fields: */
 
 template <class Visitor>
 void visitImop(const Imop & imop, Visitor & visitor) {
-
     for (const Symbol * sym : imop.defRange()) {
         if (sym->symbolType() == SYM_SYMBOL) {
             visitor.kill(sym);
@@ -185,6 +184,8 @@ void LiveVariables::updateBackwards(const SecreC::Imop & imop, Symbols & live) {
 }
 
 void LiveVariables::start(const Program & pr) {
+    m_blocks.clear ();
+
     // we need to make sure to allocate all ins and outs
     FOREACH_BLOCK (bi, pr) {
         const Block & block = *bi;
