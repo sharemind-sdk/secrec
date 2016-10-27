@@ -96,7 +96,7 @@ bool eliminateRedundantCopies (const ReachableReleases& rr,
             if (use->type () == Imop::RELEASE)
                 continue;
 
-            for (unsigned i = 1; i < use->nArgs (); ++i) {
+            for (unsigned i = 0; i < use->nArgs (); ++i) {
                 Symbol* arg = use->arg (i);
                 if (arg != nullptr && arg == dest) {
                     use->setArg (i, newArg);
