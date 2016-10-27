@@ -1917,6 +1917,14 @@ CGResult CodeGen::cgExprClassify(TreeNodeExprClassify * e) {
     Symbol * argSym = result.symbol();
     SymbolSymbol * resSym = generateResultSymbol(result, e);
     resSym->inheritShape(argSym);
+
+    if (argSym->isConstant ()) {
+        SymbolSymbol* sizeSym = m_st->appendTemporary(TypeBasic::get (DATATYPE_UINT64));
+        Symbol* one = static_cast<Symbol*> (ConstantInt::get(DATATYPE_UINT64, 1));
+        pushImopAfter(result, newUnary(e, Imop::ASSIGN, sizeSym, one));
+        resSym->setSizeSym (sizeSym);
+    }
+
     allocTemporaryResult(result);
     pushImopAfter(result, newUnary(e, Imop::CLASSIFY, resSym, argSym));
     releaseTemporary(result, argSym);
