@@ -355,6 +355,7 @@ Symbol* CodeGen::copyNonTemporary (CGResult& result, Symbol* sym) {
     if (t->isArray ()) {
         auto copy = m_st->appendTemporary (t->secrecType ());
         // Note that we don't need to assign the shape.
+        copy->setSizeSym (t->getSizeSym ());
         emplaceImopAfter (result, m_node, Imop::COPY, copy, t, t->getSizeSym ());
         return copy;
     }
