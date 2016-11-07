@@ -34,6 +34,7 @@ class ReachableUses;
 class SymbolTable;
 
 bool eliminateConstantExpressions (const ConstantFolding& cf, ICode& code);
+bool eliminateDeadAllocs (const ReachableUses& ru, ICode& code);
 bool eliminateDeadStores (const LiveMemory& lmem, ICode& code);
 bool eliminateDeadVariables (const LiveVariables& lva, ICode& code);
 bool eliminateRedundantCopies (const ReachableUses& ru,

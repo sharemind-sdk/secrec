@@ -65,6 +65,7 @@ bool optimizeCode (ICode& code) {
         if (eliminateConstantExpressions (cf, code) ||
             eliminateDeadVariables (lva, code) ||
             eliminateDeadStores (lmem, code) ||
+            eliminateDeadAllocs (ru, code) ||
             eliminateRedundantCopies (ru, rd, rr, cp, code))
         {
             removeEmptyBlocks (code);

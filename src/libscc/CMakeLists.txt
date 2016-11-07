@@ -82,6 +82,7 @@ SET(LIBSCC_SOURCES
     "Optimizer.cpp"
     "optimizer/ConstantFolding.cpp"
     "optimizer/CopyElimination.cpp"
+    "optimizer/DeadAllocElimination.cpp"
     "optimizer/DeadStoreElimination.cpp"
     "optimizer/DeadVariableElimination.cpp"
     "optimizer/Inline.cpp"
