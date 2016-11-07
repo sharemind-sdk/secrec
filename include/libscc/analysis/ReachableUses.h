@@ -21,6 +21,7 @@
 #define SECREC_REACHABLE_USES_H
 
 #include "../DataflowAnalysis.h"
+#include "AbstractReachable.h"
 
 #include <boost/interprocess/containers/flat_set.hpp>
 #include <map>
@@ -32,71 +33,27 @@ namespace SecreC {
   ReachableUses
 *******************************************************************************/
 
-class ReachableUses : public BackwardDataFlowAnalysis {
+struct UsesVisitor {
+    void operator()(const Imop& imop, AbstractReachableVisitor& visitor) {
+        for (const Symbol* sym : imop.defRange()) {
+            if (sym->symbolType() == SYM_SYMBOL) {
+                visitor.kill(sym);
+            }
+        }
 
-public: /* Types: */
+        for (const Symbol* sym : imop.useRange()) {
+            if (sym->symbolType() == SYM_SYMBOL) {
+                visitor.gen(sym, imop);
+            }
+        }
+    }
+};
 
-    using Symbols = boost::container::flat_set<const Symbol*>;
-    using Uses = boost::container::flat_set<Imop*>;
-    using SymbolUses = std::map<const Symbol*, Uses>;
-
-    struct BlockInfo {
-        SymbolUses gen;
-        Symbols kill;
-        SymbolUses in;
-        SymbolUses out;
-    };
-
-    using BlockInfoMap = std::map<const Block*, BlockInfo>;
-
-public: /* Methods: */
+struct ReachableUses : public AbstractReachable<UsesVisitor> {
 
     std::string toString(const Program& pr) const override;
 
-    SymbolUses usesOnExit(const Block& block) const {
-        const auto it = m_blocks.find(&block);
-        if (it != m_blocks.end())
-            return it->second.out;
-        return SymbolUses();
-    }
-
-    static void update(const Imop& imop, SymbolUses& vals);
-
-protected:
-
-    virtual void start(const Program& bs) override;
-    virtual void startBlock(const Block& b) override;
-    virtual void outTo(const Block& from, Edge::Label label, const Block& to) override {
-        if (Edge::isGlobal(label)) {
-            outToGlobal(from, to);
-        }
-        else {
-            outToLocal(from, to);
-        }
-    }
-
-    virtual bool finishBlock(const Block& b) override;
-    virtual void finish() override;
-
-private:
-
-    void outToLocal(const Block& from, const Block& to);
-    void outToGlobal(const Block& from, const Block& to);
-
-    BlockInfo& findBlock(const Block& block) {
-        return m_blocks[&block];
-    }
-
-    const BlockInfo& findBlock(const Block& block) const {
-        auto it = m_blocks.find(&block);
-        assert(it != m_blocks.end());
-        return it->second;
-    }
-
-private: /* Fields: */
-
-    BlockInfoMap m_blocks;
-}; // class ReachableUses
+};
 
 } // namespace SecreC
 

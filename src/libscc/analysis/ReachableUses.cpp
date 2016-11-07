@@ -20,7 +20,6 @@
 #include "analysis/ReachableUses.h"
 
 #include "Blocks.h"
-#include "Symbol.h"
 #include "TreeNode.h"
 
 #include <boost/range/adaptor/reversed.hpp>
@@ -30,128 +29,12 @@ using boost::adaptors::reverse;
 
 namespace SecreC {
 
-namespace { /* anonymous */
-
-struct CollectGenKill {
-    CollectGenKill(ReachableUses::SymbolUses& gen, ReachableUses::Symbols& kill)
-        : m_gen(gen), m_kill(kill)
-    { }
-
-    inline void gen(const Symbol* sym, const Imop& imop) {
-        m_gen[sym].insert(const_cast<Imop*>(&imop));
-    }
-
-    inline void kill(const Symbol* sym) {
-        m_kill.insert(sym);
-    }
-
-private: /* Fields: */
-    ReachableUses::SymbolUses& m_gen;
-    ReachableUses::Symbols& m_kill;
-};
-
-struct UpdateValues {
-    UpdateValues(ReachableUses::SymbolUses& values)
-        : m_values(values)
-    { }
-
-    inline void gen(const Symbol* sym, const Imop& imop) {
-        m_values[sym].insert(const_cast<Imop*>(&imop));
-    }
-
-    inline void kill(const Symbol* sym) {
-        m_values.erase(sym);
-    }
-
-    ReachableUses::SymbolUses& m_values;
-};
-
-template<class Visitor>
-void visitImop(const Imop& imop, Visitor& visitor) {
-    for (const Symbol* sym : imop.defRange()) {
-        if (sym->symbolType() == SYM_SYMBOL) {
-            visitor.kill(sym);
-        }
-    }
-
-    for (const Symbol* sym : imop.useRange()) {
-        if (sym->symbolType() == SYM_SYMBOL) {
-            visitor.gen(sym, imop);
-        }
-    }
-}
-
-inline void operator += (ReachableUses::SymbolUses& out, ReachableUses::SymbolUses& in) {
-    for (const auto it : in) {
-        out[it.first].insert(it.second.begin(), it.second.end());
-    }
-}
-
-} // namespace anonymous
-
-void ReachableUses::update(const Imop& imop, SymbolUses& vals) {
-    UpdateValues visitor(vals);
-    visitImop(imop, visitor);
-}
-
-void ReachableUses::start(const Program& pr) {
-    m_blocks.clear();
-
-    FOREACH_BLOCK (bi, pr) {
-        const Block& block = *bi;
-        BlockInfo& blockInfo = m_blocks[&block];
-        CollectGenKill collector(blockInfo.gen, blockInfo.kill);
-        for (const Imop& imop : reverse(block)) {
-            visitImop(imop, collector);
-        }
-    }
-}
-
-void ReachableUses::startBlock(const Block& b) {
-    findBlock(b).out.clear();
-}
-
-void ReachableUses::outToLocal(const Block& from, const Block& to) {
-    SymbolUses& in = findBlock(from).in;
-    SymbolUses& out = findBlock(to).out;
-    out += in;
-}
-
-void ReachableUses::outToGlobal(const Block& from, const Block& to) {
-    SymbolUses& in = findBlock(from).in;
-    SymbolUses& out = findBlock(to).out;
-
-    for (const auto& it : in) {
-        if (it.first->isGlobal()) {
-            out[it.first].insert(it.second.begin(), it.second.end());
-        }
-    }
-}
-
-bool ReachableUses::finishBlock(const Block& b) {
-    BlockInfo& blockInfo = findBlock(b);
-    SymbolUses& in = blockInfo.in;
-    const SymbolUses old = in;
-    const SymbolUses& out = blockInfo.out;
-    in = out;
-
-    for (const Symbol* s : blockInfo.kill) {
-        in.erase(s);
-    }
-
-    in += blockInfo.gen;
-
-    return old != in;
-}
-
-void ReachableUses::finish() {}
-
 std::string ReachableUses::toString(const Program& pr) const {
     std::stringstream ss;
     ss << "Reachable uses:\n";
 
     FOREACH_BLOCK (bi, pr) {
-        SymbolUses after;
+        SymbolReachable after;
         auto i = m_blocks.find(&*bi);
 
         if (i != m_blocks.end()) {

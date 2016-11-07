@@ -113,6 +113,7 @@ SET(LIBSCC_SOURCES
 
 
 SET(LIBSCC_HEADERS
+    "${LIBSCC_INCLUDE_DIR}/analysis/AbstractReachable.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ConstantFolding.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/CopyPropagation.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/Dominators.h"

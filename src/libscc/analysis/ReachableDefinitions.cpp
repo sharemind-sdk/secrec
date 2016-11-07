@@ -30,126 +30,12 @@ using boost::adaptors::reverse;
 
 namespace SecreC {
 
-namespace { /* anonymous */
-
-struct CollectGenKill {
-    CollectGenKill(ReachableDefinitions::SymbolDefinitions& gen,
-                   ReachableDefinitions::Symbols& kill)
-        : m_gen(gen), m_kill(kill)
-    { }
-
-    inline void gen(const Symbol* sym, const Imop& imop) {
-        m_gen[sym].insert(const_cast<Imop*>(&imop));
-    }
-
-    inline void kill(const Symbol* sym) {
-        m_kill.insert(sym);
-    }
-
-private: /* Fields: */
-    ReachableDefinitions::SymbolDefinitions& m_gen;
-    ReachableDefinitions::Symbols& m_kill;
-};
-
-struct UpdateValues {
-    UpdateValues(ReachableDefinitions::SymbolDefinitions& values)
-        : m_values(values)
-    { }
-
-    inline void gen(const Symbol* sym, const Imop& imop) {
-        m_values[sym].insert(const_cast<Imop*>(&imop));
-    }
-
-    inline void kill(const Symbol* sym) {
-        m_values.erase(sym);
-    }
-
-    ReachableDefinitions::SymbolDefinitions& m_values;
-};
-
-template<class Visitor>
-void visitImop(const Imop& imop, Visitor& visitor) {
-    for (const Symbol* sym : imop.defRange()) {
-        if (sym->symbolType() == SYM_SYMBOL) {
-            visitor.kill(sym);
-            visitor.gen(sym, imop);
-        }
-    }
-}
-
-inline void operator += (ReachableDefinitions::SymbolDefinitions& out,
-                         ReachableDefinitions::SymbolDefinitions& in)
-{
-    for (const auto it : in) {
-        out[it.first].insert(it.second.begin(), it.second.end());
-    }
-}
-
-} // namespace anonymous
-
-void ReachableDefinitions::update(const Imop& imop, SymbolDefinitions& vals) {
-    UpdateValues visitor(vals);
-    visitImop(imop, visitor);
-}
-
-void ReachableDefinitions::start(const Program& pr) {
-    m_blocks.clear();
-
-    FOREACH_BLOCK (bi, pr) {
-        const Block& block = *bi;
-        BlockInfo& blockInfo = m_blocks[&block];
-        CollectGenKill collector(blockInfo.gen, blockInfo.kill);
-        for (const Imop& imop : reverse(block)) {
-            visitImop(imop, collector);
-        }
-    }
-}
-
-void ReachableDefinitions::startBlock(const Block& b) {
-    findBlock(b).out.clear();
-}
-
-void ReachableDefinitions::outToLocal(const Block& from, const Block& to) {
-    SymbolDefinitions& in = findBlock(from).in;
-    SymbolDefinitions& out = findBlock(to).out;
-    out += in;
-}
-
-void ReachableDefinitions::outToGlobal(const Block& from, const Block& to) {
-    SymbolDefinitions& in = findBlock(from).in;
-    SymbolDefinitions& out = findBlock(to).out;
-
-    for (const auto& it : in) {
-        if (it.first->isGlobal()) {
-            out[it.first].insert(it.second.begin(), it.second.end());
-        }
-    }
-}
-
-bool ReachableDefinitions::finishBlock(const Block& b) {
-    BlockInfo& blockInfo = findBlock(b);
-    SymbolDefinitions& in = blockInfo.in;
-    const SymbolDefinitions old = in;
-    const SymbolDefinitions& out = blockInfo.out;
-    in = out;
-
-    for (const Symbol* s : blockInfo.kill) {
-        in.erase(s);
-    }
-
-    in += blockInfo.gen;
-
-    return old != in;
-}
-
-void ReachableDefinitions::finish() {}
-
 std::string ReachableDefinitions::toString(const Program& pr) const {
     std::stringstream ss;
     ss << "Reachable definitions:\n";
 
     FOREACH_BLOCK (bi, pr) {
-        SymbolDefinitions after;
+        SymbolReachable after;
         auto i = m_blocks.find(&*bi);
 
         if (i != m_blocks.end()) {

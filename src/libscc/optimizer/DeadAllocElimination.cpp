@@ -31,7 +31,7 @@ bool eliminateDeadAllocs (const ReachableUses& ru, ICode& code) {
     Program& program = code.program ();
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
-        ReachableUses::SymbolUses uses = ru.usesOnExit (block);
+        SymbolReachable uses = ru.reachableOnExit (block);
         for (const Imop& imop : reverse (block)) {
             boost::container::flat_set<const Imop*> releases;
 

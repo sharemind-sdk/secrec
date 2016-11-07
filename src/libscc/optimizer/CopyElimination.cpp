@@ -21,6 +21,7 @@
 #include "Intermediate.h"
 #include "Optimizer.h"
 #include "Symbol.h"
+#include "analysis/AbstractReachable.h"
 #include "analysis/CopyPropagation.h"
 #include "analysis/ReachableDefinitions.h"
 #include "analysis/ReachableReturns.h"
@@ -60,16 +61,15 @@ CopyPropagation::Copies getCopies (const Imop* i, const CopyPropagation& cp) {
         (i, [cp](const Block& block) { return cp.getCopies (block); });
 }
 
-ReachableUses::SymbolUses getUses (const Imop* i, const ReachableUses& ru) {
-    return getInfo<ReachableUses, ReachableUses::SymbolUses>
-        (i, [ru](const Block& block) { return ru.usesOnExit (block); }, false);
+SymbolReachable getUses (const Imop* i, const ReachableUses& ru) {
+    return getInfo<ReachableUses, SymbolReachable>
+        (i, [ru](const Block& block) { return ru.reachableOnExit (block); }, false);
 }
 
-ReachableDefinitions::SymbolDefinitions getDefinitions (const Imop* i,
-                                                        const ReachableDefinitions& rd)
+SymbolReachable getDefinitions (const Imop* i, const ReachableDefinitions& rd)
 {
-    return getInfo<ReachableDefinitions, ReachableDefinitions::SymbolDefinitions>
-        (i, [rd](const Block& block) { return rd.definitionsOnExit (block); }, false);
+    return getInfo<ReachableDefinitions, SymbolReachable>
+        (i, [rd](const Block& block) { return rd.reachableOnExit (block); }, false);
 }
 
 ReachableReturns::Returns getReturns (const Imop* i,
@@ -106,7 +106,7 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     }
 
     std::vector<const Imop*> copies (copySet.begin (), copySet.end ());
-    std::map<const Imop*, ReachableUses::SymbolUses> useMaps;
+    std::map<const Imop*, SymbolReachable> useMaps;
     std::sort (copies.begin (), copies.end (), compareImop);
 
     for (const Imop* copy : copies) {
@@ -143,7 +143,7 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
 
     // Find releases
     for (const Imop* copy : copies) {
-        ReachableUses::SymbolUses& after = useMaps[copy];
+        SymbolReachable& after = useMaps[copy];
 
         for (Imop* use : after[copy->dest ()]) {
             if (use->type () == Imop::RELEASE) {
@@ -164,7 +164,7 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     for (const Imop* copy : copies) {
         const Symbol* dest = copy->dest ();
         Symbol* newArg = copy->arg1 ();
-        ReachableUses::SymbolUses& uses = useMaps[copy];
+        SymbolReachable& uses = useMaps[copy];
 
         // Replace copied variable
         for (Imop* use : uses[dest]) {
@@ -185,7 +185,7 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     for (const Imop* copy : copies) {
         Symbol* newArg = copy->arg1 ();
 
-        ReachableDefinitions::SymbolDefinitions defs = getDefinitions (copy, rd);
+        SymbolReachable defs = getDefinitions (copy, rd);
         for (Imop* def : defs[newArg]) {
             if (copySet.count (def) != 0)
                 continue;
