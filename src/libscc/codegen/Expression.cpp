@@ -2298,7 +2298,8 @@ CGResult CodeGen::cgExprPrefix(TreeNodeExprPrefix * e) {
                     emplaceImopAfter(result, e, Imop::ASSIGN, x, callRes.symbol());
             }
             else {
-                emplaceImopAfter(result, e, Imop::COPY, x, callRes.symbol(), x->getSizeSym());
+                emplaceImopAfter(result, e, Imop::RELEASE, nullptr, x);
+                emplaceImop(e, Imop::COPY, x, callRes.symbol(), x->getSizeSym());
             }
 
             releaseTemporary(result, callRes.symbol());
@@ -2548,7 +2549,8 @@ CGResult CodeGen::cgExprPostfix(TreeNodeExprPostfix * e) {
                     emplaceImopAfter(result, e, Imop::ASSIGN, lvalSym, callRes.symbol());
             }
             else {
-                emplaceImopAfter(result, e, Imop::COPY, lvalSym, callRes.symbol(), lvalSym->getSizeSym());
+                emplaceImopAfter(result, e, Imop::RELEASE, nullptr, lvalSym);
+                emplaceImop(e, Imop::COPY, lvalSym, callRes.symbol(), lvalSym->getSizeSym());
             }
 
             releaseTemporary(result, callRes.symbol());
