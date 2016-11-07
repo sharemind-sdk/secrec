@@ -39,9 +39,12 @@ SET(FLEX_BISON_SOURCES
 
 SET(LIBSCC_SOURCES
     "analysis/ConstantFolding.cpp"
+    "analysis/CopyPropagation.cpp"
     "analysis/Dominators.cpp"
     "analysis/LiveMemory.cpp"
     "analysis/LiveVariables.cpp"
+    "analysis/ReachableDefinitions.cpp"
+    "analysis/ReachableReturns.cpp"
     "analysis/ReachableUses.cpp"
     "analysis/ReachingDeclassify.cpp"
     "analysis/ReachingDefinitions.cpp"
@@ -110,9 +113,13 @@ SET(LIBSCC_SOURCES
 
 SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/analysis/ConstantFolding.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/CopyPropagation.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/Dominators.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/LiveMemory.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/LiveVariables.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableDefinitions.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableReturns.h"
+    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableUses.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDeclassify.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDefinitions.h"
     "${LIBSCC_INCLUDE_DIR}/analysis/ReachingJumps.h"
