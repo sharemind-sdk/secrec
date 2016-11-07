@@ -23,18 +23,23 @@
 namespace SecreC {
 
 class ConstantFolding;
+class CopyPropagation;
 class ICode;
 class LiveMemory;
 class LiveVariables;
 class Procedure;
+class ReachableDefinitions;
+class ReachableReturns;
 class ReachableUses;
 class SymbolTable;
 
-bool eliminateDeadVariables (const LiveVariables& lva, ICode& code);
-bool eliminateDeadStores (const LiveMemory& lmem, ICode& code);
 bool eliminateConstantExpressions (const ConstantFolding& cf, ICode& code);
+bool eliminateDeadStores (const LiveMemory& lmem, ICode& code);
+bool eliminateDeadVariables (const LiveVariables& lva, ICode& code);
 bool eliminateRedundantCopies (const ReachableUses& ru,
-                               const LiveMemory& lmem,
+                               const ReachableDefinitions& rd,
+                               const ReachableReturns& rr,
+                               const CopyPropagation& cp,
                                ICode& code);
 
 bool eliminateRedundantCopies (ICode& code);
@@ -42,9 +47,7 @@ bool eliminateDeadVariables (ICode& code);
 bool eliminateConstantExpressions (ICode& code);
 bool removeUnreachableBlocks (ICode& code);
 bool removeEmptyBlocks (ICode& code);
-
 void inlineCalls (ICode& code);
-
 bool optimizeCode (ICode& code);
 
 } /* namespace SecreCC { */
