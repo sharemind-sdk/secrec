@@ -123,6 +123,13 @@ private: /* Methods: */
                     m_destBlock->insert (m_destBlockIt, *copy);
                     copy->setBlock (m_destBlock);
 
+                    if (ty->secrecDimType () > 0 || ty->secrecSecType ()->isPrivate ()) {
+                        Imop* release = new Imop (imop.creator (), Imop::RELEASE,
+                                                  nullptr, getSymbol (*retIt));
+                        m_destBlock->insert (m_destBlockIt, *release);
+                        release->setBlock (m_destBlock);
+                    }
+
                     ++retIt;
                     ++callIt;
                 }
