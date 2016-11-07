@@ -38,9 +38,12 @@
 #include <libscc/TreeNode.h>
 #include <libscc/VirtualMachine.h>
 #include <libscc/analysis/ConstantFolding.h>
+#include <libscc/analysis/CopyPropagation.h>
 #include <libscc/analysis/Dominators.h>
 #include <libscc/analysis/LiveMemory.h>
 #include <libscc/analysis/LiveVariables.h>
+#include <libscc/analysis/ReachableDefinitions.h>
+#include <libscc/analysis/ReachableReturns.h>
 #include <libscc/analysis/ReachableUses.h>
 #include <libscc/analysis/ReachingDeclassify.h>
 #include <libscc/analysis/ReachingDefinitions.h>
@@ -138,6 +141,10 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
         return new SecreC::ReachableUses ();
     }
 
+    if (name == "rabled") {
+        return new SecreC::ReachableDefinitions ();
+    }
+
     if (name == "lv") {
         return new SecreC::LiveVariables ();
     }
@@ -148,6 +155,14 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
 
     if (name == "cf") {
         return new SecreC::ConstantFolding ();
+    }
+
+    if (name == "cp") {
+        return new SecreC::CopyPropagation ();
+    }
+
+    if (name == "rr") {
+        return new SecreC::ReachableReturns ();
     }
 
     return 0;
@@ -287,10 +302,13 @@ int main(int argc, char *argv[]) {
              "\t\"rd\"  -- reaching definitions\n"
              "\t\"rj\"  -- reaching jumps\n"
              "\t\"rdc\" -- reaching declassify\n"
+             "\t\"rabled\" -- reachable definitions\n"
              "\t\"ru\"  -- reachable uses\n"
              "\t\"lm\"  -- live memory\n"
              "\t\"lv\"  -- live variables\n"
              "\t\"cf\"  -- constant folding\n"
+             "\t\"cp\"  -- copy propagation\n"
+             "\t\"rr\"  -- reachable returns\n"
              );
     po::positional_options_description p;
     p.add("input", -1);
