@@ -69,6 +69,9 @@ bool optimizeCode (ICode& code) {
             eliminateRedundantCopies (ru, rd, rr, cp, code))
         {
             removeEmptyBlocks (code);
+            code.program ().numberInstructions ();
+            code.program ().numberBlocks ();
+
             changes = true;
             continue;
         }

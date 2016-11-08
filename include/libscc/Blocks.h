@@ -260,12 +260,13 @@ public: /* Methods: */
     const Block* exitBlock () const;
 
     void buildProcedureCFG (Procedure& proc);
+    void numberInstructions ();
+    void numberBlocks ();
 
 private:
 
     void assignToBlocks (ICodeList& imops);
     void propagate (Procedure& proc, bool visitCalls);
-    void numberBlocks ();
 
 };
 

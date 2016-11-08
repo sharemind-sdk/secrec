@@ -390,6 +390,18 @@ void Program::propagate (Procedure& proc, bool visitCalls) {
     }
 }
 
+void Program::numberInstructions () {
+    unsigned long index = 0;
+
+    for (auto& proc : *this) {
+        for (auto& block : proc) {
+            for (auto& imop : block) {
+                imop.setIndex (index++);
+            }
+        }
+    }
+}
+
 void Program::numberBlocks () {
     std::set<Block*> visited;
     std::vector<Block::neighbour_const_range> stack;
