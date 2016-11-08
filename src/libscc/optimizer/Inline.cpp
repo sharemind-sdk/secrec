@@ -540,15 +540,7 @@ void inlineCalls (ICode& code) {
     }
 
     // Fix imop indexes.
-    unsigned long index = 0;
-
-    for (auto& proc : code.program ()) {
-        for (auto& block : proc) {
-            for (auto& imop : block) {
-                imop.setIndex (index++);
-            }
-        }
-    }
+    code.program ().numberInstructions ();
 }
 
 } /* namespace SecreC */
