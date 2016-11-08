@@ -49,6 +49,16 @@ void CopyPropagation::update(const Imop& imop, Copies& copies) {
         }
     }
 
+    if (imop.type() == Imop::CALL) {
+        for (Symbol* useSym : imop.useRange()) {
+            for (const Imop* copy : copies) {
+                if (useSym == copy->dest() || useSym == copy->arg1()) {
+                    kill.insert(copy);
+                }
+            }
+        }
+    }
+
     for (const Imop* copy : kill) {
         copies.erase(copy);
     }
