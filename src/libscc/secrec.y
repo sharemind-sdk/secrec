@@ -851,6 +851,7 @@ operator_definition
  :  return_type_specifier OPERATOR binop binop_def_helper { $$ = init_op(table, $3, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '-' unop_def_helper    { $$ = init_op(table, SCOP_UN_MINUS, &@$, $1, $4); }
  |  return_type_specifier OPERATOR '!' unop_def_helper    { $$ = init_op(table, SCOP_UN_NEG, &@$, $1, $4); }
+ |  return_type_specifier OPERATOR '~' unop_def_helper    { $$ = init_op(table, SCOP_UN_INV, &@$, $1, $4); }
  ;
 
 cast_definition
