@@ -260,19 +260,6 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         if (dataType->isBuiltinPrimitive ()) {
             SecrecDataType secrecDataType =
                 static_cast<const DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
-            if (secType->isPublic ()) {
-                switch (secrecDataType) {
-                case DATATYPE_XOR_UINT8:
-                case DATATYPE_XOR_UINT16:
-                case DATATYPE_XOR_UINT32:
-                case DATATYPE_XOR_UINT64:
-                    m_log.fatalInProc(_ty) << "XOR types do not have public representation at "
-                                           << _ty->location () << '.';
-                    return E_TYPE;
-                default:
-                    break;
-                }
-            }
         }
         else if (dataType->isUserPrimitive ()) {
             assert (secType->isPrivate ());

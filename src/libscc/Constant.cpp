@@ -37,20 +37,16 @@ namespace /* anonymous */ {
 unsigned widthInBits (SecrecDataType type) {
     switch (type) {
     case DATATYPE_BOOL: return 1;
-    case DATATYPE_XOR_UINT8:
     case DATATYPE_UINT8:
     case DATATYPE_INT8:
         return 8;
-    case DATATYPE_XOR_UINT16:
     case DATATYPE_UINT16:
     case DATATYPE_INT16:
         return 16;
-    case DATATYPE_XOR_UINT32:
     case DATATYPE_FLOAT32:
     case DATATYPE_UINT32:
     case DATATYPE_INT32:
         return 32;
-    case DATATYPE_XOR_UINT64:
     case DATATYPE_FLOAT64:
     case DATATYPE_UINT64:
     case DATATYPE_INT64:

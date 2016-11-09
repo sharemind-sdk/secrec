@@ -760,14 +760,14 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
                     SecrecDataType upperDT =
                         static_cast<const DataTypeBuiltinPrimitive*>(publicType)
                         ->secrecDataType();
-                    e1->instantiateDataType(upperDT);
-                    e2->instantiateDataType(upperDT);
+                    e1->instantiateDataType (upperDT);
+                    e2->instantiateDataType (upperDT);
                 }
             }
             else {
-                SecrecDataType upperDT = dtypeDeclassify (static_cast<const DataTypeBuiltinPrimitive*> (upper)->secrecDataType ());
-                e1->instantiateDataType(upperDT);
-                e2->instantiateDataType(upperDT);
+                SecrecDataType upperDT = static_cast<const DataTypeBuiltinPrimitive*> (upper)->secrecDataType ();
+                e1->instantiateDataType (upperDT);
+                e2->instantiateDataType (upperDT);
             }
         }
 
@@ -924,7 +924,6 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
 
         if (root->type() == NODE_EXPR_UINV) {
             if (isNumericDataType(et->secrecDataType ())
-                    || isXorDataType(et->secrecDataType ())
                     || et->secrecDataType ()->equals (DATATYPE_NUMERIC)
                     || et->secrecDataType ()->isBool ())
             {

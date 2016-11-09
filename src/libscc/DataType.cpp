@@ -50,26 +50,22 @@ enum CastStyle {
 #define E CAST_EXPLICIT
 
 const CastStyle dataTypeCasts[NUM_DATATYPES][NUM_DATATYPES] = {
-    //  x   U   B   S   N   I8  I16 I32 I64 U8  U16 U32 U64 X8  X16 X32 X64 F32 F64
-       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_INVALID,
-       {X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_UNIT,
-       {X,  X,  S,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E,  E},     // DATATYPE_BOOL,
-       {X,  X,  X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X},     // DATATYPE_STRING,
-       {X,  X,  X,  X,  S,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I,  I},     // DATATYPE_NUMERIC,
-       {X,  X,  E,  X,  X,  S,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT8,
-       {X,  X,  E,  X,  X,  E,  S,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT16,
-       {X,  X,  E,  X,  X,  E,  E,  S,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT32,
-       {X,  X,  E,  X,  X,  E,  E,  E,  S,  E,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_INT64,
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  S,  E,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT8,
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  S,  E,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT16,
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  S,  E,  X,  X,  X,  X,  E,  E},     // DATATYPE_UINT32,
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  S,  E,  E,  E,  E,  E,  E},     // DATATYPE_UINT64,
-       {X,  X,  E,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  S,  E,  E,  E,  X,  X},     // DATATYPE_XOR_UINT8
-       {X,  X,  E,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  S,  E,  E,  X,  X},     // DATATYPE_XOR_UINT16
-       {X,  X,  E,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  S,  E,  X,  X},     // DATATYPE_XOR_UINT32
-       {X,  X,  E,  X,  X,  X,  X,  X,  X,  X,  X,  X,  E,  E,  E,  E,  S,  X,  X},     // DATATYPE_XOR_UINT64
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  S,  E},     // DATATYPE_FLOAT32
-       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E,  X,  X,  X,  X,  E,  S}      // DATATYPE_FLOAT64
+    //  x   U   B   S   N   I8  I16 I32 I64 U8  U16 U32 U64 F32 F64
+       {X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X, X,  X},     // DATATYPE_INVALID,
+       {X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X,  X, X,  X},     // DATATYPE_UNIT,
+       {X,  X,  S,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E, E,  E},     // DATATYPE_BOOL,
+       {X,  X,  X,  S,  X,  X,  X,  X,  X,  X,  X,  X,  X, X,  X},     // DATATYPE_STRING,
+       {X,  X,  X,  X,  S,  I,  I,  I,  I,  I,  I,  I,  I, I,  I},     // DATATYPE_NUMERIC,
+       {X,  X,  E,  X,  X,  S,  E,  E,  E,  E,  E,  E,  E, E,  E},     // DATATYPE_INT8,
+       {X,  X,  E,  X,  X,  E,  S,  E,  E,  E,  E,  E,  E, E,  E},     // DATATYPE_INT16,
+       {X,  X,  E,  X,  X,  E,  E,  S,  E,  E,  E,  E,  E, E,  E},     // DATATYPE_INT32,
+       {X,  X,  E,  X,  X,  E,  E,  E,  S,  E,  E,  E,  E, E,  E},     // DATATYPE_INT64,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  S,  E,  E,  E, E,  E},     // DATATYPE_UINT8,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  S,  E,  E, E,  E},     // DATATYPE_UINT16,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  S,  E, E,  E},     // DATATYPE_UINT32,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  S, E,  E},     // DATATYPE_UINT64,
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E, S,  E},     // DATATYPE_FLOAT32
+       {X,  X,  E,  X,  X,  E,  E,  E,  E,  E,  E,  E,  E, E,  S}      // DATATYPE_FLOAT64
 };
 
 #undef X
@@ -209,8 +205,7 @@ bool isFloatingDataType (SecrecDataType dType) {
 bool isNumericDataType (SecrecDataType dType) {
     return isFloatingDataType (dType) ||
            isSignedNumericDataType (dType) ||
-           isUnsignedNumericDataType (dType) ||
-           isXorDataType (dType);
+           isUnsignedNumericDataType (dType);
 }
 
 bool isSignedNumericDataType (SecrecDataType dType) {
@@ -240,20 +235,16 @@ bool isUnsignedNumericDataType (SecrecDataType dType) {
 unsigned widthInBitsDataType (SecrecDataType dType) {
     switch (dType) {
     case DATATYPE_BOOL:
-    case DATATYPE_XOR_UINT8:
     case DATATYPE_UINT8:
     case DATATYPE_INT8:
         return 8;
-    case DATATYPE_XOR_UINT16:
     case DATATYPE_UINT16:
     case DATATYPE_INT16:
         return 16;
-    case DATATYPE_XOR_UINT32:
     case DATATYPE_UINT32:
     case DATATYPE_INT32:
     case DATATYPE_FLOAT32:
         return 32;
-    case DATATYPE_XOR_UINT64:
     case DATATYPE_UINT64:
     case DATATYPE_INT64:
     case DATATYPE_FLOAT64:
@@ -261,28 +252,6 @@ unsigned widthInBitsDataType (SecrecDataType dType) {
     default:
         // Everything else is pointer sized.
         return 64;
-    }
-}
-
-bool isXorDataType (SecrecDataType dType) {
-    switch (dType) {
-    case DATATYPE_XOR_UINT8:
-    case DATATYPE_XOR_UINT16:
-    case DATATYPE_XOR_UINT32:
-    case DATATYPE_XOR_UINT64:
-        return true;
-    default:
-        return false;
-    }
-}
-
-SecrecDataType dtypeDeclassify (SecrecDataType dtype) {
-    switch (dtype) {
-    case DATATYPE_XOR_UINT8:  return DATATYPE_UINT8;
-    case DATATYPE_XOR_UINT16: return DATATYPE_UINT16;
-    case DATATYPE_XOR_UINT32: return DATATYPE_UINT32;
-    case DATATYPE_XOR_UINT64: return DATATYPE_UINT64;
-    default:                  return dtype;
     }
 }
 
@@ -338,14 +307,6 @@ bool isNumericDataType (const DataType* dType) {
     return isNumericDataType (getSecrecDataType (dType));
 }
 
-bool isXorDataType (const DataType* dType) {
-    assert (dType != nullptr);
-    if (! dType->isBuiltinPrimitive ())
-        return false;
-
-    return isXorDataType (getSecrecDataType (dType));
-}
-
 bool isSignedNumericDataType (const DataType* dType) {
     assert (dType != nullptr);
     if (! dType->isBuiltinPrimitive ())
@@ -369,7 +330,7 @@ const DataType* dtypeDeclassify (const SecurityType* secType,
         return dType;
 
     if (dType->isBuiltinPrimitive ()) {
-        return DataTypeBuiltinPrimitive::get (dtypeDeclassify (getSecrecDataType (dType)));
+        return dType;
     }
     else if (dType->isUserPrimitive ()) {
         if (secType == nullptr || secType->isPublic ())

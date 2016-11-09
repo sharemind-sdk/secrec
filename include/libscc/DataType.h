@@ -50,19 +50,15 @@ bool latticeExplicitLEQ (SecrecDataType a, SecrecDataType b);
 
 bool isFloatingDataType (SecrecDataType dType);
 bool isNumericDataType (SecrecDataType dType);
-bool isXorDataType (SecrecDataType dType);
 bool isSignedNumericDataType (SecrecDataType dType);
 bool isUnsignedNumericDataType (SecrecDataType dType);
 unsigned widthInBitsDataType (SecrecDataType dType);
-
-SecrecDataType dtypeDeclassify (SecrecDataType dtype);
 
 bool latticeDataTypeLEQ (const DataType* a, const DataType* b);
 bool latticeExplicitLEQ (const DataType* a, const DataType* b);
 
 bool isFloatingDataType (const DataType* dType);
 bool isNumericDataType (const DataType* dType);
-bool isXorDataType (const DataType* dType);
 bool isSignedNumericDataType (const DataType* dType);
 bool isUnsignedNumericDataType (const DataType* dType);
 

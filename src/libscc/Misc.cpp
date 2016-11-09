@@ -78,10 +78,6 @@ const char * SecrecFundDataTypeToString(SecrecDataType dataType) {
         case DATATYPE_UINT16:        return "uint16";
         case DATATYPE_UINT32:        return "uint32";
         case DATATYPE_UINT64:        return "uint64";
-        case DATATYPE_XOR_UINT8:     return "xor_uint8";
-        case DATATYPE_XOR_UINT16:    return "xor_uint16";
-        case DATATYPE_XOR_UINT32:    return "xor_uint32";
-        case DATATYPE_XOR_UINT64:    return "xor_uint64";
         case DATATYPE_FLOAT32:       return "float32";
         case DATATYPE_FLOAT64:       return "float64";
         case DATATYPE_STRING:        return "string";
@@ -107,14 +103,6 @@ SecrecDataType stringToSecrecFundDataType(const char * in) {
         ty = DATATYPE_UINT32;
     else if (name == "uint64")
         ty = DATATYPE_UINT64;
-    else if (name == "xor_uint8")
-        ty = DATATYPE_XOR_UINT8;
-    else if (name == "xor_uint16")
-        ty = DATATYPE_XOR_UINT16;
-    else if (name == "xor_uint32")
-        ty = DATATYPE_XOR_UINT32;
-    else if (name == "xor_uint64")
-        ty = DATATYPE_XOR_UINT64;
     else if (name == "int8")
         ty = DATATYPE_INT8;
     else if (name == "int16")

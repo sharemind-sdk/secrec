@@ -43,10 +43,6 @@ uint8_t maximumEntropy(SecrecDataType dtype) {
     case DATATYPE_UINT16:     return 16;
     case DATATYPE_UINT32:     return 32;
     case DATATYPE_UINT64:     return 64;
-    case DATATYPE_XOR_UINT8:  return 8;
-    case DATATYPE_XOR_UINT16: return 16;
-    case DATATYPE_XOR_UINT32: return 32;
-    case DATATYPE_XOR_UINT64: return 64;
     default:
         assert(false && "invalid private data type!");
         return 0x0;

@@ -64,10 +64,6 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
         case DATATYPE_UINT16:
         case DATATYPE_UINT32:
         case DATATYPE_UINT64:
-        case DATATYPE_XOR_UINT8:
-        case DATATYPE_XOR_UINT16:
-        case DATATYPE_XOR_UINT32:
-        case DATATYPE_XOR_UINT64:
             value = static_cast<const ConstantInt*>(sym)->value ().bits ();
             break;
         default:

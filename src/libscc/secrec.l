@@ -179,11 +179,6 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "uint8"      { stepLen(yyget_lloc(yyscanner), 5);  return UINT8; }
 "void"       { stepLen(yyget_lloc(yyscanner), 4);  return VOID; }
 "while"      { stepLen(yyget_lloc(yyscanner), 5);  return WHILE; }
-"xor_uint"   { stepLen(yyget_lloc(yyscanner), 8);  return XOR_UINT; }
-"xor_uint16" { stepLen(yyget_lloc(yyscanner), 10); return XOR_UINT16; }
-"xor_uint32" { stepLen(yyget_lloc(yyscanner), 10); return XOR_UINT32; }
-"xor_uint64" { stepLen(yyget_lloc(yyscanner), 10); return XOR_UINT64; }
-"xor_uint8"  { stepLen(yyget_lloc(yyscanner), 9);  return XOR_UINT8; }
 
  /* built-in functions: */
 "__bytes_from_string" { stepLen(yyget_lloc(yyscanner), 19); return BYTESFROMSTRING; }

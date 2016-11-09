@@ -74,17 +74,11 @@ bool AbstractOperatorTypeUnifier::visitDataTypeF (TreeNodeType* t, const TypeNon
 }
 
 bool AbstractOperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* tconst,
-                                                       TreeNodeType* t,
+                                                       TreeNodeType*,
                                                        const TypeNonVoid* type)
 {
     SecrecDataType treeSc = tconst->secrecDataType ();
     const DataType* argData = type->secrecDataType ();
-
-    if (! t->secType ()->isPublic () &&
-        type->secrecSecType ()->isPublic ())
-    {
-        treeSc = dtypeDeclassify (treeSc);
-    }
 
     if (argData->isBuiltinPrimitive ()) {
         SecrecDataType argSc = static_cast<const DataTypeBuiltinPrimitive*> (argData)->secrecDataType ();
