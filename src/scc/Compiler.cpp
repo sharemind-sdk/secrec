@@ -512,7 +512,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     block.push_new () << "push" << find (imop.arg1 ());
 
     VMLabel* target = NULL;
-    VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
+    VMDataType ty = secrecDTypeToVMDType (imop.dest ()->secrecType ()->secrecDataType ());
     unsigned size = sizeInBytes (ty);
     {
         std::stringstream ss;
