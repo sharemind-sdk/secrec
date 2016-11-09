@@ -260,7 +260,7 @@ Imop::Imop(TreeNode *creator, ConstantString *name, SyscallOperands operands)
     for (const SyscallOperand& operand : *m_syscallOperands) {
         const auto sym = operand.operand();
         if (operand.passingConvention() == Return) {
-            assert (m_args[0] != nullptr);
+            assert (m_args[0] == nullptr);
             if (m_args[0] != nullptr) {
                 // TODO: throw
                 exit(EXIT_FAILURE);
