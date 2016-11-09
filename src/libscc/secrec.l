@@ -2,28 +2,33 @@
 #include "Parser.h"
 #include "yacc_secrec.h"
 
-#define step(loc) {\
-    (loc)->first_line = (loc)->last_line;\
-    (loc)->first_column = (loc)->last_column;\
-}
+#define step(loc)\
+    do {\
+        (loc)->first_line = (loc)->last_line;\
+        (loc)->first_column = (loc)->last_column;\
+    } while (0)
 
-#define newline(loc) {\
-    step(loc);\
-    (loc)->last_line++;\
-    (loc)->last_column = 1;\
-}
+#define newline(loc)\
+    do {\
+        step(loc);\
+        (loc)->last_line++;\
+        (loc)->last_column = 1;\
+    } while (0)
 
-#define stepLen(loc,len) {\
-    step(loc);\
-    (loc)->last_column += len;\
-}
+#define stepLen(loc,len)\
+    do {\
+        step(loc);\
+        (loc)->last_column += len;\
+    } while (0)
 
-#define stepChar(loc) {\
-    step(loc);\
-    (loc)->last_column++;\
-}
+#define stepChar(loc)\
+    do {\
+        step(loc);\
+        (loc)->last_column++;\
+    } while (0)
 
-#define saveText(s) do {\
+#define saveText(s)\
+    do {\
         stepLen(yyget_lloc(s), yyget_leng(s));\
         yyget_lval(s)->str = add_string (yyget_extra(s), yyget_text(s), yyget_leng(s));\
     } while (0)
@@ -184,9 +189,10 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
 "__bytes_from_string" { stepLen(yyget_lloc(yyscanner), 19); return BYTESFROMSTRING; }
 "__cref"              { stepLen(yyget_lloc(yyscanner), 6);  return CREF; }
 "__domainid"          { stepLen(yyget_lloc(yyscanner), 10); return DOMAINID; }
+"__readonly"          { stepLen(yyget_lloc(yyscanner), 10); return READONLY; }
 "__ref"               { stepLen(yyget_lloc(yyscanner), 5);  return REF; }
-"__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
 "__return"            { stepLen(yyget_lloc(yyscanner), 8);  return SYSCALL_RETURN; }
+"__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
 "__syscall"           { stepLen(yyget_lloc(yyscanner), 9);  return SYSCALL; }
 
 {IDENTIFIER}       { saveText(yyscanner); return IDENTIFIER; }

@@ -817,8 +817,6 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
         return result;
     }
 
-    Symbol* ret = nullptr;
-
     // Release stuff that is returned by the syscall.
     for (const NodeSymbolPair & ts : results) {
         switch (ts.first->type()) {
@@ -829,29 +827,37 @@ CGStmtResult CodeGen::cgStmtSyscall(TreeNodeStmtSyscall * s) {
         }
     }
 
+    SyscallOperands operands;
+    operands.reserve(results.size());
     for (const NodeSymbolPair & ts : results) {
-        Imop::Type iType;
         switch (ts.first->type()) {
-        case NODE_SYSCALL_RETURN: ret = ts.second;  continue;
-        case NODE_PUSH:     iType = Imop::PUSH;     break;
-        case NODE_PUSHREF:  iType = Imop::PUSHREF;  break;
-        case NODE_PUSHCREF: iType = Imop::PUSHCREF; break;
+        case NODE_SYSCALL_RETURN:
+            operands.emplace_back(ts.second, Return);
+            break;
+        case NODE_READONLY:
+            operands.emplace_back(ts.second, Push, ReadOnly);
+            break;
+        case NODE_PUSH:
+            operands.emplace_back(ts.second, Push);
+            break;
+        case NODE_PUSHREF:
+            operands.emplace_back(ts.second, PushRef);
+            break;
+        case NODE_PUSHCREF:
+            operands.emplace_back(ts.second, PushCRef);
+            break;
         default:
             assert(false && "ICE!");
             result.setStatus(CGResult::ERROR_FATAL);
             return result;
         }
-
-        auto i = new Imop(ts.first, iType, nullptr, ts.second);
-        pushImopAfter(result, i);
     }
 
     assert (dynamic_cast<ConstantString*>(nameResult.symbol ()) != nullptr);
     ConstantString* syscallName = static_cast<ConstantString*>(nameResult.symbol ());
 
-    auto i = new Imop(s, Imop::SYSCALL, ret, syscallName);
     pushImopAfter(result, newComment(syscallName->value()));
-    pushImopAfter(result, i);
+    pushImopAfter(result, new Imop(s, syscallName, operands));
 
     for (const NodeSymbolPair & ts : results) {
         releaseTemporary(result, ts.second);

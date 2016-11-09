@@ -215,6 +215,7 @@ enum SecrecDataType {
     O(PUSHCREF,                   SyscallParam) \
     O(PUSHREF,                    SyscallParam) \
     O(PUSH,                       SyscallParam) \
+    O(READONLY,                   SyscallParam) \
     O(SYSCALL_RETURN,             SyscallParam) \
     O(DATATYPE_DECL,              DataTypeDecl) \
     O(DATATYPE_DECL_PARAM_PUBLIC, DataTypeDeclParamPublic) \

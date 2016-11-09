@@ -31,6 +31,7 @@ class Procedure;
 class Block;
 class Imop;
 class ICode;
+class SyscallOperand;
 }
 
 
@@ -85,6 +86,7 @@ private:
     void cgStore (VMBlock& block, const SecreC::Imop& imop);
     void cgLoad (VMBlock& block, const SecreC::Imop& imop);
     void cgSyscall (VMBlock& block, const SecreC::Imop& imop);
+    void cgSyscallOperand (VMBlock& block, const SecreC::SyscallOperand& op);
     void cgDomainID (VMBlock& block, const SecreC::Imop& imop);
     void cgPush (VMBlock& block, const SecreC::Imop& imop);
     void cgError (VMBlock& block, const SecreC::Imop& imop);

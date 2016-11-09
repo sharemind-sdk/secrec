@@ -798,12 +798,8 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
     switch (iType) {
     case Imop::PARAM:
     case Imop::DOMAINID:
-    case Imop::SYSCALL:
         if (imop.dest () != nullptr)
             setVal (val, imop.dest (), Value::nac ());
-        return;
-    case Imop::PUSHREF:
-        setVal (val, imop.arg1 (), Value::nac ());
         return;
     case Imop::CALL:
         for (auto dest : imop.defRange ())
@@ -816,7 +812,6 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
     case Imop::JT:
     case Imop::JUMP:
     case Imop::PRINT:
-    case Imop::PUSHCREF:
     case Imop::RELEASE:
     case Imop::RETCLEAN:
     case Imop::RETURN:
@@ -838,13 +833,33 @@ void ConstantFolding::transfer (SVM& val, const Imop& imop) const {
         return;
     }
 
-    if (iType == Imop::PUSH) {
-        const auto t = imop.arg1 ()->secrecType ();
-        const bool isString = t->secrecDataType ()->isString ();
-        const bool isArray = t->secrecDimType () > 0;
-        const bool isPrivate = t->secrecSecType ()->isPrivate ();
-        if (isString || isArray || isPrivate)
-            setVal (val, imop.arg1 (), Value::nac ());
+    if (imop.isSyscall()) {
+        for (auto op : imop.syscallOperands()) {
+            const auto sym = op.operand();
+            switch (op.passingConvention()) {
+            case Return:
+                setVal(val, sym, Value::nac());
+                break;
+            case Push:
+                if (! op.isReadOnly()) {
+                    const auto t = sym->secrecType ();
+                    const bool isString = t->isString();
+                    const bool isArray = ! t->isScalar();
+                    const bool isPrivate = t->secrecSecType ()->isPrivate ();
+                    if (isString || isArray || isPrivate)
+                        setVal (val, sym, Value::nac());
+                }
+
+                break;
+            case PushRef:
+                setVal(val, sym, Value::nac());
+                break;
+            case PushCRef:
+                /* No effect */
+                break;
+            }
+        }
+
         return;
     }
 

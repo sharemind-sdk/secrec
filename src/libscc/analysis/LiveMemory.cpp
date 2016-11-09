@@ -84,16 +84,32 @@ void visitImop(const Imop & imop, Visitor & visitor) {
     }
 
 
+    if (imop.isSyscall()) {
+        for (auto op : imop.syscallOperands()) {
+            const auto sym = op.operand();
+            switch (op.passingConvention()) {
+            case Return:
+                visitor.kill(sym);
+                break;
+            default:
+                if (op.isReadOnly()) {
+                    visitor.gen(sym, LiveMemory::Read);
+                } else {
+                    visitor.gen(sym, LiveMemory::Write);
+                }
+                break;
+            }
+        }
+
+        return;
+    }
+
     switch (imop.type()) {
     case Imop::STORE:    visitor.gen(imop.dest(), LiveMemory::Write); break;
-    case Imop::PUSHCREF: visitor.gen(imop.arg1(), LiveMemory::Write); break;
-    case Imop::PUSH:     visitor.gen(imop.arg1(), LiveMemory::Live);  break;
-    case Imop::PUSHREF:  visitor.gen(imop.arg1(), LiveMemory::Live);  break;
     case Imop::LOAD:     visitor.gen(imop.arg1(), LiveMemory::Read);  break;
     case Imop::COPY:     visitor.gen(imop.arg1(), LiveMemory::Read);  /* FALLTHROUGH */
     case Imop::ALLOC:    /* intentionally empty */
-    case Imop::PARAM:    /* intentionally empty */
-    case Imop::SYSCALL:  visitor.kill(imop.dest());                   break;
+    case Imop::PARAM:    visitor.kill(imop.dest());                   break;
     case Imop::CALL:
         for (const Symbol* arg : imop.useRange()) {
             visitor.gen(arg, LiveMemory::Read);

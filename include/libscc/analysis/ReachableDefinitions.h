@@ -33,7 +33,8 @@ namespace SecreC {
 *******************************************************************************/
 
 struct DefinitionsVisitor {
-    void operator()(const Imop& imop, AbstractReachableVisitor& visitor) {
+    template <typename Visitor>
+    void operator()(const Imop& imop, Visitor& visitor) {
         for (const Symbol* sym : imop.defRange()) {
             if (sym->symbolType() == SYM_SYMBOL) {
                 visitor.kill(sym);

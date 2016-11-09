@@ -938,6 +938,12 @@ void Compiler::emitSyscall (VMBlock& block, VMValue* dest, const std::string& na
 }
 
 void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
+    assert (imop.isSyscall());
+
+    for (auto op : imop.syscallOperands()) {
+        cgSyscallOperand(block, op);
+    }
+
     VMLabel* label = m_scm->getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
     if (imop.dest ())
         block.push_new () << "syscall" << label << find (imop.dest ());
@@ -945,17 +951,13 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
         block.push_new () << "syscall" << label << "imm";
 }
 
-void Compiler::cgPush (VMBlock& block, const Imop& imop) {
-    assert (imop.arg1 () != NULL);
-
-    const Symbol* arg = imop.arg1 ();
-
-    if (imop.type () == Imop::PUSH) {
+void Compiler::cgSyscallOperand(VMBlock& block, const SyscallOperand& op) {
+    const auto arg = op.operand();
+    switch (op.passingConvention()) {
+    case Push:
         block.push_new () << "push" << find (arg);
-        return;
-    }
-
-    if (imop.type () == Imop::PUSHREF) {
+        break;
+    case PushRef:
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
         assert (! arg->isConstant ());
 
@@ -969,10 +971,9 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
             << find (arg)
             << "imm" << m_st.getImm(0)
             << sizeInBytes(representationType(arg->secrecType()));
-        return;
-    }
+        break;
 
-    if (imop.type () == Imop::PUSHCREF) {
+    case PushCRef:
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
         if (isString (arg)) {
             pushString (block, arg);
@@ -991,6 +992,9 @@ void Compiler::cgPush (VMBlock& block, const Imop& imop) {
             << "imm" << m_st.getImm(0)
             << sizeInBytes(representationType(arg->secrecType()));
         return;
+    case Return:
+        /* This case is handled by Compiler::cgSyscall! */
+        break;
     }
 }
 
@@ -1072,11 +1076,6 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         return;
     case Imop::SYSCALL:
         cgSyscall (block, imop);
-        return;
-    case Imop::PUSH:
-    case Imop::PUSHREF:
-    case Imop::PUSHCREF:
-        cgPush (block, imop);
         return;
     case Imop::END:
         block.push_new () << "halt imm 0x0";

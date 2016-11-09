@@ -104,9 +104,6 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::COMMENT,    0, 0, 0, 0, 0,UD,UD }
     , { Imop::PRINT,      0, 0, 0, 0, 0,UD,UD }
     , { Imop::SYSCALL,    1, 0, 0, 0, 0,UD, 1 } // DEF if private?
-    , { Imop::PUSH,       0, 0, 0, 0, 0,UD, 1 }
-    , { Imop::PUSHREF,    0, 0, 0, 0, 0,UD, 1 }
-    , { Imop::PUSHCREF,   0, 0, 0, 0, 0,UD, 1 }
     , { Imop::RETCLEAN,   0, 0, 0, 0, 0,UD,UD }
 };
 
@@ -200,6 +197,83 @@ bool hasUSEPrivateDest (const Imop& imop) {
 
 } // anonymous namespace
 
+
+Imop::Imop(TreeNode *creator, Type type)
+    : m_creator(creator)
+    , m_type(type)
+    , m_args()
+{ }
+
+Imop::Imop(TreeNode *creator, Type type, Symbol *dest)
+    : m_creator(creator)
+    , m_type(type)
+    , m_args(1, dest)
+{ }
+
+Imop::Imop(TreeNode *creator, Type type, Symbol *dest,
+                     Symbol *arg1)
+    : m_creator(creator)
+    , m_type(type)
+    , m_args(2)
+{
+    m_args[0] = dest;
+    m_args[1] = arg1;
+}
+
+Imop::Imop(TreeNode *creator, Type type, Symbol *dest,
+                     Symbol *arg1, Symbol *arg2)
+    : m_creator(creator)
+    , m_type(type)
+    , m_args(3)
+{
+    m_args[0] = dest;
+    m_args[1] = arg1;
+    m_args[2] = arg2;
+}
+
+Imop::Imop(TreeNode *creator, Type type, Symbol *dest,
+                     Symbol *arg1, Symbol *arg2, Symbol *arg3)
+    : m_creator(creator)
+    , m_type(type)
+    , m_args(4)
+{
+    m_args[0] = dest;
+    m_args[1] = arg1;
+    m_args[2] = arg2;
+    m_args[3] = arg3;
+}
+
+Imop::Imop(TreeNode* creator, Type type, OperandList args)
+    : m_creator (creator)
+    , m_type (type)
+    , m_args (std::move(args))
+{ }
+
+Imop::Imop(TreeNode *creator, ConstantString *name, SyscallOperands operands)
+    : m_creator(creator)
+    , m_type(Imop::SYSCALL)
+    , m_syscallOperands(new SyscallOperands(std::move(operands)))
+{
+    m_args.reserve(2 + m_syscallOperands->size());
+    m_args.push_back(nullptr);
+    m_args.push_back(name);
+    for (const SyscallOperand& operand : *m_syscallOperands) {
+        const auto sym = operand.operand();
+        if (operand.passingConvention() == Return) {
+            assert (m_args[0] != nullptr);
+            if (m_args[0] != nullptr) {
+                // TODO: throw
+                exit(EXIT_FAILURE);
+            }
+
+             m_args[0] = sym;
+        }
+        else {
+            m_args.push_back(sym);
+        }
+    }
+}
+
 Imop* newError (TreeNode* node, ConstantString* msg) {
     return new Imop (node, Imop::ERROR, (Symbol*) nullptr, msg);
 }
@@ -281,6 +355,15 @@ bool Imop::writesDest () const {
     }
 
     return getImopInfoBits (m_type).writesDest;
+}
+
+bool Imop::isSyscall() const {
+    return m_syscallOperands != nullptr;
+}
+
+const SyscallOperands& Imop::syscallOperands() const {
+    assert (isSyscall());
+    return *m_syscallOperands;
 }
 
 Imop::OperandConstRange Imop::useRange () const {
@@ -454,21 +537,27 @@ void Imop::print(std::ostream & os) const {
     case SYSCALL:
         assert (arg1 () != nullptr);
         assert (dynamic_cast<const ConstantString*>(arg1()) != nullptr);
-        if (dest ())
-            os << dname << " = ";
         os << "__SYSCALL \"" << static_cast<const ConstantString*>(arg1())->value () << "\"";
+        for (auto op : imop.syscallOperands()) {
+            const auto sym = op.operand();
+            switch(op.passingConvention()) {
+            case Return:
+                os << " __return " << SymbolOstreamWrapper(sym);
+                break;
+            case Push:
+                os << " __push " << SymbolOstreamWrapper(sym);
+                break;
+            case PushRef:
+                os << " __pushref " << SymbolOstreamWrapper(sym);
+                break;
+            case PushCRef:
+                os << " __pushcref " << SymbolOstreamWrapper(sym);
+                break;
+            }
+        }
         break;
     case STRLEN:
         os << dname << " = STRLEN " << a1name;
-        break;
-    case PUSH:
-        os << "__PUSH " << a1name;
-        break;
-    case PUSHREF:
-        os << "__PUSHREF " << a1name;
-        break;
-    case PUSHCREF:
-        os << "__PUSHCREF " << a1name;
         break;
     case RETCLEAN:     /* RETCLEAN;       (clean call stack) */
         os << "RETCLEAN";

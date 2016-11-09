@@ -383,9 +383,6 @@ private: /* Methods: */
             case Imop::COPY:
             case Imop::PRINT:
             case Imop::SYSCALL:
-            case Imop::PUSH:
-            case Imop::PUSHREF:
-            case Imop::PUSHCREF:
             case Imop::ERROR:
             case Imop::RETCLEAN:
                 return true;
@@ -396,7 +393,42 @@ private: /* Methods: */
     }
 
     Imop* copyImop (const Imop& imop) {
+
+        const auto doDef = [this](Symbol* s) -> void {
+            if (m_symMap.count(s) == 0 && ! s->isGlobal()) {
+                Symbol* newSym = m_code.symbols().appendTemporary(s->secrecType());
+                m_symMap.insert(std::make_pair(s, newSym));
+            }
+        };
+
+        const auto doUse = [this](Symbol* s) -> Symbol* {
+            return s == nullptr ? s : getSymbol(s);
+        };
+
+        if (imop.isSyscall()) {
+            for (auto op : imop.syscallOperands()) {
+                switch (op.passingConvention()) {
+                case Return:
+                    doDef(op.operand());
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            SyscallOperands ops;
+            for (auto op : imop.syscallOperands()) {
+                ops.emplace_back(doUse(op.operand()),
+                    op.passingConvention(), op.attributeSet());
+            }
+
+            assert (dynamic_cast<ConstantString*>(imop.arg1()) != nullptr);
+            const auto name = static_cast<ConstantString*>(imop.arg1());
+            return new Imop(imop.creator(), name, std::move(ops));
+        }
+
         for (Symbol* s : imop.defRange ()) {
+            doDef(s);
             if (m_symMap.count (s) == 0 && ! s->isGlobal ()) {
                 Symbol* newSym = m_code.symbols ().appendTemporary (s->secrecType ());
                 m_symMap.insert (std::make_pair (s, newSym));
@@ -405,10 +437,7 @@ private: /* Methods: */
 
         Imop::OperandList args;
         for (Symbol* s : imop.operands ()) {
-            if (s == nullptr)
-                args.push_back (s);
-            else
-                args.push_back (getSymbol (s));
+            args.push_back(doUse(s));
         }
 
         return new Imop (imop.creator (), imop.type (), args);

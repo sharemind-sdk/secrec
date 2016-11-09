@@ -25,6 +25,8 @@
 #include <cassert>
 #include <vector>
 
+#include "Syscall.h"
+
 namespace SecreC {
 
 class Block;
@@ -134,41 +136,25 @@ public: /* Types: */
         COMMENT,    //    // (ConstantString*) arg1
         PRINT,      //    PRINT arg1
         SYSCALL,    //    d = __syscall arg1
-        PUSH,       //    __push arg1
-        PUSHREF,    //    __pushref arg1
-        PUSHCREF,   //    __pushcref arg1
         RETCLEAN,   //    RETCLEAN; (Imop *arg2)
 
         _NUM_INSTR  // Number of instructions. Do not add anything after this.
     };
 
 public: /* Methods: */
-    explicit inline Imop(TreeNode *creator, Type type)
-        : m_creator(creator), m_type(type), m_args() {}
 
-    explicit inline Imop(TreeNode *creator, Type type, Symbol *dest)
-        : m_creator(creator), m_type(type), m_args(1, dest) {}
+    Imop(TreeNode *creator, Type type);
+    Imop(TreeNode *creator, Type type, OperandList args);
+    Imop(TreeNode* creator, ConstantString* name, SyscallOperands operands);
+    Imop(TreeNode *creator, Type type, Symbol *dest);
+    Imop(TreeNode *creator, Type type, Symbol *dest, Symbol *arg1);
 
-    explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
-                         Symbol *arg1)
-        : m_creator(creator), m_type(type), m_args(2)
-    { m_args[0] = dest; m_args[1] = arg1; }
+    Imop(TreeNode *creator, Type type, Symbol *dest,
+                         Symbol *arg1, Symbol *arg2);
 
-    explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
-                         Symbol *arg1, Symbol *arg2)
-        : m_creator(creator), m_type(type), m_args(3)
-    { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; }
+    Imop(TreeNode *creator, Type type, Symbol *dest,
+                  Symbol *arg1, Symbol *arg2, Symbol *arg3);
 
-    explicit inline Imop(TreeNode *creator, Type type, Symbol *dest,
-                         Symbol *arg1, Symbol *arg2, Symbol *arg3)
-        : m_creator(creator), m_type(type), m_args(4)
-    { m_args[0] = dest; m_args[1] = arg1; m_args[2] = arg2; m_args[3] = arg3; }
-
-    explicit inline Imop(TreeNode* creator, Type type, OperandList args)
-        : m_creator (creator)
-        , m_type (type)
-        , m_args (std::move(args))
-    { }
 
     inline TreeNode *creator() const { return m_creator; }
 
@@ -218,6 +204,9 @@ public: /* Methods: */
     bool isComment () const;
     bool writesDest () const;
 
+    bool isSyscall() const;
+    const SyscallOperands& syscallOperands() const;
+
     void replaceWith (Imop& imop) {
         assert (!imop.is_linked ());
         imop.m_index = m_index;
@@ -240,11 +229,12 @@ public: /* Methods: */
                           Iter beginArg, Iter endArg);
 private: /* Fields: */
 
-    TreeNode*     m_creator;
-    const Type    m_type;
-    OperandList   m_args;
-    Block*        m_block;
-    unsigned long m_index;
+    TreeNode*               m_creator;
+    const Type              m_type;
+    OperandList             m_args;
+    const SyscallOperands*  m_syscallOperands = nullptr;
+    Block*                  m_block;
+    unsigned long           m_index;
 };
 
 using ImopList = boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false>>;

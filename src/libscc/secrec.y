@@ -122,7 +122,7 @@
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID XOR_UINT XOR_UINT16 XOR_UINT32 XOR_UINT64 XOR_UINT8
-%token SYSCALL_RETURN TYPE STRUCT STRLEN
+%token SYSCALL_RETURN TYPE STRUCT STRLEN READONLY
 
  /* Identifiers: */
 %token <str> IDENTIFIER
@@ -1040,6 +1040,11 @@ syscall_parameter
     {
       $$ = treenode_init(NODE_PUSH, &@$);
       treenode_appendChild($$, $1);
+    }
+  | READONLY expression
+    {
+      $$ = treenode_init(NODE_READONLY, &@$);
+      treenode_appendChild($$, $2);
     }
   | SYSCALL_RETURN identifier
     {

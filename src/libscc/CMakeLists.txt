@@ -153,6 +153,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/SymbolFwd.h"
     "${LIBSCC_INCLUDE_DIR}/Symbol.h"
     "${LIBSCC_INCLUDE_DIR}/SymbolTable.h"
+    "${LIBSCC_INCLUDE_DIR}/Syscall.h"
     "${LIBSCC_INCLUDE_DIR}/TemplateChecker.h"
     "${LIBSCC_INCLUDE_DIR}/TreeNodeC.h"
     "${LIBSCC_INCLUDE_DIR}/TreeNodeFwd.h"

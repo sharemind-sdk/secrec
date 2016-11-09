@@ -32,11 +32,6 @@ using boost::adaptors::reverse;
 
 namespace SecreC {
 
-struct AbstractReachableVisitor {
-    virtual void gen(const Symbol* sym, const Imop& imop);
-    virtual void kill(const Symbol* sym);
-};
-
 using Reachable = boost::container::flat_set<Imop*>;
 using SymbolReachable = std::map<const Symbol*, Reachable>;
 
@@ -62,7 +57,7 @@ public: /* Types: */
 
 private: /* Types: */
 
-    struct CollectGenKill : AbstractReachableVisitor {
+    struct CollectGenKill {
         CollectGenKill(SymbolReachable& gen, Symbols& kill)
             : m_gen(gen), m_kill(kill)
             { }
@@ -80,7 +75,7 @@ private: /* Types: */
         Symbols& m_kill;
     };
 
-    struct UpdateValues : AbstractReachableVisitor {
+    struct UpdateValues {
         UpdateValues(SymbolReachable& values)
             : m_values(values)
             { }
