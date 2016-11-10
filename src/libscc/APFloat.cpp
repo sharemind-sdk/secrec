@@ -81,7 +81,7 @@ template <typename F, typename ...Args>
 inline APFloat mpfrApply (F op, const Args& ...args) {
     APFloat result (unwrapPrec (args...));
     op (result.bits (), mpfrResultType<Args>::unwrap (args)...);
-    return std::move (result);
+    return result;
 }
 
 
