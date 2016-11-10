@@ -257,12 +257,13 @@ TypeChecker::Status TypeChecker::visitType (TreeNodeType * _ty) {
         const DataType* dataType = tyNode->dataType ()->cachedType ();
         SecrecDimType dimType = tyNode->dimType ()->cachedType ();
 
-        if (dataType->isBuiltinPrimitive ()) {
-            SecrecDataType secrecDataType =
-                static_cast<const DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
-        }
-        else if (dataType->isUserPrimitive ()) {
-            assert (secType->isPrivate ());
+        if (dataType->isUserPrimitive ()) {
+            if (! secType->isPrivate ()) {
+                m_log.fatal () << "A user-declared primitive type (declared in PDK declaration) can not be public. "
+                               << "Probably a compiler error. "
+                               << "Error at " << _ty->location () << ".";
+                return E_TYPE;
+            }
         }
         else if (dataType->isComposite ()) {
             if (secType->isPrivate () || dimType > 0) {
