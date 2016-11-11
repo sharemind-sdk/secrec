@@ -256,7 +256,11 @@ unsigned widthInBitsDataType (SecrecDataType dType) {
 }
 
 bool latticeDataTypeLEQ (const DataType* a, const DataType* b) {
-    assert (a != nullptr && b != nullptr);
+    if (b == nullptr)
+        return false;
+
+    if (a == nullptr)
+        return true;
 
     if (a->isComposite () && b->isComposite ())
         return a == b;
