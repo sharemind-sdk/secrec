@@ -28,7 +28,6 @@
 #include "Types.h"
 #include "Visitor.h"
 
-
 namespace SecreC {
 
 /*******************************************************************************
@@ -177,7 +176,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
 
     if (s->dataType ()->isUserPrimitive ()) {
         const DataType* dt = s->dataType ();
-        auto dtPrim = static_cast<const DataTypeUserPrimitive*> (s->dataType ());
+        auto dtPrim = static_cast<const DataTypeUserPrimitive*> (dt);
 
         if (secType->isPublic ()) {
             StringRef name = dtPrim->name ();
@@ -192,7 +191,6 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
                                    << *dt << "' at " << ty->location () << '.';
             return E_TYPE;
         }
-
 
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
         if (kind->findType (dtPrim->name ()) == nullptr) {

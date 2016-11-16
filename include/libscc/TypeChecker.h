@@ -35,6 +35,7 @@ class Context;
 class DataTypeStruct;
 class Instantiation;
 class Location;
+class OperatorTable;
 class OverloadableOperator;
 class SecurityType;
 class StringRef;
@@ -72,7 +73,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt);
+    TypeChecker (OperatorTable& ops, SymbolTable& st, CompileLog& log, Context& cxt);
     ~TypeChecker ();
     TypeChecker (const TypeChecker&) = delete;
     TypeChecker& operator = (const TypeChecker&) = delete;
@@ -292,6 +293,7 @@ private: /* Methods: */
 
 private: /* Fields: */
 
+    OperatorTable*        m_operators;
     SymbolTable*          m_st;
     CompileLog&           m_log;
     Context&              m_context;

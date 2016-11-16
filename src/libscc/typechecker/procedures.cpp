@@ -23,6 +23,7 @@
 #include "DataType.h"
 #include "Log.h"
 #include "ModuleInfo.h"
+#include "OperatorTable.h"
 #include "OperatorTypeUnifier.h"
 #include "SecurityType.h"
 #include "SecurityType.h"
@@ -66,6 +67,20 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
     SymbolProcedure * ns = new SymbolUserProcedure (actualName, &procdef);
     st->appendSymbol (ns);
     return ns;
+}
+
+// Both operators and casts use this
+SymbolProcedure* appendOperator (OperatorTable* ops, const TreeNodeProcDef& procdef) {
+    const TypeProc* dt = procdef.procedureType();
+    const std::string actualName = mangleProcedure (procdef.procedureName ().str(), dt);
+    for (SymbolProcedure* op : ops->findOperators (actualName)) {
+        if (op->secrecType () == dt)
+            return op;
+    }
+
+    SymbolProcedure* op = new SymbolUserProcedure (actualName, &procdef);
+    ops->appendOperator (op);
+    return op;
 }
 
 std::vector<SymbolProcedure*>
@@ -376,7 +391,7 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
     def->m_cachedType = opType;
 
     if (append) {
-        SymbolProcedure* procSym = appendProcedure (m_st, *def);
+        SymbolProcedure* procSym = appendOperator (m_operators, *def);
         def->setSymbol (procSym);
     }
 
@@ -461,7 +476,7 @@ TypeChecker::Status TypeChecker::visitCastDef (TreeNodeCastDef* def,
     def->m_cachedType = procType;
 
     if (append) {
-        SymbolProcedure* procSym = appendProcedure (m_st, *def);
+        SymbolProcedure* procSym = appendOperator (m_operators, *def);
         def->setSymbol (procSym);
     }
 
@@ -692,19 +707,11 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
     assert (callTypeProc != nullptr);
     symProc = nullptr;
 
-    std::vector<Symbol*> ops = m_st->findAll (
-        [=](Symbol *s) {
-            if (s->symbolType () != SYM_PROCEDURE)
-                return false;
-            assert (dynamic_cast<SymbolProcedure*> (s) != nullptr);
-            return static_cast<SymbolProcedure*> (s)->procedureName () == name;
-        });
-
+    std::vector<SymbolProcedure*> ops = m_operators->findOperators (name);
     std::vector<SymbolProcedure*> matching;
     unsigned best = ~0u;
 
-    for (Symbol* op_ : ops) {
-        SymbolProcedure* op = static_cast<SymbolProcedure*> (op_);
+    for (SymbolProcedure* op : ops) {
         const TypeProc* ty = op->decl ()->procedureType ();
         const std::vector<const TypeBasic*>& paramTypes = ty->paramTypes ();
         const std::vector<const TypeBasic*>& argTypes = callTypeProc->paramTypes ();
@@ -848,19 +855,11 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
 
     // Look for non-templated cast definitions:
     {
-        std::vector<Symbol*> defs = m_st->findAll (
-            [=](Symbol *s) {
-                if (s->symbolType () != SYM_PROCEDURE)
-                    return false;
-                assert (dynamic_cast<SymbolProcedure*> (s) != nullptr);
-                return static_cast<SymbolProcedure*> (s)->procedureName () == "__cast";
-            });
-
+        std::vector<SymbolProcedure*> defs = m_operators->findOperators ("__cast");
         std::vector<SymbolProcedure*> matching;
         unsigned best = ~0u;
 
-        for (Symbol* def_ : defs) {
-            SymbolProcedure* def = static_cast<SymbolProcedure*> (def_);
+        for (SymbolProcedure* def : defs) {
             const TypeProc* ty = def->decl ()->procedureType ();
 
             assert (ty->paramTypes ().size () == 1u);

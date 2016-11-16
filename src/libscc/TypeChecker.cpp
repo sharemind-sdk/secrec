@@ -47,8 +47,9 @@ const TypeBasic* upperTypeBasic (const TypeBasic* a, const TypeBasic* b) {
   TypeChecker
 *******************************************************************************/
 
-TypeChecker::TypeChecker (SymbolTable& st, CompileLog& log, Context& cxt)
-    : m_st (&st)
+TypeChecker::TypeChecker (OperatorTable& ops, SymbolTable& st, CompileLog& log, Context& cxt)
+    : m_operators (&ops)
+    , m_st (&st)
     , m_log (log)
     , m_context (cxt)
     , m_instantiator (new TemplateInstantiator ())

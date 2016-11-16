@@ -25,6 +25,7 @@
 #include "Imop.h"
 #include "Log.h"
 #include "ModuleMap.h"
+#include "OperatorTable.h"
 #include "SymbolTable.h"
 
 #include <boost/optional/optional_fwd.hpp>
@@ -36,6 +37,7 @@ namespace SecreC {
 class StringTable;
 
 class ICode {
+
 public: /* Types: */
 
     enum Status { NOT_READY, OK, ERROR };
@@ -53,6 +55,7 @@ public: /* Methods: */
     TreeNodeModule* parseMain (const boost::optional<std::string>& mfile);
     void compile (TreeNodeModule *mod);
 
+    OperatorTable& operators () { return m_operators; }
     SymbolTable& symbols () { return m_symbols; }
     const SymbolTable& symbols () const { return m_symbols; }
     Program& program () { return m_program; }
@@ -66,6 +69,7 @@ public: /* Methods: */
 
 private: /* Fields: */
 
+    OperatorTable   m_operators;
     Status          m_status;
     Context         m_context;
     SymbolTable     m_symbols;

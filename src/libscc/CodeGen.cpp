@@ -127,7 +127,7 @@ CodeGen::CodeGen(ICodeList& code, ICode& icode)
     , m_context(icode.context())
     , m_tyChecker(nullptr)
 {
-    m_tyChecker = new TypeChecker(icode.symbols(), m_log, m_context);
+    m_tyChecker = new TypeChecker(icode.operators(), icode.symbols(), m_log, m_context);
 }
 
 CodeGen::~CodeGen() {
