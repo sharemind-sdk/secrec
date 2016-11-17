@@ -126,7 +126,6 @@ CGResult CodeGen::cgExprCast(TreeNodeExprCast * e) {
         if (result.isNotOk())
             return result;
         result.setResult(callRes.symbol());
-        releaseTemporary(result, subResult.symbol());
     }
     else {
         Imop::Type iType = Imop::CAST;
