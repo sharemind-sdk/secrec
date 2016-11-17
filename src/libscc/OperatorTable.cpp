@@ -19,23 +19,41 @@
 
 #include "OperatorTable.h"
 
+#include "TreeNode.h"
+
 namespace SecreC {
 
 OperatorTable::~OperatorTable () {
-    for (SymbolProcedure* op : m_ops)
+    for (Symbol* op : m_ops)
         delete op;
 }
 
-void OperatorTable::appendOperator (SymbolProcedure* op) {
+void OperatorTable::appendOperator (Symbol* op) {
     m_ops.push_back (op);
 }
 
 std::vector<SymbolProcedure*> OperatorTable::findOperators (StringRef name) {
     std::vector<SymbolProcedure*> res;
-    std::copy_if (m_ops.begin (), m_ops.end (), std::back_inserter (res),
-                  [=](SymbolProcedure* op) {
-                      return op->procedureName () == name;
-                  });
+    for (Symbol* s : m_ops) {
+        if (s->symbolType () == SYM_PROCEDURE) {
+            SymbolProcedure* op = static_cast<SymbolProcedure*> (s);
+            if (op->procedureName () == name)
+                res.push_back (op);
+
+        }
+    }
+    return res;
+}
+
+std::vector<SymbolOperatorTemplate*> OperatorTable::findOperatorTemplates (StringRef name) {
+    std::vector<SymbolOperatorTemplate*> res;
+    for (Symbol* s : m_ops) {
+        if (s->symbolType () == SYM_OPERATOR_TEMPLATE) {
+            SymbolOperatorTemplate* op = static_cast<SymbolOperatorTemplate*> (s);
+            if (op->decl ()->body ()->procedureName () == name)
+                res.push_back (op);
+        }
+    }
     return res;
 }
 

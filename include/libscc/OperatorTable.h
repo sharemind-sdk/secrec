@@ -34,13 +34,15 @@ public: /* Methods: */
 
     ~OperatorTable ();
 
-    void appendOperator (SymbolProcedure* op);
+    void appendOperator (Symbol* op);
 
     std::vector<SymbolProcedure*> findOperators (StringRef name);
 
+    std::vector<SymbolOperatorTemplate*> findOperatorTemplates (StringRef name);
+
 private: /* Fields: */
 
-    std::vector<SymbolProcedure*> m_ops;
+    std::vector<Symbol*> m_ops;
 };
 
 }

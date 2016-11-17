@@ -72,7 +72,7 @@ SymbolProcedure* appendProcedure (SymbolTable* st, const TreeNodeProcDef& procde
 // Both operators and casts use this
 SymbolProcedure* appendOperator (OperatorTable* ops, const TreeNodeProcDef& procdef) {
     const TypeProc* dt = procdef.procedureType();
-    const std::string actualName = mangleProcedure (procdef.procedureName ().str(), dt);
+    const std::string actualName = mangleProcedure (procdef.procedureName ().str (), dt);
     for (SymbolProcedure* op : ops->findOperators (actualName)) {
         if (op->secrecType () == dt)
             return op;
@@ -808,7 +808,7 @@ TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symPro
     OpWeight best = std::make_tuple (maxi, maxi, maxi);
     std::vector<Instantiation> bestMatches;
 
-    for (SymbolOperatorTemplate* s : findTemplates<SYM_OPERATOR_TEMPLATE> (m_st, name)) {
+    for (SymbolOperatorTemplate* s : m_operators->findOperatorTemplates (name)) {
         assert (s->decl ()->containingModule () != nullptr);
         Instantiation inst (s);
 
@@ -917,7 +917,7 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
     std::vector<const TypeBasic*> args { arg };
     const TypeProc* callTypeProc = TypeProc::get (args);
 
-    for (SymbolOperatorTemplate* s : findTemplates<SYM_OPERATOR_TEMPLATE> (m_st, "__cast")) {
+    for (SymbolOperatorTemplate* s : m_operators->findOperatorTemplates ("__cast")) {
         assert (s->decl ()->containingModule () != nullptr);
         Instantiation inst (s);
 

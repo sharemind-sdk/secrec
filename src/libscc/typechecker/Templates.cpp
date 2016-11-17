@@ -22,6 +22,7 @@
 #include "CastTemplateChecker.h"
 #include "Log.h"
 #include "ModuleInfo.h"
+#include "OperatorTable.h"
 #include "OperatorTemplateChecker.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
@@ -123,13 +124,15 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     }
 
     SymbolTemplate* s;
-    if (body->isOperator () || body->isCast ())
+    if (body->isOperator () || body->isCast ()) {
         s = new SymbolOperatorTemplate (templ, expectsDataType);
-    else
+        m_operators->appendOperator (s);
+    } else {
         s = new SymbolProcedureTemplate (templ, expectsSecType, expectsDataType, expectsDimType);
+        m_st->appendSymbol (s);
+    }
 
     s->setName (id->value ());
-    m_st->appendSymbol (s);
     return OK;
 }
 
