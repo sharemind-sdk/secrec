@@ -92,7 +92,7 @@ public: /* Methods: */
         return un_dimType == dimType;
     }
 
-    bool equlas (const SecurityType* secType) const {
+    bool equals (const SecurityType* secType) const {
         if (m_kind != TA_SEC)
             return false;
         return un_secType == secType;
