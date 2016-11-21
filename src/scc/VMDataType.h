@@ -57,6 +57,7 @@ inline VMDataType secrecDTypeToVMDType (SecrecDataType dtype) {
     case DATATYPE_BOOL:       return VM_UINT8;
     case DATATYPE_FLOAT32:    return VM_FLOAT32;
     case DATATYPE_FLOAT64:    return VM_FLOAT64;
+    case DATATYPE_STRING:     return VM_UINT8;
     default:                  break;
     }
 
