@@ -338,13 +338,18 @@ const DataType* dtypeDeclassify (const SecurityType* secType,
         return dType;
     }
     else if (dType->isUserPrimitive ()) {
-        if (secType == nullptr || secType->isPublic ())
-            return nullptr;
+        const DataTypeUserPrimitive *dtPrim = static_cast<const DataTypeUserPrimitive*> (dType);
+
+        if (secType == nullptr || secType->isPublic ()) {
+            SecrecDataType sc = stringToSecrecFundDataType (dtPrim->name ().data ());
+            if (sc == DATATYPE_UNDEFINED)
+                return nullptr;
+            return DataTypeBuiltinPrimitive::get (sc);
+        }
 
         assert (secType->isPrivate ());
 
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
-        const DataTypeUserPrimitive *dtPrim = static_cast<const DataTypeUserPrimitive*> (dType);
 
         if (kind->findType (dtPrim->name ()) == nullptr)
             return nullptr;
