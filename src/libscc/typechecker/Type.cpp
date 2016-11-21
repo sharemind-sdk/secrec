@@ -175,6 +175,8 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
     if (s == nullptr)
         return E_TYPE;
 
+    const DataType* res = s->dataType ();
+
     if (s->dataType ()->isUserPrimitive ()) {
         const DataType* dt = s->dataType ();
         auto dtPrim = static_cast<const DataTypeUserPrimitive*> (dt);
@@ -199,9 +201,20 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
                                    << *dt << "' at " << ty->location () << '.';
             return E_TYPE;
         }
+    } else if (s->dataType ()->isBuiltinPrimitive () && secType->isPrivate ()) {
+        const DataType* dt = s->dataType ();
+        auto dtPrim = static_cast<const DataTypeBuiltinPrimitive*> (dt);
+        SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
+        auto params = kind->findType (SecrecFundDataTypeToString (dtPrim->secrecDataType ()));
+        if (params == nullptr) {
+            m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
+                                   << *dt << "' at " << ty->location () << '.';
+            return E_TYPE;
+        }
+        res = params->type;
     }
 
-    ty->setCachedType (s->dataType ());
+    ty->setCachedType (res);
     return OK;
 }
 
