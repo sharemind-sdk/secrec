@@ -20,6 +20,7 @@
 #include "TypeChecker.h"
 
 #include "DataType.h"
+#include "DataTypeStruct.h"
 #include "Log.h"
 #include "Symbol.h"
 #include "SymbolTable.h"

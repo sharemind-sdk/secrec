@@ -18,6 +18,7 @@
  */
 
 #include "DataType.h"
+#include "DataTypeStruct.h"
 
 #include "Context.h"
 #include "ContextImpl.h"

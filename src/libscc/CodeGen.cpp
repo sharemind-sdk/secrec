@@ -23,6 +23,7 @@
 #include "Constant.h"
 #include "ContextImpl.h"
 #include "DataType.h"
+#include "DataTypeStruct.h"
 #include "Intermediate.h"
 #include "Misc.h"
 #include "SecurityType.h"

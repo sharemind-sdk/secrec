@@ -20,6 +20,7 @@
 #include "APFloat.h"
 #include "DataType.h"
 
+#include <cassert>
 #include <ostream>
 #include <sharemind/abort.h>
 #include <stdexcept>

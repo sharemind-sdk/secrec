@@ -21,6 +21,7 @@
 
 #include <sharemind/abort.h>
 #include "DataType.h"
+#include "DataTypeStruct.h"
 #include "Log.h"
 #include "SecurityType.h"
 #include "StringRef.h"

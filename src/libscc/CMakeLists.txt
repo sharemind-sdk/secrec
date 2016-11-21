@@ -137,6 +137,7 @@ SET(LIBSCC_HEADERS
     "${LIBSCC_INCLUDE_DIR}/Context.h"
     "${LIBSCC_INCLUDE_DIR}/DataflowAnalysis.h"
     "${LIBSCC_INCLUDE_DIR}/DataType.h"
+    "${LIBSCC_INCLUDE_DIR}/DataTypeStruct.h"
     "${LIBSCC_INCLUDE_DIR}/ICodeList.h"
     "${LIBSCC_INCLUDE_DIR}/Imop.h"
     "${LIBSCC_INCLUDE_DIR}/Intermediate.h"

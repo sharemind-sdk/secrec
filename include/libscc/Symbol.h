@@ -38,6 +38,7 @@ namespace SecreC {
 class Block;
 class DataType;
 class DataTypeBuiltinPrimitive;
+class DataTypeStruct;
 class DataTypeUserPrimitive;
 class Imop;
 class Location;
