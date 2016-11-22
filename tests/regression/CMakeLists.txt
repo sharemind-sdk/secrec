@@ -220,8 +220,11 @@ SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
   PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,21\\)\\(8,30\\)")
 add_test_secrec_execute("templates/21-cast-definitions")
 add_test_secrec_execute("templates/22-protection-domain-bug")
+add_test_secrec_execute("templates/23-template-instance-bug")
 SET_TESTS_PROPERTIES("templates/22-protection-domain-bug"
-    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,10\\)\\(7,21\\)")
+  PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,10\\)\\(7,21\\)")
+SET_TESTS_PROPERTIES("templates/23-template-instance-bug"
+  PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(13,7\\)\\(13,10\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
