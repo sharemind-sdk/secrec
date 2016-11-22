@@ -20,7 +20,6 @@
 #include "TypeUnifier.h"
 
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "SecurityType.h"
 #include "Symbol.h"
 #include "SymbolTable.h"

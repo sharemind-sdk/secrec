@@ -21,7 +21,6 @@
 #include "CodeGenResult.h"
 #include "Constant.h"
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "Log.h"
 #include "Misc.h"
 #include "StringTable.h"

@@ -19,6 +19,7 @@
 
 #include "TypeChecker.h"
 
+#include "DataType.h"
 #include "Log.h"
 #include "SecurityType.h"
 #include "Symbol.h"

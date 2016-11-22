@@ -19,7 +19,6 @@
 
 #include "Constant.h"
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "Imop.h"
 #include "Log.h"
 #include "Misc.h"

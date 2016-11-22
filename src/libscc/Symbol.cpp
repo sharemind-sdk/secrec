@@ -21,7 +21,6 @@
 
 #include "Blocks.h"
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "Imop.h"
 #include "SecurityType.h"
 #include "TreeNode.h"

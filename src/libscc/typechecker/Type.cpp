@@ -18,7 +18,6 @@
  */
 
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "Log.h"
 #include "Misc.h"
 #include "SecurityType.h"

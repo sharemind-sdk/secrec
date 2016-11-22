@@ -21,7 +21,6 @@
 
 #include <sharemind/abort.h>
 #include "DataType.h"
-#include "DataTypeStruct.h"
 #include "Log.h"
 #include "SecurityType.h"
 #include "StringRef.h"
@@ -155,5 +154,23 @@ TypeChecker::Status TypeChecker::visitTypeArgPublic(TreeNodeTypeArgPublic* t) {
     return OK;
 }
 
+bool operator == (const TypeArgument& a, const TypeArgument& b) {
+    if (a.m_kind != b.m_kind)
+        return false;
+
+    switch (a.m_kind) {
+    case TA_DIM:   return a.un_dimType  == b.un_dimType;
+    case TA_SEC:   return a.un_secType  == b.un_secType;
+    case TA_DATA:  return a.un_dataType->equals (b.un_dataType);
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
+    default: SHAREMIND_ABORT("==TA %d", static_cast<int>(a.m_kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
+    #endif
+    }
+}
 
 } // namespace SecreC

@@ -22,6 +22,7 @@
 
 #include "ParserEnums.h"
 #include "StringRef.h"
+#include "TypeArgument.h"
 
 #include <iosfwd>
 #include <map>
@@ -161,6 +162,58 @@ protected:
 private: /* Fields: */
     const StringRef m_name;
 };
+
+/*******************************************************************************
+  DataTypeStruct
+*******************************************************************************/
+
+class DataTypeStruct : public DataType {
+public: /* Types: */
+
+    struct Field {
+        const TypeBasic* type;
+        StringRef  name;
+
+        Field (const TypeBasic* type, StringRef name)
+            : type (type)
+            , name (std::move(name))
+        { }
+    };
+
+    using FieldList = std::vector<Field>;
+    using TypeArgumentList = std::vector<TypeArgument>;
+
+public: /* Methods: */
+
+    StringRef name () const { return m_name; }
+
+    static const DataTypeStruct* get (StringRef name,
+        const FieldList& fields,
+        const TypeArgumentList& typeArgs = TypeArgumentList());
+
+    const FieldList& fields () const { return m_fields; }
+    const TypeArgumentList& typeArgs () const { return m_typeArgs; }
+
+protected:
+
+    void print (std::ostream& os) const override final;
+
+    explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)
+        : DataType (COMPOSITE)
+        , m_name (std::move(name))
+        , m_typeArgs (std::move (typeArgs))
+        , m_fields (std::move(fields))
+    { }
+
+private: /* Fields: */
+    const StringRef        m_name;
+    const TypeArgumentList m_typeArgs;
+    const FieldList        m_fields;
+};
+
+inline DataTypeStruct::Field make_field (const TypeBasic* type, StringRef name) {
+    return DataTypeStruct::Field(type, name);
+}
 
 } // namespace SecreC
 
