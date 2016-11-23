@@ -23,6 +23,7 @@
 #include "../DataflowAnalysis.h"
 #include "../Symbol.h"
 
+#include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/containers/flat_set.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <map>
@@ -33,7 +34,7 @@ using boost::adaptors::reverse;
 namespace SecreC {
 
 using Reachable = boost::container::flat_set<Imop*>;
-using SymbolReachable = std::map<const Symbol*, Reachable>;
+using SymbolReachable = boost::container::flat_map<const Symbol*, Reachable>;
 
 /*******************************************************************************
   AbstractReachable
@@ -68,6 +69,7 @@ private: /* Types: */
 
         inline void kill(const Symbol* sym) {
             m_kill.insert(sym);
+            m_gen.erase(sym);
         }
 
     private: /* Fields: */
@@ -185,7 +187,7 @@ private:
     }
 
     void add(SymbolReachable& out, SymbolReachable& in) {
-        for (const auto it : in) {
+        for (const auto& it : in) {
             out[it.first].insert(it.second.begin(), it.second.end());
         }
     }
