@@ -20,6 +20,7 @@
 #include "Constant.h"
 #include "Imop.h"
 #include "Intermediate.h"
+#include "Optimizer.h"
 #include "SecurityType.h"
 #include "Symbol.h"
 #include "TreeNode.h"
@@ -554,21 +555,8 @@ void inlineCalls (ICode& code) {
         inlineCall (todo, code);
     }
 
-    // Remove unused procedures.
-    std::vector<Procedure*> remove;
-    for (auto& proc : code.program ()) {
-        // TODO: how to identify the START procedure? Currently we use
-        // "name != NULL". Not sure if it's ideal.
-        if (proc.name () != nullptr && proc.callFrom ().empty ())
-            remove.push_back (&proc);
-    }
-
-    for (Procedure* proc : remove) {
-        proc->unlink ();
-        delete proc;
-    }
-
-    // Fix imop indexes.
+    removeUnreachableBlocks (code);
+    removeEmptyProcedures (code);
     code.program ().numberInstructions ();
 }
 

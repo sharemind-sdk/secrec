@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Cybernetica
+ * Copyright (C) 2016 Cybernetica
  *
  * Research/Commercial License Usage
  * Licensees holding a valid Research License or Commercial License
@@ -20,19 +20,24 @@
 #include "Optimizer.h"
 #include "Intermediate.h"
 
+#include <memory>
+#include <vector>
+
 namespace SecreC {
 
-bool removeUnreachableBlocks (ICode& code) {
-    Program& program = code.program ();
-    std::vector<std::unique_ptr<const Block>> unreachableBlocks;
-    FOREACH_BLOCK (bi, program) {
-        const Block& block = *bi;
-        if (! block.reachable()) {
-            unreachableBlocks.emplace_back (&block);
-        }
+bool removeEmptyProcedures (ICode& code) {
+    std::vector<std::unique_ptr<Procedure>> emptyProcedures;
+    for (auto& proc : code.program ()) {
+        // TODO: how to identify the START procedure? Currently we use
+        // "name != NULL". Not sure if it's ideal.
+        if (proc.name () != nullptr && proc.callFrom ().empty ())
+            emptyProcedures.emplace_back (std::unique_ptr<Procedure> (&proc));
     }
 
-    return unreachableBlocks.size () > 0;
+    for (auto& proc : emptyProcedures)
+        proc->unlink ();
+
+    return emptyProcedures.size () > 0;
 }
 
 } // namespace SecreC

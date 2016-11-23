@@ -48,6 +48,7 @@ bool eliminateDeadVariables (ICode& code);
 bool eliminateConstantExpressions (ICode& code);
 bool removeUnreachableBlocks (ICode& code);
 bool removeEmptyBlocks (ICode& code);
+bool removeEmptyProcedures (ICode& code);
 void inlineCalls (ICode& code);
 bool optimizeCode (ICode& code);
 
