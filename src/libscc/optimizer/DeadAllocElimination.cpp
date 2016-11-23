@@ -17,6 +17,7 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "Constant.h"
 #include "DataflowAnalysis.h"
 #include "Intermediate.h"
 #include "Optimizer.h"
@@ -27,8 +28,13 @@
 namespace SecreC {
 
 bool eliminateDeadAllocs (const ReachableUses& ru, ICode& code) {
-    std::vector<std::unique_ptr<const Imop>> deadInstructions;
+    std::set<Imop*> replace;
     Program& program = code.program ();
+    ConstantString* relComment =
+        ConstantString::get (code.context (), "release removed by dead allocation elimination");
+    ConstantString* allocComment =
+        ConstantString::get (code.context (), "alloc removed by dead alloc elimination");
+
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
         SymbolReachable uses = ru.reachableOnExit (block);
@@ -47,17 +53,25 @@ bool eliminateDeadAllocs (const ReachableUses& ru, ICode& code) {
                 }
 
                 if (dead) {
-                    for (const Imop* rel : releases)
-                        deadInstructions.emplace_back (rel);
-                    deadInstructions.emplace_back (&imop);
+                    for (const Imop* rel : releases) {
+                        replace.insert (const_cast<Imop*> (rel));
+                    }
+                    replace.insert (const_cast<Imop*> (&imop));
                 }
+            } else {
+                ReachableUses::update (imop, uses);
             }
-
-            ReachableUses::update (imop, uses);
         }
     }
 
-    return deadInstructions.size () > 0;
+    for (auto i : replace) {
+        ConstantString* comment = i->type () == Imop::ALLOC ? allocComment : relComment;
+        Imop* newImop = new Imop (i->creator (), Imop::COMMENT, nullptr, comment);
+        i->replaceWith (*newImop);
+        delete i;
+    }
+
+    return replace.size ();
 }
 
 } // namespace SecreC

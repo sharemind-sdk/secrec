@@ -17,10 +17,12 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "Constant.h"
 #include "DataflowAnalysis.h"
 #include "Intermediate.h"
 #include "Optimizer.h"
 #include "Symbol.h"
+#include "TreeNode.h"
 #include "analysis/AbstractReachable.h"
 #include "analysis/CopyPropagation.h"
 #include "analysis/ReachableDefinitions.h"
@@ -215,22 +217,29 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     for (auto it = kills.begin (); it != kills.end (); ++it) {
         Symbol* arg = it->first;
         for (Imop* kill : it->second) {
-
             Imop* release = new Imop (nullptr, Imop::RELEASE, nullptr, arg);
             kill->block ()->insert (blockIterator (*kill), *release);
             release->setBlock (kill->block ());
         }
     }
 
+    ConstantString* copyComment =
+        ConstantString::get (code.context (), "copy removed by copy elimination");
     for (const Imop* copy : copies) {
-        copy->block ()->erase (blockIterator (*copy));
-        delete copy;
+        //copy->block ()->erase (blockIterator (*copy));
+        //delete copy;
+        Imop* newImop = new Imop (copy->creator (), Imop::COMMENT, nullptr, copyComment);
+        const_cast<Imop*> (copy)->replaceWith (*newImop);
         ++ changes;
     }
 
+    ConstantString* releaseComment =
+        ConstantString::get (code.context (), "release removed by copy elimination");
     for (const Imop* imop : releases) {
         if (imop->type () == Imop::RELEASE) {
-            delete imop;
+            //delete imop;
+            Imop* newImop = new Imop (imop->creator (), Imop::COMMENT, nullptr, releaseComment);
+            const_cast<Imop*> (imop)->replaceWith (*newImop);
             ++ changes;
         }
     }

@@ -17,6 +17,7 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "Constant.h"
 #include "DataflowAnalysis.h"
 #include "Intermediate.h"
 #include "Optimizer.h"
@@ -27,8 +28,9 @@
 namespace SecreC {
 
 bool eliminateDeadStores (const LiveMemory& lmem, ICode& code) {
-    std::vector<std::unique_ptr<const Imop>> deadInstructions;
     Program& program = code.program ();
+    std::vector<std::pair<std::unique_ptr<Imop>, Imop*>> replace;
+
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
         LiveMemory::Values values = lmem.liveOnExit (block);
@@ -37,14 +39,20 @@ bool eliminateDeadStores (const LiveMemory& lmem, ICode& code) {
                 (values.count (imop.dest ()) == 0 ||
                  (values.at (imop.dest ()) & LiveMemory::Read) == 0x0))
             {
-                deadInstructions.emplace_back (&imop);
+                Imop* newImop = new Imop (imop.creator (), Imop::COMMENT, nullptr,
+                                          ConstantString::get (code.context (),
+                                                               "eliminated dead store"));
+                replace.emplace_back (std::unique_ptr<Imop> (const_cast<Imop*> (&imop)), newImop);
+            } else {
+                LiveMemory::update (imop, values);
             }
-
-            LiveMemory::update (imop, values);
         }
     }
 
-    return deadInstructions.size () > 0;
+    for (auto& p : replace)
+        p.first->replaceWith (*p.second);
+
+    return replace.size ();
 }
 
 } // namespace SecreC

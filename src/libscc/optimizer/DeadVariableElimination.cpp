@@ -17,12 +17,14 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "Constant.h"
 #include "DataflowAnalysis.h"
 #include "Intermediate.h"
 #include "Optimizer.h"
 #include "analysis/LiveVariables.h"
 
 #include <boost/range/adaptor/reversed.hpp>
+#include <memory>
 
 using boost::adaptors::reverse;
 
@@ -48,20 +50,28 @@ inline bool mayEliminate (const Imop& imop) {
 } // namespace anonymous
 
 bool eliminateDeadVariables (const LiveVariables& lva, ICode& code) {
-    std::vector<std::unique_ptr<const Imop>> deadInstructions;
     Program& program = code.program ();
+    std::vector<std::pair<std::unique_ptr<Imop>, Imop*>> replace;
+
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
         LiveVariables::Symbols live = lva.liveOnExit (block);
         for (const Imop& imop : reverse (block)) {
-            if (mayEliminate (imop) && live.count (imop.dest ()) == 0)
-                deadInstructions.emplace_back (&imop);
-            else
+            if (mayEliminate (imop) && live.count (imop.dest ()) == 0) {
+                Imop* newImop = new Imop (imop.creator (), Imop::COMMENT, nullptr,
+                                          ConstantString::get (code.context (),
+                                                               "dead variable eliminated"));
+                replace.emplace_back (std::unique_ptr<Imop> (const_cast<Imop*> (&imop)), newImop);
+            } else {
                 LiveVariables::updateBackwards (imop, live);
+            }
         }
     }
 
-    return deadInstructions.size () > 0;
+    for (auto& p : replace)
+        p.first->replaceWith (*p.second);
+
+    return replace.size ();
 }
 
 bool eliminateDeadVariables (ICode& code) {
