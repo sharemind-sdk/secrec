@@ -26,6 +26,17 @@
 
 namespace SecreC {
 
+namespace {
+
+void killCopies(Symbol* s, CopyPropagation::Copies& copies, CopyPropagation::Copies& kill) {
+    for (const Imop* copy : copies) {
+        if (copy->dest() == s || copy->arg1() == s)
+            kill.insert(copy);
+    }
+}
+
+}
+
 /*******************************************************************************
   CopyPropagation
 *******************************************************************************/
@@ -33,28 +44,34 @@ namespace SecreC {
 void CopyPropagation::update(const Imop& imop, Copies& copies) {
     Copies kill;
 
-    for (Symbol* defSym : imop.defRange()) {
-        for (const Imop* copy : copies) {
-            if (defSym == copy->dest() || defSym == copy->arg1()) {
-                kill.insert(copy);
+    if (imop.isSyscall ()) {
+        for (auto op : imop.syscallOperands ()) {
+            const auto sym = op.operand();
+            switch (op.passingConvention()) {
+                case Push:
+                    if (!op.isReadOnly())
+                        killCopies(sym, copies, kill);
+                    break;
+                case PushRef:
+                case PushCRef:
+                case Return:
+                    killCopies(sym, copies, kill);
+                    break;
+
             }
         }
-    }
-
-    if (imop.writesDest()) {
-        for (const Imop* copy : copies) {
-            if (imop.dest() == copy->dest() || imop.dest() == copy->arg1()) {
-                kill.insert(copy);
-            }
+    } else {
+        for (Symbol* defSym : imop.defRange()) {
+            killCopies(defSym, copies, kill);
         }
-    }
 
-    if (imop.type() == Imop::CALL) {
-        for (Symbol* useSym : imop.useRange()) {
-            for (const Imop* copy : copies) {
-                if (useSym == copy->dest() || useSym == copy->arg1()) {
-                    kill.insert(copy);
-                }
+        if (imop.writesDest()) {
+            killCopies(imop.dest(), copies, kill);
+        }
+
+        if (imop.type() == Imop::CALL) {
+            for (Symbol* useSym : imop.useRange()) {
+                killCopies(useSym, copies, kill);
             }
         }
     }
