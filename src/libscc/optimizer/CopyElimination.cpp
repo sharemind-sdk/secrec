@@ -39,46 +39,47 @@ namespace SecreC {
 namespace /* anonymous */ {
 
 template <typename Analysis, typename State, typename Get>
-State getInfo (const Imop* i, Get get, bool forward=true) {
+State getInfo (const Imop* i, Get get) {
     const Block& block = *i->block ();
     State state = get (block);
 
-    if (forward) {
-        for (const Imop& imop : block) {
-            if (&imop == i) break;
-            Analysis::update (imop, state);
-        }
-    } else {
-        for (const Imop& imop : reverse (block)) {
-            if (&imop == i) break;
-            Analysis::update (imop, state);
-        }
+    for (const Imop& imop : reverse (block)) {
+        if (&imop == i) break;
+        Analysis::update (imop, state);
     }
 
     return state;
 }
 
 CopyPropagation::Copies getCopies (const Imop* i, const CopyPropagation& cp) {
-    return getInfo<CopyPropagation, CopyPropagation::Copies>
-        (i, [cp](const Block& block) { return cp.getCopies (block); });
+    const Block& block = *i->block ();
+    CopyPropagation::Copies state = cp.getCopies (block);
+
+    for (const Imop& imop : block) {
+        CopyPropagation::update (imop, state);
+        if (&imop == i) break;
+    }
+
+    return state;
 }
 
 SymbolReachable getUses (const Imop* i, const ReachableUses& ru) {
     return getInfo<ReachableUses, SymbolReachable>
-        (i, [ru](const Block& block) { return ru.reachableOnExit (block); }, false);
+        (i, [ru](const Block& block) { return ru.reachableOnExit (block); });
 }
 
-SymbolReachable getDefinitions (const Imop* i, const ReachableDefinitions& rd)
+ReachableDefinitions::Definitions
+getDefinitions (const Imop* i, const ReachableDefinitions& rd)
 {
-    return getInfo<ReachableDefinitions, SymbolReachable>
-        (i, [rd](const Block& block) { return rd.reachableOnExit (block); }, false);
+    return getInfo<ReachableDefinitions, ReachableDefinitions::Definitions>
+        (i, [rd](const Block& block) { return rd.definitionsOnExit (block); });
 }
 
 ReachableReturns::Returns getReturns (const Imop* i,
                                       const ReachableReturns& rr)
 {
     return getInfo<ReachableReturns, ReachableReturns::Returns>
-        (i, [rr](const Block& block) { return rr.returnsOnExit (block); }, false);
+        (i, [rr](const Block& block) { return rr.returnsOnExit (block); });
 }
 
 } // namespace anonymous
@@ -112,7 +113,7 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     std::sort (copies.begin (), copies.end (), compareImop);
 
     for (const Imop* copy : copies) {
-        useMaps.emplace(std::make_pair (copy, getUses (copy, ru)));
+        useMaps.emplace (std::make_pair (copy, getUses (copy, ru)));
     }
 
     // Check if copy can be propagated to uses
@@ -187,12 +188,17 @@ bool eliminateRedundantCopies (const ReachableUses& ru,
     for (const Imop* copy : copies) {
         Symbol* newArg = copy->arg1 ();
 
-        SymbolReachable defs = getDefinitions (copy, rd);
-        for (Imop* def : defs[newArg]) {
+        ReachableDefinitions::Definitions defs = getDefinitions (copy, rd);
+        for (const Imop* def : defs) {
             if (copySet.count (def) != 0)
                 continue;
 
-            kills[newArg].insert (def);
+            for (Symbol* defSym : def->defRange ()) {
+                if (defSym == newArg) {
+                    kills[newArg].insert (const_cast<Imop*> (def));
+                    break;
+                }
+            }
         }
 
         ReachableReturns::Returns rets = getReturns (copy, rr);
