@@ -21,7 +21,6 @@
 #define SECREC_REACHABLE_DEFINITIONS_H
 
 #include "../DataflowAnalysis.h"
-#include "AbstractReachable.h"
 
 #include <boost/interprocess/containers/flat_set.hpp>
 #include <map>
@@ -32,23 +31,39 @@ namespace SecreC {
   ReachableDefinitions
 *******************************************************************************/
 
-struct DefinitionsVisitor {
-    template <typename Visitor>
-    void operator()(const Imop& imop, Visitor& visitor) {
-        for (const Symbol* sym : imop.defRange()) {
-            if (sym->symbolType() == SYM_SYMBOL) {
-                visitor.kill(sym);
-                visitor.gen(sym, imop);
-            }
-        }
-    }
-};
+class ReachableDefinitions : public BackwardDataFlowAnalysis {
 
-struct ReachableDefinitions : public AbstractReachable<DefinitionsVisitor> {
+public: /* Types: */
+
+    using Definitions = boost::container::flat_set<const Imop*>;
+    using BlockMap = std::map<const Block*, Definitions>;
+
+public: /* Methods: */
 
     std::string toString(const Program& pr) const override;
 
-};
+    Definitions definitionsOnExit(const Block& block) const {
+        const auto it = m_outs.find(&block);
+        if (it != m_outs.end())
+            return it->second;
+        return Definitions();
+    }
+
+    static void update(const Imop& imop, Definitions& defs);
+
+protected:
+
+    virtual void start(const Program& bs) override;
+    virtual void startBlock(const Block& b) override;
+    virtual void outTo(const Block& from, Edge::Label label, const Block& to) override;
+    virtual bool finishBlock(const Block& b) override;
+    virtual void finish() override;
+
+private: /* Fields: */
+
+    BlockMap m_outs;
+    BlockMap m_ins;
+}; // class ReachableDefinitions
 
 } // namespace SecreC
 
