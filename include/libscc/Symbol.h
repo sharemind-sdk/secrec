@@ -81,8 +81,9 @@ public: /* Methods: */
     inline void setName(StringRef name) { m_name = name.str(); }
     inline const TypeNonVoid* secrecType() const { return m_type; }
 
-    bool isGlobal () const;
-    bool isArray () const;
+    bool isGlobal() const;
+    bool isArray() const;
+    bool isString() const;
 
     virtual const Location * location() const { return nullptr; }
 

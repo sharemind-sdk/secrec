@@ -112,6 +112,28 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
+  BuiltinFloatToInt
+*******************************************************************************/
+
+class BuiltinFloatToInt : public BuiltinFunction {
+public: /* Methods: */
+    BuiltinFloatToInt(VMDataType dest, VMDataType src)
+        : m_dest(dest)
+        , m_src(src)
+    { }
+
+    void generate(VMFunction& function, VMSymbolTable& st);
+
+    BuiltinFunction* clone() const {
+        return new BuiltinFloatToInt(m_dest, m_src);
+    }
+
+private: /* Fields: */
+    const VMDataType m_dest;
+    const VMDataType m_src;
+};
+
+/*******************************************************************************
   BuiltinVCast
 *******************************************************************************/
 

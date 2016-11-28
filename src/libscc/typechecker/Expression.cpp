@@ -28,11 +28,11 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
+#include "SecurityType.h"
 #include "Visitor.h"
 
 #include <array>
 #include <boost/range.hpp>
-
 
 namespace SecreC {
 
@@ -923,7 +923,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
         }
 
         if (root->type() == NODE_EXPR_UINV) {
-            if (isNumericDataType(et->secrecDataType ())
+            if (isUnsignedNumericDataType(et->secrecDataType ())
                     || et->secrecDataType ()->equals (DATATYPE_NUMERIC)
                     || et->secrecDataType ()->isBool ())
             {
@@ -993,6 +993,7 @@ TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayCons
             return E_TYPE;
 
         const auto childType = static_cast<const TypeBasic*>(child.resultType ());
+        assert (childType != nullptr);
 
         if (! childType->isScalar ()) {
             m_log.fatalInProc (e) << "Expecting scalar elements in array constructor at "
@@ -1000,7 +1001,13 @@ TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayCons
             return E_TYPE;
         }
 
-        assert (childType != nullptr);
+        if (childType->isString()) {
+            m_log.fatalInProc(e)
+                    << "Array of strings declared at " << child.location() << ".";
+            m_log.fatal() << "This feature is currently not supported.";
+            return E_TYPE;
+        }
+
         if (elemType == nullptr) {
             elemType = childType;
         }

@@ -38,6 +38,8 @@ SET(SCC_SOURCES
     "RegisterAllocator.cpp"
     "StringLiterals.h"
     "StringLiterals.cpp"
+    "VMFpu.h"
+    "VMFpu.cpp"
     "VMInstruction.h"
     "VMInstruction.cpp"
     "VMSymbolTable.h"

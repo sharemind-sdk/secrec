@@ -360,10 +360,10 @@ Symbol* CodeGen::copyNonTemporary (CGResult& result, Symbol* sym) {
         return copy;
     }
 
-    if (t->secrecType ()->secrecSecType ()->isPrivate ()) {
-        auto copy = m_st->appendTemporary (t->secrecType ());
-        emplaceImopAfter (result, m_node, Imop::DECLARE, copy);
-        emplaceImop (m_node, Imop::ASSIGN, copy, t);
+    if (t->isString() || t->secrecType()->secrecSecType()->isPrivate()) {
+        auto copy = m_st->appendTemporary(t->secrecType());
+        emplaceImopAfter(result, m_node, Imop::DECLARE, copy);
+        emplaceImop(m_node, Imop::ASSIGN, copy, t);
         return copy;
     }
 

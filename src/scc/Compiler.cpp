@@ -62,10 +62,12 @@ bool isSigned (SecreC::Symbol* sym) {
 }
 
 const char* imopToVMName (const Imop& imop) {
+    const bool isBool = imop.arg1()->secrecType()->secrecDataType()->isBool();
+
     switch (imop.type ()) {
     case Imop::UMINUS: return "bneg";
     case Imop::UNEG  : return "bnot";
-    case Imop::UINV  : return "binv";
+    case Imop::UINV  : return isBool ? "bnot" : "binv";
     case Imop::MUL   : return "tmul";
     case Imop::DIV   : return "tdiv";
     case Imop::MOD   : return "tmod";
@@ -568,7 +570,7 @@ void Compiler::cgRelease (VMBlock& block, const Imop& imop) {
     }
 
     // We allow for public scalar to be freed (which is a nop).
-    if (imop.arg1()->isArray ()) {
+    if (imop.arg1()->isArray() || imop.arg1()->isString()) {
         block.push_new () << "free" << find (imop.arg1 ());
         return;
     }
@@ -653,24 +655,35 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
         }
     }
     else {
-        VMInstruction instr;
         if (imop.dest ()->secrecType ()->secrecDataType ()->isBool ()) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
-            instr << "tgt" << destTy << find (imop.dest ())
-                  << arg << m_st.getImm (0);
+            block.push_new() << "tne"
+                             << srcTy << find (imop.dest ())
+                             << arg << m_st.getImm (0);
         }
         else
         if (destTy != srcTy) {
             VMValue* arg = loadToRegister (block, imop.arg1 ());
-            instr << "convert"
-                  << srcTy << arg
-                  << destTy << find (imop.dest ());
+
+            if (isFloating(srcTy) && (isSigned(destTy) || isUnsigned(destTy))) {
+                std::stringstream ss;
+                ss << ":cast_" << destTy << "_" << srcTy;
+                VMLabel* target = m_st.getLabel(ss.str());
+                m_funcs->insert (target, BuiltinFloatToInt(destTy, srcTy));
+                block.push_new() << "push" << arg;
+                block.push_new() << "call" << target << find(imop.dest());
+            }
+            else {
+                block.push_new() << "convert"
+                                 << srcTy << arg
+                                 << destTy << find (imop.dest ());
+            }
         }
         else {
-            instr << "mov" << find (imop.arg1 ()) << find (imop.dest ());
+            block.push_new() << "mov"
+                             << find (imop.arg1 ())
+                             << find (imop.dest ());
         }
-
-        block.push_back (instr);
     }
 }
 

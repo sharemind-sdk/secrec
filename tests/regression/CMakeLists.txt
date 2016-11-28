@@ -221,10 +221,13 @@ SET_TESTS_PROPERTIES("templates/20-operator-overloading-2"
 add_test_secrec_execute("templates/21-cast-definitions")
 add_test_secrec_execute("templates/22-protection-domain-bug")
 add_test_secrec_execute("templates/23-template-instance-bug")
+add_test_secrec_execute("templates/24-index-into-N-dimensional-array")
 SET_TESTS_PROPERTIES("templates/22-protection-domain-bug"
   PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,10\\)\\(7,21\\)")
 SET_TESTS_PROPERTIES("templates/23-template-instance-bug"
   PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(13,7\\)\\(13,10\\)")
+SET_TESTS_PROPERTIES("templates/24-index-into-N-dimensional-array"
+  PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,.*\\)\\(10,.*\\)")
 
 # Tests for structures:
 add_test_secrec_execute("structs/00-simple-declaration")
@@ -249,3 +252,18 @@ SET_TESTS_PROPERTIES("structs/04-redeclaration"
 
 SET_TESTS_PROPERTIES("structs/11-template-domain-failure"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,.*\\)\\(9,.*\\)")
+
+# Regressions found by AFL (american fuzzy lop).
+add_test_secrec_execute("afl/00-integer-literal-overflow")
+SET_TESTS_PROPERTIES("afl/00-integer-literal-overflow"
+    PROPERTIES PASS_REGULAR_EXPRESSION ".*\\(3,16\\)-\\(3,43\\).*")
+
+add_test_secrec_execute("afl/01-index-scalar-bug")
+SET_TESTS_PROPERTIES("afl/01-index-scalar-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,.*\\)\\(4,.*\\)")
+
+add_test_secrec_execute("afl/02-global-struct-init-bug")
+
+add_test_secrec_execute("afl/03-compare-struct-and-int-bug")
+SET_TESTS_PROPERTIES("afl/03-compare-struct-and-int-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,.*\\)\\(6,.*\\)")
