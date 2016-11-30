@@ -69,11 +69,15 @@ bool removeEmptyBlocksProc (SymbolTable& symbols, Procedure& proc) {
                 imop.setDest (newL);
 
                 Edge::Label edge;
+                #ifndef NDEBUG
                 bool found = false;
+                #endif
                 for (auto succ : block.successors ()) {
                     if (succ.first == l->block ()) {
                         edge = succ.second;
+                        #ifndef NDEBUG
                         found = true;
+                        #endif
                         break;
                     }
                 }
