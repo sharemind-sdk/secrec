@@ -332,7 +332,8 @@ private: /* Methods: */
 
             return m_symMap[sym];
         }
-        else if (ty == SYM_LABEL) {
+        else {
+            assert (ty == SYM_LABEL);
             SymbolLabel* l = static_cast<SymbolLabel*> (sym);
 
             // TODO: m_imopMap is only used for this case. This is
@@ -343,9 +344,6 @@ private: /* Methods: */
             Imop* newTarget = m_imopMap[l->target ()];
 
             return m_code.symbols ().label (newTarget);
-        }
-        else {
-            assert (false);
         }
     }
 
