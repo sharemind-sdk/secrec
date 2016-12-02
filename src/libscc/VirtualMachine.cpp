@@ -654,9 +654,13 @@ CallbackTy getCallback (const Imop& imop) {
             const SecurityType* sec = imop.arg1()->secrecType()->secrecSecType();
             assert(sec->isPrivate());
             SymbolKind* kind = static_cast<const PrivateSecType*>(sec)->securityKind();
-            auto pubTy = kind->findType (static_cast<const DataTypeUserPrimitive*> (dataType)->name ())->publicType;
-            assert(pubTy && "how to emulate private-only values?");
-            ty = (*pubTy)->secrecDataType();
+            const auto pubTy = kind->findType (static_cast<const DataTypeUserPrimitive*> (dataType)->name ())->publicType;
+            if (pubTy) {
+                ty = pubTy.get()->secrecDataType();
+            }
+            else {
+                SHAREMIND_ABORT("ICE: Attemping to emulate private only values.");
+            }
         }
     }
     default:
@@ -674,9 +678,13 @@ CallbackTy getCallback (const Imop& imop) {
             const SecurityType* sec = imop.dest()->secrecType()->secrecSecType();
             assert (sec->isPrivate ());
             SymbolKind* kind = static_cast<const PrivateSecType*>(sec)->securityKind();
-            auto pubTy = kind->findType (static_cast<const DataTypeUserPrimitive*> (dataType)->name ())->publicType;
-            assert (pubTy && "how to emulate private-only values?");
-            ty = (*pubTy)->secrecDataType();
+            const auto pubTy = kind->findType (static_cast<const DataTypeUserPrimitive*> (dataType)->name ())->publicType;
+            if (pubTy) {
+                ty = pubTy.get()->secrecDataType();
+            }
+            else {
+                SHAREMIND_ABORT("ICE: Attemping to emulate private only values.");
+            }
         }
     }
 
@@ -685,8 +693,7 @@ CallbackTy getCallback (const Imop& imop) {
             std::cerr << imop << " // " << TreeNode::typeName (imop.creator ()->type ()) << std::endl;
             std::cerr << *imop.dest ()->secrecType () << std::endl;
             std::cerr << *imop.arg1 ()->secrecType () << std::endl;
-
-            assert (false);
+            SHAREMIND_ABORT("ICE: Ill constructed assignment.");
         }
     }
 
