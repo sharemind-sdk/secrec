@@ -55,35 +55,22 @@ namespace po = boost::program_options;
 namespace io = boost::iostreams;
 
 struct Configuration {
-    bool m_verbose;
-    bool m_help;
-    bool m_printST;
-    bool m_printAST;
-    bool m_printCFG;
-    bool m_printDom;
-    bool m_printIR;
-    bool m_eval;
-    bool m_stdin;
-    bool m_stdout;
-    bool m_optimize;
+    bool m_verbose = false;
+    bool m_help = false;
+    bool m_printST = false;
+    bool m_printAST = false;
+    bool m_printCFG = false;
+    bool m_printDom = false;
+    bool m_printIR = false;
+    bool m_eval = false;
+    bool m_stdin = true;
+    bool m_stdout = true;
+    bool m_optimize = false;
 
     string m_output;
     string m_input;
     vector<string > m_includes;
     set<string > m_analysis;
-
-    Configuration ()
-        : m_verbose (false)
-        , m_help (false)
-        , m_printST (false)
-        , m_printAST (false)
-        , m_printCFG (false)
-        , m_printIR (false)
-        , m_eval (false)
-        , m_stdin (true)
-        , m_stdout (true)
-        , m_optimize (false)
-    { }
 
     void read (const po::variables_map& vm) {
         m_verbose = vm.count ("verbose");
