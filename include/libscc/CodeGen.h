@@ -430,6 +430,7 @@ private:
     /// generate appropriately typed result symbol for given node
     SymbolSymbol* generateResultSymbol (CGResult& result, TreeNodeExpr* node);
 
+    // TODO: make this accept only non-void types. Seem a bit challenging atm.
     /// generate symbol for given type
     SymbolSymbol* generateResultSymbol (CGResult& result, const SecreC::Type* ty);
 

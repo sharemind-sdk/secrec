@@ -405,17 +405,19 @@ LoopInfo CodeGen::prepareLoopInfo (const SubscriptInfo& subscript) {
 
 
 SymbolSymbol * CodeGen::generateResultSymbol(CGResult& result, const SecreC::Type* ty) {
+    assert (ty != nullptr);
+    assert (! ty->isVoid());
     SymbolSymbol* sym = generateSymbol (getContext (), m_st, ty);
-    if (sym != nullptr) {
-        result.setResult(sym);
-    }
-
+    assert (sym != nullptr);
+    result.setResult(sym);
     return sym;
 }
 
 SymbolSymbol* CodeGen::generateResultSymbol (CGResult& result, TreeNodeExpr* node) {
+    assert (node);
     assert (node->haveResultType ());
-    return generateResultSymbol (result, node->resultType ());
+    assert (! node->resultType()->isVoid());
+    return generateResultSymbol (result, node->resultType());
 }
 
 CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {

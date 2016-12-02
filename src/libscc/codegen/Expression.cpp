@@ -1100,7 +1100,6 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
                               const std::vector<Symbol*>& args)
 {
     CGResult result;
-    SymbolSymbol* r = generateResultSymbol (result, returnType);
     std::vector<Symbol*> argList, retList;
 
     // Initialize arguments:
@@ -1113,6 +1112,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
 
     // prep return values:
     if (!returnType->isVoid ()) {
+        SymbolSymbol* r = generateResultSymbol (result, returnType);
         retList = flattenSymbol (r);
     }
 
@@ -1136,7 +1136,6 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
                               const std::vector<TreeNodeExpr*>& args)
 {
     CGResult result;
-    SymbolSymbol* r = generateResultSymbol (result, returnType);
     std::vector<Symbol*> argList, retList;
 
     // Initialize arguments:
@@ -1155,6 +1154,7 @@ CGResult CodeGen::cgProcCall (SymbolProcedure* symProc,
 
     // prep return values:
     if (!returnType->isVoid ()) {
+        SymbolSymbol* r = generateResultSymbol (result, returnType);
         retList = flattenSymbol (r);
     }
 
@@ -1567,9 +1567,11 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
     TreeNodeExpr * e2 = e->trueBranch();
     TreeNodeExpr * e3 = e->falseBranch();
     const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
+    const bool isVoid = e->resultType()->isVoid();
 
     if (e1->havePublicBoolType()) {
-        generateResultSymbol(result, e);
+        if (! isVoid)
+            generateResultSymbol(result, e);
 
         // Generate code for boolean expression:
         CGBranchResult e1Result = codeGenBranch(e1);
@@ -1585,7 +1587,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
             return result;
         }
 
-        if (!e->resultType()->isVoid()) {
+        if (! isVoid) {
             if (!eTrueResult.symbol()->secrecType()->isScalar()) {
                 SymbolSymbol * resultSymbol = static_cast<SymbolSymbol *>(result.symbol());
                 append (eTrueResult, copyShape (resultSymbol, eTrueResult.symbol ()));
@@ -1623,7 +1625,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
             return result;
         }
 
-        if (!e->resultType()->isVoid()) {
+        if (! isVoid) {
             if (!eFalseResult.symbol()->secrecType()->isScalar()) {
                 SymbolSymbol * resultSymbol = static_cast<SymbolSymbol *>(result.symbol());
                 append (eFalseResult, copyShape (resultSymbol, eFalseResult.symbol ()));
