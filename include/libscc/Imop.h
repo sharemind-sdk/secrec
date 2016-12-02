@@ -229,12 +229,12 @@ public: /* Methods: */
                           Iter beginArg, Iter endArg);
 private: /* Fields: */
 
-    TreeNode*               m_creator;
+    TreeNode*               m_creator = nullptr;
     const Type              m_type;
     OperandList             m_args;
     const SyscallOperands*  m_syscallOperands = nullptr;
-    Block*                  m_block;
-    unsigned long           m_index;
+    Block*                  m_block = nullptr;
+    unsigned long           m_index = 0;
 };
 
 using ImopList = boost::intrusive::list<Imop, boost::intrusive::constant_time_size<false>>;
