@@ -120,20 +120,14 @@ private:
  * Collection of program options for a nice overview.
  */
 struct ProgramOptions {
-    bool                     showHelp;
-    bool                     verbose;
-    bool                     assembleOnly;
-    bool                     optimize;
-    bool                     syntaxOnly;
+    bool                     showHelp = false;
+    bool                     verbose = false;
+    bool                     assembleOnly = false;
+    bool                     optimize = false;
+    bool                     syntaxOnly = false;
     boost::optional<string>  output; // nothing if cout
     boost::optional<string>  input; // nothing if cin
     vector<string>           includes;
-
-    ProgramOptions ()
-        : showHelp (false)
-        , verbose (false)
-        , assembleOnly (false)
-    { }
 };
 
 /*
