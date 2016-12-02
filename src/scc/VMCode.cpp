@@ -19,6 +19,7 @@
 
 #include "VMCode.h"
 
+#include <boost/io/ios_state.hpp>
 #include <cassert>
 #include <ostream>
 #include <iterator>
@@ -51,6 +52,7 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
     if (function.numLocals () != 0) {
         assert (! function.isStart ()
                 && "Must not have local registers in global scope");
+        boost::io::ios_flags_saver saver(os);
         os << "resizestack 0x" << std::hex  << function.numLocals () << '\n';
     }
 
@@ -118,6 +120,7 @@ std::ostream& VMDataSection::printBodyV (std::ostream& os) const {
 
 std::ostream& VMCodeSection::printBodyV (std::ostream& os) const {
     if (numGlobals () > 0) {
+        boost::io::ios_flags_saver saver(os);
         os << "resizestack 0x" << std::hex << numGlobals () << '\n';
     }
 

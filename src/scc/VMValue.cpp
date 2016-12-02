@@ -19,6 +19,7 @@
 
 #include "VMValue.h"
 
+#include <boost/io/ios_state.hpp>
 #include <sstream>
 
 namespace SecreCC {
@@ -37,6 +38,7 @@ std::ostream& operator << (std::ostream& os, const VMValue& value) {
 ******************************************************************/
 
 void VMImm::printV (std::ostream& os) const {
+    boost::io::ios_flags_saver saver(os);
     os << "imm 0x" << std::hex << value ();
 }
 
@@ -45,6 +47,7 @@ void VMImm::printV (std::ostream& os) const {
 ******************************************************************/
 
 void VMStack::printV (std::ostream& os) const {
+    boost::io::ios_flags_saver saver(os);
     os << "stack 0x" << std::hex << number ();
 }
 
@@ -53,6 +56,7 @@ void VMStack::printV (std::ostream& os) const {
 ******************************************************************/
 
 void VMReg::printV (std::ostream& os) const {
+    boost::io::ios_flags_saver saver(os);
     os << "reg 0x" << std::hex << number ();
 }
 
