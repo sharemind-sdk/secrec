@@ -20,8 +20,10 @@
 #ifndef SECREC_VISITOR_H
 #define SECREC_VISITOR_H
 
-#include "TreeNodeFwd.h"
+#include <cassert>
 #include "ParserEnums.h"
+#include "TreeNode.h"
+
 
 /*
  * Here we provide some dispatch callbacks for various abstract syntax tree
