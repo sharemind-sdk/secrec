@@ -21,9 +21,10 @@
 #include "DataType.h"
 
 #include <cassert>
+#include <numeric>
 #include <ostream>
 #include <sharemind/abort.h>
-#include <stdexcept>
+#include <limits>
 
 
 namespace SecreC {
@@ -104,24 +105,38 @@ bool APFloat::BitwiseCmp::cmpMpfrStructs (const mpfr_srcptr x, const mpfr_srcptr
     return std::memcmp (x->_mpfr_d, y->_mpfr_d, num_bytes) < 0;
 }
 
+static_assert(sizeof(uint32_t) == sizeof(float) &&
+              std::numeric_limits<float>::is_iec559,
+              "uint32_t and float have different size. "
+              "We are expecting IEEE representation.");
+
 // TODO: don't rely on IEEE representation of float!
 uint32_t APFloat::ieee32bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT32));
     #if MPFR_VERSION >= 0x030000
-    float float_result = mpfr_get_flt (m_value, SECREC_CONSTANT_MPFR_RNDN);
+    const float float_result = mpfr_get_flt (m_value, SECREC_CONSTANT_MPFR_RNDN);
     #else
-    float float_result = mpfr_get_ld (m_value, SECREC_CONSTANT_MPFR_RNDN);
+    const float float_result = mpfr_get_ld (m_value, SECREC_CONSTANT_MPFR_RNDN);
     #endif
-    auto result = new (&float_result) uint32_t;
-    return *result;
+    uint32_t result = 0;
+    // Intentional platform specific behaviour:
+    std::memcpy(&result, &float_result, sizeof(uint32_t));
+    return result;
 }
+
+static_assert(sizeof(uint64_t) == sizeof(double) &&
+              std::numeric_limits<double>::is_iec559,
+              "uint64_t and double have different size. "
+              "We are expecting IEEE representation.");
 
 // TODO: don't rely on IEEE representation of double!
 uint64_t APFloat::ieee64bits () const {
     assert (getPrec () == floatPrec (DATATYPE_FLOAT64));
-    double double_result = mpfr_get_d (m_value, SECREC_CONSTANT_MPFR_RNDN);
-    auto result = new (&double_result) uint64_t;
-    return *result;
+    const double double_result = mpfr_get_d (m_value, SECREC_CONSTANT_MPFR_RNDN);
+    uint64_t result = 0;
+    // Intentional platform specific behaviour:
+    std::memcpy(&result, &double_result, sizeof(uint64_t));
+    return result;
 }
 
 APFloat::APFloat (prec_t p, StringRef str) {
