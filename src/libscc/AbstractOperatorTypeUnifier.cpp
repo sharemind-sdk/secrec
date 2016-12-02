@@ -148,14 +148,13 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
     return true;
 }
 
-bool AbstractOperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* ttemplate,
-                                                          TreeNodeType* t,
-                                                          const TypeNonVoid* type)
+bool AbstractOperatorTypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF*,
+                                                          TreeNodeType*,
+                                                          const TypeNonVoid*)
 {
-    (void) ttemplate;
-    (void) t;
-    (void) type;
+    // This should be unreachable code.
     assert (false);
+    return false;
 }
 
 /*******************************************************************************
