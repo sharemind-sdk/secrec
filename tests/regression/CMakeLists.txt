@@ -107,6 +107,8 @@ add_test_secrec_execute("scalars/75-cast-definitions-3")
 add_test_secrec_execute("scalars/76-cast-definitions-4")
 add_test_secrec_execute("scalars/77-cast-definitions-5")
 add_test_secrec_execute("scalars/78-void-cast-bug")
+add_test_secrec_execute("scalars/79-arithmetic-assignment-overloading")
+add_test_secrec_execute("scalars/80-void-badness")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
@@ -125,6 +127,23 @@ SET_TESTS_PROPERTIES("scalars/75-cast-definitions-3" PROPERTIES PASS_REGULAR_EXP
 SET_TESTS_PROPERTIES("scalars/76-cast-definitions-4" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,24\\)\\(10,34\\)")
 SET_TESTS_PROPERTIES("scalars/77-cast-definitions-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,4\\)\\(7,10\\)")
 SET_TESTS_PROPERTIES("scalars/78-void-cast-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,5\\)\\(3,15\\)")
+
+SET_TESTS_PROPERTIES("scalars/80-void-badness"  PROPERTIES
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(12,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(13,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(14,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(15,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(16,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(20,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(21,.*\\)"
+    PASS_REGULAR_EXPRESSION "[FATAL].*\\(22,.*\\)"
+)
 
 # Tests for arrays:
 add_test_secrec_execute("arrays/00-trivia")
