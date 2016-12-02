@@ -28,6 +28,7 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <sstream>
 
@@ -322,24 +323,23 @@ void Program::propagate (Procedure& proc, bool visitCalls) {
     todo.insert (proc.begin ());
 
     while (!todo.empty ()) {
-        Procedure::iterator cur = *todo.begin ();
+        const Procedure::iterator cur = *todo.begin ();
         todo.erase (cur);
 
         if (visited.find (cur) != visited.end ()) continue;
         cur->setReachable ();
-        Imop& lastImop = cur->back ();
+        const Imop& lastImop = cur->back ();
 
         // link call with its destination
         if (lastImop.type () == Imop::CALL) {
-            Procedure* callTarget = lastImop.callDest ()->block ()->proc ();
-            Procedure::iterator next = procIterator (*lastImop.callDest ()->block ());
+            Procedure* const callTarget = lastImop.callDest ()->block ()->proc ();
+            const Procedure::iterator next = procIterator (*lastImop.callDest ()->block ());
             if (visitCalls)
                 todo.insert (next);
             Block::addEdge (*cur, Edge::Call, *next);
             callTarget->addCallFrom (*cur);
 
-            Procedure::iterator cleanBlock = cur;
-            ++ cleanBlock;
+            const Procedure::iterator cleanBlock = std::next(cur);
             todo.insert (cleanBlock);
             Block::addEdge (*cur, Edge::CallPass, *cleanBlock);
 
@@ -356,8 +356,7 @@ void Program::propagate (Procedure& proc, bool visitCalls) {
 
         // if block falls through we set its successor to be next block
         if (fallsThru (*cur)) {
-            Procedure::iterator next = cur;
-            ++ next;
+            const Procedure::iterator next = std::next(cur);
             todo.insert (next);
             Edge::Label label = Edge::None;
             switch (lastImop.type ()) {
@@ -373,8 +372,8 @@ void Program::propagate (Procedure& proc, bool visitCalls) {
         // if last instruction is jump, link current block with its destination
         if (lastImop.isJump ()) {
             assert (dynamic_cast<const SymbolLabel*>(lastImop.dest ()) != nullptr);
-            const SymbolLabel* jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
-            Procedure::iterator next = procIterator (*jumpDest->block ());
+            const SymbolLabel* const jumpDest = static_cast<const SymbolLabel*>(lastImop.dest ());
+            const Procedure::iterator next = procIterator (*jumpDest->block ());
             todo.insert (next);
             Edge::Label label = Edge::None;
             switch (lastImop.type ()) {
@@ -408,7 +407,7 @@ void Program::numberBlocks () {
     size_t number = 0;
 
     for (Procedure& proc : *this) {
-        Block* entry = proc.entry ();
+        Block* const entry = proc.entry ();
         if (visited.insert (entry).second) {
             entry->setDfn (++ number);
             stack.push_back (entry->succ_range ());
