@@ -68,13 +68,13 @@ bool removeEmptyBlocksProc (SymbolTable& symbols, Procedure& proc) {
                 newL->setBlock (destImop->block ());
                 imop.setDest (newL);
 
-                Edge::Label edge;
                 #ifndef NDEBUG
                 bool found = false;
                 #endif
                 for (auto succ : block.successors ()) {
                     if (succ.first == l->block ()) {
-                        edge = succ.second;
+                        block.removeSucc (*l->block ());
+                        Block::addEdge (block, succ.second, *destImop->block ());
                         #ifndef NDEBUG
                         found = true;
                         #endif
@@ -83,9 +83,6 @@ bool removeEmptyBlocksProc (SymbolTable& symbols, Procedure& proc) {
                 }
 
                 assert (found);
-
-                block.removeSucc (*l->block ());
-                Block::addEdge (block, edge, *destImop->block ());
             }
         }
     }
