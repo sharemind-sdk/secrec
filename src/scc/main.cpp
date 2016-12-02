@@ -337,57 +337,69 @@ int main (int argc, char *argv[]) {
         std::cerr << "Invalid default locale from environment!" << std::endl;
         return EXIT_FAILURE;
     }
-    ProgramOptions opts;
 
-    if (!readProgramOptions(argc, argv, opts))
-        return EXIT_FAILURE;
+    try {
+        ProgramOptions opts;
 
-    if (opts.showHelp)
-        return EXIT_SUCCESS;
+        if (!readProgramOptions(argc, argv, opts))
+            return EXIT_FAILURE;
 
-    Output output (opts);
-    SecreC::ICode icode;
+        if (opts.showHelp)
+            return EXIT_SUCCESS;
 
-    /* Parse the program: */
-    SecreC::TreeNodeModule * parseTree = icode.parseMain (opts.input);
-    if (icode.status () != SecreC::ICode::OK) {
-        std::cerr << icode.compileLog ();
-        return EXIT_FAILURE;
-    }
+        Output output (opts);
+        SecreC::ICode icode;
 
-    /* Collect possible include files: */
-    for (const string& name : opts.includes) {
-        if (! icode.modules ().addSearchPath (name) && opts.verbose) {
-            cerr << "Invalid search path \"" << name << "\"." << endl;
-        }
-    }
-
-    /* TODO: We should split type checking and compilation entirely. */
-    /* Translate to intermediate code: */
-    icode.compile (parseTree);
-    if (icode.status () != SecreC::ICode::OK) {
-        cerr << "Error generating valid intermediate code." << endl;
-        cerr << icode.compileLog () << endl;
-        return EXIT_FAILURE;
-    }
-
-    if (opts.syntaxOnly)
-        return EXIT_SUCCESS;
-
-    /* Compile: */
-    VMLinkingUnit vmlu;
-    Compiler compiler (icode, opts.optimize);
-    compiler.run (vmlu);
-
-    /* Output: */
-    if (opts.assembleOnly) {
-        output.getStream() << vmlu << endl;
-    }
-    else {
-        if (! compileExecutable (output, vmlu)) {
+        /* Parse the program: */
+        SecreC::TreeNodeModule * parseTree = icode.parseMain (opts.input);
+        if (icode.status () != SecreC::ICode::OK) {
+            std::cerr << icode.compileLog ();
             return EXIT_FAILURE;
         }
-    }
 
-    return EXIT_SUCCESS;
+        /* Collect possible include files: */
+        for (const string& name : opts.includes) {
+            if (! icode.modules ().addSearchPath (name) && opts.verbose) {
+                cerr << "Invalid search path \"" << name << "\"." << endl;
+            }
+        }
+
+        /* TODO: We should split type checking and compilation entirely. */
+        /* Translate to intermediate code: */
+        icode.compile (parseTree);
+        if (icode.status () != SecreC::ICode::OK) {
+            cerr << "Error generating valid intermediate code." << endl;
+            cerr << icode.compileLog () << endl;
+            return EXIT_FAILURE;
+        }
+
+        if (opts.syntaxOnly)
+            return EXIT_SUCCESS;
+
+        /* Compile: */
+        VMLinkingUnit vmlu;
+        Compiler compiler (icode, opts.optimize);
+        compiler.run (vmlu);
+
+        /* Output: */
+        if (opts.assembleOnly) {
+            output.getStream() << vmlu << endl;
+        }
+        else {
+            if (! compileExecutable (output, vmlu)) {
+                return EXIT_FAILURE;
+            }
+        }
+
+        return EXIT_SUCCESS;
+    }
+    catch (const std::exception& e) {
+        cerr << "Failed with exception:" << endl;
+        cerr << e.what () << endl;
+        return EXIT_FAILURE;
+    }
+    catch (...) {
+        cerr << "Failed with unknown exception." << endl;
+        return EXIT_FAILURE;
+    }
 }

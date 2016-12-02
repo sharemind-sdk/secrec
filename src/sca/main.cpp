@@ -268,57 +268,68 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    po::options_description desc ("Available options");
-    desc.add_options ()
-            ("help,h",    "Display this help message")
-            ("verbose,v", "Enable verbose output")
-            ("output,o",   po::value<string>(), "Output file")
-            ("input",      po::value<string>(), "Input file")
-            ("include,I",  po::value<vector<string > >(),
-             "Directory for module search path.")
-            ("no-stdlib", "Do not look for standard library imports.")
-            ("optimize,O", "Optimize the generated code.")
-            ("eval,e", "Evaluate the program")
-            ("print-ast", "Print the abstract syntax tree")
-            ("print-st",  "Print the symbol table")
-            ("print-cfg", "Print the control flow graph")
-            ("print-dom", "Print the dominators tree")
-            ("print-ir",  "Print the intermediate represetnation")
-            ("analysis,a", po::value<vector<string > >(),
-             "Run specified analysis. Options are:\n"
-             "\t\"rd\"  -- reaching definitions\n"
-             "\t\"rj\"  -- reaching jumps\n"
-             "\t\"rdc\" -- reaching declassify\n"
-             "\t\"rabled\" -- reachable definitions\n"
-             "\t\"ru\"  -- reachable uses\n"
-             "\t\"lm\"  -- live memory\n"
-             "\t\"lv\"  -- live variables\n"
-             "\t\"cf\"  -- constant folding\n"
-             "\t\"cp\"  -- copy propagation\n"
-             "\t\"rr\"  -- reachable returns\n"
-             );
-    po::positional_options_description p;
-    p.add("input", -1);
-    po::variables_map vm;
-
     try {
+        po::options_description desc ("Available options");
+        desc.add_options ()
+                ("help,h",    "Display this help message")
+                ("verbose,v", "Enable verbose output")
+                ("output,o",   po::value<string>(), "Output file")
+                ("input",      po::value<string>(), "Input file")
+                ("include,I",  po::value<vector<string > >(),
+                 "Directory for module search path.")
+                ("no-stdlib", "Do not look for standard library imports.")
+                ("optimize,O", "Optimize the generated code.")
+                ("eval,e", "Evaluate the program")
+                ("print-ast", "Print the abstract syntax tree")
+                ("print-st",  "Print the symbol table")
+                ("print-cfg", "Print the control flow graph")
+                ("print-dom", "Print the dominators tree")
+                ("print-ir",  "Print the intermediate represetnation")
+                ("analysis,a", po::value<vector<string > >(),
+                 "Run specified analysis. Options are:\n"
+                 "\t\"rd\"  -- reaching definitions\n"
+                 "\t\"rj\"  -- reaching jumps\n"
+                 "\t\"rdc\" -- reaching declassify\n"
+                 "\t\"rabled\" -- reachable definitions\n"
+                 "\t\"ru\"  -- reachable uses\n"
+                 "\t\"lm\"  -- live memory\n"
+                 "\t\"lv\"  -- live variables\n"
+                 "\t\"cf\"  -- constant folding\n"
+                 "\t\"cp\"  -- copy propagation\n"
+                 "\t\"rr\"  -- reachable returns\n"
+                 );
+        po::positional_options_description p;
         p.add("input", -1);
-        po::store(po::command_line_parser(argc, argv).
-                  options (desc).positional (p).run (), vm);
-        po::notify(vm);
+        po::variables_map vm;
+
+        try {
+            p.add("input", -1);
+            po::store(po::command_line_parser(argc, argv).
+                      options (desc).positional (p).run (), vm);
+            po::notify(vm);
+        }
+        catch (const std::exception& e) {
+            std::cerr << e.what () << std::endl;
+            std::cerr << desc << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        Configuration cfg;
+        cfg.read (vm);
+        if (cfg.m_help) {
+            cout << desc << "\n";
+            return EXIT_SUCCESS;
+        }
+
+        return run (cfg);
     }
     catch (const std::exception& e) {
+        std::cerr << "Failed with exception:" << std::endl;
         std::cerr << e.what () << std::endl;
-        std::cerr << desc << std::endl;
         return EXIT_FAILURE;
     }
-
-    Configuration cfg;
-    cfg.read (vm);
-    if (cfg.m_help) {
-        cout << desc << "\n";
-        return EXIT_SUCCESS;
+    catch (...) {
+        std::cerr << "Failed with unknown exception." << std::endl;
+        return EXIT_FAILURE;
     }
-
-    return run (cfg);
 }
