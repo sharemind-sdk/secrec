@@ -32,9 +32,8 @@ class OperatorTemplateVarChecker: public TemplateVarChecker {
 
 public: /* Methods: */
 
-    explicit OperatorTemplateVarChecker (SymbolTable* st, CompileLog& log, SecrecOperator op)
+    explicit OperatorTemplateVarChecker (SymbolTable* st, CompileLog& log)
         : TemplateVarChecker (st, log)
-        , m_op (op)
         , m_seenDomainVar (false)
     { }
 
@@ -56,7 +55,6 @@ private: /* Methods: */
 
 private: /* Fields: */
 
-    SecrecOperator m_op;
     bool m_seenDomainVar;
 };
 

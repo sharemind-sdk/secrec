@@ -50,9 +50,8 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     std::unique_ptr<TemplateVarChecker> varChecker;
 
     if (body->isOperator ()) {
-        SecrecOperator op = static_cast<TreeNodeOpDef*> (body)->getOperator ();
         varChecker.reset (
-            new OperatorTemplateVarChecker {m_st, m_log, op});
+            new OperatorTemplateVarChecker {m_st, m_log});
     }
     else if (body->isCast ()) {
         varChecker.reset (
