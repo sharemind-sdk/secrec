@@ -91,20 +91,20 @@ void ReachableDefinitions::outTo(const Block& from, Edge::Label label, const Blo
                 m_outs[&to].insert(def);
         }
     } else {
-        Definitions& defs = m_ins[&from];
+        const Definitions& defs = m_ins[&from];
         m_outs[&to].insert(defs.begin(), defs.end());
     }
 }
 
 bool ReachableDefinitions::finishBlock(const Block& block) {
-    Definitions old = m_ins[&block];
+    const Definitions old = m_ins[&block];
     Definitions& in = m_ins[&block];
-    Definitions& out = m_outs[&block];
+    const Definitions& out = m_outs[&block];
     in.insert(out.begin(), out.end());
     return in != old;
 }
 
-void ReachableDefinitions::finish() {}
+void ReachableDefinitions::finish() { }
 
 std::string ReachableDefinitions::toString(const Program& pr) const {
     std::stringstream ss;
