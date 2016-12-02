@@ -158,13 +158,13 @@ protected:
 private:
 
     void outToLocal(const Block& from, const Block& to) {
-        SymbolReachable& in = findBlock(from).in;
+        const SymbolReachable& in = findBlock(from).in;
         SymbolReachable& out = findBlock(to).out;
         add(out, in);
     }
 
     void outToGlobal(const Block& from, const Block& to) {
-        SymbolReachable& in = findBlock(from).in;
+        const SymbolReachable& in = findBlock(from).in;
         SymbolReachable& out = findBlock(to).out;
 
         for (const auto& it : in) {
@@ -184,7 +184,7 @@ private:
         return it->second;
     }
 
-    void add(SymbolReachable& out, SymbolReachable& in) {
+    void add(SymbolReachable& out, const SymbolReachable& in) {
         for (const auto& it : in) {
             out[it.first].insert(it.second.begin(), it.second.end());
         }
