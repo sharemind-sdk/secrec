@@ -50,8 +50,8 @@ struct UsesVisitor {
     }
 };
 
-struct ReachableUses : public AbstractReachable<UsesVisitor> {
-
+class ReachableUses : public AbstractReachable<UsesVisitor> {
+public: /* Methods: */
     std::string toString(const Program& pr) const override;
 
 };
