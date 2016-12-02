@@ -975,6 +975,10 @@ TypeChecker::Status TypeChecker::visitExprBool(TreeNodeExprBool * e) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visitExprArrayConstructor(TreeNodeExprArrayConstructor * e) {
+    assert (e != nullptr);
+    assert (! e->expressions().empty() &&
+            "Parser verifies that array constructors are not empty.");
+
     if (e->haveResultType ()) {
         return OK;
     }
