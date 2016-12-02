@@ -74,6 +74,10 @@ enum SecrecDataType {
     NUM_DATATYPES
 };
 
+#ifdef O
+    #error "Macro O must not be defined before including this header."
+#endif
+
 #define TYPE_ARG_LIST \
     O(TYPE_ARG_DATA_TYPE_CONST,   TypeArgDataTypeConst) \
     O(TYPE_ARG_DIM_TYPE_CONST,    TypeArgDimTypeConst) \
