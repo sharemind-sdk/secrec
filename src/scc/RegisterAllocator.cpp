@@ -264,6 +264,7 @@ private: /* Fields: */
 RegisterAllocator::RegisterAllocator ()
     : m_st (0)
     , m_inferenceGraph (0)
+    , m_isGlobal(false)
 { }
 
 RegisterAllocator::~RegisterAllocator () {
