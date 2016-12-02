@@ -95,8 +95,6 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    virtual std::string toString(const Program& pr) const = 0;
-
     SymbolReachable reachableOnExit(const Block& block) const {
         const auto it = m_blocks.find(&block);
         if (it != m_blocks.end())
