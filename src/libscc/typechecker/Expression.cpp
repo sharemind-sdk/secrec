@@ -287,8 +287,7 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
 
     // Search for overloaded operator
     if (e->type() != NODE_EXPR_BINARY_ASSIGN) {
-        SecrecOperator op = e->getOperator();
-        assert(op != SCOP_NONE);
+        assert(e->getOperator() != SCOP_NONE);
 
         bool isIndexed = lval->type () == NODE_LVALUE_INDEX;
         // If the lval is indexed, codegen will create a loop
