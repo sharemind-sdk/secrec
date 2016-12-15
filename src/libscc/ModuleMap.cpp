@@ -93,7 +93,7 @@ void ModuleMap::addSearchPath (const std::string& pathName, bool verbose) {
                     std::unique_ptr<ModuleInfo>(new ModuleInfo (f, m_cxt))))
             {
                 if (verbose) {
-                    std::cerr << "    Overrides a previously included module."
+                    std::cerr << "    Ignoring. File with same name already found."
                               << std::endl;
                 }
 
