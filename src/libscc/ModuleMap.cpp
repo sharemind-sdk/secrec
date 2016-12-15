@@ -21,6 +21,7 @@
 
 #include "ModuleInfo.h"
 
+#include <iostream>
 #include <boost/range/adaptors.hpp>
 #include <boost/range/iterator_range.hpp>
 
@@ -32,58 +33,90 @@ namespace SecreC {
   ModuleMap
 *******************************************************************************/
 
-ModuleMap::~ModuleMap () {
-    for (ModuleInfo* modInfo : adaptors::values (m_modules)) {
-        delete modInfo;
-    }
-}
+ModuleMap::ModuleMap (Context& cxt)
+    : m_cxt (cxt)
+{ }
+
+ModuleMap::~ModuleMap() { }
 
 bool ModuleMap::addModule (const std::string& name, std::unique_ptr<ModuleInfo> info) {
     assert (info.get () != nullptr);
     auto it = m_modules.find (name);
     if (it != m_modules.end ())
         return false;
-    m_modules.insert (it, std::make_pair (name, info.get ()));
-    info.release ();
+    m_modules.insert (it, std::make_pair (name, std::move(info)));
     return true;
 }
 
-bool ModuleMap::addSearchPath (const std::string& pathName) {
+void ModuleMap::addSearchPath (const std::string& pathName, bool verbose) {
     using namespace boost::filesystem;
 
     const path p (pathName);
 
     try  {
-        if (! exists (p))
-            return false;
+        if (! exists(p)) {
+            if (verbose) {
+                std::cerr << "Search path " << p << " does not exist."
+                          << std::endl;
+            }
 
-        if (! is_directory (p))
-            return false;
+            return;
+        }
 
-        for (auto f : make_iterator_range (directory_iterator (p), directory_iterator ())) {
-            if (! is_regular_file (f))
-                continue;
+        if (! is_directory (p)) {
+            if (verbose) {
+                std::cerr << "Invalid search path " << p << "."
+                          << " Not a directory."
+                          << std::endl;
+            }
 
+            return;
+        }
+
+        if (verbose) {
+            std::cerr << "Searching module files from " << p << "." << std::endl;
+        }
+
+        for (auto f : make_iterator_range (directory_iterator (p),
+                                           directory_iterator ())) {
             if (f.path ().extension () != ".sc")
                 continue;
 
-            std::unique_ptr<ModuleInfo> newModule (new ModuleInfo (f, m_cxt));
-            if (! addModule (f.path ().stem ().string (), std::move (newModule)))
-                return false;
+            if (! is_regular_file (f))
+                continue;
+
+            if (verbose) {
+                std::cerr << "Using module " << f.path() << std::endl;
+            }
+
+            if (! addModule (f.path ().stem ().string (),
+                    std::unique_ptr<ModuleInfo>(new ModuleInfo (f, m_cxt))))
+            {
+                if (verbose) {
+                    std::cerr << "    Overrides a previously included module."
+                              << std::endl;
+                }
+
+                continue;
+            }
         }
     }
-    catch (...) {
-        return false;
+    catch (const std::exception& e) {
+        std::cerr << "Exception " << e.what()
+                  << " thrown when adding search path for " << pathName
+                  << std::endl;
     }
-
-    return true;
+    catch (...) {
+        std::cerr << "Unknown exception thrown when adding search path for "
+                  << pathName << std::endl;
+    }
 }
 
 ModuleInfo* ModuleMap::findModule (const std::string& name) const {
     auto i = m_modules.find (name);
     if (i == m_modules.end ())
         return nullptr;
-    return i->second;
+    return i->second.get();
 }
 
 } // namespace SecreC

@@ -37,13 +37,13 @@ class ModuleMap {
     ModuleMap (ModuleMap&) = delete;
     ModuleMap& operator = (const ModuleMap&) = delete;
 private: /* Types: */
-    using MapType = std::map<std::string, ModuleInfo*>;
+    using MapType = std::map<std::string, std::unique_ptr<ModuleInfo>>;
 public: /* Methods: */
 
-    explicit ModuleMap (Context& cxt) : m_cxt (cxt) { }
-    ~ModuleMap ();
+    explicit ModuleMap (Context& cxt);
+    ~ModuleMap();
 
-    bool addSearchPath (const std::string& pathName);
+    void addSearchPath (const std::string& pathName, bool verbose = false);
     bool addModule (const std::string& name, std::unique_ptr<ModuleInfo> info);
     ModuleInfo* findModule (const std::string& name) const;
 

@@ -188,9 +188,7 @@ int run (const Configuration& cfg) {
     }
 
     for (const std::string& path : cfg.m_includes) {
-        if (! icode.modules ().addSearchPath (path) && cfg.m_verbose) {
-            cerr << "Invalid search path \"" << path << "\"." << endl;
-        }
+        icode.modules ().addSearchPath (path, cfg.m_verbose);
     }
 
     icode.compile (parseTree);

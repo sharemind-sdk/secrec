@@ -178,16 +178,18 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
         if (vm.count("input"))
             opts.input = vm["input"].as<string>();
 
-        if (vm.count("include"))
-            opts.includes = vm["include"].as<vector<string> >();
-
-
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
 #else
         if (!vm.count("no-stdlib"))
             opts.includes.push_back (SHAREMIND_STDLIB_PATH);
 #endif
+
+        if (vm.count("include")) {
+            auto const& temp = vm["include"].as<vector<string> >();
+            opts.includes.insert(opts.includes.end(), temp.begin(), temp.end());
+        }
+
         return true;
     }
     catch (const std::exception & e) {
@@ -353,9 +355,7 @@ int main (int argc, char *argv[]) {
 
         /* Collect possible include files: */
         for (const string& name : opts.includes) {
-            if (! icode.modules ().addSearchPath (name) && opts.verbose) {
-                cerr << "Invalid search path \"" << name << "\"." << endl;
-            }
+            icode.modules ().addSearchPath (name, opts.verbose);
         }
 
         /* TODO: We should split type checking and compilation entirely. */
