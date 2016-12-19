@@ -1075,8 +1075,13 @@ TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
         const DataType* dType = DataTypeBuiltinPrimitive::get (DATATYPE_NUMERIC); /* default */
         if (e->haveContextDataType()) {
             dType = dtypeDeclassify(e->contextSecType(), e->contextDataType());
-            if ((dType == nullptr) || ! (isFloatingDataType (dType) ||
-                                         dType->equals (DATATYPE_NUMERIC)))
+            if (dType == nullptr) {
+                m_log.fatalInProc(e) << "ICE: Unknown type at " << e->location() << ".";
+                return E_TYPE;
+            }
+
+            if (! (isFloatingDataType (dType) ||
+                   dType->equals (DATATYPE_NUMERIC)))
             {
                 m_log.fatalInProc(e) << "Expecting floating point, got "
                     << *dType << " at " << e->location() << '.';
