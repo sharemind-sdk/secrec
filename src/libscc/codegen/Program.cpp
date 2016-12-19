@@ -57,7 +57,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         return CGResult::ERROR_CONTINUE;
     }
 
-    SymbolKind * skind = new SymbolKind (id->value ());
+    auto skind = std::unique_ptr<SymbolKind>(new SymbolKind (id->value ()));
 
     for (const TreeNodeDataTypeDecl& tyDecl : kind->types ()) {
         if (skind->findType (tyDecl.typeName ()) != nullptr) {
@@ -134,7 +134,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         }
     }
 
-    st->appendSymbol(skind);
+    st->appendSymbol(skind.release());
     return CGStmtResult();
 }
 
