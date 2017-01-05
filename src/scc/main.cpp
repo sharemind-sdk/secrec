@@ -242,12 +242,8 @@ private: /* Fields: */
     bool m_fileOpened;
 };
 
-/*
- * Compile the actual bytecode executable.
- */
-bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
+bool assemble(ScopedAsmLinkingUnits& lus, const VMLinkingUnit& vmlu) {
     fs::path p = fs::temp_directory_path () / fs::unique_path ();
-
     ScopedRemovePath scopedRemove (p);
 
     {
@@ -267,7 +263,6 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
         }
     }
 
-    ScopedAsmLinkingUnits lus;
 
     {
         io::stream<io::mapped_file_source > fin (p.string ());
@@ -295,8 +290,8 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
             cerr << "ICE: Assembling error: ";
             if (errorToken) {
                 cerr << '(' << errorToken->start_line << ", "
-                            << errorToken->start_column << ", "
-                            << SharemindAssemblerTokenType_toString(errorToken->type) + 11
+                     << errorToken->start_column << ", "
+                     << SharemindAssemblerTokenType_toString(errorToken->type) + 11
                      << ')';
             }
 
@@ -306,6 +301,18 @@ bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
             free (errorString);
             return false;
         }
+    }
+
+    return true;
+}
+
+/*
+ * Compile the actual bytecode executable.
+ */
+bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
+    ScopedAsmLinkingUnits lus;
+    if (! assemble(lus, vmlu)) {
+        return false;
     }
 
     size_t outputLength = 0;
