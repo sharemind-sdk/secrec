@@ -149,7 +149,7 @@ class VMVReg: public VMValue {
 public: /* Methods: */
 
     explicit VMVReg (bool isGlobal)
-        : m_actualReg (0)
+        : m_actualReg (nullptr)
         , m_isGlobal (isGlobal)
     { }
 

@@ -103,7 +103,7 @@ VMSymbolTable::VMSymbolTable ()
 
 VMSymbolTable::~VMSymbolTable () {
     delete m_impl;
-    m_impl = 0;
+    m_impl = nullptr;
 }
 
 VMVReg* VMSymbolTable::getVReg (bool isGlobal) {
@@ -113,19 +113,19 @@ VMVReg* VMSymbolTable::getVReg (bool isGlobal) {
 }
 
 VMValue* VMSymbolTable::find (const SecreC::Symbol* symbol) const {
-    assert (symbol != 0);
+    assert (symbol != nullptr);
     typedef VMSTImpl::SymbolMap SVM;
     SVM::const_iterator i = m_impl->m_mapping.find (symbol);
     if (i == m_impl->m_mapping.end ()) {
-        return 0;
+        return nullptr;
     }
 
     return i->second;
 }
 
 void VMSymbolTable::store (const SecreC::Symbol* symbol, VMValue* value) {
-    assert (symbol != 0);
-    assert (value != 0);
+    assert (symbol != nullptr);
+    assert (value != nullptr);
     typedef VMSTImpl::SymbolMap  SVM;
     SVM::iterator i = m_impl->m_mapping.find (symbol);
     if (i == m_impl->m_mapping.end ()) {

@@ -343,39 +343,42 @@ int main (int argc, char *argv[]) {
         if (opts.showHelp)
             return EXIT_SUCCESS;
 
-        Output output (opts);
-        SecreC::ICode icode;
-
-        /* Parse the program: */
-        SecreC::TreeNodeModule * parseTree = icode.parseMain (opts.input);
-        if (icode.status () != SecreC::ICode::OK) {
-            std::cerr << icode.compileLog ();
-            return EXIT_FAILURE;
-        }
-
-        /* Collect possible include files: */
-        for (const string& name : opts.includes) {
-            icode.modules ().addSearchPath (name, opts.verbose);
-        }
-
-        /* TODO: We should split type checking and compilation entirely. */
-        /* Translate to intermediate code: */
-        icode.compile (parseTree);
-        if (icode.status () != SecreC::ICode::OK) {
-            cerr << "Error generating valid intermediate code." << endl;
-            cerr << icode.compileLog () << endl;
-            return EXIT_FAILURE;
-        }
-
-        if (opts.syntaxOnly)
-            return EXIT_SUCCESS;
-
-        /* Compile: */
+        Compiler compiler { opts.optimize };
         VMLinkingUnit vmlu;
-        Compiler compiler (icode, opts.optimize);
-        compiler.run (vmlu);
+
+        {
+            SecreC::ICode icode;
+
+            /* Parse the program: */
+            SecreC::TreeNodeModule * parseTree = icode.parseMain (opts.input);
+            if (icode.status () != SecreC::ICode::OK) {
+                std::cerr << icode.compileLog ();
+                return EXIT_FAILURE;
+            }
+
+            /* Collect possible include files: */
+            for (const string& name : opts.includes) {
+                icode.modules ().addSearchPath (name, opts.verbose);
+            }
+
+            /* TODO: We should split type checking and compilation entirely. */
+            /* Translate to intermediate code: */
+            icode.compile (parseTree);
+            if (icode.status () != SecreC::ICode::OK) {
+                cerr << "Error generating valid intermediate code." << endl;
+                cerr << icode.compileLog () << endl;
+                return EXIT_FAILURE;
+            }
+
+            if (opts.syntaxOnly)
+                return EXIT_SUCCESS;
+
+            /* Compile: */
+            compiler.run (vmlu, icode);
+        }
 
         /* Output: */
+        Output output (opts);
         if (opts.assembleOnly) {
             output.getStream() << vmlu << endl;
         }

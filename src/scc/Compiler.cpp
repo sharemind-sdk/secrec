@@ -306,35 +306,43 @@ std::string SyscallName::basic (const TypeNonVoid* ty, const char* name,  bool n
   Compiler
 *******************************************************************************/
 
-Compiler::Compiler (ICode& code, bool optimize)
-    : m_code (code)
-    , m_target (0)
+Compiler::Compiler (bool optimize)
+    : m_target (nullptr)
     , m_param (0)
-    , m_funcs (0)
-    , m_ra (0)
-    , m_scm (0)
-    , m_strLit (0)
+    , m_funcs (nullptr)
+    , m_ra (nullptr)
+    , m_scm (nullptr)
+    , m_strLit (nullptr)
     , m_optimize (optimize)
 { }
 
 Compiler::~Compiler () {
+    cleanup();
+}
+
+void Compiler::cleanup() {
     delete m_funcs;
     delete m_ra;
     delete m_scm;
     delete m_strLit;
+
+    m_funcs = nullptr;
+    m_ra = nullptr;
+    m_scm = nullptr;
+    m_strLit = nullptr;
 }
 
-void Compiler::run (VMLinkingUnit& vmlu) {
+void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
 
     if (m_optimize) {
-        optimizeCode (m_code);
+        optimizeCode (code);
     }
     else {
-        removeUnreachableBlocks (m_code);
-        eliminateDeadVariables (m_code);
+        removeUnreachableBlocks (code);
+        eliminateDeadVariables (code);
     }
 
-    // eliminateRedundantCopies (m_code);
+    // eliminateRedundantCopies (code);
 
     // Create and add the linking unit sections:
     VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
@@ -356,7 +364,7 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     RegisterAllocator::LVPtr lv (new LiveVariables ());
     DataFlowAnalysisRunner ()
             .addAnalysis (*lv.get ())
-            .run (m_code.program ());
+            .run (code.program ());
 
     m_target = codeSec;
     m_ra->init(m_st, std::move(lv));
@@ -364,12 +372,14 @@ void Compiler::run (VMLinkingUnit& vmlu) {
     m_strLit->init (m_st, rodataSec);
 
     // Finally generate code:
-    for (const Procedure& proc : m_code.program ()) {
+    for (const Procedure& proc : code.program ()) {
         cgProcedure (proc);
     }
 
     m_funcs->generateAll (*m_target, m_st);
     m_target->setNumGlobals (m_ra->globalCount ());
+
+    cleanup();
 }
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {

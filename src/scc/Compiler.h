@@ -54,14 +54,16 @@ private:
 
 public: /* Methods: */
 
-    Compiler (SecreC::ICode& code, bool optimize);
+    explicit Compiler (bool optimize);
     ~Compiler ();
 
-    void run (VMLinkingUnit& vmlu);
+    void run (VMLinkingUnit& vmlu, SecreC::ICode& code);
 
     VMSymbolTable& st () { return m_st; }
 
 private:
+
+    void cleanup();
 
     void cgProcedure (const SecreC::Procedure& blocks);
     void cgBlock (VMFunction& func, const SecreC::Block& block);
@@ -126,7 +128,6 @@ private:
 
 private: /* Fields: */
 
-    SecreC::ICode&        m_code;     ///< SecreC intermediate code
     VMCodeSection*        m_target;   ///< Target code
     VMSymbolTable         m_st;       ///< VM symbol table
     unsigned              m_param;    ///< Current param count
