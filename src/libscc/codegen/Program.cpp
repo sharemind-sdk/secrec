@@ -71,7 +71,9 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         // uninitialized
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuninitialized"
+        #ifndef __clang__
         #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+        #endif
         boost::optional<const DataTypeBuiltinPrimitive*> publicType = boost::none;
         boost::optional<uint64_t> size = boost::none;
 
