@@ -24,157 +24,30 @@ ADD_DEFINITIONS(${SharemindCHeaders_DEFINITIONS})
 # libscc
 ################################################################################
 
-BISON_TARGET(SECREC_PARSER "secrec.y"
-    "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
-FLEX_TARGET(SECREC_LEXER "secrec.l"
-    "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
+SET(LIBSCC_FLEX_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/secrec.l")
+SET(LIBSCC_FLEX_GENERATED_HEADER "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
+FLEX_TARGET(SECREC_LEXER "${LIBSCC_FLEX_SOURCE}"
+            "${LIBSCC_FLEX_GENERATED_HEADER}")
+
+SET(LIBSCC_BISON_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/secrec.y")
+SET(LIBSCC_BISON_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
+BISON_TARGET(SECREC_PARSER "${LIBSCC_BISON_SOURCE}"
+             "${LIBSCC_BISON_GENERATED_SOURCE}")
+
 ADD_FLEX_BISON_DEPENDENCY(SECREC_LEXER SECREC_PARSER)
 
-SET(LIBSCC_INCLUDE_DIR
-    "${CMAKE_SOURCE_DIR}/include/libscc/")
+SET(LIBSCC_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/libscc/")
 
-SET(FLEX_BISON_SOURCES
-    "secrec.l"
-    "secrec.y")
+FILE(GLOB_RECURSE LIBSCC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+FILE(GLOB_RECURSE LIBSCC_HEADERS "${LIBSCC_INCLUDE_DIR}/*.h")
+FILE(GLOB_RECURSE LIBSCC_HEADERS_P "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-SET(LIBSCC_SOURCES
-    "analysis/ConstantFolding.cpp"
-    "analysis/CopyPropagation.cpp"
-    "analysis/Dominators.cpp"
-    "analysis/LiveMemory.cpp"
-    "analysis/LiveVariables.cpp"
-    "analysis/ReachableDefinitions.cpp"
-    "analysis/ReachableReturns.cpp"
-    "analysis/ReachableUses.cpp"
-    "analysis/ReachingDeclassify.cpp"
-    "analysis/ReachingDefinitions.cpp"
-    "analysis/ReachingJumps.cpp"
-    "AbstractOperatorTypeUnifier.cpp"
-    "APInt.cpp"
-    "APFloat.cpp"
-    "Blocks.cpp"
-    "CastTemplateChecker.cpp"
-    "CastTypeUnifier.cpp"
-    "CodeGen.cpp"
-    "CodeGenResult.cpp"
-    "codegen/Assign.cpp"
-    "codegen/Expression.cpp"
-    "codegen/LValue.cpp"
-    "codegen/Program.cpp"
-    "codegen/Statement.cpp"
-    "Constant.cpp"
-    "Context.cpp"
-    "ContextImpl.cpp"
-    "ContextImpl.h"
-    "DataflowAnalysis.cpp"
-    "DataType.cpp"
-    "ICodeList.cpp"
-    "Imop.cpp"
-    "Intermediate.cpp"
-    "Location.cpp"
-    "Log.cpp"
-    "Misc.cpp"
-    "ModuleInfo.cpp"
-    "ModuleInfo.h"
-    "ModuleMap.cpp"
-    "OperatorTable.cpp"
-    "OperatorTemplateChecker.cpp"
-    "OperatorTypeUnifier.cpp"
-    "Optimizer.cpp"
-    "optimizer/ConstantFolding.cpp"
-    "optimizer/CopyElimination.cpp"
-    "optimizer/DeadAllocElimination.cpp"
-    "optimizer/DeadStoreElimination.cpp"
-    "optimizer/DeadVariableElimination.cpp"
-    "optimizer/Inline.cpp"
-    "optimizer/RemoveEmptyBlocks.cpp"
-    "optimizer/RemoveEmptyProcedures.cpp"
-    "optimizer/RemoveUnreachableBlocks.cpp"
-    "SecurityType.cpp"
-    "StringRef.cpp"
-    "Symbol.cpp"
-    "SymbolTable.cpp"
-    "TemplateChecker.cpp"
-    "TreeNode.cpp"
-    "TypeArgument.cpp"
-    "TypeChecker.cpp"
-    "typechecker/Expression.cpp"
-    "typechecker/LValue.cpp"
-    "typechecker/procedures.cpp"
-    "typechecker/Statement.cpp"
-    "typechecker/Struct.cpp"
-    "typechecker/Templates.cpp"
-    "typechecker/Templates.h"
-    "typechecker/Type.cpp"
-    "TypeContext.cpp"
-    "TypeUnifier.cpp"
-    "Types.cpp"
-    "VirtualMachine.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c"
-    "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
-
-
-SET(LIBSCC_HEADERS
-    "${LIBSCC_INCLUDE_DIR}/analysis/AbstractReachable.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ConstantFolding.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/CopyPropagation.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/Dominators.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/LiveMemory.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/LiveVariables.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableDefinitions.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableReturns.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachableUses.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDeclassify.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingDefinitions.h"
-    "${LIBSCC_INCLUDE_DIR}/analysis/ReachingJumps.h"
-    "${LIBSCC_INCLUDE_DIR}/APInt.h"
-    "${LIBSCC_INCLUDE_DIR}/APFloat.h"
-    "${LIBSCC_INCLUDE_DIR}/Blocks.h"
-    "${LIBSCC_INCLUDE_DIR}/CFG.h"
-    "${LIBSCC_INCLUDE_DIR}/CodeGen.h"
-    "${LIBSCC_INCLUDE_DIR}/CodeGenResult.h"
-    "${LIBSCC_INCLUDE_DIR}/CodeGenState.h"
-    "${LIBSCC_INCLUDE_DIR}/Constant.h"
-    "${LIBSCC_INCLUDE_DIR}/Context.h"
-    "${LIBSCC_INCLUDE_DIR}/DataflowAnalysis.h"
-    "${LIBSCC_INCLUDE_DIR}/DataType.h"
-    "${LIBSCC_INCLUDE_DIR}/ICodeList.h"
-    "${LIBSCC_INCLUDE_DIR}/Imop.h"
-    "${LIBSCC_INCLUDE_DIR}/Intermediate.h"
-    "${LIBSCC_INCLUDE_DIR}/Location.h"
-    "${LIBSCC_INCLUDE_DIR}/Log.h"
-    "${LIBSCC_INCLUDE_DIR}/Misc.h"
-    "${LIBSCC_INCLUDE_DIR}/ModuleMap.h"
-    "${LIBSCC_INCLUDE_DIR}/OperatorTable.h"
-    "${LIBSCC_INCLUDE_DIR}/Optimizer.h"
-    "${LIBSCC_INCLUDE_DIR}/ParserEnums.h"
-    "${LIBSCC_INCLUDE_DIR}/Parser.h"
-    "${LIBSCC_INCLUDE_DIR}/PrettyPrint.h"
-    "${LIBSCC_INCLUDE_DIR}/SecurityType.h"
-    "${LIBSCC_INCLUDE_DIR}/StringRef.h"
-    "${LIBSCC_INCLUDE_DIR}/StringTable.h"
-    "${LIBSCC_INCLUDE_DIR}/SymbolFwd.h"
-    "${LIBSCC_INCLUDE_DIR}/Symbol.h"
-    "${LIBSCC_INCLUDE_DIR}/SymbolTable.h"
-    "${LIBSCC_INCLUDE_DIR}/Syscall.h"
-    "${LIBSCC_INCLUDE_DIR}/TemplateChecker.h"
-    "${LIBSCC_INCLUDE_DIR}/TreeNodeC.h"
-    "${LIBSCC_INCLUDE_DIR}/TreeNodeFwd.h"
-    "${LIBSCC_INCLUDE_DIR}/TreeNode.h"
-    "${LIBSCC_INCLUDE_DIR}/TypeArgument.h"
-    "${LIBSCC_INCLUDE_DIR}/TypeChecker.h"
-    "${LIBSCC_INCLUDE_DIR}/TypeContext.h"
-    "${LIBSCC_INCLUDE_DIR}/Types.h"
-    "${LIBSCC_INCLUDE_DIR}/TypeUnifier.h"
-    "${LIBSCC_INCLUDE_DIR}/VirtualMachine.h"
-    "${LIBSCC_INCLUDE_DIR}/Visitor.h")
-
-SET_SOURCE_FILES_PROPERTIES("libscc/treenode.cpp" PROPERTIES OBJECT_DEPENDS
+SET_SOURCE_FILES_PROPERTIES("${CMAKE_CURRENT_SOURCE_DIR}/treenode.cpp"
+    PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
 include_directories(
-    "${CMAKE_SOURCE_DIR}/include/libscc/"
-    "${CMAKE_SOURCE_DIR}/src/libscc/"
+    "${LIBSCC_INCLUDE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}"
     ${Boost_INCLUDE_DIRS}
     ${MPFR_INCLUDE_DIRS}
@@ -186,8 +59,13 @@ ENDIF()
 
 ADD_LIBRARY("libscc" ${SHAREMIND_LIBSCC_LINKING_MODE}
     ${LIBSCC_SOURCES}
-    ${FLEX_BISON_SOURCES}
-    ${LIBSCC_HEADERS})
+    ${LIBSCC_HEADERS}
+    ${LIBSCC_HEADERS_P}
+    "${LIBSCC_FLEX_GENERATED_HEADER}"
+    "${LIBSCC_BISON_GENERATED_SOURCE}"
+    "${LIBSCC_FLEX_SOURCE}"
+    "${LIBSCC_BISON_SOURCE}"
+)
 SET_TARGET_PROPERTIES("libscc" PROPERTIES
     OUTPUT_NAME "scc"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/"

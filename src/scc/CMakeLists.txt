@@ -24,29 +24,9 @@
 INCLUDE_DIRECTORIES(${SharemindLibas_INCLUDE_DIRS})
 ADD_DEFINITIONS(${SharemindLibas_DEFINITIONS})
 
-SET(SCC_SOURCES
-    "main.cpp"
-    "VMCode.h"
-    "VMCode.cpp"
-    "Compiler.h"
-    "Compiler.cpp"
-    "Builtin.h"
-    "Builtin.cpp"
-    "SyscallManager.h"
-    "SyscallManager.cpp"
-    "RegisterAllocator.h"
-    "RegisterAllocator.cpp"
-    "StringLiterals.h"
-    "StringLiterals.cpp"
-    "VMFpu.h"
-    "VMFpu.cpp"
-    "VMInstruction.h"
-    "VMInstruction.cpp"
-    "VMSymbolTable.h"
-    "VMSymbolTable.cpp"
-    "VMValue.h"
-    "VMValue.cpp"
-    "VMDataType.h")
+FILE(GLOB_RECURSE SCC_SOURCES
+     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
 include_directories(
     "${CMAKE_SOURCE_DIR}/include/"
