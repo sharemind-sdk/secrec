@@ -17,12 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "../ModuleInfo.h"
+#include "../typechecker/Templates.h"
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "DataType.h"
 #include "Log.h"
 #include "Misc.h"
-#include "ModuleInfo.h"
 #include "ModuleMap.h"
 #include "SecurityType.h"
 #include "StringTable.h"
@@ -31,7 +32,6 @@
 #include "TreeNode.h"
 #include "TypeChecker.h"
 #include "Types.h"
-#include "typechecker/Templates.h"
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/optional.hpp>

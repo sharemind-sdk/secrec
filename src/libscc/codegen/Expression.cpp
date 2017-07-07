@@ -17,13 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
+#include "../ModuleInfo.h"
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "Constant.h"
 #include "DataType.h"
 #include "Log.h"
 #include "Misc.h"
-#include "ModuleInfo.h"
 #include "SecurityType.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"

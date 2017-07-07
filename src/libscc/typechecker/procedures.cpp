@@ -19,10 +19,10 @@
 
 #include "TypeChecker.h"
 
+#include "../ModuleInfo.h"
 #include "CastTypeUnifier.h"
 #include "DataType.h"
 #include "Log.h"
-#include "ModuleInfo.h"
 #include "OperatorTable.h"
 #include "OperatorTypeUnifier.h"
 #include "SecurityType.h"

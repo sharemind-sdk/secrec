@@ -17,11 +17,11 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "typechecker/Templates.h"
+#include "Templates.h"
 
+#include "../ModuleInfo.h"
 #include "CastTemplateChecker.h"
 #include "Log.h"
-#include "ModuleInfo.h"
 #include "OperatorTable.h"
 #include "OperatorTemplateChecker.h"
 #include "Symbol.h"

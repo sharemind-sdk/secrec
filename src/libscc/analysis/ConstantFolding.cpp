@@ -19,9 +19,9 @@
 
 #include "analysis/ConstantFolding.h"
 
+#include "../ContextImpl.h"
 #include "Constant.h"
 #include "Context.h"
-#include "ContextImpl.h"
 #include "DataType.h"
 #include "Imop.h"
 #include "SecurityType.h"
