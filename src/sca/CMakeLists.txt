@@ -29,12 +29,28 @@ include_directories(
 ADD_EXECUTABLE("sca" "main.cpp")
 SET_TARGET_PROPERTIES("sca" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
-    VERSION "0.3.0.0")
+    VERSION "${SECREC_FRAMEWORK_VERSION}")
 TARGET_LINK_LIBRARIES("sca" "libscc"
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
     ${MPFR_LIBRARIES})
 INSTALL(TARGETS "sca"
+    COMPONENT "sca"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
     ARCHIVE DESTINATION "lib"
     PUBLIC_HEADER DESTINATION "include")
+
+# Packaging:
+SET(CPACK_DEBIAN_SCA_PACKAGE_NAME "sca" PARENT_SCOPE)
+SET(CPACK_COMPONENT_SCA_DESCRIPTION "Sharemind SecreC Analyzer" PARENT_SCOPE)
+SET(CPACK_DEBIAN_SCA_PACKAGE_SECTION "devel" PARENT_SCOPE)
+SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
+SET(deps
+    "libboost-iostreams${BV}"
+    "libboost-program-options${BV}"
+    "libc6 (>= 2.19)"
+    "libsharemind-scc (= ${SECREC_FRAMEWORK_VERSION})"
+    "libstdc++6 (>= 4.8.0)"
+)
+STRING(REPLACE ";" ", " deps "${deps}")
+SET(CPACK_DEBIAN_SCA_PACKAGE_DEPENDS "${deps}" PARENT_SCOPE)

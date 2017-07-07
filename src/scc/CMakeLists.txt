@@ -55,7 +55,7 @@ include_directories(
 ADD_EXECUTABLE("scc" ${SCC_SOURCES})
 SET_TARGET_PROPERTIES("scc" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
-    VERSION "0.0.1.0")
+    VERSION "${SECREC_FRAMEWORK_VERSION}")
 TARGET_LINK_LIBRARIES("scc" "libscc"
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
@@ -64,7 +64,26 @@ TARGET_LINK_LIBRARIES("scc" "libscc"
     ${MPFR_LIBRARIES}
     ${SharemindLibas_LIBRARIES})
 INSTALL(TARGETS "scc"
+    COMPONENT "scc"
     RUNTIME DESTINATION "bin"
     LIBRARY DESTINATION "lib"
     ARCHIVE DESTINATION "lib"
     PUBLIC_HEADER DESTINATION "include")
+
+# Packaging:
+SET(CPACK_DEBIAN_SCC_PACKAGE_NAME "scc" PARENT_SCOPE)
+SET(CPACK_COMPONENT_SCC_DESCRIPTION "Sharemind SecreC Compiler" PARENT_SCOPE)
+SET(CPACK_DEBIAN_SCC_PACKAGE_SECTION "devel" PARENT_SCOPE)
+SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
+SET(deps
+    "libboost-filesystem${BV}"
+    "libboost-iostreams${BV}"
+    "libboost-program-options${BV}"
+    "libc6 (>= 2.19)"
+    "libmpfr4"
+    "libsharemind-as (>= 0.1.0)"
+    "libsharemind-scc (= ${SECREC_FRAMEWORK_VERSION})"
+    "libstdc++6 (>= 4.8.0)"
+)
+STRING(REPLACE ";" ", " deps "${deps}")
+SET(CPACK_DEBIAN_SCC_PACKAGE_DEPENDS "${deps}" PARENT_SCOPE)
