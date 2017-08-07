@@ -17,16 +17,17 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "DataType.h"
-#include "Log.h"
-#include "Misc.h"
-#include "SecurityType.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "TreeNode.h"
-#include "TypeChecker.h"
-#include "Types.h"
-#include "Visitor.h"
+#include "../DataType.h"
+#include "../Log.h"
+#include "../Misc.h"
+#include "../SecurityType.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
+#include "../TypeChecker.h"
+#include "../Types.h"
+#include "../Visitor.h"
+
 
 namespace SecreC {
 

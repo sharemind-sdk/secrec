@@ -17,19 +17,19 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Optimizer.h"
-
+#include "../analysis/ConstantFolding.h"
 #include "../ContextImpl.h"
-#include "Constant.h"
-#include "Context.h"
-#include "DataType.h"
-#include "Imop.h"
-#include "SecurityType.h"
-#include "StringTable.h"
-#include "SymbolTable.h"
-#include "Types.h"
-#include "Intermediate.h"
-#include "analysis/ConstantFolding.h"
+#include "../Constant.h"
+#include "../Context.h"
+#include "../DataType.h"
+#include "../Imop.h"
+#include "../Optimizer.h"
+#include "../SecurityType.h"
+#include "../StringTable.h"
+#include "../SymbolTable.h"
+#include "../Types.h"
+#include "../Intermediate.h"
+
 
 namespace SecreC {
 

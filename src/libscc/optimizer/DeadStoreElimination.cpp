@@ -17,13 +17,14 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "DataflowAnalysis.h"
-#include "Intermediate.h"
-#include "Optimizer.h"
-#include "analysis/LiveMemory.h"
+#include "../analysis/LiveMemory.h"
+#include "../Constant.h"
+#include "../DataflowAnalysis.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
 
 #include <memory>
+
 
 namespace SecreC {
 

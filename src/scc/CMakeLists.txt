@@ -29,7 +29,7 @@ FILE(GLOB_RECURSE SCC_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
 include_directories(
-    "${CMAKE_SOURCE_DIR}/include/"
+    "${CMAKE_SOURCE_DIR}/src/"
     ${Boost_INCLUDE_DIRS}
     ${MPFR_INCLUDE_DIRS})
 ADD_EXECUTABLE("scc" ${SCC_SOURCES})

@@ -17,17 +17,17 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "CodeGen.h"
-#include "CodeGenResult.h"
-#include "Constant.h"
-#include "DataType.h"
-#include "Log.h"
-#include "Misc.h"
-#include "StringTable.h"
-#include "SymbolTable.h"
-#include "TreeNode.h"
-#include "TypeChecker.h"
-#include "Types.h"
+#include "../CodeGen.h"
+#include "../CodeGenResult.h"
+#include "../Constant.h"
+#include "../DataType.h"
+#include "../Log.h"
+#include "../Misc.h"
+#include "../StringTable.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
+#include "../TypeChecker.h"
+#include "../Types.h"
 
 /**
  * Code generation for statements.

@@ -17,12 +17,12 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/LiveVariables.h"
+#include "LiveVariables.h"
 
-#include "Blocks.h"
-#include "Misc.h"
-#include "Symbol.h"
-#include "TreeNode.h"
+#include "../Blocks.h"
+#include "../Misc.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>

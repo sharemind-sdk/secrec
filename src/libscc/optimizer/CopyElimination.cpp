@@ -17,20 +17,21 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "DataflowAnalysis.h"
-#include "Intermediate.h"
-#include "Optimizer.h"
-#include "Symbol.h"
-#include "TreeNode.h"
-#include "analysis/AbstractReachable.h"
-#include "analysis/CopyPropagation.h"
-#include "analysis/ReachableDefinitions.h"
-#include "analysis/ReachableReturns.h"
-#include "analysis/ReachableUses.h"
+#include "../analysis/AbstractReachable.h"
+#include "../analysis/CopyPropagation.h"
+#include "../analysis/ReachableDefinitions.h"
+#include "../analysis/ReachableReturns.h"
+#include "../analysis/ReachableUses.h"
+#include "../Constant.h"
+#include "../DataflowAnalysis.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
+
 
 using boost::adaptors::reverse;
 

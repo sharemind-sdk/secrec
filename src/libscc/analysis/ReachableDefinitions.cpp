@@ -17,14 +17,15 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ReachableDefinitions.h"
+#include "ReachableDefinitions.h"
 
-#include "Symbol.h"
-#include "TreeNode.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
 
 using boost::adaptors::reverse;
 

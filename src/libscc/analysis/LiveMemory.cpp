@@ -17,12 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/LiveMemory.h"
+#include "LiveMemory.h"
 
-#include "Symbol.h"
+#include "../Symbol.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
 
 using boost::adaptors::reverse;
 

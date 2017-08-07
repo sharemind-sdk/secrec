@@ -17,16 +17,17 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "Imop.h"
-#include "Intermediate.h"
-#include "Optimizer.h"
-#include "SecurityType.h"
-#include "Symbol.h"
-#include "TreeNode.h"
-#include "Types.h"
+#include "../Constant.h"
+#include "../Imop.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
+#include "../SecurityType.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
+#include "../Types.h"
 
 #include <boost/interprocess/containers/flat_set.hpp>
+
 
 namespace {
 

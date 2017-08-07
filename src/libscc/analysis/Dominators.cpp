@@ -17,13 +17,15 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/Dominators.h"
+#include "Dominators.h"
 
-#include "Blocks.h"
-#include "Symbol.h"
-#include "TreeNode.h"
+#include "../Blocks.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <boost/range/adaptor/reversed.hpp>
+
+
 using boost::adaptors::reverse;
 
 namespace SecreC {

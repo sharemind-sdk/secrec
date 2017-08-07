@@ -17,17 +17,17 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ConstantFolding.h"
+#include "ConstantFolding.h"
 
 #include "../ContextImpl.h"
-#include "Constant.h"
-#include "Context.h"
-#include "DataType.h"
-#include "Imop.h"
-#include "SecurityType.h"
-#include "SymbolTable.h"
-#include "StringTable.h"
-#include "Types.h"
+#include "../Constant.h"
+#include "../Context.h"
+#include "../DataType.h"
+#include "../Imop.h"
+#include "../SecurityType.h"
+#include "../SymbolTable.h"
+#include "../StringTable.h"
+#include "../Types.h"
 
 #include <iostream>
 #include <list>

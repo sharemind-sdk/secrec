@@ -17,14 +17,14 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ReachingDeclassify.h"
+#include "ReachingDeclassify.h"
 
-#include "DataType.h"
-#include "Misc.h"
-#include "SecurityType.h"
-#include "Symbol.h"
-#include "TreeNode.h"
-#include "Types.h"
+#include "../DataType.h"
+#include "../Misc.h"
+#include "../SecurityType.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
+#include "../Types.h"
 
 #include <sstream>
 

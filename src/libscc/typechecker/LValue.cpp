@@ -17,12 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "TypeChecker.h"
+#include "../TypeChecker.h"
 
-#include "Symbol.h"
-#include "TreeNode.h"
-#include "Types.h"
-#include "Visitor.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
+#include "../Types.h"
+#include "../Visitor.h"
+
 
 namespace SecreC {
 

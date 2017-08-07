@@ -17,29 +17,29 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "TypeChecker.h"
-
+#include "../CastTypeUnifier.h"
+#include "../DataType.h"
+#include "../Log.h"
 #include "../ModuleInfo.h"
-#include "CastTypeUnifier.h"
-#include "DataType.h"
-#include "Log.h"
-#include "OperatorTable.h"
-#include "OperatorTypeUnifier.h"
-#include "SecurityType.h"
-#include "SecurityType.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "Templates.h"
-#include "TreeNode.h"
-#include "TypeUnifier.h"
-#include "Types.h"
+#include "../OperatorTable.h"
+#include "../OperatorTypeUnifier.h"
+#include "../SecurityType.h"
+#include "../SecurityType.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
+#include "../typechecker/Templates.h"
+#include "../TypeChecker.h"
+#include "../TypeUnifier.h"
+#include "../Types.h"
 
+#include <algorithm>
 #include <boost/range.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
 #include <vector>
 
-#include <algorithm>
+
 using boost::adaptors::reverse;
 
 

@@ -17,9 +17,10 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ReachingJumps.h"
+#include "ReachingJumps.h"
 
 #include <sstream>
+
 
 namespace SecreC {
 

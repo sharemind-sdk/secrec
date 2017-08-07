@@ -17,11 +17,12 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Optimizer.h"
-#include "Intermediate.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
 
 #include <memory>
 #include <vector>
+
 
 namespace SecreC {
 

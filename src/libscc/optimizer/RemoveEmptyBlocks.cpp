@@ -17,11 +17,12 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Intermediate.h"
-#include "Symbol.h"
+#include "../Intermediate.h"
+#include "../Symbol.h"
 
 #include <map>
 #include <set>
+
 
 namespace SecreC {
 

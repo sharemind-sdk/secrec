@@ -17,22 +17,23 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "DataType.h"
-#include "Imop.h"
-#include "Log.h"
-#include "Misc.h"
-#include "SecurityType.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "TreeNode.h"
-#include "TypeChecker.h"
-#include "Types.h"
-#include "SecurityType.h"
-#include "Visitor.h"
+#include "../Constant.h"
+#include "../DataType.h"
+#include "../Imop.h"
+#include "../Log.h"
+#include "../Misc.h"
+#include "../SecurityType.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
+#include "../TypeChecker.h"
+#include "../Types.h"
+#include "../SecurityType.h"
+#include "../Visitor.h"
 
 #include <array>
 #include <boost/range.hpp>
+
 
 namespace SecreC {
 

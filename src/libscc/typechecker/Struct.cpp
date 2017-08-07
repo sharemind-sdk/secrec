@@ -17,21 +17,21 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "TypeChecker.h"
+#include "../TypeChecker.h"
 
-#include "DataType.h"
-#include "Log.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "TreeNode.h"
-#include "Types.h"
-
-#include <set>
+#include "../DataType.h"
+#include "../Log.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
+#include "../Types.h"
 
 #include <boost/flyweight.hpp>
 #include <boost/flyweight/key_value.hpp>
 #include <boost/flyweight/no_locking.hpp>
 #include <boost/flyweight/no_tracking.hpp>
+#include <set>
+
 
 namespace SecreC {
 

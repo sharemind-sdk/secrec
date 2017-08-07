@@ -19,18 +19,19 @@
 
 #include "Templates.h"
 
+#include "../CastTemplateChecker.h"
+#include "../Log.h"
 #include "../ModuleInfo.h"
-#include "CastTemplateChecker.h"
-#include "Log.h"
-#include "OperatorTable.h"
-#include "OperatorTemplateChecker.h"
-#include "Symbol.h"
-#include "SymbolTable.h"
-#include "TemplateChecker.h"
-#include "TreeNode.h"
-#include "TypeChecker.h"
+#include "../OperatorTable.h"
+#include "../OperatorTemplateChecker.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TemplateChecker.h"
+#include "../TreeNode.h"
+#include "../TypeChecker.h"
 
 #include <memory>
+
 
 namespace SecreC {
 

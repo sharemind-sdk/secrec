@@ -17,13 +17,14 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ReachingDefinitions.h"
+#include "ReachingDefinitions.h"
 
-#include "Misc.h"
-#include "Symbol.h"
-#include "TreeNode.h"
+#include "../Misc.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <sstream>
+
 
 namespace SecreC {
 

@@ -17,13 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "CodeGen.h"
+#include "../CodeGen.h"
+#include "../CodeGenResult.h"
+#include "../Log.h"
+#include "../Symbol.h"
+#include "../SymbolTable.h"
+#include "../TreeNode.h"
 
-#include "CodeGenResult.h"
-#include "TreeNode.h"
-#include "SymbolTable.h"
-#include "Symbol.h"
-#include "Log.h"
 
 namespace SecreC {
 

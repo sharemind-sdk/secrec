@@ -17,12 +17,13 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/ReachableReturns.h"
+#include "ReachableReturns.h"
 
-#include "TreeNode.h"
+#include "../TreeNode.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <sstream>
+
 
 using boost::adaptors::reverse;
 

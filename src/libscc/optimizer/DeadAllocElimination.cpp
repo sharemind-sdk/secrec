@@ -17,13 +17,14 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "DataflowAnalysis.h"
-#include "Intermediate.h"
-#include "Optimizer.h"
-#include "analysis/ReachableUses.h"
+#include "../analysis/ReachableUses.h"
+#include "../Constant.h"
+#include "../DataflowAnalysis.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
 
 #include <boost/interprocess/containers/flat_set.hpp>
+
 
 namespace SecreC {
 

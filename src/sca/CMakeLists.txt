@@ -23,7 +23,7 @@
 
 find_package(Boost COMPONENTS program_options REQUIRED)
 include_directories(
-    "${CMAKE_SOURCE_DIR}/include/"
+    "${CMAKE_SOURCE_DIR}/src/"
     ${Boost_INCLUDE_DIRS}
     ${MPFR_INCLUDE_DIRS})
 

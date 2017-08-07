@@ -17,10 +17,10 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "analysis/CopyPropagation.h"
+#include "CopyPropagation.h"
 
-#include "Symbol.h"
-#include "TreeNode.h"
+#include "../Symbol.h"
+#include "../TreeNode.h"
 
 #include <sstream>
 

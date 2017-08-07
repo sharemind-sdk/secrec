@@ -27,11 +27,11 @@
 #include <utility>
 #include <vector>
 
-#include "ParserEnums.h"
-#include "StringRef.h"
-#include "TreeNodeFwd.h"
-#include "DataType.h"
-#include "TypeArgument.h"
+#include "../DataType.h"
+#include "../ParserEnums.h"
+#include "../StringRef.h"
+#include "../TreeNodeFwd.h"
+#include "../TypeArgument.h"
 
 /**
  * This file contains functionality for template instantiation

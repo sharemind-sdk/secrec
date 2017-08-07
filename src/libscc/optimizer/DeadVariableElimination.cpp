@@ -17,14 +17,15 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "Constant.h"
-#include "DataflowAnalysis.h"
-#include "Intermediate.h"
-#include "Optimizer.h"
-#include "analysis/LiveVariables.h"
+#include "../analysis/LiveVariables.h"
+#include "../Constant.h"
+#include "../DataflowAnalysis.h"
+#include "../Intermediate.h"
+#include "../Optimizer.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <memory>
+
 
 using boost::adaptors::reverse;
 
