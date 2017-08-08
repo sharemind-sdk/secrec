@@ -854,9 +854,6 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
                 root->setResultType(TypeBasic::get (s0, d0, n0));
                 return OK;
             }
-
-            root->setResultType(TypeBasic::get (s0, d0, n0));
-            return OK;
         }
     }
 
