@@ -45,7 +45,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
 
-find_package(Boost COMPONENTS thread system filesystem iostreams program_options REQUIRED)
+find_package(Boost COMPONENTS system filesystem iostreams program_options REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
