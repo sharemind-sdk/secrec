@@ -54,6 +54,9 @@ using namespace std;
 namespace po = boost::program_options;
 namespace io = boost::iostreams;
 
+
+namespace {
+
 struct Configuration {
     bool m_verbose = false;
     bool m_help = false;
@@ -254,6 +257,8 @@ int run (const Configuration& cfg) {
 
     return EXIT_SUCCESS;
 }
+
+} // anonymous namespace
 
 int main(int argc, char *argv[]) {
     try {
