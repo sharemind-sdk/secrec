@@ -1279,4 +1279,4 @@ void Compiler::cgPrivateStore (VMBlock& block, const Imop& imop) {
     emitSyscall (block, SyscallName::basic (ty, "store"));
 }
 
-} // namespac SecreC
+} // namespace SecreCC

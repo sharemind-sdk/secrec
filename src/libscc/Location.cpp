@@ -67,5 +67,4 @@ YYLTYPE Location::toYYLTYPE() const {
     return r;
 }
 
-
-}
+} // namespace SecreC {

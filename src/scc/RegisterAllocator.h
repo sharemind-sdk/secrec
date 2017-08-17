@@ -29,7 +29,7 @@ namespace SecreC {
     class Imop;
     class LiveVariables;
     class Symbol;
-}
+} /* namespace SecreC { */
 
 namespace SecreCC {
 

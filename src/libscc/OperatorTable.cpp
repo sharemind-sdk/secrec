@@ -57,4 +57,4 @@ std::vector<SymbolOperatorTemplate*> OperatorTable::findOperatorTemplates (Strin
     return res;
 }
 
-}
+} // namespace SecreC {

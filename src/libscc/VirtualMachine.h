@@ -30,6 +30,6 @@ public:
     int run (const Program&);
 };
 
-}
+} /* namespace SecreC { */
 
 #endif // VIRTUAL_MACHINE_H

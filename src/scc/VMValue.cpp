@@ -81,4 +81,4 @@ void VMVReg::printV (std::ostream& os) const {
     }
 }
 
-}
+} // namespace SecreCC

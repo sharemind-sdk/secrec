@@ -25,7 +25,7 @@
 
 namespace SecreC {
     class Symbol;
-}
+} /* namespace SecreC { */
 
 namespace SecreCC {
 

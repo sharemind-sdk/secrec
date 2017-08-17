@@ -48,6 +48,6 @@ private: /* Fields: */
     ContextImpl* m_pImpl;
 };
 
-}
+} /* namespace SecreC { */
 
 #endif // CONTEXT_H

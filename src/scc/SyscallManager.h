@@ -27,7 +27,7 @@
 
 namespace SecreC {
     class PrivateSecType;
-}
+} /* namespace SecreC { */
 
 namespace SecreCC {
 

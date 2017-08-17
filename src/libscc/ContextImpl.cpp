@@ -23,4 +23,4 @@ namespace SecreC {
 
 ContextImpl::~ContextImpl () { }
 
-}
+} // namespace SecreC {

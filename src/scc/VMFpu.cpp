@@ -69,4 +69,4 @@ void fpuSetRoundingMode(VMBlock& block, VMSymbolTable& st,
     }
 }
 
-}
+} // namespace SecreCC

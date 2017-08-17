@@ -30,4 +30,4 @@ Context::~Context () {
     delete m_pImpl;
 }
 
-}
+} // namespace SecreC {

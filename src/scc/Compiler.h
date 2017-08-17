@@ -32,7 +32,7 @@ class Block;
 class Imop;
 class ICode;
 class SyscallOperand;
-}
+} /* namespace SecreC { */
 
 
 namespace SecreCC {

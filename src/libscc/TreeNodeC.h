@@ -70,7 +70,7 @@ TreeNode *treenode_init_dataTypeDeclParamSize (uint64_t size, YYLTYPE * loc);
 TYPE_STRINGREF secrec_fund_datatype_to_string (TYPE_STRINGTABLE table, enum SecrecDataType ty);
 
 #ifdef __cplusplus
-} /* namespace SecreC */
+} /* extern "C" { */
 #endif /* __cplusplus */
 
 #endif /* SECREC_TREENODEC_H */

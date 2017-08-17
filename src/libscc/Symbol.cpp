@@ -493,4 +493,4 @@ SymbolOperatorTemplate::SymbolOperatorTemplate(TreeNodeTemplate *templ,
     m_quantifiedParamCount = countQuantifiedParams (templ);
 }
 
-}
+} // namespace SecreC {

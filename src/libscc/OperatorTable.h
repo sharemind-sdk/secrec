@@ -45,6 +45,6 @@ private: /* Fields: */
     std::vector<Symbol*> m_ops;
 };
 
-}
+} /* namespace SecreC { */
 
 #endif // SECREC_OPERATORTABLE_H

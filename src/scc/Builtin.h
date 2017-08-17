@@ -28,7 +28,7 @@
 
 namespace SecreC {
     class Imop;
-}
+} /* namespace SecreC { */
 
 namespace SecreCC {
 
