@@ -92,4 +92,4 @@ bool eliminateDeadVariables (ICode& code) {
     return changes;
 }
 
-} // namespace SecreCC
+} // namespace SecreC

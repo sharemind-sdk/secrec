@@ -52,6 +52,6 @@ bool removeEmptyProcedures (ICode& code);
 void inlineCalls (ICode& code);
 bool optimizeCode (ICode& code);
 
-} /* namespace SecreCC { */
+} /* namespace SecreC { */
 
 #endif /* SECREC_OPTIMIZER_H */

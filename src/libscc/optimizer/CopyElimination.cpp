@@ -272,4 +272,4 @@ bool eliminateRedundantCopies (ICode& code) {
                                      reachableReturns, copyPropagation, code);
 }
 
-} // namespace SecreCC
+} // namespace SecreC
