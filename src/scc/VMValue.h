@@ -46,7 +46,8 @@ protected:
     virtual void printV (std::ostream& os) const = 0;
 };
     
-std::ostream& operator << (std::ostream& os, const VMValue& value);
+std::ostream& operator << (std::ostream& os, const VMValue& value)
+        __attribute__((visibility("internal")));;
 
 /******************************************************************
   VMImm

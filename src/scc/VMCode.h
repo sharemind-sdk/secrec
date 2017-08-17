@@ -338,12 +338,19 @@ private: /* Fields: */
     SectionList m_sections;
 };
 
-std::ostream& operator << (std::ostream& os, const VMBlock& block);
-std::ostream& operator << (std::ostream& os, const VMFunction& function);
-std::ostream& operator << (std::ostream& os, const VMBinding& binding);
-std::ostream& operator << (std::ostream& os, const VMSection& section);
-std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code);
-std::ostream& operator << (std::ostream& os, const VMDataSection::Record& record);
+std::ostream& operator << (std::ostream& os, const VMBlock& block)
+        __attribute__((visibility("internal")));
+std::ostream& operator << (std::ostream& os, const VMFunction& function)
+        __attribute__((visibility("internal")));
+std::ostream& operator << (std::ostream& os, const VMBinding& binding)
+        __attribute__((visibility("internal")));
+std::ostream& operator << (std::ostream& os, const VMSection& section)
+        __attribute__((visibility("internal")));
+std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code)
+        __attribute__((visibility("internal")));
+std::ostream& operator << (std::ostream& os,
+                           const VMDataSection::Record& record)
+        __attribute__((visibility("internal")));
 
 
 

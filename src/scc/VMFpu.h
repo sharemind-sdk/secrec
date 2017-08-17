@@ -33,12 +33,15 @@ enum class FpuRoundingMode {
     UPWARD
 };
 
-void fpuGetState(VMBlock& block, VMStack* reg);
+void fpuGetState(VMBlock& block, VMStack* reg)
+        __attribute__((visibility("internal")));
 
-void fpuSetState(VMBlock& block, VMStack* reg);
+void fpuSetState(VMBlock& block, VMStack* reg)
+        __attribute__((visibility("internal")));
 
 void fpuSetRoundingMode(VMBlock& block, VMSymbolTable& st,
-                        VMStack* reg, FpuRoundingMode mode);
+                        VMStack* reg, FpuRoundingMode mode)
+        __attribute__((visibility("internal")));
 
 } // namespace SecreCC
 

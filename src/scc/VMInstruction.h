@@ -116,7 +116,8 @@ private: /* Fields: */
 };
 
 
-std::ostream& operator << (std::ostream& o, const VMInstruction& instr);
+std::ostream& operator << (std::ostream& o, const VMInstruction& instr)
+        __attribute__((visibility("internal")));;
 
 }
 
