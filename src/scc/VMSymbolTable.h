@@ -41,7 +41,7 @@ class VMSTImpl;
   VMSymbolTable
 *******************************************************************************/
 
-class VMSymbolTable {
+class __attribute__ ((visibility("internal"))) VMSymbolTable {
 
 private: /* Not copyable/assignable: */
 

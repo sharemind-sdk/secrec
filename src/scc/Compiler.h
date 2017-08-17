@@ -46,7 +46,7 @@ class StringLiterals;
   Compiler
 *******************************************************************************/
 
-class Compiler {
+class __attribute__ ((visibility("internal"))) Compiler {
 private:
 
     Compiler (const Compiler&) = delete;

@@ -59,7 +59,7 @@ Value* insertNew (Map& map, const Key& key, TypeProvider<Value>) {
   VMSTImpl
 *******************************************************************************/
 
-class VMSTImpl {
+class __attribute__ ((visibility("internal"))) VMSTImpl {
 public: /* Types: */
 
     typedef std::map<std::string, VMLabel* > LabelMap;

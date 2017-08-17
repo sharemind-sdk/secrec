@@ -43,7 +43,7 @@ class VMBindingSection;
 /**
  * Class to manage mapping system calls and protection domains to labels.
  */
-class SyscallManager {
+class __attribute__ ((visibility("internal"))) SyscallManager {
 private: /* Types: */
 
     typedef std::map<std::string, VMLabel*> SCMap;

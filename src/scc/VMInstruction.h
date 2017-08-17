@@ -36,7 +36,7 @@ class VMValue;
   VMInstruction
 ******************************************************************/
 
-class VMInstruction {
+class __attribute__ ((visibility("internal"))) VMInstruction {
 private: /* Types: */
 
     struct Operand {

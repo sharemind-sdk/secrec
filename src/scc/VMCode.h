@@ -42,7 +42,7 @@ class VMLabel;
 /**
  * Basic block of VM code instructions.
  */
-class VMBlock {
+class __attribute__ ((visibility("internal"))) VMBlock {
 public: /* Types: */
 
     typedef std::list<VMInstruction > InstList;
@@ -88,7 +88,7 @@ private: /* Fields: */
 /**
  * Representation of SecreC function in the VM
  */
-class VMFunction {
+class __attribute__ ((visibility("internal"))) VMFunction {
 public: /* Types: */
 
     typedef std::list<VMBlock > BlockList;
@@ -134,7 +134,7 @@ private: /* Fields: */
   VMBinding
 *******************************************************************************/
 
-class VMBinding {
+class __attribute__ ((visibility("internal"))) VMBinding {
 public: /* Methods: */
 
     VMBinding (VMLabel* label, std::string name)
@@ -154,7 +154,7 @@ private: /* Fields: */
   VMSection
 *******************************************************************************/
 
-class VMSection {
+class __attribute__ ((visibility("internal"))) VMSection {
 public: /* Methods: */
 
     VMSection (const char* name) : m_name (name) { }
@@ -176,7 +176,9 @@ protected: /* Fields: */
   VMBindingSection
 *******************************************************************************/
 
-class VMBindingSection : public VMSection {
+class __attribute__ ((visibility("internal"))) VMBindingSection
+    : public VMSection
+{
 private: /* Types: */
     typedef std::list<VMBinding > BindingList;
     typedef BindingList::iterator iterator;
@@ -211,7 +213,9 @@ private: /* Fields: */
   VMDataSection
 *******************************************************************************/
 
-class VMDataSection : public VMSection {
+class __attribute__ ((visibility("internal"))) VMDataSection
+    : public VMSection
+{
 private:
     VMDataSection (const VMDataSection&) = delete;
     VMDataSection& operator = (const VMDataSection&) = delete;
@@ -267,7 +271,9 @@ private: /* Fields: */
   VMCodeSection
 *******************************************************************************/
 
-class VMCodeSection : public VMSection {
+class __attribute__ ((visibility("internal"))) VMCodeSection
+    : public VMSection
+{
 public: /* Types: */
 
     typedef std::list<VMFunction > FunctionList;
@@ -309,7 +315,7 @@ private: /* Fields: */
   VMLinkingUnit
 *******************************************************************************/
 
-class VMLinkingUnit {
+class __attribute__ ((visibility("internal"))) VMLinkingUnit {
 private:
 
     VMLinkingUnit (const VMLinkingUnit&) = delete;

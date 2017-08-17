@@ -34,7 +34,7 @@ namespace SecreCC {
  * Representation of Sharemind virtual machine values.
  * Only (de)allocated by the VM symbol table class.
  */
-class VMValue {
+class __attribute__ ((visibility("internal"))) VMValue {
 public: /* Methods: */
 
     virtual ~VMValue () { }
@@ -53,7 +53,7 @@ std::ostream& operator << (std::ostream& os, const VMValue& value)
   VMImm
 ******************************************************************/
 
-class VMImm : public VMValue {
+class __attribute__ ((visibility("internal"))) VMImm : public VMValue {
 public: /* Methods: */
 
     explicit VMImm (uint64_t value)
@@ -75,7 +75,7 @@ private: /* Fields: */
   VMStack
 ******************************************************************/
 
-class VMStack : public VMValue {
+class __attribute__ ((visibility("internal"))) VMStack : public VMValue {
 public: /* Methods: */
 
     explicit VMStack (unsigned num)
@@ -97,7 +97,7 @@ private: /* Fields: */
   VMReg
 ******************************************************************/
 
-class VMReg : public VMValue {
+class __attribute__ ((visibility("internal"))) VMReg : public VMValue {
 public: /* Methods: */
 
     explicit VMReg (unsigned num)
@@ -119,7 +119,7 @@ private: /* Fields: */
   VMLabel
 ******************************************************************/
 
-class VMLabel : public VMValue {
+class __attribute__ ((visibility("internal"))) VMLabel : public VMValue {
 public: /* Methods: */
 
     explicit VMLabel (const std::string& name)
@@ -146,7 +146,7 @@ private: /* Fields: */
  * Representation of unallocated registers. Will be set to concrete registers
  * at the register allocation pass.
  */
-class VMVReg: public VMValue {
+class __attribute__ ((visibility("internal"))) VMVReg: public VMValue {
 public: /* Methods: */
 
     explicit VMVReg (bool isGlobal)

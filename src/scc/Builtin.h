@@ -38,7 +38,7 @@ class StringLiterals;
   BuiltinFunction
 *******************************************************************************/
 
-class BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinFunction {
 public: /* Methods: */
     virtual ~BuiltinFunction () { }
     virtual void generate (VMFunction& function, VMSymbolTable& st) = 0;
@@ -49,7 +49,7 @@ public: /* Methods: */
   BuiltinFunctions
 *******************************************************************************/
 
-class BuiltinFunctions {
+class __attribute__ ((visibility("internal"))) BuiltinFunctions {
 public: /* Types: */
 
     typedef std::map<VMLabel*, BuiltinFunction* > Map;
@@ -78,7 +78,9 @@ private: /* Fields: */
   BuiltinAlloc
 *******************************************************************************/
 
-class BuiltinAlloc : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinAlloc
+    : public BuiltinFunction
+{
 public: /* Methods: */
     BuiltinAlloc (unsigned size) : m_size (size) { }
     
@@ -97,7 +99,9 @@ private: /* Fields: */
 *******************************************************************************/
 
 /// Builtin vectorised arithmetic operations
-class BuiltinVArith : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinVArith
+    : public BuiltinFunction
+{
 public: /* Methods: */
     BuiltinVArith (const SecreC::Imop* imop) : m_imop (imop) { }
 
@@ -115,7 +119,9 @@ private: /* Fields: */
   BuiltinFloatToInt
 *******************************************************************************/
 
-class BuiltinFloatToInt : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinFloatToInt
+    : public BuiltinFunction
+{
 public: /* Methods: */
     BuiltinFloatToInt(VMDataType dest, VMDataType src)
         : m_dest(dest)
@@ -137,7 +143,9 @@ private: /* Fields: */
   BuiltinVCast
 *******************************************************************************/
 
-class BuiltinVCast : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinVCast
+    : public BuiltinFunction
+{
 public: /* Methods: */
     BuiltinVCast (VMDataType dest, VMDataType src)
         : m_dest (dest)
@@ -159,7 +167,9 @@ private: /* Fields: */
   BuiltinVBoolCast
 *******************************************************************************/
 
-class BuiltinVBoolCast : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinVBoolCast
+    : public BuiltinFunction
+{
 public: /* Methods: */
     BuiltinVBoolCast (VMDataType src)
         : m_src (src)
@@ -179,7 +189,9 @@ private: /* Fields: */
   BuiltinStrAppend
 *******************************************************************************/
 
-class BuiltinStrAppend : public BuiltinFunction {
+class __attribute__ ((visibility("internal"))) BuiltinStrAppend
+    : public BuiltinFunction
+{
 public: /* Methods: */
 
     void generate (VMFunction& function, VMSymbolTable& st);
@@ -193,7 +205,9 @@ public: /* Methods: */
   BuiltinStrDup
 *******************************************************************************/
 
-class BuiltinStrDup : public BuiltinFunction  {
+class __attribute__ ((visibility("internal"))) BuiltinStrDup
+    : public BuiltinFunction
+{
 public: /* Methods: */
 
     void generate (VMFunction& function, VMSymbolTable& st);
@@ -207,7 +221,9 @@ public: /* Methods: */
   BuiltinBoolToString
 *******************************************************************************/
 
-class BuiltinBoolToString : public BuiltinFunction  {
+class __attribute__ ((visibility("internal"))) BuiltinBoolToString
+    : public BuiltinFunction
+{
 public: /* Methods: */
     explicit BuiltinBoolToString (StringLiterals* strLit)
         : m_strLit (strLit)
@@ -227,7 +243,9 @@ private: /* Fields: */
   BuiltinStringCmp
 *******************************************************************************/
 
-class BuiltinStringCmp : public BuiltinFunction  {
+class __attribute__ ((visibility("internal"))) BuiltinStringCmp
+    : public BuiltinFunction
+{
 public: /* Methods: */
 
     void generate (VMFunction& function, VMSymbolTable& st);

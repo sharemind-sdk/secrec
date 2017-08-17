@@ -34,7 +34,7 @@ class VMDataSection;
   StringLiterals
 *******************************************************************************/
 
-class StringLiterals {
+class __attribute__ ((visibility("internal"))) StringLiterals {
 private:
     StringLiterals (const StringLiterals&) = delete;
     StringLiterals& operator = (const StringLiterals&) = delete;

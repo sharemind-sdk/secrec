@@ -44,7 +44,7 @@ class VMFunction;
   RegisterAllocator
 *******************************************************************************/
 
-class RegisterAllocator {
+class __attribute__ ((visibility("internal"))) RegisterAllocator {
 public: /* Types: */
 
     typedef std::unique_ptr<SecreC::LiveVariables > LVPtr;
