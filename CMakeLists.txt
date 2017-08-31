@@ -49,7 +49,7 @@ find_package(Boost COMPONENTS system filesystem iostreams program_options REQUIR
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
-FIND_PACKAGE(SharemindLibas REQUIRED)
+FIND_PACKAGE(SharemindLibAs REQUIRED)
 
 add_definitions("-DSHAREMIND_STDLIB_PATH=\"${CMAKE_INSTALL_PREFIX}/lib/sharemind/stdlib\"")
 

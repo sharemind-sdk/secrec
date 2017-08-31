@@ -21,8 +21,8 @@
 # scc
 ################################################################################
 
-INCLUDE_DIRECTORIES(${SharemindLibas_INCLUDE_DIRS})
-ADD_DEFINITIONS(${SharemindLibas_DEFINITIONS})
+INCLUDE_DIRECTORIES(${SharemindLibAs_INCLUDE_DIRS})
+ADD_DEFINITIONS(${SharemindLibAs_DEFINITIONS})
 
 FILE(GLOB_RECURSE SCC_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -42,7 +42,7 @@ TARGET_LINK_LIBRARIES("scc" "libscc"
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_IOSTREAMS_LIBRARY}
     ${MPFR_LIBRARIES}
-    ${SharemindLibas_LIBRARIES})
+    ${SharemindLibAs_LIBRARIES})
 INSTALL(TARGETS "scc"
     COMPONENT "scc"
     RUNTIME DESTINATION "bin"
