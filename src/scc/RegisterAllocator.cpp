@@ -39,10 +39,10 @@ namespace {
 using namespace SecreCC;
 
 void getImm (VMSymbolTable& st, const Symbol* sym) {
-    assert (sym != NULL);
+    assert(sym);
     assert (sym->symbolType () == SYM_CONSTANT);
     VMValue* imm = st.find (sym);
-    if (imm == NULL) {
+    if (!imm) {
         uint64_t value = 0xdeadbeef;
         const DataType* dataType = sym->secrecType ()->secrecDataType ();
         assert (dataType);
@@ -75,7 +75,7 @@ void getImm (VMSymbolTable& st, const Symbol* sym) {
         st.store (sym, imm);
     }
 
-    assert (dynamic_cast<VMImm*>(imm) != NULL);
+    assert(dynamic_cast<VMImm *>(imm));
 }
 
 template <class T, class U>
@@ -262,8 +262,8 @@ private: /* Fields: */
 *******************************************************************************/
 
 RegisterAllocator::RegisterAllocator ()
-    : m_st (0)
-    , m_inferenceGraph (0)
+    : m_st(nullptr)
+    , m_inferenceGraph(nullptr)
     , m_isGlobal(false)
 { }
 
@@ -312,12 +312,12 @@ void RegisterAllocator::enterBlock (VMBlock& block) {
     m_live.clear ();
     for (const Symbol* sym : in) {
         VMValue* reg = m_st->find (sym);
-        if (reg == NULL) {
+        if (!reg) {
             reg = m_st->getVReg (sym->isGlobal ());
             m_st->store (sym, reg);
         }
 
-        assert (dynamic_cast<VMVReg*>(reg) != NULL);
+        assert(dynamic_cast<VMVReg *>(reg));
         m_live.insert (static_cast<VMVReg*>(reg));
     }
 }
@@ -334,7 +334,7 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     for (const Symbol* symbol : imop.useRange ()) {
         switch (symbol->symbolType ()) {
         case SYM_SYMBOL:
-            assert (m_st->find (symbol) != NULL);
+            assert(m_st->find(symbol));
             break;
         case SYM_CONSTANT:
             getImm (*m_st, symbol);
@@ -350,12 +350,12 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
 
 void RegisterAllocator::defSymbol (const Symbol* symbol) {
     VMValue* reg = m_st->find (symbol);
-    if (reg == NULL) {
+    if (!reg) {
         reg = m_st->getVReg (symbol->isGlobal ());
         m_st->store (symbol, reg);
     }
 
-    assert (dynamic_cast<VMVReg*>(reg) != NULL);
+    assert(dynamic_cast<VMVReg *>(reg));
     VMVReg* vreg = static_cast<VMVReg*>(reg);
     m_inferenceGraph->addNode (vreg);
     for (VMVReg* other : m_live) {

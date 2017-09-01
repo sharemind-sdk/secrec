@@ -30,9 +30,9 @@ using namespace SecreC;
 namespace SecreCC {
 
 SyscallManager::SyscallManager ()
-    : m_st (0)
-    , m_pdSection (0)
-    , m_scSection (0)
+    : m_st(nullptr)
+    , m_pdSection(nullptr)
+    , m_scSection(nullptr)
 { }
 
 SyscallManager::~SyscallManager () { }

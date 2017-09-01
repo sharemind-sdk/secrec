@@ -33,7 +33,7 @@ namespace SecreCC {
 namespace {
 
 bool isSigned (SecreC::Symbol* sym) {
-    assert (sym != NULL);
+    assert(sym);
     return isSignedNumericDataType (sym->secrecType ()->secrecDataType ());
 }
 
@@ -93,21 +93,21 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* rOffset = st.getStack (3);
     VMImm*   iSize = st.getImm (m_size);
 
-    VMLabel* lBack = NULL;
+    VMLabel * lBack = nullptr;
     {
         std::stringstream ss;
         ss << ":back_" << st.uniq ();
         lBack = st.getLabel (ss.str ());
     }
 
-    VMLabel* lOut = NULL;
+    VMLabel * lOut = nullptr;
     {
         std::stringstream ss;
         ss << ":out_" << st.uniq ();
         lOut = st.getLabel (ss.str ());
     }
 
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
     entryB.push_new () << "resizestack" << 4;
     entryB.push_new () << "mov imm 0x0" << rOffset;
     entryB.push_new () << "bmul uint64" << rSize << iSize;
@@ -117,14 +117,14 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     entryB.push_new () << "udec uint64" << rSize;
     function.push_back (entryB);
 
-    VMBlock middleB (lBack, 0);
+    VMBlock middleB(lBack, nullptr);
     middleB.push_new () << "jge" << lOut << "uint64" << rOffset << rSize;
     middleB.push_new () << "mov" << rDefault << "mem" << rOut << rOffset << iSize;
     middleB.push_new () << "badd uint64" << rOffset << iSize;
     middleB.push_new () << "jmp" << lBack;
     function.push_back (middleB);
 
-    VMBlock exitB (lOut, 0);
+    VMBlock exitB(lOut, nullptr);
     exitB.push_new () << "return" << rOut;
     function.push_back (exitB);
 }
@@ -146,7 +146,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     VMImm* const argSize = st.getImm (sizeInBytes (argTy));
     VMImm* const destSize = st.getImm (sizeInBytes (destTy));
 
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
 
     entryB.push_new () << "resizestack" << (2*n + 3);
 
@@ -163,20 +163,20 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         rTmp[i] = st.getStack (n + 3 + i);
 
 
-    VMLabel* lBack = NULL;
+    VMLabel * lBack = nullptr;
     { std::stringstream ss;
       ss << ":back_" << st.uniq ();
       lBack = st.getLabel (ss.str ());
     }
 
-    VMLabel* lOut = NULL;
+    VMLabel * lOut = nullptr;
     { std::stringstream ss;
       ss << ":out_" << st.uniq ();
       lOut = st.getLabel (ss.str ());
     }
 
     // jump out if needed
-    VMBlock middleB (lBack, 0);
+    VMBlock middleB(lBack, nullptr);
     middleB.push_new () << "jge" << lOut << "uint64" << rCount << rSize;
 
     // move arguments to temporaries
@@ -191,7 +191,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
     // perform operation on temporaries
     {
-        const char* name = NULL;
+        char const * name = nullptr;
         switch (imop.type ()) {
         case Imop::UMINUS: name = "bneg"; break;
         case Imop::UNEG  : name = "bnot"; break;
@@ -242,7 +242,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     // jump back to conditional
     middleB.push_new () << "jmp" << lBack;
 
-    VMBlock returnB (lOut, 0);
+    VMBlock returnB(lOut, nullptr);
     returnB.push_new () << "return imm 0x0";
 
     function.push_back (entryB);
@@ -263,7 +263,7 @@ void BuiltinFloatToInt::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* prevFpuState = st.getStack(2);
     VMStack* fpuState = st.getStack(3);
 
-    VMBlock block (0, 0);
+    VMBlock block(nullptr, nullptr);
     block.push_new () << "resizestack" << 4;
 
     // Set proper FPU state:
@@ -318,7 +318,7 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
 
     ///////////////
     // Entry block:
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
 
     entryB.push_new () << "resizestack" << stackSize;
 
@@ -335,7 +335,7 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
     entryB.push_new () << "jge" << exitL << VM_UINT64 << srcOff << size;
 
 
-    VMBlock middleB (middleL, 0);
+    VMBlock middleB(middleL, nullptr);
     middleB.push_new () << "mov" << "mem" << src << srcOff << temp << srcSize;
     middleB.push_new () << "convert" << m_src << temp << m_dest << temp;
     middleB.push_new () << "mov" << temp << "mem" << dest << destOff << destSize;
@@ -343,7 +343,7 @@ void BuiltinVCast::generate (VMFunction& function, VMSymbolTable& st) {
     middleB.push_new () << "badd" << VM_UINT64 << destOff << destSize;
     middleB.push_new () << "jlt" << middleL << VM_UINT64 << srcOff << size;
 
-    VMBlock exitB (exitL, 0);
+    VMBlock exitB(exitL, nullptr);
 
     if (needToRoundToZero) {
         fpuSetState(exitB, prevFpuState);
@@ -379,14 +379,14 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
 
     ///////////////
     // Entry block:
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
     entryB.push_new () << "resizestack" << 7;
     entryB.push_new () << "mov" << st.getImm (0) << srcOff;
     entryB.push_new () << "mov" << st.getImm (0) << destOff;
     entryB.push_new () << "bmul uint64" << size << srcSize;
     entryB.push_new () << "jge" << exitL << "uint64" << srcOff << size;
 
-    VMBlock middleB (middleL, 0);
+    VMBlock middleB(middleL, nullptr);
     middleB.push_new () << "mov" << "mem" << src << srcOff << temp << srcSize;
     middleB.push_new () << "tne" << m_src << boolTemp << temp << st.getImm (0);
     middleB.push_new () << "mov" << boolTemp << "mem" << dest << destOff << destElemSize;
@@ -394,7 +394,7 @@ void BuiltinVBoolCast::generate (VMFunction& function, VMSymbolTable& st) {
     middleB.push_new () << "badd uint64" << destOff << destElemSize;
     middleB.push_new () << "jlt" << middleL << "uint64" << srcOff << size;
 
-    VMBlock exitB (exitL, 0);
+    VMBlock exitB(exitL, nullptr);
     exitB.push_new () << "return imm 0x0";
 
     function.push_back (entryB)
@@ -415,7 +415,7 @@ void BuiltinStrAppend::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* totalSize = st.getStack (2);
     VMStack* dest = st.getStack (3);
 
-    VMBlock block (0, 0);
+    VMBlock block(nullptr, nullptr);
     block.push_new () << "resizestack 0x4";
     block.push_new () << "getcrefsize" << lhs << lhsSize;
     block.push_new () << "getcrefsize" << rhs << rhsSize;
@@ -438,7 +438,7 @@ void BuiltinStrDup::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* size = st.getStack (0);
     VMStack* dest = st.getStack (1);
 
-    VMBlock block (0, 0);
+    VMBlock block(nullptr, nullptr);
     block.push_new () << "resizestack 0x2";
     block.push_new () << "getcrefsize" << src << size;
     block.push_new () << "alloc" << dest << size;
@@ -462,7 +462,7 @@ void BuiltinBoolToString::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* dest = st.getStack (4);
     VMLabel* trueL = st.getUniqLabel ();
 
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
     entryB.push_new () << "resizestack" << 6;
     entryB.push_new () << "mov" << trueLit << label;
     entryB.push_new () << "mov" << st.getImm (5) << size;
@@ -472,7 +472,7 @@ void BuiltinBoolToString::generate (VMFunction& function, VMSymbolTable& st) {
     entryB.push_new () << "mov" << falseLit << label;
     entryB.push_new () << "mov" << st.getImm (6) << size;
 
-    VMBlock exitB (trueL, 0);
+    VMBlock exitB(trueL, nullptr);
     exitB.push_new () << "alloc" << dest << size;
     exitB.push_new () << "mov" << "mem" << rodata << label << "mem" << dest << st.getImm (0) << size;
     exitB.push_new () << "return" << dest;
@@ -495,7 +495,7 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* sizeR = st.getStack (5);
     VMStack* temp = st.getStack (6);
 
-    VMBlock entryB (0, 0);
+    VMBlock entryB(nullptr, nullptr);
     entryB.push_new () << "resizestack" << 7;
     entryB.push_new () << "mov" << st.getImm (0) << idx;
     // zero the bytes to use wider subtraction
@@ -508,7 +508,7 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     VMLabel* falseL = st.getUniqLabel ();
     VMLabel* trueL = st.getUniqLabel ();
 
-    VMBlock loopB (loopL, 0);
+    VMBlock loopB(loopL, nullptr);
     loopB.push_new () << "mov cref 0x0" << idx << chrL << st.getImm (1);
     loopB.push_new () << "mov cref 0x1" << idx << chrR << st.getImm (1);
     loopB.push_new () << "tsub" << VM_INT64 << temp << chrL << chrR;
@@ -518,10 +518,10 @@ void BuiltinStringCmp::generate (VMFunction& function, VMSymbolTable& st) {
     loopB.push_new () << "jge" << trueL << VM_UINT64 << idx << sizeR;
     loopB.push_new () << "jmp" << loopL;
 
-    VMBlock trueB (trueL, 0);
+    VMBlock trueB(trueL, nullptr);
     loopB.push_new () << "tsub" << VM_INT64 << temp << sizeL << sizeR;
 
-    VMBlock falseB (falseL, 0);
+    VMBlock falseB(falseL, nullptr);
     falseB.push_new () << "return" << temp;
 
     function.push_back (entryB)

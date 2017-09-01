@@ -173,7 +173,7 @@ public: /* Methods: */
     bool getForInstantiation (InstanceInfo&);
 
     /// Check if given identifier is in scope. Logs error message
-    /// and returns NULL if not.
+    /// and returns nullptr if not.
     SymbolSymbol* getSymbol (TreeNodeIdentifier* id);
 
     /// Return symbol for the main procedure (if exists).
@@ -264,9 +264,9 @@ private: /* Methods: */
      * \brief Looks for a best matching procedure or template.
      *
      * Raises error if multiple matches are found. If no matches are found
-     * returns \a OK, and sets \a symProc to \a NULL.
+     * returns \a OK, and sets \a symProc to \a nullptr.
      *
-     * \pre argTypes != NULL
+     * \pre argTypes != nullptr
      * \param[in] name name of the procedure/template
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found

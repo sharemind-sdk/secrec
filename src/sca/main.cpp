@@ -155,11 +155,11 @@ SecreC::DataFlowAnalysis* getAnalysisByName (const std::string& name) {
         return new SecreC::ReachableReturns ();
     }
 
-    return 0;
+    return nullptr;
 }
 
 int run (const Configuration& cfg) {
-    SecreC::TreeNodeModule* parseTree = NULL;
+    SecreC::TreeNodeModule * parseTree = nullptr;
     std::ostream out (cout.rdbuf ());
     io::stream_buffer<io::file_sink > fileBuf;
     SecreC::ICode icode;
@@ -183,7 +183,7 @@ int run (const Configuration& cfg) {
     out << flush;
     cerr << flush;
 
-    assert (parseTree != NULL);
+    assert(parseTree);
     if (cfg.m_printAST) {
         parseTree->print(out);
         out << endl;
@@ -239,8 +239,7 @@ int run (const Configuration& cfg) {
         SecreC::DataFlowAnalysisRunner runner;
         boost::ptr_vector<SecreC::DataFlowAnalysis> analysis;
         for (const std::string& name : cfg.m_analysis) {
-            SecreC::DataFlowAnalysis* a = getAnalysisByName (name);
-            if (a != NULL) {
+            if (SecreC::DataFlowAnalysis * const a = getAnalysisByName(name)) {
                 analysis.push_back (a);
                 runner.addAnalysis (*a);
             }

@@ -275,13 +275,13 @@ bool assemble(ScopedAsmLinkingUnits& lus, const VMLinkingUnit& vmlu) {
         size_t sl = 0u;
         size_t sc = 0u;
         ScopedAsmTokens ts (sharemind_assembler_tokenize (fin->data (), fin->size (), &sl, &sc));
-        if (ts.get () == NULL) {
+        if (!ts.get()) {
             cerr << "ICE: Tokenization failed at (" << sl << "," << sc << ")" << endl;
             return false;
         }
 
-        const SharemindAssemblerToken* errorToken = NULL;
-        char* errorString = NULL;
+        const SharemindAssemblerToken * errorToken = nullptr;
+        char * errorString = nullptr;
         SharemindAssemblerError r = sharemind_assembler_assemble (ts.get (), &lus, &errorToken, &errorString);
         if (r != SHAREMIND_ASSEMBLE_OK) {
             const char* smasErrorStr = SharemindAssemblerError_toString (r);

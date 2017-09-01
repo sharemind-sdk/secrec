@@ -342,7 +342,7 @@ public: /* Methods: */
 
     /**
      * \brief Used to push instruction right after code block.
-     * \pre imop is not NULL
+     * \pre imop is not nullptr
      * \post first imop is set and next list is empty
      */
     void pushImopAfter (CGResult& result, Imop* imop);

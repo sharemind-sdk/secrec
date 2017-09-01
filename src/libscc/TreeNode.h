@@ -99,7 +99,7 @@ public: /* Methods: */
      * to distinguish them wihout major reduce-reduce conflicts.
      * @note Does not perform any type checking.
      * @param loc Location where the error happens.
-     * @return NULL if the given tree node is not a lvalue and otherwise a newly constructed lvalue.
+     * @return nullptr if the given tree node is not a lvalue and otherwise a newly constructed lvalue.
      */
     TreeNodeLValue* makeLValue (Location& loc) const { return makeLValueV (loc); }
 

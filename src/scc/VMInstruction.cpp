@@ -40,7 +40,7 @@ VMInstruction& VMInstruction::arg (const StringOperand& str) {
 }
 
 VMInstruction& VMInstruction::arg (VMValue* val) {
-    assert (val != 0);
+    assert(val);
     m_operands.push_back (Operand (*val));
     return *this;
 }

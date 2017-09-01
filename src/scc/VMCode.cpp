@@ -33,9 +33,8 @@ namespace SecreCC {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block) {
-    if (block.name () != 0) {
+    if (block.name())
         os << block.name ()->name () << '\n';
-    }
 
     std::copy (block.begin (), block.end (),
                std::ostream_iterator<VMInstruction>(os, "\n"));
@@ -47,7 +46,7 @@ std::ostream& operator << (std::ostream& os, const VMBlock& block) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMFunction& function) {
-    assert (function.name () != 0);
+    assert(function.name());
     os << function.name ()->name () << '\n';
     if (function.numLocals () != 0) {
         assert (! function.isStart ()
@@ -139,7 +138,7 @@ VMLinkingUnit::~VMLinkingUnit () {
 }
 
 void VMLinkingUnit::addSection (VMSection *section) {
-    assert (section != 0);
+    assert(section);
     m_sections.push_back (section);
 }
 

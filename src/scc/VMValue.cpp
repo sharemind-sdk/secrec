@@ -73,7 +73,7 @@ void VMLabel::printV (std::ostream& os) const {
 ******************************************************************/
 
 void VMVReg::printV (std::ostream& os) const {
-    if (m_actualReg == 0) {
+    if (!m_actualReg) {
         os << "vreg " << this;
     }
     else {

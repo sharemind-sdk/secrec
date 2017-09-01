@@ -30,7 +30,7 @@ bool removeEmptyProcedures (ICode& code) {
     std::vector<std::unique_ptr<Procedure>> emptyProcedures;
     for (auto& proc : code.program ()) {
         // TODO: how to identify the START procedure? Currently we use
-        // "name != NULL". Not sure if it's ideal.
+        // "name != nullptr". Not sure if it's ideal.
         if (proc.name () != nullptr && proc.callFrom ().empty ())
             emptyProcedures.emplace_back (std::unique_ptr<Procedure> (&proc));
     }

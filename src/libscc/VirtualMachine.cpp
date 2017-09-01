@@ -585,7 +585,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     SWITCHER(NAME)\
     default:\
         assert (false && #NAME " is not declared on given type!");\
-        callback = NULL; /* fallback failure if DEBUG is not set */ \
+        callback = nullptr; /* fallback failure if DEBUG is not set */ \
     } } while (0)
 #define SET_SPECIALIZE_CALLBACK_V(NAME, SWITCHER) do {\
     if (isVec) {\

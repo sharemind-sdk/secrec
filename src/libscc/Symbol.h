@@ -93,7 +93,7 @@ protected:
 
 private: /* Fields: */
     Type const m_symbolType; ///< Type of the symbol.
-    const TypeNonVoid* const m_type; ///< Type of the symbol or NULL.
+    const TypeNonVoid* const m_type; ///< Type of the symbol or nullptr.
     std::string m_name; ///< Name of the symbol.
 };
 

@@ -38,7 +38,7 @@ class TypeNonVoid;
 
 /**
  * Type context may or may not define security, data, or dimensionality types.
- * We use NULL to represent undefined security type, DATATYPE_UNDEFINED to
+ * We use nullptr to represent undefined security type, DATATYPE_UNDEFINED to
  * represent undefined data type, and finally (~ SecrecDimType (0)) for undefined
  * dimensionality types.
  */
