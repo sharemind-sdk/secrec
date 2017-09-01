@@ -53,7 +53,7 @@ std::ostream& operator << (std::ostream& os, const VMValue& value)
   VMImm
 ******************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMImm : public VMValue {
+class __attribute__ ((visibility("internal"))) VMImm final: public VMValue {
 public: /* Methods: */
 
     explicit VMImm (uint64_t value)
@@ -64,7 +64,7 @@ public: /* Methods: */
 
 protected:
 
-    void printV (std::ostream& os) const;
+    void printV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -75,7 +75,7 @@ private: /* Fields: */
   VMStack
 ******************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMStack : public VMValue {
+class __attribute__ ((visibility("internal"))) VMStack final: public VMValue {
 public: /* Methods: */
 
     explicit VMStack (unsigned num)
@@ -86,7 +86,7 @@ public: /* Methods: */
 
 protected:
 
-    void printV (std::ostream& os) const;
+    void printV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -97,7 +97,7 @@ private: /* Fields: */
   VMReg
 ******************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMReg : public VMValue {
+class __attribute__ ((visibility("internal"))) VMReg final: public VMValue {
 public: /* Methods: */
 
     explicit VMReg (unsigned num)
@@ -108,7 +108,7 @@ public: /* Methods: */
 
 protected:
 
-    void printV (std::ostream& os) const;
+    void printV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -119,7 +119,7 @@ private: /* Fields: */
   VMLabel
 ******************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMLabel : public VMValue {
+class __attribute__ ((visibility("internal"))) VMLabel final: public VMValue {
 public: /* Methods: */
 
     explicit VMLabel (const std::string& name)
@@ -130,7 +130,7 @@ public: /* Methods: */
 
 protected:
 
-    void printV (std::ostream& os) const;
+    void printV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -146,7 +146,7 @@ private: /* Fields: */
  * Representation of unallocated registers. Will be set to concrete registers
  * at the register allocation pass.
  */
-class __attribute__ ((visibility("internal"))) VMVReg: public VMValue {
+class __attribute__ ((visibility("internal"))) VMVReg final: public VMValue {
 public: /* Methods: */
 
     explicit VMVReg (bool isGlobal)
@@ -163,7 +163,7 @@ public: /* Methods: */
 
 protected:
 
-    void printV (std::ostream& os) const;
+    void printV(std::ostream & os) const final override;
 
 private: /* Fields: */
 

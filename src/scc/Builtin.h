@@ -78,15 +78,15 @@ private: /* Fields: */
   BuiltinAlloc
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinAlloc
+class __attribute__ ((visibility("internal"))) BuiltinAlloc final
     : public BuiltinFunction
 {
 public: /* Methods: */
     BuiltinAlloc (unsigned size) : m_size (size) { }
     
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinAlloc (m_size);
     }
 
@@ -99,15 +99,15 @@ private: /* Fields: */
 *******************************************************************************/
 
 /// Builtin vectorised arithmetic operations
-class __attribute__ ((visibility("internal"))) BuiltinVArith
+class __attribute__ ((visibility("internal"))) BuiltinVArith final
     : public BuiltinFunction
 {
 public: /* Methods: */
     BuiltinVArith (const SecreC::Imop* imop) : m_imop (imop) { }
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinVArith (m_imop);
     }
 
@@ -119,7 +119,7 @@ private: /* Fields: */
   BuiltinFloatToInt
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinFloatToInt
+class __attribute__ ((visibility("internal"))) BuiltinFloatToInt final
     : public BuiltinFunction
 {
 public: /* Methods: */
@@ -128,9 +128,9 @@ public: /* Methods: */
         , m_src(src)
     { }
 
-    void generate(VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone() const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinFloatToInt(m_dest, m_src);
     }
 
@@ -143,7 +143,7 @@ private: /* Fields: */
   BuiltinVCast
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinVCast
+class __attribute__ ((visibility("internal"))) BuiltinVCast final
     : public BuiltinFunction
 {
 public: /* Methods: */
@@ -152,9 +152,9 @@ public: /* Methods: */
         , m_src (src)
     { }
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinVCast (m_dest, m_src);
     }
 
@@ -167,7 +167,7 @@ private: /* Fields: */
   BuiltinVBoolCast
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinVBoolCast
+class __attribute__ ((visibility("internal"))) BuiltinVBoolCast final
     : public BuiltinFunction
 {
 public: /* Methods: */
@@ -175,9 +175,9 @@ public: /* Methods: */
         : m_src (src)
     { }
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinVBoolCast (m_src);
     }
 
@@ -189,14 +189,14 @@ private: /* Fields: */
   BuiltinStrAppend
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinStrAppend
+class __attribute__ ((visibility("internal"))) BuiltinStrAppend final
     : public BuiltinFunction
 {
 public: /* Methods: */
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinStrAppend ();
     }
 };
@@ -205,14 +205,14 @@ public: /* Methods: */
   BuiltinStrDup
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinStrDup
+class __attribute__ ((visibility("internal"))) BuiltinStrDup final
     : public BuiltinFunction
 {
 public: /* Methods: */
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinStrDup ();
     }
 };
@@ -221,7 +221,7 @@ public: /* Methods: */
   BuiltinBoolToString
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinBoolToString
+class __attribute__ ((visibility("internal"))) BuiltinBoolToString final
     : public BuiltinFunction
 {
 public: /* Methods: */
@@ -229,9 +229,9 @@ public: /* Methods: */
         : m_strLit (strLit)
     { }
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinBoolToString (m_strLit);
     }
 
@@ -243,14 +243,14 @@ private: /* Fields: */
   BuiltinStringCmp
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) BuiltinStringCmp
+class __attribute__ ((visibility("internal"))) BuiltinStringCmp final
     : public BuiltinFunction
 {
 public: /* Methods: */
 
-    void generate (VMFunction& function, VMSymbolTable& st);
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction* clone () const {
+    BuiltinFunction * clone() const final override {
         return new BuiltinStringCmp ();
     }
 };

@@ -176,7 +176,7 @@ protected: /* Fields: */
   VMBindingSection
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMBindingSection
+class __attribute__ ((visibility("internal"))) VMBindingSection final
     : public VMSection
 {
 private: /* Types: */
@@ -202,7 +202,7 @@ public: /* Methods: */
 
 protected:
 
-    std::ostream& printBodyV (std::ostream& os) const;
+    std::ostream & printBodyV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -213,7 +213,7 @@ private: /* Fields: */
   VMDataSection
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMDataSection
+class __attribute__ ((visibility("internal"))) VMDataSection final
     : public VMSection
 {
 private:
@@ -259,7 +259,7 @@ public: /* Methods: */
 
 protected:
 
-    std::ostream& printBodyV (std::ostream& os) const;
+    std::ostream & printBodyV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
@@ -271,7 +271,7 @@ private: /* Fields: */
   VMCodeSection
 *******************************************************************************/
 
-class __attribute__ ((visibility("internal"))) VMCodeSection
+class __attribute__ ((visibility("internal"))) VMCodeSection final
     : public VMSection
 {
 public: /* Types: */
@@ -303,7 +303,7 @@ public: /* Methods: */
 
 protected:
 
-    std::ostream& printBodyV (std::ostream& os) const;
+    std::ostream & printBodyV(std::ostream & os) const final override;
 
 private: /* Fields: */
 
