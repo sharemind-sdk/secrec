@@ -1998,8 +1998,6 @@ public: /* Methods: */
 
     bool isDomainQuantifier () const { return m_type == NODE_TEMPLATE_QUANTIFIER_DOMAIN; }
 
-protected:
-    virtual TreeNode* cloneV () const = 0;
 };
 
 /******************************************************************
