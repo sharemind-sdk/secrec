@@ -45,7 +45,7 @@ int bufferChar (char c) {
     return 1;
 }
 
-void clearBuffer () {
+void clearBuffer (void) {
     secrec_strbuflen = 0;
 }
 
