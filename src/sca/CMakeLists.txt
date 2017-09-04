@@ -17,11 +17,6 @@
 # For further information, please contact us at sharemind@cyber.ee.
 #
 
-################################################################################
-# sca
-################################################################################
-
-find_package(Boost COMPONENTS program_options REQUIRED)
 
 FILE(GLOB_RECURSE SCA_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -36,6 +31,7 @@ SharemindAddExecutable("sca"
         ${MPFR_INCLUDE_DIRS}
     LINK_LIBRARIES
         "libscc"
+        ${Boost_IOSTREAMS_LIBRARY}
         ${Boost_PROGRAM_OPTIONS_LIBRARY}
         ${MPFR_LIBRARIES}
     COMPONENT "sca"

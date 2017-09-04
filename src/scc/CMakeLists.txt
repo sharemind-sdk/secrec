@@ -17,12 +17,6 @@
 # For further information, please contact us at sharemind@cyber.ee.
 #
 
-################################################################################
-# scc
-################################################################################
-
-INCLUDE_DIRECTORIES(${SharemindLibAs_INCLUDE_DIRS})
-ADD_DEFINITIONS(${SharemindLibAs_DEFINITIONS})
 
 FILE(GLOB_RECURSE SCC_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -35,12 +29,15 @@ SharemindAddExecutable("scc"
         "${CMAKE_SOURCE_DIR}/src/"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
+        ${SharemindLibAs_INCLUDE_DIRS}
+    LEGACY_DEFINITIONS
+        ${SharemindLibAs_DEFINITIONS}
     LINK_LIBRARIES
         "libscc"
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
         ${Boost_FILESYSTEM_LIBRARY}
         ${Boost_IOSTREAMS_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
         ${MPFR_LIBRARIES}
         ${SharemindLibAs_LIBRARIES}
     COMPONENT "scc"
@@ -58,6 +55,7 @@ SharemindAddComponentPackage("scc"
         "libboost-filesystem${BV}"
         "libboost-iostreams${BV}"
         "libboost-program-options${BV}"
+        "libboost-system${BV}"
         "libc6 (>= 2.19)"
         "libmpfr4"
         "libsharemind-as (>= 0.1.0)"

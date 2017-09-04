@@ -17,12 +17,6 @@
 # For further information, please contact us at sharemind@cyber.ee.
 #
 
-FIND_PACKAGE(SharemindCHeaders REQUIRED)
-ADD_DEFINITIONS(${SharemindCHeaders_DEFINITIONS})
-
-################################################################################
-# libscc
-################################################################################
 
 SET(LIBSCC_FLEX_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/secrec.l")
 SET(LIBSCC_FLEX_GENERATED_HEADER "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h")
@@ -81,10 +75,11 @@ SharemindAddSharedLibrary("libscc"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
         ${SharemindCHeaders_INCLUDE_DIRS}
+    LEGACY_DEFINITIONS
+        ${SharemindCHeaders_DEFINITIONS}
     LINK_LIBRARIES
-        ${Boost_SYSTEM_LIBRARY}
-        ${Boost_THREAD_LIBRARY}
         ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
         ${MPFR_LIBRARIES}
         ${SharemindCHeaders_LIBRARIES}
         "yacc_o"
@@ -102,6 +97,7 @@ SharemindAddComponentPackage("libscc"
     DEB_SECTION "libs"
     DEB_DEPENDS
         "libboost-filesystem${BV}"
+        "libboost-system${BV}"
         "libc6 (>= 2.19)"
         "libmpfr4"
         "libstdc++6 (>= 4.8.0)"
