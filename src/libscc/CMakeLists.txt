@@ -65,12 +65,11 @@ SharemindSetC99CompileOptions(
     DEFINITIONS
         "_POSIX_C_SOURCE"
 )
+SET_PROPERTY(TARGET "yacc_o"
+    PROPERTY INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
-include_directories(
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    ${Boost_INCLUDE_DIRS}
-    ${MPFR_INCLUDE_DIRS}
-    ${SharemindCHeaders_INCLUDE_DIRS})
 
 SharemindAddSharedLibrary("libscc"
     OUTPUT_NAME "scc"
@@ -78,6 +77,10 @@ SharemindAddSharedLibrary("libscc"
         ${LIBSCC_SOURCES}
         ${LIBSCC_HEADERS}
         ${LIBSCC_HEADERS_P}
+    INCLUDE_DIRECTORIES
+        ${Boost_INCLUDE_DIRS}
+        ${MPFR_INCLUDE_DIRS}
+        ${SharemindCHeaders_INCLUDE_DIRS}
     LINK_LIBRARIES
         ${Boost_SYSTEM_LIBRARY}
         ${Boost_THREAD_LIBRARY}
