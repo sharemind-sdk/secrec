@@ -33,6 +33,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <sharemind/abort.h>
 #include <sstream>
 #include <stack>
 #include <stdint.h>
