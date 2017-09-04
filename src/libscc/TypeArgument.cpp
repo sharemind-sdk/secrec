@@ -173,4 +173,22 @@ bool operator == (const TypeArgument& a, const TypeArgument& b) {
     }
 }
 
+bool operator<(TypeArgument const & a, TypeArgument const & b) {
+    if (a.m_kind < b.m_kind) return true;
+    if (a.m_kind > b.m_kind) return false;
+    switch (a.m_kind) {
+    case TA_DIM:   return a.un_dimType  < b.un_dimType;
+    case TA_SEC:   return a.un_secType  < b.un_secType;
+    case TA_DATA:  return a.un_dataType < b.un_dataType;
+    #ifdef __clang__
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #endif
+    default: SHAREMIND_ABORT("TAC %d", static_cast<int>(a.m_kind));
+    #ifdef __clang__
+    #pragma GCC diagnostic pop
+    #endif
+    }
+}
+
 } // namespace SecreC
