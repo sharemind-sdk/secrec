@@ -28,42 +28,48 @@ FILE(GLOB_RECURSE SCC_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-include_directories(
-    "${CMAKE_SOURCE_DIR}/src/"
-    ${Boost_INCLUDE_DIRS}
-    ${MPFR_INCLUDE_DIRS})
-ADD_EXECUTABLE("scc" ${SCC_SOURCES})
-SET_TARGET_PROPERTIES("scc" PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
-    VERSION "${SECREC_FRAMEWORK_VERSION}")
-TARGET_LINK_LIBRARIES("scc" "libscc"
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_FILESYSTEM_LIBRARY}
-    ${Boost_IOSTREAMS_LIBRARY}
-    ${MPFR_LIBRARIES}
-    ${SharemindLibAs_LIBRARIES})
-INSTALL(TARGETS "scc"
+SharemindAddExecutable("scc"
+    SOURCES
+        ${SCC_SOURCES}
+    INCLUDE_DIRECTORIES
+        "${CMAKE_SOURCE_DIR}/src/"
+        ${Boost_INCLUDE_DIRS}
+        ${MPFR_INCLUDE_DIRS}
+    LINK_LIBRARIES
+        "libscc"
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_IOSTREAMS_LIBRARY}
+        ${MPFR_LIBRARIES}
+        ${SharemindLibAs_LIBRARIES}
     COMPONENT "scc"
-    RUNTIME DESTINATION "bin"
-    LIBRARY DESTINATION "lib"
-    ARCHIVE DESTINATION "lib"
-    PUBLIC_HEADER DESTINATION "include")
+    SPLITDEBUG_COMPONENT "scc-debug"
+)
+SharemindSetCxx11CompileOptions(TARGETS "scc")
 
 # Packaging:
-SET(CPACK_DEBIAN_SCC_PACKAGE_NAME "scc" PARENT_SCOPE)
-SET(CPACK_COMPONENT_SCC_DESCRIPTION "Sharemind SecreC Compiler" PARENT_SCOPE)
-SET(CPACK_DEBIAN_SCC_PACKAGE_SECTION "devel" PARENT_SCOPE)
 SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
-SET(deps
-    "libboost-filesystem${BV}"
-    "libboost-iostreams${BV}"
-    "libboost-program-options${BV}"
-    "libc6 (>= 2.19)"
-    "libmpfr4"
-    "libsharemind-as (>= 0.1.0)"
-    "libsharemind-scc (= ${SECREC_FRAMEWORK_VERSION})"
-    "libstdc++6 (>= 4.8.0)"
+SharemindAddComponentPackage("scc"
+    NAME "scc"
+    DESCRIPTION "Sharemind SecreC Compiler"
+    DEB_SECTION "devel"
+    DEB_DEPENDS
+        "libboost-filesystem${BV}"
+        "libboost-iostreams${BV}"
+        "libboost-program-options${BV}"
+        "libc6 (>= 2.19)"
+        "libmpfr4"
+        "libsharemind-as (>= 0.1.0)"
+        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+        "libstdc++6 (>= 4.8.0)"
+    PARENT_SCOPE
 )
-STRING(REPLACE ";" ", " deps "${deps}")
-SET(CPACK_DEBIAN_SCC_PACKAGE_DEPENDS "${deps}" PARENT_SCOPE)
+SharemindAddComponentPackage("scc-debug"
+    NAME "scc-dbg"
+    DESCRIPTION "Sharemind SecreC Compiler debug symbols"
+    DEB_SECTION "debug"
+    DEB_DEPENDS
+        "scc (= ${SharemindSecrecFramework_VERSION})"
+    PARENT_SCOPE
+)

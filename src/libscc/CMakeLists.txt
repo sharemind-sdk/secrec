@@ -49,56 +49,66 @@ SET_SOURCE_FILES_PROPERTIES("${CMAKE_CURRENT_SOURCE_DIR}/treenode.cpp"
     PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
+ADD_LIBRARY("yacc_o" STATIC
+    "${LIBSCC_FLEX_GENERATED_HEADER}"
+    "${LIBSCC_BISON_GENERATED_SOURCE}"
+    "${LIBSCC_FLEX_SOURCE}"
+    "${LIBSCC_BISON_SOURCE}"
+)
+SharemindSetC99CompileOptions(
+    TARGETS "yacc_o"
+    FORCED_OPTIONS "-fPIC"
+    CHECK_OPTIONS
+        "-Wno-c++-compat"
+        "-Wno-unused-macros"
+        "-Wno-switch-default"
+    DEFINITIONS
+        "_POSIX_C_SOURCE"
+)
+
 include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}"
     ${Boost_INCLUDE_DIRS}
     ${MPFR_INCLUDE_DIRS}
     ${SharemindCHeaders_INCLUDE_DIRS})
 
-IF(NOT SHAREMIND_LIBSCC_LINKING_MODE)
-    SET(SHAREMIND_LIBSCC_LINKING_MODE SHARED)
-ENDIF()
-
-ADD_LIBRARY("libscc" ${SHAREMIND_LIBSCC_LINKING_MODE}
-    ${LIBSCC_SOURCES}
-    ${LIBSCC_HEADERS}
-    ${LIBSCC_HEADERS_P}
-    "${LIBSCC_FLEX_GENERATED_HEADER}"
-    "${LIBSCC_BISON_GENERATED_SOURCE}"
-    "${LIBSCC_FLEX_SOURCE}"
-    "${LIBSCC_BISON_SOURCE}"
-)
-SET_TARGET_PROPERTIES("libscc" PROPERTIES
+SharemindAddSharedLibrary("libscc"
     OUTPUT_NAME "scc"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/"
-    VERSION "${SECREC_FRAMEWORK_VERSION}"
-    SOVERSION "${SECREC_FRAMEWORK_SOVERSION}"
-    CLEAN_DIRECT_OUTPUT 1)
-TARGET_LINK_LIBRARIES("libscc"
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_FILESYSTEM_LIBRARY}
-    ${MPFR_LIBRARIES}
-    ${SharemindCHeaders_LIBRARIES})
-INSTALL(TARGETS "libscc"
-    COMPONENT "lib"
-    RUNTIME DESTINATION "bin"
-    LIBRARY DESTINATION "lib"
-    ARCHIVE DESTINATION "lib"
-    PUBLIC_HEADER DESTINATION "include")
+    SOURCES
+        ${LIBSCC_SOURCES}
+        ${LIBSCC_HEADERS}
+        ${LIBSCC_HEADERS_P}
+    LINK_LIBRARIES
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_THREAD_LIBRARY}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${MPFR_LIBRARIES}
+        ${SharemindCHeaders_LIBRARIES}
+        "yacc_o"
+    COMPONENT "libscc"
+    SPLITDEBUG_COMPONENT "libscc-debug"
+)
+SharemindSetCxx11CompileOptions(TARGETS "libscc")
 
 
 # Packaging:
-SET(CPACK_DEBIAN_LIB_PACKAGE_NAME "libsharemind-scc" PARENT_SCOPE)
-SET(CPACK_COMPONENT_LIB_DESCRIPTION "Sharemind SecreC Compiler library"
-    PARENT_SCOPE)
-SET(CPACK_DEBIAN_LIB_PACKAGE_SECTION "libs" PARENT_SCOPE)
 SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
-SET(deps
-    "libboost-filesystem${BV}"
-    "libc6 (>= 2.19)"
-    "libmpfr4"
-    "libstdc++6 (>= 4.8.0)"
+SharemindAddComponentPackage("libscc"
+    NAME "libsharemind-scc"
+    DESCRIPTION "Sharemind SecreC Compiler library"
+    DEB_SECTION "libs"
+    DEB_DEPENDS
+        "libboost-filesystem${BV}"
+        "libc6 (>= 2.19)"
+        "libmpfr4"
+        "libstdc++6 (>= 4.8.0)"
+    PARENT_SCOPE
 )
-STRING(REPLACE ";" ", " deps "${deps}")
-SET(CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "${deps}" PARENT_SCOPE)
+SharemindAddComponentPackage("libscc-debug"
+    NAME "libsharemind-scc-dbg"
+    DESCRIPTION "Sharemind SecreC Compiler library debug symbols"
+    DEB_SECTION "debug"
+    DEB_DEPENDS
+        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+    PARENT_SCOPE
+)

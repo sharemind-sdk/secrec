@@ -22,40 +22,47 @@
 ################################################################################
 
 find_package(Boost COMPONENTS program_options REQUIRED)
-include_directories(
-    "${CMAKE_SOURCE_DIR}/src/"
-    ${Boost_INCLUDE_DIRS}
-    ${MPFR_INCLUDE_DIRS})
 
 FILE(GLOB_RECURSE SCA_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-ADD_EXECUTABLE("sca" ${SCA_SOURCES})
-SET_TARGET_PROPERTIES("sca" PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/"
-    VERSION "${SECREC_FRAMEWORK_VERSION}")
-TARGET_LINK_LIBRARIES("sca" "libscc"
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${MPFR_LIBRARIES})
-INSTALL(TARGETS "sca"
+SharemindAddExecutable("sca"
+    SOURCES
+        ${SCA_SOURCES}
+    INCLUDE_DIRECTORIES
+        "${CMAKE_SOURCE_DIR}/src/"
+        ${Boost_INCLUDE_DIRS}
+        ${MPFR_INCLUDE_DIRS}
+    LINK_LIBRARIES
+        "libscc"
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${MPFR_LIBRARIES}
     COMPONENT "sca"
-    RUNTIME DESTINATION "bin"
-    LIBRARY DESTINATION "lib"
-    ARCHIVE DESTINATION "lib"
-    PUBLIC_HEADER DESTINATION "include")
+    SPLITDEBUG_COMPONENT "sca-debug"
+)
+SharemindSetCxx11CompileOptions(TARGETS "sca")
+
 
 # Packaging:
-SET(CPACK_DEBIAN_SCA_PACKAGE_NAME "sca" PARENT_SCOPE)
-SET(CPACK_COMPONENT_SCA_DESCRIPTION "Sharemind SecreC Analyzer" PARENT_SCOPE)
-SET(CPACK_DEBIAN_SCA_PACKAGE_SECTION "devel" PARENT_SCOPE)
 SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
-SET(deps
-    "libboost-iostreams${BV}"
-    "libboost-program-options${BV}"
-    "libc6 (>= 2.19)"
-    "libsharemind-scc (= ${SECREC_FRAMEWORK_VERSION})"
-    "libstdc++6 (>= 4.8.0)"
+SharemindAddComponentPackage("sca"
+    NAME "sca"
+    DESCRIPTION "Sharemind SecreC Analyzer"
+    DEB_SECTION "devel"
+    DEB_DEPENDS
+        "libboost-iostreams${BV}"
+        "libboost-program-options${BV}"
+        "libc6 (>= 2.19)"
+        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+        "libstdc++6 (>= 4.8.0)"
+    PARENT_SCOPE
 )
-STRING(REPLACE ";" ", " deps "${deps}")
-SET(CPACK_DEBIAN_SCA_PACKAGE_DEPENDS "${deps}" PARENT_SCOPE)
+SharemindAddComponentPackage("sca-debug"
+    NAME "sca-dbg"
+    DESCRIPTION "Sharemind SecreC Analyzer debug symbols"
+    DEB_SECTION "debug"
+    DEB_DEPENDS
+        "sca (= ${SharemindSecrecFramework_VERSION})"
+    PARENT_SCOPE
+)
