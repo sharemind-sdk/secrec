@@ -201,11 +201,11 @@ class SymbolKind : public Symbol {
 public: /* Types: */
 
     struct Parameters {
-        const DataTypeUserPrimitive* type;
+        const DataType* type;
         const boost::optional<const DataTypeBuiltinPrimitive*> publicType;
         const boost::optional<uint64_t> size;
 
-        Parameters (const DataTypeUserPrimitive* type,
+        Parameters (const DataType* type,
                     boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                     boost::optional<uint64_t> size)
             : type (type)
@@ -230,7 +230,8 @@ public: /* Methods: */
 
     const Parameters* findType (StringRef name) const;
 
-    void addType (const DataTypeUserPrimitive* type,
+    void addType (StringRef name,
+                  const DataType* type,
                   boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                   boost::optional<uint64_t> size);
 

@@ -217,11 +217,11 @@ SymbolKind::findType (StringRef name) const {
         return it->second;
 }
 
-void SymbolKind::addType (const DataTypeUserPrimitive* type,
+void SymbolKind::addType (StringRef name,
+                          const DataType* type,
                           boost::optional<const DataTypeBuiltinPrimitive*> publicType,
                           boost::optional<uint64_t> size)
 {
-    StringRef name = type->name ();
     assert (m_types.find (name) == m_types.end ());
     auto params = new Parameters (type, publicType, size);
     m_types.insert (std::make_pair (name, params));

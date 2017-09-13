@@ -111,6 +111,7 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
         // If the private type has the name of a public type, the
         // corresponding public type must be the same
         SecrecDataType tyFund = stringToSecrecFundDataType (tyDecl.typeName ().data ());
+        const DataType* dt;
         if (tyFund != DATATYPE_UNDEFINED) {
             const DataTypeBuiltinPrimitive* ty = DataTypeBuiltinPrimitive::get (tyFund);
             if (! publicType) {
@@ -124,11 +125,13 @@ CGStmtResult CodeGen::cgKind(TreeNodeKind * kind) {
                     return CGResult::ERROR_CONTINUE;
                 }
             }
+            dt = ty;
+        } else {
+            dt = DataTypeUserPrimitive::get (tyDecl.typeName ());
         }
         #pragma GCC diagnostic pop
 
-        const DataTypeUserPrimitive* dt = DataTypeUserPrimitive::get (tyDecl.typeName ());
-        skind->addType (dt, publicType, size);
+        skind->addType (tyDecl.typeName(), dt, publicType, size);
 
         SymbolDataType* sym = st->find<SYM_TYPE> (tyDecl.typeName ());
         if (sym == nullptr) {
