@@ -152,8 +152,6 @@ public: /* Methods: */
 
     StringRef name () const { return m_name; }
 
-    bool equals (SecrecDataType type) const override final;
-
     bool equals (const DataType* other) const override final;
 
 protected:

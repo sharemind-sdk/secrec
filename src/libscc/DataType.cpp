@@ -339,11 +339,8 @@ const DataType* dtypeDeclassify (const SecurityType* secType,
     else if (dType->isUserPrimitive ()) {
         const DataTypeUserPrimitive *dtPrim = static_cast<const DataTypeUserPrimitive*> (dType);
 
-        if (secType == nullptr || secType->isPublic ()) {
-            SecrecDataType sc = stringToSecrecFundDataType (dtPrim->name ().data ());
-            if (sc == DATATYPE_UNDEFINED)
-                return nullptr;
-            return DataTypeBuiltinPrimitive::get (sc);
+        if (secType == nullptr) {
+            return nullptr;
         }
 
         assert (secType->isPrivate ());
@@ -393,15 +390,8 @@ const DataTypeBuiltinPrimitive* DataTypeBuiltinPrimitive::get (SecrecDataType da
 bool DataTypeBuiltinPrimitive::equals (const DataType* other) const {
     assert (other != nullptr);
 
-    if (! other->isPrimitive ()) {
-        return false;
-    }
-    else if (other->isBuiltinPrimitive ()) {
+    if (other->isBuiltinPrimitive ())
         return this == other;
-    }
-    else if (other->isUserPrimitive ()) {
-        return static_cast<const DataTypeUserPrimitive*> (other)->equals (m_dataType);
-    }
 
     return false;
 }
@@ -422,23 +412,11 @@ const DataTypeUserPrimitive* DataTypeUserPrimitive::get (StringRef name)
     return &fw_t{name}.get();
 }
 
-bool DataTypeUserPrimitive::equals (SecrecDataType type) const {
-    StringRef tyStr = SecrecFundDataTypeToString (type);
-    return tyStr == m_name;
-}
-
 bool DataTypeUserPrimitive::equals (const DataType* other) const {
     assert (other != nullptr);
 
-    if (! other->isPrimitive ()) {
-        return false;
-    }
-    else if (other->isBuiltinPrimitive ()) {
-        return equals (static_cast<const DataTypeBuiltinPrimitive*> (other)->secrecDataType ());
-    }
-    else if (other->isUserPrimitive ()) {
+    if (other->isUserPrimitive ())
         return this == other;
-    }
 
     return false;
 }

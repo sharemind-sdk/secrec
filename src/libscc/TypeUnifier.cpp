@@ -116,9 +116,7 @@ bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, const DataType
     assert (dataType != nullptr);
 
     if (dataType->isUserPrimitive ()) {
-        // We have to do this because uint in "D uint x" will be
-        // parsed as TreeNodeDataTypeConstF.
-        return static_cast<const DataTypeUserPrimitive*> (dataType)->equals (t->secrecDataType ());
+        return false;
     }
 
     return dataType->equals (t->secrecDataType ());

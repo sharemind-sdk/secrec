@@ -87,9 +87,7 @@ bool AbstractOperatorTypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t
     }
     else if (argData->isUserPrimitive ()) {
         assert (type->secrecSecType ()->isPrivate ());
-
-        if (! static_cast<const DataTypeUserPrimitive*> (argData)->equals (treeSc))
-            return false;
+        return false;
     }
     else {
         // No structs in operator definitions
