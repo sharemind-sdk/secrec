@@ -217,8 +217,13 @@ CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* v
 
     const auto ns = new SymbolSymbol(varInit->variableName(), ty);
     initShapeSymbols (m_st, ns);
-    setSymbolGlobalScope (ns);
     m_st->appendSymbol (ns);
+
+    if (ty->secrecDataType ()->isComposite()) {
+        initFieldSymbols (getStringTable (), m_st, ns, static_cast<const TypeBasic*> (ty));
+    }
+
+    setSymbolGlobalScope (ns);
 
     // <initialization function>
     SymbolProcedure* procSym = nullptr;
@@ -244,20 +249,23 @@ CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* v
 
         // footer
         Symbol* localResultSym = varInitResult.symbol ();
+
+        std::vector<Symbol*> rets;
+        for (Symbol* sym : flattenSymbol (localResultSym)) {
+            rets.push_back (copyNonTemporary (result, sym));
+        }
+
         releaseProcVariables (result, localResultSym);
         if (result.isNotOk ())
             return result;
 
-        std::vector<Symbol*> rets (dim_begin(localResultSym), dim_end(localResultSym));
-        rets.push_back (localResultSym);
         Imop * i = newReturn(varInit, rets.begin(), rets.end());
         i->setDest(m_st->label(funcStart));
         pushImopAfter(result, i);
     }
 
     std::vector<Symbol*> retList, argList;
-    retList.insert (retList.end (), dim_begin (ns), dim_end (ns));
-    retList.push_back (ns);
+    retList = flattenSymbol (ns);
 
     Imop* callImop = newCall (varInit, retList.begin (), retList.end (), argList.begin (), argList.end ());
     auto cleanImop = new Imop (varInit, Imop::RETCLEAN, nullptr, nullptr, nullptr);
