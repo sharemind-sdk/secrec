@@ -273,6 +273,9 @@ SET_TESTS_PROPERTIES("structs/04-redeclaration"
 SET_TESTS_PROPERTIES("structs/11-template-domain-failure"
     PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,.*\\)\\(9,.*\\)")
 
+SET_TESTS_PROPERTIES("structs/15-recursive-bug"
+    PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(2,13\\)\\(3,14\\)")
+
 # Regressions found by AFL (american fuzzy lop).
 add_test_secrec_execute("afl/00-integer-literal-overflow")
 SET_TESTS_PROPERTIES("afl/00-integer-literal-overflow"

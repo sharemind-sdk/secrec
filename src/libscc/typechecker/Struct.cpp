@@ -30,6 +30,7 @@
 #include <boost/flyweight/key_value.hpp>
 #include <boost/flyweight/no_locking.hpp>
 #include <boost/flyweight/no_tracking.hpp>
+#include <boost/scope_exit.hpp>
 #include <set>
 
 
@@ -66,6 +67,11 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
         return E_TYPE;
     }
 
+    m_structsInProgress.push_back (decl->identifier ()->value ());
+    BOOST_SCOPE_EXIT(&m_structsInProgress) {
+        m_structsInProgress.pop_back ();
+    } BOOST_SCOPE_EXIT_END
+
     TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
 
     if (! quants.empty ()) {
@@ -92,8 +98,25 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     std::vector<DataTypeStruct::Field> fields;
     fields.reserve (decl->attributes ().size ());
     for (TreeNodeAttribute& attr : decl->attributes ()) {
+        // Check if we the field type is a struct that's currently
+        // being typechecked to avoid a recursive struct.
+        TreeNodeType* type = attr.type ();
+        if (type->type () == NODE_TYPETYPE) {
+            TreeNode* dataTypeNode = type->children ()[1];
+            if (dataTypeNode->type () == NODE_DATATYPE_TEMPLATE_F) {
+                StringRef dataTypeName =
+                    static_cast<TreeNodeDataTypeTemplateF*> (dataTypeNode)->identifier ()->value ();
+                for (StringRef& seenName : m_structsInProgress) {
+                    if (seenName == dataTypeName) {
+                        m_log.fatal () << "Recursive structure due to field at " << attr.location () << '.';
+                        return E_TYPE;
+                    }
+                }
+            }
+        }
+
         // TODO: This is incredibly ugly workaround! We are cloning in order to avoid using cache-d type.
-        TreeNodeType* type = static_cast<TreeNodeType*>(attr.type ()->clone (nullptr));
+        type = static_cast<TreeNodeType*>(attr.type ()->clone (nullptr));
         TCGUARD (visitType (type));
         if (type->secrecType ()->kind () != Type::BASIC) {
             m_log.fatal () << "Invalid structure field at " << type->location () << '.';

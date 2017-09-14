@@ -293,11 +293,12 @@ private: /* Methods: */
 
 private: /* Fields: */
 
-    OperatorTable*        m_operators;
-    SymbolTable*          m_st;
-    CompileLog&           m_log;
-    Context&              m_context;
-    TemplateInstantiator* m_instantiator;
+    OperatorTable*         m_operators;
+    SymbolTable*           m_st;
+    CompileLog&            m_log;
+    Context&               m_context;
+    TemplateInstantiator*  m_instantiator;
+    std::vector<StringRef> m_structsInProgress;
 };
 
 } // namespace SecreC
