@@ -288,6 +288,8 @@ TypeChecker::Status TypeChecker::visitExprAssign(TreeNodeExprAssign * e) {
 
     // Search for overloaded operator
     if (e->type() != NODE_EXPR_BINARY_ASSIGN) {
+        std::cout << "expr binary assign asukohaga " << e->location() << std::endl;
+
         bool isIndexed = lval->type () == NODE_LVALUE_INDEX;
         // If the lval is indexed, codegen will create a loop
         // operating on scalars

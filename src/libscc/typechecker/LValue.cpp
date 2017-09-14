@@ -19,6 +19,7 @@
 
 #include "../TypeChecker.h"
 
+#include "../Log.h"
 #include "../Symbol.h"
 #include "../TreeNode.h"
 #include "../Types.h"
@@ -108,6 +109,14 @@ TypeChecker::Status TypeChecker::visitLIndex(TreeNodeLIndex* lindex) {
     const TypeNonVoid* lvalType = lval->secrecType ();
     SecrecDimType destDim = 0;
     TCGUARD (checkIndices(lindex->indices (), destDim));
+
+    SecrecDimType nIndices = static_cast<SecrecDimType> (lindex->indices ()->children ().size ());
+    if (nIndices != lvalType->secrecDimType ()) {
+        m_log.fatalInProc (lindex)
+            << "Incorrect number of indices at " << lindex->location () << '.';
+        return E_TYPE;
+    }
+
     lindex->setSecrecType (TypeBasic::get (lvalType->secrecSecType (),
                                            lvalType->secrecDataType (),
                                            destDim));
