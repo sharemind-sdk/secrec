@@ -297,6 +297,8 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     case DATATYPE_UINT32: castValue<DATATYPE_UINT32,fromTy>(dest, from); break;
     case DATATYPE_INT64:  castValue<DATATYPE_INT64,fromTy>(dest, from); break;
     case DATATYPE_UINT64: castValue<DATATYPE_UINT64,fromTy>(dest, from); break;
+    case DATATYPE_FLOAT32: castValue<DATATYPE_FLOAT32,fromTy>(dest, from); break;
+    case DATATYPE_FLOAT64: castValue<DATATYPE_FLOAT64,fromTy>(dest, from); break;
     default:
         assert (false);
         exit (1);
@@ -738,7 +740,7 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::END:        SET_SIMPLE_CALLBACK(END); break;
     case Imop::PRINT:      SET_SIMPLE_CALLBACK(PRINT); break;
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
-    case Imop::TOSTRING:   SET_SPECIALIZE_CALLBACK(TOSTRING,SWITCH_ARITH); break;
+    case Imop::TOSTRING:   SET_SPECIALIZE_CALLBACK(TOSTRING,SWITCH_NONSTRING); break;
     case Imop::STRLEN:     SET_SIMPLE_CALLBACK(STRLEN); break;
     default:
         assert (false && "Reached unsupported instruction.");
@@ -785,9 +787,19 @@ void storeConstant (VMSym sym, const Symbol* c) {
     case DATATYPE_UINT32: storeConstantInt<DATATYPE_UINT32>(out, c); break;
     case DATATYPE_INT64: storeConstantInt<DATATYPE_INT64>(out, c); break;
     case DATATYPE_UINT64: storeConstantInt<DATATYPE_UINT64>(out, c); break;
-    case DATATYPE_FLOAT32: storeConstantInt<DATATYPE_FLOAT32>(out, c); break;
-    case DATATYPE_FLOAT64: storeConstantInt<DATATYPE_FLOAT64>(out, c); break;
-    default:
+    case DATATYPE_FLOAT32: {
+        const ConstantFloat* floatSym = static_cast<const ConstantFloat*>(c);
+        const uint32_t bits = floatSym->value ().ieee32bits ();
+        const float value = *reinterpret_cast<const float*>(&bits);
+        assignValue (out, value);
+        break;
+    } case DATATYPE_FLOAT64: {
+        const ConstantFloat* floatSym = static_cast<const ConstantFloat*>(c);
+        const uint64_t bits = floatSym->value ().ieee64bits ();
+        const double value = *reinterpret_cast<const double*>(&bits);
+        assignValue (out, value);
+        break;
+    } default:
         assert (false && "Invalid data type.");
     }
 }
