@@ -178,17 +178,15 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
         if (vm.count("input"))
             opts.input = vm["input"].as<string>();
 
+        if (vm.count ("include"))
+            opts.includes = vm["include"].as<vector<string> >();
+
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
 #else
         if (!vm.count("no-stdlib"))
             opts.includes.push_back (SHAREMIND_STDLIB_PATH);
 #endif
-
-        if (vm.count("include")) {
-            auto const& temp = vm["include"].as<vector<string> >();
-            opts.includes.insert(opts.includes.end(), temp.begin(), temp.end());
-        }
 
         return true;
     }
