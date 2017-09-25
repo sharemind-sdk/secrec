@@ -102,10 +102,9 @@ struct Configuration {
 
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
-#else
+#endif
         if (!vm.count("no-stdlib"))
             m_includes.push_back (SHAREMIND_STDLIB_PATH);
-#endif
 
         if (vm.count ("analysis")) {
             const vector<string >& v = vm["analysis"].as<vector<string > > ();

@@ -183,10 +183,9 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
 
 #ifndef SHAREMIND_STDLIB_PATH
 #error "SHAREMIND_STDLIB_PATH not defined"
-#else
+#endif
         if (!vm.count("no-stdlib"))
             opts.includes.push_back (SHAREMIND_STDLIB_PATH);
-#endif
 
         return true;
     }
