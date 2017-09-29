@@ -793,13 +793,17 @@ void storeConstant (VMSym sym, const Symbol* c) {
     case DATATYPE_FLOAT32: {
         const ConstantFloat* floatSym = static_cast<const ConstantFloat*>(c);
         const uint32_t bits = floatSym->value ().ieee32bits ();
-        const float value = *reinterpret_cast<const float*>(&bits);
+        float value;
+        static_assert(sizeof(value) == sizeof(bits), "");
+        std::memcpy(&value, &bits, sizeof(bits));
         assignValue (out, value);
         break;
     } case DATATYPE_FLOAT64: {
         const ConstantFloat* floatSym = static_cast<const ConstantFloat*>(c);
         const uint64_t bits = floatSym->value ().ieee64bits ();
-        const double value = *reinterpret_cast<const double*>(&bits);
+        double value;
+        static_assert(sizeof(value) == sizeof(bits), "");
+        std::memcpy(&value, &bits, sizeof(bits));
         assignValue (out, value);
         break;
     } default:
