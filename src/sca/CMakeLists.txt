@@ -49,6 +49,7 @@ SharemindAddComponentPackage("sca"
     DEB_DEPENDS
         "libboost-iostreams${BV}"
         "libboost-program-options${BV}"
+        "libboost-regex${BV}"
         "libc6 (>= 2.19)"
         "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
         "libstdc++6 (>= 4.8.0)"
