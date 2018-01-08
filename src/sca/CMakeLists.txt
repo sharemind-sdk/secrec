@@ -31,7 +31,6 @@ SharemindAddExecutable("sca"
         ${MPFR_INCLUDE_DIRS}
     LINK_LIBRARIES
         "libscc"
-        ${Boost_IOSTREAMS_LIBRARY}
         ${Boost_PROGRAM_OPTIONS_LIBRARY}
         ${MPFR_LIBRARIES}
     COMPONENT "sca"
@@ -47,9 +46,7 @@ SharemindAddComponentPackage("sca"
     DESCRIPTION "Sharemind SecreC Analyzer"
     DEB_SECTION "devel"
     DEB_DEPENDS
-        "libboost-iostreams${BV}"
         "libboost-program-options${BV}"
-        "libboost-regex${BV}"
         "libc6 (>= 2.19)"
         "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
         "libstdc++6 (>= 4.8.0)"
