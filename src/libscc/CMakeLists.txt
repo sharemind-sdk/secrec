@@ -75,13 +75,16 @@ SharemindAddSharedLibrary("libscc"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
         ${SharemindCHeaders_INCLUDE_DIRS}
+        ${SharemindCxxHeaders_INCLUDE_DIRS}
     LEGACY_DEFINITIONS
         ${SharemindCHeaders_DEFINITIONS}
+        ${SharemindCxxHeaders_DEFINITIONS}
     LINK_LIBRARIES
         ${Boost_FILESYSTEM_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
         ${MPFR_LIBRARIES}
         ${SharemindCHeaders_LIBRARIES}
+        ${SharemindCxxHeaders_LIBRARIES}
         "yacc_o"
     COMPONENT "libscc"
     SPLITDEBUG_COMPONENT "libscc-debug"

@@ -252,7 +252,7 @@ Imop::Imop(TreeNode* creator, Type type, OperandList args)
 Imop::Imop(TreeNode *creator, ConstantString *name, SyscallOperands operands)
     : m_creator(creator)
     , m_type(Imop::SYSCALL)
-    , m_syscallOperands(new SyscallOperands(std::move(operands)))
+    , m_syscallOperands(sharemind::inPlace, std::move(operands))
 {
     m_args.reserve(2 + m_syscallOperands->size());
     m_args.push_back(nullptr);
@@ -358,7 +358,7 @@ bool Imop::writesDest () const {
 }
 
 bool Imop::isSyscall() const {
-    return m_syscallOperands != nullptr;
+    return static_cast<bool>(m_syscallOperands);
 }
 
 const SyscallOperands& Imop::syscallOperands() const {

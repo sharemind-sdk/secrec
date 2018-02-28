@@ -23,6 +23,7 @@
 #include <boost/intrusive/list_hook.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <cassert>
+#include <sharemind/Optional.h>
 #include <vector>
 
 #include "Syscall.h"
@@ -232,7 +233,7 @@ private: /* Fields: */
     TreeNode*               m_creator = nullptr;
     const Type              m_type;
     OperandList             m_args;
-    const SyscallOperands*  m_syscallOperands = nullptr;
+    sharemind::Optional<SyscallOperands const> const m_syscallOperands;
     Block*                  m_block = nullptr;
     unsigned long           m_index = 0;
 };

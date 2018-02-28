@@ -29,10 +29,14 @@ SharemindAddExecutable("sca"
         "${CMAKE_SOURCE_DIR}/src/"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
+        ${SharemindCxxHeaders_INCLUDE_DIRS}
+    LEGACY_DEFINITIONS
+        ${SharemindCxxHeaders_DEFINITIONS}
     LINK_LIBRARIES
         "libscc"
         ${Boost_PROGRAM_OPTIONS_LIBRARY}
         ${MPFR_LIBRARIES}
+        ${SharemindCxxHeaders_LIBRARIES}
     COMPONENT "sca"
     SPLITDEBUG_COMPONENT "sca-debug"
 )

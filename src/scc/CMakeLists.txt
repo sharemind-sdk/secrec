@@ -30,8 +30,10 @@ SharemindAddExecutable("scc"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
         ${SharemindLibAs_INCLUDE_DIRS}
+        ${SharemindCxxHeaders_INCLUDE_DIRS}
     LEGACY_DEFINITIONS
         ${SharemindLibAs_DEFINITIONS}
+        ${SharemindCxxHeaders_DEFINITIONS}
     LINK_LIBRARIES
         "libscc"
         ${Boost_FILESYSTEM_LIBRARY}
@@ -40,6 +42,7 @@ SharemindAddExecutable("scc"
         ${Boost_SYSTEM_LIBRARY}
         ${MPFR_LIBRARIES}
         ${SharemindLibAs_LIBRARIES}
+        ${SharemindCxxHeaders_LIBRARIES}
     COMPONENT "scc"
     SPLITDEBUG_COMPONENT "scc-debug"
 )
