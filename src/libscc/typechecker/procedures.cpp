@@ -358,9 +358,7 @@ TypeChecker::Status TypeChecker::visitOpDef (TreeNodeOpDef* def,
         return E_TYPE;
     }
 
-    for (unsigned i = 0; i < params.size (); ++i) {
-        const TypeBasic* ty = params[i];
-
+    for (TypeBasic const * ty : params) {
         if (! opSupportedType (ty)) {
             m_log.fatal () << "Operator definition at " << def->location ()
                            << " has an operand which is not a scalar or vector.";
