@@ -24,7 +24,6 @@
 #include "ICodeList.h"
 
 #include <boost/intrusive/list.hpp>
-#include <boost/utility.hpp>
 #include <set>
 
 #define FOREACH_BLOCK(IT,pr) \
@@ -82,7 +81,6 @@ struct Edge {
 class Block : private ImopList
             , public auto_unlink_hook
             , public CFGNode<Block, Edge::Label>
-            , boost::noncopyable
 {
 public: /* Types: */
 
@@ -101,6 +99,8 @@ public: /* Methods: */
         , m_reachable (false)
     { }
 
+    Block(Block const &) = delete;
+    Block & operator = (Block const &) = delete;
     ~Block ();
 
     using ImopList::back;
@@ -163,7 +163,6 @@ inline Block::const_iterator blockIterator (const Imop& imop) {
 
 class Procedure : private BlockList
                 , public auto_unlink_hook
-                , boost::noncopyable
 {
 public: /* Types: */
 
@@ -176,6 +175,8 @@ public: /* Methods: */
         : m_name (name)
     { }
 
+    Procedure(Procedure const &) = delete;
+    Procedure & operator = (Procedure const &) = delete;
     ~Procedure ();
 
     const Block* entry () const {
@@ -236,7 +237,7 @@ inline Procedure::const_iterator procIterator (const Block& block) {
   Program
 *******************************************************************************/
 
-class Program : private ProcedureList, boost::noncopyable {
+class Program : private ProcedureList {
 public: /* Types: */
 
     using ProcedureList::iterator;
@@ -245,6 +246,8 @@ public: /* Types: */
 public: /* Methods: */
 
     Program ();
+    Program(Program const &) = delete;
+    Program const & operator = (Program const &) = delete;
     ~Program ();
 
     void init (ICodeList& code);
