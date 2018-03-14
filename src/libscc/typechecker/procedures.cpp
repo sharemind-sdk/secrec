@@ -154,7 +154,7 @@ unsigned calculateOpScore (const TypeProc* callTypeProc,
     assert (callTypeProc->paramTypes ().size () == proc->params ().size ());
 
     unsigned i = 0;
-    for (TreeNodeStmtDecl param : proc->params ()) {
+    for (TreeNodeStmtDecl const & param : proc->params ()) {
         const TypeBasic* argTy = callTypeProc->paramTypes ()[i++];
         const TreeNodeType* paramTy = param.varType ();
 
