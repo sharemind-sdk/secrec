@@ -47,14 +47,11 @@ class StringLiterals;
 *******************************************************************************/
 
 class __attribute__ ((visibility("internal"))) Compiler {
-private:
-
-    Compiler (const Compiler&) = delete;
-    Compiler& operator = (const Compiler&) = delete;
-
 public: /* Methods: */
 
     explicit Compiler (bool optimize);
+    Compiler (const Compiler&) = delete;
+    Compiler& operator = (const Compiler&) = delete;
     ~Compiler ();
 
     void run (VMLinkingUnit& vmlu, SecreC::ICode& code);

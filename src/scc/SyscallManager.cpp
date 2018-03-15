@@ -35,7 +35,7 @@ SyscallManager::SyscallManager ()
     , m_scSection(nullptr)
 { }
 
-SyscallManager::~SyscallManager () { }
+SyscallManager::~SyscallManager() = default;
 
 void SyscallManager::init (VMSymbolTable& st,
                            VMBindingSection* sc,
@@ -45,14 +45,26 @@ void SyscallManager::init (VMSymbolTable& st,
     m_pdSection = pd;
 }
 
-VMLabel* SyscallManager::getPD (const SecreC::PrivateSecType* secTy) {
-    PDMap::iterator i = m_pds.find (secTy);
-    if (i == m_pds.end ()) {
-        std::ostringstream ss;
-        ss << ":PD_" << m_st->uniq ();
-        VMLabel* label = m_st->getLabel (ss.str ());
-        i = m_pds.insert (i, std::make_pair (secTy, label));
-        m_pdSection->addBinding (label, secTy->name ().str());
+void SyscallManager::addPd(const SecreC::SymbolDomain * sym) {
+    auto const secTy = sym->securityType();
+    if (secTy->isPrivate()) {
+        auto const privSecTy = static_cast<const SecreC::PrivateSecType*>(secTy);
+        auto const i = m_pds.find (privSecTy);
+        if (i == m_pds.end ()) {
+            std::ostringstream ss;
+            ss << ":PD_" << m_st->uniq ();
+            VMLabel* label = m_st->getLabel (ss.str ());
+            m_pds.insert (i, std::make_pair (privSecTy, label));
+            m_pdSection->addBinding (label, privSecTy->name ().str());
+        }
+    }
+}
+
+VMLabel* SyscallManager::getPd(const SecreC::PrivateSecType * secTy) const {
+    auto const i = m_pds.find (secTy);
+    assert (i != m_pds.end ());
+    if (i == m_pds.end()) {
+        return nullptr;
     }
 
     return i->second;
@@ -63,7 +75,7 @@ VMLabel* SyscallManager::getSyscallBinding (const SecreC::ConstantString* str) {
 }
 
 VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {
-    SCMap::iterator i = m_syscalls.find (name);
+    auto i = m_syscalls.find (name);
     if (i == m_syscalls.end ()) {
         std::ostringstream ss;
         ss << ":SC_" << m_st->uniq ();

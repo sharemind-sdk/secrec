@@ -208,7 +208,7 @@ VMLabel* getPD (SyscallManager* scm, const Symbol* sym) {
     const SecreC::Type* ty = sym->secrecType ();
     assert (ty->secrecSecType ()->isPrivate ());
     const auto pty = static_cast<const PrivateSecType*>(ty->secrecSecType ());
-    return scm->getPD (pty);
+    return scm->getPd(pty);
 }
 
 class SyscallName {
@@ -346,10 +346,10 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     // eliminateRedundantCopies (code);
 
     // Create and add the linking unit sections:
-    VMDataSection* rodataSec = new VMDataSection (VMDataSection::RODATA);
-    VMBindingSection* pdSec = new VMBindingSection ("PDBIND");
-    VMBindingSection* scSec = new VMBindingSection ("BIND");
-    VMCodeSection* codeSec = new VMCodeSection ();
+    auto const rodataSec = new VMDataSection (VMDataSection::RODATA);
+    auto const pdSec = new VMBindingSection ("PDBIND");
+    auto const scSec = new VMBindingSection ("BIND");
+    auto const codeSec = new VMCodeSection ();
 
     vmlu.addSection (pdSec);
     vmlu.addSection (scSec);
@@ -371,6 +371,16 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     m_ra->init(m_st, std::move(lv));
     m_scm->init (m_st, scSec, pdSec);
     m_strLit->init (m_st, rodataSec);
+
+    // Register all protection domains:
+    auto const & isProtectionDomainSymbol = [](SecreC::Symbol * sym) {
+        assert (sym != nullptr);
+        return sym->symbolType() == SYM_DOMAIN;
+    };
+
+    for (auto sym : code.symbols().findFromCurrentScope(isProtectionDomainSymbol)) {
+        m_scm->addPd(static_cast<SymbolDomain *>(sym));
+    }
 
     // Finally generate code:
     for (const Procedure& proc : code.program ()) {
@@ -943,7 +953,7 @@ void Compiler::cgDomainID (VMBlock& block, const Imop& imop) {
     const SymbolDomain* dom = static_cast<const SymbolDomain*>(imop.arg1 ());
     assert(dynamic_cast<PrivateSecType const *>(dom->securityType()));
     const auto secTy = static_cast<const PrivateSecType*>(dom->securityType ());
-    VMLabel* label = m_scm->getPD (secTy);
+    VMLabel* label = m_scm->getPd(secTy);
     block.push_new () << "mov" << label << find (imop.dest ());
 }
 
