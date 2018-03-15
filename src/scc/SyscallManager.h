@@ -56,7 +56,8 @@ public: /* Methods: */
 
     void init (VMSymbolTable& st, VMBindingSection* sc, VMBindingSection* pd);
 
-    VMLabel* getPD (const SecreC::PrivateSecType* secTy);
+    void addPd (const SecreC::SymbolDomain * sym);
+    VMLabel* getPD(const SecreC::PrivateSecType * secTy) const;
 
     VMLabel* getSyscallBinding (const SecreC::ConstantString* str);
     VMLabel* getSyscallBinding (const std::string& name);

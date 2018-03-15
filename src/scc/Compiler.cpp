@@ -372,6 +372,16 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     m_scm->init (m_st, scSec, pdSec);
     m_strLit->init (m_st, rodataSec);
 
+    // Register all protection domains:
+    auto const & isProtectionDomainSymbol = [](SecreC::Symbol * sym) {
+        assert (sym != nullptr);
+        return sym->symbolType() == SYM_DOMAIN;
+    };
+
+    for (auto sym : code.symbols().findFromCurrentScope(isProtectionDomainSymbol)) {
+        m_scm->addPd(static_cast<SymbolDomain *>(sym));
+    }
+
     // Finally generate code:
     for (const Procedure& proc : code.program ()) {
         cgProcedure (proc);
