@@ -868,7 +868,8 @@ public: /* Methods: */
     void instantiateDataType (const DataType* dType);
 
     // If possible instantiate abstract data type to given concrete data type
-    void instantiateDataType (SecrecDataType dType = DATATYPE_INT64);
+    void instantiateDataType(SecrecDataType dType);
+    void instantiateDataType();
 
     bool haveResultType() const { return m_resultType != nullptr; }
     bool havePublicBoolType() const;

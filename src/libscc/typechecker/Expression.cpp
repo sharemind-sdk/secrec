@@ -31,39 +31,75 @@
 #include "../SecurityType.h"
 #include "../Visitor.h"
 
-#include <array>
-#include <boost/range.hpp>
-
 
 namespace SecreC {
 
 namespace /* anonymous */ {
 
+/**
+ * Use for statically casting base class to subclass.
+ * NULL pointer input is not allowed.
+ * Asserts that dynamic_cast returns non-null.
+ */
+template <typename DestPtr, typename SrcPtr>
+inline DestPtr cast(SrcPtr ptr) {
+    static_assert(std::is_convertible<DestPtr, SrcPtr>::value, "");
+    assert (ptr != nullptr);
+    assert (dynamic_cast<DestPtr>(ptr) != nullptr);
+    return static_cast<DestPtr>(ptr);
+};
+
+bool isAbstractNumeric(SecrecDataType d) {
+    switch (d) {
+    case DATATYPE_NUMERIC:
+    case DATATYPE_NUMERIC_FLOAT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool compatibleAbstractNumericDType(SecrecDataType d1, SecrecDataType d2,
+                                    SecrecDataType * result)
+{
+    if (isAbstractNumeric(d1) || isAbstractNumeric(d2)) {
+        *result = upperDataType(d1, d2);
+        return true;
+    }
+
+    return false;
+}
+
 SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, SecrecDataType d2) {
+    SecrecDataType result = DATATYPE_UNDEFINED;
     switch (type) {
     case NODE_EXPR_BINARY_ADD:
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
         if (d1 != d2) break;
         if (! isNumericDataType(d1) && d1 != DATATYPE_STRING)
             break;
         return d1;
     case NODE_EXPR_BINARY_SHL:
     case NODE_EXPR_BINARY_SHR:
-        if (isSignedNumericDataType (d1))
-            break;
+        if (isSignedNumericDataType (d1)) break;
+        if (isSignedNumericDataType (d2)) break;
     case NODE_EXPR_BINARY_SUB:
     case NODE_EXPR_BINARY_MUL:
     case NODE_EXPR_BINARY_MOD:
     case NODE_EXPR_BINARY_DIV:
-        if (d1 != d2) break;
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
         if (d1 == DATATYPE_STRING) break;
-        if (d1 != DATATYPE_NUMERIC && ! isNumericDataType(d1))
-            break;
+        if (d1 != d2) break;
+        if (! isNumericDataType(d1)) break;
         return d1;
     case NODE_EXPR_BITWISE_AND:
     case NODE_EXPR_BITWISE_OR:
     case NODE_EXPR_BITWISE_XOR:
-        if (d1 != d2) break;
+        if (d1 == DATATYPE_NUMERIC_FLOAT || d2 == DATATYPE_NUMERIC_FLOAT) break;
+        if (isFloatingDataType(d1) || isFloatingDataType(d2)) break;
         if (d1 == DATATYPE_STRING) break;
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
+        if (d1 != d2) break;
         return d1;
     case NODE_EXPR_BINARY_EQ:
     case NODE_EXPR_BINARY_GE:
@@ -71,6 +107,11 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
     case NODE_EXPR_BINARY_LE:
     case NODE_EXPR_BINARY_LT:
     case NODE_EXPR_BINARY_NE:
+        if (compatibleAbstractNumericDType(d1, d2, &result)) {
+            if (result == DATATYPE_UNDEFINED) {
+                break;
+            }
+        }
         if (d1 != d2) break;
         return DATATYPE_BOOL;
     case NODE_EXPR_BINARY_LAND:
@@ -365,8 +406,7 @@ TypeChecker::Status TypeChecker::visitExprCast(TreeNodeExprCast * root) {
         return E_TYPE;
     }
 
-    assert(dynamic_cast<const TypeBasic*>(subExpr->resultType()) != nullptr);
-    const TypeBasic * ty = static_cast<const TypeBasic*>(subExpr->resultType());
+    const TypeBasic * ty = cast<const TypeBasic*>(subExpr->resultType());
     const DataType * givenDType = ty->secrecDataType();
 
     TCGUARD (visitDataTypeF (root->dataType (), ty->secrecSecType ()));
@@ -491,8 +531,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
     for (int i = 0; i < 2; ++ i) {
-        assert(dynamic_cast<TreeNodeExpr *>(root->children().at(i)) != nullptr);
-        TreeNodeExpr * e = static_cast<TreeNodeExpr *>(root->children().at(i));
+        TreeNodeExpr * e = cast<TreeNodeExpr *>(root->children().at(i));
         e->setContext(root->typeContext());
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
@@ -664,10 +703,10 @@ bool checkUserPrimPublic (const TypeBasic* lType, const TypeBasic* rType) {
     const DataType* lData = lType->secrecDataType ();
 
     if (lData->isUserPrimitive ()) {
-        auto lPrim = static_cast<const DataTypeUserPrimitive*> (lData);
+        auto lPrim = cast<const DataTypeUserPrimitive*> (lData);
         assert (lType->secrecSecType ()->isPrivate ());
         SymbolKind* kind =
-            static_cast<const PrivateSecType*> (lType->secrecSecType ())->securityKind ();
+            cast<const PrivateSecType*> (lType->secrecSecType ())->securityKind ();
 
         assert (kind->findType (lPrim->name ()) != nullptr);
         auto publicType = kind->findType (lPrim->name ())->publicType;
@@ -686,7 +725,6 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
     TreeNodeExpr * e1 = root->leftExpression ();
     TreeNodeExpr * e2 = root->rightExpression ();
     const TypeBasic * eType1 = nullptr, *eType2 = nullptr;
-    const TypeBasic * eType1Orig = nullptr, *eType2Orig = nullptr;
 
     //set context data type
     switch (root->type()) {
@@ -711,156 +749,144 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
         break;
     }
 
-    {
-        TCGUARD (visitExpr(e1));
-        if (checkAndLogIfVoid(e1))
-            return E_TYPE;
+    TCGUARD (visitExpr(e1));
+    if (checkAndLogIfVoid(e1))
+        return E_TYPE;
 
-        TCGUARD (visitExpr(e2));
-        if (checkAndLogIfVoid(e2))
-            return E_TYPE;
+    TCGUARD (visitExpr(e2));
+    if (checkAndLogIfVoid(e2))
+        return E_TYPE;
+
+    auto const lTypeOrig = cast<const TypeBasic *>(e1->resultType());
+    auto const rTypeOrig = cast<const TypeBasic *>(e2->resultType());
+
+    // Can't have an expression with a private-only type and a public type
+    if (! checkUserPrimPublic (lTypeOrig, rTypeOrig) ||
+        ! checkUserPrimPublic (rTypeOrig, lTypeOrig))
+    {
+        m_log.fatalInProc (root)
+            << "Binary expression operands at " << root->location ()
+            << " have a public type and a user defined type without a public representation.";
+        return E_TYPE;
     }
 
-    assert(dynamic_cast<const TypeBasic *>(e1->resultType()) != nullptr);
-    eType1Orig = static_cast<const TypeBasic *>(e1->resultType());
+    const DataType* upper = upperDataType (lTypeOrig, rTypeOrig);
+    if (upper != nullptr) {
+        if (upper->isUserPrimitive ()) {
+            // One of the operands must have been private. Use its
+            // public type to instantiate.
 
-    assert(dynamic_cast<const TypeBasic *>(e2->resultType()) != nullptr);
-    eType2Orig = static_cast<const TypeBasic *>(e2->resultType());
+            const SecurityType* secType = lTypeOrig->secrecSecType()->isPrivate()
+                ? lTypeOrig->secrecSecType()
+                : rTypeOrig->secrecSecType();
 
-    {
-        const TypeBasic* const lType = static_cast<const TypeBasic*> (e1->resultType());
-        const TypeBasic* const rType = static_cast<const TypeBasic*> (e2->resultType());
+            auto publicType = dtypeDeclassify (secType, upper);
 
-        // Can't have an expression with a private-only type and a public type
-        if (! checkUserPrimPublic (lType, rType) ||
-            ! checkUserPrimPublic (rType, lType))
-        {
-            m_log.fatalInProc (root)
-                << "Binary expression operands at " << root->location ()
-                << " have a public type and a user defined type without a public representation.";
-            return E_TYPE;
-        }
-
-        const DataType* upper = upperDataType (lType, rType);
-
-        if (upper != nullptr) {
-            if (upper->isUserPrimitive ()) {
-                // One of the operands must have been private. Use its
-                // public type to instantiate.
-
-                const SecurityType* secType = lType->secrecSecType()->isPrivate()
-                    ? lType->secrecSecType()
-                    : rType->secrecSecType();
-
-                auto publicType = dtypeDeclassify (secType, upper);
-
-                if (publicType != nullptr) {
-                    SecrecDataType upperDT =
-                        static_cast<const DataTypeBuiltinPrimitive*>(publicType)
-                        ->secrecDataType();
-                    e1->instantiateDataType (upperDT);
-                    e2->instantiateDataType (upperDT);
-                }
-            }
-            else {
-                SecrecDataType upperDT = static_cast<const DataTypeBuiltinPrimitive*> (upper)->secrecDataType ();
+            if (publicType != nullptr) {
+                SecrecDataType upperDT =
+                    cast<const DataTypeBuiltinPrimitive*>(publicType)
+                    ->secrecDataType();
                 e1->instantiateDataType (upperDT);
                 e2->instantiateDataType (upperDT);
             }
         }
-
-        assert(dynamic_cast<const TypeBasic *>(e1->resultType()) != nullptr);
-        eType1 = static_cast<const TypeBasic *>(e1->resultType());
-
-        assert(dynamic_cast<const TypeBasic *>(e2->resultType()) != nullptr);
-        eType2 = static_cast<const TypeBasic *>(e2->resultType());
+        else {
+            SecrecDataType upperDT = cast<const DataTypeBuiltinPrimitive*> (upper)->secrecDataType ();
+            e1->instantiateDataType (upperDT);
+            e2->instantiateDataType (upperDT);
+        }
     }
 
-    SecrecDimType n1 = eType1->secrecDimType();
-    SecrecDimType n2 = eType2->secrecDimType();
+    eType1 = cast<const TypeBasic *>(e1->resultType());
+    eType2 = cast<const TypeBasic *>(e2->resultType());
 
-    if (n1 == 0 || n2 == 0 || n1 == n2) {
-        SecrecDimType n0 = upperDimType(n1, n2);
+    SecrecDimType const n1 = eType1->secrecDimType();
+    SecrecDimType const n2 = eType2->secrecDimType();
 
-        // Find user definition
-        SymbolProcedure* match = nullptr;
-        if (overloadedOpGood(eType1) && overloadedOpGood(eType2)) {
-            std::vector<const TypeBasic*> argumentDataTypes;
-            argumentDataTypes.push_back(eType1);
-            argumentDataTypes.push_back(eType2);
-            const TypeProc* argTypes = TypeProc::get(argumentDataTypes);
-            TCGUARD(findBestMatchingOpDef(match, root->operatorName(), *root, argTypes, root));
+    if (n1 != n2 && n1 > 0 && n2 > 0) {
+        m_log.fatalInProc(root) << "Binary operation " << root->operatorString()
+                                << " between operands with dimensions " << n1 << " and " << n2
+                                << " at " << root->location() << '.';
+        return E_TYPE;
+    }
+
+    SecrecDimType const n0 = upperDimType(n1, n2);
+
+    // Find user definition
+    SymbolProcedure* match = nullptr;
+    if (overloadedOpGood(eType1) && overloadedOpGood(eType2)) {
+        std::vector<const TypeBasic*> argumentDataTypes;
+        argumentDataTypes.push_back(eType1);
+        argumentDataTypes.push_back(eType2);
+        const TypeProc* argTypes = TypeProc::get(argumentDataTypes);
+        TCGUARD(findBestMatchingOpDef(match, root->operatorName(), *root, argTypes, root));
+    }
+
+    if (match != nullptr) { // Overloaded operator
+        // Add implicit classify nodes if needed:
+        const std::vector<const TypeBasic*>& params =
+            match->decl()->procedureType()->paramTypes();
+
+        e1->setContextDataType(params[0u]->secrecDataType());
+        e2->setContextDataType(params[1u]->secrecDataType());
+
+        (void) classifyIfNeeded(e1, params[0u]->secrecSecType());
+        (void) classifyIfNeeded(e2, params[1u]->secrecSecType());
+
+        const Type* rtv = match->decl()->procedureType()->returnType();
+        auto const rt = cast<const TypeBasic*>(rtv);
+
+        root->setResultType(
+            TypeBasic::get(rt->secrecSecType(), rt->secrecDataType(), n0));
+        root->setProcSymbol(match);
+
+        return OK;
+    }
+    else { // Not overloaded
+        auto const s1 = eType1->secrecSecType();
+        auto const s2 = eType2->secrecSecType();
+        auto const s0 = upperSecType(s1, s2);
+
+        if (s0 == nullptr || s0->isPrivate()) {
+            m_log.fatalInProc(root) << "Binary expression on private operands at "
+                                    << root->location()
+                                    << " has no matching operator definition.";
+            return E_TYPE;
         }
 
-        if (match != nullptr) { // Overloaded operator
-            // Add implicit classify nodes if needed:
-            const std::vector<const TypeBasic*>& params =
-                match->decl()->procedureType()->paramTypes();
+        assert (s1->isPublic() && s2->isPublic());
 
-            e1->setContextDataType(params[0u]->secrecDataType());
-            e2->setContextDataType(params[1u]->secrecDataType());
+        eType1 = cast<const TypeBasic *>(e1->resultType());
+        eType2 = cast<const TypeBasic *>(e2->resultType());
 
-            e1 = classifyIfNeeded(e1, params[0u]->secrecSecType());
-            eType1 = static_cast<const TypeBasic *>(e1->resultType());
-            e2 = classifyIfNeeded(e2, params[1u]->secrecSecType());
-            eType2 = static_cast<const TypeBasic *>(e2->resultType());
+        auto const d1 = eType1->secrecDataType();
+        auto const d2 = eType2->secrecDataType();
+        auto const d0 = getResultDType(root->type(), d1, d2);
 
-            const Type* rtv = match->decl()->procedureType()->returnType();
-            assert(dynamic_cast<const TypeBasic*>(rtv) != nullptr);
-            const TypeBasic* rt = static_cast<const TypeBasic*>(rtv);
+        if (d0 != DATATYPE_UNDEFINED) {
+            switch (root->type()) {
+                case NODE_EXPR_BINARY_EQ:
+                case NODE_EXPR_BINARY_GE:
+                case NODE_EXPR_BINARY_GT:
+                case NODE_EXPR_BINARY_LE:
+                case NODE_EXPR_BINARY_LT:
+                case NODE_EXPR_BINARY_NE:
+                    e1->instantiateDataType();
+                    e2->instantiateDataType();
+                default:
+                    break;
+            }
 
-            root->setResultType(
-                TypeBasic::get(rt->secrecSecType(), rt->secrecDataType(), n0));
-            root->setProcSymbol(match);
-
+            root->setResultType(TypeBasic::get (s0, d0, n0));
             return OK;
         }
-        else { // Not overloaded
-            const SecurityType * s1 = eType1->secrecSecType();
-            const SecurityType * s2 = eType2->secrecSecType();
-            const SecurityType * s0 = upperSecType(s1, s2);
-
-            if (s0 == nullptr || s0->isPrivate()) {
-                m_log.fatalInProc(root) << "Binary expression on private operands at "
-                                        << root->location()
-                                        << " has no matching operator definition.";
-                return E_TYPE;
-            }
-
-            // Add implicit classify nodes if needed:
-            e1 = classifyIfNeeded(e1, s0);
-            eType1 = static_cast<const TypeBasic *>(e1->resultType());
-            e2 = classifyIfNeeded(e2, s0);
-            eType2 = static_cast<const TypeBasic *>(e2->resultType());
-
-            const DataType* d1 = eType1->secrecDataType();
-            const DataType* d2 = eType2->secrecDataType();
-            SecrecDataType d0 = getResultDType(root->type(), d1, d2);
-
-            if (d0 != DATATYPE_UNDEFINED) {
-                switch (root->type()) {
-                    case NODE_EXPR_BINARY_EQ:
-                    case NODE_EXPR_BINARY_GE:
-                    case NODE_EXPR_BINARY_GT:
-                    case NODE_EXPR_BINARY_LE:
-                    case NODE_EXPR_BINARY_LT:
-                    case NODE_EXPR_BINARY_NE:
-                        e1->instantiateDataType();
-                        e2->instantiateDataType();
-                    default:
-                        break;
-                }
-
-                root->setResultType(TypeBasic::get (s0, d0, n0));
-                return OK;
-            }
+        else {
+            m_log.fatalInProc(root) << "Binary operation " << root->operatorString()
+                                    << " between operands of type " << *lTypeOrig << " and " << *rTypeOrig
+                                    << " at " << root->location() << '.';
+            return E_TYPE;
         }
     }
-
-    m_log.fatalInProc(root) << "Invalid binary operation " << root->operatorString()
-        << " between operands of type " << *eType1Orig << " and " << *eType2Orig
-        << " at " << root->location() << '.';
-    return E_TYPE;
 }
 
 void TreeNodeExprBinary::instantiateDataTypeV(SecrecDataType dType) {
@@ -899,8 +925,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
                 root->setProcSymbol(match);
 
                 const Type* rtv = match->decl()->procedureType()->returnType();
-                assert(dynamic_cast<const TypeBasic*>(rtv) != nullptr);
-                const TypeBasic* rt = static_cast<const TypeBasic*>(rtv);
+                const TypeBasic* rt = cast<const TypeBasic*>(rtv);
 
                 root->setResultType(
                     TypeBasic::get(rt->secrecSecType(),
@@ -919,7 +944,7 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
 
         if (root->type() == NODE_EXPR_UINV) {
             if (isUnsignedNumericDataType(et->secrecDataType ())
-                    || et->secrecDataType ()->equals (DATATYPE_NUMERIC)
+                    || et->secrecDataType ()->isAbstractNumeric()
                     || et->secrecDataType ()->isBool ())
             {
                 root->setResultType (et);
@@ -933,7 +958,8 @@ TypeChecker::Status TypeChecker::visitExprUnary(TreeNodeExprUnary * root) {
         }
         else if (root->type() == NODE_EXPR_UMINUS) {
             if (isNumericDataType(et->secrecDataType())
-                    || et->secrecDataType()->equals (DATATYPE_NUMERIC)) {
+                    || et->secrecDataType()->isAbstractNumeric())
+            {
                 root->setResultType (et);
                 return OK;
             }
@@ -1070,19 +1096,11 @@ void TreeNodeExprInt::instantiateDataTypeV(SecrecDataType dType) {
 
 TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
     if (!e->haveResultType()) {
-        const DataType* dType = DataTypeBuiltinPrimitive::get (DATATYPE_NUMERIC); /* default */
+        const DataType* dType = DataTypeBuiltinPrimitive::get(DATATYPE_NUMERIC_FLOAT); /* default */
         if (e->haveContextDataType()) {
             dType = dtypeDeclassify(e->contextSecType(), e->contextDataType());
             if (dType == nullptr) {
                 m_log.fatalInProc(e) << "ICE: Unknown type at " << e->location() << ".";
-                return E_TYPE;
-            }
-
-            if (! (isFloatingDataType (dType) ||
-                   dType->equals (DATATYPE_NUMERIC)))
-            {
-                m_log.fatalInProc(e) << "Expecting floating point, got "
-                    << *dType << " at " << e->location() << '.';
                 return E_TYPE;
             }
         }
@@ -1094,7 +1112,6 @@ TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
 }
 
 void TreeNodeExprFloat::instantiateDataTypeV(SecrecDataType dType) {
-    assert (dType == DATATYPE_FLOAT32 || dType == DATATYPE_FLOAT64);
     resetDataType(dType);
 }
 
@@ -1317,8 +1334,7 @@ TypeChecker::Status TypeChecker::visitExprTernary(TreeNodeExprTernary * root) {
     const SecreC::Type * eType2 = e2->resultType();
     const SecreC::Type * eType3 = e3->resultType();
 
-    assert(dynamic_cast<const TypeNonVoid *>(eType1) != nullptr);
-    const auto cType = static_cast<const TypeNonVoid *>(eType1);
+    const auto cType = cast<const TypeNonVoid *>(eType1);
 
     // check if conditional expression is of public boolean type
     if (! cType->secrecDataType()->isBool () || cType->secrecSecType()->isPrivate())

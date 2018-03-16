@@ -78,6 +78,7 @@ const char * SecrecFundDataTypeToString(SecrecDataType dataType) {
         case DATATYPE_UINT16:        return "uint16";
         case DATATYPE_UINT32:        return "uint32";
         case DATATYPE_UINT64:        return "uint64";
+        case DATATYPE_NUMERIC_FLOAT: return "numeric_float";
         case DATATYPE_FLOAT32:       return "float32";
         case DATATYPE_FLOAT64:       return "float64";
         case DATATYPE_STRING:        return "string";
