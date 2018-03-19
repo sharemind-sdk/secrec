@@ -109,6 +109,7 @@ add_test_secrec_execute("scalars/77-cast-definitions-5")
 add_test_secrec_execute("scalars/78-void-cast-bug")
 add_test_secrec_execute("scalars/79-arithmetic-assignment-overloading")
 add_test_secrec_execute("scalars/80-void-badness")
+add_test_secrec_execute("scalars/81-numeric-literals")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")

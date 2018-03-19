@@ -59,10 +59,22 @@ bool isAbstractNumeric(SecrecDataType d) {
     }
 }
 
+bool compatibleAbstractNumericDType(SecrecDataType d1, SecrecDataType d2,
+                                    SecrecDataType * result)
+{
+    if (isAbstractNumeric(d1) || isAbstractNumeric(d2)) {
+        *result = upperDataType(d1, d2);
+        return true;
+    }
+
+    return false;
+}
+
 SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, SecrecDataType d2) {
     SecrecDataType result = DATATYPE_UNDEFINED;
     switch (type) {
     case NODE_EXPR_BINARY_ADD:
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
         if (d1 != d2) break;
         if (! isNumericDataType(d1) && d1 != DATATYPE_STRING)
             break;
@@ -75,7 +87,7 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
     case NODE_EXPR_BINARY_MUL:
     case NODE_EXPR_BINARY_MOD:
     case NODE_EXPR_BINARY_DIV:
-        if (d1 != d2) break;
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
         if (d1 == DATATYPE_STRING) break;
         if (d1 != d2) break;
         if (! isNumericDataType(d1)) break;
@@ -86,6 +98,7 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
         if (d1 == DATATYPE_NUMERIC_FLOAT || d2 == DATATYPE_NUMERIC_FLOAT) break;
         if (isFloatingDataType(d1) || isFloatingDataType(d2)) break;
         if (d1 == DATATYPE_STRING) break;
+        if (compatibleAbstractNumericDType(d1, d2, &result)) return result;
         if (d1 != d2) break;
         return d1;
     case NODE_EXPR_BINARY_EQ:
@@ -94,6 +107,11 @@ SecrecDataType getResultDType(SecrecTreeNodeType type, SecrecDataType d1, Secrec
     case NODE_EXPR_BINARY_LE:
     case NODE_EXPR_BINARY_LT:
     case NODE_EXPR_BINARY_NE:
+        if (compatibleAbstractNumericDType(d1, d2, &result)) {
+            if (result == DATATYPE_UNDEFINED) {
+                break;
+            }
+        }
         if (d1 != d2) break;
         return DATATYPE_BOOL;
     case NODE_EXPR_BINARY_LAND:
