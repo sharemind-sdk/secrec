@@ -91,6 +91,10 @@ public: /* Methods: */
     bool isString () const { return equals (DATATYPE_STRING); }
     bool isBool () const { return equals (DATATYPE_BOOL); }
 
+    bool isAbstractNumeric() const {
+        return equals(DATATYPE_NUMERIC) || equals(DATATYPE_NUMERIC_FLOAT);
+    }
+
     virtual bool equals (const DataType* other) const { return this == other; };
     virtual bool equals (SecrecDataType other) const;
 

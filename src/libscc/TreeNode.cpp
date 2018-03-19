@@ -445,11 +445,31 @@ void TreeNodeExpr::instantiateDataType (const DataType* dType) {
     }
 }
 
+void TreeNodeExpr::instantiateDataType() {
+    assert (resultType () != nullptr);
+
+    if (resultType()->isVoid()) {
+        return;
+    }
+
+    auto const dataType = resultType()->secrecDataType();
+
+    if (dataType->equals(DATATYPE_NUMERIC_FLOAT)) {
+        instantiateDataTypeV(DATATYPE_FLOAT64);
+        return;
+    }
+
+    if (dataType->equals(DATATYPE_NUMERIC)) {
+        instantiateDataTypeV(DATATYPE_INT64);
+        return;
+    }
+}
+
 // If possible instantiate abstract data type to given concrete data type
 void TreeNodeExpr::instantiateDataType (SecrecDataType dType) {
     assert (resultType () != nullptr);
     if ( ! resultType ()->isVoid ()
-        && resultType ()->secrecDataType ()->equals (DATATYPE_NUMERIC)
+        && resultType ()->secrecDataType ()->isAbstractNumeric()
         && dType != DATATYPE_NUMERIC) {
         instantiateDataTypeV (dType);
     }

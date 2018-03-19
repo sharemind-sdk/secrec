@@ -119,7 +119,7 @@ public: /* Methods: */
 
 protected: /* Methods: */
 
-    TypeNonVoid (Kind kind)
+    explicit TypeNonVoid (Kind kind)
         : Type (kind)
     { }
 };
