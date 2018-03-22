@@ -176,9 +176,9 @@ public: /* Types: */
         const TypeBasic* type;
         StringRef  name;
 
-        Field (const TypeBasic* type, StringRef name)
-            : type (type)
-            , name (std::move(name))
+        Field(TypeBasic const * type_, StringRef name_)
+            : type(type_)
+            , name(std::move(name_))
         { }
     };
 
