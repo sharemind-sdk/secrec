@@ -243,9 +243,8 @@ bool TypeUnifier::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, const TypeAr
             "ICE: This should have bee guaranteed by the type checker!");
 
     for (size_t i = 0; i < args.size (); ++ i) {
-        TreeNodeTypeArg& arg = args[i];
         TypeArgument expectedArg = expectedArgs[i];
-        TUGUARD (visitTypeArg (&arg, expectedArg));
+        TUGUARD (visitTypeArg (&args[i], expectedArg));
     }
 
     return true;
