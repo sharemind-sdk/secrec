@@ -117,12 +117,18 @@ void castValue (Value& dest, const Value& from) {
 
 /// Stack for values
 class ValueStack {
-    ValueStack (const ValueStack&); // not copyable
-    ValueStack& operator = (const ValueStack&); // not assignable
+
 public:
 
     ValueStack () : m_bptr (nullptr), m_offset (0), m_size (0) { }
+
+    ValueStack(ValueStack &&) = delete;
+    ValueStack(ValueStack const &) = delete;
+
     ~ValueStack () { free (m_bptr); }
+
+    ValueStack & operator=(ValueStack &&) = delete;
+    ValueStack & operator=(ValueStack const &) = delete;
 
     void top (Value& out) const {
         assert (m_offset > 0);
