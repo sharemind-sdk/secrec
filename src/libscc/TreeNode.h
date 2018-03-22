@@ -881,7 +881,7 @@ public: /* Methods: */
 protected: /* Methods: */
 
     virtual void instantiateDataTypeV (SecrecDataType) {
-        assert ("ICE! data types should not be instantiated on given tree node type");
+        assert(false && "ICE! data types should not be instantiated on given tree node type");
     }
 
     void setResultType(const Type *type);
