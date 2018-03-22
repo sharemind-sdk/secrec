@@ -62,10 +62,10 @@ unsigned countQuantifiedParams (TreeNodeTemplate* templ) {
         }
 
         if (t->dataType ()->type () == NODE_DATATYPE_TEMPLATE_F) {
-            TreeNodeDataTypeTemplateF* templ = static_cast<TreeNodeDataTypeTemplateF*> (t->dataType ());
+            TreeNodeDataTypeTemplateF* templ2 = static_cast<TreeNodeDataTypeTemplateF*> (t->dataType ());
             std::vector<TreeNodeTypeArg*> typeArgs;
 
-            for (TreeNodeTypeArg& arg : templ->arguments ()) {
+            for (TreeNodeTypeArg& arg : templ2->arguments ()) {
                 typeArgs.push_back (&arg);
             }
 
