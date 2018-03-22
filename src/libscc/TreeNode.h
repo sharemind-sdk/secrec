@@ -2137,7 +2137,7 @@ public: /* Methods: */
         : TreeNode (NODE_MODULE, loc)
     { }
 
-    ~TreeNodeModule();
+    ~TreeNodeModule() override;
 
     bool hasName () const;
     StringRef name () const;
