@@ -38,25 +38,6 @@ void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
             out << " ";
 }
 
-
-template <typename T, typename V >
-static void deleteValues (typename std::map<T, V* >& kvs) {
-    typename std::map<T, V* >::iterator i;
-    for (i = kvs.begin (); i != kvs.end (); ++ i) {
-        delete i->second;
-    }
-
-    kvs.clear ();
-}
-
-template <typename T, typename V >
-void printValues (typename std::map<T, V* > const& kvs, std::ostringstream& os) {
-    typename std::map<T, V* >::const_iterator i;
-    for (i = kvs.begin (); i != kvs.end (); ++ i) {
-        os << *i->second << '\n';
-    }
-}
-
 } // anonymous namespace
 
 /*******************************************************************************
