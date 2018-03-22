@@ -118,12 +118,12 @@ bool TypeNonVoid::latticeLEQ (const TypeNonVoid* other) const {
 
 struct TypeBasic::Key {
 
-    Key (const SecurityType* secType,
-         const DataType* dataType,
-         SecrecDimType dimType)
-        : secType {secType}
-        , dataType {dataType}
-        , dimType {dimType}
+    Key (const SecurityType* secType_,
+         const DataType* dataType_,
+         SecrecDimType dimType_)
+        : secType(secType_)
+        , dataType(dataType_)
+        , dimType(dimType_)
     { }
 
     inline friend bool operator == (const Key& k1, const Key& k2) {
