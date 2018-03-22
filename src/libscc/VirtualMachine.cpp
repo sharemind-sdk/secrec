@@ -186,11 +186,6 @@ struct VMSym {
 
     VMSym () { }
 
-    VMSym(bool isLocal_, Instruction * inst)
-        : isLocal(isLocal_)
-        , un_inst(inst)
-    {}
-
     VMSym (bool isLocal_, Symbol const * sym)
         : isLocal(isLocal_)
         , un_sym(sym)
