@@ -119,12 +119,12 @@ protected: /* Methods: */
     }
 
     void setContainingProcedureDirectly (TreeNodeProcDef *p) {
-        m_procedure = p;
+        m_containingProcedure = p;
     }
 
     virtual inline void resetParent(TreeNode *parent) {
         m_parent = parent;
-        m_procedure = parent->m_procedure;
+        m_containingProcedure = parent->m_containingProcedure;
     }
 
     // It's assumed that cloneV sets m_type, and m_location.
@@ -134,7 +134,7 @@ protected: /* Methods: */
 
 protected: /* Fields: */
     TreeNode*                 m_parent;
-    mutable TreeNodeProcDef * m_procedure;
+    mutable TreeNodeProcDef * m_containingProcedure;
     const SecrecTreeNodeType  m_type;
     ChildrenList              m_children;
     Location                  m_location;

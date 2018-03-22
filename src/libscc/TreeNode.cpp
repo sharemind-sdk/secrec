@@ -78,7 +78,7 @@ TreeNodeExpr * expressionAt(const TreeNode * node, size_t i) {
 
 TreeNode::TreeNode(SecrecTreeNodeType type, const Location & loc)
     : m_parent(nullptr)
-    , m_procedure(nullptr)
+    , m_containingProcedure(nullptr)
     , m_type(type)
     , m_location(loc)
 {
@@ -109,9 +109,9 @@ TreeNode * TreeNode::clone(TreeNode * parent) const {
 }
 
 TreeNodeProcDef * TreeNode::containingProcedure() const {
-    if (m_procedure != nullptr) return m_procedure;
+    if (m_containingProcedure != nullptr) return m_containingProcedure;
     if (m_parent != nullptr) {
-        return (m_procedure = m_parent->containingProcedure());
+        return (m_containingProcedure = m_parent->containingProcedure());
     }
     return nullptr;
 }
