@@ -81,6 +81,8 @@ public: /* Methods: */
     TemplateVarChecker (TemplateVarChecker&&) = default;
     TemplateVarChecker& operator = (TemplateVarChecker&&) = default;
 
+    virtual ~TemplateVarChecker() noexcept;
+
     bool visit (TreeNodeIdentifier* id, TypeArgumentKind kind);
 
     virtual bool visitQuantifier (TreeNodeQuantifier* q);

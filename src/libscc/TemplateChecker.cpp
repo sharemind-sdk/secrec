@@ -31,6 +31,8 @@ namespace SecreC {
   TemplateChecker
 *******************************************************************************/
 
+TemplateVarChecker::~TemplateVarChecker() noexcept = default;
+
 bool TemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind kind) {
     const StringRef name = id->value ();
     const auto it = m_vars.find (name);
