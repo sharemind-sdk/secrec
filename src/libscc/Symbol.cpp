@@ -133,7 +133,8 @@ void flattenSymbolLoop (std::vector<Symbol*>& acc, Symbol* sym) {
         }
     }
     else {
-        acc.insert (acc.end (), dim_begin (sym), dim_end (sym));
+        if (auto ss = dynamic_cast<SymbolSymbol *>(sym))
+            acc.insert(acc.end(), ss->dims().begin(), ss->dims().end());
         acc.push_back (sym);
     }
 }

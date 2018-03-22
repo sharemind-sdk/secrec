@@ -330,9 +330,8 @@ void CodeGen::codeGenSize (CGResult &result, SymbolSymbol* sym) {
             return;
         Symbol * one = indexConstant(1);
         emplaceImopAfter (result, m_node, Imop::ASSIGN, size, one);
-        for (auto dimSym : dim_range (sym)) {
+        for (auto dimSym : sym->dims())
             emplaceImop(m_node, Imop::MUL, size, size, dimSym);
-        }
     }
 }
 
@@ -375,12 +374,14 @@ CGResult CodeGen::copyShape (Symbol* dest, Symbol* sym) {
     assert (dynamic_cast<SymbolSymbol *>(sym) != nullptr);
     SymbolSymbol* d = static_cast<SymbolSymbol *>(dest);
     SymbolSymbol* s = static_cast<SymbolSymbol *>(sym);
-    dim_iterator dj = dim_begin (d);
+    assert(d->dims().size() == s->dims().size());
+    auto dj(d->dims().begin());
 
     CGResult result;
-    for (dim_iterator di(dim_begin(s)); di != dim_end(s); ++ di, ++ dj) {
-        assert(dj != dim_end(d));
-        emplaceImopAfter (result, m_node, Imop::ASSIGN, *dj, *di);
+    for (auto ss : s->dims()) {
+        assert(dj != d->dims().end());
+        emplaceImopAfter(result, m_node, Imop::ASSIGN, *dj, ss);
+        ++dj;
     }
 
     if (s->getSizeSym() != nullptr) {
@@ -617,7 +618,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
         const TypeBasic * boolTy = TypeBasic::getPublicBoolType();
         SymbolTemporary * temp_bool = m_st->appendTemporary(boolTy);
 
-        dim_iterator dit = dim_begin(x);
+        auto dit = x->dims().begin();
         for (auto it = m_spv.begin(), e = m_spv.end ();
              it != e; ++ it, ++ dit)
         {
@@ -691,13 +692,13 @@ CGResult CodeGen::cgProcParam (SymbolSymbol* sym) {
     }
     else {
         // Pop parameters:
-        for (auto symDim : dim_range (sym))
+        for (auto symDim : sym->dims())
             emplaceImopAfter(result, m_node, Imop::PARAM, symDim);
         emplaceImopAfter(result, m_node, Imop::PARAM, sym);
 
         // Update size:
         emplaceImop(m_node, Imop::ASSIGN, sym->getSizeSym(), indexConstant(1));
-        for (auto symDim : dim_range (sym))
+        for (auto symDim : sym->dims())
             emplaceImop(m_node, Imop::MUL, sym->getSizeSym(), sym->getSizeSym(), symDim);
     }
 
@@ -803,12 +804,14 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
             ss << "Shape mismatch at " << m_node->location();
             Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * const errLabel = m_st->label(err);
-            dim_iterator lhsDimIter = dim_begin(lhs);
-            for (Symbol * rhsDim : dim_range(rhs)) {
-                SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
-                emplaceImopAfter(result, m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter);
-                emplaceImop(m_node, Imop::JT, errLabel, temp_bool);
-                ++lhsDimIter;
+            auto lhsDimIter(lhs->dims().begin());
+            if (auto rhsSs = dynamic_cast<SymbolSymbol *>(rhs)) {
+                for (auto rhsDim : rhsSs->dims()) {
+                    SymbolTemporary * const temp_bool = m_st->appendTemporary(pubBoolTy);
+                    emplaceImopAfter(result, m_node, Imop::NE, temp_bool, rhsDim, *lhsDimIter);
+                    emplaceImop(m_node, Imop::JT, errLabel, temp_bool);
+                    ++lhsDimIter;
+                }
             }
 
             const auto jmp = new Imop(m_node, Imop::JUMP, nullptr);
@@ -827,9 +830,11 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
             } else {
                 assert(ty->secrecDimType() == rhs->secrecType()->secrecDimType());
 
-                dim_iterator srcIter = dim_begin(rhs);
-                for (Symbol * const destSym : dim_range(lhs)) {
-                    assert(srcIter != dim_end(rhs));
+                auto & rhsSs = *static_cast<SymbolSymbol *>(rhs);
+
+                auto srcIter(rhsSs.dims().begin());
+                for (auto destSym : lhs->dims()) {
+                    assert(srcIter != rhsSs.dims().end());
                     emplaceImopAfter(result, m_node, Imop::ASSIGN, destSym, *srcIter);
                     ++srcIter;
                 }

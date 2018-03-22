@@ -26,9 +26,7 @@
 #include "TreeNodeFwd.h"
 
 #include <boost/optional.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <cassert>
-#include <iterator>
 #include <map>
 #include <set>
 #include <vector>
@@ -262,6 +260,9 @@ public: /* Methods: */
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
     inline bool isTemporary () const { return m_isTemporary; }
 
+    std::vector<SymbolSymbol*> const & dims() const noexcept
+    { return m_dims; }
+
     inline SymbolSymbol* getDim (SecrecDimType i) { return m_dims[i]; }
     inline void setDim (SecrecDimType i, SymbolSymbol* sym) {
         if (sym != nullptr) {
@@ -293,11 +294,6 @@ public: /* Methods: */
 protected:
     void print(std::ostream & os) const override;
 
-protected:
-
-    template <typename B, typename E>
-    friend class DimIterator;
-
 private: /* Fields: */
 
     ScopeType                   m_scopeType;
@@ -321,61 +317,6 @@ std::vector<Symbol*> flattenSymbol (Symbol* sym);
 
 using SymbolTemporary = SymbolSymbol;
 
-template <typename BaseTy, typename ElemTy >
-class DimIterator : public std::iterator<std::bidirectional_iterator_tag, ElemTy* > {
-public: /* Types: */
-
-    using Self = DimIterator<BaseTy, ElemTy >;
-
-public: /* Methods: */
-
-    explicit inline DimIterator (BaseTy symbol)
-        : m_symbol (symbol)
-        , m_index (0)
-    { }
-
-    explicit inline DimIterator (BaseTy symbol, bool)
-        : m_symbol (symbol)
-        , m_index (symbol ? symbol->m_dims.size () : 0)
-    { }
-
-    inline const Self& operator = (const Self& i) {
-        assert (m_symbol == i.m_symbol);
-        m_index = i.m_index;
-        return *this;
-    }
-
-    inline bool operator == (const Self& i) const { return m_index == i.m_index; }
-    inline bool operator != (const Self& i) const { return m_index != i.m_index; }
-    inline ElemTy* operator*() const { return m_symbol->m_dims[m_index]; }
-    inline ElemTy* operator->() const { return operator * (); }
-    inline ElemTy*& operator*() { return m_symbol->m_dims[m_index]; }
-    inline ElemTy*& operator->() { return operator * (); }
-    inline Self& operator ++ () { ++ m_index; return *this; }
-    inline Self  operator ++ (int) { Self tmp = *this; ++ m_index; return tmp; }
-    inline Self& operator -- () { -- m_index; return *this; }
-    inline Self  operator -- (int) { Self tmp = *this; -- m_index; return tmp; }
-
-private: /* Methods: */
-
-    const BaseTy   m_symbol;
-    unsigned       m_index;
-};
-
-/// \{
-using dim_iterator = DimIterator<SymbolSymbol*, SymbolSymbol>;
-using dim_const_iterator = DimIterator<const SymbolSymbol*, SymbolSymbol>;
-inline dim_iterator dim_begin (SymbolSymbol* symbol) { return dim_iterator (symbol); }
-inline dim_iterator dim_end (SymbolSymbol* symbol) { return dim_iterator (symbol, true); }
-inline dim_const_iterator dim_begin (const SymbolSymbol* symbol) { return dim_const_iterator (symbol); }
-inline dim_const_iterator dim_end (const SymbolSymbol* symbol) { return dim_const_iterator (symbol, true); }
-inline dim_iterator dim_begin (Symbol* symbol) { return dim_begin (dynamic_cast<SymbolSymbol*>(symbol)); }
-inline dim_iterator dim_end (Symbol* symbol) { return dim_end (dynamic_cast<SymbolSymbol*>(symbol)); }
-inline dim_const_iterator dim_begin (const Symbol* symbol) { return dim_begin (dynamic_cast<const SymbolSymbol*>(symbol)); }
-inline dim_const_iterator dim_end (const Symbol* symbol) { return dim_end (dynamic_cast<const SymbolSymbol*>(symbol)); }
-inline boost::iterator_range<dim_iterator> dim_range (Symbol* symbol) { return {dim_begin (symbol), dim_end (symbol)}; }
-inline boost::iterator_range<dim_const_iterator> dim_range (const Symbol* symbol) { return {dim_begin (symbol), dim_end (symbol)}; }
-/// \}
 
 /*******************************************************************************
   SymbolProcedure

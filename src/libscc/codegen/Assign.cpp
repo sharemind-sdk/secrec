@@ -400,10 +400,9 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
                 SymbolLabel * errLabel = m_st->label(err);
                 SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
 
-                dim_iterator
-                    di = dim_begin(arg2ResultSymbol),
-                    dj = dim_begin(destSym),
-                    de = dim_end(arg2ResultSymbol);
+                auto di(arg2ResultSymbol->dims().begin());
+                auto de(arg2ResultSymbol->dims().end());
+                auto dj(static_cast<SymbolSymbol *>(destSym)->dims().begin());
                 for (; di != de; ++ di, ++ dj) {
                     SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
                     emplaceImop(e, Imop::NE, temp_bool, *di, *dj);

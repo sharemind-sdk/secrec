@@ -356,10 +356,12 @@ CGResult CodeGen::cgExprShape(TreeNodeExprShape * e) {
     emplaceImop(e, Imop::ASSIGN, resSym->getDim(0), n);
 
     unsigned count = 0;
-    for (Symbol* sizeSym : dim_range(argResult.symbol())) {
-        Symbol * indexSym = indexConstant(count);
-        emplaceImop(e, Imop::STORE, resSym, indexSym, sizeSym);
-        ++ count;
+    if (auto argResultSs = dynamic_cast<SymbolSymbol *>(argResult.symbol())) {
+        for (Symbol* sizeSym : argResultSs->dims()) {
+            Symbol * indexSym = indexConstant(count);
+            emplaceImop(e, Imop::STORE, resSym, indexSym, sizeSym);
+            ++ count;
+        }
     }
 
     codeGenSize(result);
@@ -551,9 +553,9 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
     SymbolSymbol * resSym = generateResultSymbol(result, e);
 
     {   // Eval subexpressions and copy dimensionalities:
-        dim_iterator dimIt = dim_begin(resSym);
+        auto dimIt(resSym->dims().begin());
         for (TreeNodeExpr& dim : e->dimensions()) {
-            assert(dimIt != dim_end(resSym));
+            assert(dimIt != resSym->dims().end());
             const CGResult & argResult = codeGen(&dim);
             append(result, argResult);
             if (result.isNotOk()) {
@@ -642,12 +644,16 @@ void CodeGen::cgBinExprShapeCheck(TreeNodeExpr * e,
     ss << "Mismatching shapes in arithmetic expression at " << e->location();
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
-    dim_iterator dj = dim_begin(e2result);
-    for (Symbol* dim : dim_range(e1result)) {
-        SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
-        emplaceImopAfter(result, e, Imop::NE, temp_bool, dim, *dj);
-        emplaceImop(e, Imop::JT, errLabel, temp_bool);
-        ++dj;
+    if (auto e1ResultSs = dynamic_cast<SymbolSymbol *>(e1result)) {
+        if (!e1ResultSs->dims().empty()) {
+            auto dj(static_cast<SymbolSymbol *>(e2result)->dims().begin());
+            for (auto dim : e1ResultSs->dims()) {
+                SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
+                emplaceImopAfter(result, e, Imop::NE, temp_bool, dim, *dj);
+                emplaceImop(e, Imop::JT, errLabel, temp_bool);
+                ++dj;
+            }
+        }
     }
 
     Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
@@ -1684,18 +1690,19 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
-        dim_iterator
-            di = dim_begin(e1Result.symbol()),
-               dj = dim_begin(e2Result.symbol()),
-               dk = dim_begin(e3Result.symbol()),
-               de = dim_end(e1Result.symbol());
-        for (; di != de; ++ di, ++ dj, ++ dk) {
-            SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
+        if (auto e1ResultSs = dynamic_cast<SymbolSymbol *>(e1Result.symbol())) {
+            auto dj(static_cast<SymbolSymbol *>(e2Result.symbol())->dims().begin());
+            auto dk(static_cast<SymbolSymbol *>(e3Result.symbol())->dims().begin());
+            for (auto dim : e1ResultSs->dims()) {
+                SymbolTemporary * temp_bool = m_st->appendTemporary(pubBoolTy);
 
-            emplaceImopAfter (result, e, Imop::NE, temp_bool, *di, *dj);
-            emplaceImop (e, Imop::JT, errLabel, temp_bool);
-            emplaceImop (e, Imop::NE, temp_bool, *dj, *dk);
-            emplaceImop (e, Imop::JT, errLabel, temp_bool);
+                emplaceImopAfter (result, e, Imop::NE, temp_bool, dim, *dj);
+                emplaceImop (e, Imop::JT, errLabel, temp_bool);
+                emplaceImop (e, Imop::NE, temp_bool, *dj, *dk);
+                emplaceImop (e, Imop::JT, errLabel, temp_bool);
+                ++dj;
+                ++dk;
+            }
         }
 
         result.patchNextList(m_st->label(jmp));
