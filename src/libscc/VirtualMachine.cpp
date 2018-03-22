@@ -156,7 +156,8 @@ private:
     void increase_size () {
         m_size = ((m_size + 1) * 3) / 2;
         TRACE("RESIZE STACK TO %zu\n", m_size);
-        Value* newBPtr = (Value*) realloc (m_bptr, m_size * sizeof (Value));
+        auto * newBPtr =
+                static_cast<Value *>(realloc(m_bptr, m_size * sizeof(Value)));
         if (newBPtr != nullptr) {
             m_bptr = newBPtr;
         }
@@ -479,7 +480,7 @@ MKCALLBACK(JUMP, 0, 0, 0, 0,
 MKCALLBACK(ALLOC, 1, 1, 1, 0,
     const Value& v = arg2;
     const unsigned n = arg1.un_uint_val;
-    dest.un_ptr = (Value*) malloc (sizeof (Value) * n);
+    dest.un_ptr = static_cast<Value *>(malloc(sizeof(Value) * n));
     for (Value* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
       *it = v;
 )
@@ -834,7 +835,8 @@ public: /* Methods: */
             }
         }
 
-        out = (Instruction*) calloc(sizeof (Instruction), m_codeSize);
+        out = static_cast<Instruction *>(calloc(sizeof(Instruction),
+                                                m_codeSize));
         for (size_t i = 0; i != m_codeSize; ++ i) {
             out[i] = m_code[i].first;
             const Imop* dest = m_code[i].second;
