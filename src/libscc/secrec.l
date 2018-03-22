@@ -60,13 +60,13 @@ void clearBuffer (void) {
  * Flex-generated code: */
 
 void * yyalloc(yy_size_t  size, yyscan_t yyscanner)
-{ return ((void) yyscanner, malloc(size)); }
+{ (void) yyscanner; return malloc(size); }
 
 void * yyrealloc(void * ptr, yy_size_t size, yyscan_t yyscanner)
-{ return ((void) yyscanner, realloc(ptr, size)); }
+{ (void) yyscanner; return realloc(ptr, size); }
 
 void yyfree(void * ptr, yyscan_t yyscanner)
-{ return ((void) yyscanner, free(ptr)); }
+{ (void) yyscanner; free(ptr); }
 
 #define YY_EXIT_FAILURE (((void) yyscanner), 2)
 
