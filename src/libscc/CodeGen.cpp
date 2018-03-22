@@ -532,7 +532,7 @@ CGResult CodeGen::exitLoop(LoopInfo & loopInfo) {
                 prevJump->setDest(m_st->label(i));
             }
 
-            i = new Imop(m_node, Imop::JUMP, (Symbol *) nullptr);
+            i = new Imop(m_node, Imop::JUMP, static_cast<Symbol *>(nullptr));
             push_imop(i);
 
             i->setDest(m_st->label(check.test));
@@ -610,7 +610,7 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
     {
         std::stringstream ss;
         ss << "Index out of bounds at " << m_node->location() << '.';
-        auto jmp = new Imop(m_node, Imop::JUMP, (Symbol *) nullptr);
+        auto jmp = new Imop(m_node, Imop::JUMP, static_cast<Symbol *>(nullptr));
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
 
