@@ -37,6 +37,8 @@ namespace SecreC {
   AbstractOperatorTypeUnifier
 *******************************************************************************/
 
+AbstractOperatorTypeUnifier::~AbstractOperatorTypeUnifier() noexcept = default;
+
 bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, const SecurityType*) {
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg) {

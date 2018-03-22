@@ -63,6 +63,8 @@ public: /* Methods: */
     AbstractOperatorTypeUnifier (AbstractOperatorTypeUnifier&&) = default;
     AbstractOperatorTypeUnifier& operator = (AbstractOperatorTypeUnifier&&) = default;
 
+    virtual ~AbstractOperatorTypeUnifier() noexcept;
+
     bool visitType (TreeNodeType* t, const Type* type);
 
     virtual bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) = 0;
