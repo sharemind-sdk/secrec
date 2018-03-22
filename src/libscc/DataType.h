@@ -95,7 +95,7 @@ public: /* Methods: */
         return equals(DATATYPE_NUMERIC) || equals(DATATYPE_NUMERIC_FLOAT);
     }
 
-    virtual bool equals (const DataType* other) const { return this == other; };
+    virtual bool equals (const DataType* other) const { return this == other; }
     virtual bool equals (SecrecDataType other) const;
 
 protected:
