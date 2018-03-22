@@ -326,7 +326,7 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
 
 #define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, CODE) \
     template <SecrecDataType ty>\
-    inline int __##NAME##_callback (const Instruction* ip) \
+    inline int NAME##_callback (const Instruction* ip) \
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
@@ -554,7 +554,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
  * to be (those are simply instantiated with DATATYPE_UNDEFINED).
  */
 
-#define GET_CALLBACK(NAME,TYPE) (__ ## NAME ## _callback<TYPE>)
+#define GET_CALLBACK(NAME,TYPE) (NAME ## _callback<TYPE>)
 #define SET_CALLBACK(NAME,TYPE) do {\
         callback = GET_CALLBACK(NAME,TYPE);\
     } while (0)
