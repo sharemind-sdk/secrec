@@ -110,7 +110,8 @@ public: /* Methods: */
 };
 
 bool operator < (const IntValue& x, const IntValue& y) {
-    return std::tie (x.isSigned, (APInt&) x) < std::tie (y.isSigned, (APInt&) y);
+    return std::tie(x.isSigned, static_cast<APInt const &>(x))
+           < std::tie(y.isSigned, static_cast<APInt const &>(y));
 }
 
 std::string IntValue::toString () const {

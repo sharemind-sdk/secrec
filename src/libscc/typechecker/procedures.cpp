@@ -802,7 +802,7 @@ TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symPro
         return OK;
 
     // Look for templates:
-    unsigned maxi = ~((unsigned) 0);
+    unsigned maxi = ~0u;
     OpWeight best = std::make_tuple (maxi, maxi, maxi);
     std::vector<Instantiation> bestMatches;
 
@@ -909,7 +909,7 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
     }
 
     // Look for templates:
-    unsigned maxi = ~((unsigned) 0);
+    unsigned maxi = ~0u;
     OpWeight best = std::make_tuple (maxi, maxi, maxi);
     std::vector<Instantiation> bestMatches;
     std::vector<const TypeBasic*> args { arg };

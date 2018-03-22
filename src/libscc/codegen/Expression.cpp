@@ -423,7 +423,7 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
         }
     }
 
-    auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+    auto jmp = new Imop(e, Imop::JUMP, static_cast<Symbol *>(nullptr));
     pushImopAfter(result, jmp);
     result.addToNextList(jmp);
 
@@ -656,7 +656,7 @@ void CodeGen::cgBinExprShapeCheck(TreeNodeExpr * e,
         }
     }
 
-    Imop * jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+    Imop * jmp = new Imop(e, Imop::JUMP, static_cast<Symbol *>(nullptr));
     pushImopAfter(result, jmp);
     result.addToNextList(jmp);
     push_imop(err);
@@ -1687,7 +1687,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         // check that shapes match
         std::stringstream ss;
         ss << "Mismatching shapes at " << e->location();
-        auto jmp = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+        auto jmp = new Imop(e, Imop::JUMP, static_cast<Symbol *>(nullptr));
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
         if (auto e1ResultSs = dynamic_cast<SymbolSymbol *>(e1Result.symbol())) {
@@ -1734,7 +1734,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         push_imop(test);
 
         // L0: if (counter >= size) goto next;
-        i = new Imop(e, Imop::JT, (Symbol *) nullptr, temp_bool);
+        i = new Imop(e, Imop::JT, static_cast<Symbol *>(nullptr), temp_bool);
         push_imop(i);
         result.addToNextList(i);
 
@@ -1746,7 +1746,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         auto t1 = new Imop(e, Imop::STORE, resSym, counter, t);
 
         // if b goto T0
-        i = new Imop(e, Imop::JT, (Symbol *) nullptr, b);
+        i = new Imop(e, Imop::JT, static_cast<Symbol *>(nullptr), b);
         push_imop(i);
         i->setDest(m_st->label(t0));
 
@@ -1760,7 +1760,7 @@ CGResult CodeGen::cgExprTernary(TreeNodeExprTernary * e) {
         push_imop(t0);
 
         // goto L0
-        i = new Imop(e, Imop::JUMP, (Symbol *) nullptr);
+        i = new Imop(e, Imop::JUMP, static_cast<Symbol *>(nullptr));
         push_imop(i);
         i->setDest(m_st->label(test));
 
