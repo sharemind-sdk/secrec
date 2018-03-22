@@ -26,12 +26,6 @@
 #include "Visitor.h"
 
 
-#define CTUGUARD(expr) \
-    do { \
-        if (! (expr)) \
-            return false; \
-    } while (false)
-
 namespace SecreC {
 
 /*******************************************************************************
