@@ -27,7 +27,6 @@
 #include "TreeNode.h"
 #include "Types.h"
 
-#include <boost/preprocessor/control/if.hpp>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -39,8 +38,13 @@
 #include <stdint.h>
 #include <string>
 
+
 #define LEAVETRACE 0
-#define PP_IF(bit,arg) BOOST_PP_IF(bit, arg, (void) 0)
+
+#define PP_IF_0(t,f) f
+#define PP_IF_1(t,f) t
+#define PP_IF_(bit,arg) PP_IF_ ## bit(arg, (void) 0)
+#define PP_IF(bit,arg) PP_IF_(bit, arg)
 #define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
 
 namespace SecreC {
