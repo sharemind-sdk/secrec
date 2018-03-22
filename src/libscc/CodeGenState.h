@@ -61,10 +61,11 @@ public: /* Methods: */
         , m_node (nullptr)
     { }
 
-    CodeGenState& operator = (CodeGenState state) {
-        swapState (state);
-        return *this;
-    }
+    CodeGenState(CodeGenState &&) noexcept = default;
+    CodeGenState(CodeGenState const &) noexcept = default;
+
+    CodeGenState & operator=(CodeGenState &&) noexcept = default;
+    CodeGenState & operator=(CodeGenState const &) noexcept = default;
 
     SymbolTable* st () const { return m_st; }
 
