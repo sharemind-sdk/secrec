@@ -31,6 +31,7 @@ namespace SecreC {
 class PrettyPrintable {
 protected: /* Methods: */
     friend class PrettyPrint;
+    virtual ~PrettyPrintable() noexcept;
     virtual void printPrettyV (std::ostream& os) const = 0;
 };
 
