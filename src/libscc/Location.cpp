@@ -30,10 +30,10 @@ Location::FilenameCache Location::m_filenameCache;
 
 std::ostream & operator<<(std::ostream & os, const Location & loc) {
     os << loc.filename()
-       << ":(" << loc.firstLine()
-       << ',' << loc.firstColumn()
-       << ")(" << loc.lastLine()
-       << ',' << loc.lastColumn() << ')';
+       << ":(" << loc.m_firstLine
+       << ',' << loc.m_firstColumn
+       << ")(" << loc.m_lastLine
+       << ',' << loc.m_lastColumn << ')';
     return os;
 }
 

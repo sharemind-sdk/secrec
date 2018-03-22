@@ -40,7 +40,11 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    inline Location(int firstLine, int firstColumn, int lastColumn, int lastLine, const char * filename)
+    Location(std::size_t firstLine,
+             std::size_t firstColumn,
+             std::size_t lastColumn,
+             std::size_t lastLine,
+             char const * filename)
         : m_firstLine(firstLine)
         , m_firstColumn(firstColumn)
         , m_lastLine(lastLine)
@@ -67,10 +71,10 @@ public: /* Methods: */
         return !(*this == rhs);
     }
 
-    inline int firstLine() const { return m_firstLine; }
-    inline int firstColumn() const { return m_firstColumn; }
-    inline int lastLine() const { return m_lastLine; }
-    inline int lastColumn() const { return m_lastColumn; }
+    std::size_t firstLine() const noexcept { return m_firstLine; }
+    std::size_t firstColumn() const noexcept { return m_firstColumn; }
+    std::size_t lastLine() const noexcept { return m_lastLine; }
+    std::size_t lastColumn() const noexcept { return m_lastColumn; }
     inline const std::string & filename() const {
         return *m_filenameItem;
     }
@@ -86,10 +90,10 @@ private: /* Methods: */
 
 private: /* Fields: */
 
-    int m_firstLine;
-    int m_firstColumn;
-    int m_lastLine;
-    int m_lastColumn;
+    std::size_t m_firstLine;
+    std::size_t m_firstColumn;
+    std::size_t m_lastLine;
+    std::size_t m_lastColumn;
     const std::string * m_filenameItem;
 
     static FilenameCache m_filenameCache;
