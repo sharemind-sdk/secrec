@@ -37,6 +37,20 @@
 #include <sharemind/abort.h>
 #include <sstream>
 
+
+namespace /* anonymous */ {
+
+TreeNode * toC(SecreC::TreeNode * node) noexcept
+{ return reinterpret_cast<TreeNode *>(node); }
+
+SecreC::TreeNode * toCxx(TreeNode * node) noexcept
+{ return reinterpret_cast<SecreC::TreeNode *>(node); }
+
+SecreC::TreeNode const * toCxx(TreeNode const * node) noexcept
+{ return reinterpret_cast<SecreC::TreeNode const *>(node); }
+
+} // namespace anonymous
+
 namespace SecreC {
 
 namespace /* anonymous */ {
@@ -1499,14 +1513,12 @@ TreeNodeSeqView<TreeNodeDataTypeDeclParam> TreeNodeDataTypeDecl::parameters () c
 *******************************************************************************/
 
 #define SELECTNODE(ENUM,NAME)\
-    case NODE_ ## ENUM : do { \
-        return (TreeNode *)(new SecreC :: TreeNode ## NAME (*loc)); \
-    } while (0)
+    case NODE_ ## ENUM: \
+        return toC(new SecreC::TreeNode ## NAME(*loc))
 
 #define SELECTNODETYPE(ENUM,NAME)\
-    case NODE_ ## ENUM : do { \
-        return (TreeNode *)(new SecreC :: TreeNode ## NAME (type, *loc)); \
-    } while (0)
+    case NODE_ ## ENUM: \
+        return toC(new SecreC::TreeNode ## NAME(type, *loc))
 
 #define SELECTEXPR(ENUM, NAME) SELECTNODE (EXPR_ ## ENUM, Expr ## NAME)
 #define SELECTEXPRTYPE(ENUM, NAME) SELECTNODETYPE (EXPR_ ## ENUM, Expr ## NAME)
@@ -1636,36 +1648,36 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
 }
 
 void treenode_free(TreeNode * node) {
-    delete(SecreC::TreeNode *) node;
+    delete toCxx(node);
 }
 
 enum SecrecTreeNodeType treenode_type(TreeNode * node) {
-    return ((const SecreC::TreeNode *) node)->type();
+    return toCxx(node)->type();
 }
 
 YYLTYPE treenode_location(const TreeNode * node) {
-    return ((const SecreC::TreeNode *) node)->location().toYYLTYPE();
+    return toCxx(node)->location().toYYLTYPE();
 }
 
 unsigned treenode_numChildren(const TreeNode * node) {
-    return ((const SecreC::TreeNode *) node)->children().size();
+    return toCxx(node)->children().size();
 }
 
 TreeNode * treenode_childAt(const TreeNode * node, unsigned index) {
-    return (TreeNode *)((const SecreC::TreeNode *) node)->children().at(index);
+    return toC(toCxx(node)->children().at(index));
 }
 
 void treenode_appendChild(TreeNode * parent, TreeNode * child) {
-    return ((SecreC::TreeNode *) parent)->appendChild((SecreC::TreeNode *) child);
+    return toCxx(parent)->appendChild(toCxx(child));
 }
 
 void treenode_setLocation(TreeNode * node, YYLTYPE * loc) {
-    return ((SecreC::TreeNode *) node)->setLocation(*loc);
+    return toCxx(node)->setLocation(*loc);
 }
 
 void treenode_moveChildren(TreeNode * cfrom, TreeNode * cto) {
-    SecreC::TreeNode * from = (SecreC::TreeNode *) cfrom;
-    SecreC::TreeNode * to = (SecreC::TreeNode *) cto;
+    auto const from = toCxx(cfrom);
+    auto const to = toCxx(cto);
     for (SecreC::TreeNode * child : from->children()) {
         to->appendChild(child);
     }
@@ -1674,51 +1686,51 @@ void treenode_moveChildren(TreeNode * cfrom, TreeNode * cto) {
 }
 
 TreeNode * treenode_init_bool(unsigned value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprBool(value, *loc);
+    return toC(new SecreC::TreeNodeExprBool(value, *loc));
 }
 
 TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprInt(value, *loc);
+    return toC(new SecreC::TreeNodeExprInt(value, *loc));
 }
 
 TreeNode * treenode_init_str_fragment(TYPE_STRINGREF value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeStringPartFragment (*value, *loc);
+    return toC(new SecreC::TreeNodeStringPartFragment (*value, *loc));
 }
 
 TreeNode * treenode_init_str_ident(TYPE_STRINGREF value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeStringPartIdentifier (*value, *loc);
+    return toC(new SecreC::TreeNodeStringPartIdentifier (*value, *loc));
 }
 
 TreeNode * treenode_init_float(TYPE_STRINGREF value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeExprFloat(*value, *loc);
+    return toC(new SecreC::TreeNodeExprFloat(*value, *loc));
 }
 
 TreeNode * treenode_init_identifier(TYPE_STRINGREF value, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeIdentifier(*value, *loc);
+    return toC(new SecreC::TreeNodeIdentifier(*value, *loc));
 }
 
 TreeNode * treenode_init_publicSecTypeF(YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PUBLIC_F, *loc);
+    return toC(new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PUBLIC_F, *loc));
 }
 
 TreeNode * treenode_init_privateSecTypeF(YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PRIVATE_F, *loc);
+    return toC(new SecreC::TreeNodeSecTypeF(NODE_SECTYPE_PRIVATE_F, *loc));
 }
 
 TreeNode * treenode_init_dataTypeVarF (YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeVarF (*loc);
+    return toC(new SecreC::TreeNodeDataTypeVarF (*loc));
 }
 
 TreeNode * treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeConstF(dataType, *loc);
+    return toC(new SecreC::TreeNodeDataTypeConstF(dataType, *loc));
 }
 
 TreeNode * treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDimTypeConstF(dimType, *loc);
+    return toC(new SecreC::TreeNodeDimTypeConstF(dimType, *loc));
 }
 
 TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE * loc) {
-    TreeNode * node = (TreeNode *) new SecreC::TreeNodeOpDef(op, *loc);
+    auto const node = toC(new SecreC::TreeNodeOpDef(op, *loc));
     std::ostringstream os;
     os << "__operator" << op;
     treenode_appendChild(node, treenode_init_identifier(table->addString (os.str()), loc));
@@ -1726,7 +1738,7 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
 }
 
 TreeNode * treenode_init_castdef(TYPE_STRINGTABLE table, YYLTYPE * loc) {
-    TreeNode * node = (TreeNode *) new SecreC::TreeNodeCastDef(*loc);
+    auto const node = toC(new SecreC::TreeNodeCastDef(*loc));
     static std::string castStr = "__cast";
     treenode_appendChild(node, treenode_init_identifier(table->addString(castStr), loc));
     return node;
@@ -1735,29 +1747,29 @@ TreeNode * treenode_init_castdef(TYPE_STRINGTABLE table, YYLTYPE * loc) {
 TreeNode* treenode_init_lvalue(TreeNode *node, YYLTYPE* loc) {
     assert (node != nullptr && loc != nullptr);
     SecreC::Location secrecLoc (*loc);
-    TreeNode* result = (TreeNode*) ((const SecreC::TreeNode*) node)->makeLValue (secrecLoc);
+    auto const result = toC(toCxx(node)->makeLValue(secrecLoc));
     *loc = secrecLoc.toYYLTYPE ();
     return result;
 }
 
 TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeTypeArgDataTypeConst(dataType, *loc);
+    return toC(new SecreC::TreeNodeTypeArgDataTypeConst(dataType, *loc));
 }
 
 TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc) {
-    return (TreeNode *) new SecreC::TreeNodeTypeArgDimTypeConst(dimType, *loc);
+    return toC(new SecreC::TreeNodeTypeArgDimTypeConst(dimType, *loc));
 }
 
 TreeNode *treenode_init_dataTypeDecl (TYPE_STRINGREF name, YYLTYPE *loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeDecl(*name, *loc);
+    return toC(new SecreC::TreeNodeDataTypeDecl(*name, *loc));
 }
 
 TreeNode *treenode_init_dataTypeDeclParamPublic (enum SecrecDataType dataType, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeDeclParamPublic(dataType, *loc);
+    return toC(new SecreC::TreeNodeDataTypeDeclParamPublic(dataType, *loc));
 }
 
 TreeNode *treenode_init_dataTypeDeclParamSize (uint64_t size, YYLTYPE * loc) {
-    return (TreeNode *) new SecreC::TreeNodeDataTypeDeclParamSize(size, *loc);
+    return toC(new SecreC::TreeNodeDataTypeDeclParamSize(size, *loc));
 }
 
 TYPE_STRINGREF secrec_fund_datatype_to_string (TYPE_STRINGTABLE table, SecrecDataType ty)
