@@ -49,7 +49,7 @@ public: /* Methods: */
                    SyscallAttribute attr = None)
         : m_operand(arg)
         , m_convention(convention)
-        , m_attributeSet((unsigned) attr)
+        , m_attributeSet(static_cast<unsigned>(attr))
     {
         assert (arg != nullptr);
     }
@@ -74,7 +74,7 @@ public: /* Methods: */
         if (m_convention == PushCRef)
             return true;
 
-        if (m_attributeSet & ((unsigned) ReadOnly != 0))
+        if (m_attributeSet & (static_cast<unsigned>(ReadOnly) != 0))
             return true;
 
         return false;
