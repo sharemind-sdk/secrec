@@ -275,7 +275,7 @@ Imop::Imop(TreeNode *creator, ConstantString *name, SyscallOperands operands)
 }
 
 Imop* newError (TreeNode* node, ConstantString* msg) {
-    return new Imop (node, Imop::ERROR, (Symbol*) nullptr, msg);
+    return new Imop(node, Imop::ERROR, static_cast<Symbol *>(nullptr), msg);
 }
 
 Imop* newAssign (TreeNode* node, Symbol* dest, Symbol* from) {
@@ -307,7 +307,10 @@ Imop* newUnary (TreeNode* node, Imop::Type iType, Symbol *dest, Symbol *arg1) {
 }
 
 Imop* newCall (TreeNode* node) {
-   return new Imop (node, Imop::CALL, (Symbol*) nullptr, (Symbol*) nullptr);
+   return new Imop(node,
+                   Imop::CALL,
+                   static_cast<Symbol *>(nullptr),
+                   static_cast<Symbol *>(nullptr));
 }
 
 
