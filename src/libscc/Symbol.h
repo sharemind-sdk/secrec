@@ -205,12 +205,13 @@ public: /* Types: */
         const boost::optional<const DataTypeBuiltinPrimitive*> publicType;
         const boost::optional<uint64_t> size;
 
-        Parameters (const DataType* type,
-                    boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                    boost::optional<uint64_t> size)
-            : type (type)
-            , publicType (publicType)
-            , size (size)
+        Parameters(
+                DataType const * type_,
+                boost::optional<DataTypeBuiltinPrimitive const *> publicType_,
+                boost::optional<uint64_t> size_)
+            : type(type_)
+            , publicType(publicType_)
+            , size(size_)
             { }
     };
 
