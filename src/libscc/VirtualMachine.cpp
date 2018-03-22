@@ -141,22 +141,11 @@ public:
         -- m_offset;
     }
 
-    inline bool empty () const {
-        return m_offset <= 0;
-    }
-
     void push (Value val) {
         if (m_offset >= m_size)
             increase_size ();
         TRACE("-> %lu\n", val.un_uint_val);
         m_bptr[m_offset ++] = val;
-    }
-
-    void push (int n) {
-        Value val;
-        val.un_int32_val = n;
-        TRACE("-> %d\n", n);
-        push (val);
     }
 
 private:
