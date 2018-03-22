@@ -2246,7 +2246,7 @@ public: /* Methods: */
 
     explicit TreeNodeStmtDecl (const Location & loc, bool global = false, bool procParam = false)
         : TreeNodeStmt (NODE_DECL, loc)
-        , m_type (nullptr)
+        , m_resultType (nullptr)
         , m_global (global)
         , m_procParam (procParam)
     { }
@@ -2254,12 +2254,12 @@ public: /* Methods: */
     CGStmtResult codeGenWith (CodeGen& cg) override final;
 
     inline const TypeNonVoid* resultType() const {
-        assert(m_type != nullptr);
-        return m_type;
+        assert(m_resultType != nullptr);
+        return m_resultType;
     }
 
-    inline bool haveResultType() const { return m_type != nullptr; }
-    void setResultType (const TypeNonVoid* type) { m_type = type; }
+    inline bool haveResultType() const { return m_resultType != nullptr; }
+    void setResultType (const TypeNonVoid* type) { m_resultType = type; }
 
     inline bool global() const { return m_global; }
     inline void setGlobal(bool isGlobal = true) {
@@ -2285,7 +2285,7 @@ protected:
     }
 
 protected: /* Fields: */
-    const TypeNonVoid *m_type;
+    const TypeNonVoid *m_resultType;
     bool m_global;
     bool m_procParam;
 };
