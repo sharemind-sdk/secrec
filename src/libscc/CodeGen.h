@@ -90,10 +90,6 @@ public: /* Types: */
     };
 
 public: /* Methods: */
-    LoopInfo () { }
-    ~LoopInfo () {
-        assert (m_jumpStack.empty () && "The loop was not exited.");
-    }
 
     void push_index (Symbol* symbol) { m_indices.push_back (symbol); }
     Symbol* at (IndexList::size_type n) const { return m_indices.at (n); }
