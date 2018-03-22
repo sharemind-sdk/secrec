@@ -186,13 +186,15 @@ struct VMSym {
 
     VMSym () { }
 
-    VMSym (bool isLocal, Instruction* inst)
-        : isLocal (isLocal)
-        , un_inst (inst) { }
+    VMSym(bool isLocal_, Instruction * inst)
+        : isLocal(isLocal_)
+        , un_inst(inst)
+    {}
 
-    VMSym (bool isLocal, const Symbol* sym)
-        : isLocal(isLocal)
-        , un_sym (sym) { }
+    VMSym (bool isLocal_, Symbol const * sym)
+        : isLocal(isLocal_)
+        , un_sym(sym)
+    {}
 };
 
 /// Very naive implementation of a memory store.
