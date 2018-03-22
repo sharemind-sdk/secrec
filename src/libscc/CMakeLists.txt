@@ -56,8 +56,6 @@ SharemindSetC99CompileOptions(
         "-Wno-c++-compat"
         "-Wno-unused-macros"
         "-Wno-switch-default"
-    DEFINITIONS
-        "_POSIX_C_SOURCE"
 )
 SET_PROPERTY(TARGET "yacc_o"
     PROPERTY INCLUDE_DIRECTORIES
