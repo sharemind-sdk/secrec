@@ -324,28 +324,32 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
 
 #define CUR do { return ip->callback (ip); } while (0)
 
-#define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, CODE) \
+#define MKCALLBACK_(NAME, PDEST, PDN, PARG1, P1N, PARG2, P2N, PARG3, P3N, ...) \
     template <SecrecDataType ty>\
     inline int NAME##_callback (const Instruction* ip) \
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
-        PP_IF (PDEST, FETCH (dest, 0)); \
-        PP_IF (PARG1, FETCH (arg1, 1); TRACE("0x%lx ", arg1.un_uint_val)); \
-        PP_IF (PARG2, FETCH (arg2, 2); TRACE("0x%lx ", arg2.un_uint_val)); \
-        PP_IF (PARG3, FETCH (arg3, 3); TRACE("0x%lx ", arg3.un_uint_val)); \
+        PP_IF (PDEST, FETCH (PDN, 0)); \
+        PP_IF (PARG1, FETCH (P1N, 1); TRACE("0x%lx ", arg1.un_uint_val)); \
+        PP_IF (PARG2, FETCH (P2N, 2); TRACE("0x%lx ", arg2.un_uint_val)); \
+        PP_IF (PARG3, FETCH (P3N, 3); TRACE("0x%lx ", arg3.un_uint_val)); \
         TRACE ("%s", "\n"); \
-        CODE; \
+        __VA_ARGS__; \
         NEXT; \
     )
 
+#define MKCALLBACK(NAME, PDEST, PARG1, PARG2, PARG3, ...) \
+    MKCALLBACK_(NAME, PDEST, dest, PARG1, arg1, PARG2, arg2, PARG3, arg3, \
+                __VA_ARGS__)
+
 #define DECLOP1(NAME,CODE) \
     MKCALLBACK(NAME, 1, 1, 0, 0, CODE) \
-    MKCALLBACK(NAME ## _vec, 1, 1, 1, 0, BLOCK( \
-        const size_t s = arg2.un_uint_val; \
-        Value* desti = dest.un_ptr; \
-        Value* end = dest.un_ptr + s; \
-        Value* arg1i = arg1.un_ptr; \
+    MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 0,, BLOCK( \
+        const size_t s = arg2_.un_uint_val; \
+        Value* desti = dest_.un_ptr; \
+        Value* end = dest_.un_ptr + s; \
+        Value* arg1i = arg1_.un_ptr; \
         for (; desti != end; ++ desti, ++ arg1i) \
         BLOCK( \
             Value& dest = *desti; \
@@ -357,12 +361,12 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
 
 #define DECLOP2(NAME,CODE) \
     MKCALLBACK(NAME, 1, 1, 1, 0, CODE) \
-    MKCALLBACK(NAME ## _vec, 1, 1, 1, 1, BLOCK( \
-        const size_t s = arg3.un_uint_val; \
-        Value* desti = dest.un_ptr; \
-        Value* end = dest.un_ptr + s; \
-        Value* arg1i = arg1.un_ptr; \
-        Value* arg2i = arg2.un_ptr; \
+    MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 1, arg3_, BLOCK( \
+        const size_t s = arg3_.un_uint_val; \
+        Value* desti = dest_.un_ptr; \
+        Value* end = dest_.un_ptr + s; \
+        Value* arg1i = arg1_.un_ptr; \
+        Value* arg2i = arg2_.un_ptr; \
         for (; desti != end; ++ desti, ++ arg1i, ++ arg2i) \
         BLOCK( \
             Value& dest = *desti; \
@@ -965,9 +969,9 @@ private:
 
         // pop return values
         for (++ it; it != itEnd; ++ it) {
-            Instruction i (SIMPLE_CALLBACK(POP));
-            i.args[0] = toVMSym (*it);
-            emitInstruction (i);
+            Instruction i2(SIMPLE_CALLBACK(POP));
+            i2.args[0] = toVMSym(*it);
+            emitInstruction(i2);
         }
     }
 
