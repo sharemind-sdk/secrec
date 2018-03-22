@@ -224,8 +224,8 @@ bool TemplateVarChecker::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, TypeA
 
     for (size_t i = 0; i < args.size (); ++ i) {
         TreeNodeTypeArg& arg = args[i];
-        TypeArgumentKind kind = quantifierKind (quants[i]);
-        if (! visitTypeArg (&arg, kind))
+        TypeArgumentKind kind2 = quantifierKind(quants[i]);
+        if (!visitTypeArg(&arg, kind2))
             return false;
 
         // TODO: mismatching domain quantifier?

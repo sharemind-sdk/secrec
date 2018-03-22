@@ -46,14 +46,12 @@ enum TemplateArgPos {
 struct TemplateTypeVar {
     TreeNodeIdentifier* id;
     TypeArgumentKind    kind;
-    bool                bound;
-    TemplateArgPos      pos;
+    bool                bound = false;
+    TemplateArgPos      pos = ArgParameter;
 
-    TemplateTypeVar (TreeNodeIdentifier* id, TypeArgumentKind kind)
-        : id (id)
-        , kind (kind)
-        , bound (false)
-        , pos (ArgParameter)
+    TemplateTypeVar(TreeNodeIdentifier * id_, TypeArgumentKind kind_)
+        : id(id_)
+        , kind(kind_)
     { }
 };
 
