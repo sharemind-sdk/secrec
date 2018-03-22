@@ -224,7 +224,7 @@ public: /* Methods: */
         : Symbol (SYM_KIND, name)
     { }
 
-    ~SymbolKind () {
+    ~SymbolKind() noexcept override {
         for (auto it : m_types)
             delete it.second;
     }
