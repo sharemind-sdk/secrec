@@ -39,13 +39,16 @@
 #include <string>
 
 
-#define LEAVETRACE 0
+#if 0
+#define TRACE(...) do { std::fprintf(stderr, __VA_ARGS__); } while (false)
+#else
+#define TRACE(...) (void) 0
+#endif
 
 #define PP_IF_0(t,f) f
 #define PP_IF_1(t,f) t
 #define PP_IF_(bit,arg) PP_IF_ ## bit(arg, (void) 0)
 #define PP_IF(bit,arg) PP_IF_(bit, arg)
-#define TRACE(format,msg) PP_IF(LEAVETRACE, fprintf(stderr, format, msg))
 
 namespace SecreC {
 
