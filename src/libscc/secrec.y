@@ -10,6 +10,7 @@
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, TYPE_STRINGTABLE table, const char *s);
 
+  uint64_t char_to_digit(char const c);
   uint64_t char_to_digit(char const c) {
       switch (c) {
           #define X(c,d) case c: return d;
@@ -24,6 +25,9 @@
       }
   }
 
+  uint64_t convert_to_base(TYPE_STRINGREF input,
+                           uint64_t base,
+                           int* does_overflow);
   uint64_t convert_to_base(TYPE_STRINGREF input,
                            uint64_t base,
                            int* does_overflow)
@@ -56,7 +60,14 @@
       return out;
   }
 
-  struct TreeNode * init_op(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE * loc,
+  struct TreeNode * init_op(TYPE_STRINGTABLE table,
+                            enum SecrecOperator op,
+                            YYLTYPE * loc,
+                            struct TreeNode * ret,
+                            struct TreeNode * params);
+  struct TreeNode * init_op(TYPE_STRINGTABLE table,
+                            enum SecrecOperator op,
+                            YYLTYPE * loc,
                             struct TreeNode * ret,
                             struct TreeNode * params)
   {
@@ -67,7 +78,10 @@
       return out;
   }
 
-  struct TreeNode * treenode_init_compound (struct TreeNode * stmts, YYLTYPE * loc)
+  struct TreeNode * treenode_init_compound(struct TreeNode * stmts,
+                                           YYLTYPE * loc);
+  struct TreeNode * treenode_init_compound(struct TreeNode * stmts,
+                                           YYLTYPE * loc)
   {
         struct TreeNode * out = treenode_init (NODE_STMT_COMPOUND, loc);
         struct TreeNode * cur = stmts;
@@ -86,8 +100,8 @@
         return out;
   }
 
-  void treenode_add_stmt (struct TreeNode * stmts, struct TreeNode * node)
-  {
+  void treenode_add_stmt(struct TreeNode * stmts, struct TreeNode * node);
+  void treenode_add_stmt(struct TreeNode * stmts, struct TreeNode * node) {
       if (treenode_type(node) == NODE_STMT_COMPOUND && treenode_numChildren(node) <= 0)
           treenode_free(node);
       else

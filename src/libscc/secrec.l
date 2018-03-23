@@ -37,7 +37,8 @@
 static char secrec_strbuf[STRBUF_SIZE];
 static unsigned secrec_strbuflen;
 
-int bufferChar (char c) {
+int bufferChar(char c);
+int bufferChar(char c) {
     if (STRBUF_SIZE == 0 || secrec_strbuflen >= STRBUF_SIZE - 1)
         return 0;
 
@@ -45,9 +46,8 @@ int bufferChar (char c) {
     return 1;
 }
 
-void clearBuffer (void) {
-    secrec_strbuflen = 0;
-}
+void clearBuffer(void);
+void clearBuffer(void) { secrec_strbuflen = 0; }
 
 #define saveString(s) \
     do { \
