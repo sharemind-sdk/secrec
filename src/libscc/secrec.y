@@ -10,16 +10,18 @@
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, TYPE_STRINGTABLE table, const char *s);
 
-  uint64_t char_to_digit(char c)
-  {
-      if ('0' <= c && c <= '9')
-          return c - '0';
-      if ('a' <= c && c <= 'f')
-          return (c - 'a') + 10;
-      if ('A' <= c && c <= 'F')
-          return (c - 'A') + 10;
-      assert(0 && "Invalid digit character!");
-      return 0;
+  uint64_t char_to_digit(char const c) {
+      switch (c) {
+          #define X(c,d) case c: return d;
+          X('0', 0u) X('1', 1u) X('2', 2u) X('3', 3u) X('4', 4u)
+          X('5', 5u) X('6', 6u) X('7', 7u) X('8', 8u) X('9', 9u)
+          X('a',10u) X('b',11u) X('c',12u) X('d',13u) X('e',14u) X('f',15u)
+          X('A',10u) X('B',11u) X('C',12u) X('D',13u) X('E',14u) X('F',15u)
+          #undef X
+          default:
+              assert(0 && "Invalid digit character!");
+              return 0;
+      }
   }
 
   uint64_t convert_to_base(TYPE_STRINGREF input,
