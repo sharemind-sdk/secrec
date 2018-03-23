@@ -23,13 +23,22 @@
 #include "Log.h"
 #include "TreeNode.h"
 #include "Visitor.h"
-
+#include "TypeChecker.h"
 
 namespace SecreC {
 
 /*******************************************************************************
   TemplateChecker
 *******************************************************************************/
+
+TemplateVarChecker::TemplateVarChecker(TypeChecker & typeChecker,
+                                       SymbolTable * st,
+                                       CompileLog & log)
+    : m_typeChecker(typeChecker)
+    , m_st(st)
+    , m_log(log)
+    , m_pos(ArgParameter)
+{ }
 
 TemplateVarChecker::~TemplateVarChecker() noexcept = default;
 
@@ -188,8 +197,12 @@ bool TemplateVarChecker::visitDimTypeVarF (TreeNodeDimTypeVarF* t) {
     return visit (t->identifier (), TA_DIM);
 }
 
-bool TemplateVarChecker::visitDimTypeConstF (TreeNodeDimTypeConstF*) {
+bool TemplateVarChecker::visitDimTypeZeroF(TreeNodeDimTypeZeroF *) {
     return true;
+}
+
+bool TemplateVarChecker::visitDimTypeConstF (TreeNodeDimTypeConstF* t) {
+    return m_typeChecker.visitDimTypeConstF(t) == TypeChecker::OK;
 }
 
 bool TemplateVarChecker::visitTypeArg (TreeNodeTypeArg* t, TypeArgumentKind kind) {

@@ -263,6 +263,15 @@ TreeNodeSeqView<TreeNodeTypeArg> TreeNodeDataTypeTemplateF::arguments () const {
   TreeNodeDimTypeConstF
 *******************************************************************************/
 
+TreeNodeExprInt * TreeNodeDimTypeConstF::value() const {
+    assert (children().size() == 1);
+    return childAt<TreeNodeExprInt>(this, 0);
+}
+
+/*******************************************************************************
+  TreeNodeDimTypeZeroF
+*******************************************************************************/
+
 bool TreeNodeDimTypeConstF::printHelper (std::ostream & os) const {
     os << cachedType ();
     return true;
@@ -270,6 +279,19 @@ bool TreeNodeDimTypeConstF::printHelper (std::ostream & os) const {
 
 void TreeNodeDimTypeConstF::printXmlHelper (std::ostream & os) const {
     os << " dim=\"" << cachedType () << "\"";
+}
+
+/*******************************************************************************
+  TreeNodeDimTypeConstF
+*******************************************************************************/
+
+bool TreeNodeDimTypeZeroF::printHelper (std::ostream & os) const {
+    os << "0";
+    return true;
+}
+
+void TreeNodeDimTypeZeroF::printXmlHelper (std::ostream & os) const {
+    os << " dim=\"0\"";
 }
 
 /*******************************************************************************
@@ -344,7 +366,7 @@ void printTypeArg(std::ostream& os, const TreeNodeTypeArg& arg) {
     else if (arg.type () == NODE_TYPE_ARG_DIM_TYPE_CONST) {
         const TreeNodeTypeArgDimTypeConst* dim =
             static_cast<const TreeNodeTypeArgDimTypeConst*> (&arg);
-        os << dim->secrecDimType();
+        os << dim->value()->stringValue();
     }
     else if (arg.type () == NODE_TYPE_ARG_PUBLIC) {
         os << "public";
@@ -388,19 +410,26 @@ void TreeNodeType::typeString(std::ostream& os) const {
         }
     }
     else {
-        TreeNodeDataTypeVarF* varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());
+        auto const varDataType = static_cast<TreeNodeDataTypeVarF*>(dataType ());
         os << varDataType->identifier ()->value ();
     }
 
     // Dimensionality type:
-    if (! dimType()->isVariable ()) {
-        const SecrecDimType dim = dimType()->cachedType ();
-        if (dim != ~ SecrecDimType (0) && dim != 0)
-            os << "[[" << dim << "]]";
+    if (dimType()->type() == NODE_DIMTYPE_VAR_F) {
+        auto const varDimType = static_cast<TreeNodeDimTypeVarF*>(dimType ());
+        os << "[[" << varDimType->identifier ()->value () << "]]";
+    }
+    else
+    if (dimType()->type() == NODE_DIMTYPE_CONST_F) {
+        auto const constDimType = static_cast<TreeNodeDimTypeConstF const *>(dimType());
+        os << "[[" << constDimType->value()->stringValue() << "]]";
+    }
+    else
+    if (dimType()->type() == NODE_DIMTYPE_ZERO_F) {
+        os << "[[0]]";
     }
     else {
-        TreeNodeDimTypeVarF* const varDimType = static_cast<TreeNodeDimTypeVarF*>(dimType ());
-        os << "[[" << varDimType->identifier ()->value () << "]]";
+        os << "[[UNDEFINED]]";
     }
 }
 
@@ -940,12 +969,12 @@ TreeNodeExprInt* TreeNodeExprCat::dimensionality () const {
 *******************************************************************************/
 
 bool TreeNodeExprInt::printHelper (std::ostream & os) const {
-    os << m_value;
+    os << m_stringValue;
     return true;
 }
 
 void TreeNodeExprInt::printXmlHelper (std::ostream & os) const {
-    os << " value=\"int:" << m_value << "\"";
+    os << " value=\"int:" << m_stringValue << "\"";
 }
 
 /*******************************************************************************
@@ -1497,6 +1526,20 @@ TreeNodeSeqView<TreeNodeTypeArg> TreeNodeTypeArgTemplate::arguments () const {
 }
 
 /*******************************************************************************
+  TreeNodeTypeArgDimTypeConst
+*******************************************************************************/
+
+TreeNodeExprInt * TreeNodeTypeArgDimTypeConst::value() const {
+    assert (children ().size () == 1);
+    return childAt<TreeNodeExprInt>(this, 0);
+}
+
+SecrecDimType TreeNodeTypeArgDimTypeConst::secrecDimType() const {
+    assert (value()->haveActualValue());
+    return static_cast<SecrecDimType>(value()->actualValue());
+}
+
+/*******************************************************************************
   TreeNodeDataTypeDecl
 *******************************************************************************/
 
@@ -1544,6 +1587,8 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(MODULE, Module);
     SELECTNODE(IMPORT, Import);
     SELECTNODE(DIMTYPE_VAR_F, DimTypeVarF);
+    SELECTNODE(DIMTYPE_ZERO_F, DimTypeZeroF);
+    SELECTNODE(DIMTYPE_CONST_F, DimTypeConstF);
     SELECTNODE(TYPEVAR, TypeVarF);
     SELECTNODE(LITE_STRING, ExprString);
     SELECTNODE(STRUCT_DECL, StructDecl);
@@ -1689,8 +1734,8 @@ TreeNode * treenode_init_bool(unsigned value, YYLTYPE * loc) {
     return toC(new SecreC::TreeNodeExprBool(value, *loc));
 }
 
-TreeNode * treenode_init_int(uint64_t value, YYLTYPE * loc) {
-    return toC(new SecreC::TreeNodeExprInt(value, *loc));
+TreeNode * treenode_init_int(TYPE_STRINGREF value, YYLTYPE * loc) {
+    return toC(new SecreC::TreeNodeExprInt(*value, *loc));
 }
 
 TreeNode * treenode_init_str_fragment(TYPE_STRINGREF value, YYLTYPE * loc) {
@@ -1725,10 +1770,6 @@ TreeNode * treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * 
     return toC(new SecreC::TreeNodeDataTypeConstF(dataType, *loc));
 }
 
-TreeNode * treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE * loc) {
-    return toC(new SecreC::TreeNodeDimTypeConstF(dimType, *loc));
-}
-
 TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE * loc) {
     auto const node = toC(new SecreC::TreeNodeOpDef(op, *loc));
     std::ostringstream os;
@@ -1754,10 +1795,6 @@ TreeNode* treenode_init_lvalue(TreeNode *node, YYLTYPE* loc) {
 
 TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLTYPE * loc) {
     return toC(new SecreC::TreeNodeTypeArgDataTypeConst(dataType, *loc));
-}
-
-TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc) {
-    return toC(new SecreC::TreeNodeTypeArgDimTypeConst(dimType, *loc));
 }
 
 TreeNode *treenode_init_dataTypeDecl (TYPE_STRINGREF name, YYLTYPE *loc) {

@@ -54,6 +54,8 @@ public: /* Methods: */
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) override;
 
+    virtual bool visitDimTypeZeroF(TreeNodeDimTypeZeroF* t, SecrecDimType dimType) override;
+
     virtual bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) override;
 
     bool checkDomainQuantifier ();

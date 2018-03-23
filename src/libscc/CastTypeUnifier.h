@@ -27,6 +27,7 @@
 #include "TreeNodeFwd.h"
 #include "TypeArgument.h"
 #include "Types.h"
+#include "TreeNode.h"
 
 #include <map>
 
@@ -50,6 +51,8 @@ public: /* Methods: */
     CastTypeUnifier& operator = (CastTypeUnifier&&) = default;
 
     bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) override;
+
+    bool visitDimTypeZeroF (TreeNodeDimTypeZeroF* t, SecrecDimType dimType) override;
 
     bool visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secType) override;
 };

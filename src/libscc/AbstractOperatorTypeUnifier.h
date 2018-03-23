@@ -83,6 +83,7 @@ public: /* Methods: */
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
+    virtual bool visitDimTypeZeroF(TreeNodeDimTypeZeroF* t, SecrecDimType dimType) = 0;
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) = 0;
 
     bool checkKind ();

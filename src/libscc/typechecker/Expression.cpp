@@ -31,6 +31,9 @@
 #include "../SecurityType.h"
 #include "../Visitor.h"
 
+#include "../Context.h"
+#include "../ContextImpl.h"
+
 
 namespace SecreC {
 
@@ -521,22 +524,16 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
     if (root->haveResultType())
         return OK;
 
-    // missing argument is interpreted as 0
-    if (root->dimensionality() == nullptr) {
-        TreeNode * e = new TreeNodeExprInt(0, root->location());
-        root->appendChild(e);
-    }
-
     std::array<const TypeNonVoid*, 2> eTypes = {{nullptr, nullptr}};
 
     // check that first subexpressions 2 are arrays and of equal dimensionalities
-    for (int i = 0; i < 2; ++ i) {
-        TreeNodeExpr * e = cast<TreeNodeExpr *>(root->children().at(i));
+    for (std::size_t i = 0; i < 2; ++ i) {
+        auto const e = cast<TreeNodeExpr *>(root->children().at(i));
         e->setContext(root->typeContext());
         TCGUARD (visitExpr(e));
         if (checkAndLogIfVoid(e))
             return E_TYPE;
-        eTypes[i] = static_cast<const TypeNonVoid*>(e->resultType());
+        eTypes[i] = cast<const TypeNonVoid*>(e->resultType());
         if (eTypes[i]->isScalar()) {
             m_log.fatalInProc(root) << "Concatenation of scalar values at "
                 << e->location() << '.';
@@ -544,8 +541,8 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         }
     }
 
-    const DataType* d0 = upperDataType(static_cast<const TypeBasic*> (eTypes[0]),
-                                       static_cast<const TypeBasic*> (eTypes[1]));
+    const DataType* d0 = upperDataType(cast<const TypeBasic*> (eTypes[0]),
+                                       cast<const TypeBasic*> (eTypes[1]));
     root->leftExpression()->instantiateDataType(d0);
     root->rightExpression()->instantiateDataType(d0);
 
@@ -556,8 +553,8 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         TreeNodeExpr * right = root->rightExpression();
         left = classifyIfNeeded(left, rSecTy);
         right = classifyIfNeeded(right, lSecTy);
-        eTypes[0] = static_cast<const TypeNonVoid*>(left->resultType());
-        eTypes[1] = static_cast<const TypeNonVoid*>(right->resultType());
+        eTypes[0] = cast<const TypeNonVoid*>(left->resultType());
+        eTypes[1] = cast<const TypeNonVoid*>(right->resultType());
     }
 
     const SecurityType * resSecType = upperSecType(eTypes[0]->secrecSecType(),
@@ -582,25 +579,32 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
         return E_TYPE;
     }
 
-    if (root->dimensionality ()->value () >=  eTypes[0]->secrecDimType()) {
-        m_log.fatalInProc (root) << "Array concatenation over invalid dimensionality at "
-            << root->dimensionality ()->location () << '.';
+    // missing argument is interpreted as 0
+    if (root->dimensionality() == nullptr) {
+        // A bit awkard to intern string for just this
+        auto strRef = getContext().pImpl()->stringTable().addString("0", 1);
+        TreeNode * e = new TreeNodeExprInt(*strRef, root->location());
+        root->appendChild(e);
+    }
+
+    auto const dimExpr = root->dimensionality();
+    dimExpr->setContextIndexType();
+    TCGUARD (visitExpr(dimExpr));
+    if (checkAndLogIfVoid(dimExpr) || ! dimExpr->haveActualValue()) {
         return E_TYPE;
     }
 
-    // type checker actually allows for aribtrary expression here
-    // but right now parser expects integer literals, this is OK
-    TreeNodeExpr * e3 = root->dimensionality();
-    e3->setContextIndexType();
-    TCGUARD (visitExpr(e3));
-    if (checkAndLogIfVoid(e3))
-        return E_TYPE;
-
-    const auto e3Type = static_cast<const TypeNonVoid *>(e3->resultType());
-    if (! e3Type->isPublicUIntScalar()) {
+    const auto dimType = cast<const TypeNonVoid *>(dimExpr->resultType());
+    if (! dimType->isPublicUIntScalar()) {
         m_log.fatalInProc(root) << "Expected public scalar integer at "
             << root->dimensionality()->location()
-            << " got " << *e3Type << '.';
+            << " got " << *dimType << '.';
+        return E_TYPE;
+    }
+
+    if (dimExpr->actualValue () >= eTypes[0]->secrecDimType()) {
+        m_log.fatalInProc (root) << "Array concatenation over invalid dimensionality at "
+                                 << dimExpr->location () << '.';
         return E_TYPE;
     }
 
@@ -1068,19 +1072,149 @@ void TreeNodeExprArrayConstructor::instantiateDataTypeV(SecrecDataType dType) {
   TreeNodeExprInt
 *******************************************************************************/
 
+namespace /* anonymous */ {
+
+uint64_t charToDigit(char c) {
+    switch (c) {
+        #define X(c,d) case c: return d;
+        X('0', 0u) X('1', 1u) X('2', 2u) X('3', 3u) X('4', 4u)
+        X('5', 5u) X('6', 6u) X('7', 7u) X('8', 8u) X('9', 9u)
+        X('a',10u) X('b',11u) X('c',12u) X('d',13u) X('e',14u) X('f',15u)
+        X('A',10u) X('B',11u) X('C',12u) X('D',13u) X('E',14u) X('F',15u)
+        #undef X
+        default:
+            assert(0 && "Invalid digit character!");
+            return 0;
+    }
+}
+
+bool readIntLiteralSuffix(StringRef input,
+                          std::size_t * length,
+                          SecrecDataType * dataType)
+{
+    assert (length);
+    assert (dataType);
+
+    static std::array<std::pair<std::string, SecrecDataType>, 10> const
+        suffixes = {{
+            {"u8",  DATATYPE_UINT8},
+            {"u16", DATATYPE_UINT16},
+            {"u32", DATATYPE_UINT32},
+            {"u64", DATATYPE_UINT64},
+            {"i8",  DATATYPE_INT8 },
+            {"i16", DATATYPE_INT16},
+            {"i32", DATATYPE_INT32},
+            {"i64", DATATYPE_INT64},
+            {"f32", DATATYPE_FLOAT32},
+            {"f64", DATATYPE_FLOAT64}
+        }};
+
+    if (input.size() > 2) {
+        for (auto const & suffix : suffixes) {
+            if (input.endsWith(suffix.first)) {
+                *length -= suffix.first.size();
+                *dataType = suffix.second;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool convertNumber(StringRef input,
+                   SecrecDataType * dataType,
+                   uint64_t * result)
+{
+    assert (dataType);
+    assert (result);
+
+    const char* start = input.data(); // start of the actual number part
+    size_t length = input.size(); // length of the actual number part
+
+    // Read suffix:
+    SecrecDataType tempDataType;
+    bool const haveSuffix = readIntLiteralSuffix(input, &length, &tempDataType);
+
+    // Read prefix:
+    uint64_t base = 10;
+    if (length > 2 && start[0] == '0') {
+        switch (start[1]) {
+        case 'b': base = 2; start += 2; length -= 2; break;
+        case 'o': base = 8; start += 2; length -= 2; break;
+        case 'x': base = 16; start += 2; length -= 2; break;
+        default:
+            break;
+        }
+    }
+
+    // Read value:
+    uint64_t value = 0;
+    for (std::size_t offset = 0; offset < length; ++ offset) {
+        uint64_t const digit = charToDigit(start[offset]);
+        assert(digit < base);
+        uint64_t const newValue = value*base + digit;
+        if (newValue < value) {
+            return false;
+        }
+
+        value = newValue;
+    }
+
+    // Commit:
+    *dataType = haveSuffix ? tempDataType : DATATYPE_NUMERIC;
+    *result = value;
+    return true;
+}
+
+uint64_t maxIntLiteralValue(SecrecDataType dataType) {
+    switch (dataType) {
+    case DATATYPE_INT8: return std::numeric_limits<int8_t>::max();
+    case DATATYPE_INT16: return std::numeric_limits<int16_t>::max();
+    case DATATYPE_INT32: return std::numeric_limits<int32_t>::max();
+    case DATATYPE_INT64: return std::numeric_limits<int64_t>::max();
+    case DATATYPE_UINT8: return std::numeric_limits<uint8_t>::max();
+    case DATATYPE_UINT16: return std::numeric_limits<uint16_t>::max();
+    case DATATYPE_UINT32: return std::numeric_limits<uint32_t>::max();
+    case DATATYPE_UINT64: return std::numeric_limits<uint64_t>::max();
+    case DATATYPE_NUMERIC: return std::numeric_limits<uint64_t>::max();
+    default: return 0; /* unexpected, will fail later on */
+    }
+}
+
+
+} // namespace anonymous
+
 TypeChecker::Status TypeChecker::visitExprInt(TreeNodeExprInt * e) {
     if (! e->haveResultType()) {
-        const DataType* dtype = DataTypeBuiltinPrimitive::get (DATATYPE_NUMERIC); /* default */
+        uint64_t actualValue = 0;
+        SecrecDataType dataType = DATATYPE_NUMERIC;
+        if (! convertNumber(e->stringValue(), &dataType, &actualValue)) {
+            m_log.fatalInProc(e)
+                << "Integer literal overflow at "
+                << e->location() << '.';
+            return E_TYPE;
+        }
+
+        const DataType* dType = DataTypeBuiltinPrimitive::get(dataType);
+        if (actualValue > maxIntLiteralValue(dataType)) {
+            m_log.fatalInProc(e)
+                << "Integer literal can not be represented by type \'"
+                << *dType << "\' at " << e->location() << '.';
+            return E_TYPE;
+        }
+
         if (e->haveContextDataType()) {
-            dtype = dtypeDeclassify(e->contextSecType(), e->contextDataType());
-            if ((dtype == nullptr) || ! isNumericDataType(dtype)) {
+            dType = dtypeDeclassify(e->contextSecType(), e->contextDataType());
+            if ((dType == nullptr) || ! isNumericDataType(dType)) {
                 m_log.fatalInProc(e) << "Expecting numeric context at "
                                      << e->location() << '.';
                 return E_TYPE;
             }
         }
 
-        e->setResultType(TypeBasic::get(dtype));
+        e->setActualValue(actualValue);
+        e->setResultType(TypeBasic::get(dType));
     }
 
     return OK;
@@ -1094,9 +1228,22 @@ void TreeNodeExprInt::instantiateDataTypeV(SecrecDataType dType) {
   TreeNodeExprFloat
 *******************************************************************************/
 
+namespace /* anonymous */ {
+
+SecrecDataType readFloatLiteralSuffix(StringRef input)  {
+
+    if (input.endsWith("f32")) return DATATYPE_FLOAT32;
+    if (input.endsWith("f64")) return DATATYPE_FLOAT64;
+
+    return DATATYPE_NUMERIC_FLOAT;
+}
+
+} // namespace anonymous
+
 TypeChecker::Status TypeChecker::visitExprFloat(TreeNodeExprFloat * e) {
     if (!e->haveResultType()) {
-        const DataType* dType = DataTypeBuiltinPrimitive::get(DATATYPE_NUMERIC_FLOAT); /* default */
+        auto const secrecDataType = readFloatLiteralSuffix(e->value());
+        DataType const * dType = DataTypeBuiltinPrimitive::get(secrecDataType);
         if (e->haveContextDataType()) {
             dType = dtypeDeclassify(e->contextSecType(), e->contextDataType());
             if (dType == nullptr) {

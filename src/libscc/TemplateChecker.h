@@ -33,6 +33,7 @@ namespace SecreC {
 class SymbolTable;
 class CompileLog;
 class Location;
+class TypeChecker;
 
 /*******************************************************************************
   TemplateChecker
@@ -68,11 +69,9 @@ public:
 
 public: /* Methods: */
 
-    explicit TemplateVarChecker (SymbolTable* st, CompileLog& log)
-        : m_st (st)
-        , m_log (log)
-        , m_pos (ArgParameter)
-    { }
+    explicit TemplateVarChecker (TypeChecker & typeChecker,
+                                 SymbolTable* st,
+                                 CompileLog& log);
 
     TemplateVarChecker (const TemplateVarChecker&) = delete;
     TemplateVarChecker& operator = (const TemplateVarChecker&) = delete;
@@ -96,6 +95,7 @@ public: /* Methods: */
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, TypeArgumentKind kind);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t);
+    virtual bool visitDimTypeZeroF(TreeNodeDimTypeZeroF* t);
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t);
 
     bool visitTypeArg (TreeNodeTypeArg* t, TypeArgumentKind kind);
@@ -118,6 +118,7 @@ protected: /* Methods: */
     const char* thing ();
 
 protected: /* Fields: */
+    TypeChecker&   m_typeChecker;
     SymbolTable*   m_st;
     CompileLog&    m_log;
     TemplateVarMap m_vars;

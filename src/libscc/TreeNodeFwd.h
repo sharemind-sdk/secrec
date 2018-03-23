@@ -36,6 +36,7 @@ class TreeNodeDataTypeVarF;
 class TreeNodeDimTypeConstF;
 class TreeNodeDimTypeF;
 class TreeNodeDimTypeVarF;
+class TreeNodeDimTypeZeroF;
 class TreeNodeDomain;
 class TreeNodeExpr;
 class TreeNodeExprArrayConstructor;

@@ -43,7 +43,7 @@ void treenode_setLocation(TreeNode *node, YYLTYPE *loc);
 void treenode_moveChildren(TreeNode* from, TreeNode* to);
 
 TreeNode *treenode_init_bool(unsigned value, YYLTYPE *loc);
-TreeNode *treenode_init_int(uint64_t value, YYLTYPE *loc);
+TreeNode *treenode_init_int(TYPE_STRINGREF value, YYLTYPE *loc);
 
 TreeNode *treenode_init_str_fragment(TYPE_STRINGREF value, YYLTYPE *loc);
 TreeNode *treenode_init_str_ident(TYPE_STRINGREF value, YYLTYPE *loc);
@@ -55,13 +55,11 @@ TreeNode *treenode_init_privateSecTypeF(YYLTYPE *loc);
 TreeNode *treenode_init_dataTypeVarF (YYLTYPE * loc);
 TreeNode *treenode_init_dataTypeConstF(enum SecrecDataType dataType, YYLTYPE * loc);
 TreeNode *treenode_init_dataTypeF(enum SecrecDataType dataType, YYLTYPE *loc);
-TreeNode *treenode_init_dimTypeConstF(unsigned dimType, YYLTYPE *loc);
 TreeNode *treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, YYLTYPE *loc);
 TreeNode *treenode_init_castdef(TYPE_STRINGTABLE table, YYLTYPE *loc);
 TreeNode *treenode_init_lvalue (TreeNode* node, YYLTYPE *loc);
 
 TreeNode *treenode_init_typeArgDataTypeConst (enum SecrecDataType dataType, YYLTYPE * loc);
-TreeNode *treenode_init_typeArgDimTypeConst (unsigned dimType, YYLTYPE *loc);
 
 TreeNode *treenode_init_dataTypeDecl (TYPE_STRINGREF name, YYLTYPE *loc);
 TreeNode *treenode_init_dataTypeDeclParamPublic (enum SecrecDataType dataType, YYLTYPE * loc);

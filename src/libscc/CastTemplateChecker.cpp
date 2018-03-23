@@ -21,6 +21,7 @@
 
 #include "Log.h"
 #include "TreeNode.h"
+#include "TypeChecker.h"
 
 
 namespace SecreC {
@@ -93,6 +94,10 @@ bool CastTemplateVarChecker::visitDataTypeConstF (TreeNodeDataTypeConstF* t) {
 }
 
 bool CastTemplateVarChecker::visitDimTypeConstF (TreeNodeDimTypeConstF* t) {
+    if (m_typeChecker.visitDimTypeConstF(t) != TypeChecker::OK) {
+        return false;
+    }
+
     if (t->cachedType () != 1u) {
         badType (t);
         return false;

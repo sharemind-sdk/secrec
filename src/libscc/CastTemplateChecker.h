@@ -31,8 +31,10 @@ class CastTemplateVarChecker: public TemplateVarChecker {
 
 public: /* Methods: */
 
-    explicit CastTemplateVarChecker (SymbolTable * st, CompileLog & log)
-        : TemplateVarChecker (st, log)
+    explicit CastTemplateVarChecker (TypeChecker & typeChecker,
+                                     SymbolTable * st,
+                                     CompileLog & log)
+        : TemplateVarChecker (typeChecker, st, log)
         , m_seenDomainVar (false)
     { }
 

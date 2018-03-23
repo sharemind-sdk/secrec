@@ -10,56 +10,6 @@
 
   void yyerror(YYLTYPE *loc, yyscan_t yyscanner, TYPE_TREENODE *parseTree, const char * fileName, TYPE_STRINGTABLE table, const char *s);
 
-  uint64_t char_to_digit(char const c);
-  uint64_t char_to_digit(char const c) {
-      switch (c) {
-          #define X(c,d) case c: return d;
-          X('0', 0u) X('1', 1u) X('2', 2u) X('3', 3u) X('4', 4u)
-          X('5', 5u) X('6', 6u) X('7', 7u) X('8', 8u) X('9', 9u)
-          X('a',10u) X('b',11u) X('c',12u) X('d',13u) X('e',14u) X('f',15u)
-          X('A',10u) X('B',11u) X('C',12u) X('D',13u) X('E',14u) X('F',15u)
-          #undef X
-          default:
-              assert(0 && "Invalid digit character!");
-              return 0;
-      }
-  }
-
-  uint64_t convert_to_base(TYPE_STRINGREF input,
-                           uint64_t base,
-                           int* does_overflow);
-  uint64_t convert_to_base(TYPE_STRINGREF input,
-                           uint64_t base,
-                           int* does_overflow)
-  {
-      assert (does_overflow);
-      const char* begin = stringref_begin(input);
-      assert (begin);
-      size_t length = stringref_length(input);
-
-      assert(base == 2 || base == 8 || base == 10 || base == 16);
-      uint64_t out = 0;
-      size_t offset = 0;
-      if (base != 10) {
-          /* skip the headers: 0b, 0o, and 0x */
-          assert(length > 1);
-          if (length <= 1) return 0;
-          offset += 2;
-      }
-
-      for (; offset < length; ++ offset) {
-          uint64_t digit = char_to_digit(begin[offset]);
-          assert(digit < base);
-          uint64_t new_out = out*base + digit;
-          if (new_out < out)
-              *does_overflow = 1;
-
-          out = new_out;
-      }
-
-      return out;
-  }
-
   struct TreeNode * init_op(TYPE_STRINGTABLE table,
                             enum SecrecOperator op,
                             YYLTYPE * loc,
@@ -265,7 +215,6 @@
 
 %type <secrec_operator> binop
 %type <secrec_datatype> primitive_datatype
-%type <integer_literal> int_literal_helper
 %type <str> datatype_identifier
 %type <nothing> module
 
@@ -547,7 +496,7 @@ maybe_sectype_specifier
 maybe_dimtype_specifier
  : /* nothing */
    {
-     $$ = treenode_init_dimTypeConstF(0, &@$);
+     $$ = treenode_init(NODE_DIMTYPE_ZERO_F, &@$);
    }
  | dimtype_specifier
  ;
@@ -638,9 +587,10 @@ type_argument
    {
      $$ = treenode_init_typeArgDataTypeConst($1, &@$);
    }
- | int_literal_helper
+ | int_literal
    {
-     $$ = treenode_init_typeArgDimTypeConst($1, &@$);
+     $$ = treenode_init(NODE_TYPE_ARG_DIM_TYPE_CONST, &@$);
+     treenode_appendChild($$, $1);
    }
  | PUBLIC
    {
@@ -662,9 +612,10 @@ type_arguments
  ;
 
 dimtype_specifier
- : '[' '[' int_literal_helper ']' ']'
+ : '[' '[' int_literal ']' ']'
    {
-      $$ = treenode_init_dimTypeConstF ($3, &@$);
+      $$ = treenode_init(NODE_DIMTYPE_CONST_F, &@$);
+      treenode_appendChild($$, $3);
    }
  | '[' '[' identifier ']' ']'
    {
@@ -1586,50 +1537,11 @@ primary_expression
  | literal
  ;
 
-int_literal_helper
- : BIN_LITERAL {
-    int does_overflow = 0;
-    $$ = convert_to_base($1, 2, &does_overflow);
-    if (does_overflow) {
-        yyerror(&@$, yyscanner, NULL, @$.filename, table,
-                "Binary literal overflows 64 bits.");
-        YYERROR;
-    }
- }
- | OCT_LITERAL {
-    int does_overflow = 0;
-    $$ = convert_to_base($1,  8, &does_overflow);
-    if (does_overflow) {
-        yyerror(&@$, yyscanner, NULL, @$.filename, table,
-                "Octal literal overflows 64 bits..");
-        YYERROR;
-    }
- }
- | DEC_LITERAL {
-    int does_overflow = 0;
-    $$ = convert_to_base($1, 10, &does_overflow);
-    if (does_overflow) {
-        yyerror(&@$, yyscanner, NULL, @$.filename, table,
-                "Decimal literal overflows 64 bits.");
-        YYERROR;
-    }
- }
- | HEX_LITERAL {
-    int does_overflow = 0;
-    $$ = convert_to_base($1, 16, &does_overflow);
-    if (does_overflow) {
-        yyerror(&@$, yyscanner, NULL, @$.filename, table,
-                "Hexadecimal literal overflows 64 bits.");
-        YYERROR;
-    }
- }
- ;
-
 int_literal
- : int_literal_helper
-   {
-     $$ = treenode_init_int($1, &@$);
-   }
+ : BIN_LITERAL { $$ = treenode_init_int($1, &@$); }
+ | OCT_LITERAL { $$ = treenode_init_int($1, &@$); }
+ | DEC_LITERAL { $$ = treenode_init_int($1, &@$); }
+ | HEX_LITERAL { $$ = treenode_init_int($1, &@$); }
  ;
 
 float_literal

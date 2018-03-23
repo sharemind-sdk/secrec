@@ -128,6 +128,7 @@ public: /* Methods: */
     Status visitDataTypeVarF(TreeNodeDataTypeVarF * ty, const SecurityType* secType = nullptr);
     Status visitDimTypeConstF(TreeNodeDimTypeConstF *);
     Status visitDimTypeF(TreeNodeDimTypeF* ty);
+    Status visitDimTypeZeroF(TreeNodeDimTypeZeroF* ty);
     Status visitDimTypeVarF(TreeNodeDimTypeVarF * ty);
     Status visitSecTypeF(TreeNodeSecTypeF * ty);
     Status visitTypeF(TreeNodeTypeF* ty);

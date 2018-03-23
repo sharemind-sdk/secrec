@@ -52,15 +52,15 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
 
     if (body->isOperator ()) {
         varChecker.reset (
-            new OperatorTemplateVarChecker {m_st, m_log});
+            new OperatorTemplateVarChecker {*this, m_st, m_log});
     }
     else if (body->isCast ()) {
         varChecker.reset (
-            new CastTemplateVarChecker {m_st, m_log});
+            new CastTemplateVarChecker {*this, m_st, m_log});
     }
     else {
         varChecker.reset (
-            new TemplateVarChecker {m_st, m_log});
+            new TemplateVarChecker {*this, m_st, m_log});
     }
 
     for (auto& quant : templ->quantifiers ()) {

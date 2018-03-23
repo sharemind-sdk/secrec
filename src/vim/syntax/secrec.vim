@@ -30,8 +30,9 @@ syn keyword	scConstant	true false
 syn keyword	scSupport	cat size shape reshape tostring assert declassify
 syn keyword	scSupport	__domainid __syscall __ref __cref __return __bytes_from_string __string_from_bytes
 
-syn match	scNumber	"\<\(0x\)\=\d\+\(\.\d\+\)\="
-syn match	scNumber	"\<0b[01]\+"
+syn match	scNumber	"\<\(0x\x\+\|0o\o\+\|\d\+\)\(i8\|i16\|i32\|i64\|u8\|u16\|u32\|u64\|f32\|f64\)\="
+syn match	scNumber	"\<\d\+\.\d\+\(f32\|f64\)\="
+syn match	scNumber	"\<0b[01]\+\(i8\|i16\|i32\|i64\|u8\|u16\|u32\|u64\)\="
 
 syn match	scSpecial	contained "\\\(x\x\+\|\o\{1,3}\)"
 syn match	scSpecial	contained "\\\(u\x\{4}\|U\x\{8}\)"

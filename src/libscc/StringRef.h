@@ -96,6 +96,17 @@ public: /* Methods: */
         return std::strncmp (m_data, ref.m_data, m_size) == 0;
     }
 
+    bool endsWith(StringRef ref) const {
+        if (ref.m_size > m_size)
+            return false;
+
+        if (ref.m_size == 0)
+            return true;
+
+        std::size_t offset = m_size - ref.m_size;
+        return std::strncmp(m_data + offset, ref.m_data, ref.m_size) == 0;
+    }
+
     static void free (StringRef ref) {
         std::free (const_cast<value_type*>(ref.m_data));
     }

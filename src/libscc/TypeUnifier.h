@@ -70,6 +70,7 @@ public: /* Methods: */
 
     bool visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType);
     bool visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType);
+    bool visitDimTypeZeroF(TreeNodeDimTypeZeroF* t, SecrecDimType dimType);
     bool visitDimTypeConstF(TreeNodeDimTypeConstF* t, SecrecDimType dimType);
 
     bool visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg);

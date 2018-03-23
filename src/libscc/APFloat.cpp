@@ -141,7 +141,11 @@ uint64_t APFloat::ieee64bits () const {
 
 APFloat::APFloat (prec_t p, StringRef str) {
     mpfr_init2 (m_value, p);
-    if (mpfr_set_str (m_value, str.str ().c_str (), 10, SECREC_CONSTANT_MPFR_RNDN) != 0) {
+    // need to use temporary str to avoid undefined behaviour
+    auto const tempStr = str.str();
+    char * endptr = nullptr;
+    (void) mpfr_strtofr(m_value, tempStr.c_str(), &endptr, 10, SECREC_CONSTANT_MPFR_RNDN);
+    if (endptr == nullptr) {
         mpfr_clear (m_value);
         throw std::logic_error ("Invalid floating point string literal!");
     }

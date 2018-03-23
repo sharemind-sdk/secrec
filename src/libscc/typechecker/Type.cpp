@@ -230,12 +230,24 @@ void TreeNodeDimTypeF::setTypeContext (TypeContext& cxt) const {
     cxt.setContextDimType (cachedType ());
 }
 
-TypeChecker::Status TypeChecker::visitDimTypeConstF (TreeNodeDimTypeConstF*) {
+TypeChecker::Status TypeChecker::visitDimTypeConstF (TreeNodeDimTypeConstF* ty) {
+    auto const intExpr = ty->value();
+    TCGUARD(visitExprInt(intExpr));
+    if (! intExpr->haveActualValue()) {
+        return E_TYPE;
+    }
+
+    ty->setCachedType(static_cast<SecrecDimType>(intExpr->actualValue()));
+    return OK;
+}
+
+
+TypeChecker::Status TypeChecker::visitDimTypeZeroF(TreeNodeDimTypeZeroF*) {
     return OK;
 }
 
 TypeChecker::Status TypeChecker::visitDimTypeVarF (TreeNodeDimTypeVarF * ty) {
-    if (ty->cachedType () != ~ SecrecDimType (0)) {
+    if (ty->haveCachedType()) {
         return OK;
     }
 

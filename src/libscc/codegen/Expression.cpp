@@ -398,11 +398,11 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
     }
 
     const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
-    SecrecDimType k = e->dimensionality()->value();
+    auto k = static_cast<SecrecDimType>(e->dimensionality()->actualValue());
     SecrecDimType n = e->resultType()->secrecDimType();
-    SymbolSymbol * arg1ResultSymbol = static_cast<SymbolSymbol *>(arg1Result.symbol());
-    SymbolSymbol * arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
-    SymbolSymbol * resSym = static_cast<SymbolSymbol *>(result.symbol());
+    auto const arg1ResultSymbol = static_cast<SymbolSymbol *>(arg1Result.symbol());
+    auto const arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
+    auto const resSym = static_cast<SymbolSymbol *>(result.symbol());
 
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
@@ -1857,9 +1857,12 @@ CGResult CodeGen::cgExprInt(TreeNodeExprInt * e) {
     if (m_tyChecker->visitExprInt(e) != TypeChecker::OK)
         return CGResult::ERROR_CONTINUE;
 
+    if (! e->haveActualValue())
+        return CGResult::ERROR_FATAL;
+
     CGResult result;
     result.setResult(numericConstant(e->resultType()->secrecDataType(),
-                                     e->value()));
+                                     e->actualValue()));
     return result;
 }
 

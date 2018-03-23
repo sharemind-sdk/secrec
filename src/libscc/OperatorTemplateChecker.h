@@ -32,8 +32,8 @@ class OperatorTemplateVarChecker: public TemplateVarChecker {
 
 public: /* Methods: */
 
-    explicit OperatorTemplateVarChecker (SymbolTable* st, CompileLog& log)
-        : TemplateVarChecker (st, log)
+    explicit OperatorTemplateVarChecker(TypeChecker & typeChecker, SymbolTable* st, CompileLog& log)
+        : TemplateVarChecker(typeChecker, st, log)
         , m_seenDomainVar (false)
     { }
 
@@ -46,6 +46,8 @@ public: /* Methods: */
     virtual bool visitDataTypeConstF (TreeNodeDataTypeConstF* t) override;
 
     virtual bool visitDimTypeConstF (TreeNodeDimTypeConstF* t) override;
+
+    virtual bool visitDimTypeZeroF (TreeNodeDimTypeZeroF* t) override;
 
     bool checkLUB (TreeNodeTemplate* templ);
 

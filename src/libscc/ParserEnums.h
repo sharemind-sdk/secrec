@@ -93,6 +93,7 @@ enum SecrecDataType {
 
 #define DIM_TYPE_LIST \
     O(DIMTYPE_CONST_F,            DimTypeConstF) \
+    O(DIMTYPE_ZERO_F,             DimTypeZeroF) \
     O(DIMTYPE_VAR_F,              DimTypeVarF)
 
 #define DATATYPE_LIST \

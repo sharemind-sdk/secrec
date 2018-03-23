@@ -177,6 +177,10 @@ bool TypeUnifier::visitDimTypeF (TreeNodeDimTypeF* t, SecrecDimType dimType) {
     return dispatchDimTypeF (*this, t, dimType);
 }
 
+bool TypeUnifier::visitDimTypeZeroF(TreeNodeDimTypeZeroF* t, SecrecDimType dimType) {
+    return t->cachedType() == dimType;
+}
+
 bool TypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType dimType) {
     return t->cachedType () == dimType;
 }

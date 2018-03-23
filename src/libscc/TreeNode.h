@@ -608,14 +608,23 @@ protected:
 ******************************************************************/
 
 class TreeNodeDimTypeF: public TreeNodeTypeF {
+private:
+
+    static constexpr SecrecDimType UndefinedDimType = ~ SecrecDimType (0);
+
 public: /* Methods: */
     inline TreeNodeDimTypeF(SecrecTreeNodeType type,
                             const Location & loc)
         : TreeNodeTypeF (type, loc)
-        , m_dimType (~ SecrecDimType (0))
+        , m_dimType (UndefinedDimType)
     { }
 
-    inline SecrecDimType cachedType () const { return m_dimType; }
+    bool haveCachedType() const { return m_dimType != UndefinedDimType; }
+    inline SecrecDimType cachedType() const {
+        assert (haveCachedType());
+        return m_dimType;
+    }
+
     inline void setCachedType (SecrecDimType dimType) { m_dimType = dimType; }
     void setTypeContext (TypeContext& cxt) const override final;
 
@@ -629,16 +638,40 @@ private: /* Fields: */
 
 class TreeNodeDimTypeConstF: public TreeNodeDimTypeF {
 public: /* Methods: */
-    inline TreeNodeDimTypeConstF(SecrecDimType dimType,
-                                 const Location & loc)
+    inline explicit TreeNodeDimTypeConstF(const Location & loc)
         : TreeNodeDimTypeF (NODE_DIMTYPE_CONST_F, loc)
-    { setCachedType (dimType); }
+    { }
+
+    TreeNodeExprInt * value() const;
 
 protected:
     bool printHelper(std::ostream & os) const override final;
     void printXmlHelper (std::ostream & os) const override final;
     TreeNode* cloneV () const override final {
-        return new TreeNodeDimTypeConstF (cachedType (), m_location);
+        auto const ret = new TreeNodeDimTypeConstF(m_location);
+        if (haveCachedType()) {
+            ret->setCachedType(cachedType());
+        }
+
+        return ret;
+    }
+};
+
+/******************************************************************
+  TreeNodeDimTypeZeroF
+******************************************************************/
+
+class TreeNodeDimTypeZeroF: public TreeNodeDimTypeF {
+public: /* Methods: */
+    inline explicit TreeNodeDimTypeZeroF(const Location & loc)
+        : TreeNodeDimTypeF(NODE_DIMTYPE_ZERO_F, loc)
+    { setCachedType(0); }
+
+protected:
+    bool printHelper(std::ostream & os) const override final;
+    void printXmlHelper (std::ostream & os) const override final;
+    TreeNode* cloneV () const override final {
+        return new TreeNodeDimTypeZeroF(m_location);
     }
 };
 
@@ -814,21 +847,17 @@ private: /* Fields: */
 
 class TreeNodeTypeArgDimTypeConst: public TreeNodeTypeArg {
 public: /* Methods: */
-    explicit inline TreeNodeTypeArgDimTypeConst(SecrecDimType dimType,
-                                                const Location & loc)
+    explicit inline TreeNodeTypeArgDimTypeConst(const Location & loc)
         : TreeNodeTypeArg(NODE_TYPE_ARG_DIM_TYPE_CONST, loc)
-        , m_secrecDimType (dimType)
     { }
 
-    SecrecDimType secrecDimType () const { return m_secrecDimType; }
+    TreeNodeExprInt * value() const;
+    SecrecDimType secrecDimType() const;
 
 protected:
     TreeNode* cloneV () const override final {
-        return new TreeNodeTypeArgDimTypeConst (m_secrecDimType, m_location);
+        return new TreeNodeTypeArgDimTypeConst (m_location);
     }
-
-private: /* Fields: */
-    const SecrecDimType m_secrecDimType;
 };
 
 /******************************************************************
@@ -955,25 +984,44 @@ protected:
 
 class TreeNodeExprInt: public TreeNodeExpr {
 public: /* Methods: */
-    inline TreeNodeExprInt(uint64_t value, const Location & loc)
-        : TreeNodeExpr(NODE_LITE_INT, loc), m_value(value) {}
 
-    inline uint64_t value() const { return m_value; }
+    inline TreeNodeExprInt(StringRef value, const Location & loc)
+        : TreeNodeExpr(NODE_LITE_INT, loc)
+        , m_stringValue(value)
+    { }
 
-    CGResult codeGenWith (CodeGen& cg) override final;
+    CGResult codeGenWith (CodeGen & cg) override final;
+
+    StringRef stringValue() const { return m_stringValue; }
+    bool haveActualValue() const { return m_haveActualValue; }
+
+    uint64_t actualValue() const {
+        assert (haveActualValue());
+        return m_actualValue;
+    }
+
+    void setActualValue(uint64_t val) {
+        m_haveActualValue = true;
+        m_actualValue = val;
+    }
 
 protected:
 
     bool printHelper(std::ostream & os) const override final;
     void printXmlHelper (std::ostream & os) const override final;
     TreeNode* cloneV () const override final {
-        return new TreeNodeExprInt (m_value, m_location);
+        auto const ret = new TreeNodeExprInt(m_stringValue, m_location);
+        ret->m_haveActualValue = m_haveActualValue;
+        ret->m_actualValue = m_actualValue;
+        return ret;
     }
 
     void instantiateDataTypeV (SecrecDataType dType) override final;
 
 private: /* Fields: */
-    uint64_t m_value;
+    StringRef m_stringValue;
+    bool m_haveActualValue = false;
+    uint64_t m_actualValue = 0;
 };
 
 /******************************************************************

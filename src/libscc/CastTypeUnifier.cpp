@@ -82,4 +82,8 @@ bool CastTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF*, SecrecDimType)
     return true;
 }
 
+bool CastTypeUnifier::visitDimTypeZeroF (TreeNodeDimTypeZeroF*, SecrecDimType) {
+    return true;
+}
+
 } /* namespace SecreC */

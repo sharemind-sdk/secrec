@@ -137,6 +137,10 @@ bool OperatorTypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDi
     return true;
 }
 
+bool OperatorTypeUnifier::visitDimTypeZeroF(TreeNodeDimTypeZeroF*, SecrecDimType) {
+    return true;
+}
+
 bool OperatorTypeUnifier::checkReturnDataType (TreeNodeType* retNodeTy,
                                                const DataType* dt)
 {
@@ -144,7 +148,8 @@ bool OperatorTypeUnifier::checkReturnDataType (TreeNodeType* retNodeTy,
     // m_securityType here
     const SecurityType* sec = m_securityType;
     // Dimension variables are not allowed in operators
-    assert (retNodeTy->dimType ()->type () == NODE_DIMTYPE_CONST_F);
+    assert (retNodeTy->dimType ()->type () == NODE_DIMTYPE_CONST_F ||
+            retNodeTy->dimType ()->type () == NODE_DIMTYPE_ZERO_F);
     SecrecDimType dim = retNodeTy->dimType ()->cachedType ();
     const TypeBasic* type = TypeBasic::get (sec, dt, dim);
     OTUGUARD (visitType (retNodeTy, type));
