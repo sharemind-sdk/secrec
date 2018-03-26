@@ -23,6 +23,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <limits>
 #include <locale>
 
 #include <boost/optional.hpp>
@@ -42,6 +43,7 @@
 #include <sharemind/libas/assemble.h>
 #include <sharemind/libas/linker.h>
 #include <sharemind/libas/tokenizer.h>
+#include <sharemind/PotentiallyVoidTypeInfo.h>
 
 #include "Compiler.h"
 
@@ -69,50 +71,6 @@ public: /* Methods: */
 
 private: /* Fields: */
     const fs::path& m_path;
-};
-
-/*
- * RAII for SharemindAssemblerTokens.
- */
-class ScopedAsmTokens : boost::noncopyable {
-public:
-    explicit ScopedAsmTokens (SharemindAssemblerTokens* ts)
-        : m_ts (ts) { }
-
-    ~ScopedAsmTokens () {
-        SharemindAssemblerTokens_free (m_ts);
-    }
-
-    SharemindAssemblerTokens* get () const { return m_ts; }
-private:
-    SharemindAssemblerTokens* const m_ts;
-};
-
-/*
- * RAII for SharemindAssemblerLinkingUnits.
- */
-class ScopedAsmLinkingUnits : public SharemindAssemblerLinkingUnits, boost::noncopyable {
-public:
-    ScopedAsmLinkingUnits () {
-        SharemindAssemblerLinkingUnits_init (this);
-    }
-
-    ~ScopedAsmLinkingUnits () {
-        SharemindAssemblerLinkingUnits_destroy(this);
-    }
-};
-
-/*
- * RAII to force C style free. auto_ptr uses delete which is incorrect.
- */
-class ScopedFree : boost::noncopyable {
-public:
-    explicit ScopedFree (void* p)
-        : m_ptr (p) { }
-    ~ScopedFree () { free (m_ptr); }
-    void* get () const { return m_ptr; }
-private:
-    void* const m_ptr;
 };
 
 
@@ -239,7 +197,9 @@ private: /* Fields: */
     bool m_fileOpened;
 };
 
-bool assemble(ScopedAsmLinkingUnits& lus, const VMLinkingUnit& vmlu) {
+bool assemble(sharemind::Assembler::LinkingUnitsVector & lus,
+              VMLinkingUnit const & vmlu)
+{
     fs::path p = fs::temp_directory_path () / fs::unique_path ();
     ScopedRemovePath scopedRemove (p);
 
@@ -260,46 +220,15 @@ bool assemble(ScopedAsmLinkingUnits& lus, const VMLinkingUnit& vmlu) {
         }
     }
 
-
-    {
-        io::stream<io::mapped_file_source > fin (p.string ());
-        if (! fin.is_open ()) {
-            cerr << "Failed to mmap a temporary file \"" << p
-                 << "\" for reading!" << endl;
-            return false;
-        }
-
-        size_t sl = 0u;
-        size_t sc = 0u;
-        ScopedAsmTokens ts (sharemind_assembler_tokenize (fin->data (), fin->size (), &sl, &sc));
-        if (!ts.get()) {
-            cerr << "ICE: Tokenization failed at (" << sl << "," << sc << ")" << endl;
-            return false;
-        }
-
-        const SharemindAssemblerToken * errorToken = nullptr;
-        char * errorString = nullptr;
-        SharemindAssemblerError r = sharemind_assembler_assemble (ts.get (), &lus, &errorToken, &errorString);
-        if (r != SHAREMIND_ASSEMBLE_OK) {
-            const char* smasErrorStr = SharemindAssemblerError_toString (r);
-            assert (smasErrorStr);
-
-            cerr << "ICE: Assembling error: ";
-            if (errorToken) {
-                cerr << '(' << errorToken->start_line << ", "
-                     << errorToken->start_column << ", "
-                     << SharemindAssemblerTokenType_toString(errorToken->type) + 11
-                     << ')';
-            }
-
-            cerr << smasErrorStr;
-            if (errorString) cerr <<  ": " << errorString;
-            cerr << endl;
-            free (errorString);
-            return false;
-        }
+    io::stream<io::mapped_file_source > fin (p.string ());
+    if (! fin.is_open ()) {
+        cerr << "Failed to mmap a temporary file \"" << p
+             << "\" for reading!" << endl;
+        return false;
     }
 
+    lus = sharemind::Assembler::assemble(
+              sharemind::Assembler::tokenize(fin->data(), fin->size()));
     return true;
 }
 
@@ -307,21 +236,31 @@ bool assemble(ScopedAsmLinkingUnits& lus, const VMLinkingUnit& vmlu) {
  * Compile the actual bytecode executable.
  */
 bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
-    ScopedAsmLinkingUnits lus;
-    if (! assemble(lus, vmlu)) {
+    sharemind::Assembler::LinkingUnitsVector lus;
+    if (!assemble(lus, vmlu))
         return false;
-    }
 
-    size_t outputLength = 0;
-    ScopedFree ptr (sharemind_assembler_link (0x0, &lus, &outputLength, 0));
+    auto const linkerResult(sharemind::Assembler::link(0x0, lus));
+    auto readPtr = linkerResult.data();
+    auto readSizeLeft = linkerResult.size();
     std::ostream& os = output.getStream ();
-    os.write (static_cast<const char*>(ptr.get ()), outputLength);
-    if (os.bad ()) {
-        cerr << "Writing bytecode to output failed." << endl;
-        return false;
+    static constexpr auto const streamSizeMax =
+            std::numeric_limits<std::streamsize>::max();
+    while (readSizeLeft > streamSizeMax) {
+        os.write(readPtr, streamSizeMax);
+        if (os.bad())
+            goto err;
+        readPtr = sharemind::ptrAdd(readPtr, streamSizeMax);
+        readSizeLeft -= streamSizeMax;
     }
-
+    os.write(readPtr, static_cast<std::streamsize>(readSizeLeft));
+    if (os.bad())
+        goto err;
     return true;
+
+err:
+    cerr << "Writing bytecode to output failed." << endl;
+    return false;
 }
 
 } // anonymous namespace
