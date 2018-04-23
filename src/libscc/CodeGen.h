@@ -463,7 +463,6 @@ private:
     void startLoop ();
     void endLoop ();
     SymbolTable* loopST () const;
-    SymbolTable* procST () const;
 
 private: /* Fields: */
 
