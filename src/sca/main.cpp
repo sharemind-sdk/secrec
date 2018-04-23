@@ -33,6 +33,7 @@
 #include <libscc/Context.h>
 #include <libscc/DataflowAnalysis.h>
 #include <libscc/Intermediate.h>
+#include <libscc/Location.h>
 #include <libscc/Optimizer.h>
 #include <libscc/Parser.h>
 #include <libscc/TreeNode.h>
@@ -193,7 +194,7 @@ int run (const Configuration& cfg) {
         icode.modules ().addSearchPath (path, cfg.m_verbose);
     }
 
-    icode.compile (parseTree);
+    icode.compile (parseTree, SecreC::Location::PathStyle::FullPath);
     if (icode.status () != SecreC::ICode::OK) {
         cerr << "Error generating valid intermediate code." << endl;
         cerr << icode.compileLog () << endl;

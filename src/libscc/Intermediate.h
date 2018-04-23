@@ -24,6 +24,7 @@
 #include "Context.h"
 #include "Imop.h"
 #include "Log.h"
+#include "Location.h"
 #include "ModuleMap.h"
 #include "OperatorTable.h"
 #include "SymbolTable.h"
@@ -53,7 +54,7 @@ public: /* Methods: */
     ICode& operator = (const ICode&) = delete;
 
     TreeNodeModule* parseMain (const boost::optional<std::string>& mfile);
-    void compile (TreeNodeModule *mod);
+    void compile (TreeNodeModule *mod, Location::PathStyle pathStyle);
 
     OperatorTable& operators () { return m_operators; }
     SymbolTable& symbols () { return m_symbols; }

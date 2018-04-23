@@ -119,13 +119,14 @@ std::vector<SymbolSymbol*> collectTemporaries (Symbol* sym) {
   CodeGen
 *******************************************************************************/
 
-CodeGen::CodeGen(ICodeList& code, ICode& icode)
+CodeGen::CodeGen(ICodeList& code, ICode& icode, Location::PathStyle style)
     : CodeGenState(code.end(), &icode.symbols())
     , m_code(code)
     , m_log(icode.compileLog())
     , m_modules(icode.modules())
     , m_context(icode.context())
     , m_tyChecker(nullptr)
+    , m_pathStyle(style)
 {
     m_tyChecker = new TypeChecker(icode.operators(), icode.symbols(), m_log, m_context);
 }
@@ -610,7 +611,8 @@ CGResult CodeGen::codeGenSubscript(SubscriptInfo & subInfo, Symbol * tmp, TreeNo
     // 2. check that indices are legal
     {
         std::stringstream ss;
-        ss << "Index out of bounds at " << m_node->location() << '.';
+        ss << "Index out of bounds at "
+           << m_node->location().printer(m_pathStyle) << '.';
         auto jmp = new Imop(m_node, Imop::JUMP, static_cast<Symbol *>(nullptr));
         Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
         SymbolLabel * errLabel = m_st->label(err);
@@ -801,7 +803,8 @@ CGResult CodeGen::cgInitializeToSymbol (SymbolSymbol* lhs, Symbol* rhs, bool has
         else {
             // check that shapes match and assign
             std::stringstream ss;
-            ss << "Shape mismatch at " << m_node->location();
+            ss << "Shape mismatch at "
+               << m_node->location().printer(m_pathStyle) << '.';
             Imop * err = newError(m_node, ConstantString::get(getContext(), ss.str()));
             SymbolLabel * const errLabel = m_st->label(err);
             auto lhsDimIter(lhs->dims().begin());

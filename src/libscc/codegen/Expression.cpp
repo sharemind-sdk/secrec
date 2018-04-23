@@ -406,7 +406,8 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     // Compute resulting shape and perform sanity check:
     std::stringstream ss;
-    ss << "Different sized dimensions in concat at " << e->location() << '.';
+    ss << "Different sized dimensions in concat at "
+       << e->location().printer(m_pathStyle) << '.';
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
     for (SecrecDimType it = 0; it < e->resultType()->secrecDimType(); ++ it) {
@@ -585,7 +586,8 @@ CGResult CodeGen::cgExprReshape(TreeNodeExprReshape * e) {
         result.addToNextList(jmp);
 
         std::stringstream ss;
-        ss << "ERROR: Mismatching sizes in reshape at " << e->location() << '.';
+        ss << "ERROR: Mismatching sizes in reshape at "
+           << e->location().printer(m_pathStyle) << '.';
         Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
         push_imop(err);
 
@@ -641,7 +643,8 @@ void CodeGen::cgBinExprShapeCheck(TreeNodeExpr * e,
 {
     const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
     std::stringstream ss;
-    ss << "Mismatching shapes in arithmetic expression at " << e->location();
+    ss << "Mismatching shapes in arithmetic expression at "
+       << e->location().printer(m_pathStyle);
     Imop * err = newError(e, ConstantString::get(getContext(), ss.str()));
     SymbolLabel * errLabel = m_st->label(err);
     if (auto e1ResultSs = dynamic_cast<SymbolSymbol *>(e1result)) {
@@ -792,8 +795,9 @@ CGResult CodeGen::cgOverloadedExpr (TreeNodeExpr* e,
         // Check result size
         pushComment("Checking if procedure call result has the correct size:");
         std::stringstream ss;
-        ss << "Procedure at " << *symProc->location()
-           << " returned a value with incorrect size in expression at " << e->location();
+        ss << "Procedure at " << symProc->location()->printer(m_pathStyle)
+           << " returned a value with incorrect size in expression at "
+           << e->location().printer(m_pathStyle);
         Imop* err = newError(e, ConstantString::get(getContext(), ss.str()));
         SymbolLabel* errLabel = m_st->label(err);
 

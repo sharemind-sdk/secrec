@@ -21,41 +21,46 @@
 
 #include "Parser.h"
 
+#include <boost/filesystem.hpp>
 #include <ostream>
+#include <set>
+
+
+namespace /* anonymous */ {
+
+// Pointers to set elements will are not invalidated!
+using FilenameCache = std::set<std::string>;
+
+static FilenameCache filenameCache;
+
+std::string const * initFilename (const char* filename) {
+    assert(filename);
+    return &*filenameCache.insert (filename).first;
+}
+
+} // anonymous {
 
 namespace SecreC {
 
-Location::FilenameCache Location::m_filenameCache;
-
-
-std::ostream & operator<<(std::ostream & os, const Location & loc) {
-    os << loc.filename()
-       << ":(" << loc.m_firstLine
-       << ',' << loc.m_firstColumn
-       << ")(" << loc.m_lastLine
-       << ',' << loc.m_lastColumn << ')';
-    return os;
-}
+Location::Location(std::size_t firstLine,
+                   std::size_t firstColumn,
+                   std::size_t lastColumn,
+                   std::size_t lastLine,
+                   char const * filename)
+    : m_firstLine(firstLine)
+    , m_firstColumn(firstColumn)
+    , m_lastLine(lastLine)
+    , m_lastColumn(lastColumn)
+    , m_filenameItem(initFilename(filename))
+{ }
 
 Location::Location(const YYLTYPE & loc)
     : m_firstLine(loc.first_line)
     , m_firstColumn(loc.first_column)
     , m_lastLine(loc.last_line)
     , m_lastColumn(loc.last_column)
-{
-    assert(loc.filename);
-    init(loc.filename);
-}
-
-Location & Location::operator=(const YYLTYPE & loc) {
-    assert(loc.filename);
-    m_firstLine = loc.first_line;
-    m_firstColumn = loc.first_column;
-    m_lastLine = loc.last_line;
-    m_lastColumn = loc.last_column;
-    init(loc.filename);
-    return *this;
-}
+    , m_filenameItem(initFilename(loc.filename))
+{  }
 
 YYLTYPE Location::toYYLTYPE() const {
     YYLTYPE r;
@@ -66,5 +71,26 @@ YYLTYPE Location::toYYLTYPE() const {
     r.filename = filename().c_str();
     return r;
 }
+
+std::ostream & Location::print(std::ostream & os, Location::PathStyle style) const
+{
+    switch (style) {
+    case PathStyle::FullPath:
+        os << filename();
+        break;
+    case PathStyle::FileName:
+        os << boost::filesystem::path(filename()).filename().c_str();
+        break;
+    }
+
+    os << ":(" << m_firstLine
+       << ',' << m_firstColumn
+       << ")(" << m_lastLine
+       << ',' << m_lastColumn
+       << ')';
+
+    return os;
+}
+
 
 } // namespace SecreC {

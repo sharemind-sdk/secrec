@@ -34,11 +34,12 @@
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
 
+#include <libscc/Blocks.h>
 #include <libscc/Context.h>
 #include <libscc/Intermediate.h>
-#include <libscc/TreeNode.h>
-#include <libscc/Blocks.h>
+#include <libscc/Location.h>
 #include <libscc/StringTable.h>
+#include <libscc/TreeNode.h>
 
 #include <sharemind/libas/assemble.h>
 #include <sharemind/libas/linker.h>
@@ -73,6 +74,7 @@ private: /* Fields: */
     const fs::path& m_path;
 };
 
+using LocationPathStyle = SecreC::Location::PathStyle;
 
 /*
  * Collection of program options for a nice overview.
@@ -83,10 +85,12 @@ struct ProgramOptions {
     bool                     assembleOnly = false;
     bool                     optimize = false;
     bool                     syntaxOnly = false;
+    LocationPathStyle        runtimeErrorPathStyle = LocationPathStyle::FileName;
     boost::optional<string>  output; // nothing if cout
     boost::optional<string>  input; // nothing if cin
     vector<string>           includes;
 };
+
 
 /*
  * Parse program options. Returns false on failure.
@@ -104,6 +108,8 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
             ("no-stdlib", "Do not look for standard library imports.")
             ("optimize,O", "Optimize the generated code.")
             ("syntax-only", "Parse and type check only. Do not generate code.")
+            ("runtime-error-path-style", po::value<string>()->default_value("filename"),
+             "Control how paths in SecreC runtime error messages are displayed. Either \"filename\" or \"fullpath\".")
             ;
     po::positional_options_description p;
     p.add("input", -1);
@@ -129,6 +135,18 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
         opts.assembleOnly = vm.count("assemble");
         opts.optimize = vm.count ("optimize");
         opts.syntaxOnly = vm.count("syntax-only");
+
+        if (vm.count("runtime-error-path-style")) {
+            auto const & style = vm["runtime-error-path-style"].as<string>();
+            if (style == "filename")
+                opts.runtimeErrorPathStyle = LocationPathStyle::FileName;
+            else if (style == "fullpath")
+                opts.runtimeErrorPathStyle = LocationPathStyle::FullPath;
+            else {
+                cerr << "Invalid runtime-error-path-style option \'" << style << "\'.";
+                return false;
+            }
+        }
 
         if (vm.count("output"))
             opts.output = vm["output"].as<string>();
@@ -306,7 +324,7 @@ int main (int argc, char *argv[]) {
 
             /* TODO: We should split type checking and compilation entirely. */
             /* Translate to intermediate code: */
-            icode.compile (parseTree);
+            icode.compile (parseTree, opts.runtimeErrorPathStyle);
             if (icode.status () != SecreC::ICode::OK) {
                 cerr << "Error generating valid intermediate code." << endl;
                 cerr << icode.compileLog () << endl;

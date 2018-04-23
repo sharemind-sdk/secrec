@@ -22,7 +22,6 @@
 
 #include <cassert>
 #include <iosfwd>
-#include <set>
 #include <string>
 
 struct YYLTYPE;
@@ -30,13 +29,30 @@ struct YYLTYPE;
 namespace SecreC {
 
 class Location {
+public: /* Types: */
 
-    friend std::ostream & operator<<(std::ostream & os, const Location & loc);
+    enum class PathStyle {
+        FullPath,
+        FileName
+    };
 
 private: /* Types: */
 
-    // Pointers to set elements will are not invalidated!
-    using FilenameCache = std::set<std::string>;
+    class Printer {
+    public: /* Methods: */
+        Printer(Location const * location, Location::PathStyle style) noexcept
+            : m_location(location)
+            , m_style(style)
+        { }
+
+        friend std::ostream & operator<<(std::ostream & os, Printer const & p) {
+            return p.m_location->print(os, p.m_style);
+        }
+
+    private: /* Fields: */
+        Location const * m_location;
+        Location::PathStyle m_style;
+    };
 
 public: /* Methods: */
 
@@ -44,49 +60,21 @@ public: /* Methods: */
              std::size_t firstColumn,
              std::size_t lastColumn,
              std::size_t lastLine,
-             char const * filename)
-        : m_firstLine(firstLine)
-        , m_firstColumn(firstColumn)
-        , m_lastLine(lastLine)
-        , m_lastColumn(lastColumn)
-    { init (filename); }
+             char const * filename);
 
     Location(const YYLTYPE & loc);
 
-    Location(const Location & loc) = default;
+    Location(const Location & loc) noexcept = default;
 
-    Location & operator=(const YYLTYPE & loc);
+    Location & operator = (Location const & loc) noexcept = default;
 
-    Location & operator=(const Location & loc) = default;
-
-    bool operator==(const Location & rhs) const {
-        return m_firstLine == rhs.m_firstLine
-               && m_firstColumn == rhs.m_firstColumn
-               && m_lastLine == rhs.m_lastLine
-               && m_lastColumn == rhs.m_lastColumn
-               && m_filenameItem == rhs.m_filenameItem;
-    }
-
-    bool operator!=(const Location & rhs) const {
-        return !(*this == rhs);
-    }
-
-    std::size_t firstLine() const noexcept { return m_firstLine; }
-    std::size_t firstColumn() const noexcept { return m_firstColumn; }
-    std::size_t lastLine() const noexcept { return m_lastLine; }
-    std::size_t lastColumn() const noexcept { return m_lastColumn; }
-    inline const std::string & filename() const {
-        return *m_filenameItem;
-    }
+    inline const std::string & filename() const { return *m_filenameItem; }
 
     YYLTYPE toYYLTYPE() const;
 
-private: /* Methods: */
+    std::ostream & print(std::ostream & os, PathStyle style) const;
 
-    void init (const char* filename) {
-        assert(filename);
-        m_filenameItem= &*m_filenameCache.insert (filename).first;
-    }
+    Printer printer(PathStyle style) const { return Printer{this, style}; }
 
 private: /* Fields: */
 
@@ -95,12 +83,11 @@ private: /* Fields: */
     std::size_t m_lastLine;
     std::size_t m_lastColumn;
     const std::string * m_filenameItem;
-
-    static FilenameCache m_filenameCache;
-
 }; /* class Location { */
 
-std::ostream & operator<<(std::ostream & os, const Location & loc);
+inline std::ostream & operator<<(std::ostream & os, const Location & loc) {
+    return loc.print(os, Location::PathStyle::FullPath);
+}
 
 } // namespace SecreC
 

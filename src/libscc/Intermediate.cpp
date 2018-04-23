@@ -63,10 +63,10 @@ TreeNodeModule* ICode::parseMain (const boost::optional<std::string>& mfile) {
     return parseTree;
 }
 
-void ICode::compile (TreeNodeModule *mod) {
+void ICode::compile (TreeNodeModule *mod, Location::PathStyle pathStyle) {
     assert (mod != nullptr);
     ICodeList code;
-    CodeGen cg (code, *this);
+    CodeGen cg (code, *this, pathStyle);
     if (cg.cgMain(mod).status() != CGResult::OK) {
         m_status = ERROR;
         return;

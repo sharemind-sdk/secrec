@@ -22,6 +22,7 @@
 
 #include "CodeGenState.h"
 #include "ICodeList.h"
+#include "Location.h"
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 
@@ -188,10 +189,11 @@ private: /* Types: */
 
     using CallMap = std::map<SymbolProcedure*, std::set<Imop*>>;
     using STList = std::vector<SymbolTable*>;
+    using PathStyle = Location::PathStyle;
 
 public: /* Methods: */
 
-    CodeGen (ICodeList& code, ICode& icode);
+    CodeGen (ICodeList& code, ICode& icode, Location::PathStyle pathStyle);
     ~CodeGen ();
 
     CGResult codeGen (TreeNodeExpr* e);
@@ -475,6 +477,7 @@ private: /* Fields: */
     STList        m_loops;
     TypeChecker*  m_tyChecker;    ///< Instance of the type checker.
     CallMap       m_callsTo;      ///< Unpatched procedure calls.
+    PathStyle     m_pathStyle;    ///< How to display paths in assert and other runtime error messages.
 };
 
 

@@ -986,7 +986,7 @@ CGStmtResult CodeGen::cgStmtAssert(TreeNodeStmtAssert * s) {
     releaseAllVariables(result);
 
     std::ostringstream ss;
-    ss << "assert failed at " << s->location();
+    ss << "assert failed at " << s->location().printer(m_pathStyle);
     Imop * i = newError(s, ConstantString::get(getContext(), ss.str()));
     pushImopAfter(result, i);
 
