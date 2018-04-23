@@ -60,7 +60,7 @@ namespace /* anonymous */ {
 /*
  * RAII to remove a temporary path.
  */
-class ScopedRemovePath : boost::noncopyable {
+class ScopedRemovePath {
 public: /* Methods: */
     ScopedRemovePath (const fs::path& path)
         : m_path (path) { }
@@ -69,6 +69,9 @@ public: /* Methods: */
         boost::system::error_code ec;
         fs::remove (m_path, ec);
     }
+
+    ScopedRemovePath(ScopedRemovePath const &) = delete;
+    ScopedRemovePath & operator = (ScopedRemovePath const &) = delete;
 
 private: /* Fields: */
     const fs::path& m_path;
@@ -131,10 +134,10 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
            return true;
         }
 
-        opts.verbose = vm.count("verbose");
-        opts.assembleOnly = vm.count("assemble");
-        opts.optimize = vm.count ("optimize");
-        opts.syntaxOnly = vm.count("syntax-only");
+        opts.verbose = vm.count("verbose") > 0u;
+        opts.assembleOnly = vm.count("assemble") > 0u;
+        opts.optimize = vm.count ("optimize") > 0u;
+        opts.syntaxOnly = vm.count("syntax-only") > 0u;
 
         if (vm.count("runtime-error-path-style")) {
             auto const & style = vm["runtime-error-path-style"].as<string>();
@@ -176,8 +179,6 @@ bool readProgramOptions(int argc, char * argv[], ProgramOptions & opts) {
  * Lazy output.
  */
 class Output {
-    Output(const Output&);
-    void operator= (const Output&);
 public: /* Methods: */
     Output (const ProgramOptions& opts)
         : m_os (cout.rdbuf ())
@@ -185,6 +186,9 @@ public: /* Methods: */
         , m_opts (opts)
         , m_fileOpened (false)
     { }
+
+    Output(Output const &) = delete;
+    Output & operator= (Output const &) = delete;
 
     std::ostream& getStream () {
         if (!m_fileOpened && m_opts.output) {
