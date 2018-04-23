@@ -264,8 +264,6 @@ public: /* Methods: */
         return m_os.str ();
     }
 
-    static std::string arithm (const TypeNonVoid* ty, Imop::Type iType);
-    static std::string cast (const TypeNonVoid* from, const TypeNonVoid* to);
     static std::string tostring (SecrecDataType dType);
     static std::string tostring (const DataType* dType);
     static std::string basic (const TypeNonVoid* ty, const char* name, bool needDataType = true, bool needVec = true);
@@ -1229,25 +1227,6 @@ void Compiler::cgDeclassify (VMBlock& block, const Imop& imop) {
     }
 
     emitSyscall (block, SyscallName::basic (ty, "declassify"));
-}
-
-void Compiler::cgPrivateNE (VMBlock& block, const Imop& imop) {
-    const TypeNonVoid* ty = imop.arg1 ()->secrecType ();
-    VMValue* pd = getPD (m_scm, imop.dest ());
-    VMValue* arg1 = find (imop.arg1 ());
-    VMValue* arg2 = find (imop.arg2 ());
-    VMValue* dest = find (imop.dest ());
-
-    block.push_new () << "push" << pd;
-    block.push_new () << "push" << arg1;
-    block.push_new () << "push" << arg2;
-    block.push_new () << "push" << dest;
-    emitSyscall (block, SyscallName::basic (ty, "eq"));
-
-    block.push_new () << "push" << pd;
-    block.push_new () << "push" << dest;
-    block.push_new () << "push" << dest;
-    emitSyscall (block, SyscallName::basic (imop.dest()->secrecType(), "not"));
 }
 
 void Compiler::cgPrivateAlloc (VMBlock& block, const Imop& imop) {

@@ -87,7 +87,6 @@ private:
     void cgSyscall (VMBlock& block, const SecreC::Imop& imop);
     void cgSyscallOperand (VMBlock& block, const SecreC::SyscallOperand& op);
     void cgDomainID (VMBlock& block, const SecreC::Imop& imop);
-    void cgPush (VMBlock& block, const SecreC::Imop& imop);
     void cgError (VMBlock& block, const SecreC::Imop& imop);
     void cgPrint (VMBlock& block, const SecreC::Imop& imop);
     void cgComment(VMBlock & block, const SecreC::Imop & imop);
@@ -104,11 +103,8 @@ private:
     void emitSyscall (VMBlock& block, const std::string& name);
     void cgPrivateAssign (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateCopy (VMBlock& block, const SecreC::Imop& imop);
-    void cgPrivateNE (VMBlock& block, const SecreC::Imop& imop);
-    void cgPrivateArithm (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateAlloc (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateRelease (VMBlock& block, const SecreC::Imop& imop);
-    void cgPrivateCast (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateLoad (VMBlock& block, const SecreC::Imop& imop);
     void cgPrivateStore (VMBlock& block, const SecreC::Imop& imop);
 
