@@ -132,8 +132,6 @@ public: /* Methods: */
     size_t dfn () const { return m_dfn; }
     Procedure* proc () const { return m_proc; }
     bool hasIncomingJumps () const;
-    bool isProgramExit () const;
-    bool isProgramEntry () const;
     bool isExit () const;
     bool isEntry () const;
 

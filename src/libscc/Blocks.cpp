@@ -560,14 +560,6 @@ Block::~Block () {
     clear_and_dispose (disposer<Imop> ());
 }
 
-bool Block::isProgramEntry () const {
-    return isEntry () && (proc ()->name () == nullptr);
-}
-
-bool Block::isProgramExit () const {
-    return isExit () && (proc ()->name () == nullptr);
-}
-
 bool Block::isEntry () const {
     return this == proc ()->entry ();
 }

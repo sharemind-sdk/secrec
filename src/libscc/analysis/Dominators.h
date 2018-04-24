@@ -22,6 +22,7 @@
 
 #include <iosfwd>
 #include <map>
+#include <memory>
 #include <vector>
 
 namespace SecreC {
@@ -38,7 +39,7 @@ class Program;
 class DominanceNode {
     friend class Dominators;
 private: /* Types: */
-    using ChildrenList = std::vector<DominanceNode*>;
+    using ChildrenList = std::vector<std::unique_ptr<DominanceNode>>;
 public: /* Methods: */
 
     explicit
@@ -53,7 +54,7 @@ public: /* Methods: */
     Block* block () const { return m_block; }
     const ChildrenList& children () const { return m_children; }
 
-    void addChild (DominanceNode* node) { m_children.push_back (node); }
+    void addChild (DominanceNode* node) { m_children.emplace_back (node); }
     void setParent (DominanceNode* node) { m_parent = node; }
 
 private: /* Fields: */
@@ -71,7 +72,6 @@ private: /* Types: */
     using NodeMap = std::map<const Block*, DominanceNode*>;
 public: /* Methods: */
     Dominators () { }
-    ~Dominators ();
 
     void calculate (Program* prog);
     void calculate (Procedure* proc);
@@ -91,7 +91,7 @@ private:
     }
 
 private: /* Fields: */
-    std::vector<DominanceNode*> m_roots;
+    std::vector<std::unique_ptr<DominanceNode>> m_roots;
     NodeMap m_nodes;
 }; /*class Dominators { */
 

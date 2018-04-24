@@ -106,9 +106,9 @@ void printTree(std::ostream & os, DominanceNode * node) {
     while (! todo.empty()) {
         DominanceNode * parent = todo.back();
         todo.pop_back();
-        for (DominanceNode* child : parent->children()) {
-            printEdge(os, parent, child);
-            todo.push_back(child);
+        for (auto const & child : parent->children()) {
+            printEdge(os, parent, child.get());
+            todo.push_back(child.get());
         }
     }
 
@@ -122,10 +122,6 @@ void printTree(std::ostream & os, DominanceNode * node) {
 *******************************************************************************/
 
 DominanceNode::~DominanceNode() {
-    for (DominanceNode * child : m_children) {
-        delete child;
-    }
-
     m_children.clear();
     m_parent = nullptr;
 }
@@ -133,12 +129,6 @@ DominanceNode::~DominanceNode() {
 /*******************************************************************************
   Dominators
 *******************************************************************************/
-
-Dominators::~Dominators() {
-    for (DominanceNode * root : m_roots) {
-        delete root;
-    }
-}
 
 void Dominators::calculate(Program * prog) {
     for (Procedure & proc : *prog) {
@@ -208,7 +198,7 @@ void Dominators::calculate(Block * root) {
             child->setParent(parent);
 
             if (&i == &info[i.idom]) {
-                m_roots.push_back(parent);
+                m_roots.emplace_back(parent);
             }
             else {
                 parent->addChild(child);
@@ -219,8 +209,8 @@ void Dominators::calculate(Block * root) {
 
 void Dominators::dumpToDot(std::ostream & os) {
     os << "digraph IDOM {\n";
-    for (DominanceNode* root : m_roots) {
-        printTree(os, root);
+    for (auto const & root : m_roots) {
+        printTree(os, root.get());
     }
 
     os << "}\n";
