@@ -25,6 +25,7 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 
 
@@ -50,32 +51,18 @@ void printIndent(std::ostream &out, unsigned level, unsigned indent = 4) {
  */
 class SymbolTable::OtherSymbols {
 private: /* Types: */
-    using LabelMap = std::map<const Imop*, SymbolLabel* >;
+    using SymbolPtr = std::unique_ptr<Symbol>;
+    using SymbolLabelPtr = std::unique_ptr<SymbolLabel>;
+    using SymbolSymbolPtr = std::unique_ptr<SymbolSymbol>;
+
 public: /* Methods: */
-    OtherSymbols ()
-        : m_tempCount (0)
-    { }
-
-    ~OtherSymbols () {
-        for (LabelMap::value_type& v : m_labels) {
-            delete v.second;
-        }
-
-        for (SymbolSymbol* s : m_temporaries) {
-            delete s;
-        }
-
-        for (Symbol* sym : m_table) {
-            delete sym;
-        }
-    }
 
     SymbolLabel* label (Imop* imop) {
         assert (imop != nullptr);
         auto
                 it = m_labels.find (imop);
         if (it != m_labels.end ()) {
-            return it->second;
+            return it->second.get();
         }
 
         auto label = new SymbolLabel (imop);
@@ -90,26 +77,26 @@ public: /* Methods: */
         std::ostringstream os;
         os << "{t}" << m_tempCount ++;
         SymbolSymbol * tmp = new SymbolSymbol(os.str(), type, true);
-        m_temporaries.push_back (tmp);
+        m_temporaries.emplace_back (tmp);
         return tmp;
     }
 
     void print (std::ostream& os) const {
         os << "Temporaries:\n";
-        for (SymbolSymbol* s : m_temporaries)
+        for (auto const & s : m_temporaries)
             os << '\t' << *s << '\n';
     }
 
     void appendSymbol (Symbol* symbol) {
         assert (symbol != nullptr);
-        m_table.push_back (symbol);
+        m_table.emplace_back (symbol);
     }
 
 private: /* Fields: */
-    std::vector<Symbol *>                 m_table;
-    std::map<const Imop*, SymbolLabel* >  m_labels;
-    std::vector<SymbolSymbol* >           m_temporaries;
-    unsigned                              m_tempCount;
+    std::vector<SymbolPtr> m_table;
+    std::map<const Imop*, SymbolLabelPtr> m_labels;
+    std::vector<SymbolSymbolPtr> m_temporaries;
+    unsigned m_tempCount = 0;
 };
 
 /*******************************************************************************
@@ -137,12 +124,6 @@ SymbolTable::SymbolTable (SymbolTable *parent, StringRef name)
 }
 
 SymbolTable::~SymbolTable() {
-    for (Symbol* sym : m_table)
-        delete sym;
-
-    for (SymbolTable* table : m_scopes)
-        delete table;
-
     if (m_parent == nullptr)
         delete m_other;
 }
@@ -159,10 +140,10 @@ bool SymbolTable::addImport (SymbolTable* st) {
 
 std::vector<SymbolSymbol*> SymbolTable::variables () const {
     std::vector<SymbolSymbol*> out;
-    for (Symbol* sym : reverse (m_table)) {
+    for (auto const & sym : boost::adaptors::reverse(m_table)) {
         if (sym->symbolType () == SYM_SYMBOL) {
-            assert (dynamic_cast<SymbolSymbol*>(sym) != nullptr);
-            SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym);
+            assert (dynamic_cast<SymbolSymbol*>(sym.get()) != nullptr);
+            SymbolSymbol* ssym = static_cast<SymbolSymbol*>(sym.get());
             assert (! ssym->isTemporary ());
             out.push_back (ssym);
         }
@@ -183,7 +164,7 @@ std::vector<SymbolSymbol*> SymbolTable::variablesUpTo (const SymbolTable* end) c
 
 void SymbolTable::appendSymbol (Symbol* symbol) {
     assert (symbol != nullptr);
-    m_table.push_back (symbol);
+    m_table.emplace_back (symbol);
 }
 
 void SymbolTable::appendOtherSymbol (Symbol* symbol) {
@@ -238,7 +219,7 @@ std::vector<Symbol*> SymbolTable::findFromCurrentScope (SymbolCategory type, Str
 
 SymbolTable *SymbolTable::newScope () {
     auto scope = new SymbolTable (this);
-    m_scopes.push_back (scope);
+    m_scopes.emplace_back (scope);
     return scope;
 }
 
@@ -261,12 +242,12 @@ void SymbolTable::print (std::ostream& os, unsigned level, unsigned indent) cons
     os << ") ==" << std::endl;
 
 
-    for (Symbol* sym : m_table) {
+    for (auto const & sym : m_table) {
         printIndent(os, level, indent);
         os << ' ' << sym->name () << ": " << *sym << std::endl;
     }
 
-    for (SymbolTable* table : m_scopes) {
+    for (auto const & table : m_scopes) {
         table->print (os, level + 1, indent);
     }
 }

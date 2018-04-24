@@ -35,7 +35,7 @@ bool eliminateDeadStores (const LiveMemory& lmem, ICode& code) {
     FOREACH_BLOCK (bi, program) {
         const Block& block = *bi;
         LiveMemory::Values values = lmem.liveOnExit (block);
-        for (const Imop& imop : reverse (block)) {
+        for (const Imop& imop : boost::adaptors::reverse (block)) {
             if (imop.type () == Imop::STORE &&
                 (values.count (imop.dest ()) == 0 ||
                  (values.at (imop.dest ()) & LiveMemory::Read) == 0x0))

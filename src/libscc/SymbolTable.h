@@ -26,9 +26,8 @@
 
 #include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
+#include <memory>
 #include <vector>
-
-using boost::adaptors::reverse;
 
 namespace SecreC {
 
@@ -45,15 +44,13 @@ class TypeNonVoid;
 
 class SymbolTable {
 private: /* Types: */
-    using Table = std::vector<Symbol*>;
-
-    SymbolTable (const SymbolTable&); // do not implement
-    SymbolTable& operator = (const SymbolTable&); // do not implement
-
+    using Table = std::vector<std::unique_ptr<Symbol>>;
+    using Scopes = std::vector<std::unique_ptr<SymbolTable>>;
 public: /* Methods: */
     SymbolTable (StringRef name = "Global");
     explicit SymbolTable(SymbolTable *parent, StringRef name = "Local");
-
+    SymbolTable (const SymbolTable&) = delete;
+    SymbolTable& operator = (const SymbolTable&) = delete;
     ~SymbolTable();
 
     void appendSymbol (Symbol* symbol);
@@ -118,11 +115,17 @@ public: /* Methods: */
     */
     template <typename Pred>
     std::vector<Symbol*> findFromCurrentScope (Pred pred) const {
+        using boost::adaptors::reverse;
+
         std::vector<Symbol*> r;
         for (SymbolTable* import : reverse (m_imports)) {
-            auto x = reverse (import->m_table);
-            std::copy_if (x.begin (), x.end (), std::back_inserter (r), pred);
+            for (auto const & sym : reverse (import->m_table)) {
+                if (pred(sym.get())) {
+                    r.push_back(sym.get());
+                }
+            }
         }
+
         return r;
     }
 
@@ -137,7 +140,7 @@ private: /* Fields: */
     SymbolTable* const          m_global;   ///< Global scope.
     OtherSymbols* const         m_other;    ///< Temporaries and labels.
     std::vector<SymbolTable* >  m_imports;  ///< STs of imported modules.
-    std::vector<SymbolTable* >  m_scopes;   ///< Local scopes.
+    Scopes                      m_scopes;   ///< Local scopes.
     StringRef                   m_name;     ///< Debugging.
 };
 
