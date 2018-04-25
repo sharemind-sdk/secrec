@@ -69,7 +69,7 @@ public: /* Methods: */
         std::ostringstream os;
         os << "{label}" << imop;
         label->setName (os.str ());
-        m_labels.emplace_hint(it, imop, label);
+        m_labels.emplace_hint(it, imop, SymbolLabelPtr{label});
         return label;
     }
 
