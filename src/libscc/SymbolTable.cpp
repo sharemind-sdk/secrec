@@ -69,7 +69,7 @@ public: /* Methods: */
         std::ostringstream os;
         os << "{label}" << imop;
         label->setName (os.str ());
-        m_labels.insert (it, std::make_pair (imop, label));
+        m_labels.emplace_hint(it, imop, label);
         return label;
     }
 
