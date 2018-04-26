@@ -29,11 +29,13 @@ SharemindAddExecutable("scc"
         "${CMAKE_SOURCE_DIR}/src/"
         ${Boost_INCLUDE_DIRS}
         ${MPFR_INCLUDE_DIRS}
-        ${SharemindLibAs_INCLUDE_DIRS}
         ${SharemindCxxHeaders_INCLUDE_DIRS}
+        ${SharemindLibAs_INCLUDE_DIRS}
+        ${SharemindLibExecutable_INCLUDE_DIRS}
     LEGACY_DEFINITIONS
-        ${SharemindLibAs_DEFINITIONS}
         ${SharemindCxxHeaders_DEFINITIONS}
+        ${SharemindLibAs_DEFINITIONS}
+        ${SharemindLibExecutable_DEFINITIONS}
     LINK_LIBRARIES
         "libscc"
         ${Boost_FILESYSTEM_LIBRARY}
@@ -41,8 +43,9 @@ SharemindAddExecutable("scc"
         ${Boost_PROGRAM_OPTIONS_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
         ${MPFR_LIBRARIES}
-        ${SharemindLibAs_LIBRARIES}
         ${SharemindCxxHeaders_LIBRARIES}
+        ${SharemindLibAs_LIBRARIES}
+        ${SharemindLibExecutable_LIBRARIES}
     COMPONENT "scc"
     SPLITDEBUG_COMPONENT "scc-debug"
 )

@@ -42,8 +42,8 @@
 #include <libscc/TreeNode.h>
 
 #include <sharemind/libas/assemble.h>
-#include <sharemind/libas/linker.h>
 #include <sharemind/libas/tokenizer.h>
+#include <sharemind/libexecutable/Executable.h>
 #include <sharemind/PotentiallyVoidTypeInfo.h>
 
 #include "Compiler.h"
@@ -219,7 +219,7 @@ private: /* Fields: */
     bool m_fileOpened;
 };
 
-bool assemble(sharemind::Assembler::LinkingUnitsVector & lus,
+bool assemble(sharemind::Executable & exe,
               VMLinkingUnit const & vmlu)
 {
     fs::path p = fs::temp_directory_path () / fs::unique_path ();
@@ -249,7 +249,7 @@ bool assemble(sharemind::Assembler::LinkingUnitsVector & lus,
         return false;
     }
 
-    lus = sharemind::Assembler::assemble(
+    exe = sharemind::Assembler::assemble(
               sharemind::Assembler::tokenize(fin->data(), fin->size()));
     return true;
 }
@@ -258,31 +258,15 @@ bool assemble(sharemind::Assembler::LinkingUnitsVector & lus,
  * Compile the actual bytecode executable.
  */
 bool compileExecutable (Output& output, const VMLinkingUnit& vmlu) {
-    sharemind::Assembler::LinkingUnitsVector lus;
-    if (!assemble(lus, vmlu))
+    sharemind::Executable exe;
+    if (!assemble(exe, vmlu))
         return false;
 
-    auto const linkerResult(sharemind::Assembler::link(0x0, lus));
-    auto readPtr = linkerResult.data();
-    auto readSizeLeft = linkerResult.size();
-    std::ostream& os = output.getStream ();
-    static constexpr auto const streamSizeMax =
-            std::numeric_limits<std::streamsize>::max();
-    while (readSizeLeft > streamSizeMax) {
-        os.write(readPtr, streamSizeMax);
-        if (os.bad())
-            goto err;
-        readPtr = sharemind::ptrAdd(readPtr, streamSizeMax);
-        readSizeLeft -= streamSizeMax;
+    if (!(output.getStream() << exe)) {
+        cerr << "Writing bytecode to output failed." << endl;
+        return false;
     }
-    os.write(readPtr, static_cast<std::streamsize>(readSizeLeft));
-    if (os.bad())
-        goto err;
     return true;
-
-err:
-    cerr << "Writing bytecode to output failed." << endl;
-    return false;
 }
 
 } // anonymous namespace

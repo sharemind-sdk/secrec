@@ -36,7 +36,8 @@ find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
 FIND_PACKAGE(SharemindCHeaders REQUIRED)
 FIND_PACKAGE(SharemindCxxHeaders REQUIRED)
-FIND_PACKAGE(SharemindLibAs REQUIRED)
+FIND_PACKAGE(SharemindLibAs 0.3.0 REQUIRED)
+FIND_PACKAGE(SharemindLibExecutable 0.2.0 REQUIRED)
 
 add_definitions("-DSHAREMIND_STDLIB_PATH=\"${CMAKE_INSTALL_PREFIX}/lib/sharemind/stdlib\"")
 
