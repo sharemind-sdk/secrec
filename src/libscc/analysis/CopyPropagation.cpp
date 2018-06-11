@@ -103,7 +103,11 @@ void CopyPropagation::inFrom(const Block& from, Edge::Label label, const Block& 
     } else {
         if (m_ins.count(&to) == 0) {
             // First set
-            m_ins[&to].insert(m_outs[&from].begin(), m_outs[&from].end());
+            auto & inSet = m_ins[&to];
+            auto const & outSet = m_outs[&from];
+            for (auto imop : outSet) {
+                inSet.insert(imop);
+            }
         } else {
             // Union
             Copies bad;

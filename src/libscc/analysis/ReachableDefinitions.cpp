@@ -93,7 +93,10 @@ void ReachableDefinitions::outTo(const Block& from, Edge::Label label, const Blo
         }
     } else {
         const Definitions& defs = m_ins[&from];
-        m_outs[&to].insert(defs.begin(), defs.end());
+        Definitions & out = m_outs[&to];
+        for (auto imop : defs) {
+            out.insert(imop);
+        }
     }
 }
 
@@ -101,7 +104,10 @@ bool ReachableDefinitions::finishBlock(const Block& block) {
     const Definitions old = m_ins[&block];
     Definitions& in = m_ins[&block];
     const Definitions& out = m_outs[&block];
-    in.insert(out.begin(), out.end());
+    for (auto imop : out) {
+        in.insert(imop);
+    }
+
     return in != old;
 }
 

@@ -162,8 +162,15 @@ private:
     unsigned m_count;
 };
 
-inline void operator += (LiveVariables::Symbols& out, LiveVariables::Symbols& arg) {
-    out.insert(arg.begin(), arg.end());
+inline void operator += (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
+    /*
+     * NOTE: Using a slow workaround!
+     * Namely "out.insert(arg.begin(), arg.end());" causes heap
+     * buffer overflow on boost 1.67. Might be boost bug.
+     */
+    for (auto sym : arg) {
+        out.insert(sym);
+    }
 }
 
 inline void operator -= (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {
