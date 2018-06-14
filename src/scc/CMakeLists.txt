@@ -52,7 +52,10 @@ SharemindAddExecutable("scc"
 SharemindSetCxx11CompileOptions(TARGETS "scc")
 
 # Packaging:
-SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
+SET(BV
+    "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}"
+)
+
 SharemindAddComponentPackage("scc"
     NAME "scc"
     DESCRIPTION "Sharemind SecreC Compiler"
