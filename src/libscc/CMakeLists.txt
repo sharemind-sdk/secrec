@@ -91,7 +91,10 @@ SharemindSetCxx11CompileOptions(TARGETS "libscc")
 
 
 # Packaging:
-SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
+SET(BV
+    "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}"
+)
+
 SharemindAddComponentPackage("libscc"
     NAME "libsharemind-scc"
     DESCRIPTION "Sharemind SecreC Compiler library"
