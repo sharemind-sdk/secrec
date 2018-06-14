@@ -44,7 +44,10 @@ SharemindSetCxx11CompileOptions(TARGETS "sca")
 
 
 # Packaging:
-SET(BV "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.0")
+SET(BV
+    "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}"
+)
+
 SharemindAddComponentPackage("sca"
     NAME "sca"
     DESCRIPTION "Sharemind SecreC Analyzer"
