@@ -115,3 +115,7 @@ SharemindAddComponentPackage("libscc-debug"
         "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
     PARENT_SCOPE
 )
+
+# Propagate package version to script in parent directory:
+SET(SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION
+    "${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION}" PARENT_SCOPE)
