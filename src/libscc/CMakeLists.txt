@@ -112,6 +112,6 @@ SharemindAddComponentPackage("libscc-debug"
     DESCRIPTION "Sharemind SecreC Compiler library debug symbols"
     DEB_SECTION "debug"
     DEB_DEPENDS
-        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+        "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
     PARENT_SCOPE
 )

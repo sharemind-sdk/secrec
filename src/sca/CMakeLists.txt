@@ -55,7 +55,7 @@ SharemindAddComponentPackage("sca"
     DEB_DEPENDS
         "libboost-program-options${BV}"
         "libc6 (>= 2.19)"
-        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+        "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
         "libstdc++6 (>= 4.8.0)"
     PARENT_SCOPE
 )
@@ -64,6 +64,6 @@ SharemindAddComponentPackage("sca-debug"
     DESCRIPTION "Sharemind SecreC Analyzer debug symbols"
     DEB_SECTION "debug"
     DEB_DEPENDS
-        "sca (= ${SharemindSecrecFramework_VERSION})"
+        "sca (= ${SharemindSecrecFramework_DEB_sca_PACKAGE_VERSION})"
     PARENT_SCOPE
 )

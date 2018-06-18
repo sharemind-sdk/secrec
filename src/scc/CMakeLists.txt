@@ -69,7 +69,7 @@ SharemindAddComponentPackage("scc"
         "libc6 (>= 2.19)"
         "libmpfr4"
         "libsharemind-as (>= 0.1.0)"
-        "libsharemind-scc (= ${SharemindSecrecFramework_VERSION})"
+        "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
         "libstdc++6 (>= 4.8.0)"
     PARENT_SCOPE
 )
@@ -78,6 +78,6 @@ SharemindAddComponentPackage("scc-debug"
     DESCRIPTION "Sharemind SecreC Compiler debug symbols"
     DEB_SECTION "debug"
     DEB_DEPENDS
-        "scc (= ${SharemindSecrecFramework_VERSION})"
+        "scc (= ${SharemindSecrecFramework_DEB_scc_PACKAGE_VERSION})"
     PARENT_SCOPE
 )
