@@ -103,7 +103,7 @@ SharemindAddComponentPackage("libscc"
         "libboost-filesystem${BV}"
         "libboost-system${BV}"
         "libc6 (>= 2.19)"
-        "libmpfr4"
+        "libmpfr4 | libmpfr6"
         "libstdc++6 (>= 4.8.0)"
     PARENT_SCOPE
 )
