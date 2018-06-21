@@ -68,7 +68,7 @@ SharemindAddComponentPackage("scc"
         "libboost-system${BV}"
         "libc6 (>= 2.19)"
         "libmpfr${MPFR_ABI_VERSION}"
-        "libsharemind-as (>= 0.1.0)"
+        "libsharemind-as (>= 0.3.0)"
         "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
         "libstdc++6 (>= 4.8.0)"
     PARENT_SCOPE
