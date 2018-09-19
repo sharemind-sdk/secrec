@@ -410,12 +410,12 @@ VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     return reg;
 }
 
-void Compiler::pushString (VMBlock& block, const Symbol* str) {
+void Compiler::pushString (VMBlock& block, const Symbol* str, bool asNullTerminated) {
     assert (str->secrecType ()->secrecDataType ()->isString ());
     if (str->isConstant ()) {
         assert(dynamic_cast<ConstantString const *>(str));
         const ConstantString* cstr = static_cast<const ConstantString*>(str);
-        StringLiterals::LiteralInfo info = m_strLit->insert (cstr);
+        StringLiterals::LiteralInfo info = m_strLit->insert (cstr, asNullTerminated);
         VMLabel* offset = info.label;
         VMVReg* temp = m_ra->temporaryReg ();
         block.push_new () << "mov imm :RODATA" << temp;

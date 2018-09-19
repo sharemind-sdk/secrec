@@ -112,7 +112,7 @@ private:
      * Convenience operations:
      */
     VMValue* loadToRegister (VMBlock& block, const SecreC::Symbol* symbol);
-    void pushString (VMBlock& block, const SecreC::Symbol* str);
+    void pushString (VMBlock& block, const SecreC::Symbol* str, bool asNullTerminated = true);
     void paramString (VMBlock& block, const SecreC::Symbol* str);
     VMValue* find (const SecreC::Symbol* sym) const;
     void cgStringAppend (VMBlock& block, const SecreC::Imop& imop);
