@@ -1039,9 +1039,8 @@ void Compiler::cgComment(VMBlock & block, const Imop & imop) {
 
 void Compiler::cgError (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::ERROR);
-    pushString (block, imop.arg1 ());
-    emitSyscall (block, "Process_logString");
-    block.push_new () << "except 0xf00";
+    pushString (block, imop.arg1 (), false);
+    block.push_new () << "user_except";
 }
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
