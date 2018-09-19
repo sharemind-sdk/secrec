@@ -60,8 +60,8 @@ public: /* Methods: */
     ~StringLiterals ();
 
     void init (VMSymbolTable& st, VMDataSection* section);
-    LiteralInfo insert (const SecreC::ConstantString* str);
-    LiteralInfo insert (const std::string& str);
+    LiteralInfo insert (const SecreC::ConstantString* str, bool asNullTerminated = true);
+    LiteralInfo insert (const std::string& str, bool asNullTerminated = true);
 
 private: /* Fields: */
 

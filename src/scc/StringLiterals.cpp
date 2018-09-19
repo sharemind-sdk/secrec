@@ -27,7 +27,7 @@
 namespace {
 
 /// \todo probably broken
-std::string escape (const std::string& str) {
+std::string escape (const std::string& str, bool asNullTerminated) {
     std::ostringstream os;
 
     os << '\"';
@@ -47,8 +47,10 @@ std::string escape (const std::string& str) {
         default:   os << c;      break;
         }
     }
+    if (asNullTerminated)
+        os << "\\0";
 
-    os << "\\0\"";
+    os << '"';
     return os.str ();
 }
 
@@ -73,20 +75,23 @@ void StringLiterals::init (VMSymbolTable& st, VMDataSection* section) {
     m_dataSection = section;
 }
 
-StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str) {
+StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str, bool asNullTerminated) {
     assert (str != nullptr);
-    return insert (str->value ().str ());
+    return insert (str->value ().str (), asNullTerminated);
 }
 
-StringLiterals::LiteralInfo StringLiterals::insert (const std::string& str) {
+StringLiterals::LiteralInfo StringLiterals::insert (const std::string& str, bool asNullTerminated) {
     LitMap::iterator i = m_literals.find (str);
     if (i == m_literals.end ()) {
         std::stringstream os;
         os << ":STR_" << m_uniq ++;
         VMLabel* label = m_st->getLabel (os.str ());
-        const std::string& s = escape (str);
+        const std::string& s = escape (str, asNullTerminated);
         m_dataSection->addRecord (label, "string", s);
-        i = m_literals.insert (i, std::make_pair (str, LiteralInfo (label, str.size () + 1)));
+        auto size = str.size();
+        if (asNullTerminated)
+            ++size;
+        i = m_literals.insert (i, std::make_pair (str, LiteralInfo (label, size)));
     }
 
     return i->second;
