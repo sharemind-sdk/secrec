@@ -169,10 +169,7 @@ private:
 
         for (const auto& it : in) {
             if (it.first->isGlobal()) {
-                auto & dest = out[it.first];
-                for (auto imop : it.second) {
-                    dest.insert(imop);
-                }
+                out[it.first].insert(it.second.begin(), it.second.end());
             }
         }
     }
@@ -187,12 +184,9 @@ private:
         return it->second;
     }
 
-    static void add(SymbolReachable& out, const SymbolReachable& in) {
+    void add(SymbolReachable& out, const SymbolReachable& in) {
         for (const auto& it : in) {
-            auto & dest = out[it.first];
-            for (auto imop : it.second) {
-                dest.insert(imop);
-            }
+            out[it.first].insert(it.second.begin(), it.second.end());
         }
     }
 

@@ -54,21 +54,14 @@ void ReachableReturns::outTo(const Block& from, Edge::Label label, const Block& 
     if (Edge::isGlobal(label))
         return;
 
-    auto const & rets = m_ins[&from];
-    auto & outSet = m_outs[&to];
-    for (auto imop : rets) {
-        outSet.insert(imop);
-    }
+    Returns& rets = m_ins[&from];
+    m_outs[&to].insert(rets.begin(), rets.end());
 }
 
 bool ReachableReturns::finishBlock(const Block& block) {
     Returns old = m_ins[&block];
     Returns& in = m_ins[&block];
-    auto const & out = m_outs[&block];
-    for (auto imop : out) {
-        in.insert(imop);
-    }
-
+    in.insert(m_outs[&block].begin(), m_outs[&block].end());
     return in != old;
 }
 
