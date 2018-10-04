@@ -18,6 +18,7 @@
  */
 
 #include "CopyPropagation.h"
+#include "BoostInsertWorkaround.h"
 
 #include "../Symbol.h"
 #include "../TreeNode.h"
@@ -103,7 +104,7 @@ void CopyPropagation::inFrom(const Block& from, Edge::Label label, const Block& 
     } else {
         if (m_ins.count(&to) == 0) {
             // First set
-            m_ins[&to].insert(m_outs[&from].begin(), m_outs[&from].end());
+            insertWorkaround(m_ins[&to], m_outs[&from].begin(), m_outs[&from].end());
         } else {
             // Union
             Copies bad;

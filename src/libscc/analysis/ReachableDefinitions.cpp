@@ -18,6 +18,7 @@
  */
 
 #include "ReachableDefinitions.h"
+#include "BoostInsertWorkaround.h"
 
 #include "../Symbol.h"
 #include "../TreeNode.h"
@@ -93,7 +94,7 @@ void ReachableDefinitions::outTo(const Block& from, Edge::Label label, const Blo
         }
     } else {
         const Definitions& defs = m_ins[&from];
-        m_outs[&to].insert(defs.begin(), defs.end());
+        insertWorkaround(m_outs[&to], defs.begin(), defs.end());
     }
 }
 
@@ -101,7 +102,7 @@ bool ReachableDefinitions::finishBlock(const Block& block) {
     const Definitions old = m_ins[&block];
     Definitions& in = m_ins[&block];
     const Definitions& out = m_outs[&block];
-    in.insert(out.begin(), out.end());
+    insertWorkaround(in, out.begin(), out.end());
     return in != old;
 }
 

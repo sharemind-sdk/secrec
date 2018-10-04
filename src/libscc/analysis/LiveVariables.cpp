@@ -18,6 +18,7 @@
  */
 
 #include "LiveVariables.h"
+#include "BoostInsertWorkaround.h"
 
 #include "../Blocks.h"
 #include "../Misc.h"
@@ -163,7 +164,7 @@ private:
 };
 
 inline void operator += (LiveVariables::Symbols& out, LiveVariables::Symbols& arg) {
-    out.insert(arg.begin(), arg.end());
+    insertWorkaround(out, arg.begin(), arg.end());
 }
 
 inline void operator -= (LiveVariables::Symbols& out, const LiveVariables::Symbols& arg) {

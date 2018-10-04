@@ -18,6 +18,7 @@
  */
 
 #include "ReachableReturns.h"
+#include "BoostInsertWorkaround.h"
 
 #include "../TreeNode.h"
 
@@ -55,13 +56,13 @@ void ReachableReturns::outTo(const Block& from, Edge::Label label, const Block& 
         return;
 
     Returns& rets = m_ins[&from];
-    m_outs[&to].insert(rets.begin(), rets.end());
+    insertWorkaround(m_outs[&to], rets.begin(), rets.end());
 }
 
 bool ReachableReturns::finishBlock(const Block& block) {
     Returns old = m_ins[&block];
     Returns& in = m_ins[&block];
-    in.insert(m_outs[&block].begin(), m_outs[&block].end());
+    insertWorkaround(in, m_outs[&block].begin(), m_outs[&block].end());
     return in != old;
 }
 

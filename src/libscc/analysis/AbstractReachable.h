@@ -22,6 +22,7 @@
 
 #include "../DataflowAnalysis.h"
 #include "../Symbol.h"
+#include "BoostInsertWorkaround.h"
 
 #include <boost/interprocess/containers/flat_map.hpp>
 #include <boost/interprocess/containers/flat_set.hpp>
@@ -169,7 +170,7 @@ private:
 
         for (const auto& it : in) {
             if (it.first->isGlobal()) {
-                out[it.first].insert(it.second.begin(), it.second.end());
+                insertWorkaround(out[it.first], it.second.begin(), it.second.end());
             }
         }
     }
@@ -186,7 +187,7 @@ private:
 
     void add(SymbolReachable& out, const SymbolReachable& in) {
         for (const auto& it : in) {
-            out[it.first].insert(it.second.begin(), it.second.end());
+            insertWorkaround(out[it.first], it.second.begin(), it.second.end());
         }
     }
 
