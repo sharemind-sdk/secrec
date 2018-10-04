@@ -26,7 +26,7 @@ namespace SecreC {
 
 template <typename Container, typename InputIterator>
 inline void insertWorkaround(Container & c, InputIterator begin, InputIterator end) {
-#if (BOOST_VERSION >= 1067000) && (BOOST_VERSION < 1068000)
+#if (BOOST_VERSION < 1068000)
     while (begin != end) {
         c.insert(*begin++);
     }
