@@ -985,24 +985,29 @@ StringRef TreeNodeProcDef::procedureName() const {
     return identifier ()->value ();
 }
 
+TreeNodeAnnotation* TreeNodeProcDef::annotation () const {
+    assert (children().size() >= 4);
+    return childAt<TreeNodeAnnotation>(this, 0);
+}
+
 TreeNodeIdentifier* TreeNodeProcDef::identifier () const {
-    assert (children().size() >= 3);
-    return childAt<TreeNodeIdentifier>(this, 0);
+    assert (children().size() >= 4);
+    return childAt<TreeNodeIdentifier>(this, 1);
 }
 
 TreeNodeType* TreeNodeProcDef::returnType () const {
-    assert (children().size() >= 3);
-    return childAt<TreeNodeType>(this, 1);
+    assert (children().size() >= 4);
+    return childAt<TreeNodeType>(this, 2);
 }
 
 TreeNodeStmt* TreeNodeProcDef::body () const {
-    assert (children().size() >= 3);
-    return childAt<TreeNodeStmt>(this, 2);
+    assert (children().size() >= 4);
+    return childAt<TreeNodeStmt>(this, 3);
 }
 
 TreeNodeSeqView<TreeNodeStmtDecl> TreeNodeProcDef::params () const {
-    assert (children ().size () > 2);
-    return TreeNodeSeqView<TreeNodeStmtDecl>(children ().begin () + 3, children ().end ());
+    assert (children ().size () >= 4);
+    return TreeNodeSeqView<TreeNodeStmtDecl>(children ().begin () + 4, children ().end ());
 }
 
 const std::string TreeNodeProcDef::printableSignature() const {
@@ -1549,6 +1554,16 @@ TreeNodeSeqView<TreeNodeDataTypeDeclParam> TreeNodeDataTypeDecl::parameters () c
     return TreeNodeSeqView<TreeNodeDataTypeDeclParam>(child->children ());
 }
 
+/*******************************************************************************
+  TreeNodeAnnotation
+*******************************************************************************/
+
+TreeNodeIdentifier* TreeNodeAnnotation::identifier () const {
+    if (children ().size () == 1)
+        return childAt<TreeNodeIdentifier>(this, 0);
+    return nullptr;
+}
+
 } // namespace SecreC
 
 /*******************************************************************************
@@ -1602,6 +1617,7 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTNODE(SUBSCRIPT, Subscript);
     SELECTNODE(INDEX_INT, IndexInt);
     SELECTNODE(INDEX_SLICE, IndexSlice);
+    SELECTNODE(ANNOTATION, Annotation);
 
     SELECTNODE(TYPE_ARG_VAR, TypeArgVar);
     SELECTNODE(TYPE_ARG_TEMPLATE, TypeArgTemplate);
@@ -1774,6 +1790,7 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
     auto const node = toC(new SecreC::TreeNodeOpDef(op, *loc));
     std::ostringstream os;
     os << "__operator" << op;
+    treenode_appendChild(node, treenode_init(NODE_ANNOTATION, loc));
     treenode_appendChild(node, treenode_init_identifier(table->addString (os.str()), loc));
     return node;
 }
@@ -1781,6 +1798,7 @@ TreeNode * treenode_init_opdef(TYPE_STRINGTABLE table, enum SecrecOperator op, Y
 TreeNode * treenode_init_castdef(TYPE_STRINGTABLE table, YYLTYPE * loc) {
     auto const node = toC(new SecreC::TreeNodeCastDef(*loc));
     static std::string castStr = "__cast";
+    treenode_appendChild(node, treenode_init(NODE_ANNOTATION, loc));
     treenode_appendChild(node, treenode_init_identifier(table->addString(castStr), loc));
     return node;
 }

@@ -301,6 +301,14 @@ TypeChecker::Status TypeChecker::visitProcDef (TreeNodeProcDef * proc,
 
     TCGUARD (checkRedefinitions (*proc));
 
+    assert (proc->annotation () != nullptr);
+    const TreeNodeIdentifier* ann = proc->annotation ()->identifier ();
+
+    if (ann != nullptr && ann->value () != "deprecated") {
+        m_log.fatal () << "Unknown annotation '" << ann->value () << "' at " << ann->location() << '.';
+        return E_TYPE;
+    }
+
     return OK;
 }
 
@@ -573,6 +581,16 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
                 << " has mismatching dimensionality.";
             return E_TYPE;
         }
+    }
+
+    const TreeNodeProcDef* def = symProc->decl ();
+    assert (def->annotation () != nullptr);
+    const TreeNodeIdentifier* ann = def->annotation ()->identifier ();
+    const StringRef procName = def->procedureName ();
+
+    if (ann != nullptr && ann->value () == "deprecated") {
+        m_log.warning () << "Procedure " << procName << " at " << def->location ()
+                         << " is deprecated.";
     }
 
     // Set result type:

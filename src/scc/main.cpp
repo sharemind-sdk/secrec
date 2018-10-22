@@ -313,11 +313,16 @@ int main (int argc, char *argv[]) {
             /* TODO: We should split type checking and compilation entirely. */
             /* Translate to intermediate code: */
             icode.compile (parseTree, opts.runtimeErrorPathStyle);
-            if (icode.status () != SecreC::ICode::OK) {
+
+            bool bad = icode.status () != SecreC::ICode::OK;
+
+            if (bad)
                 cerr << "Error generating valid intermediate code." << endl;
-                cerr << icode.compileLog () << endl;
+
+            cerr << icode.compileLog () << endl;
+
+            if (bad)
                 return EXIT_FAILURE;
-            }
 
             if (opts.syntaxOnly)
                 return EXIT_SUCCESS;

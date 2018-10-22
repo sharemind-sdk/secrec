@@ -116,6 +116,7 @@ class TreeNodeTypeArgVar;
 class TreeNodeTypeF;
 class TreeNodeTypeVarF;
 class TreeNodeVarInit;
+class TreeNodeAnnotation;
 
 template <class SubClass>
 class TreeNodeSeqView;

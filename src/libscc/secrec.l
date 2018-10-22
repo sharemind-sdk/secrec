@@ -100,7 +100,7 @@ HEXLIT          0x{HEXDIGIT}+{INTSUFFIX}?
 SIMPLEFLOAT     {DECIMAL}{EXPONENT}{FLOATSUFFIX}?
 SCIENTIFICFLOAT {DECIMAL}\.{DIGIT}*{EXPONENT}?{FLOATSUFFIX}?
 NEWLINE         (\n\r|\r\n|\n|\r)
-SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|]
+SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|\@]
 
 
 %x COMMENT_C

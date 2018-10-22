@@ -209,6 +209,7 @@
 %type <treenode> datatype_declaration
 %type <treenode> datatype_declaration_param_list
 %type <treenode> datatype_declaration_param
+%type <treenode> maybe_annotation
 
 %type <treenode> template_struct_datatype_specifier
 %type <treenode> type_arguments type_argument
@@ -721,6 +722,18 @@ attribute
   * Procedures:                                                                 *
   *******************************************************************************/
 
+maybe_annotation
+ : /* empty */
+   {
+     $$ = treenode_init(NODE_ANNOTATION, &@$);
+   }
+ | '@' identifier
+   {
+     $$ = treenode_init(NODE_ANNOTATION, &@$);
+     treenode_appendChild($$, $2);
+   }
+ ;
+
 return_type_specifier
  : VOID
    {
@@ -732,21 +745,23 @@ return_type_specifier
 procedure_definition
  : operator_definition
  | cast_definition
- | return_type_specifier identifier '(' ')' compound_statement
+ | maybe_annotation return_type_specifier identifier '(' ')' compound_statement
    {
      $$ = treenode_init(NODE_PROCDEF, &@$);
-     treenode_appendChild($$, $2);
      treenode_appendChild($$, $1);
-     treenode_appendChild($$, $5);
-   }
- | return_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
-   {
-     $$ = treenode_init(NODE_PROCDEF, &@$);
+     treenode_appendChild($$, $3);
      treenode_appendChild($$, $2);
-     treenode_appendChild($$, $1);
      treenode_appendChild($$, $6);
-     treenode_moveChildren ($4, $$);
-     treenode_free($4);
+   }
+ | maybe_annotation return_type_specifier identifier '(' procedure_parameter_list ')' compound_statement
+   {
+     $$ = treenode_init(NODE_PROCDEF, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, $7);
+     treenode_moveChildren ($5, $$);
+     treenode_free($5);
    }
  ;
 

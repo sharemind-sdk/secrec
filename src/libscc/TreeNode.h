@@ -1968,6 +1968,7 @@ public:
         return m_type == NODE_CASTDEF;
     }
 
+    TreeNodeAnnotation* annotation () const;
     TreeNodeIdentifier* identifier () const;
     TreeNodeType* returnType () const;
     TreeNodeStmt* body () const;
@@ -2634,6 +2635,25 @@ protected:
 
 private: /* Fields: */
     const uint64_t m_size;
+};
+
+/******************************************************************
+  TreeNodeAnnotation
+******************************************************************/
+
+class TreeNodeAnnotation: public TreeNode {
+public: /* Methods: */
+    explicit inline TreeNodeAnnotation(const Location & loc)
+        : TreeNode(NODE_ANNOTATION, loc)
+    { }
+
+    TreeNodeIdentifier* identifier () const;
+
+protected:
+
+    TreeNode* cloneV () const override final {
+        return new TreeNodeAnnotation (m_location);
+    }
 };
 
 } /* namespace SecreC */
