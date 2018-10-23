@@ -112,6 +112,8 @@ add_test_secrec_execute("scalars/80-void-badness")
 add_test_secrec_execute("scalars/81-numeric-literals")
 add_test_secrec_execute("scalars/82-literal-suffixes")
 add_test_secrec_execute("scalars/83-literal-overflow")
+add_test_secrec_execute("scalars/84-deprecated-procedure")
+add_test_secrec_execute("scalars/85-invalid-annotation")
 
 SET_TESTS_PROPERTIES("scalars/05-assert-fail" PROPERTIES PASS_REGULAR_EXPRESSION "assert failed at .*\\(3,3\\)\\(3,18\\)")
 SET_TESTS_PROPERTIES("scalars/43-domain-fail" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(11,5\\)\\(11,12\\)")
@@ -131,7 +133,7 @@ SET_TESTS_PROPERTIES("scalars/76-cast-definitions-4" PROPERTIES PASS_REGULAR_EXP
 SET_TESTS_PROPERTIES("scalars/77-cast-definitions-5" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,4\\)\\(7,10\\)")
 SET_TESTS_PROPERTIES("scalars/78-void-cast-bug" PROPERTIES PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,5\\)\\(3,15\\)")
 
-SET_TESTS_PROPERTIES("scalars/80-void-badness"  PROPERTIES
+SET_TESTS_PROPERTIES("scalars/80-void-badness" PROPERTIES
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(6,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(7,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,.*\\)"
@@ -148,7 +150,7 @@ SET_TESTS_PROPERTIES("scalars/80-void-badness"  PROPERTIES
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(22,.*\\)"
 )
 
-SET_TESTS_PROPERTIES("scalars/83-literal-overflow"  PROPERTIES
+SET_TESTS_PROPERTIES("scalars/83-literal-overflow" PROPERTIES
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(2,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(3,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(4,.*\\)"
@@ -158,6 +160,15 @@ SET_TESTS_PROPERTIES("scalars/83-literal-overflow"  PROPERTIES
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(8,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(9,.*\\)"
     PASS_REGULAR_EXPRESSION "[FATAL].*\\(10,.*\\)"
+)
+
+SET_TESTS_PROPERTIES("scalars/84-deprecated-procedure" PROPERTIES
+    PASS_REGULAR_EXPRESSION "[WARN ].*\\(1,.*\\)"
+    PASS_REGULAR_EXPRESSION "[WARN ].*\\(7,.*\\)"
+)
+
+SET_TESTS_PROPERTIES("scalars/85-invalid-annotation" PROPERTIES
+  PASS_REGULAR_EXPRESSION "[FATAL].*\\(1,.*\\)"
 )
 
 # Tests for arrays:
