@@ -195,11 +195,15 @@ int run (const Configuration& cfg) {
     }
 
     icode.compile (parseTree, SecreC::Location::PathStyle::FullPath);
-    if (icode.status () != SecreC::ICode::OK) {
+    bool bad = icode.status () != SecreC::ICode::OK;
+
+    if (bad)
         cerr << "Error generating valid intermediate code." << endl;
-        cerr << icode.compileLog () << endl;
+
+    cerr << icode.compileLog () << endl;
+
+    if (bad)
         return EXIT_FAILURE;
-    }
 
     SecreC::Program& pr = icode.program ();
 
