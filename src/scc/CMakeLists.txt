@@ -49,7 +49,7 @@ SharemindAddExecutable("scc"
     COMPONENT "scc"
     SPLITDEBUG_COMPONENT "scc-debug"
 )
-SharemindSetCxx11CompileOptions(TARGETS "scc")
+SharemindSetCxx14CompileOptions(TARGETS "scc")
 
 # Packaging:
 SET(BV

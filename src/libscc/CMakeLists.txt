@@ -87,7 +87,7 @@ SharemindAddSharedLibrary("libscc"
     COMPONENT "libscc"
     SPLITDEBUG_COMPONENT "libscc-debug"
 )
-SharemindSetCxx11CompileOptions(TARGETS "libscc")
+SharemindSetCxx14CompileOptions(TARGETS "libscc")
 
 
 # Packaging:

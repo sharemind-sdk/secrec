@@ -40,7 +40,7 @@ SharemindAddExecutable("sca"
     COMPONENT "sca"
     SPLITDEBUG_COMPONENT "sca-debug"
 )
-SharemindSetCxx11CompileOptions(TARGETS "sca")
+SharemindSetCxx14CompileOptions(TARGETS "sca")
 
 
 # Packaging:
