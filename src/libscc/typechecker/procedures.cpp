@@ -589,8 +589,8 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     const StringRef procName = def->procedureName ();
 
     if (ann != nullptr && ann->value () == "deprecated") {
-        m_log.warning () << "Procedure " << procName << " at " << def->location ()
-                         << " is deprecated.";
+        m_log.warning () << tyCxt.location () << ": procedure " << procName
+                         << " at " << def->location () << " is deprecated.";
     }
 
     // Set result type:
