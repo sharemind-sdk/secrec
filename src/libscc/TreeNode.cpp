@@ -1559,7 +1559,7 @@ TreeNodeSeqView<TreeNodeDataTypeDeclParam> TreeNodeDataTypeDecl::parameters () c
 *******************************************************************************/
 
 TreeNodeIdentifier* TreeNodeAnnotation::identifier () const {
-    if (children ().size () == 1)
+    if (children().size() >= 1)
         return childAt<TreeNodeIdentifier>(this, 0);
     return nullptr;
 }
