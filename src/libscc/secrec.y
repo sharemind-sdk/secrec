@@ -732,6 +732,12 @@ maybe_annotation
      $$ = treenode_init(NODE_ANNOTATION, &@$);
      treenode_appendChild($$, $2);
    }
+ | '@' identifier '(' STR_FRAGMENT ')'
+   {
+     $$ = treenode_init(NODE_ANNOTATION, &@$);
+     treenode_appendChild($$, $2);
+     treenode_appendChild($$, treenode_init_str_fragment($4, &@$));
+  }
  ;
 
 return_type_specifier

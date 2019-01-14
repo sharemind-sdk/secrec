@@ -1564,6 +1564,12 @@ TreeNodeIdentifier* TreeNodeAnnotation::identifier () const {
     return nullptr;
 }
 
+TreeNodeStringPartFragment* TreeNodeAnnotation::message() const {
+    if (children().size() >= 2)
+        return childAt<TreeNodeStringPartFragment>(this, 1u);
+    return nullptr;
+}
+
 } // namespace SecreC
 
 /*******************************************************************************

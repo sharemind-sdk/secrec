@@ -585,12 +585,20 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     const TreeNodeProcDef* def = symProc->decl ();
     assert (def->annotation () != nullptr);
-    const TreeNodeIdentifier* ann = def->annotation ()->identifier ();
+    const TreeNodeAnnotation* ann = def->annotation ();
     const StringRef procName = def->procedureName ();
 
-    if (ann != nullptr && ann->value () == "deprecated") {
-        m_log.warning () << tyCxt.location () << ": procedure " << procName
-                         << " at " << def->location () << " is deprecated.";
+    if (ann->identifier () != nullptr
+        && ann->identifier ()->value() == "deprecated")
+    {
+        if (auto const * const msg = ann->message ()) {
+            m_log.warning () << tyCxt.location () << ": procedure " << procName
+                             << " at " << def->location () << " is deprecated: "
+                             << msg->staticValue ();
+        } else {
+            m_log.warning () << tyCxt.location () << ": procedure " << procName
+                             << " at " << def->location () << " is deprecated.";
+        }
     }
 
     // Set result type:

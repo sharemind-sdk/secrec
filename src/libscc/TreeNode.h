@@ -2649,6 +2649,8 @@ public: /* Methods: */
 
     TreeNodeIdentifier* identifier () const;
 
+    TreeNodeStringPartFragment* message() const;
+
 protected:
 
     TreeNode* cloneV () const override final {
