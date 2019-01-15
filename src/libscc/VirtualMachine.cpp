@@ -824,7 +824,7 @@ class Compiler {
 public: /* Types: */
 
     using UnlinkedCode = std::vector<std::pair<Instruction, const Imop* > >;
-    using ImopAddrs = std::map<const Imop*, unsigned >;
+    using ImopAddrs = std::map<Imop const *, std::size_t>;
 
 public: /* Methods: */
 
