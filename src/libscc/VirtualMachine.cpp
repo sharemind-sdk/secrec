@@ -46,10 +46,10 @@
 #define TRACE(...) (void) 0
 #endif
 
-#define PP_IF_0(t,f) f
-#define PP_IF_1(t,f) t
-#define PP_IF_(bit,arg) PP_IF_ ## bit(arg, (void) 0)
-#define PP_IF(bit,arg) PP_IF_(bit, arg)
+#define PP_IF_0(...)
+#define PP_IF_1(...) __VA_ARGS__
+#define PP_IF_(bit,...) PP_IF_ ## bit(__VA_ARGS__)
+#define PP_IF(bit,...) PP_IF_(bit, __VA_ARGS__)
 
 namespace SecreC {
 
