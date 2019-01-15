@@ -328,10 +328,10 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
-        PP_IF (PDEST, FETCH (PDN, 0)); \
-        PP_IF (PARG1, FETCH (P1N, 1); TRACE("0x%lx ", P1N.un_uint_val)); \
-        PP_IF (PARG2, FETCH (P2N, 2); TRACE("0x%lx ", P2N.un_uint_val)); \
-        PP_IF (PARG3, FETCH (P3N, 3); TRACE("0x%lx ", P3N.un_uint_val)); \
+        PP_IF (PDEST, FETCH (PDN, 0); ) \
+        PP_IF (PARG1, FETCH (P1N, 1); TRACE("0x%lx ", P1N.un_uint_val);) \
+        PP_IF (PARG2, FETCH (P2N, 2); TRACE("0x%lx ", P2N.un_uint_val);) \
+        PP_IF (PARG3, FETCH (P3N, 3); TRACE("0x%lx ", P3N.un_uint_val);) \
         TRACE ("%s", "\n"); \
         __VA_ARGS__; \
         NEXT; \
@@ -341,8 +341,8 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     MKCALLBACK_(NAME, PDEST, dest, PARG1, arg1, PARG2, arg2, PARG3, arg3, \
                 __VA_ARGS__)
 
-#define DECLOP1(NAME,CODE) \
-    MKCALLBACK(NAME, 1, 1, 0, 0, CODE) \
+#define DECLOP1(NAME,...) \
+    MKCALLBACK(NAME, 1, 1, 0, 0, __VA_ARGS__) \
     MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 0,, BLOCK( \
         const size_t s = arg2_.un_uint_val; \
         Value* desti = dest_.un_ptr; \
@@ -352,13 +352,13 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
         BLOCK( \
             Value& dest = *desti; \
             Value arg1 = *arg1i; \
-            CODE; \
+            __VA_ARGS__ \
         ) \
     ) \
     )
 
-#define DECLOP2(NAME,CODE) \
-    MKCALLBACK(NAME, 1, 1, 1, 0, CODE) \
+#define DECLOP2(NAME,...) \
+    MKCALLBACK(NAME, 1, 1, 1, 0, __VA_ARGS__) \
     MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 1, arg3_, BLOCK( \
         const size_t s = arg3_.un_uint_val; \
         Value* desti = dest_.un_ptr; \
@@ -370,7 +370,7 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
             Value& dest = *desti; \
             Value arg1 = *arg1i; \
             Value arg2 = *arg2i; \
-            CODE; \
+            __VA_ARGS__ \
         ) \
     ) \
     )
@@ -389,29 +389,29 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
  */
 
 //DECLOP1 (DECLARE, (void) dest; (void) arg1)
-DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1)))
-DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1)))
-DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1)))
-DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1))
-DECLOP1 (UINV, assignValue (dest, ~getValue<ty>(arg1)))
-DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1)))
-DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val))
-DECLOP2 (LOR,  assignValue (dest, arg1.un_bool_val || arg2.un_bool_val))
-DECLOP2 (BAND, assignValue (dest, getValue<ty>(arg1) & getValue<ty>(arg2)))
-DECLOP2 (BOR,  assignValue (dest, getValue<ty>(arg1) | getValue<ty>(arg2)))
-DECLOP2 (XOR,  assignValue (dest, getValue<ty>(arg1) ^ getValue<ty>(arg2)))
-DECLOP1 (UMINUS, assignValue (dest, -getValue<ty>(arg1)))
-DECLOP2 (EQ,  assignValue (dest, getValue<ty>(arg1) == getValue<ty>(arg2)))
-DECLOP2 (NE,  assignValue (dest, getValue<ty>(arg1) != getValue<ty>(arg2)))
-DECLOP2 (ADD, assignValue (dest, getValue<ty>(arg1) +  getValue<ty>(arg2)))
-DECLOP2 (SUB, assignValue (dest, getValue<ty>(arg1) -  getValue<ty>(arg2)))
-DECLOP2 (MUL, assignValue (dest, getValue<ty>(arg1) *  getValue<ty>(arg2)))
-DECLOP2 (DIV, assignValue (dest, getValue<ty>(arg1) /  getValue<ty>(arg2)))
-DECLOP2 (MOD, assignValue (dest, getValue<ty>(arg1) %  getValue<ty>(arg2)))
-DECLOP2 (LE,  assignValue (dest, getValue<ty>(arg1) <= getValue<ty>(arg2)))
-DECLOP2 (LT,  assignValue (dest, getValue<ty>(arg1) <  getValue<ty>(arg2)))
-DECLOP2 (GE,  assignValue (dest, getValue<ty>(arg1) >= getValue<ty>(arg2)))
-DECLOP2 (GT,  assignValue (dest, getValue<ty>(arg1) >  getValue<ty>(arg2)))
+DECLOP1 (ASSIGN, assignValue (dest, getValue<ty>(arg1));)
+DECLOP1 (CLASSIFY, assignValue (dest, getValue<ty>(arg1));)
+DECLOP1 (DECLASSIFY, assignValue (dest, getValue<ty>(arg1));)
+DECLOP1 (CAST, castValueDyn<ty>(ip->args[0].un_sym->secrecType ()->secrecDataType (), dest, arg1);)
+DECLOP1 (UINV, assignValue (dest, ~getValue<ty>(arg1));)
+DECLOP1 (UNEG, assignValue (dest, !getValue<DATATYPE_BOOL>(arg1));)
+DECLOP2 (LAND, assignValue (dest, arg1.un_bool_val && arg2.un_bool_val);)
+DECLOP2 (LOR,  assignValue (dest, arg1.un_bool_val || arg2.un_bool_val);)
+DECLOP2 (BAND, assignValue (dest, getValue<ty>(arg1) & getValue<ty>(arg2));)
+DECLOP2 (BOR,  assignValue (dest, getValue<ty>(arg1) | getValue<ty>(arg2));)
+DECLOP2 (XOR,  assignValue (dest, getValue<ty>(arg1) ^ getValue<ty>(arg2));)
+DECLOP1 (UMINUS, assignValue (dest, -getValue<ty>(arg1));)
+DECLOP2 (EQ,  assignValue (dest, getValue<ty>(arg1) == getValue<ty>(arg2));)
+DECLOP2 (NE,  assignValue (dest, getValue<ty>(arg1) != getValue<ty>(arg2));)
+DECLOP2 (ADD, assignValue (dest, getValue<ty>(arg1) +  getValue<ty>(arg2));)
+DECLOP2 (SUB, assignValue (dest, getValue<ty>(arg1) -  getValue<ty>(arg2));)
+DECLOP2 (MUL, assignValue (dest, getValue<ty>(arg1) *  getValue<ty>(arg2));)
+DECLOP2 (DIV, assignValue (dest, getValue<ty>(arg1) /  getValue<ty>(arg2));)
+DECLOP2 (MOD, assignValue (dest, getValue<ty>(arg1) %  getValue<ty>(arg2));)
+DECLOP2 (LE,  assignValue (dest, getValue<ty>(arg1) <= getValue<ty>(arg2));)
+DECLOP2 (LT,  assignValue (dest, getValue<ty>(arg1) <  getValue<ty>(arg2));)
+DECLOP2 (GE,  assignValue (dest, getValue<ty>(arg1) >= getValue<ty>(arg2));)
+DECLOP2 (GT,  assignValue (dest, getValue<ty>(arg1) >  getValue<ty>(arg2));)
 
 
 /**
