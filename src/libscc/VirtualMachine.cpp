@@ -38,6 +38,7 @@
 #include <stack>
 #include <stdint.h>
 #include <string>
+#include <type_traits>
 
 
 #if 0
@@ -211,8 +212,6 @@ struct Instruction {
     explicit Instruction (CallbackTy cb)
         : callback (cb)
     { }
-
-    ~Instruction () { }
 };
 
 /// Each frame has local store, old instruction pointer, and pointer to previous frame.
@@ -843,10 +842,11 @@ public: /* Methods: */
             }
         }
 
+        static_assert(std::is_trivially_destructible<Instruction>::value, "");
         out = static_cast<Instruction *>(calloc(sizeof(Instruction),
                                                 m_codeSize));
         for (size_t i = 0; i != m_codeSize; ++ i) {
-            out[i] = m_code[i].first;
+            auto newInstr(new (out + i) Instruction(m_code[i].first));
             const Imop* dest = m_code[i].second;
             if (dest != nullptr) {
                 out[i].args[0].un_inst = &out[m_addrs[dest]];
