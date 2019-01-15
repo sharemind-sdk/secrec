@@ -849,7 +849,9 @@ public: /* Methods: */
             auto newInstr(new (out + i) Instruction(m_code[i].first));
             const Imop* dest = m_code[i].second;
             if (dest != nullptr) {
-                out[i].args[0].un_inst = &out[m_addrs[dest]];
+                auto const it(m_addrs.find(dest));
+                assert(it != m_addrs.end());
+                newInstr->args[0].un_inst = out + it->second;
             }
         }
 
