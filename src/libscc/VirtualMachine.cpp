@@ -39,6 +39,7 @@
 #include <stdint.h>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 
 #if 0
@@ -846,7 +847,8 @@ public: /* Methods: */
         out = static_cast<Instruction *>(calloc(sizeof(Instruction),
                                                 m_codeSize));
         for (size_t i = 0; i != m_codeSize; ++ i) {
-            auto newInstr(new (out + i) Instruction(m_code[i].first));
+            auto newInstr(new (out + i) Instruction(
+                                                std::move(m_code[i].first)));
             const Imop* dest = m_code[i].second;
             if (dest != nullptr) {
                 auto const it(m_addrs.find(dest));
