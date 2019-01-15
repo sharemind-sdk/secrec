@@ -127,6 +127,7 @@ void ConstantInt::print (std::ostream &os) const {
         m_value.sprint (os);
     else
         m_value.uprint (os);
+    os << "::" << *dataType;
 }
 
 /*******************************************************************************
@@ -157,7 +158,8 @@ ConstantFloat* ConstantFloat::get (const DataType* type, const APFloat& value) {
     return &it->second;
 }
 
-void ConstantFloat::print (std::ostream &os) const { os << m_value; }
+void ConstantFloat::print (std::ostream &os) const
+{ os << m_value << "::" << secrecType()->secrecDataType(); }
 
 /*******************************************************************************
   ConstantString
