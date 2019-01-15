@@ -27,6 +27,7 @@
 #include "TreeNode.h"
 #include "Types.h"
 
+#include <array>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -201,7 +202,7 @@ using CallbackTy = int (*)(const Instruction*);
 /// Instructions are composed of callback, and 4 arguments.
 struct Instruction {
     CallbackTy callback;
-    VMSym args[4];
+    std::array<VMSym, 4u> args;
 
     Instruction ()
         : callback (nullptr)
@@ -892,24 +893,31 @@ private:
             break;
         }
 
-        unsigned nArgs = 0;
         Instruction i;
+        auto appendSymbolArg =
+                [this, it = i.args.begin(), end = i.args.end()](
+                        Symbol const * symbol) mutable
+                {
+                    assert(it != end);
+                    *it = toVMSym(symbol);
+                    ++it;
+                };
         const Imop* dest = nullptr;
 
         if (imop.isJump ()) {
             const Symbol* arg = imop.dest ();
-            i.args[nArgs ++] = toVMSym (arg);
+            appendSymbolArg(arg);
             assert (dynamic_cast<const SymbolLabel*>(arg) != nullptr);
             dest = static_cast<const SymbolLabel*>(arg)->target ();
         }
         else {
             for (const Symbol* sym : imop.defRange ()) {
-                i.args[nArgs ++] = toVMSym (sym);
+                appendSymbolArg(sym);
             }
         }
 
         for (const Symbol* sym : imop.useRange ()) {
-            i.args[nArgs ++] = toVMSym (sym);
+            appendSymbolArg(sym);
         }
 
         /// workaround as scc doesn't support strings yet
@@ -917,7 +925,7 @@ private:
         case Imop::ERROR:
         case Imop::PRINT:
         case Imop::DOMAINID:
-            i.args[nArgs ++] = toVMSym (imop.arg1 ());
+            appendSymbolArg(imop.arg1());
         default:
             break;
         }
