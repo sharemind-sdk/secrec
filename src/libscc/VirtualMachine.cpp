@@ -328,9 +328,9 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
         TRACE("%p: ", (void*) ip); \
         TRACE("%s ",#NAME); \
         PP_IF (PDEST, FETCH (PDN, 0)); \
-        PP_IF (PARG1, FETCH (P1N, 1); TRACE("0x%lx ", arg1.un_uint_val)); \
-        PP_IF (PARG2, FETCH (P2N, 2); TRACE("0x%lx ", arg2.un_uint_val)); \
-        PP_IF (PARG3, FETCH (P3N, 3); TRACE("0x%lx ", arg3.un_uint_val)); \
+        PP_IF (PARG1, FETCH (P1N, 1); TRACE("0x%lx ", P1N.un_uint_val)); \
+        PP_IF (PARG2, FETCH (P2N, 2); TRACE("0x%lx ", P2N.un_uint_val)); \
+        PP_IF (PARG3, FETCH (P3N, 3); TRACE("0x%lx ", P3N.un_uint_val)); \
         TRACE ("%s", "\n"); \
         __VA_ARGS__; \
         NEXT; \
