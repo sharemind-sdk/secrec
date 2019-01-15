@@ -828,7 +828,7 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    Compiler () : m_codeSize (0) { }
+    Compiler () = default;
     ~Compiler () { }
 
     Instruction* runOn (const Program& pr) {
@@ -845,8 +845,8 @@ public: /* Methods: */
 
         static_assert(std::is_trivially_destructible<Instruction>::value, "");
         out = static_cast<Instruction *>(calloc(sizeof(Instruction),
-                                                m_codeSize));
-        for (size_t i = 0; i != m_codeSize; ++ i) {
+                                                m_code.size()));
+        for (size_t i = 0; i != m_code.size(); ++ i) {
             auto newInstr(new (out + i) Instruction(
                                                 std::move(m_code[i].first)));
             const Imop* dest = m_code[i].second;
@@ -857,7 +857,6 @@ public: /* Methods: */
             }
         }
 
-        m_codeSize = 0;
         m_code.clear ();
         m_addrs.clear ();
 
@@ -887,7 +886,7 @@ private:
     //void compileInstruction (Instruction& i, const Imop& imop) {
     void compileInstruction (const Imop& imop) {
         // copy args
-        m_addrs.insert (std::make_pair (&imop, m_codeSize));
+        m_addrs.insert (std::make_pair (&imop, m_code.size()));
 
         // handle multi instruction IR instructions
         switch (imop.type ()) {
@@ -1009,13 +1008,11 @@ private:
 
     void emitInstruction (Instruction i, const Imop* tar = nullptr) {
         m_code.push_back (std::make_pair (i, tar));
-        ++ m_codeSize;
     }
 
 private: /* Fields: */
 
     UnlinkedCode   m_code;
-    size_t         m_codeSize;
     ImopAddrs      m_addrs;
 };
 
