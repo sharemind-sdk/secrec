@@ -273,6 +273,8 @@ public: /* Methods: */
     CGResult cgExprQualified (TreeNodeExprQualified* e);
     CGResult cgExprBytesFromString (TreeNodeExprBytesFromString* e);
     CGResult cgExprStringFromBytes (TreeNodeExprStringFromBytes* e);
+    CGResult cgExprGetFpuState (TreeNodeExprGetFpuState* e);
+    CGResult cgExprSetFpuState (TreeNodeExprSetFpuState* e);
     CGResult cgExprString (TreeNodeExprString* e);
     CGResult cgExprFloat (TreeNodeExprFloat* e);
     CGResult cgExprTernary (TreeNodeExprTernary* e);

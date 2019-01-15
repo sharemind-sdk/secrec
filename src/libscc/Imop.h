@@ -116,6 +116,8 @@ public: /* Types: */
         PARAM,      //    d = PARAM
         DOMAINID,   //    d = DOMAINID((SymbolDomain*)arg1)
         CALL,       //    arg_{n+2}, ..., arg_{n+m+1} = CALL arg0 (arg1, ..., argn, 0)
+        GETFPUSTATE, //   d = __fpu_state
+        SETFPUSTATE, //   __set_fpu_state arg1
 
         //-------
         // Jumps:

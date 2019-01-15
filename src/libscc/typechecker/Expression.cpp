@@ -1697,6 +1697,45 @@ TypeChecker::Status TypeChecker::visitExprBytesFromString(TreeNodeExprBytesFromS
 }
 
 /*******************************************************************************
+  TreeNodeExprGetFpuState
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visitExprGetFpuState(TreeNodeExprGetFpuState * e) {
+    if (e->haveResultType())
+        return OK;
+
+    e->setResultType(TypeBasic::get(DATATYPE_UINT64));
+    return OK;
+}
+
+/*******************************************************************************
+  TreeNodeExprSetFpuState
+*******************************************************************************/
+
+TypeChecker::Status TypeChecker::visitExprSetFpuState(TreeNodeExprSetFpuState * e) {
+    if (e->haveResultType())
+        return OK;
+
+    auto * subExpr = e->expression();
+    subExpr->setContext(TypeBasic::get(DATATYPE_UINT64));
+    TCGUARD(visitExpr(subExpr));
+
+    assert(subExpr->haveResultType());
+    auto const * ty = subExpr->resultType();
+    if (ty->isVoid()
+        || !ty->secrecDataType()->equals(DATATYPE_UINT64)
+        || !ty->secrecSecType()->isPublic()
+        || !ty->isScalar())
+    {
+        m_log.fatalInProc(e) << "Argument to __set_fpu_state must be of type "
+                                "public uint64 in " << e->location();
+        return E_TYPE;
+    }
+    e->setResultType(TypeVoid::get());
+    return OK;
+}
+
+/*******************************************************************************
   TreeNodeExprPrefix
 *******************************************************************************/
 

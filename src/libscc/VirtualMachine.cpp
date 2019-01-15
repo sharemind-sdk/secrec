@@ -244,6 +244,7 @@ private:
 ValueStack m_stack;
 Frame* m_frames = nullptr;
 Store m_global;
+std::uint64_t m_fpuState = 0u;
 
 void free_store (Store& store) {
     // TODO: not actually releasing any dynamically allocated memory
@@ -465,6 +466,14 @@ MKCALLBACK(DOMAINID, 1, 0, 0, 0,
 
 MKCALLBACK(STRLEN, 1, 1, 0, 0,
     dest.un_uint_val = arg1.un_str_val->size ();
+)
+
+MKCALLBACK(GETFPUSTATE, 1, 0, 0, 0,
+    dest.un_uint_val = m_fpuState;
+)
+
+MKCALLBACK(SETFPUSTATE, 1, 0, 0, 0,
+    m_fpuState = getValue<DATATYPE_UINT64>(dest);
 )
 
 MKCALLBACK(PUSH, 0, 1, 0, 0,
@@ -749,6 +758,8 @@ CallbackTy getCallback (const Imop& imop) {
     case Imop::DOMAINID:   SET_SIMPLE_CALLBACK(DOMAINID); break;
     case Imop::TOSTRING:   SET_SPECIALIZE_CALLBACK(TOSTRING,SWITCH_NONSTRING); break;
     case Imop::STRLEN:     SET_SIMPLE_CALLBACK(STRLEN); break;
+    case Imop::GETFPUSTATE: SET_SIMPLE_CALLBACK(GETFPUSTATE); break;
+    case Imop::SETFPUSTATE: SET_SIMPLE_CALLBACK(SETFPUSTATE); break;
     default:
         assert (false && "Reached unsupported instruction.");
         break;

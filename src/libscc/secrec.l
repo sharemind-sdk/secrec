@@ -191,6 +191,8 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|\@]
 "__return"            { stepLen(yyget_lloc(yyscanner), 8);  return SYSCALL_RETURN; }
 "__string_from_bytes" { stepLen(yyget_lloc(yyscanner), 19); return STRINGFROMBYTES; }
 "__syscall"           { stepLen(yyget_lloc(yyscanner), 9);  return SYSCALL; }
+"__fpu_state"         { stepLen(yyget_lloc(yyscanner), 15); return GET_FPU_STATE; }
+"__set_fpu_state"     { stepLen(yyget_lloc(yyscanner), 15); return SET_FPU_STATE; }
 
 {IDENTIFIER}       { saveText(yyscanner); return IDENTIFIER; }
 {BINARYLIT}        { saveText(yyscanner); return BIN_LITERAL; }

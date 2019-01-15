@@ -99,6 +99,7 @@ public: /* Methods: */
     Status visitExprDeclassify(TreeNodeExprDeclassify * e);
     Status visitExprDomainID(TreeNodeExprDomainID * e);
     Status visitExprFloat(TreeNodeExprFloat * e);
+    Status visitExprGetFpuState(TreeNodeExprGetFpuState* e);
     Status visitExprIndex(TreeNodeExprIndex * root);
     Status visitExprInt(TreeNodeExprInt * e);
     Status visitExprNone(TreeNodeExprNone* e);
@@ -109,6 +110,7 @@ public: /* Methods: */
     Status visitExprRVariable(TreeNodeExprRVariable * e);
     Status visitExprReshape(TreeNodeExprReshape * root);
     Status visitExprSelection(TreeNodeExprSelection * e);
+    Status visitExprSetFpuState(TreeNodeExprSetFpuState* e);
     Status visitExprShape(TreeNodeExprShape * root);
     Status visitExprSize(TreeNodeExprSize * root);
     Status visitExprString(TreeNodeExprString * e);

@@ -754,6 +754,16 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     block.push_new () << "call" << getProc (st (), dest) << "imm";
 }
 
+void Compiler::cgGetFpuState (VMBlock &block, const Imop &imop) {
+    assert (imop.type () == Imop::GETFPUSTATE);
+    block.push_new () << "fpu.getstate" << m_st.find(imop.dest());
+}
+
+void Compiler::cgSetFpuState (VMBlock &block, const Imop &imop) {
+    assert (imop.type () == Imop::SETFPUSTATE);
+    block.push_new () << "fpu.setstate" << m_st.find(imop.arg1());
+}
+
 void Compiler::cgParam (VMBlock& block, const Imop& imop) {
     assert (imop.type () == Imop::PARAM);
 
@@ -1091,6 +1101,12 @@ void Compiler::cgImop (VMBlock& block, const Imop& imop) {
         return;
     case Imop::CALL:
         cgCall (block, imop);
+        return;
+    case Imop::GETFPUSTATE:
+        cgGetFpuState(block, imop);
+        return;
+    case Imop::SETFPUSTATE:
+        cgSetFpuState(block, imop);
         return;
     case Imop::PARAM:
         cgParam (block, imop);

@@ -1140,6 +1140,15 @@ TreeNodeExpr* TreeNodeExprBytesFromString::expression () const {
 }
 
 /*******************************************************************************
+  TreeNodeExprSetFpuState
+*******************************************************************************/
+
+TreeNodeExpr* TreeNodeExprSetFpuState::expression () const {
+    assert (children ().size () == 1);
+    return expressionAt (this, 0);
+}
+
+/*******************************************************************************
   TreeNodeIdentifier
 *******************************************************************************/
 
@@ -1647,6 +1656,8 @@ TreeNode * treenode_init(enum SecrecTreeNodeType type, const YYLTYPE * loc) {
     SELECTEXPR(TOSTRING, ToString);
     SELECTEXPR(STRING_FROM_BYTES, StringFromBytes);
     SELECTEXPR(BYTES_FROM_STRING, BytesFromString);
+    SELECTEXPR(SET_FPU_STATE, SetFpuState);
+    SELECTEXPR(GET_FPU_STATE, GetFpuState);
     SELECTEXPR(DOMAINID, DomainID);
     SELECTEXPR(TYPE_QUAL, Qualified);
     SELECTEXPR(ARRAY_CONSTRUCTOR, ArrayConstructor);

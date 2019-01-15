@@ -77,6 +77,8 @@ private:
     void cgDeclassify (VMBlock& block, const SecreC::Imop& imop);
     void cgCopy (VMBlock& block, const SecreC::Imop& imop);
     void cgCall (VMBlock& block, const SecreC::Imop& imop);
+    void cgGetFpuState (VMBlock& block, const SecreC::Imop& imop);
+    void cgSetFpuState (VMBlock& block, const SecreC::Imop& imop);
     void cgParam (VMBlock& block, const SecreC::Imop& imop);
     void cgReturn (VMBlock& block, const SecreC::Imop& imop);
     void cgArithm (VMBlock& block, const SecreC::Imop& imop);

@@ -1811,6 +1811,46 @@ protected:
 };
 
 /******************************************************************
+  TreeNodeExprGetFpuState
+******************************************************************/
+
+// TODO: make this a builtin function
+class TreeNodeExprGetFpuState : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprGetFpuState(const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_GET_FPU_STATE, loc) {}
+
+    CGResult codeGenWith (CodeGen& cg) override final;
+
+protected:
+
+    TreeNode* cloneV () const override final {
+        return new TreeNodeExprGetFpuState (m_location);
+    }
+};
+
+/******************************************************************
+  TreeNodeExprSetFpuState
+******************************************************************/
+
+// TODO: make this a builtin function
+class TreeNodeExprSetFpuState : public TreeNodeExpr {
+public: /* Methods: */
+    inline TreeNodeExprSetFpuState(const Location & loc)
+        : TreeNodeExpr(NODE_EXPR_SET_FPU_STATE, loc) {}
+
+    CGResult codeGenWith (CodeGen& cg) override final;
+
+    TreeNodeExpr* expression () const;
+
+protected:
+
+    TreeNode* cloneV () const override final {
+        return new TreeNodeExprSetFpuState (m_location);
+    }
+};
+
+/******************************************************************
   TreeNodeKind
 ******************************************************************/
 

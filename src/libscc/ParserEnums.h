@@ -139,6 +139,7 @@ enum SecrecDataType {
     O(EXPR_CLASSIFY,              ExprClassify) \
     O(EXPR_DECLASSIFY,            ExprDeclassify) \
     O(EXPR_DOMAINID,              ExprDomainID) \
+    O(EXPR_GET_FPU_STATE,         ExprGetFpuState) \
     O(EXPR_INDEX,                 ExprIndex) \
     O(EXPR_NONE,                  ExprNone) \
     O(EXPR_POSTFIX_DEC,           ExprPostfix) \
@@ -149,6 +150,7 @@ enum SecrecDataType {
     O(EXPR_RESHAPE,               ExprReshape) \
     O(EXPR_RVARIABLE,             ExprRVariable) \
     O(EXPR_SELECTION,             ExprSelection) \
+    O(EXPR_SET_FPU_STATE,         ExprSetFpuState) \
     O(EXPR_SHAPE,                 ExprShape) \
     O(EXPR_SIZE,                  ExprSize) \
     O(EXPR_STRING_FROM_BYTES,     ExprStringFromBytes) \

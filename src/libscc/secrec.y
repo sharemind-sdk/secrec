@@ -88,6 +88,7 @@
 %token INT32 INT64 INT8 KIND MODULE OPERATOR PRINT PUBLIC REF RESHAPE RETURN
 %token SHAPE SIZE STRING STRINGFROMBYTES SYSCALL TEMPLATE TOSTRING TRUE_B UINT UINT16
 %token UINT32 UINT64 UINT8 WHILE VOID SYSCALL_RETURN TYPE STRUCT STRLEN READONLY
+%token GET_FPU_STATE SET_FPU_STATE
 
  /* Identifiers: */
 %token <str> IDENTIFIER
@@ -1511,6 +1512,11 @@ postfix_expression
      $$ = treenode_init(NODE_EXPR_BYTES_FROM_STRING, &@$);
      treenode_appendChild($$, $3);
    }
+ | SET_FPU_STATE '(' expression ')'
+   {
+     $$ = treenode_init(NODE_EXPR_SET_FPU_STATE, &@$);
+     treenode_appendChild($$, $3);
+   }
  | identifier '(' ')'
    {
      $$ = treenode_init(NODE_EXPR_PROCCALL, &@$);
@@ -1554,6 +1560,10 @@ primary_expression
    {
      $$ = treenode_init(NODE_EXPR_RVARIABLE, &@$);
      treenode_appendChild($$, $1);
+   }
+ | GET_FPU_STATE
+   {
+     $$ = treenode_init(NODE_EXPR_GET_FPU_STATE, &@$);
    }
  | literal
  ;

@@ -92,6 +92,8 @@ ImopInfoBits imopInfo [Imop::_NUM_INSTR] = {
     , { Imop::PARAM,      1, 1, 0, 0, 0,UD, 1 }
     , { Imop::DOMAINID,   1, 0, 0, 0, 0,UD,UD }
     , { Imop::CALL,       1, 1, 0, 1, 0,UD, 1 }
+    , { Imop::GETFPUSTATE,1, 0, 0, 0, 1,UD, 1 }
+    , { Imop::SETFPUSTATE,0, 0, 0, 0, 0,UD, 1 }
     // Jumps:
     , { Imop::JUMP,       0, 0, 1, 1, 0,UD, 1 }
     , { Imop::JT,         0, 0, 1, 1, 0,UD, 1 }
@@ -582,6 +584,12 @@ void Imop::print(std::ostream & os) const {
         break;
     case END:          /* END PROGRAM                        */
         os << "END";
+        break;
+    case GETFPUSTATE:
+        os << dname << " = __FPU_STATE";
+        break;
+    case SETFPUSTATE:
+        os << "__SET_FPU_STATE(" << a1name << ')';
         break;
     default:
         os << "TODO";

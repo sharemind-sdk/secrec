@@ -1414,6 +1414,49 @@ CGResult CodeGen::cgExprBytesFromString(TreeNodeExprBytesFromString * e) {
 }
 
 /*******************************************************************************
+  TreeNodeExprGetFpuState
+*******************************************************************************/
+
+CGResult TreeNodeExprGetFpuState::codeGenWith(CodeGen & cg) {
+    return cg.cgExprGetFpuState(this);
+}
+
+CGResult CodeGen::cgExprGetFpuState(TreeNodeExprGetFpuState * e) {
+    // Type check:
+    if (m_tyChecker->visitExprGetFpuState(e) != TypeChecker::OK)
+        return CGResult::ERROR_CONTINUE;
+
+    CGResult result;
+    emplaceImopAfter(result, e, Imop::GETFPUSTATE, generateResultSymbol(result, e));
+    return result;
+}
+
+/*******************************************************************************
+  TreeNodeExprSetFpuState
+*******************************************************************************/
+
+CGResult TreeNodeExprSetFpuState::codeGenWith(CodeGen & cg) {
+    return cg.cgExprSetFpuState(this);
+}
+
+CGResult CodeGen::cgExprSetFpuState(TreeNodeExprSetFpuState * e) {
+    // Type check:
+    if (m_tyChecker->visitExprSetFpuState(e) != TypeChecker::OK)
+        return CGResult::ERROR_CONTINUE;
+
+    CGResult result;
+    CGResult const & argResult = codeGen(e->expression());
+    append(result, argResult);
+    if (result.isNotOk ())
+        return result;
+
+    auto * const stateSym = argResult.symbol();
+    emplaceImopAfter(result, e, Imop::SETFPUSTATE, nullptr, stateSym);
+    releaseTemporary(result, stateSym);
+    return result;
+}
+
+/*******************************************************************************
   TreeNodeStringPart
 *******************************************************************************/
 
