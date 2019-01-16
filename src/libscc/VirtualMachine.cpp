@@ -821,46 +821,44 @@ void storeConstant (VMSym sym, const Symbol* c) {
  * because some intermediate code instructions compile into multiple callbacks.
  */
 class Compiler {
+
 public: /* Types: */
 
-    using UnlinkedCode = std::vector<std::pair<Instruction, const Imop* > >;
-    using ImopAddrs = std::map<Imop const *, std::size_t>;
+    using Instructions = std::vector<Instruction>;
+
+private: /* Types: */
+
+    using JumpDestinations =
+            std::vector<std::pair<Instructions::size_type, Imop const *> >;
+    struct UnlinkedCode {
+        Instructions instructions;
+        JumpDestinations jumpDestinations;
+    };
 
 public: /* Methods: */
 
-    Compiler () = default;
-    ~Compiler () { }
-
-    Instruction* runOn (const Program& pr) {
-        Instruction* out = nullptr;
+    static Instructions runOn (const Program& pr) {
         assert (! pr.empty ());
+        UnlinkedCode code;
+        std::map<Imop const *, std::size_t> imopAddresses;
         for (const auto & func : pr) {
             for (const auto & block : func) {
                 assert (! block.empty ());
                 for (const auto & imop : block) {
-                    compileInstruction (imop);
+                    imopAddresses.emplace(&imop, code.instructions.size());
+                    compileInstruction(code, imop);
                 }
             }
         }
 
-        static_assert(std::is_trivially_destructible<Instruction>::value, "");
-        out = static_cast<Instruction *>(calloc(sizeof(Instruction),
-                                                m_code.size()));
-        for (size_t i = 0; i != m_code.size(); ++ i) {
-            auto newInstr(new (out + i) Instruction(
-                                                std::move(m_code[i].first)));
-            const Imop* dest = m_code[i].second;
-            if (dest != nullptr) {
-                auto const it(m_addrs.find(dest));
-                assert(it != m_addrs.end());
-                newInstr->args[0].un_inst = out + it->second;
-            }
+        auto & is = code.instructions;
+        for (auto const & jumpDestination : code.jumpDestinations) {
+            assert(jumpDestination.first < is.size());
+            auto const it(imopAddresses.find(jumpDestination.second));
+            assert(it != imopAddresses.end());
+            is[jumpDestination.first].args[0].un_inst = is.data() + it->second;
         }
-
-        m_code.clear ();
-        m_addrs.clear ();
-
-        return out;
+        return std::move(code.instructions);
     }
 
 private:
@@ -884,14 +882,11 @@ private:
     }
 
     //void compileInstruction (Instruction& i, const Imop& imop) {
-    void compileInstruction (const Imop& imop) {
-        // copy args
-        m_addrs.insert (std::make_pair (&imop, m_code.size()));
-
+    static void compileInstruction (UnlinkedCode & code, const Imop& imop) {
         // handle multi instruction IR instructions
         switch (imop.type ()) {
-        case Imop::CALL: compileCall (imop); return;
-        case Imop::RETURN: compileReturn (imop); return;
+        case Imop::CALL: return compileCall(code, imop);
+        case Imop::RETURN: return compileReturn(code, imop);
         default:
             break;
         }
@@ -934,11 +929,11 @@ private:
         }
 
         i.callback = getCallback (imop);
-        emitInstruction (i, dest);
+        emitInstruction (code, i, dest);
     }
 
     /// compile Imop::CALL instruction
-    void compileCall (const Imop& imop) {
+    static void compileCall (UnlinkedCode & code, const Imop& imop) {
         assert (imop.type () == Imop::CALL);
 
         Imop::OperandConstIterator it, itBegin, itEnd;
@@ -964,7 +959,7 @@ private:
             argList.pop ();
             Instruction i (SIMPLE_CALLBACK(PUSH));
             i.args[1] = toVMSym (sym);
-            emitInstruction (i);
+            emitInstruction (code, i);
         }
 
         assert (it != itEnd && *it == nullptr &&
@@ -972,19 +967,19 @@ private:
 
         // CALL
         Instruction i (SIMPLE_CALLBACK(CALL));
-        emitInstruction (i, targetImop);
+        emitInstruction (code, i, targetImop);
 
         // pop return values
         for (++ it; it != itEnd; ++ it) {
             Instruction i2(SIMPLE_CALLBACK(POP));
             i2.args[0] = toVMSym(*it);
-            emitInstruction(i2);
+            emitInstruction(code, i2);
         }
     }
 
 
     /// compile Imop::RETURN instruction
-    void compileReturn (const Imop& imop) {
+    static void compileReturn (UnlinkedCode & code, const Imop& imop) {
         assert (imop.type () == Imop::RETURN);
 
         assert (imop.operandsBegin () != imop.operandsEnd () &&
@@ -998,34 +993,42 @@ private:
         while (!rev.empty ()) {
             Instruction i (SIMPLE_CALLBACK(PUSH));
             i.args[1] = toVMSym (rev.top ());
-            emitInstruction (i);
+            emitInstruction (code, i);
             rev.pop ();
         }
 
         Instruction i (SIMPLE_CALLBACK(RETVOID));
-        emitInstruction (i);
+        emitInstruction (code, i);
     }
 
-    void emitInstruction (Instruction i, const Imop* tar = nullptr) {
-        m_code.push_back (std::make_pair (i, tar));
+    static void emitInstruction(UnlinkedCode & code, Instruction i)
+    { code.instructions.emplace_back(std::move(i)); }
+
+    static void emitInstruction(UnlinkedCode & code,
+                                Instruction i,
+                                Imop const * tar)
+    {
+        if (tar)
+            code.jumpDestinations.emplace_back(code.instructions.size(), tar);
+        try {
+            emitInstruction(code, std::move(i));
+        } catch (...) {
+            code.jumpDestinations.pop_back();
+            throw;
+        }
     }
 
-private: /* Fields: */
-
-    UnlinkedCode   m_code;
-    ImopAddrs      m_addrs;
 };
 
 
 } // namespace anonymous
 
 int VirtualMachine::run (const Program& pr) {
-    Compiler comp;
-    Instruction* code = comp.runOn (pr);
+    auto const code(Compiler::runOn(pr));
 
     // execute
     push_frame (nullptr);
-    int status = code->callback (code);
+    int status = code.front().callback(code.data());
 
     // Program might exit from within a procedure, and if that
     // happens we nee to unwind all the frames to clear the memory.
@@ -1033,7 +1036,6 @@ int VirtualMachine::run (const Program& pr) {
         pop_frame ();
     }
 
-    free (code);
     free_store (m_global);
 
     return status;
