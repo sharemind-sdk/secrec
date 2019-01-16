@@ -323,7 +323,7 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
 #define CUR do { return ip->callback (ip); } while (0)
 
 #define MKCALLBACK_(NAME, PDEST, PDN, PARG1, P1N, PARG2, P2N, PARG3, P3N, ...) \
-    template <SecrecDataType ty>\
+    template <SecrecDataType ty = DATATYPE_UNDEFINED> \
     inline int NAME##_callback (const Instruction* ip) \
     BLOCK( \
         TRACE("%p: ", (void*) ip); \
@@ -560,7 +560,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
 #define SET_CALLBACK(NAME,TYPE) do {\
         callback = GET_CALLBACK(NAME,TYPE);\
     } while (0)
-#define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,DATATYPE_UNDEFINED)
+#define SET_SIMPLE_CALLBACK(NAME) SET_CALLBACK(NAME,)
 #define SWITCH_ONE(NAME,TYPE) case TYPE: SET_CALLBACK(NAME,TYPE); break;
 #define SWITCH_SIGNED(NAME)\
     SWITCH_ONE (NAME, DATATYPE_INT8)\
@@ -604,7 +604,7 @@ MKCALLBACK(END, 0, 0, 0, 0, return EXIT_SUCCESS; )
     } else {\
         SET_SPECIALIZE_CALLBACK(NAME, SWITCHER);\
     }} while (0)
-#define SIMPLE_CALLBACK(NAME) GET_CALLBACK(NAME,DATATYPE_UNDEFINED)
+#define SIMPLE_CALLBACK(NAME) GET_CALLBACK(NAME,)
 #define SET_SIMPLE_CALLBACK_V(NAME) do {\
     if (isVec) {\
         SET_SIMPLE_CALLBACK(NAME ## _vec);\
