@@ -50,6 +50,7 @@ enum SecrecOperator {
     SCOP_BIN_XOR  = 0x010,
     SCOP_BIN_SHL  = 0x011,
     SCOP_BIN_SHR  = 0x012,
+    SCOP_BIN_COMMA = 0x13,
     SCOP_UN_INV   = 0x100,
     SCOP_UN_NEG   = 0x200,
     SCOP_UN_MINUS = 0x300
@@ -115,6 +116,7 @@ enum SecrecDataType {
     O(EXPR_BINARY_ASSIGN_OR,      ExprAssign) \
     O(EXPR_BINARY_ASSIGN_SUB,     ExprAssign) \
     O(EXPR_BINARY_ASSIGN_XOR,     ExprAssign) \
+    O(EXPR_BINARY_COMMA,          ExprBinary) \
     O(EXPR_BINARY_DIV,            ExprBinary) \
     O(EXPR_BINARY_EQ,             ExprBinary) \
     O(EXPR_BINARY_GE,             ExprBinary) \

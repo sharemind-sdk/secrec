@@ -26,6 +26,11 @@ FUNCTION(add_test_secrec_execute testfile)
         COMMAND $<TARGET_FILE:sca> --eval "${CMAKE_CURRENT_SOURCE_DIR}/${testfile}.sc")
 ENDFUNCTION()
 
+
+# Tests for expressions:
+add_test_secrec_execute("expressions/00-comma")
+
+
 # Tests for scalars:
 add_test_secrec_execute("scalars/00-trivial")
 add_test_secrec_execute("scalars/01-true")

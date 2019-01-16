@@ -918,8 +918,14 @@ CGResult CodeGen::cgExprBinary(TreeNodeExprBinary * e) {
         return result;
     }
 
-    Symbol * e1result = arg1Result.symbol();
     Symbol * e2result = arg2Result.symbol();
+
+    if (e->type() == NODE_EXPR_BINARY_COMMA) {
+        result.setResult(e2result);
+        return result;
+    }
+
+    Symbol * e1result = arg1Result.symbol();
 
     // Implicitly convert scalar to array if needed:
     if (eArg1->resultType()->secrecDimType() > eArg2->resultType()->secrecDimType()) {
@@ -1053,12 +1059,24 @@ CGBranchResult CodeGen::cgBoolExprBinary(TreeNodeExprBinary * e) {
     case NODE_EXPR_BITWISE_AND: // fall through
     case NODE_EXPR_BITWISE_OR:  // fall through
     case NODE_EXPR_BITWISE_XOR: // fall through
+    case NODE_EXPR_BINARY_COMMA:
         {
             // Generate code for first child expression:
             const CGResult & arg1Result = codeGen(eArg1);
             append(result, arg1Result);
             if (result.isNotOk()) {
                 return result;
+            }
+
+            if (e->type() == NODE_EXPR_BINARY_COMMA) {
+                const CGBranchResult & arg2Result = codeGenBranch(eArg2);
+                append(result, arg2Result);
+                if (result.isNotOk()) {
+                    return result;
+                }
+                result.setTrueList(arg2Result.trueList());
+                result.setFalseList(arg2Result.falseList());
+                break;
             }
 
             // Generate code for second child expression:

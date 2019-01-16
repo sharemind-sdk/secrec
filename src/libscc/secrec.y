@@ -103,6 +103,7 @@
 %token <str> STR_IDENTIFIER
 
  /* Operators from higher to lower precedence: */
+%left ','
 %right '=' AND_ASSIGN OR_ASSIGN XOR_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
 %left TYPE_QUAL
 %left '?' ':'
@@ -825,6 +826,7 @@ binop
  | NE_OP   { $$ = SCOP_BIN_NE;   }
  | SHL_OP  { $$ = SCOP_BIN_SHL;  }
  | SHR_OP  { $$ = SCOP_BIN_SHR;  }
+ | ','     { $$ = SCOP_BIN_COMMA; }
  ;
 
  /*
@@ -1124,7 +1126,13 @@ lvalue
  ;
 
 expression
- : assignment_expression
+ : expression ',' assignment_expression
+   {
+     $$ = treenode_init(NODE_EXPR_BINARY_COMMA, &@$);
+     treenode_appendChild($$, $1);
+     treenode_appendChild($$, $3);
+   }
+ | assignment_expression
  ;
 
 assignment_expression /* WARNING: RIGHT RECURSION */

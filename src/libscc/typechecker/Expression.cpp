@@ -732,6 +732,12 @@ TypeChecker::Status TypeChecker::visitExprBinary(TreeNodeExprBinary * root) {
 
     //set context data type
     switch (root->type()) {
+    case NODE_EXPR_BINARY_COMMA:
+        e2->setContext(root);
+        TCGUARD (visitExpr(e1));
+        TCGUARD (visitExpr(e2));
+        root->setResultType(e2->resultType());
+        return OK;
     case NODE_EXPR_BINARY_ADD:
     case NODE_EXPR_BINARY_DIV:
     case NODE_EXPR_BINARY_LAND:
