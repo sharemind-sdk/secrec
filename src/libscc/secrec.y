@@ -165,6 +165,7 @@
 %type <treenode> lvalue
 %type <treenode> maybe_dimensions
 %type <treenode> maybe_expression
+%type <treenode> maybe_assignment_expression
 %type <treenode> multiplicative_expression
 %type <treenode> operator_definition
 %type <treenode> postfix_expression
@@ -397,7 +398,7 @@ variable_initialization
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $2);
    }
- | identifier maybe_dimensions '=' expression
+ | identifier maybe_dimensions '=' assignment_expression
    {
      $$ = treenode_init (NODE_VAR_INIT, &@$);
      treenode_appendChild($$, $1);
@@ -451,12 +452,12 @@ dimensions
  ;
 
 expression_list
- : expression_list ',' expression
+ : expression_list ',' assignment_expression
    { $$ = $1;
      treenode_setLocation($$, &@$);
      treenode_appendChild($$, $3);
    }
- | expression
+ | assignment_expression
    {
      $$ = treenode_init(NODE_INTERNAL_USE, &@$);
      treenode_appendChild($$, $1);
@@ -955,6 +956,14 @@ maybe_expression
  | expression
  ;
 
+maybe_assignment_expression
+  : /* empty */
+    {
+      $$ = treenode_init(NODE_EXPR_NONE, &@$);
+    }
+  | assignment_expression
+  ;
+
 while_statement
  : WHILE '(' expression ')' statement
    {
@@ -1019,12 +1028,12 @@ syscall_parameters
   ;
 
 syscall_parameter
-  : expression
+  : assignment_expression
     {
       $$ = treenode_init(NODE_PUSH, &@$);
       treenode_appendChild($$, $1);
     }
-  | READONLY expression
+  | READONLY assignment_expression
     {
       $$ = treenode_init(NODE_READONLY, &@$);
       treenode_appendChild($$, $2);
@@ -1045,7 +1054,7 @@ syscall_parameter
       $$ = treenode_init(NODE_PUSHREF, &@$);
       treenode_appendChild($$, var);
     }
-  | CREF expression
+  | CREF assignment_expression
     {
       $$ = treenode_init(NODE_PUSHCREF, &@$);
       treenode_appendChild($$, $2);
@@ -1083,13 +1092,13 @@ indices
   * to value in some other context we need to figure out sane precedence.
   */
 index
- : maybe_expression ':' maybe_expression
+ : maybe_assignment_expression ':' maybe_assignment_expression
    {
      $$ = treenode_init(NODE_INDEX_SLICE, &@$);
      treenode_appendChild($$, $1);
      treenode_appendChild($$, $3);
    }
- | expression
+ | assignment_expression
    {
      $$ = treenode_init(NODE_INDEX_INT, &@$);
      treenode_appendChild($$, $1);
@@ -1212,7 +1221,7 @@ qualified_expression
  ;
 
 conditional_expression
- : logical_or_expression '?' expression ':' expression
+ : logical_or_expression '?' expression ':' assignment_expression
    {
      $$ = treenode_init(NODE_EXPR_TERNIF, &@$);
      treenode_appendChild($$, $1);
@@ -1449,14 +1458,14 @@ unary_expression
  ;
 
 cat_expression
- : CAT '(' expression ',' expression ',' int_literal ')'
+ : CAT '(' assignment_expression ',' assignment_expression ',' int_literal ')'
    {
      $$ = treenode_init(NODE_EXPR_CAT, &@$);
      treenode_appendChild($$, $3);
      treenode_appendChild($$, $5);
      treenode_appendChild($$, $7);
    }
- | CAT '(' expression ',' expression ')'
+ | CAT '(' assignment_expression ',' assignment_expression ')'
    {
      $$ = treenode_init(NODE_EXPR_CAT, &@$);
      treenode_appendChild($$, $3);
