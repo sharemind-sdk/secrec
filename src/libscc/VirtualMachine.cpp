@@ -865,7 +865,7 @@ public: /* Methods: */
 
 private:
 
-    VMSym toVMSym (const Symbol* sym) {
+    static VMSym toVMSym (const Symbol* sym) {
         assert (sym != nullptr);
         VMSym out (true, sym );
 
@@ -898,8 +898,8 @@ private:
 
         Instruction i;
         auto appendSymbolArg =
-                [this, it = i.args.begin(), end = i.args.end()](
-                        Symbol const * symbol) mutable
+                [it = i.args.begin(), end = i.args.end()](Symbol const * symbol)
+                        mutable
                 {
                     assert(it != end);
                     *it = toVMSym(symbol);
