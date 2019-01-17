@@ -1,3 +1,6 @@
+template <type A, type B> struct TestTemplate {}
+template <type A, type B> void f(A a, B b) { TestTemplate<A, B> test; }
+
 void main() {
   assert((true, false) == false);
 

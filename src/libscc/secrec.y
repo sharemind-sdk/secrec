@@ -909,7 +909,7 @@ statement
    { /* We also use the compound statement construct for empty statements: */
      $$ = treenode_init(NODE_STMT_COMPOUND, &@$);
    }
- | expression ';'
+ | assignment_expression ';'
    {
      $$ = treenode_init(NODE_STMT_EXPR, &@$);
      treenode_appendChild($$, $1);
