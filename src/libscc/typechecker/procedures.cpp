@@ -146,14 +146,14 @@ bool opSupportedType (const TypeBasic* ty) {
     return true;
 }
 
-unsigned calculateOpScore (const TypeProc* callTypeProc,
-                           const TreeNodeProcDef* proc)
+std::size_t calculateOpScore (const TypeProc* callTypeProc,
+                              const TreeNodeProcDef* proc)
 {
-    unsigned score = 0;
+    std::size_t score = 0;
 
     assert (callTypeProc->paramTypes ().size () == proc->params ().size ());
 
-    unsigned i = 0;
+    std::size_t i = 0;
     for (TreeNodeStmtDecl const & param : proc->params ()) {
         const TypeBasic* argTy = callTypeProc->paramTypes ()[i++];
         const TreeNodeType* paramTy = param.varType ();
@@ -172,7 +172,7 @@ unsigned calculateOpScore (const TypeProc* callTypeProc,
 
 // Tuple of: has kind constraint?, number of quantifier occurences in
 // parameters, number of implicit classifies and reshapes
-using OpWeight = std::tuple<unsigned, unsigned, unsigned>;
+using OpWeight = std::tuple<std::size_t, std::size_t, std::size_t>;
 
 OpWeight calculateOpWeight (Instantiation& inst,
                             const TypeProc* callTypeProc)
@@ -181,11 +181,11 @@ OpWeight calculateOpWeight (Instantiation& inst,
     assert (dynamic_cast<SymbolOperatorTemplate*> (t_) != nullptr);
     SymbolOperatorTemplate* t = static_cast<SymbolOperatorTemplate*> (t_);
 
-    unsigned quantParamCount = t->quantifiedParamCount ();
+    std::size_t quantParamCount = t->quantifiedParamCount ();
     // Kind constraint is good, so we give lower weight (0) when it's
     // present
-    unsigned domainWeight = t->domainWeight ();
-    unsigned score = calculateOpScore (callTypeProc, t->decl ()->body ());
+    std::size_t domainWeight = t->domainWeight ();
+    std::size_t score = calculateOpScore (callTypeProc, t->decl ()->body ());
 
     return std::make_tuple (domainWeight, quantParamCount, score);
 }
@@ -564,7 +564,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
 
     // Check security types of parameters:
     assert(ft->paramTypes().size() == arguments.size ());
-    for (unsigned i = 0; i < ft->paramTypes().size(); i++) {
+    for (std::size_t i = 0; i < ft->paramTypes().size(); i++) {
         const TypeBasic* need = ft->paramTypes()[i];
         const TypeBasic* have = argTypes->paramTypes()[i];
 
@@ -733,7 +733,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
 
     std::vector<SymbolProcedure*> ops = m_operators->findOperators (name);
     std::vector<SymbolProcedure*> matching;
-    unsigned best = ~0u;
+    std::size_t best = ~0u;
 
     for (SymbolProcedure* op : ops) {
         const TypeProc* ty = op->decl ()->procedureType ();
@@ -746,7 +746,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
         bool bad = false;
 
         // Check if parameters and arguments match
-        for (unsigned i = 0; i < argTypes.size (); ++i) {
+        for (std::size_t i = 0; i < argTypes.size (); ++i) {
             const TypeBasic* paramTy = paramTypes[i];
             const TypeBasic* argTy = argTypes[i];
 
@@ -785,7 +785,7 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
         }
 
         if (! bad) {
-            unsigned score = calculateOpScore (callTypeProc, op->decl ());
+            std::size_t score = calculateOpScore (callTypeProc, op->decl ());
 
             if (score > best) continue;
             if (score < best) {
@@ -828,7 +828,7 @@ TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symPro
         return OK;
 
     // Look for templates:
-    unsigned maxi = ~0u;
+    std::size_t maxi = ~0u;
     OpWeight best = std::make_tuple (maxi, maxi, maxi);
     std::vector<Instantiation> bestMatches;
 
@@ -881,7 +881,7 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
     {
         std::vector<SymbolProcedure*> defs = m_operators->findOperators ("__cast");
         std::vector<SymbolProcedure*> matching;
-        unsigned best = ~0u;
+        std::size_t best = ~0u;
 
         for (SymbolProcedure* def : defs) {
             const TypeProc* ty = def->decl ()->procedureType ();
@@ -904,7 +904,7 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
                 continue;
             }
 
-            unsigned score = 0u;
+            std::size_t score = 0u;
             if (arg->secrecDimType () != param->secrecDimType ())
                 ++score;
 
@@ -935,7 +935,7 @@ TypeChecker::Status TypeChecker::findBestMatchingCastDef(SymbolProcedure *& symP
     }
 
     // Look for templates:
-    unsigned maxi = ~0u;
+    std::size_t maxi = ~0u;
     OpWeight best = std::make_tuple (maxi, maxi, maxi);
     std::vector<Instantiation> bestMatches;
     std::vector<const TypeBasic*> args { arg };
@@ -997,7 +997,7 @@ bool TypeChecker::unify (Instantiation& inst,
 
     TypeUnifier typeUnifier {m_st, sym};
 
-    unsigned i = 0;
+    std::size_t i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         const TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
@@ -1084,7 +1084,7 @@ bool TypeChecker::unifyOperator (Instantiation& inst,
     if (! typeUnifier.checkDomainQuantifier ())
         return false;
 
-    unsigned i = 0;
+    std::size_t i = 0;
     for (TreeNodeStmtDecl& decl : t->body ()->params ()) {
         TreeNodeType* argNodeTy = decl.varType ();
         const TypeBasic* expectedTy = argTypes->paramTypes ().at (i ++);
