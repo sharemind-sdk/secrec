@@ -207,11 +207,8 @@ CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* v
 
     CGStmtResult result;
 
-    Imop* i = nullptr;
-
     // JUMP SKIP;
-    i = pushComment ("Global variable initialization:");
-    result.setFirstImop (i);
+    result.setFirstImop(pushComment ("Global variable initialization:"));
     auto skip = new Imop(varInit, Imop::JUMP, static_cast<Symbol *>(nullptr));
     push_imop (skip);
 
