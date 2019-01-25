@@ -426,7 +426,7 @@ CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
     const TypeBasic * ty = TypeBasic::getIndexType();
     CGResult result;
     Symbol * tmp = strideInfo.symbol();
-    const unsigned n = tmp->secrecType()->secrecDimType();
+    std::size_t const n = tmp->secrecType()->secrecDimType();
     if (n == 0) { // scalar doesn't have stride
         return result;
     }
@@ -436,12 +436,12 @@ CGResult CodeGen::codeGenStride(ArrayStrideInfo & strideInfo) {
     strideInfo.clear();
     strideInfo.reserve(n);
 
-    for (unsigned it = 0; it < n; ++ it) {
+    for (std::size_t it = 0; it < n; ++ it) {
         strideInfo.push_back(m_st->appendTemporary(ty));
     }
 
     emplaceImopAfter (result, m_node, Imop::ASSIGN, strideInfo.at(n - 1), indexConstant(1));
-    for (unsigned it = n - 1; it != 0; -- it) {
+    for (std::size_t it = n - 1; it != 0; -- it) {
         emplaceImop (m_node, Imop::MUL,
             strideInfo.at(it - 1), strideInfo.at(it), sym->getDim(it));
     }
