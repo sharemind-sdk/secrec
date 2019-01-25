@@ -90,18 +90,18 @@ private: /* Methods: */
 
     void inlineImop (const Imop& imop) {
         SymbolTable& symbols = m_code.symbols ();
-        Imop::Type ty = imop.type ();
+        Imop::Type imopType = imop.type ();
         Imop* i = nullptr;
 
         if (isCopyable (imop)) {
             i = copyImop (imop);
         }
-        else if (ty == Imop::RELEASE) {
+        else if (imopType == Imop::RELEASE) {
             Symbol* arg = getSymbol (imop.arg1 ());
             if (! arg->isConstant ())
                 i = new Imop (imop.creator (), Imop::RELEASE, nullptr, arg);
         }
-        else if (ty == Imop::RETURN) {
+        else if (imopType == Imop::RETURN) {
             if (imop.nArgs() > 1) {
                 Imop::OperandConstRange range = m_call->defRange ();
                 Imop::OperandConstIterator callIt = range.begin ();
@@ -139,7 +139,7 @@ private: /* Methods: */
 
             i = new Imop (imop.creator (), Imop::JUMP, m_returnLabel);
         }
-        else if (ty == Imop::ALLOC) {
+        else if (imopType == Imop::ALLOC) {
             Symbol* newSym = symbols.appendTemporary (imop.dest ()->secrecType ());
             m_symMap.insert (std::make_pair (imop.dest (), newSym));
 
@@ -154,11 +154,11 @@ private: /* Methods: */
                               getSymbol (imop.arg1 ()));
             }
         }
-        else if (ty == Imop::CALL) {
+        else if (imopType == Imop::CALL) {
             i = copyImop (imop);
             m_todo.push_back (i);
         }
-        else if (ty == Imop::PARAM) {
+        else if (imopType == Imop::PARAM) {
             Symbol* s = m_suppliedArgs[m_paramIdx++];
             if (s->secrecType ()->isScalar () &&
                 ! s->secrecType ()->secrecSecType ()->isPrivate ())
@@ -176,18 +176,18 @@ private: /* Methods: */
                 m_symMap.insert (std::make_pair (imop.dest (), s));
             }
         }
-        else if (ty == Imop::DOMAINID) {
+        else if (imopType == Imop::DOMAINID) {
             Symbol* newSym = symbols.appendTemporary (imop.dest ()->secrecType ());
             m_symMap.insert (std::make_pair (imop.dest (), newSym));
             i = new Imop (imop.creator (), Imop::DOMAINID, newSym, imop.arg1 ());
         }
-        else if (ty == Imop::COMMENT) {
+        else if (imopType == Imop::COMMENT) {
             // nothing
         }
-        else if (ty == Imop::JT || ty == Imop::JF) {
+        else if (imopType == Imop::JT || imopType == Imop::JF) {
             i = new Imop (imop.creator (), imop.type (), imop.dest (), getSymbol (imop.arg1 ()));
         }
-        else if (ty == Imop::JUMP) {
+        else if (imopType == Imop::JUMP) {
             i = new Imop (imop.creator (), Imop::JUMP, imop.dest ());
         }
         else {
