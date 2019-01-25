@@ -112,10 +112,10 @@ TypeChecker::Status TypeChecker::visitTemplate(TreeNodeTemplate * templ) {
     if (! unboundTVs.empty()) {
         bool first = true;
         std::stringstream ss;
-        for (TreeNodeIdentifier* id : unboundTVs) {
+        for (TreeNodeIdentifier* unboundTV : unboundTVs) {
             if (! first)
                 ss << ",";
-            ss << " \'" << id->value () << "\' at " << id->location();
+            ss << " \'" << unboundTV->value () << "\' at " << unboundTV->location();
             first = false;
         }
 
@@ -155,11 +155,11 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
         info.m_localScope = local;
         it = m_instanceInfo.insert (it, std::make_pair (i, info));
 
-        auto it = i.getParams ().begin ();
+        auto it2 = i.getParams ().begin ();
         for (TreeNodeQuantifier& quant : i.getTemplate ()->decl ()->quantifiers ()) {
             StringRef qname = quant.typeVariable ()->value ();
-            local->appendSymbol (it->bind (qname));
-            ++ it;
+            local->appendSymbol (it2->bind (qname));
+            ++ it2;
         }
     }
 
