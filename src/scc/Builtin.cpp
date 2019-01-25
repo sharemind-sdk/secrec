@@ -150,7 +150,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
     entryB.push_new () << "resizestack" << (2*n + 3);
 
-    for (unsigned i = 0; i < 3; ++ i) {
+    for (std::size_t i = 0; i < 3; ++ i) {
         entryB.push_new () << "mov imm 0x0" << st.getStack (n + i);
     }
 
@@ -159,7 +159,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* rOffArg = st.getStack (n);
     VMStack* rOffDest = st.getStack (n + 1);
     VMStack* rCount = st.getStack (n + 2);
-    for (unsigned i = 0; i < n-1; ++ i)
+    for (std::size_t i = 0; i < n-1; ++ i)
         rTmp[i] = st.getStack (n + 3 + i);
 
 
@@ -180,7 +180,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     middleB.push_new () << "jge" << lOut << "uint64" << rCount << rSize;
 
     // move arguments to temporaries
-    for (unsigned i = 1; i < n - 1; ++ i) {
+    for (std::size_t i = 1; i < n - 1; ++ i) {
         middleB.push_new ()
             << "mov mem"
             << st.getStack (i)
@@ -220,7 +220,7 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
 
         VMInstruction instr;
         instr << name << argTy;
-        for (unsigned i = 0; i < n - 1; ++ i)
+        for (std::size_t i = 0; i < n - 1; ++ i)
             instr << rTmp [i];
         middleB.push_back (instr);
     }
