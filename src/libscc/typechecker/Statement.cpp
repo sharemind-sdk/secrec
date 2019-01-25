@@ -241,13 +241,15 @@ TypeChecker::Status TypeChecker::visitStmtReturn(TreeNodeStmtReturn * stmt) {
 *******************************************************************************/
 
 TypeChecker::Status TypeChecker::visitStmtSyscall(TreeNodeStmtSyscall * stmt) {
-    TreeNodeExprString* e = stmt->name ();
-    TCGUARD (visitExprString (e));
+    {
+        TreeNodeExprString* e = stmt->name ();
+        TCGUARD (visitExprString (e));
 
-    if (! e->isConstant ()) {
-        m_log.fatalInProc (stmt) << "Syscall name at " << e->location ()
-                              << " is not a static string.";
-        return E_TYPE;
+        if (! e->isConstant ()) {
+            m_log.fatalInProc (stmt) << "Syscall name at " << e->location ()
+                                  << " is not a static string.";
+            return E_TYPE;
+        }
     }
 
     bool hasReturn = false;
