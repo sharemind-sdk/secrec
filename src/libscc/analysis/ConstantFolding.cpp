@@ -87,10 +87,10 @@ public: /* Methods: */
         , isSigned (false)
     { }
 
-    IntValue (bool isSigned, APInt value)
+    IntValue (bool isSigned_, APInt value)
         : AbstractValue (VINT)
         , APInt (value)
-        , isSigned (isSigned)
+        , isSigned (isSigned_)
     { }
 
     IntValue (APInt value)
