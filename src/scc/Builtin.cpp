@@ -136,7 +136,7 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
 void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
     using namespace SecreC;
     const Imop& imop = *m_imop;
-    const unsigned n = imop.nArgs ();
+    const auto n = imop.nArgs ();
     assert (n > 0);
     assert (imop.isVectorized ());
     const bool isBool = imop.arg1()->secrecType()->secrecDataType()->isBool();

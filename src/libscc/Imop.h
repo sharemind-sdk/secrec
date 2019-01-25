@@ -163,7 +163,7 @@ public: /* Methods: */
 
     inline Type type() const { return m_type; }
 
-    inline unsigned nArgs() const { return m_args.size(); }
+    inline std::size_t nArgs() const { return m_args.size(); }
 
     OperandConstIterator operandsBegin () const { return m_args.begin (); }
     OperandConstIterator operandsEnd () const { return m_args.end (); }
