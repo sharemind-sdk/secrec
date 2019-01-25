@@ -227,7 +227,7 @@ private: /* Methods: */
     /**
      * \brief Type check a procedure, and classify parameters if needed.
      * \param[in] name name of the procedure to call
-     * \param[in] contextSecType context security type
+     * \param[in] tyCxt context of the procedure call
      * \param[in] arguments argument expressions
      * \param[out] resultType resulting type of the procedure call
      * \param[out] symProc symbol of the procedure which will be called
@@ -273,7 +273,7 @@ private: /* Methods: */
      * \param[in] name name of the procedure/template
      * \param[in] argTypes types of arguments
      * \param[out] symProc best matching procedure if single best one was found
-     * \param[in] errorCtx the location about which to print errors.
+     * \param[in] errorCxt the location about which to print errors.
      */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
                                 StringRef name,
