@@ -110,16 +110,6 @@ struct SimpleInterferenceGraph {
         }
     }
 
-    unsigned getNumber(const Symbol * sym) {
-        auto i = m_numbers.find(sym);
-
-        if (i == m_numbers.end()) {
-            i = m_numbers.insert(i, std::make_pair(sym, m_count ++));
-        }
-
-        return i->second;
-    }
-
     inline void gen(const Symbol * s1) {
         m_live.insert(s1);
     }
