@@ -207,7 +207,7 @@ class RegisterAllocator::InferenceGraph {
 private:
 
     struct SetReg {
-        SetReg (VMSymbolTable & st) : st (st) { }
+        SetReg (VMSymbolTable & st_) : st (st_) { }
         inline void operator () (VMVReg* reg, unsigned color) {
             reg->setActualReg (st.getReg (color));
         }
@@ -217,7 +217,7 @@ private:
     };
 
     struct SetStack {
-        SetStack (VMSymbolTable & st) : st (st) { }
+        SetStack (VMSymbolTable & st_) : st (st_) { }
         inline void operator () (VMVReg* reg, unsigned color) {
             reg->setActualReg (st.getStack (color));
         }
