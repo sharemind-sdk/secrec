@@ -56,19 +56,19 @@ public: /* Methods: */
     VMValue* find (const SecreC::Symbol* symbol) const;
     void store (const SecreC::Symbol* symbol, VMValue*);
 
-    unsigned uniq () { return m_uniq ++; }
+    std::size_t uniq () { return m_uniq ++; }
 
     VMLabel* getUniqLabel ();
     VMImm*   getImm (uint64_t value);
-    VMReg*   getReg (unsigned number);
-    VMStack* getStack (unsigned number);
+    VMReg*   getReg (std::size_t number);
+    VMStack* getStack (std::size_t number);
     VMLabel* getLabel (const std::string& name);
     VMVReg*  getVReg (bool isGlobal);
 
 private: /* Fields: */
 
     VMSTImpl*  m_impl;
-    unsigned   m_uniq;
+    std::size_t   m_uniq;
 };
 
 }

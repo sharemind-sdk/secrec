@@ -64,8 +64,8 @@ public: /* Types: */
 
     typedef std::map<std::string, VMLabel* > LabelMap;
     typedef std::map<uint64_t, VMImm* > ImmMap;
-    typedef std::map<unsigned, VMStack* > LocalMap;
-    typedef std::map<unsigned, VMReg* > GlobalMap;
+    typedef std::map<std::size_t, VMStack* > LocalMap;
+    typedef std::map<std::size_t, VMReg* > GlobalMap;
     typedef std::set<VMVReg* > VRegSet;
     typedef std::map<const SecreC::Symbol*, VMValue*> SymbolMap;
 
@@ -137,11 +137,11 @@ VMImm* VMSymbolTable::getImm (uint64_t value) {
     return insertNew (m_impl->m_imms, value, TypeProvider<VMImm>());
 }
 
-VMReg* VMSymbolTable::getReg (unsigned number) {
+VMReg* VMSymbolTable::getReg (std::size_t number) {
     return insertNew (m_impl->m_globals, number, TypeProvider<VMReg>());
 }
 
-VMStack* VMSymbolTable::getStack (unsigned number) {
+VMStack* VMSymbolTable::getStack (std::size_t number) {
     return insertNew (m_impl->m_locals, number, TypeProvider<VMStack>());
 }
 
