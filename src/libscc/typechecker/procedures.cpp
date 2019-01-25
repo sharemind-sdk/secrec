@@ -1046,9 +1046,9 @@ bool TypeChecker::unify (Instantiation& inst,
                 if (param.secType ()->isPublic ())
                     return false;
                 else {
-                    SymbolKind* sym = m_st->find<SYM_KIND>(domain->kind ()->value ());
+                    SymbolKind* kindSym = m_st->find<SYM_KIND>(domain->kind ()->value ());
                     const auto privArgTy = static_cast<const PrivateSecType*>(param.secType ());
-                    if (sym != privArgTy->securityKind ()) {
+                    if (kindSym != privArgTy->securityKind ()) {
                         return false;
                     }
                 }
