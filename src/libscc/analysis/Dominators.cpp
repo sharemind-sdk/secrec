@@ -34,8 +34,8 @@ namespace { /* anonymous */
 
 struct DomInfo {
 
-    explicit DomInfo(Block * block)
-        : block(block)
+    explicit DomInfo(Block * block_)
+        : block(block_)
         , idom(0)
     { }
 
