@@ -173,9 +173,9 @@ public: /* Methods: */
     inline Symbol* arg1() const { return arg(1); }
     inline Symbol* arg2() const { return arg(2); }
     inline Symbol* arg3() const { return arg(3); }
-    inline Symbol* arg(unsigned i) const {
+    inline Symbol* arg(std::size_t i) const {
         assert (i < m_args.size () &&
-                "Imop::arg(unsigned i): index i out of bounds.");
+                "Imop::arg(std::size_t i): index i out of bounds.");
         return m_args[i];
     }
 
@@ -183,9 +183,9 @@ public: /* Methods: */
     inline void setArg1(Symbol *arg1) { setArg(1, arg1); }
     inline void setArg2(Symbol *arg2) { setArg(2, arg2); }
     inline void setArg3(Symbol* arg3) { setArg(3, arg3); }
-    inline void setArg(unsigned i, Symbol* arg) {
+    inline void setArg(std::size_t i, Symbol* arg) {
         assert (i < m_args.size () &&
-                "Imop::setArg(unsigned i, const Symbol* arg): index i out of bounds.");
+                "Imop::setArg(std::size_t i, const Symbol* arg): index i out of bounds.");
         m_args[i] = arg;
     }
 
