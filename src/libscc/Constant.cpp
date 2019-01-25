@@ -26,6 +26,7 @@
 
 #include <array>
 #include <cstring>
+#include <sharemind/ToUnsigned.h>
 #include <sstream>
 #include <string>
 #include <map>
@@ -186,7 +187,14 @@ ConstantString* ConstantString::get (Context& cxt, StringRef str) {
 void ConstantString::print (std::ostream &os) const {
     // TODO: not escaped! do we assume that input is always escaped?
     os.put ('"');
-    os.write (m_value.data (), m_value.size ());
+    auto toPrint = m_value.size();
+    constexpr auto const chunkSize =
+            std::numeric_limits<std::streamsize>::max();
+    for (constexpr auto const uChunkSize = sharemind::toUnsigned(chunkSize);
+         toPrint > uChunkSize;
+         toPrint -= uChunkSize)
+        os.write(m_value.data(), chunkSize);
+    os.write (m_value.data (), static_cast<std::streamsize>(toPrint));
     os.put ('"');
 }
 
