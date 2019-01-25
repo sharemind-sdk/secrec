@@ -1741,7 +1741,7 @@ YYLTYPE treenode_location(const TreeNode * node) {
     return toCxx(node)->location().toYYLTYPE();
 }
 
-unsigned treenode_numChildren(const TreeNode * node) {
+size_t treenode_numChildren(const TreeNode * node) {
     return toCxx(node)->children().size();
 }
 

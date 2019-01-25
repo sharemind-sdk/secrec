@@ -20,6 +20,11 @@
 #ifndef SECREC_TREENODEC_H
 #define SECREC_TREENODEC_H
 
+#ifdef __cplusplus
+#include <cstddef>
+#else
+#include <stddef.h>
+#endif
 #include "Parser.h"
 
 /**
@@ -36,7 +41,10 @@ TreeNode *treenode_init(enum SecrecTreeNodeType type, const YYLTYPE *loc);
 void treenode_free(TreeNode *node);
 enum SecrecTreeNodeType treenode_type(TreeNode *node);
 YYLTYPE treenode_location(const TreeNode *node);
-unsigned treenode_numChildren(const TreeNode *node);
+#ifdef __cplusplus
+std::
+#endif
+size_t treenode_numChildren(const TreeNode *node);
 TreeNode *treenode_childAt(const TreeNode *node, unsigned index);
 void treenode_appendChild(TreeNode *parent, TreeNode *child);
 void treenode_setLocation(TreeNode *node, YYLTYPE *loc);
