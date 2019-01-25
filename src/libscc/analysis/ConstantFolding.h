@@ -108,7 +108,7 @@ public: /* Methods: */
     ConstantFolding ();
     ConstantFolding (const ConstantFolding&) = delete;
     ConstantFolding& operator = (const ConstantFolding&) = delete;
-    ~ConstantFolding ();
+    ~ConstantFolding () override;
 
     void start(const Program &bs) override final;
     void startBlock(const Block &b) override final;
