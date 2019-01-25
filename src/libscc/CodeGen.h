@@ -142,8 +142,8 @@ public: /* Methods: */
 
     const_iterator begin () const { return m_stride.begin (); }
     const_iterator end () const { return m_stride.end (); }
-    unsigned size () const { return m_stride.size (); }
-    Symbol* at (unsigned i) const { return m_stride.at (i); }
+    size_type size () const { return m_stride.size (); }
+    Symbol* at (size_type i) const { return m_stride.at (i); }
 
 protected:
 
