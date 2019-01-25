@@ -598,7 +598,7 @@ Value exprValue (ValueFactory& factory, const Imop& imop, const std::vector<Valu
      */
     bool anyIsUndef = false;
     std::vector<const AbstractValue*> vs;
-    for (const auto v : args) {
+    for (auto const & v : args) {
         if (v.isConst ()) {
             assert (v.value () != nullptr);
             vs.push_back (v.value ());
