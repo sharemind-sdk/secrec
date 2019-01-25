@@ -65,6 +65,8 @@ protected: /* Methods: */
 
 public:
 
+    DataFlowAnalysis(DataFlowAnalysis const &) noexcept = default;
+
     virtual ~DataFlowAnalysis () { }
 
     inline bool isForward () const { return m_forward; }
