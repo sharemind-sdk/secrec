@@ -27,6 +27,7 @@
 #include "TreeNodeFwd.h"
 
 #include <cassert>
+#include <limits>
 #include <string>
 #include <vector>
 #include <stdint.h>
@@ -210,20 +211,30 @@ public: /* Methods: */
         , m_end (std::move(end))
     { }
 
-    size_type size () const { return std::distance (m_begin, m_end); }
+    size_type size () const {
+        using R = decltype(std::distance(m_begin, m_end));
+        static_assert(std::numeric_limits<size_type>::max()
+                      >= std::numeric_limits<R>::max(), "");
+        return static_cast<size_type>(std::distance(m_begin, m_end));
+    }
 
     bool empty () const { return m_begin == m_end; }
 
     const_reference operator [] (size_type i) const {
         assert (i < size ());
-        assert (dynamic_cast<const_pointer>(*(m_begin + i)) != nullptr);
-        return *static_cast<const_pointer>(*(m_begin + i));
+        using D =
+                typename std::iterator_traits<const_iterator>::difference_type;
+        auto const distance = static_cast<D>(i);
+        assert (dynamic_cast<const_pointer>(*(m_begin + distance)) != nullptr);
+        return *static_cast<const_pointer>(*(m_begin + distance));
     }
 
     reference operator [] (size_type i) {
         assert (i < size ());
-        assert (dynamic_cast<pointer>(*(m_begin + i)) != nullptr);
-        return *static_cast<pointer>(*(m_begin + i));
+        using D = typename std::iterator_traits<iterator>::difference_type;
+        auto const distance = static_cast<D>(i);
+        assert (dynamic_cast<pointer>(*(m_begin + distance)) != nullptr);
+        return *static_cast<pointer>(*(m_begin + distance));
     }
 
     iterator begin () const { return iterator (m_begin); }
