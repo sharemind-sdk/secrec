@@ -21,10 +21,22 @@
 #define SECREC_PARSER_ENUMS_H
 
 #ifdef __cplusplus
+#include <cstddef>
+#else
+#include <stddef.h>
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef unsigned SecrecDimType; /**< (~ SecrecDimType(0)) reserved for undefined  */
+#ifdef __cplusplus
+/** \note (~ SecrecDimType(0)) reserved for undefined  */
+using SecrecDimType = std::size_t;
+#else
+/** \note (~ SecrecDimType(0)) reserved for undefined  */
+typedef size_t SecrecDimType;
+#endif
 
 #ifdef __cplusplus
 namespace SecreC { using SecrecDimType = ::SecrecDimType; }
