@@ -408,17 +408,17 @@ class SymbolProcedureTemplate: public SymbolTemplate {
 public: /* Types: */
 
     struct Weight {
-        unsigned m_typeVariableCount;
-        unsigned m_qualifiedTypeVariableCount;
-        unsigned m_quantifiedParamCount;
+        std::size_t m_typeVariableCount;
+        std::size_t m_qualifiedTypeVariableCount;
+        std::size_t m_quantifiedParamCount;
 
         Weight ()
-            : m_typeVariableCount (~ unsigned (0))
-            , m_qualifiedTypeVariableCount (~ unsigned (0))
-            , m_quantifiedParamCount (~ unsigned (0))
+            : m_typeVariableCount (~ std::size_t (0))
+            , m_qualifiedTypeVariableCount (~ std::size_t (0))
+            , m_quantifiedParamCount (~ std::size_t (0))
         { }
 
-        Weight (unsigned a, unsigned b, unsigned c)
+        Weight (std::size_t a, std::size_t b, std::size_t c)
             : m_typeVariableCount (a)
             , m_qualifiedTypeVariableCount (b)
             , m_quantifiedParamCount (c)
@@ -433,9 +433,9 @@ public: /* Types: */
         inline bool operator != (const Weight& other) const { return !(*this == other); }
 
         inline bool operator < (const Weight& other) const {
-            const unsigned left[3] = { m_typeVariableCount, m_qualifiedTypeVariableCount, m_quantifiedParamCount };
-            const unsigned right[3] = { other.m_typeVariableCount, other.m_qualifiedTypeVariableCount, other.m_quantifiedParamCount };
-            for (unsigned i = 0; i < 3; ++ i) {
+            const std::size_t left[3] = { m_typeVariableCount, m_qualifiedTypeVariableCount, m_quantifiedParamCount };
+            const std::size_t right[3] = { other.m_typeVariableCount, other.m_qualifiedTypeVariableCount, other.m_quantifiedParamCount };
+            for (std::size_t i = 0; i < 3; ++ i) {
                 if (left[i] < right[i]) return true;
                 if (left[i] > right[i]) return false;
             }
@@ -447,7 +447,7 @@ public: /* Types: */
             return (other < *this);
         }
 
-        inline unsigned typeVariableCount () const {
+        inline std::size_t typeVariableCount () const {
             return m_typeVariableCount;
         }
     };
@@ -480,11 +480,11 @@ class SymbolOperatorTemplate: public SymbolTemplate {
 public: /* Methods: */
     SymbolOperatorTemplate (TreeNodeTemplate *templ, bool expectsDataType);
 
-    inline unsigned quantifiedParamCount () const {
+    inline std::size_t quantifiedParamCount () const {
         return m_quantifiedParamCount;
     }
 
-    inline unsigned domainWeight () const {
+    inline std::size_t domainWeight () const {
         return m_domainWeight;
     }
 
@@ -494,8 +494,8 @@ public: /* Methods: */
 
 private: /* Fields: */
     bool m_expectsDataType;
-    unsigned m_quantifiedParamCount;
-    unsigned m_domainWeight;
+    std::size_t m_quantifiedParamCount;
+    std::size_t m_domainWeight;
 };
 
 /*******************************************************************************

@@ -32,9 +32,9 @@ namespace SecreC {
 
 namespace /* anonymous */ {
 
-unsigned countQuantifiedParams (TreeNodeTemplate* templ) {
+std::size_t countQuantifiedParams (TreeNodeTemplate* templ) {
     std::set<StringRef, StringRef::FastCmp > typeVariables;
-    unsigned quantifiedParamCount = 0;
+    std::size_t quantifiedParamCount = 0;
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         typeVariables.insert (quant.typeVariable ()->value ());
@@ -91,9 +91,9 @@ unsigned countQuantifiedParams (TreeNodeTemplate* templ) {
 }
 
 SymbolProcedureTemplate::Weight computeTemplateWeight (TreeNodeTemplate* templ) {
-    unsigned typeVariableCount = templ->quantifiers ().size ();
-    unsigned qualifiedTypeVariableCount = 0;
-    unsigned quantifiedParamCount = countQuantifiedParams (templ);
+    std::size_t typeVariableCount = templ->quantifiers ().size ();
+    std::size_t qualifiedTypeVariableCount = 0;
+    std::size_t quantifiedParamCount = countQuantifiedParams (templ);
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
         if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {
