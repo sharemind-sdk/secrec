@@ -29,8 +29,8 @@
 
 #define saveText(s)\
     do {\
-        stepLen(yyget_lloc(s), yyget_leng(s));\
-        yyget_lval(s)->str = add_string (yyget_extra(s), yyget_text(s), yyget_leng(s));\
+        stepLen(yyget_lloc(s), (size_t) yyget_leng(s));\
+        yyget_lval(s)->str = add_string (yyget_extra(s), yyget_text(s), (size_t) yyget_leng(s));\
     } while (0)
 
 #define STRBUF_SIZE 2048
@@ -111,8 +111,8 @@ SIMPLEOP        [\.\-\,\;\:\!\?\/\^\~\(\)\[\]\{\}\*\&\%\+\<\=\>\|\@]
 
  /* C-style comments: */
 "/*"                      { stepLen(yyget_lloc(yyscanner), 2); BEGIN(COMMENT_C); }
-<COMMENT_C>[^*\n\r]*      { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
-<COMMENT_C>"*"+[^*/\n\r]* { stepLen(yyget_lloc(yyscanner), yyget_leng(yyscanner)); }
+<COMMENT_C>[^*\n\r]*      { stepLen(yyget_lloc(yyscanner), (size_t) yyget_leng(yyscanner)); }
+<COMMENT_C>"*"+[^*/\n\r]* { stepLen(yyget_lloc(yyscanner), (size_t) yyget_leng(yyscanner)); }
 <COMMENT_C>{NEWLINE}      { newline(yyget_lloc(yyscanner)); }
 <COMMENT_C>"*"+"/"        { BEGIN(INITIAL); }
 
