@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
                 ("print-st",  "Print the symbol table")
                 ("print-cfg", "Print the control flow graph")
                 ("print-dom", "Print the dominators tree")
-                ("print-ir",  "Print the intermediate represetnation")
+                ("print-ir",  "Print the intermediate representation")
                 ("analysis,a", po::value<vector<string > >(),
                  "Run specified analysis. Options are:\n"
                  "\t\"rd\"  -- reaching definitions\n"
