@@ -62,10 +62,10 @@ public: /* Methods: */
     { }
 
     CodeGenState(CodeGenState &&) = delete;
-    CodeGenState(CodeGenState const &) noexcept = default;
+    CodeGenState(CodeGenState const &) = default;
 
     CodeGenState & operator=(CodeGenState &&) = delete;
-    CodeGenState & operator=(CodeGenState const &) noexcept = default;
+    CodeGenState & operator=(CodeGenState const &) = default;
 
     SymbolTable* st () const { return m_st; }
 
