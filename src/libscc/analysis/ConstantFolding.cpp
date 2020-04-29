@@ -289,7 +289,7 @@ inline std::vector<const typename GetTagType<tag>::Type*> as (const std::vector<
         result.push_back (static_cast<const typename GetTagType<tag>::Type*>(v));
     }
 
-    return std::move (result);
+    return result;
 }
 
 /*******************************************************************************
