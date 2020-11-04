@@ -43,51 +43,50 @@ SET_SOURCE_FILES_PROPERTIES("${CMAKE_CURRENT_SOURCE_DIR}/treenode.cpp"
     PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
-ADD_LIBRARY("yacc_o" STATIC
+ADD_LIBRARY(yacc_o STATIC
     "${LIBSCC_FLEX_GENERATED_HEADER}"
     "${LIBSCC_BISON_GENERATED_SOURCE}"
     "${LIBSCC_FLEX_SOURCE}"
     "${LIBSCC_BISON_SOURCE}"
 )
 SharemindSetC99CompileOptions(
-    TARGETS "yacc_o"
+    TARGETS yacc_o
     FORCED_OPTIONS "-fPIC"
     CHECK_OPTIONS
         "-Wno-c++-compat"
         "-Wno-unused-macros"
         "-Wno-switch-default"
 )
-SET_PROPERTY(TARGET "yacc_o"
-    PROPERTY INCLUDE_DIRECTORIES
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-)
+TARGET_INCLUDE_DIRECTORIES(yacc_o PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
-SharemindAddSharedLibrary("libscc"
+SharemindAddSharedLibrary(libscc
     OUTPUT_NAME "scc"
     SOURCES
         ${LIBSCC_SOURCES}
         ${LIBSCC_HEADERS}
         ${LIBSCC_HEADERS_P}
-    INCLUDE_DIRECTORIES
-        ${Boost_INCLUDE_DIRS}
-        ${MPFR_INCLUDE_DIRS}
-        ${SharemindCHeaders_INCLUDE_DIRS}
-        ${SharemindCxxHeaders_INCLUDE_DIRS}
-    LEGACY_DEFINITIONS
-        ${SharemindCHeaders_DEFINITIONS}
-        ${SharemindCxxHeaders_DEFINITIONS}
-    LINK_LIBRARIES
-        ${Boost_FILESYSTEM_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-        ${MPFR_LIBRARIES}
-        ${SharemindCHeaders_LIBRARIES}
-        ${SharemindCxxHeaders_LIBRARIES}
-        "yacc_o"
     COMPONENT "libscc"
     SPLITDEBUG_COMPONENT "libscc-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS "libscc")
+SharemindSetCxx14CompileOptions(TARGETS libscc)
+TARGET_INCLUDE_DIRECTORIES(libscc
+    PUBLIC
+        ${MPFR_INCLUDE_DIRS}
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        # $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include> # TODO
+    )
+TARGET_LINK_LIBRARIES(libscc
+    PRIVATE
+        Boost::filesystem
+        yacc_o
+    PUBLIC
+        Boost::boost
+        ${MPFR_LIBRARIES}
+        Sharemind::CHeaders
+        Sharemind::CxxHeaders
+    )
 
 
 # Packaging:
@@ -101,7 +100,6 @@ SharemindAddComponentPackage("libscc"
     DEB_SECTION "libs"
     DEB_DEPENDS
         "libboost-filesystem${BV}"
-        "libboost-system${BV}"
         "libc6 (>= 2.19)"
         "libmpfr${MPFR_ABI_VERSION}"
         "libstdc++6 (>= 4.8.0)"

@@ -21,26 +21,26 @@
 FILE(GLOB_RECURSE SCA_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-
-SharemindAddExecutable("sca"
-    SOURCES
-        ${SCA_SOURCES}
-    INCLUDE_DIRECTORIES
-        "${CMAKE_SOURCE_DIR}/src/"
-        ${Boost_INCLUDE_DIRS}
-        ${MPFR_INCLUDE_DIRS}
-        ${SharemindCxxHeaders_INCLUDE_DIRS}
-    LEGACY_DEFINITIONS
-        ${SharemindCxxHeaders_DEFINITIONS}
-    LINK_LIBRARIES
-        "libscc"
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${MPFR_LIBRARIES}
-        ${SharemindCxxHeaders_LIBRARIES}
+SharemindAddExecutable(sca
+    SOURCES ${SCA_SOURCES}
     COMPONENT "sca"
     SPLITDEBUG_COMPONENT "sca-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS "sca")
+SharemindSetCxx14CompileOptions(TARGETS sca)
+TARGET_INCLUDE_DIRECTORIES(sca
+    PRIVATE
+        "${CMAKE_SOURCE_DIR}/src/"
+        ${MPFR_INCLUDE_DIRS}
+    )
+TARGET_LINK_LIBRARIES(sca
+    PRIVATE
+        Boost::boost
+        Boost::program_options
+        Boost::iostreams
+        libscc
+        ${MPFR_LIBRARIES}
+        Sharemind::CxxHeaders
+    )
 
 
 # Packaging:
@@ -53,6 +53,7 @@ SharemindAddComponentPackage("sca"
     DESCRIPTION "Sharemind SecreC Analyzer"
     DEB_SECTION "devel"
     DEB_DEPENDS
+        "libboost-iostreams${BV}"
         "libboost-program-options${BV}"
         "libc6 (>= 2.19)"
         "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"

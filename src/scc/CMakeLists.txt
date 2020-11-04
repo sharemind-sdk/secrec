@@ -21,35 +21,30 @@
 FILE(GLOB_RECURSE SCC_SOURCES
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-
-SharemindAddExecutable("scc"
-    SOURCES
-        ${SCC_SOURCES}
-    INCLUDE_DIRECTORIES
-        "${CMAKE_SOURCE_DIR}/src/"
-        ${Boost_INCLUDE_DIRS}
-        ${MPFR_INCLUDE_DIRS}
-        ${SharemindCxxHeaders_INCLUDE_DIRS}
-        ${SharemindLibAs_INCLUDE_DIRS}
-        ${SharemindLibExecutable_INCLUDE_DIRS}
-    LEGACY_DEFINITIONS
-        ${SharemindCxxHeaders_DEFINITIONS}
-        ${SharemindLibAs_DEFINITIONS}
-        ${SharemindLibExecutable_DEFINITIONS}
-    LINK_LIBRARIES
-        "libscc"
-        ${Boost_FILESYSTEM_LIBRARY}
-        ${Boost_IOSTREAMS_LIBRARY}
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-        ${MPFR_LIBRARIES}
-        ${SharemindCxxHeaders_LIBRARIES}
-        ${SharemindLibAs_LIBRARIES}
-        ${SharemindLibExecutable_LIBRARIES}
+SharemindAddExecutable(scc
+    SOURCES ${SCC_SOURCES}
     COMPONENT "scc"
     SPLITDEBUG_COMPONENT "scc-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS "scc")
+SharemindSetCxx14CompileOptions(TARGETS scc)
+TARGET_INCLUDE_DIRECTORIES(scc
+    PRIVATE
+        "${CMAKE_SOURCE_DIR}/src/"
+        ${MPFR_INCLUDE_DIRS}
+    )
+TARGET_LINK_LIBRARIES(scc
+    PRIVATE
+        Boost::boost
+        Boost::filesystem
+        Boost::iostreams
+        Boost::program_options
+        libscc
+        ${MPFR_LIBRARIES}
+        Sharemind::CxxHeaders
+        Sharemind::LibAs
+        Sharemind::LibExecutable
+    )
+
 
 # Packaging:
 SET(BV
@@ -64,11 +59,10 @@ SharemindAddComponentPackage("scc"
         "libboost-filesystem${BV}"
         "libboost-iostreams${BV}"
         "libboost-program-options${BV}"
-        "libboost-regex${BV}"
-        "libboost-system${BV}"
         "libc6 (>= 2.19)"
         "libmpfr${MPFR_ABI_VERSION}"
-        "libsharemind-as (>= 0.3.0)"
+        "libsharemind-as (>= 0.4.0)"
+        "libsharemind-executable (>= 0.4.0)"
         "libsharemind-scc (= ${SharemindSecrecFramework_DEB_libscc_PACKAGE_VERSION})"
         "libstdc++6 (>= 4.8.0)"
     PARENT_SCOPE

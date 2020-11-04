@@ -32,10 +32,10 @@ find_package(Boost 1.62 COMPONENTS filesystem iostreams program_options system R
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
-FIND_PACKAGE(SharemindCHeaders 1.1.0 REQUIRED)
-FIND_PACKAGE(SharemindCxxHeaders 0.2.0 REQUIRED)
-FIND_PACKAGE(SharemindLibAs 0.3.2 REQUIRED)
-FIND_PACKAGE(SharemindLibExecutable 0.2.0 REQUIRED)
+FIND_PACKAGE(SharemindCHeaders 1.3.0 REQUIRED)
+FIND_PACKAGE(SharemindCxxHeaders 0.8.0 REQUIRED)
+FIND_PACKAGE(SharemindLibAs 0.4.0 REQUIRED)
+FIND_PACKAGE(SharemindLibExecutable 0.4.0 REQUIRED)
 
 add_definitions("-DSHAREMIND_STDLIB_PATH=\"${CMAKE_INSTALL_PREFIX}/lib/sharemind/stdlib\"")
 
