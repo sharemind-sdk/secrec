@@ -28,7 +28,7 @@ FIND_PACKAGE(SharemindCMakeHelpers 1.4 REQUIRED)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeIncludes/" ${CMAKE_MODULE_PATH})
 
-find_package(Boost COMPONENTS filesystem iostreams program_options system REQUIRED)
+find_package(Boost 1.62 COMPONENTS filesystem iostreams program_options system REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
