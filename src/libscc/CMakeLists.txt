@@ -43,33 +43,28 @@ SET_SOURCE_FILES_PROPERTIES("${CMAKE_CURRENT_SOURCE_DIR}/treenode.cpp"
     PROPERTIES OBJECT_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/lex_secrec.h;${CMAKE_CURRENT_BINARY_DIR}/yacc_secrec.c")
 
-ADD_LIBRARY(yacc_o STATIC
+SET_SOURCE_FILES_PROPERTIES(
     "${LIBSCC_FLEX_GENERATED_HEADER}"
     "${LIBSCC_BISON_GENERATED_SOURCE}"
     "${LIBSCC_FLEX_SOURCE}"
     "${LIBSCC_BISON_SOURCE}"
-)
-SharemindSetC99CompileOptions(
-    TARGETS yacc_o
-    FORCED_OPTIONS "-fPIC"
-    CHECK_OPTIONS
-        "-Wno-c++-compat"
-        "-Wno-unused-macros"
-        "-Wno-switch-default"
-)
-TARGET_INCLUDE_DIRECTORIES(yacc_o PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-
-
+    PROPERTIES
+        COMPILE_OPTIONS "-Wno-c++-compat;-Wno-unused-macros;-Wno-switch-default"
+        INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
 SharemindAddSharedLibrary(libscc
     OUTPUT_NAME "scc"
     SOURCES
         ${LIBSCC_SOURCES}
         ${LIBSCC_HEADERS}
         ${LIBSCC_HEADERS_P}
+        "${LIBSCC_FLEX_GENERATED_HEADER}"
+        "${LIBSCC_BISON_GENERATED_SOURCE}"
+        "${LIBSCC_FLEX_SOURCE}"
+        "${LIBSCC_BISON_SOURCE}"
     COMPONENT "libscc"
     SPLITDEBUG_COMPONENT "libscc-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS libscc)
 TARGET_INCLUDE_DIRECTORIES(libscc
     PUBLIC
         ${MPFR_INCLUDE_DIRS}
@@ -80,7 +75,6 @@ TARGET_INCLUDE_DIRECTORIES(libscc
 TARGET_LINK_LIBRARIES(libscc
     PRIVATE
         Boost::filesystem
-        yacc_o
     PUBLIC
         Boost::boost
         ${MPFR_LIBRARIES}
