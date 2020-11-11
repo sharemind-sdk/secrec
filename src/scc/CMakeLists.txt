@@ -26,7 +26,6 @@ SharemindAddExecutable(scc
     COMPONENT "scc"
     SPLITDEBUG_COMPONENT "scc-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS scc)
 TARGET_INCLUDE_DIRECTORIES(scc
     PRIVATE
         "${CMAKE_SOURCE_DIR}/src/"

@@ -26,7 +26,6 @@ SharemindAddExecutable(sca
     COMPONENT "sca"
     SPLITDEBUG_COMPONENT "sca-debug"
 )
-SharemindSetCxx14CompileOptions(TARGETS sca)
 TARGET_INCLUDE_DIRECTORIES(sca
     PRIVATE
         "${CMAKE_SOURCE_DIR}/src/"
