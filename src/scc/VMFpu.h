@@ -20,11 +20,11 @@
 #ifndef SECREC_VM_FPU_H
 #define SECREC_VM_FPU_H
 
+namespace SecreCC {
+
 class VMBlock;
 class VMStack;
 class VMSymbolTable;
-
-namespace SecreCC {
 
 enum class FpuRoundingMode {
     DOWNWARD,
