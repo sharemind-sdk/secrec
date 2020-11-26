@@ -72,27 +72,20 @@ public: /* Methods: */
     static Value nac () { return Value (NAC, nullptr); }
     static Value undef () { return Value (UNDEF, nullptr); }
 
-    friend bool operator < (Value x, Value y);
-    friend bool operator == (Value x, Value y);
-    friend bool operator != (Value x, Value y);
+    // This is lexicographic not lattice ordering!
+    friend bool operator<(Value const & x, Value const & y) noexcept
+    { return std::tie(x.m_kind, x.m_value) < std::tie(y.m_kind, y.m_value); }
+
+    friend bool operator==(Value const & x, Value const & y) noexcept
+    { return x.m_kind == y.m_kind && x.m_value == y.m_value; }
+
+    friend bool operator!=(Value const & x, Value const & y) noexcept
+    { return !(x == y); }
 
 private: /* Fields: */
     Kind                 m_kind;
     const AbstractValue* m_value;
 };
-
-// This is lexicographic not lattice ordering!
-inline bool operator < (Value x, Value y) {
-    return std::tie (x.m_kind, x.m_value) < std::tie (y.m_kind, y.m_value);
-}
-
-inline bool operator == (Value x, Value y) {
-    return x.m_kind == y.m_kind && x.m_value == y.m_value;
-}
-
-inline bool operator != (Value x, Value y) {
-    return !(x == y);
-}
 
 /*******************************************************************************
   ConstantFolding
