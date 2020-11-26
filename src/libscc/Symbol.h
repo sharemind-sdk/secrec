@@ -82,6 +82,7 @@ public: /* Methods: */
     bool isGlobal() const;
     bool isArray() const;
     bool isString() const;
+    bool isSigned() const;
 
     virtual const Location * location() const { return nullptr; }
 

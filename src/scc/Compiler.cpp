@@ -56,11 +56,6 @@ VMDataType representationType (const TypeNonVoid* tnv) {
     return ty;
 }
 
-bool isSigned (SecreC::Symbol* sym) {
-    assert(sym);
-    return isSignedNumericDataType (sym->secrecType ()->secrecDataType ());
-}
-
 const char* imopToVMName (const Imop& imop) {
     const bool isBool = imop.arg1()->secrecType()->secrecDataType()->isBool();
 
@@ -85,7 +80,7 @@ const char* imopToVMName (const Imop& imop) {
     case Imop::GT    : return "tgt";
     case Imop::XOR   : return "btxor";
     case Imop::SHL   : return "tshl0";
-    case Imop::SHR   : return isSigned (imop.dest ()) ? "tshr" : "tshr0";
+    case Imop::SHR   : return imop.dest()->isSigned() ? "tshr" : "tshr0";
     default:
         assert (false && "Not an arithmetic instruction!");
         return nullptr;

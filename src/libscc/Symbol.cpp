@@ -181,6 +181,9 @@ bool Symbol::isString() const {
     return false;
 }
 
+bool Symbol::isSigned() const
+{ return isSignedNumericDataType(m_type->secrecDataType()); }
+
 /*******************************************************************************
   SymbolDimensionality
 *******************************************************************************/
