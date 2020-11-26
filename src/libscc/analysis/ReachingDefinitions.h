@@ -31,7 +31,7 @@ namespace SecreC {
 class ReachingDefinitions: public ForwardDataFlowAnalysis {
 public: /* Types: */
 
-    using Defs = std::set<const Imop*>;
+    using Defs = ImopSet;
     using SDefs = std::map<const Symbol*, Defs>;
     using BDM = std::map<const Block*, SDefs>;
 

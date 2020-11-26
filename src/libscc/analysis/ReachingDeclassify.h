@@ -31,8 +31,6 @@ namespace SecreC {
 class ReachingDeclassify: public ForwardDataFlowAnalysis {
 public: /* Types: */
 
-    using ImopSet = std::set<const Imop*>;
-
     struct Defs {
         ImopSet  sensitive;
         ImopSet  nonsensitive;

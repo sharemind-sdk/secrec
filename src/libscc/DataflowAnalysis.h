@@ -25,18 +25,6 @@
 #include <set>
 #include <string>
 
-template <class T, class U>
-inline std::set<T> &operator+=(std::set<T> &dest, const std::set<U> &src) {
-    dest.insert (src.begin(), src.end());
-    return dest;
-}
-
-template <class T, class U>
-inline std::set<T> &operator-=(std::set<T> &dest, const std::set<U> &src) {
-    for (auto i = src.begin (), e = src.end (); i != e; ++ i)
-        dest.erase (*i);
-    return dest;
-}
 
 namespace SecreC {
 
@@ -56,6 +44,30 @@ class BackwardAnalysisRunner;
 class DataFlowAnalysis {
     friend class ForwardAnalysisRunner;
     friend class BackwardAnalysisRunner;
+
+protected: /* Types: */
+
+    class ImopSet: public std::set<Imop const*> {
+
+    public: /* Methods: */
+
+        using std::set<Imop const*>::set;
+        using std::set<Imop const*>::operator=;
+
+        ImopSet & operator+=(ImopSet const & src) {
+            insert(src.begin(), src.end());
+            return *this;
+        }
+
+        template <class T>
+        ImopSet & operator-=(ImopSet const & src) {
+            for (auto & e : src)
+                erase(e);
+            return *this;
+        }
+
+    };
+
 protected: /* Methods: */
 
     DataFlowAnalysis (bool forward, bool backward)
