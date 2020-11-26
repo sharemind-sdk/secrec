@@ -58,7 +58,7 @@ namespace SecreC {
 namespace /* anonymous */ {
 
 /// Primitive values of the VM.
-union Value {
+union ValueUnion {
     double        un_float64_val;
     float         un_float32_val;
     uint64_t      un_uint_val;
@@ -71,7 +71,7 @@ union Value {
     int8_t        un_int8_val;
     bool          un_bool_val;
 
-    Value*        un_ptr;
+    ValueUnion*        un_ptr;
     std::string*  un_str_val;
 };
 
@@ -90,37 +90,37 @@ template <> struct secrec_type_traits<DATATYPE_STRING> { using type = const std:
 template <> struct secrec_type_traits<DATATYPE_BOOL> { using type = bool; };
 
 /// Get value based on the data type.
-template <SecrecDataType ty> typename secrec_type_traits<ty>::type getValue (const Value&);
-template <> double getValue<DATATYPE_FLOAT64> (const Value& v) { return v.un_float64_val; }
-template <> float getValue<DATATYPE_FLOAT32> (const Value& v) { return v.un_float32_val; }
-template <> uint64_t getValue<DATATYPE_UINT64> (const Value& v) { return v.un_uint_val; }
-template <> uint32_t getValue<DATATYPE_UINT32> (const Value& v) { return v.un_uint32_val; }
-template <> uint16_t getValue<DATATYPE_UINT16> (const Value& v) { return v.un_uint16_val; }
-template <> uint8_t getValue<DATATYPE_UINT8> (const Value& v) { return v.un_uint8_val; }
-template <> int64_t getValue<DATATYPE_INT64> (const Value& v) { return v.un_int_val; }
-template <> int32_t getValue<DATATYPE_INT32> (const Value& v) { return v.un_int32_val; }
-template <> int16_t getValue<DATATYPE_INT16> (const Value& v) { return v.un_int16_val; }
-template <> int8_t getValue<DATATYPE_INT8> (const Value& v) { return v.un_int8_val; }
-template <> bool getValue<DATATYPE_BOOL> (const Value& v) { return v.un_bool_val; }
-template <> const std::string& getValue<DATATYPE_STRING> (const Value& v) { return *v.un_str_val; }
+template <SecrecDataType ty> typename secrec_type_traits<ty>::type getValue (const ValueUnion&);
+template <> double getValue<DATATYPE_FLOAT64> (const ValueUnion& v) { return v.un_float64_val; }
+template <> float getValue<DATATYPE_FLOAT32> (const ValueUnion& v) { return v.un_float32_val; }
+template <> uint64_t getValue<DATATYPE_UINT64> (const ValueUnion& v) { return v.un_uint_val; }
+template <> uint32_t getValue<DATATYPE_UINT32> (const ValueUnion& v) { return v.un_uint32_val; }
+template <> uint16_t getValue<DATATYPE_UINT16> (const ValueUnion& v) { return v.un_uint16_val; }
+template <> uint8_t getValue<DATATYPE_UINT8> (const ValueUnion& v) { return v.un_uint8_val; }
+template <> int64_t getValue<DATATYPE_INT64> (const ValueUnion& v) { return v.un_int_val; }
+template <> int32_t getValue<DATATYPE_INT32> (const ValueUnion& v) { return v.un_int32_val; }
+template <> int16_t getValue<DATATYPE_INT16> (const ValueUnion& v) { return v.un_int16_val; }
+template <> int8_t getValue<DATATYPE_INT8> (const ValueUnion& v) { return v.un_int8_val; }
+template <> bool getValue<DATATYPE_BOOL> (const ValueUnion& v) { return v.un_bool_val; }
+template <> const std::string& getValue<DATATYPE_STRING> (const ValueUnion& v) { return *v.un_str_val; }
 
 /// Set value based on C data type.
-inline void assignValue (Value& v, double r) { v.un_float64_val = r; }
-inline void assignValue (Value& v, float r) { v.un_float32_val = r; }
-inline void assignValue (Value& v, uint64_t r) { v.un_uint_val = r; }
-inline void assignValue (Value& v, uint32_t r) { v.un_uint32_val = r; }
-inline void assignValue (Value& v, uint16_t r) { v.un_uint16_val = r; }
-inline void assignValue (Value& v, uint8_t r) { v.un_uint8_val = r; }
-inline void assignValue (Value& v, int64_t r) { v.un_int_val = r; }
-inline void assignValue (Value& v, int32_t r) { v.un_int32_val = r; }
-inline void assignValue (Value& v, int16_t r) { v.un_int16_val = r; }
-inline void assignValue (Value& v, int8_t r) { v.un_int8_val = r; }
-inline void assignValue (Value& v, bool r) { v.un_bool_val = r; }
-inline void assignValue (Value& v, const std::string& r) { v.un_str_val = new std::string (r); }
+inline void assignValue (ValueUnion& v, double r) { v.un_float64_val = r; }
+inline void assignValue (ValueUnion& v, float r) { v.un_float32_val = r; }
+inline void assignValue (ValueUnion& v, uint64_t r) { v.un_uint_val = r; }
+inline void assignValue (ValueUnion& v, uint32_t r) { v.un_uint32_val = r; }
+inline void assignValue (ValueUnion& v, uint16_t r) { v.un_uint16_val = r; }
+inline void assignValue (ValueUnion& v, uint8_t r) { v.un_uint8_val = r; }
+inline void assignValue (ValueUnion& v, int64_t r) { v.un_int_val = r; }
+inline void assignValue (ValueUnion& v, int32_t r) { v.un_int32_val = r; }
+inline void assignValue (ValueUnion& v, int16_t r) { v.un_int16_val = r; }
+inline void assignValue (ValueUnion& v, int8_t r) { v.un_int8_val = r; }
+inline void assignValue (ValueUnion& v, bool r) { v.un_bool_val = r; }
+inline void assignValue (ValueUnion& v, const std::string& r) { v.un_str_val = new std::string (r); }
 
 /// Statically typed value casting.
 template <SecrecDataType toTy, SecrecDataType fromTy >
-void castValue (Value& dest, const Value& from) {
+void castValue (ValueUnion& dest, const ValueUnion& from) {
     using type = typename secrec_type_traits<toTy>::type;
     assignValue (dest, static_cast<type>(getValue<fromTy>(from)));
 }
@@ -140,7 +140,7 @@ public:
     ValueStack & operator=(ValueStack &&) = delete;
     ValueStack & operator=(ValueStack const &) = delete;
 
-    void top (Value& out) const {
+    void top (ValueUnion& out) const {
         assert (m_offset > 0);
         out = m_bptr[m_offset - 1];
         TRACE("<- %lu\n", out.un_uint_val);
@@ -151,7 +151,7 @@ public:
         -- m_offset;
     }
 
-    void push (Value val) {
+    void push (ValueUnion val) {
         if (m_offset >= m_size)
             increase_size ();
         TRACE("-> %lu\n", val.un_uint_val);
@@ -159,7 +159,7 @@ public:
     }
 
 private:
-    Value*   m_bptr;
+    ValueUnion*   m_bptr;
     size_t   m_offset;
     size_t   m_size;
 
@@ -167,7 +167,8 @@ private:
         m_size = ((m_size + 1) * 3) / 2;
         TRACE("RESIZE STACK TO %zu\n", m_size);
         auto * newBPtr =
-                static_cast<Value *>(realloc(m_bptr, m_size * sizeof(Value)));
+                static_cast<ValueUnion *>(
+                    realloc(m_bptr, m_size * sizeof(ValueUnion)));
         if (newBPtr != nullptr) {
             m_bptr = newBPtr;
         }
@@ -196,7 +197,7 @@ struct VMSym {
 };
 
 /// Very naive implementation of a memory store.
-using Store = std::map<const Symbol*, Value>;
+using Store = std::map<const Symbol*, ValueUnion>;
 
 /// Type of instantiated callback.
 using CallbackTy = int (*)(const Instruction*);
@@ -268,8 +269,8 @@ inline void pop_frame (void) {
 }
 
 // Force to not inline to make output assembler nicer.
-Value& lookup (VMSym sym) __attribute__ ((noinline));
-Value& lookup (VMSym sym)  {
+ValueUnion& lookup (VMSym sym) __attribute__ ((noinline));
+ValueUnion& lookup (VMSym sym)  {
     TRACE ("%s ", (sym.isLocal ? "LOCAL" : "GLOBAL"));
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     assert (sym.un_sym != nullptr);
@@ -277,8 +278,8 @@ Value& lookup (VMSym sym)  {
 }
 
 // Force to not inline to make output assembler nicer.
-void storeSym (VMSym sym, Value val) __attribute__ ((noinline));
-void storeSym (VMSym sym, Value val) {
+void storeSym (VMSym sym, ValueUnion val) __attribute__ ((noinline));
+void storeSym (VMSym sym, ValueUnion val) {
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
     assert (sym.un_sym != nullptr);
     store[sym.un_sym] = val;
@@ -286,7 +287,7 @@ void storeSym (VMSym sym, Value val) {
 
 // Quick and dirty solution.
 template <SecrecDataType fromTy >
-void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
+void castValueDyn (const DataType* dataType, ValueUnion& dest, const ValueUnion& from) {
     assert (dataType != nullptr && dataType->isBuiltinPrimitive ());
     SecrecDataType toTy = static_cast<const DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
     switch (toTy) {
@@ -315,7 +316,7 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
 /// Just to make vim syntax highlighter quiet
 #define BLOCK(CODE) { CODE }
 
-#define FETCH(name,i) Value& name = lookup((ip)->args[i])
+#define FETCH(name,i) ValueUnion & name = lookup((ip)->args[i])
 
 // Note that returns after callback explicitly tell compiler that callbacks
 // don't return. That should make tail call detection trivial.
@@ -346,13 +347,13 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     MKCALLBACK(NAME, 1, 1, 0, 0, __VA_ARGS__) \
     MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 0,, BLOCK( \
         const size_t s = arg2_.un_uint_val; \
-        Value* desti = dest_.un_ptr; \
-        Value* end = dest_.un_ptr + s; \
-        Value* arg1i = arg1_.un_ptr; \
+        ValueUnion* desti = dest_.un_ptr; \
+        ValueUnion* end = dest_.un_ptr + s; \
+        ValueUnion* arg1i = arg1_.un_ptr; \
         for (; desti != end; ++ desti, ++ arg1i) \
         BLOCK( \
-            Value& dest = *desti; \
-            Value arg1 = *arg1i; \
+            ValueUnion& dest = *desti; \
+            ValueUnion arg1 = *arg1i; \
             __VA_ARGS__ \
         ) \
     ) \
@@ -362,15 +363,15 @@ void castValueDyn (const DataType* dataType, Value& dest, const Value& from) {
     MKCALLBACK(NAME, 1, 1, 1, 0, __VA_ARGS__) \
     MKCALLBACK_(NAME ## _vec, 1, dest_, 1, arg1_, 1, arg2_, 1, arg3_, BLOCK( \
         const size_t s = arg3_.un_uint_val; \
-        Value* desti = dest_.un_ptr; \
-        Value* end = dest_.un_ptr + s; \
-        Value* arg1i = arg1_.un_ptr; \
-        Value* arg2i = arg2_.un_ptr; \
+        ValueUnion* desti = dest_.un_ptr; \
+        ValueUnion* end = dest_.un_ptr + s; \
+        ValueUnion* arg1i = arg1_.un_ptr; \
+        ValueUnion* arg2i = arg2_.un_ptr; \
         for (; desti != end; ++ desti, ++ arg1i, ++ arg2i) \
         BLOCK( \
-            Value& dest = *desti; \
-            Value arg1 = *arg1i; \
-            Value arg2 = *arg2i; \
+            ValueUnion& dest = *desti; \
+            ValueUnion arg1 = *arg1i; \
+            ValueUnion arg2 = *arg2i; \
             __VA_ARGS__ \
         ) \
     ) \
@@ -496,17 +497,17 @@ MKCALLBACK(JUMP, 0, 0, 0, 0,
 )
 
 MKCALLBACK(ALLOC, 1, 1, 1, 0,
-    const Value& v = arg2;
+    const ValueUnion& v = arg2;
     const unsigned n = arg1.un_uint_val;
-    dest.un_ptr = static_cast<Value *>(malloc(sizeof(Value) * n));
-    for (Value* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
+    dest.un_ptr = static_cast<ValueUnion *>(malloc(sizeof(ValueUnion) * n));
+    for (ValueUnion* it(dest.un_ptr); it < dest.un_ptr + n; ++ it)
       *it = v;
 )
 
 MKCALLBACK(COPY, 1, 1, 1, 0,
     const size_t n = arg2.un_uint_val;
-    dest.un_ptr = static_cast<Value*>(malloc (sizeof (Value) * n));
-    memcpy (dest.un_ptr, arg1.un_ptr, sizeof (Value) * n);
+    dest.un_ptr = static_cast<ValueUnion*>(malloc (sizeof (ValueUnion) * n));
+    memcpy (dest.un_ptr, arg1.un_ptr, sizeof (ValueUnion) * n);
 )
 
 MKCALLBACK(RELEASE, 1, 0, 0, 0,
@@ -524,11 +525,11 @@ MKCALLBACK(RELEASE, 1, 0, 0, 0,
 )
 
 template <SecrecDataType ty>
-Value loadArray (Value& arg, uint64_t index) { return arg.un_ptr[index]; }
+ValueUnion loadArray (ValueUnion& arg, uint64_t index) { return arg.un_ptr[index]; }
 
 template <>
-Value loadArray<DATATYPE_STRING>(Value& arg, uint64_t index) {
-    Value out;
+ValueUnion loadArray<DATATYPE_STRING>(ValueUnion& arg, uint64_t index) {
+    ValueUnion out;
     out.un_uint8_val = arg.un_str_val->at (index);
     return out;
 }
@@ -538,12 +539,12 @@ MKCALLBACK(LOAD, 0, 1, 1, 0,
 )
 
 template <SecrecDataType ty>
-void storeArray (Value& dest, uint64_t i, Value v) {
+void storeArray (ValueUnion& dest, uint64_t i, ValueUnion v) {
     dest.un_ptr[i] = v;
 }
 
 template <>
-void storeArray<DATATYPE_STRING>(Value& dest, uint64_t i, Value v) {
+void storeArray<DATATYPE_STRING>(ValueUnion& dest, uint64_t i, ValueUnion v) {
     dest.un_str_val->at (i) = v.un_uint8_val;
 }
 
@@ -775,13 +776,13 @@ CallbackTy getCallback (const Imop& imop) {
  * to the global scope.
  */
 
-void storeConstantString (Value& out, const Symbol* c) {
+void storeConstantString (ValueUnion& out, const Symbol* c) {
     const ConstantString* str = static_cast<const ConstantString*>(c);
     out.un_str_val = new std::string (str->value ().str ());
 }
 
 template <SecrecDataType ty>
-void storeConstantInt (Value& out, const Symbol* c) {
+void storeConstantInt (ValueUnion& out, const Symbol* c) {
     using type = typename secrec_type_traits<ty>::type;
     const ConstantInt* intSym = static_cast<const ConstantInt*>(c);
     const uint64_t value = intSym->value ().bits ();
@@ -793,7 +794,7 @@ void storeConstant (VMSym sym, const Symbol* c) {
     assert (dataType != nullptr && dataType->isBuiltinPrimitive ());
     SecrecDataType dtype = static_cast<const DataTypeBuiltinPrimitive*>(dataType)->secrecDataType ();
     Store& store = sym.isLocal ? m_frames->m_local : m_global;
-    Value& out = store[sym.un_sym];
+    ValueUnion& out = store[sym.un_sym];
     switch (dtype) {
     case DATATYPE_STRING: storeConstantString(out, c); break;
     case DATATYPE_BOOL: storeConstantInt<DATATYPE_BOOL>(out, c); break;
