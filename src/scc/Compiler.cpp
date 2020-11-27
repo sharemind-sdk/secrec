@@ -295,7 +295,7 @@ class Compiler {
 
 public: /* Methods: */
 
-    explicit Compiler (bool optimize);
+    explicit Compiler ();
     Compiler (const Compiler&) = delete;
     Compiler& operator = (const Compiler&) = delete;
 
@@ -372,27 +372,14 @@ private: /* Fields: */
     RegisterAllocator     m_ra;       ///< Register allocator
     SyscallManager        m_scm;      ///< The syscall manager
     StringLiterals        m_strLit;   ///< String literals
-    bool                  m_optimize; ///< If we need to optimize the code.
 };
 
-Compiler::Compiler (bool optimize)
+Compiler::Compiler()
     : m_target (nullptr)
     , m_param (0)
-    , m_optimize (optimize)
 { }
 
 void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
-
-    if (m_optimize) {
-        optimizeCode (code);
-    }
-    else {
-        removeUnreachableBlocks (code);
-        eliminateDeadVariables (code);
-    }
-
-    // eliminateRedundantCopies (code);
-
     // Create and add the linking unit sections:
     auto const rodataSec = new VMDataSection (VMDataSection::RODATA);
     auto const pdSec = new VMBindingSection ("PDBIND");
@@ -1328,7 +1315,14 @@ void Compiler::cgPrivateStore (VMBlock& block, const Imop& imop) {
 
 } // anonymous namespace
 
-void compile(VMLinkingUnit & vmlu, SecreC::ICode & code, bool optimize)
-{ Compiler(optimize).run(vmlu, code); }
+void compile(VMLinkingUnit & vmlu, SecreC::ICode & code, bool optimize) {
+    if (optimize) {
+        optimizeCode(code);
+    } else {
+        removeUnreachableBlocks(code);
+        eliminateDeadVariables(code);
+    }
+    Compiler().run(vmlu, code);
+}
 
 } // namespace SecreCC
