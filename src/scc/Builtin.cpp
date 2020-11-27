@@ -40,9 +40,9 @@ BuiltinFunctions::BuiltinFunctions() = default;
 BuiltinFunctions::~BuiltinFunctions() = default;
 
 void BuiltinFunctions::insert (VMLabel* label, const BuiltinFunction& func) {
-    auto const it(m_funtions.find(label));
-    if (it == m_funtions.end())
-        m_funtions.emplace(label, func.clone());
+    auto const it(m_functions.find(label));
+    if (it == m_functions.end())
+        m_functions.emplace(label, func.clone());
 }
 
 void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
@@ -54,14 +54,14 @@ void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
         { return label->name() < other.label->name(); }
     };
     std::set<ValueType> vs;
-    for (auto & f : m_funtions)
+    for (auto & f : m_functions)
         vs.emplace(ValueType{f.first, *f.second});
     for (auto const & v : vs) {
         VMFunction function(v.label);
         v.function.get().generate(function, st);
         code.push_back(function);
     }
-    m_funtions.clear();
+    m_functions.clear();
 }
 
 

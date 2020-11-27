@@ -65,7 +65,7 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    std::unordered_map<VMLabel *, std::unique_ptr<BuiltinFunction>> m_funtions;
+    std::unordered_map<VMLabel *, std::unique_ptr<BuiltinFunction>> m_functions;
 
 };
 
