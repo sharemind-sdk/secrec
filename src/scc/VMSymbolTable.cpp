@@ -20,7 +20,6 @@
 #include "VMSymbolTable.h"
 
 #include <cassert>
-#include <sharemind/Concat.h>
 #include "VMValue.h"
 
 
@@ -73,7 +72,6 @@ VMStack * VMSymbolTable::getStack(std::size_t const number)
 VMLabel * VMSymbolTable::getLabel(std::string const & name)
 { return getOrCreate(m_labels, name); }
 
-VMLabel * VMSymbolTable::getUniqLabel()
-{ return getLabel(sharemind::concat(":LU_", uniq())); }
+VMLabel * VMSymbolTable::getUniqLabel() { return getUniqLabel(":LU_"); }
 
 } // namespace SecreCC {

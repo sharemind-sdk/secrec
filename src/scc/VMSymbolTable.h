@@ -23,8 +23,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <sharemind/Concat.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 
@@ -54,8 +56,14 @@ public: /* Methods: */
     VMValue * find(SecreC::Symbol const * const symbol) const noexcept;
     bool store(SecreC::Symbol const * const symbol, VMValue * const);
 
-    std::size_t uniq() noexcept { return m_uniq++; }
     VMLabel * getUniqLabel();
+
+    template <typename ... Args>
+    VMLabel * getUniqLabel(Args && ... args) {
+        return getLabel(sharemind::concat(std::forward<Args>(args)...,
+                                          m_uniq++));
+    }
+
     VMImm * getImm(std::uint64_t const value);
     VMReg * getReg(std::size_t const number);
     VMStack * getStack(std::size_t const number);

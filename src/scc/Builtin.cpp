@@ -84,19 +84,8 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
     VMStack* rOffset = st.getStack (3);
     VMImm*   iSize = st.getImm (m_size);
 
-    VMLabel * lBack = nullptr;
-    {
-        std::stringstream ss;
-        ss << ":back_" << st.uniq ();
-        lBack = st.getLabel (ss.str ());
-    }
-
-    VMLabel * lOut = nullptr;
-    {
-        std::stringstream ss;
-        ss << ":out_" << st.uniq ();
-        lOut = st.getLabel (ss.str ());
-    }
+    auto const lBack = st.getUniqLabel(":back_");
+    auto const lOut = st.getUniqLabel(":out_");
 
     VMBlock entryB(nullptr, nullptr);
     entryB.push_new () << "resizestack" << 4;
@@ -154,17 +143,8 @@ void BuiltinVArith::generate (VMFunction& function, VMSymbolTable& st) {
         rTmp[i] = st.getStack (n + 3 + i);
 
 
-    VMLabel * lBack = nullptr;
-    { std::stringstream ss;
-      ss << ":back_" << st.uniq ();
-      lBack = st.getLabel (ss.str ());
-    }
-
-    VMLabel * lOut = nullptr;
-    { std::stringstream ss;
-      ss << ":out_" << st.uniq ();
-      lOut = st.getLabel (ss.str ());
-    }
+    auto const lBack = st.getUniqLabel(":back_");
+    auto const lOut = st.getUniqLabel(":out_");
 
     // jump out if needed
     VMBlock middleB(lBack, nullptr);

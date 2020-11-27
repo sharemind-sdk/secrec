@@ -19,7 +19,6 @@
 
 #include "SyscallManager.h"
 
-#include <sstream>
 #include <libscc/SecurityType.h>
 
 #include "VMSymbolTable.h"
@@ -51,9 +50,7 @@ void SyscallManager::addPd(const SecreC::SymbolDomain * sym) {
         auto const privSecTy = static_cast<const SecreC::PrivateSecType*>(secTy);
         auto const i = m_pds.find (privSecTy);
         if (i == m_pds.end ()) {
-            std::ostringstream ss;
-            ss << ":PD_" << m_st->uniq ();
-            VMLabel* label = m_st->getLabel (ss.str ());
+            auto const label = m_st->getUniqLabel(":PD_");
             m_pds.insert (i, std::make_pair (privSecTy, label));
             m_pdSection->addBinding (label, privSecTy->name ().str());
         }
@@ -77,9 +74,7 @@ VMLabel* SyscallManager::getSyscallBinding (const SecreC::ConstantString* str) {
 VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {
     auto i = m_syscalls.find (name);
     if (i == m_syscalls.end ()) {
-        std::ostringstream ss;
-        ss << ":SC_" << m_st->uniq ();
-        VMLabel* label = m_st->getLabel (ss.str ());
+        auto const label = m_st->getUniqLabel(":SC_");
         i = m_syscalls.insert (i, std::make_pair (name, label));
         m_scSection->addBinding (label, name);
     }
