@@ -47,7 +47,6 @@ class VMFunction;
 class __attribute__ ((visibility("internal"))) RegisterAllocator {
 public: /* Types: */
 
-    typedef std::unique_ptr<SecreC::LiveVariables > LVPtr;
     typedef std::set<const SecreC::Symbol*> Symbols;
     typedef std::set<VMVReg*> RegSet;
     typedef std::vector<VMVReg*> RegStack;
@@ -57,7 +56,7 @@ public: /* Methods: */
     RegisterAllocator ();
     ~RegisterAllocator ();
 
-    void init(VMSymbolTable & st, LVPtr && lv);
+    void init(VMSymbolTable & st, std::unique_ptr<SecreC::LiveVariables> lv);
 
     VMVReg* temporaryReg ();
 
@@ -79,7 +78,7 @@ private: /* Fields: */
     class InferenceGraph;
 
     VMSymbolTable*          m_st;
-    LVPtr                   m_lv; ///< Pointer to live variables.
+    std::unique_ptr<SecreC::LiveVariables> m_lv; ///< Pointer to live variables.
     InferenceGraph*         m_inferenceGraph;
     RegSet                  m_live;
     RegStack                m_temporaries;

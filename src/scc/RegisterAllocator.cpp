@@ -271,7 +271,9 @@ RegisterAllocator::~RegisterAllocator () {
     delete m_inferenceGraph;
 }
 
-void RegisterAllocator::init(VMSymbolTable & st, LVPtr && lv) {
+void RegisterAllocator::init(VMSymbolTable & st,
+                             std::unique_ptr<SecreC::LiveVariables> lv)
+{
     assert(!m_st);
     assert(!m_lv);
     assert(!m_inferenceGraph);

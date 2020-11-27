@@ -404,9 +404,9 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     vmlu.addSection (rodataSec);
     vmlu.addSection (codeSec);
 
-    RegisterAllocator::LVPtr lv (new LiveVariables ());
+    auto lv(std::make_unique<LiveVariables>());
     DataFlowAnalysisRunner ()
-            .addAnalysis (*lv.get ())
+            .addAnalysis (*lv)
             .run (code.program ());
 
     m_target = codeSec;
