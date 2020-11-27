@@ -79,7 +79,7 @@ private: /* Fields: */
 
     VMSymbolTable*          m_st;
     std::unique_ptr<SecreC::LiveVariables> m_lv; ///< Pointer to live variables.
-    InferenceGraph*         m_inferenceGraph;
+    std::unique_ptr<InferenceGraph> m_inferenceGraph;
     RegSet                  m_live;
     RegStack                m_temporaries;
     bool                    m_isGlobal;

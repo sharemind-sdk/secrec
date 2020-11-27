@@ -263,21 +263,15 @@ private: /* Fields: */
 
 RegisterAllocator::RegisterAllocator ()
     : m_st(nullptr)
-    , m_inferenceGraph(nullptr)
     , m_isGlobal(false)
 { }
 
-RegisterAllocator::~RegisterAllocator () {
-    delete m_inferenceGraph;
-}
+RegisterAllocator::~RegisterAllocator() = default;
 
 void RegisterAllocator::init(VMSymbolTable & st,
                              std::unique_ptr<SecreC::LiveVariables> lv)
 {
-    assert(!m_st);
-    assert(!m_lv);
-    assert(!m_inferenceGraph);
-    m_inferenceGraph = new InferenceGraph{};
+    m_inferenceGraph = std::make_unique<InferenceGraph>();
     m_st = &st;
     m_lv = std::move(lv);
 }
