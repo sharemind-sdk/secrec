@@ -20,7 +20,8 @@
 #ifndef BUILTIN_H
 #define BUILTIN_H
 
-#include <map>
+#include <unordered_map>
+#include <memory>
 
 #include "VMValue.h"
 #include "VMCode.h"
@@ -42,7 +43,7 @@ class __attribute__ ((visibility("internal"))) BuiltinFunction {
 public: /* Methods: */
     virtual ~BuiltinFunction () { }
     virtual void generate (VMFunction& function, VMSymbolTable& st) = 0;
-    virtual BuiltinFunction* clone () const = 0;
+    virtual std::unique_ptr<BuiltinFunction> clone () const = 0;
 };
 
 /*******************************************************************************
@@ -50,28 +51,22 @@ public: /* Methods: */
 *******************************************************************************/
 
 class __attribute__ ((visibility("internal"))) BuiltinFunctions {
-public: /* Types: */
-
-    typedef std::map<VMLabel*, BuiltinFunction* > Map;
 
 public: /* Methods: */
 
-    BuiltinFunctions ();
-    ~BuiltinFunctions ();
+    BuiltinFunctions();
+    ~BuiltinFunctions();
 
     /// Add function into the pool
-    void insert (VMLabel* label, const BuiltinFunction& func);
+    void insert(VMLabel * label, BuiltinFunction const & func);
 
     /// Generate bodies of inserted functions
-    void generateAll (VMCodeSection& code, VMSymbolTable& st);
-
-protected:
-
-    void eraseAll ();
+    void generateAll(VMCodeSection & code, VMSymbolTable & st);
 
 private: /* Fields: */
 
-    Map m_funtions;
+    std::unordered_map<VMLabel *, std::unique_ptr<BuiltinFunction>> m_funtions;
+
 };
 
 /*******************************************************************************
@@ -86,9 +81,8 @@ public: /* Methods: */
     
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinAlloc (m_size);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinAlloc>(m_size); }
 
 private: /* Fields: */
     const unsigned m_size;
@@ -107,9 +101,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinVArith (m_imop);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinVArith>(m_imop); }
 
 private: /* Fields: */
     const SecreC::Imop* const m_imop;
@@ -130,9 +123,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinFloatToInt(m_dest, m_src);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinFloatToInt>(m_dest, m_src); }
 
 private: /* Fields: */
     const VMDataType m_dest;
@@ -154,9 +146,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinVCast (m_dest, m_src);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinVCast>(m_dest, m_src); }
 
 private: /* Fields: */
     const VMDataType m_dest;
@@ -177,9 +168,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinVBoolCast (m_src);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinVBoolCast>(m_src); }
 
 private: /* Fields: */
     const VMDataType m_src;
@@ -196,9 +186,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinStrAppend ();
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinStrAppend>(); }
 };
 
 /*******************************************************************************
@@ -212,9 +201,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinStrDup ();
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinStrDup>(); }
 };
 
 /*******************************************************************************
@@ -231,9 +219,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinBoolToString (m_strLit);
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinBoolToString>(m_strLit); }
 
 private: /* Fields: */
     StringLiterals*  const m_strLit;
@@ -250,9 +237,8 @@ public: /* Methods: */
 
     void generate(VMFunction & function, VMSymbolTable & st) final override;
 
-    BuiltinFunction * clone() const final override {
-        return new BuiltinStringCmp ();
-    }
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinStringCmp>(); }
 };
 
 } // namespace SecreCC

@@ -19,6 +19,8 @@
 
 #include "Builtin.h"
 
+#include <functional>
+#include <set>
 #include <sstream>
 #include <libscc/Imop.h>
 #include <libscc/Symbol.h>
@@ -34,44 +36,34 @@ namespace SecreCC {
   BuiltinFunctions
 *******************************************************************************/
 
-BuiltinFunctions::BuiltinFunctions () { }
-
-BuiltinFunctions::~BuiltinFunctions () {
-    eraseAll ();
-}
+BuiltinFunctions::BuiltinFunctions() = default;
+BuiltinFunctions::~BuiltinFunctions() = default;
 
 void BuiltinFunctions::insert (VMLabel* label, const BuiltinFunction& func) {
-    Map::iterator i = m_funtions.find (label);
-    if (i == m_funtions.end ()) {
-        m_funtions.insert (i, std::make_pair (label, func.clone ()));
-    }
+    auto const it(m_funtions.find(label));
+    if (it == m_funtions.end())
+        m_funtions.emplace(label, func.clone());
 }
 
 void BuiltinFunctions::generateAll (VMCodeSection& code, VMSymbolTable& st) {
-    using value_type = std::pair<VMLabel*, BuiltinFunction*>;
-    std::vector<value_type> vs (m_funtions.begin (), m_funtions.end ());
-    std::sort (vs.begin (), vs.end (),
-        [](const value_type& x, const value_type& y) {
-            return x.first->name () < y.first->name ();
-        }
-    );
+    struct ValueType {
+        VMLabel const * label;
+        std::reference_wrapper<BuiltinFunction> function;
 
-    for (value_type& v : vs) {
-        VMFunction function (v.first);
-        v.second->generate (function, st);
-        code.push_back (function);
+        bool operator<(ValueType const & other) const noexcept
+        { return label->name() < other.label->name(); }
+    };
+    std::set<ValueType> vs;
+    for (auto & f : m_funtions)
+        vs.emplace(ValueType{f.first, *f.second});
+    for (auto const & v : vs) {
+        VMFunction function(v.label);
+        v.function.get().generate(function, st);
+        code.push_back(function);
     }
-
-    eraseAll ();
+    m_funtions.clear();
 }
 
-void BuiltinFunctions::eraseAll () {
-    for (Map::value_type& v : m_funtions) {
-        delete v.second;
-    }
-
-    m_funtions.clear ();
-}
 
 /*******************************************************************************
   BuiltinAlloc
