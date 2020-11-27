@@ -295,11 +295,9 @@ class Compiler {
 
 public: /* Methods: */
 
-    explicit Compiler ();
+    Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code);
     Compiler (const Compiler&) = delete;
     Compiler& operator = (const Compiler&) = delete;
-
-    void run (VMLinkingUnit& vmlu, SecreC::ICode& code);
 
 private:
     VMSymbolTable& st () { return m_st; }
@@ -367,19 +365,14 @@ private: /* Fields: */
 
     VMCodeSection*        m_target;   ///< Target code
     VMSymbolTable         m_st;       ///< VM symbol table
-    unsigned              m_param;    ///< Current param count
+    unsigned              m_param = 0;///< Current param count
     BuiltinFunctions      m_funcs;    ///< Bult-in functions
     RegisterAllocator     m_ra;       ///< Register allocator
     SyscallManager        m_scm;      ///< The syscall manager
     StringLiterals        m_strLit;   ///< String literals
 };
 
-Compiler::Compiler()
-    : m_target (nullptr)
-    , m_param (0)
-{ }
-
-void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
+Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code) {
     // Create and add the linking unit sections:
     auto const rodataSec = new VMDataSection (VMDataSection::RODATA);
     auto const pdSec = new VMBindingSection ("PDBIND");
@@ -1322,7 +1315,7 @@ void compile(VMLinkingUnit & vmlu, SecreC::ICode & code, bool optimize) {
         removeUnreachableBlocks(code);
         eliminateDeadVariables(code);
     }
-    Compiler().run(vmlu, code);
+    Compiler(vmlu, code);
 }
 
 } // namespace SecreCC
