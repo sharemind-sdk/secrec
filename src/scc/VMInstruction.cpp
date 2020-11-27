@@ -21,21 +21,31 @@
 #include "VMValue.h"
 
 #include <cassert>
+#include <memory>
 #include <ostream>
 #include <sstream>
+#include <vector>
 
 namespace SecreCC {
+namespace {
 
-boost::ptr_vector<std::string> VMInstruction::m_allocStrings;
+char const * allocString(std::string const & str) {
+    static std::vector<std::unique_ptr<char[]>> storage;
+    auto const size = str.size() + 1u;
+    storage.emplace_back(std::make_unique<char[]>(size));
+    char * const r = storage.back().get();
+    std::memcpy(r, str.c_str(), size);
+    return r;
+}
+
+} // anonymous namespace
 
 /*******************************************************************************
   VMInstruction
 *******************************************************************************/
 
 VMInstruction& VMInstruction::arg (const StringOperand& str) {
-    std::string* copy = new std::string (str.m_str);
-    m_allocStrings.push_back (copy);
-    m_operands.push_back (Operand (copy->c_str()));
+    m_operands.emplace_back(Operand(allocString(str.m_str)));
     return *this;
 }
 

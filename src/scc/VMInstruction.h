@@ -20,7 +20,6 @@
 #ifndef VMINSTRUCTION_H
 #define VMINSTRUCTION_H
 
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -112,7 +111,6 @@ private:
 private: /* Fields: */
 
     std::vector<Operand > m_operands;
-    static boost::ptr_vector<std::string> m_allocStrings;
 };
 
 
