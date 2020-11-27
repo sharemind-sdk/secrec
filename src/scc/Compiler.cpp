@@ -363,7 +363,7 @@ private:
 
 private: /* Fields: */
 
-    VMCodeSection*        m_target;   ///< Target code
+    std::shared_ptr<VMCodeSection> m_target;   ///< Target code
     VMSymbolTable         m_st;       ///< VM symbol table
     unsigned              m_param = 0;///< Current param count
     BuiltinFunctions      m_funcs;    ///< Bult-in functions
@@ -374,15 +374,10 @@ private: /* Fields: */
 
 Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code) {
     // Create and add the linking unit sections:
-    auto const rodataSec = new VMDataSection (VMDataSection::RODATA);
-    auto const pdSec = new VMBindingSection ("PDBIND");
-    auto const scSec = new VMBindingSection ("BIND");
-    auto const codeSec = new VMCodeSection ();
-
-    vmlu.addSection (pdSec);
-    vmlu.addSection (scSec);
-    vmlu.addSection (rodataSec);
-    vmlu.addSection (codeSec);
+    auto rodataSec(std::make_shared<VMDataSection>(VMDataSection::RODATA));
+    auto pdSec(std::make_shared<VMBindingSection>("PDBIND"));
+    auto scSec(std::make_shared<VMBindingSection>("BIND"));
+    auto codeSec(std::make_shared<VMCodeSection>());
 
     auto lv(std::make_unique<LiveVariables>());
     DataFlowAnalysisRunner ()
@@ -411,6 +406,11 @@ Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code) {
 
     m_funcs.generateAll (*m_target, m_st);
     m_target->setNumGlobals (m_ra.globalCount ());
+
+    vmlu.addSection(std::move(pdSec));
+    vmlu.addSection(std::move(scSec));
+    vmlu.addSection(std::move(rodataSec));
+    vmlu.addSection(std::move(codeSec));
 }
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {

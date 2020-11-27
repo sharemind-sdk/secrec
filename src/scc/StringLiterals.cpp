@@ -64,15 +64,16 @@ namespace SecreCC {
 
 StringLiterals::StringLiterals ()
     : m_st (nullptr)
-    , m_dataSection (nullptr)
     , m_uniq (0)
 { }
 
 StringLiterals::~StringLiterals () { }
 
-void StringLiterals::init (VMSymbolTable& st, VMDataSection* section) {
+void StringLiterals::init(VMSymbolTable & st,
+                          std::shared_ptr<VMDataSection> section)
+{
     m_st = &st;
-    m_dataSection = section;
+    m_dataSection = std::move(section);
 }
 
 StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str, bool asNullTerminated) {

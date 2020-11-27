@@ -23,6 +23,7 @@
 #include "VMInstruction.h"
 
 #include <list>
+#include <memory>
 #include <ostream>
 
 #include "VMDataType.h"
@@ -316,26 +317,25 @@ private: /* Fields: */
 *******************************************************************************/
 
 class __attribute__ ((visibility("internal"))) VMLinkingUnit {
-private:
-
-    VMLinkingUnit (const VMLinkingUnit&) = delete;
-    VMLinkingUnit& operator = (const VMLinkingUnit&) = delete;
 
 public: /* Methods: */
 
-    VMLinkingUnit () { }
-    ~VMLinkingUnit ();
+    VMLinkingUnit();
+    VMLinkingUnit(VMLinkingUnit &&) = delete;
+    VMLinkingUnit(VMLinkingUnit const &) = delete;
+    VMLinkingUnit & operator=(VMLinkingUnit &&) = delete;
+    VMLinkingUnit & operator=(VMLinkingUnit const &) = delete;
 
-    /// Take ownership of the section.
-    /// The section will be released on destructions.
-    void addSection (VMSection* section);
+    ~VMLinkingUnit();
 
-    friend std::ostream&
-    operator << (std::ostream& os, const VMLinkingUnit& code);
+    void addSection(std::shared_ptr<VMSection> section);
+
+    friend std::ostream &
+    operator<<(std::ostream & os, VMLinkingUnit const & code);
 
 private: /* Fields: */
 
-    std::vector<VMSection *> m_sections;
+    std::vector<std::shared_ptr<VMSection>> m_sections;
 
 };
 

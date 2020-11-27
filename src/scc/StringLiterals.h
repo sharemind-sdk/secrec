@@ -23,6 +23,8 @@
 #include <map>
 
 #include <libscc/Constant.h>
+#include <memory>
+
 
 namespace SecreCC {
 
@@ -59,14 +61,14 @@ public: /* Methods: */
     StringLiterals ();
     ~StringLiterals ();
 
-    void init (VMSymbolTable& st, VMDataSection* section);
+    void init(VMSymbolTable & st, std::shared_ptr<VMDataSection> section);
     LiteralInfo insert (const SecreC::ConstantString* str, bool asNullTerminated = true);
     LiteralInfo insert (const std::string& str, bool asNullTerminated = true);
 
 private: /* Fields: */
 
     VMSymbolTable*   m_st;
-    VMDataSection*   m_dataSection;
+    std::shared_ptr<VMDataSection> m_dataSection;
     LitMap           m_literals;
     size_t           m_uniq;
 };

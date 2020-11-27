@@ -30,18 +30,17 @@ namespace SecreCC {
 
 SyscallManager::SyscallManager ()
     : m_st(nullptr)
-    , m_pdSection(nullptr)
-    , m_scSection(nullptr)
 { }
 
 SyscallManager::~SyscallManager() = default;
 
-void SyscallManager::init (VMSymbolTable& st,
-                           VMBindingSection* sc,
-                           VMBindingSection* pd) {
+void SyscallManager::init(VMSymbolTable & st,
+                          std::shared_ptr<VMBindingSection> sc,
+                          std::shared_ptr<VMBindingSection> pd)
+{
     m_st = &st;
-    m_scSection = sc;
-    m_pdSection = pd;
+    m_scSection = std::move(sc);
+    m_pdSection = std::move(pd);
 }
 
 void SyscallManager::addPd(const SecreC::SymbolDomain * sym) {

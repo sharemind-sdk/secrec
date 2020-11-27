@@ -24,6 +24,8 @@
 
 #include <libscc/Parser.h>
 #include <libscc/Constant.h>
+#include <memory>
+
 
 namespace SecreC {
     class PrivateSecType;
@@ -54,7 +56,9 @@ public: /* Methods: */
     SyscallManager ();
     ~SyscallManager ();
 
-    void init (VMSymbolTable& st, VMBindingSection* sc, VMBindingSection* pd);
+    void init(VMSymbolTable & st,
+              std::shared_ptr<VMBindingSection> sc,
+              std::shared_ptr<VMBindingSection> pd);
 
     void addPd (const SecreC::SymbolDomain * sym);
     VMLabel* getPd(const SecreC::PrivateSecType * secTy) const;
@@ -65,8 +69,8 @@ public: /* Methods: */
 private: /* Fields: */
 
     VMSymbolTable*     m_st; ///< Labels are managed by the VM symbol table.
-    VMBindingSection*  m_pdSection; ///< Section for security domains.
-    VMBindingSection*  m_scSection; ///< Section for syscalls.
+    std::shared_ptr<VMBindingSection> m_pdSection; ///< Section for security domains.
+    std::shared_ptr<VMBindingSection> m_scSection; ///< Section for syscalls.
     SCMap              m_syscalls; ///< Sharemin system calls.
     PDMap              m_pds; ///< Privacy domains
 };

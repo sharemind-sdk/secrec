@@ -131,26 +131,18 @@ std::ostream& VMCodeSection::printBodyV (std::ostream& os) const {
   VMLinkingUnit
 *******************************************************************************/
 
-VMLinkingUnit::~VMLinkingUnit () {
-    for (VMSection* section : m_sections) {
-        delete section;
-    }
-}
+VMLinkingUnit::VMLinkingUnit() = default;
+VMLinkingUnit::~VMLinkingUnit() = default;
 
-void VMLinkingUnit::addSection (VMSection *section) {
+void VMLinkingUnit::addSection(std::shared_ptr<VMSection> section) {
     assert(section);
-    m_sections.push_back (section);
+    m_sections.emplace_back(std::move(section));
 }
 
-std::ostream& operator << (std::ostream& os, const VMLinkingUnit& vmlu) {
-    for (VMSection* section : vmlu.m_sections) {
+std::ostream & operator<<(std::ostream & os, VMLinkingUnit const & vmlu) {
+    for (auto const & section : vmlu.m_sections)
         os << *section;
-    }
-
     return os;
 }
-
-
-
 
 } // namespace SecreCC
