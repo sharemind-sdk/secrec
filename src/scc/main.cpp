@@ -47,6 +47,7 @@
 #include <sharemind/PotentiallyVoidTypeInfo.h>
 
 #include "Compiler.h"
+#include "VMCode.h"
 
 using namespace std;
 using namespace SecreCC;
@@ -292,7 +293,6 @@ int main (int argc, char *argv[]) {
         if (opts.showHelp)
             return EXIT_SUCCESS;
 
-        Compiler compiler { opts.optimize };
         VMLinkingUnit vmlu;
 
         {
@@ -328,7 +328,7 @@ int main (int argc, char *argv[]) {
                 return EXIT_SUCCESS;
 
             /* Compile: */
-            compiler.run (vmlu, icode);
+            compile(vmlu, icode, opts.optimize);
         }
 
         /* Output: */
