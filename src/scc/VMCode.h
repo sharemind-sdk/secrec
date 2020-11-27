@@ -321,12 +321,6 @@ private:
     VMLinkingUnit (const VMLinkingUnit&) = delete;
     VMLinkingUnit& operator = (const VMLinkingUnit&) = delete;
 
-public: /* Types: */
-
-    typedef std::vector<VMSection* > SectionList;
-    typedef SectionList::iterator iterator;
-    typedef SectionList::const_iterator const_iterator;
-
 public: /* Methods: */
 
     VMLinkingUnit () { }
@@ -341,7 +335,8 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    SectionList m_sections;
+    std::vector<VMSection *> m_sections;
+
 };
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block)
