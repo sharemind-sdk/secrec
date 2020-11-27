@@ -20,13 +20,15 @@
 #ifndef VM_SYMBOL_TABLE_H
 #define VM_SYMBOL_TABLE_H
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-namespace SecreC {
-    class Symbol;
-} /* namespace SecreC { */
 
+namespace SecreC { class Symbol; }
 namespace SecreCC {
 
 class VMValue;
@@ -35,42 +37,43 @@ class VMReg;
 class VMStack;
 class VMLabel;
 class VMVReg;
-class VMSTImpl;
-
-/*******************************************************************************
-  VMSymbolTable
-*******************************************************************************/
 
 class __attribute__ ((visibility("internal"))) VMSymbolTable {
 
-private: /* Not copyable/assignable: */
-
-    VMSymbolTable (const VMSymbolTable&) = delete;
-    VMSymbolTable& operator = (const VMSymbolTable&) = delete;
-
 public: /* Methods: */
 
-    VMSymbolTable ();
-    ~VMSymbolTable ();
+    VMSymbolTable();
+    VMSymbolTable(VMSymbolTable const &) = delete;
+    VMSymbolTable(VMSymbolTable &&) = delete;
 
-    VMValue* find (const SecreC::Symbol* symbol) const;
-    void store (const SecreC::Symbol* symbol, VMValue*);
+    ~VMSymbolTable();
 
-    std::size_t uniq () { return m_uniq ++; }
+    VMSymbolTable & operator=(VMSymbolTable const &) = delete;
+    VMSymbolTable & operator=(VMSymbolTable &&) = delete;
 
-    VMLabel* getUniqLabel ();
-    VMImm*   getImm (uint64_t value);
-    VMReg*   getReg (std::size_t number);
-    VMStack* getStack (std::size_t number);
-    VMLabel* getLabel (const std::string& name);
-    VMVReg*  getVReg (bool isGlobal);
+    VMValue * find(SecreC::Symbol const * const symbol) const noexcept;
+    bool store(SecreC::Symbol const * const symbol, VMValue * const);
 
-private: /* Fields: */
+    std::size_t uniq() noexcept { return m_uniq++; }
+    VMLabel * getUniqLabel();
+    VMImm * getImm(std::uint64_t const value);
+    VMReg * getReg(std::size_t const number);
+    VMStack * getStack(std::size_t const number);
+    VMLabel * getLabel(std::string const & name);
+    VMVReg * getVReg(bool const isGlobal);
 
-    VMSTImpl*  m_impl;
-    std::size_t   m_uniq;
-};
+public: /* Fields: */
 
-}
+    std::unordered_map<std::size_t, std::unique_ptr<VMReg>> m_globals;
+    std::unordered_map<std::size_t, std::unique_ptr<VMStack>> m_locals;
+    std::unordered_map<std::uint64_t, std::unique_ptr<VMImm>> m_imms;
+    std::unordered_map<std::string, std::unique_ptr<VMLabel>> m_labels;
+    std::vector<std::unique_ptr<VMVReg> > m_vregs;
+    std::unordered_map<SecreC::Symbol const *, VMValue *> m_mapping;
+    std::size_t m_uniq = 0u;
+
+}; /* class VMSymbolTable { */
+
+} /* namespace SecreCC { */
 
 #endif
