@@ -195,13 +195,12 @@ bool isStringRelated (const Imop& imop) {
     return false;
 }
 
-VMLabel* getPD (SyscallManager* scm, const Symbol* sym) {
-    assert(scm);
+VMLabel* getPD (SyscallManager & scm, const Symbol* sym) {
     assert(sym);
     const SecreC::Type* ty = sym->secrecType ();
     assert (ty->secrecSecType ()->isPrivate ());
     const auto pty = static_cast<const PrivateSecType*>(ty->secrecSecType ());
-    return scm->getPd(pty);
+    return scm.getPd(pty);
 }
 
 class SyscallName {
@@ -299,10 +298,8 @@ public: /* Methods: */
     explicit Compiler (bool optimize);
     Compiler (const Compiler&) = delete;
     Compiler& operator = (const Compiler&) = delete;
-    ~Compiler ();
 
     void run (VMLinkingUnit& vmlu, SecreC::ICode& code);
-
 
 private:
     VMSymbolTable& st () { return m_st; }
@@ -371,29 +368,18 @@ private: /* Fields: */
     VMCodeSection*        m_target;   ///< Target code
     VMSymbolTable         m_st;       ///< VM symbol table
     unsigned              m_param;    ///< Current param count
-    BuiltinFunctions*     m_funcs;    ///< Bult-in functions
-    RegisterAllocator*    m_ra;       ///< Register allocator
-    SyscallManager*       m_scm;      ///< The syscall manager
-    StringLiterals*       m_strLit;   ///< String literals
+    BuiltinFunctions      m_funcs;    ///< Bult-in functions
+    RegisterAllocator     m_ra;       ///< Register allocator
+    SyscallManager        m_scm;      ///< The syscall manager
+    StringLiterals        m_strLit;   ///< String literals
     bool                  m_optimize; ///< If we need to optimize the code.
 };
 
 Compiler::Compiler (bool optimize)
     : m_target (nullptr)
     , m_param (0)
-    , m_funcs (nullptr)
-    , m_ra (nullptr)
-    , m_scm (nullptr)
-    , m_strLit (nullptr)
     , m_optimize (optimize)
 { }
-
-Compiler::~Compiler () {
-    delete m_funcs;
-    delete m_ra;
-    delete m_scm;
-    delete m_strLit;
-}
 
 void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
 
@@ -418,21 +404,15 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     vmlu.addSection (rodataSec);
     vmlu.addSection (codeSec);
 
-    // Create and initialize components:
-    m_funcs = new BuiltinFunctions ();
-    m_ra = new RegisterAllocator ();
-    m_scm = new SyscallManager ();
-    m_strLit = new StringLiterals ();
-
     RegisterAllocator::LVPtr lv (new LiveVariables ());
     DataFlowAnalysisRunner ()
             .addAnalysis (*lv.get ())
             .run (code.program ());
 
     m_target = codeSec;
-    m_ra->init(m_st, std::move(lv));
-    m_scm->init (m_st, scSec, pdSec);
-    m_strLit->init (m_st, rodataSec);
+    m_ra.init(m_st, std::move(lv));
+    m_scm.init (m_st, scSec, pdSec);
+    m_strLit.init (m_st, rodataSec);
 
     // Register all protection domains:
     auto const & isProtectionDomainSymbol = [](SecreC::Symbol * sym) {
@@ -441,7 +421,7 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
     };
 
     for (auto sym : code.symbols().findFromCurrentScope(isProtectionDomainSymbol)) {
-        m_scm->addPd(static_cast<SymbolDomain *>(sym));
+        m_scm.addPd(static_cast<SymbolDomain *>(sym));
     }
 
     // Finally generate code:
@@ -449,8 +429,8 @@ void Compiler::run (VMLinkingUnit& vmlu, SecreC::ICode& code) {
         cgProcedure (proc);
     }
 
-    m_funcs->generateAll (*m_target, m_st);
-    m_target->setNumGlobals (m_ra->globalCount ());
+    m_funcs.generateAll (*m_target, m_st);
+    m_target->setNumGlobals (m_ra.globalCount ());
 }
 
 VMValue* Compiler::find (const SecreC::Symbol* sym) const {
@@ -462,7 +442,7 @@ VMValue* Compiler::find (const SecreC::Symbol* sym) const {
 VMValue* Compiler::loadToRegister (VMBlock &block, const Symbol *symbol) {
     VMValue * reg = nullptr; // this holds the value of symbol
     if (symbol->symbolType () == SecreC::SYM_CONSTANT) {
-        reg = m_ra->temporaryReg (); // temporary register
+        reg = m_ra.temporaryReg (); // temporary register
         block.push_new () << "mov" << find (symbol) << reg;
     }
     else {
@@ -477,9 +457,9 @@ void Compiler::pushString (VMBlock& block, const Symbol* str, bool asNullTermina
     if (str->isConstant ()) {
         assert(dynamic_cast<ConstantString const *>(str));
         const ConstantString* cstr = static_cast<const ConstantString*>(str);
-        StringLiterals::LiteralInfo info = m_strLit->insert (cstr, asNullTerminated);
+        StringLiterals::LiteralInfo info = m_strLit.insert (cstr, asNullTerminated);
         VMLabel* offset = info.label;
-        VMVReg* temp = m_ra->temporaryReg ();
+        VMVReg* temp = m_ra.temporaryReg ();
         block.push_new () << "mov imm :RODATA" << temp;
         block.push_new () << "pushcrefpart mem" << temp << offset << m_st.getImm (info.size);
     }
@@ -491,7 +471,7 @@ void Compiler::pushString (VMBlock& block, const Symbol* str, bool asNullTermina
 void Compiler::paramString (VMBlock& block, const Symbol* dest) {
     VMLabel* target = m_st.getLabel (":builtin_str_dup__");
     block.push_new () << "pushcref cref" << m_param;
-    m_funcs->insert (target, BuiltinStrDup ());
+    m_funcs.insert (target, BuiltinStrDup ());
     block.push_new () << "call" << target << find (dest);
     ++ m_param;
 }
@@ -507,14 +487,14 @@ void Compiler::cgProcedure (const Procedure& blocks) {
     if (!blocks.name())
         function.setIsStart ();
 
-    m_ra->enterFunction (function);
+    m_ra.enterFunction (function);
     for (const Block& block : blocks) {
         if (block.reachable ()) {
             cgBlock (function, block);
         }
     }
 
-    m_ra->exitFunction (function);
+    m_ra.exitFunction (function);
     m_target->push_back (function);
 }
 
@@ -525,12 +505,12 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
     }
 
     VMBlock vmBlock (name, &block);
-    m_ra->enterBlock (vmBlock);
+    m_ra.enterBlock (vmBlock);
     for (const Imop& imop : block) {
         cgImop (vmBlock, imop);
     }
 
-    m_ra->exitBlock (vmBlock);
+    m_ra.exitBlock (vmBlock);
     function.push_back (vmBlock);
 }
 
@@ -599,7 +579,7 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
         target = m_st.getLabel (ss.str ());
     }
 
-    m_funcs->insert (target, BuiltinAlloc (size));
+    m_funcs.insert (target, BuiltinAlloc (size));
 
     block.push_new () << "call" << target << find (imop.dest ());
 }
@@ -610,7 +590,7 @@ void Compiler::cgToString (VMBlock& block, const Imop& imop) {
     const DataType* dType = imop.arg1 ()->secrecType ()->secrecDataType ();
     if (dType->isBool ()) {
         target = m_st.getLabel (":bool_to_string__");
-        m_funcs->insert (target, BuiltinBoolToString (m_strLit));
+        m_funcs.insert (target, BuiltinBoolToString (&m_strLit));
 
         block.push_new () << "push" << find (imop.arg1 ());
         block.push_new () << "call" << target << find (imop.dest ());
@@ -663,7 +643,7 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     if (imop.dest ()->secrecType ()->secrecDataType ()->isString ()) {
         pushString (block, imop.arg1 ());
         VMLabel* target = m_st.getLabel (":builtin_str_dup__");
-        m_funcs->insert (target, BuiltinStrDup ());
+        m_funcs.insert (target, BuiltinStrDup ());
         block.push_new () << "call" << target << find (imop.dest ());
         return;
     }
@@ -676,7 +656,7 @@ void Compiler::cgAssign (VMBlock& block, const Imop& imop) {
     VMInstruction instr;
     instr << "mov";
     if (imop.isVectorized ()) {
-        VMValue* rSize = m_ra->temporaryReg ();
+        VMValue* rSize = m_ra.temporaryReg ();
         VMValue* rNum = find (imop.arg2 ());
         VMDataType ty = secrecDTypeToVMDType (imop.arg1 ()->secrecType ()->secrecDataType ());
         assert (ty != VM_INVALID);
@@ -714,7 +694,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             block.push_new () << "push" << find (imop.arg2 ());
             ss << ":vec_cast_bool_" << srcTy;
             target = m_st.getLabel (ss.str ());
-            m_funcs->insert (target, BuiltinVBoolCast (srcTy));
+            m_funcs.insert (target, BuiltinVBoolCast (srcTy));
             block.push_new () << "call" << target << "imm";
         }
         else
@@ -724,7 +704,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
             block.push_new () << "push" << find (imop.arg2 ());
             ss << ":vec_cast_" << destTy << "_" << srcTy;
             target = m_st.getLabel (ss.str ());
-            m_funcs->insert (target, BuiltinVCast (destTy, srcTy));
+            m_funcs.insert (target, BuiltinVCast (destTy, srcTy));
             block.push_new () << "call" << target << "imm";
         }
         else {
@@ -750,7 +730,7 @@ void Compiler::cgCast (VMBlock& block, const Imop& imop) {
                 std::stringstream ss;
                 ss << ":cast_" << destTy << "_" << srcTy;
                 VMLabel* target = m_st.getLabel(ss.str());
-                m_funcs->insert (target, BuiltinFloatToInt(destTy, srcTy));
+                m_funcs.insert (target, BuiltinFloatToInt(destTy, srcTy));
                 block.push_new() << "push" << arg;
                 block.push_new() << "call" << target << find(imop.dest());
             }
@@ -780,7 +760,7 @@ void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
     assert (ty != VM_INVALID);
     const unsigned elemSize = sizeInBytes (ty);
     VMValue* rNum = find (imop.arg2 ());
-    VMValue* rSize = m_ra->temporaryReg ();
+    VMValue* rSize = m_ra.temporaryReg ();
     block.push_new ()
         << "tmul" << VM_UINT64 << rSize << rNum
         << m_st.getImm (elemSize);
@@ -878,18 +858,18 @@ void Compiler::cgLoad (VMBlock& block, const Imop& imop) {
     assert (ty != VM_INVALID);
     const unsigned size = sizeInBytes (ty);
 
-    VMValue* rOffset = m_ra->temporaryReg ();
+    VMValue* rOffset = m_ra.temporaryReg ();
     block.push_new () << "mov" << find (imop.arg2 ()) << rOffset;
     block.push_new () << "bmul" << VM_UINT64 << rOffset << m_st.getImm (size);
 
     VMValue * rAddr = nullptr;
     if (imop.arg1 ()->isConstant ()) {
         assert (imop.arg1 ()->secrecType ()->secrecDataType ()->isString ());
-        rAddr = m_ra->temporaryReg ();
+        rAddr = m_ra.temporaryReg ();
         block.push_new () << "mov imm :RODATA" << rAddr;
 
         const ConstantString* cstr = static_cast<const ConstantString*>(imop.arg1 ());
-        StringLiterals::LiteralInfo info = m_strLit->insert (cstr);
+        StringLiterals::LiteralInfo info = m_strLit.insert (cstr);
         block.push_new () << "badd" << VM_UINT64 << rOffset << info.label;
     }
     else {
@@ -912,7 +892,7 @@ void Compiler::cgStore (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    VMValue* rOffset = m_ra->temporaryReg ();
+    VMValue* rOffset = m_ra.temporaryReg ();
 
     block.push_new () << "mov" << find (imop.arg1 ()) << rOffset;
 
@@ -931,7 +911,7 @@ void Compiler::cgStringAppend (VMBlock& block, const Imop& imop) {
     pushString (block, imop.arg1 ());
     pushString (block, imop.arg2 ());
     VMLabel* target = m_st.getLabel (":builtin_str_append__");
-    m_funcs->insert (target, BuiltinStrAppend ());
+    m_funcs.insert (target, BuiltinStrAppend ());
     block.push_new () << "call" << target << find (imop.dest ());
 }
 
@@ -939,7 +919,7 @@ void Compiler::cgStringCmp (VMBlock& block, const Imop& imop) {
     pushString (block, imop.arg1 ());
     pushString (block, imop.arg2 ());
     VMLabel* target = m_st.getLabel (":builtin_str_cmp__");
-    m_funcs->insert (target, BuiltinStringCmp ());
+    m_funcs.insert (target, BuiltinStringCmp ());
     VMValue* dest = find (imop.dest ());
     block.push_new () << "call" << target << dest;
 
@@ -999,7 +979,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
             target = st ().getLabel (ss.str ());
         }
 
-        m_funcs->insert (target, BuiltinVArith (&imop));
+        m_funcs.insert (target, BuiltinVArith (&imop));
         block.push_new () << "call" << target << "imm";
         return;
     }
@@ -1023,17 +1003,17 @@ void Compiler::cgDomainID (VMBlock& block, const Imop& imop) {
     const SymbolDomain* dom = static_cast<const SymbolDomain*>(imop.arg1 ());
     assert(dynamic_cast<PrivateSecType const *>(dom->securityType()));
     const auto secTy = static_cast<const PrivateSecType*>(dom->securityType ());
-    VMLabel* label = m_scm->getPd(secTy);
+    VMLabel* label = m_scm.getPd(secTy);
     block.push_new () << "mov" << label << find (imop.dest ());
 }
 
 void Compiler::emitSyscall (VMBlock& block, const std::string& name) {
-    VMLabel* label = m_scm->getSyscallBinding (name);
+    VMLabel* label = m_scm.getSyscallBinding (name);
     block.push_new () << "syscall" << label << "imm";
 }
 
 void Compiler::emitSyscall (VMBlock& block, VMValue* dest, const std::string& name) {
-    VMLabel* label = m_scm->getSyscallBinding (name);
+    VMLabel* label = m_scm.getSyscallBinding (name);
     block.push_new () << "syscall" << label << dest;
 }
 
@@ -1044,7 +1024,7 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
         cgSyscallOperand(block, op);
     }
 
-    VMLabel* label = m_scm->getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
+    VMLabel* label = m_scm.getSyscallBinding (static_cast<const ConstantString*>(imop.arg1 ()));
     if (imop.dest ())
         block.push_new () << "syscall" << label << find (imop.dest ());
     else
@@ -1117,7 +1097,7 @@ void Compiler::cgError (VMBlock& block, const Imop& imop) {
 
 void Compiler::cgImop (VMBlock& block, const Imop& imop) {
 
-    m_ra->getReg (imop);
+    m_ra.getReg (imop);
 
     if (imop.isJump ()) {
         cgJump (block, imop);
