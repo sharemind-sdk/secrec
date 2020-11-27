@@ -41,16 +41,12 @@ void deleteValues (MapContainer& kvs) {
     kvs.clear ();
 }
 
-template <class T> struct TypeProvider { };
-
-template <class Map, typename Key, class Value>
-Value* insertNew (Map& map, const Key& key, TypeProvider<Value>) {
-    typename Map::iterator i = map.find (key);
-    if (i == map.end ()) {
-        i = map.insert (i, std::make_pair (key, new Value (key)));
-    }
-
-    return i->second;
+template <typename K, typename T>
+T * insertNew(std::map<K, T *> & map, K const & key) {
+    auto const it = map.find(key);
+    if (it != map.end())
+        return it->second;
+    return map.emplace_hint(it, key, new T(key))->second;
 }
 
 } // namespace anonymous
@@ -133,21 +129,17 @@ void VMSymbolTable::store (const SecreC::Symbol* symbol, VMValue* value) {
     }
 }
 
-VMImm* VMSymbolTable::getImm (uint64_t value) {
-    return insertNew (m_impl->m_imms, value, TypeProvider<VMImm>());
-}
+VMImm * VMSymbolTable::getImm(uint64_t const value)
+{ return insertNew(m_impl->m_imms, value); }
 
-VMReg* VMSymbolTable::getReg (std::size_t number) {
-    return insertNew (m_impl->m_globals, number, TypeProvider<VMReg>());
-}
+VMReg * VMSymbolTable::getReg (std::size_t const number)
+{ return insertNew(m_impl->m_globals, number); }
 
-VMStack* VMSymbolTable::getStack (std::size_t number) {
-    return insertNew (m_impl->m_locals, number, TypeProvider<VMStack>());
-}
+VMStack * VMSymbolTable::getStack(std::size_t const number)
+{ return insertNew(m_impl->m_locals, number); }
 
-VMLabel* VMSymbolTable::getLabel (const std::string& name) {
-    return insertNew (m_impl->m_labels, name, TypeProvider<VMLabel>());
-}
+VMLabel * VMSymbolTable::getLabel(std::string const & name)
+{ return insertNew(m_impl->m_labels, name); }
 
 VMLabel* VMSymbolTable::getUniqLabel () {
     std::ostringstream os;
