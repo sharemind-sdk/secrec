@@ -62,19 +62,15 @@ namespace SecreCC {
   StringLiterals
 *******************************************************************************/
 
-StringLiterals::StringLiterals ()
-    : m_st (nullptr)
+StringLiterals::StringLiterals(VMSymbolTable & st)
+    : m_st(st)
     , m_uniq (0)
 { }
 
 StringLiterals::~StringLiterals () { }
 
-void StringLiterals::init(VMSymbolTable & st,
-                          std::shared_ptr<VMDataSection> section)
-{
-    m_st = &st;
-    m_dataSection = std::move(section);
-}
+void StringLiterals::init(std::shared_ptr<VMDataSection> section)
+{ m_dataSection = std::move(section); }
 
 StringLiterals::LiteralInfo StringLiterals::insert (const SecreC::ConstantString* str, bool asNullTerminated) {
     assert (str != nullptr);
@@ -86,7 +82,7 @@ StringLiterals::LiteralInfo StringLiterals::insert (const std::string& str, bool
     if (i == m_literals.end ()) {
         std::stringstream os;
         os << ":STR_" << m_uniq ++;
-        VMLabel* label = m_st->getLabel (os.str ());
+        VMLabel* label = m_st.getLabel (os.str ());
         const std::string& s = escape (str, asNullTerminated);
         m_dataSection->addRecord (label, "string", s);
         auto size = str.size();

@@ -58,16 +58,16 @@ private:
 
 public: /* Methods: */
 
-    StringLiterals ();
+    StringLiterals(VMSymbolTable & st);
     ~StringLiterals ();
 
-    void init(VMSymbolTable & st, std::shared_ptr<VMDataSection> section);
+    void init(std::shared_ptr<VMDataSection> section);
     LiteralInfo insert (const SecreC::ConstantString* str, bool asNullTerminated = true);
     LiteralInfo insert (const std::string& str, bool asNullTerminated = true);
 
 private: /* Fields: */
 
-    VMSymbolTable*   m_st;
+    VMSymbolTable & m_st;
     std::shared_ptr<VMDataSection> m_dataSection;
     LitMap           m_literals;
     size_t           m_uniq;

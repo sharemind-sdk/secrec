@@ -374,6 +374,7 @@ private: /* Fields: */
 Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code)
     : m_ra(m_st)
     , m_scm(m_st)
+    , m_strLit(m_st)
 {
     // Create and add the linking unit sections:
     auto rodataSec(std::make_shared<VMDataSection>(VMDataSection::RODATA));
@@ -389,7 +390,7 @@ Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code)
     m_target = codeSec;
     m_ra.init(std::move(lv));
     m_scm.init(scSec, pdSec);
-    m_strLit.init (m_st, rodataSec);
+    m_strLit.init(rodataSec);
 
     // Register all protection domains:
     auto const & isProtectionDomainSymbol = [](SecreC::Symbol * sym) {
