@@ -300,7 +300,6 @@ public: /* Methods: */
     Compiler& operator = (const Compiler&) = delete;
 
 private:
-    VMSymbolTable& st () { return m_st; }
 
     void cgProcedure (const SecreC::Procedure& blocks);
     void cgBlock (VMFunction& func, const SecreC::Block& block);
@@ -459,9 +458,9 @@ void Compiler::paramString (VMBlock& block, const Symbol* dest) {
 void Compiler::cgProcedure (const Procedure& blocks) {
     VMLabel * name = nullptr;
     if (!blocks.name())
-        name = st ().getLabel (":start"); // nullptr instead?
+        name = m_st.getLabel (":start"); // nullptr instead?
     else
-        name = getProc (st (), blocks.name ());
+        name = getProc (m_st, blocks.name ());
     m_param = 0;
     VMFunction function (name);
     if (!blocks.name())
@@ -481,7 +480,7 @@ void Compiler::cgProcedure (const Procedure& blocks) {
 void Compiler::cgBlock (VMFunction& function, const Block& block) {
     VMLabel * name = nullptr;
     if (block.hasIncomingJumps ()) {
-        name = getLabel (st (), block);
+        name = getLabel (m_st, block);
     }
 
     VMBlock vmBlock (name, &block);
@@ -510,7 +509,7 @@ void Compiler::cgJump (VMBlock& block, const Imop& imop) {
 
     // jump target
     VMInstruction instr;
-    instr << name << getLabel (st (), imop.jumpDest ());
+    instr << name << getLabel (m_st, imop.jumpDest ());
 
     // type of arguments (if needed)
     if (imop.type () != Imop::JUMP) {
@@ -773,7 +772,7 @@ void Compiler::cgCall (VMBlock& block, const Imop& imop) {
     }
 
     // CALL
-    block.push_new () << "call" << getProc (st (), dest) << "imm";
+    block.push_new () << "call" << getProc (m_st, dest) << "imm";
 }
 
 void Compiler::cgGetFpuState (VMBlock &block, const Imop &imop) {
@@ -956,7 +955,7 @@ void Compiler::cgArithm (VMBlock& block, const Imop& imop) {
         {
             std::stringstream ss;
             ss << ':' << imopToVMName (imop) << "_vec_" << ty;
-            target = st ().getLabel (ss.str ());
+            target = m_st.getLabel (ss.str ());
         }
 
         m_funcs.insert (target, BuiltinVArith (&imop));
