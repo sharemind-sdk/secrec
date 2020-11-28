@@ -261,23 +261,21 @@ private: /* Fields: */
   RegisterAllocator
 *******************************************************************************/
 
-RegisterAllocator::RegisterAllocator ()
-    : m_st(nullptr)
+RegisterAllocator::RegisterAllocator(VMSymbolTable & st)
+    : m_st(st)
     , m_isGlobal(false)
 { }
 
 RegisterAllocator::~RegisterAllocator() = default;
 
-void RegisterAllocator::init(VMSymbolTable & st,
-                             std::unique_ptr<SecreC::LiveVariables> lv)
+void RegisterAllocator::init(std::unique_ptr<SecreC::LiveVariables> lv)
 {
     m_inferenceGraph = std::make_unique<InferenceGraph>();
-    m_st = &st;
     m_lv = std::move(lv);
 }
 
 VMVReg* RegisterAllocator::temporaryReg () {
-    VMVReg* reg = m_st->getVReg (m_isGlobal);
+    VMVReg* reg = m_st.getVReg (m_isGlobal);
     m_temporaries.push_back (reg);
     m_inferenceGraph->addNode (reg);
     for (VMVReg* other : m_live) {
@@ -294,23 +292,23 @@ void RegisterAllocator::enterFunction (VMFunction& function) {
 
 void RegisterAllocator::exitFunction (VMFunction& function) {
     if (!m_isGlobal) {
-        function.setNumLocals (m_inferenceGraph->colorLocal (*m_st));
+        function.setNumLocals (m_inferenceGraph->colorLocal (m_st));
         m_inferenceGraph->resetLocal ();
     }
 }
 
 unsigned RegisterAllocator::globalCount () {
-    return m_inferenceGraph->colorGlobal (*m_st);
+    return m_inferenceGraph->colorGlobal (m_st);
 }
 
 void RegisterAllocator::enterBlock (VMBlock& block) {
     const LiveVariables::Symbols& in = m_lv->ins (*block.secrecBlock ());
     m_live.clear ();
     for (const Symbol* sym : in) {
-        VMValue* reg = m_st->find (sym);
+        VMValue* reg = m_st.find (sym);
         if (!reg) {
-            reg = m_st->getVReg (sym->isGlobal ());
-            m_st->store (sym, reg);
+            reg = m_st.getVReg (sym->isGlobal ());
+            m_st.store (sym, reg);
         }
 
         assert(dynamic_cast<VMVReg *>(reg));
@@ -330,10 +328,10 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     for (const Symbol* symbol : imop.useRange ()) {
         switch (symbol->symbolType ()) {
         case SYM_SYMBOL:
-            assert(m_st->find(symbol));
+            assert(m_st.find(symbol));
             break;
         case SYM_CONSTANT:
-            getImm (*m_st, symbol);
+            getImm (m_st, symbol);
         default:
             break;
         }
@@ -345,10 +343,10 @@ void RegisterAllocator::getReg (const SecreC::Imop& imop) {
 }
 
 void RegisterAllocator::defSymbol (const Symbol* symbol) {
-    VMValue* reg = m_st->find (symbol);
+    VMValue* reg = m_st.find (symbol);
     if (!reg) {
-        reg = m_st->getVReg (symbol->isGlobal ());
-        m_st->store (symbol, reg);
+        reg = m_st.getVReg (symbol->isGlobal ());
+        m_st.store (symbol, reg);
     }
 
     assert(dynamic_cast<VMVReg *>(reg));

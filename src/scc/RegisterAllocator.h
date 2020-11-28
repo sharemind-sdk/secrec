@@ -53,10 +53,10 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    RegisterAllocator ();
+    RegisterAllocator(VMSymbolTable & st);
     ~RegisterAllocator ();
 
-    void init(VMSymbolTable & st, std::unique_ptr<SecreC::LiveVariables> lv);
+    void init(std::unique_ptr<SecreC::LiveVariables> lv);
 
     VMVReg* temporaryReg ();
 
@@ -77,7 +77,7 @@ private: /* Fields: */
 
     class InferenceGraph;
 
-    VMSymbolTable*          m_st;
+    VMSymbolTable &         m_st;
     std::unique_ptr<SecreC::LiveVariables> m_lv; ///< Pointer to live variables.
     std::unique_ptr<InferenceGraph> m_inferenceGraph;
     RegSet                  m_live;

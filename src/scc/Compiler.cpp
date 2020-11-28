@@ -371,7 +371,9 @@ private: /* Fields: */
     StringLiterals        m_strLit;   ///< String literals
 };
 
-Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code) {
+Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code)
+    : m_ra(m_st)
+{
     // Create and add the linking unit sections:
     auto rodataSec(std::make_shared<VMDataSection>(VMDataSection::RODATA));
     auto pdSec(std::make_shared<VMBindingSection>("PDBIND"));
@@ -384,7 +386,7 @@ Compiler::Compiler(VMLinkingUnit & vmlu, SecreC::ICode & code) {
             .run (code.program ());
 
     m_target = codeSec;
-    m_ra.init(m_st, std::move(lv));
+    m_ra.init(std::move(lv));
     m_scm.init (m_st, scSec, pdSec);
     m_strLit.init (m_st, rodataSec);
 
