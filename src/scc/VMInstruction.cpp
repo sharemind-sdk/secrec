@@ -32,10 +32,10 @@ namespace {
 char const * allocString(std::string const & str) {
     static std::vector<std::unique_ptr<char[]>> storage;
     auto const size = str.size() + 1u;
-    storage.emplace_back(std::make_unique<char[]>(size));
-    char * const r = storage.back().get();
-    std::memcpy(r, str.c_str(), size);
-    return r;
+    auto smartPtr(std::make_unique<char[]>(size));
+    auto * const ptr = smartPtr.get();
+    storage.emplace_back(std::move(smartPtr));
+    return static_cast<char *>(std::memcpy(ptr, str.c_str(), size));
 }
 
 } // anonymous namespace
