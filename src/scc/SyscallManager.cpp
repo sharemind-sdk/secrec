@@ -28,17 +28,15 @@ using namespace SecreC;
 
 namespace SecreCC {
 
-SyscallManager::SyscallManager ()
-    : m_st(nullptr)
+SyscallManager::SyscallManager(VMSymbolTable & st)
+    : m_st(st)
 { }
 
 SyscallManager::~SyscallManager() = default;
 
-void SyscallManager::init(VMSymbolTable & st,
-                          std::shared_ptr<VMBindingSection> sc,
+void SyscallManager::init(std::shared_ptr<VMBindingSection> sc,
                           std::shared_ptr<VMBindingSection> pd)
 {
-    m_st = &st;
     m_scSection = std::move(sc);
     m_pdSection = std::move(pd);
 }
@@ -49,7 +47,7 @@ void SyscallManager::addPd(const SecreC::SymbolDomain * sym) {
         auto const privSecTy = static_cast<const SecreC::PrivateSecType*>(secTy);
         auto const i = m_pds.find (privSecTy);
         if (i == m_pds.end ()) {
-            auto const label = m_st->getUniqLabel(":PD_");
+            auto const label = m_st.getUniqLabel(":PD_");
             m_pds.insert (i, std::make_pair (privSecTy, label));
             m_pdSection->addBinding (label, privSecTy->name ().str());
         }
@@ -73,7 +71,7 @@ VMLabel* SyscallManager::getSyscallBinding (const SecreC::ConstantString* str) {
 VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {
     auto i = m_syscalls.find (name);
     if (i == m_syscalls.end ()) {
-        auto const label = m_st->getUniqLabel(":SC_");
+        auto const label = m_st.getUniqLabel(":SC_");
         i = m_syscalls.insert (i, std::make_pair (name, label));
         m_scSection->addBinding (label, name);
     }

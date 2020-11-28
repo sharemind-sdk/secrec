@@ -53,11 +53,10 @@ private: /* Types: */
 
 public: /* Methods: */
 
-    SyscallManager ();
+    SyscallManager(VMSymbolTable & st);
     ~SyscallManager ();
 
-    void init(VMSymbolTable & st,
-              std::shared_ptr<VMBindingSection> sc,
+    void init(std::shared_ptr<VMBindingSection> sc,
               std::shared_ptr<VMBindingSection> pd);
 
     void addPd (const SecreC::SymbolDomain * sym);
@@ -68,7 +67,7 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    VMSymbolTable*     m_st; ///< Labels are managed by the VM symbol table.
+    VMSymbolTable & m_st; ///< Labels are managed by the VM symbol table.
     std::shared_ptr<VMBindingSection> m_pdSection; ///< Section for security domains.
     std::shared_ptr<VMBindingSection> m_scSection; ///< Section for syscalls.
     SCMap              m_syscalls; ///< Sharemin system calls.
