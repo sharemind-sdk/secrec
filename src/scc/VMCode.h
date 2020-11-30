@@ -31,10 +31,6 @@
 #include "VMDataType.h"
 
 
-namespace SecreC {
-    class Block;
-} // namespace SecreC
-
 namespace SecreCC {
 
 /*******************************************************************************
@@ -53,17 +49,10 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    VMBlock(std::shared_ptr<OStreamable> name,
-            SecreC::Block const * block = nullptr) noexcept
+    VMBlock() noexcept {}
+    VMBlock(std::shared_ptr<OStreamable> name) noexcept
         : m_name(std::move(name))
-        , m_secrecBlock (block)
     {}
-
-    VMBlock(SecreC::Block const * block = nullptr) noexcept
-        : m_secrecBlock(block)
-    {}
-
-    const SecreC::Block* secrecBlock () const { return m_secrecBlock; }
 
     iterator begin () { return m_instructions.begin (); }
     iterator end () { return m_instructions.end (); }
@@ -83,7 +72,6 @@ public: /* Methods: */
 private: /* Fields: */
 
     std::shared_ptr<OStreamable> const m_name;
-    const SecreC::Block*  const  m_secrecBlock;
     InstList                     m_instructions;
 };
 

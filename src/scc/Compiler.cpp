@@ -487,7 +487,7 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
     if (block.hasIncomingJumps())
         nameStreamable = getLabel(m_st, block)->nameStreamable();
 
-    VMBlock vmBlock(nameStreamable, &block);
+    VMBlock vmBlock(nameStreamable);
     m_ra.enterBlock(block);
     for (const Imop& imop : block) {
         cgImop (vmBlock, imop);
