@@ -20,9 +20,12 @@
 #ifndef VM_VALUE_H
 #define VM_VALUE_H
 
-#include <iosfwd>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <stdint.h>
+#include <utility>
+#include "OStreamable.h"
+
 
 namespace SecreCC {
 
@@ -35,19 +38,25 @@ namespace SecreCC {
  * Only (de)allocated by the VM symbol table class.
  */
 class __attribute__ ((visibility("internal"))) VMValue {
+
+protected: /* Methods: */
+
+    VMValue(std::shared_ptr<OStreamable> streamable)
+        : m_streamable(std::move(streamable))
+    {}
+
 public: /* Methods: */
 
-    virtual ~VMValue () { }
-    
-    friend std::ostream& operator << (std::ostream& os, const VMValue& value);
+    virtual ~VMValue();
 
-protected:
+    std::shared_ptr<OStreamable> const & streamable() const noexcept
+    { return m_streamable; }
 
-    virtual void printV (std::ostream& os) const = 0;
+private: /* Fields: */
+
+    std::shared_ptr<OStreamable> m_streamable;
+
 };
-    
-std::ostream& operator << (std::ostream& os, const VMValue& value)
-        __attribute__((visibility("internal")));;
 
 /******************************************************************
   VMImm
@@ -56,19 +65,8 @@ std::ostream& operator << (std::ostream& os, const VMValue& value)
 class __attribute__ ((visibility("internal"))) VMImm final: public VMValue {
 public: /* Methods: */
 
-    explicit VMImm (uint64_t value)
-        : m_value (value)
-    { }
+    explicit VMImm(std::uint64_t value);
 
-    uint64_t value () const { return m_value; }
-
-protected:
-
-    void printV(std::ostream & os) const final override;
-
-private: /* Fields: */
-
-    const uint64_t m_value;
 };
 
 /******************************************************************
@@ -78,19 +76,8 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMStack final: public VMValue {
 public: /* Methods: */
 
-    explicit VMStack (unsigned num)
-        : m_number (num)
-    { }
+    explicit VMStack(unsigned number);
 
-    unsigned number () const { return m_number; }
-
-protected:
-
-    void printV(std::ostream & os) const final override;
-
-private: /* Fields: */
-
-    const unsigned m_number;
 };
 
 /******************************************************************
@@ -100,19 +87,8 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMReg final: public VMValue {
 public: /* Methods: */
 
-    explicit VMReg (unsigned num)
-        : m_number (num)
-    { }
+    explicit VMReg(unsigned number);
 
-    unsigned number () const { return m_number; }
-
-protected:
-
-    void printV(std::ostream & os) const final override;
-
-private: /* Fields: */
-
-    const unsigned m_number;
 };
 
 /******************************************************************
@@ -122,19 +98,11 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMLabel final: public VMValue {
 public: /* Methods: */
 
-    explicit VMLabel (const std::string& name)
-        : m_name (name)
-    { }
+    explicit VMLabel(std::string name);
 
-    inline const std::string& name () const { return m_name; }
+    std::shared_ptr<OStreamable> nameStreamable() const noexcept;
+    std::string const & name() const noexcept;
 
-protected:
-
-    void printV(std::ostream & os) const final override;
-
-private: /* Fields: */
-
-    const std::string m_name;
 };
 
 /******************************************************************
@@ -149,28 +117,17 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMVReg final: public VMValue {
 public: /* Methods: */
 
-    explicit VMVReg (bool isGlobal)
-        : m_actualReg (nullptr)
-        , m_isGlobal (isGlobal)
-    { }
+    explicit VMVReg(bool const isGlobal);
 
-    std::string toString () const;
-    bool isGlobal () const { return m_isGlobal; }
-    VMValue* actualReg () const { return m_actualReg; }
-    void setActualReg (VMValue* reg) {
-        m_actualReg = reg;
-    }
-
-protected:
-
-    void printV(std::ostream & os) const final override;
+    bool isGlobal() const noexcept { return m_isGlobal; }
+    void setActualReg(VMValue const & reg);
 
 private: /* Fields: */
 
-    VMValue*    m_actualReg;
-    const bool  m_isGlobal;
-};
+    bool m_isGlobal;
+    std::string m_value;
 
+};
 
 } // namespace SecreCC
 

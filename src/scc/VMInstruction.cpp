@@ -18,72 +18,61 @@
  */
 
 #include "VMInstruction.h"
+
+#include <ostream>
+#include <sharemind/Concat.h>
+#include <sstream>
 #include "VMValue.h"
 
-#include <cassert>
-#include <memory>
-#include <ostream>
-#include <sstream>
-#include <vector>
 
 namespace SecreCC {
-namespace {
 
-char const * allocString(std::string const & str) {
-    static std::vector<std::unique_ptr<char[]>> storage;
-    auto const size = str.size() + 1u;
-    auto smartPtr(std::make_unique<char[]>(size));
-    auto * const ptr = smartPtr.get();
-    storage.emplace_back(std::move(smartPtr));
-    return static_cast<char *>(std::memcpy(ptr, str.c_str(), size));
-}
+using sharemind::concat;
 
-} // anonymous namespace
-
-/*******************************************************************************
-  VMInstruction
-*******************************************************************************/
-
-VMInstruction& VMInstruction::arg (const StringOperand& str) {
-    m_operands.emplace_back(Operand(allocString(str.m_str)));
+VMInstruction & VMInstruction::operator<<(OStreamableString str) {
+    m_operands.emplace_back(
+                std::make_shared<OStreamableString>(std::move(str)));
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (VMValue* val) {
-    assert(val);
-    m_operands.push_back (Operand (*val));
+VMInstruction & VMInstruction::operator<<(VMValue const & val) {
+    m_operands.emplace_back(val.streamable());
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (uint64_t n) {
-    m_operands.push_back (Operand (n));
+VMInstruction & VMInstruction::operator<<(std::uint64_t const n) {
+    struct Streamable: OStreamable {
+        Streamable(std::uint64_t const value) noexcept : m_value(value) {}
+        std::ostream & streamTo(std::ostream & os) const final override
+        { return os << "0x" << std::hex << m_value; }
+        std::uint64_t m_value;
+    };
+
+    m_operands.emplace_back(std::make_shared<Streamable>(n));
     return *this;
 }
 
-VMInstruction& VMInstruction::arg (const char* cstr) {
-    m_operands.push_back (Operand (cstr));
+VMInstruction & VMInstruction::operator<<(VMDataType const ty) {
+    struct Streamable: OStreamable {
+        Streamable(VMDataType const dataType) noexcept : m_dataType(dataType) {}
+        std::ostream & streamTo(std::ostream & os) const final override
+        { return os << dataTypeToStr(m_dataType); }
+        VMDataType m_dataType;
+    };
+
+    m_operands.emplace_back(std::make_shared<Streamable>(ty));
     return *this;
 }
 
-void VMInstruction::print (std::ostream& os) const {
-    bool first = true;
-    for (const Operand& op : m_operands) {
-        if (! first)
-            os << ' ';
-        else
-            first = false;
-
-        switch (op.m_type) {
-        case Operand::Value:  os << *op.un_value;                     break;
-        case Operand::Number: os << "0x" << std::hex << op.un_number; break;
-        case Operand::String: os << op.un_string;                     break;
-        }
+std::ostream & operator<<(std::ostream & os, VMInstruction const & instr) {
+    auto it = instr.m_operands.begin();
+    auto const end = instr.m_operands.end();
+    if (it != end) {
+        (*it)->streamTo(os);
+        while (++it != end)
+            (*it)->streamTo(os << ' ');
     }
-}
-
-std::ostream& operator << (std::ostream& os, const VMInstruction& instr) {
-    instr.print (os);
     return os;
 }
 
-}
+} // namespace SecreCC {

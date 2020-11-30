@@ -209,7 +209,7 @@ private:
     struct SetReg {
         SetReg (VMSymbolTable & st_) : st (st_) { }
         inline void operator () (VMVReg* reg, unsigned color) {
-            reg->setActualReg (st.getReg (color));
+            reg->setActualReg(*st.getReg(color));
         }
 
     private:
@@ -219,7 +219,7 @@ private:
     struct SetStack {
         SetStack (VMSymbolTable & st_) : st (st_) { }
         inline void operator () (VMVReg* reg, unsigned color) {
-            reg->setActualReg (st.getStack (color));
+            reg->setActualReg(*st.getStack(color));
         }
 
     private:

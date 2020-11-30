@@ -19,66 +19,80 @@
 
 #include "VMValue.h"
 
-#include <boost/io/ios_state.hpp>
+#include <cassert>
+#include <iomanip>
 #include <sstream>
 
+
+#define DEFINE_STREAMABLE(Class,T,...) \
+    struct Class: OStreamable { \
+        Class(T value) : m_value(std::move(value)) {} \
+        std::ostream & streamTo(std::ostream & os) const final override \
+        { return os << __VA_ARGS__; } \
+        T m_value; \
+    }
+#define DEFINE_PREFIXED_HEX_STREAMABLE_VALUE(Class,T,prefix) \
+    Class::Class(T value) \
+        : VMValue( \
+            [v = std::move(value)] { \
+                DEFINE_STREAMABLE(Streamable, \
+                                  T, \
+                                  prefix " 0x" << std::hex << m_value); \
+                return std::make_shared<Streamable>(std::move(v)); \
+            }()) \
+    {}
+
 namespace SecreCC {
+namespace {
 
-/******************************************************************
-  VMValue
-******************************************************************/
+struct LabelStreamable: OStreamable {
+    LabelStreamable(std::string label)
+        : m_nameStreamable(std::move(label))
+    {}
 
-std::ostream& operator << (std::ostream& os, const VMValue& value) {
-    value.printV (os);
-    return os;
+    std::ostream & streamTo(std::ostream & os) const final override
+    { return m_nameStreamable.streamTo(os << "imm "); }
+
+    OStreamableString m_nameStreamable;
+};
+
+} // anonymous namespace
+
+VMValue::~VMValue() = default;
+
+DEFINE_PREFIXED_HEX_STREAMABLE_VALUE(VMImm, std::uint64_t, "imm")
+DEFINE_PREFIXED_HEX_STREAMABLE_VALUE(VMStack, unsigned, "stack")
+DEFINE_PREFIXED_HEX_STREAMABLE_VALUE(VMReg, unsigned, "reg")
+
+VMLabel::VMLabel(std::string name)
+    : VMValue(std::make_shared<LabelStreamable>(std::move(name)))
+{}
+
+std::shared_ptr<OStreamable> VMLabel::nameStreamable() const noexcept {
+    auto const & s = streamable();
+    return std::shared_ptr<OStreamable>(
+                s,
+                &static_cast<LabelStreamable &>(*s).m_nameStreamable);
 }
 
-/******************************************************************
-  VMImm
-******************************************************************/
-
-void VMImm::printV (std::ostream& os) const {
-    boost::io::ios_flags_saver saver(os);
-    os << "imm 0x" << std::hex << value ();
+std::string const & VMLabel::name() const noexcept {
+    return static_cast<LabelStreamable &>(
+                *streamable()).m_nameStreamable.m_value;
 }
 
-/******************************************************************
-  VMStack
-******************************************************************/
+VMVReg::VMVReg(bool const isGlobal)
+    : VMValue(std::make_shared<OStreamableString>(std::string()))
+    , m_isGlobal(isGlobal)
+{}
 
-void VMStack::printV (std::ostream& os) const {
-    boost::io::ios_flags_saver saver(os);
-    os << "stack 0x" << std::hex << number ();
+void VMVReg::setActualReg(VMValue const & reg) {
+    std::ostringstream oss;
+    assert(reg.streamable());
+    reg.streamable()->streamTo(oss);
+    static_cast<OStreamableString &>(*streamable()).m_value = oss.str();
 }
 
-/******************************************************************
-  VMReg
-******************************************************************/
+} // namespace SecreCC {
 
-void VMReg::printV (std::ostream& os) const {
-    boost::io::ios_flags_saver saver(os);
-    os << "reg 0x" << std::hex << number ();
-}
-
-/******************************************************************
-  VMLabel
-******************************************************************/
-
-void VMLabel::printV (std::ostream& os) const {
-    os << "imm " << name ();
-}
-
-/******************************************************************
-  VMVreg
-******************************************************************/
-
-void VMVReg::printV (std::ostream& os) const {
-    if (!m_actualReg) {
-        os << "vreg " << this;
-    }
-    else {
-        os << *m_actualReg;
-    }
-}
-
-} // namespace SecreCC
+#undef DEFINE_PREFIXED_HEX_STREAMABLE_VALUE
+#undef DEFINE_STREAMABLE
