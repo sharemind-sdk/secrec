@@ -224,26 +224,24 @@ public: /* Types: */
         RODATA
     };
 
-    struct Record {
+    struct StringRecord {
     private:
-        Record& operator = (const Record&) = delete;
+        StringRecord & operator=(StringRecord const &) = delete;
     public:
-        Record (VMLabel* label, const char* type, const std::string& value)
+        StringRecord(VMLabel * label, std::string const & value)
             : m_label (label)
-            , m_dataType (type)
             , m_value (value)
         { }
 
         VMLabel*      const  m_label;
-        const char*   const  m_dataType;
         std::string   const  m_value;
 
-        std::ostream& print (std::ostream& os) const;
+        std::ostream & print(std::ostream & os) const;
     };
 
 private:
 
-    typedef std::list<Record > Records;
+    typedef std::list<StringRecord> Records;
 
 public: /* Methods: */
 
@@ -251,9 +249,8 @@ public: /* Methods: */
         : VMSection (type == RODATA ? "RODATA" : "DATA")
     { }
 
-    void addRecord (VMLabel* l, const char* t, const std::string& v) {
-        m_records.push_back (Record (l, t, v));
-    }
+    void addStringRecord(VMLabel * l, std::string const & v)
+    { m_records.push_back(StringRecord(l, v)); }
 
 protected:
 
@@ -347,7 +344,7 @@ std::ostream& operator << (std::ostream& os, const VMSection& section)
 std::ostream& operator << (std::ostream& os, const VMLinkingUnit& code)
         __attribute__((visibility("internal")));
 std::ostream& operator << (std::ostream& os,
-                           const VMDataSection::Record& record)
+                           VMDataSection::StringRecord const & record)
         __attribute__((visibility("internal")));
 
 

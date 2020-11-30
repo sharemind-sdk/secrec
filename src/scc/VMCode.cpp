@@ -91,25 +91,19 @@ std::ostream& VMBindingSection::printBodyV (std::ostream& os) const {
   VMDataSection
 *******************************************************************************/
 
-std::ostream& VMDataSection::Record::print (std::ostream& os) const {
-    if (m_label) {
+std::ostream & VMDataSection::StringRecord::print(std::ostream & os) const {
+    if (m_label)
         os << m_label->name () << ' ';
-    }
-
-    os << ".data" << ' ';
-    os << m_dataType << ' ';
-    os << m_value;
-    return os;
+    return os << ".data string " << m_value;
 }
 
 std::ostream&
-operator << (std::ostream& os, const VMDataSection::Record& record) {
-    return record.print (os);
-}
+operator<<(std::ostream & os, VMDataSection::StringRecord const & record)
+{ return record.print(os); }
 
-std::ostream& VMDataSection::printBodyV (std::ostream& os) const {
+std::ostream & VMDataSection::printBodyV (std::ostream& os) const {
     std::copy (m_records.begin (), m_records.end (),
-        std::ostream_iterator<VMDataSection::Record>(os, "\n"));
+        std::ostream_iterator<VMDataSection::StringRecord>(os, "\n"));
     return os;
 }
 
