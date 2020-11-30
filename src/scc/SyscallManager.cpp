@@ -20,9 +20,10 @@
 #include "SyscallManager.h"
 
 #include <libscc/SecurityType.h>
-
 #include "VMSymbolTable.h"
 #include "VMCode.h"
+#include "VMValue.h"
+
 
 using namespace SecreC;
 
@@ -49,7 +50,8 @@ void SyscallManager::addPd(const SecreC::SymbolDomain * sym) {
         if (i == m_pds.end ()) {
             auto const label = m_st.getUniqLabel(":PD_");
             m_pds.insert (i, std::make_pair (privSecTy, label));
-            m_pdSection->addBinding (label, privSecTy->name ().str());
+            m_pdSection->addBinding(label->nameStreamable(),
+                                    privSecTy->name().str());
         }
     }
 }
@@ -73,7 +75,7 @@ VMLabel* SyscallManager::getSyscallBinding (const std::string& name) {
     if (i == m_syscalls.end ()) {
         auto const label = m_st.getUniqLabel(":SC_");
         i = m_syscalls.insert (i, std::make_pair (name, label));
-        m_scSection->addBinding (label, name);
+        m_scSection->addBinding(label->nameStreamable(), name);
     }
 
     return i->second;

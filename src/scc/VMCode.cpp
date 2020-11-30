@@ -24,7 +24,6 @@
 #include <ostream>
 #include <iterator>
 
-#include "VMValue.h"
 
 namespace SecreCC {
 
@@ -34,7 +33,7 @@ namespace SecreCC {
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block) {
     if (block.m_name)
-        os << block.m_name->name () << '\n';
+        block.m_name->streamTo(os) << '\n';
 
     std::copy (block.begin (), block.end (),
                std::ostream_iterator<VMInstruction>(os, "\n"));
@@ -46,8 +45,7 @@ std::ostream& operator << (std::ostream& os, const VMBlock& block) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMFunction& function) {
-    assert(function.m_name);
-    os << function.m_name->name () << '\n';
+    function.m_name->streamTo(os) << '\n';
     if (function.numLocals () != 0) {
         assert (! function.isStart ()
                 && "Must not have local registers in global scope");
@@ -65,8 +63,8 @@ std::ostream& operator << (std::ostream& os, const VMFunction& function) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMBinding& binding) {
-    os << binding.m_label->name () << " .bind \"" << binding.m_name << "\"";
-    return  os;
+    return binding.m_label->streamTo(os) << " .bind \"" << binding.m_name
+                                         << "\"";
 }
 
 /*******************************************************************************
@@ -93,7 +91,7 @@ std::ostream& VMBindingSection::printBodyV (std::ostream& os) const {
 
 std::ostream & VMDataSection::StringRecord::print(std::ostream & os) const {
     if (m_label)
-        os << m_label->name () << ' ';
+        m_label->streamTo(os) << ' ';
     return os << ".data string " << m_value;
 }
 

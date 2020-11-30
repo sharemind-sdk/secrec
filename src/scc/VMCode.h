@@ -25,16 +25,17 @@
 #include <list>
 #include <memory>
 #include <ostream>
-
+#include <string>
+#include <utility>
+#include "OStreamable.h"
 #include "VMDataType.h"
+
 
 namespace SecreC {
     class Block;
 } // namespace SecreC
 
 namespace SecreCC {
-
-class VMLabel;
 
 /*******************************************************************************
   VMBlock
@@ -52,10 +53,15 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    VMBlock (const VMLabel* name, const SecreC::Block* block)
-        : m_name (name)
+    VMBlock(std::shared_ptr<OStreamable> name,
+            SecreC::Block const * block = nullptr) noexcept
+        : m_name(std::move(name))
         , m_secrecBlock (block)
-    { }
+    {}
+
+    VMBlock(SecreC::Block const * block = nullptr) noexcept
+        : m_secrecBlock(block)
+    {}
 
     const SecreC::Block* secrecBlock () const { return m_secrecBlock; }
 
@@ -76,7 +82,7 @@ public: /* Methods: */
 
 private: /* Fields: */
 
-    const VMLabel*        const  m_name;
+    std::shared_ptr<OStreamable> const m_name;
     const SecreC::Block*  const  m_secrecBlock;
     InstList                     m_instructions;
 };
@@ -97,11 +103,11 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit VMFunction (const VMLabel* name)
-        : m_name (name)
+    explicit VMFunction(std::shared_ptr<OStreamable> name)
+        : m_name(std::move(name))
         , m_isStart (false)
         , m_numLocals (0)
-    { }
+    {}
 
     unsigned numLocals () const { return m_numLocals; }
     void setNumLocals (unsigned n) { m_numLocals = n; }
@@ -122,7 +128,7 @@ public: /* Methods: */
 private: /* Fields: */
 
    BlockList       m_blocks;  ///< VM blocks that define this function.
-   const VMLabel*  m_name; ///< Name of the function.
+   std::shared_ptr<OStreamable> const m_name; ///< Name of the function.
    bool            m_isStart; ///< Special function to mark the start of the byte code.
    unsigned        m_numLocals; ///< Number of local registers, either "reg" or "stack".
 };
@@ -135,16 +141,16 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMBinding {
 public: /* Methods: */
 
-    VMBinding (VMLabel* label, std::string name)
-        : m_label (label)
-        , m_name (name)
+    VMBinding(std::shared_ptr<OStreamable> label, std::string name)
+        : m_label(std::move(label))
+        , m_name(std::move(name))
     { }
 
     friend std::ostream& operator << (std::ostream& os, const VMBinding& binding);
 
 private: /* Fields: */
 
-    VMLabel*    const m_label;
+    std::shared_ptr<OStreamable> const m_label;
     std::string const m_name;
 };
 
@@ -189,9 +195,8 @@ public: /* Methods: */
         : VMSection (name)
     { }
 
-    void addBinding (VMLabel* label, const std::string& name) {
-        m_bindings.push_back (VMBinding (label, name));
-    }
+    void addBinding(std::shared_ptr<OStreamable> label, std::string name)
+    { m_bindings.emplace_back(std::move(label), std::move(name)); }
 
     iterator begin () { return m_bindings.begin (); }
     iterator end () { return m_bindings.end (); }
@@ -225,16 +230,15 @@ public: /* Types: */
     };
 
     struct StringRecord {
-    private:
+    public: /* Methods: */
         StringRecord & operator=(StringRecord const &) = delete;
-    public:
-        StringRecord(VMLabel * label, std::string const & value)
-            : m_label (label)
-            , m_value (value)
-        { }
+        StringRecord(std::shared_ptr<OStreamable> label, std::string value)
+            : m_label(std::move(label))
+            , m_value(std::move(value))
+        {}
 
-        VMLabel*      const  m_label;
-        std::string   const  m_value;
+        std::shared_ptr<OStreamable> const m_label;
+        std::string const m_value;
 
         std::ostream & print(std::ostream & os) const;
     };
@@ -249,8 +253,8 @@ public: /* Methods: */
         : VMSection (type == RODATA ? "RODATA" : "DATA")
     { }
 
-    void addStringRecord(VMLabel * l, std::string const & v)
-    { m_records.push_back(StringRecord(l, v)); }
+    void addStringRecord(std::shared_ptr<OStreamable> label, std::string value)
+    { m_records.emplace_back(std::move(label), std::move(value)); }
 
 protected:
 

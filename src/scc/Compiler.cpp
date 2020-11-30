@@ -30,12 +30,13 @@
 #include <libscc/TreeNode.h>
 #include <libscc/Types.h>
 #include <libscc/analysis/LiveVariables.h>
-
 #include "Builtin.h"
 #include "RegisterAllocator.h"
 #include "StringLiterals.h"
 #include "SyscallManager.h"
 #include "VMDataType.h"
+#include "VMValue.h"
+
 
 namespace SecreCC {
 
@@ -460,13 +461,13 @@ void Compiler::paramString (VMBlock& block, const Symbol* dest) {
 }
 
 void Compiler::cgProcedure (const Procedure& blocks) {
-    VMLabel * name = nullptr;
+    VMLabel * label = nullptr;
     if (!blocks.name())
-        name = m_st.getLabel (":start"); // nullptr instead?
+        label = m_st.getLabel (":start"); // nullptr instead?
     else
-        name = getProc (m_st, blocks.name ());
+        label = getProc (m_st, blocks.name ());
     m_param = 0;
-    VMFunction function (name);
+    VMFunction function(label->nameStreamable());
     if (!blocks.name())
         function.setIsStart ();
 
@@ -482,12 +483,11 @@ void Compiler::cgProcedure (const Procedure& blocks) {
 }
 
 void Compiler::cgBlock (VMFunction& function, const Block& block) {
-    VMLabel * name = nullptr;
-    if (block.hasIncomingJumps ()) {
-        name = getLabel (m_st, block);
-    }
+    std::shared_ptr<OStreamable> nameStreamable;
+    if (block.hasIncomingJumps())
+        nameStreamable = getLabel(m_st, block)->nameStreamable();
 
-    VMBlock vmBlock (name, &block);
+    VMBlock vmBlock(nameStreamable, &block);
     m_ra.enterBlock (vmBlock);
     for (const Imop& imop : block) {
         cgImop (vmBlock, imop);

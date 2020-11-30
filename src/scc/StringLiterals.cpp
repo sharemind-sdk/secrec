@@ -23,6 +23,8 @@
 
 #include "VMSymbolTable.h"
 #include "VMCode.h"
+#include "VMValue.h"
+
 
 namespace {
 
@@ -84,7 +86,7 @@ StringLiterals::LiteralInfo StringLiterals::insert (const std::string& str, bool
         os << ":STR_" << m_uniq ++;
         VMLabel* label = m_st.getLabel (os.str ());
         const std::string& s = escape (str, asNullTerminated);
-        m_dataSection->addStringRecord(label, s);
+        m_dataSection->addStringRecord(label->nameStreamable(), s);
         auto size = str.size();
         if (asNullTerminated)
             ++size;
