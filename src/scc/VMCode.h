@@ -161,10 +161,9 @@ private: /* Fields: */
 class __attribute__ ((visibility("internal"))) VMSection {
 public: /* Methods: */
 
-    VMSection (const char* name) : m_name (name) { }
+    VMSection(std::string name) : m_name(std::move(name)) {}
     virtual ~VMSection () { }
 
-    const char* name () const { return m_name; }
     friend std::ostream& operator << (std::ostream& os, const VMSection& section);
 
 protected:
@@ -173,7 +172,7 @@ protected:
 
 protected: /* Fields: */
 
-    const char* const m_name;
+    std::string m_name;
 };
 
 /*******************************************************************************
@@ -191,8 +190,8 @@ private: /* Types: */
 public: /* Methods: */
 
 
-    explicit VMBindingSection (const char* name)
-        : VMSection (name)
+    explicit VMBindingSection(std::string name)
+        : VMSection(std::move(name))
     { }
 
     void addBinding(std::shared_ptr<OStreamable> label, std::string name)

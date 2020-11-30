@@ -72,7 +72,7 @@ std::ostream& operator << (std::ostream& os, const VMBinding& binding) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMSection& section) {
-    os << ".section " << section.name () << '\n';
+    os << ".section " << section.m_name << '\n';
     return section.printBodyV (os);
 }
 
