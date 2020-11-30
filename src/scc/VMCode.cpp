@@ -33,8 +33,8 @@ namespace SecreCC {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMBlock& block) {
-    if (block.name())
-        os << block.name ()->name () << '\n';
+    if (block.m_name)
+        os << block.m_name->name () << '\n';
 
     std::copy (block.begin (), block.end (),
                std::ostream_iterator<VMInstruction>(os, "\n"));
@@ -46,8 +46,8 @@ std::ostream& operator << (std::ostream& os, const VMBlock& block) {
 *******************************************************************************/
 
 std::ostream& operator << (std::ostream& os, const VMFunction& function) {
-    assert(function.name());
-    os << function.name ()->name () << '\n';
+    assert(function.m_name);
+    os << function.m_name->name () << '\n';
     if (function.numLocals () != 0) {
         assert (! function.isStart ()
                 && "Must not have local registers in global scope");

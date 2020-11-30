@@ -57,7 +57,6 @@ public: /* Methods: */
         , m_secrecBlock (block)
     { }
 
-    const VMLabel* name () const { return m_name; }
     const SecreC::Block* secrecBlock () const { return m_secrecBlock; }
 
     iterator begin () { return m_instructions.begin (); }
@@ -103,8 +102,6 @@ public: /* Methods: */
         , m_isStart (false)
         , m_numLocals (0)
     { }
-
-    const VMLabel* name () const { return m_name; }
 
     unsigned numLocals () const { return m_numLocals; }
     void setNumLocals (unsigned n) { m_numLocals = n; }
