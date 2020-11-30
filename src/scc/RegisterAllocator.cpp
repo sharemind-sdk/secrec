@@ -316,8 +316,6 @@ void RegisterAllocator::enterBlock(SecreC::Block const & secrecBlock) {
     }
 }
 
-void RegisterAllocator::exitBlock (VMBlock &) { }
-
 void RegisterAllocator::getReg (const SecreC::Imop& imop) {
     for (VMVReg* temp : m_temporaries) {
         m_live.erase (temp);

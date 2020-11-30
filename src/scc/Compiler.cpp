@@ -493,7 +493,6 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
         cgImop (vmBlock, imop);
     }
 
-    m_ra.exitBlock (vmBlock);
     function.push_back (vmBlock);
 }
 
