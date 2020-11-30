@@ -26,6 +26,7 @@
 #include <vector>
 
 namespace SecreC {
+    class Block;
     class Imop;
     class LiveVariables;
     class Symbol;
@@ -62,7 +63,7 @@ public: /* Methods: */
 
     void enterFunction (VMFunction& function);
     void exitFunction (VMFunction& function);
-    void enterBlock (VMBlock& block);
+    void enterBlock(SecreC::Block const & secrecBlock);
     void exitBlock (VMBlock&);
 
     unsigned globalCount ();

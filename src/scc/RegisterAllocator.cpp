@@ -301,8 +301,8 @@ unsigned RegisterAllocator::globalCount () {
     return m_inferenceGraph->colorGlobal (m_st);
 }
 
-void RegisterAllocator::enterBlock (VMBlock& block) {
-    const LiveVariables::Symbols& in = m_lv->ins (*block.secrecBlock ());
+void RegisterAllocator::enterBlock(SecreC::Block const & secrecBlock) {
+    auto const & in = m_lv->ins(secrecBlock);
     m_live.clear ();
     for (const Symbol* sym : in) {
         VMValue* reg = m_st.find (sym);

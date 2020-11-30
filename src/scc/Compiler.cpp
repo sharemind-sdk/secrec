@@ -488,7 +488,7 @@ void Compiler::cgBlock (VMFunction& function, const Block& block) {
         nameStreamable = getLabel(m_st, block)->nameStreamable();
 
     VMBlock vmBlock(nameStreamable, &block);
-    m_ra.enterBlock (vmBlock);
+    m_ra.enterBlock(block);
     for (const Imop& imop : block) {
         cgImop (vmBlock, imop);
     }
