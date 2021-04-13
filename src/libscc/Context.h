@@ -22,8 +22,7 @@
 
 namespace SecreC {
 
-class ContextImpl;
-
+class StringTable;
 
 /**
  * Context class is responsible for allocating types and constant symbols.
@@ -39,13 +38,12 @@ public: /* Fields: */
     Context ();
     ~Context ();
 
-    inline ContextImpl* pImpl () const {
-        return m_pImpl;
-    }
+    StringTable & stringTable() noexcept { return *m_stringTable; }
 
 private: /* Fields: */
 
-    ContextImpl* m_pImpl;
+    StringTable * m_stringTable;
+
 };
 
 } /* namespace SecreC { */

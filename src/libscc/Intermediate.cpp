@@ -23,7 +23,6 @@
 #include "CodeGen.h"
 #include "CodeGenResult.h"
 #include "Context.h"
-#include "ContextImpl.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
 #include "VirtualMachine.h"
@@ -76,9 +75,7 @@ void ICode::compile (TreeNodeModule *mod, Location::PathStyle pathStyle) {
     m_program.init (code);
 }
 
-StringTable& ICode::stringTable () {
-    return context ().pImpl ()->stringTable();
-}
+StringTable & ICode::stringTable() { return context().stringTable(); }
 
 std::ostream &operator<<(std::ostream &out, const ICode::Status &s) {
     switch (s) {

@@ -18,16 +18,14 @@
  */
 
 #include "Context.h"
-#include "ContextImpl.h"
+
+#include "StringTable.h"
+
 
 namespace SecreC {
 
-Context::Context ()
-    : m_pImpl (new ContextImpl ())
-{ }
+Context::Context() : m_stringTable(new StringTable()) {}
 
-Context::~Context () {
-    delete m_pImpl;
-}
+Context::~Context() { delete m_stringTable; }
 
 } // namespace SecreC {

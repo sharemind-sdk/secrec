@@ -21,7 +21,6 @@
 
 #include "CodeGenResult.h"
 #include "Constant.h"
-#include "ContextImpl.h"
 #include "DataType.h"
 #include "Intermediate.h"
 #include "Misc.h"
@@ -135,9 +134,8 @@ CodeGen::~CodeGen() {
     delete m_tyChecker;
 }
 
-StringTable& CodeGen::getStringTable () const {
-    return m_context.pImpl ()->stringTable();
-}
+StringTable & CodeGen::getStringTable() const
+{ return m_context.stringTable(); }
 
 void CodeGen::updateTypeChecker() {
     m_tyChecker->setScope(*m_st);

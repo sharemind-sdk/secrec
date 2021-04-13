@@ -23,6 +23,7 @@
 #include "../Log.h"
 #include "../Misc.h"
 #include "../SecurityType.h"
+#include "../StringTable.h"
 #include "../Symbol.h"
 #include "../SymbolTable.h"
 #include "../TreeNode.h"
@@ -32,7 +33,6 @@
 #include "../Visitor.h"
 
 #include "../Context.h"
-#include "../ContextImpl.h"
 
 
 namespace SecreC {
@@ -582,7 +582,7 @@ TypeChecker::Status TypeChecker::visitExprCat(TreeNodeExprCat * root) {
     // missing argument is interpreted as 0
     if (root->dimensionality() == nullptr) {
         // A bit awkard to intern string for just this
-        auto strRef = getContext().pImpl()->stringTable().addString("0", 1);
+        auto strRef = getContext().stringTable().addString("0", 1);
         TreeNode * e = new TreeNodeExprInt(*strRef, root->location());
         root->appendChild(e);
     }

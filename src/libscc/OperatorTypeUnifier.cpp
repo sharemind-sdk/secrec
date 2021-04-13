@@ -19,7 +19,6 @@
 
 #include "OperatorTypeUnifier.h"
 
-#include "ContextImpl.h"
 #include "DataType.h"
 #include "Misc.h"
 #include "SecurityType.h"

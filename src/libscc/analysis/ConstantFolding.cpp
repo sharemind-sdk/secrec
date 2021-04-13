@@ -19,7 +19,6 @@
 
 #include "ConstantFolding.h"
 
-#include "../ContextImpl.h"
 #include "../Constant.h"
 #include "../Context.h"
 #include "../DataType.h"

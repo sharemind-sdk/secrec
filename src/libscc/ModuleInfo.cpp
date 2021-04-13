@@ -20,7 +20,6 @@
 #include "ModuleInfo.h"
 
 #include "Context.h"
-#include "ContextImpl.h"
 #include "TreeNode.h"
 #include "Parser.h"
 
@@ -57,9 +56,8 @@ bool ModuleInfo::read() {
         return false;
     }
 
-    ContextImpl* pImpl = m_cxt.pImpl ();
     TreeNodeModule* treeNode = nullptr;
-    int parseResult = sccparse_file(&pImpl->stringTable (), m_location.path().c_str (), f, &treeNode);
+    int parseResult = sccparse_file(&m_cxt.stringTable (), m_location.path().c_str (), f, &treeNode);
     fclose (f);
     if (parseResult != 0 || treeNode == nullptr) {
         return false;
