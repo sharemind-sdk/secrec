@@ -20,7 +20,6 @@
 #ifndef SECREC_STRINGREF_H
 #define SECREC_STRINGREF_H
 
-#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <iosfwd>
@@ -101,10 +100,6 @@ public: /* Methods: */
 
         std::size_t offset = m_size - ref.m_size;
         return std::strncmp(m_data + offset, ref.m_data, ref.m_size) == 0;
-    }
-
-    static void free (StringRef ref) {
-        std::free (const_cast<value_type*>(ref.m_data));
     }
 
 private: /* Fields: */

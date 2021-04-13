@@ -22,6 +22,7 @@
 
 #include "StringRef.h"
 
+#include <cstdlib>
 #include <string.h>
 #include <unordered_set>
 
@@ -51,9 +52,8 @@ public: /* Methods: */
     StringTable (const StringTable&) = delete;
     StringTable& operator = (const StringTable&) = delete;
     ~StringTable () {
-        for (const auto & strRef : *this) {
-            StringRef::free (strRef);
-        }
+        for (const auto & strRef : *this)
+            std::free(const_cast<char *>(strRef.data()));
     }
 
     const StringRef* addString (const std::string& str) {
