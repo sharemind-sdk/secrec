@@ -22,7 +22,9 @@
 
 #include "StringRef.h"
 
+#include <string.h>
 #include <unordered_set>
+
 
 namespace SecreC {
 
