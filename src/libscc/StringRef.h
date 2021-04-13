@@ -85,10 +85,6 @@ public: /* Methods: */
     value_type back () const { return m_data[m_size - 1]; }
     std::string str () const { return std::string (m_data, m_size); }
 
-    bool fastEquality (StringRef other) const {
-        return m_data == other.m_data && m_size == other.m_size;
-    }
-
     bool isPrefixOf (StringRef ref) const {
         if (m_size > ref.m_size)
             return false;
