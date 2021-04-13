@@ -38,7 +38,7 @@ public: /* Methods: */
 
     StringTable& stringTable () { return m_stringTable; }
 
-public: /* Fields: */
+private: /* Fields: */
 
     /* Strings: */
     StringTable m_stringTable;

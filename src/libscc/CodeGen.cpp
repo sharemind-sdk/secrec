@@ -136,7 +136,7 @@ CodeGen::~CodeGen() {
 }
 
 StringTable& CodeGen::getStringTable () const {
-    return m_context.pImpl ()->m_stringTable;
+    return m_context.pImpl ()->stringTable();
 }
 
 void CodeGen::updateTypeChecker() {

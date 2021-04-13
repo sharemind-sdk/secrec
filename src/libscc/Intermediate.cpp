@@ -77,7 +77,7 @@ void ICode::compile (TreeNodeModule *mod, Location::PathStyle pathStyle) {
 }
 
 StringTable& ICode::stringTable () {
-    return context ().pImpl ()->m_stringTable;
+    return context ().pImpl ()->stringTable();
 }
 
 std::ostream &operator<<(std::ostream &out, const ICode::Status &s) {

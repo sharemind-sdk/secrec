@@ -175,7 +175,7 @@ ConstantString* ConstantString::get (Context& cxt, StringRef str) {
     auto it = stringLiterals.find (str);
     if (it == stringLiterals.end ()) {
         // Make sure that the string is allocated in the table
-        const StringRef val = *cxt.pImpl ()->m_stringTable.addString (str);
+        const StringRef val = *cxt.pImpl ()->stringTable().addString (str);
         const auto cstr = ConstantString (TypeBasic::get (DATATYPE_STRING), val);
         it = stringLiterals.insert (it, std::make_pair (val, cstr));
     }
