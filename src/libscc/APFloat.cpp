@@ -21,6 +21,7 @@
 #include "DataType.h"
 
 #include <cassert>
+#include <cstring>
 #include <numeric>
 #include <ostream>
 #include <sharemind/abort.h>
