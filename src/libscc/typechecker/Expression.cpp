@@ -50,7 +50,7 @@ inline DestPtr cast(SrcPtr ptr) {
     assert (ptr != nullptr);
     assert (dynamic_cast<DestPtr>(ptr) != nullptr);
     return static_cast<DestPtr>(ptr);
-};
+}
 
 bool isAbstractNumeric(SecrecDataType d) {
     switch (d) {
