@@ -39,13 +39,5 @@ const SecreC::StringRef* add_string (SecreC::StringTable* table, const char * st
     return table->addString(str, size);
 }
 
-size_t stringref_length (const SecreC::StringRef* ref) {
-    return ref->size();
-}
-
-const char* stringref_begin (const SecreC::StringRef* ref) {
-    return ref->data();
-}
-
 }
 

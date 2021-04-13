@@ -81,10 +81,6 @@ extern int sccparse_mem(TYPE_STRINGTABLE table, const char * filename, const voi
 
 extern TYPE_STRINGREF add_string (TYPE_STRINGTABLE table, const char * str, size_t size);
 
-extern size_t stringref_length (TYPE_STRINGREF ref);
-
-extern const char* stringref_begin (TYPE_STRINGREF ref);
-
 union YYSTYPE {
     TYPE_TREENODE        treenode;
     void *               nothing;
