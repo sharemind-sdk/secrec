@@ -20,10 +20,10 @@
 #ifndef SECREC_SECURITYTYPE_H
 #define SECREC_SECURITYTYPE_H
 
-#include "StringRef.h"
-
 #include <iosfwd>
+#include <sharemind/StringView.h>
 #include <utility>
+
 
 namespace SecreC {
 

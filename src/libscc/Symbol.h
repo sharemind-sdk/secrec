@@ -20,8 +20,8 @@
 #ifndef SECREC_SYMBOL_H
 #define SECREC_SYMBOL_H
 
+#include <sharemind/StringView.h>
 #include "ParserEnums.h"
-#include "StringRef.h"
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 

@@ -23,6 +23,7 @@
 #include "DataType.h"
 #include "Imop.h"
 #include "SecurityType.h"
+#include "StringViewFastCmp.h"
 #include "TreeNode.h"
 #include "Types.h"
 
@@ -33,7 +34,7 @@ namespace SecreC {
 namespace /* anonymous */ {
 
 std::size_t countQuantifiedParams (TreeNodeTemplate* templ) {
-    std::set<sharemind::StringView, StringRef::FastCmp > typeVariables;
+    std::set<sharemind::StringView, StringViewFastCmp> typeVariables;
     std::size_t quantifiedParamCount = 0;
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {

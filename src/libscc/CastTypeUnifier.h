@@ -22,7 +22,6 @@
 
 #include "AbstractOperatorTypeUnifier.h"
 #include "Context.h"
-#include "StringRef.h"
 #include "SymbolTable.h"
 #include "TreeNodeFwd.h"
 #include "TypeArgument.h"

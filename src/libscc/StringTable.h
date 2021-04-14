@@ -20,10 +20,9 @@
 #ifndef SECREC_STRINGTABLE_H
 #define SECREC_STRINGTABLE_H
 
-#include "StringRef.h"
-
 #include <boost/container_hash/hash.hpp>
 #include <cstdlib>
+#include <sharemind/StringView.h>
 #include <string.h>
 #include <unordered_set>
 

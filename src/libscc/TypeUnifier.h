@@ -20,7 +20,7 @@
 #ifndef SECREC_TYPE_UNIFIER_H
 #define SECREC_TYPE_UNIFIER_H
 
-#include "StringRef.h"
+#include "StringViewFastCmp.h"
 #include "TypeArgument.h"
 #include "TreeNodeFwd.h"
 
@@ -41,7 +41,8 @@ class TypeUnifier {
 private: /* Types: */
 
     using TypeVarMap = std::map<sharemind::StringView,
-                                TypeArgument, StringRef::FastCmp>;
+                                TypeArgument,
+                                StringViewFastCmp>;
 
 public:
 

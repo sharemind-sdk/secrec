@@ -21,12 +21,12 @@
 #define SECREC_ABSTRACT_OPERATOR_TYPE_UNIFIER_H
 
 #include "Context.h"
-#include "StringRef.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TypeArgument.h"
 #include "Types.h"
 #include "SecurityType.h"
+#include "StringViewFastCmp.h"
 #include "TreeNodeFwd.h"
 
 #include <map>
@@ -44,7 +44,7 @@ private: /* Types: */
 
     using TypeVarMap = std::map<sharemind::StringView,
                                 TypeArgument,
-                                StringRef::FastCmp>;
+                                StringViewFastCmp>;
 
 public:
 

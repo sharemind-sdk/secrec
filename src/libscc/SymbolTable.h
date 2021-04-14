@@ -20,19 +20,19 @@
 #ifndef SECREC_SYMBOLTABLE_H
 #define SECREC_SYMBOLTABLE_H
 
-#include "StringRef.h"
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
 
 #include <algorithm>
 #include <boost/range/adaptor/reversed.hpp>
 #include <memory>
+#include <sharemind/StringView.h>
 #include <vector>
 
 namespace SecreC {
 
 /**
- * \todo Try to use StringRef instead of std::string here.
+ * \todo Try to use sharemind::StringView instead of std::string here.
  */
 
 class Imop;

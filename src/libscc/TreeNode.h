@@ -20,9 +20,9 @@
 #ifndef SECREC_TREENODE_H
 #define SECREC_TREENODE_H
 
+#include <sharemind/StringView.h>
 #include "Location.h"
 #include "ParserEnums.h"
-#include "StringRef.h"
 #include "TypeContext.h"
 #include "TreeNodeFwd.h"
 

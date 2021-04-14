@@ -20,9 +20,9 @@
 #ifndef SECREC_OPERATOR_TYPE_UNIFIER_H
 #define SECREC_OPERATOR_TYPE_UNIFIER_H
 
+#include <sharemind/StringView.h>
 #include "AbstractOperatorTypeUnifier.h"
 #include "Log.h"
-#include "StringRef.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNodeFwd.h"

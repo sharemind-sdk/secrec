@@ -20,7 +20,7 @@
 #ifndef SECREC_TEMPLATE_CHECKER_H
 #define SECREC_TEMPLATE_CHECKER_H
 
-#include "StringRef.h"
+#include "StringViewFastCmp.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNodeFwd.h"
@@ -64,7 +64,7 @@ class TemplateVarChecker {
 public: /* Types: */
 
     using TemplateVarMap =
-        std::map<sharemind::StringView, TemplateTypeVar, StringRef::FastCmp>;
+        std::map<sharemind::StringView, TemplateTypeVar, StringViewFastCmp>;
 
 public:
 

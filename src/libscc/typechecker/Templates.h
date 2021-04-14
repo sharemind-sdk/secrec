@@ -29,7 +29,7 @@
 
 #include "../DataType.h"
 #include "../ParserEnums.h"
-#include "../StringRef.h"
+#include "../StringViewFastCmp.h"
 #include "../TreeNodeFwd.h"
 #include "../TypeArgument.h"
 
@@ -53,7 +53,7 @@ class TypeNonVoid;
 
 
 using TemplateVarMap =
-        std::map<sharemind::StringView, TypeArgument, StringRef::FastCmp>;
+        std::map<sharemind::StringView, TypeArgument, StringViewFastCmp>;
 
 /*******************************************************************************
   Instantiation

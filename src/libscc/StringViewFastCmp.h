@@ -17,16 +17,22 @@
  * For further information, please contact us at sharemind@cyber.ee.
  */
 
-#include "StringRef.h"
+#ifndef SECREC_STRINGVIEWFASTCMP_H
+#define SECREC_STRINGVIEWFASTCMP_H
 
-#include "StringTable.h"
+#include <sharemind/StringView.h>
+#include <tuple>
 
 
-extern "C" {
+namespace SecreC {
 
-sharemind::StringView const *
-add_string(SecreC::StringTable * table, char const * str, std::size_t size)
-{ return table->addString(str, size); }
+struct StringViewFastCmp {
+    bool operator()(sharemind::StringView a, sharemind::StringView b) const {
+        return std::make_tuple(a.data(), a.size())
+                < std::make_tuple(b.data(), b.size());
+    }
+};
 
-}
+} /* namespace SecreC */
 
+#endif /* SECREC_STRINGVIEWFASTCMP_H */
