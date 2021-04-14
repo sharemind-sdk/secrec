@@ -27,7 +27,9 @@
 namespace SecreC {
 
 struct StringViewFastCmp {
-    bool operator()(sharemind::StringView a, sharemind::StringView b) const {
+    bool operator()(sharemind::StringView a,
+                    sharemind::StringView b) const noexcept
+    {
         return std::make_tuple(a.data(), a.size())
                 < std::make_tuple(b.data(), b.size());
     }
