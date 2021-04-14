@@ -229,7 +229,8 @@ CGStmtResult CodeGen::cgGlobalVarInit (const TypeNonVoid* ty, TreeNodeVarInit* v
         std::stringstream ss;
         ss << "__global_init_" << varInit->variableName ();
 
-        const StringRef procName = *getStringTable ().addString (ss.str ());
+        sharemind::StringView const procName =
+                *getStringTable().addString(ss.str());
         const TypeProc* procType = TypeProc::get (std::vector<const TypeBasic*>(), ty);
         procSym = new SymbolProcedure (procName, procType);
         m_st->appendSymbol (procSym);

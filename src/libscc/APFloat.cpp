@@ -140,7 +140,7 @@ uint64_t APFloat::ieee64bits () const {
     return result;
 }
 
-APFloat::APFloat (prec_t p, StringRef str) {
+APFloat::APFloat(prec_t p, sharemind::StringView str) {
     mpfr_init2 (m_value, p);
     // need to use temporary str to avoid undefined behaviour
     auto const tempStr = str.str();

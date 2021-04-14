@@ -49,13 +49,14 @@ void PrivateSecType::print (std::ostream & os) const {
     os << m_name;
 }
 
-const PrivateSecType* PrivateSecType::get (StringRef name,
-                                           SymbolKind* kind)
+PrivateSecType const * PrivateSecType::get(sharemind::StringView name,
+                                           SymbolKind * kind)
 {
     using namespace ::boost::flyweights;
     using PrivateSecTypeFlyweight =
         flyweight<
-            key_value<std::pair<StringRef, SymbolKind*>, PrivateSecType>,
+            key_value<std::pair<sharemind::StringView, SymbolKind *>,
+                      PrivateSecType>,
             no_locking,
             no_tracking
         >;

@@ -20,8 +20,8 @@
 #ifndef SECREC_DATATYPE_H
 #define SECREC_DATATYPE_H
 
+#include <sharemind/StringView.h>
 #include "ParserEnums.h"
-#include "StringRef.h"
 #include "TypeArgument.h"
 
 #include <iosfwd>
@@ -147,14 +147,14 @@ class DataTypeUserPrimitive : public DataType {
 
 public: /* Methods: */
 
-    explicit DataTypeUserPrimitive (StringRef name)
+    explicit DataTypeUserPrimitive(sharemind::StringView name)
         : DataType (USER_PRIMITIVE)
         , m_name (name)
     { }
 
-    static const DataTypeUserPrimitive* get (StringRef name);
+    static DataTypeUserPrimitive const * get(sharemind::StringView name);
 
-    StringRef name () const { return m_name; }
+    sharemind::StringView name() const noexcept { return m_name; }
 
     bool equals (const DataType* other) const override final;
 
@@ -162,7 +162,9 @@ protected:
     void print (std::ostream& os) const override final;
 
 private: /* Fields: */
-    const StringRef m_name;
+
+    sharemind::StringView const m_name;
+
 };
 
 /*******************************************************************************
@@ -174,9 +176,9 @@ public: /* Types: */
 
     struct Field {
         const TypeBasic* type;
-        StringRef  name;
+        sharemind::StringView name;
 
-        Field(TypeBasic const * type_, StringRef name_)
+        Field(TypeBasic const * type_, sharemind::StringView name_)
             : type(type_)
             , name(std::move(name_))
         { }
@@ -187,11 +189,12 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    StringRef name () const { return m_name; }
+    sharemind::StringView name() const noexcept { return m_name; }
 
-    static const DataTypeStruct* get (StringRef name,
-        const FieldList& fields,
-        const TypeArgumentList& typeArgs = TypeArgumentList());
+    static DataTypeStruct const * get(
+            sharemind::StringView name,
+            FieldList const & fields,
+            TypeArgumentList const & typeArgs = TypeArgumentList());
 
     const FieldList& fields () const { return m_fields; }
     const TypeArgumentList& typeArgs () const { return m_typeArgs; }
@@ -200,7 +203,9 @@ protected:
 
     void print (std::ostream& os) const override final;
 
-    explicit DataTypeStruct (StringRef name, TypeArgumentList typeArgs, FieldList fields)
+    explicit DataTypeStruct(sharemind::StringView name,
+                            TypeArgumentList typeArgs,
+                            FieldList fields)
         : DataType (COMPOSITE)
         , m_name (std::move(name))
         , m_typeArgs (std::move (typeArgs))
@@ -208,14 +213,14 @@ protected:
     { }
 
 private: /* Fields: */
-    const StringRef        m_name;
+    sharemind::StringView const m_name;
     const TypeArgumentList m_typeArgs;
     const FieldList        m_fields;
 };
 
-inline DataTypeStruct::Field make_field (const TypeBasic* type, StringRef name) {
-    return DataTypeStruct::Field(type, name);
-}
+inline DataTypeStruct::Field make_field(TypeBasic const * type,
+                                        sharemind::StringView name)
+{ return DataTypeStruct::Field(type, name); }
 
 } // namespace SecreC
 

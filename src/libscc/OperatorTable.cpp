@@ -32,7 +32,8 @@ void OperatorTable::appendOperator (Symbol* op) {
     m_ops.push_back (op);
 }
 
-std::vector<SymbolProcedure*> OperatorTable::findOperators (StringRef name) {
+std::vector<SymbolProcedure *>
+OperatorTable::findOperators(sharemind::StringView name) {
     std::vector<SymbolProcedure*> res;
     for (Symbol* s : m_ops) {
         if (s->symbolType () == SYM_PROCEDURE) {
@@ -45,7 +46,8 @@ std::vector<SymbolProcedure*> OperatorTable::findOperators (StringRef name) {
     return res;
 }
 
-std::vector<SymbolOperatorTemplate*> OperatorTable::findOperatorTemplates (StringRef name) {
+std::vector<SymbolOperatorTemplate *>
+OperatorTable::findOperatorTemplates(sharemind::StringView name) {
     std::vector<SymbolOperatorTemplate*> res;
     for (Symbol* s : m_ops) {
         if (s->symbolType () == SYM_OPERATOR_TEMPLATE) {

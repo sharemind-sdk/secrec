@@ -22,6 +22,7 @@
 
 #include "StringRef.h"
 
+#include <boost/container_hash/hash.hpp>
 #include <cstdlib>
 #include <string.h>
 #include <unordered_set>
@@ -39,7 +40,8 @@ namespace SecreC {
 class StringTable {
 private: /* Types: */
 
-    using impl_t = std::unordered_set<StringRef>;
+    using impl_t = std::unordered_set<sharemind::StringView,
+                                      boost::hash<sharemind::StringView> >;
 
 public: /* Types: */
 
@@ -56,19 +58,18 @@ public: /* Methods: */
             std::free(const_cast<char *>(strRef.data()));
     }
 
-    const StringRef* addString (const std::string& str) {
-        return addString (str.c_str(), str.length());
-    }
+    sharemind::StringView const * addString(std::string const & str)
+    { return addString(str.c_str(), str.length()); }
 
-    const StringRef* addString (StringRef str) {
-        return addString (str.data (), str.size ());
-    }
+    sharemind::StringView const * addString(sharemind::StringView str)
+    { return addString(str.data(), str.size()); }
 
-    const StringRef* addString (const char* str, size_t size) {
-        auto i = m_impl.find (StringRef (str, size));
+    sharemind::StringView const * addString(char const * str, std::size_t size)
+    {
+        auto i = m_impl.find(sharemind::StringView(str, size));
         if (i == end ()) {
             const char* copy = strndup (str, size);
-            i = m_impl.insert (i, StringRef (copy, size));
+            i = m_impl.insert(i, sharemind::StringView(copy, size));
         }
 
         return &*i;

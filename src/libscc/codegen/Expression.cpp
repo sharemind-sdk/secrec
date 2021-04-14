@@ -2666,7 +2666,7 @@ CGResult CodeGen::cgExprSelection(TreeNodeExprSelection* root) {
     // Pick the proper field:
     assert (dynamic_cast<SymbolSymbol*>(exprResult.symbol ()) != nullptr);
     SymbolSymbol* exprValue = static_cast<SymbolSymbol*>(exprResult.symbol ());
-    StringRef fieldName = root->identifier ()->value ();
+    sharemind::StringView fieldName = root->identifier()->value();
     if (SymbolSymbol* fieldValue = lookupField (exprValue, fieldName)) {
         result.setResult (fieldValue);
         releaseTemporary (result, exprResult.symbol (), fieldValue);

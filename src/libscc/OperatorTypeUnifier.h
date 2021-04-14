@@ -66,9 +66,9 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool bind (StringRef name,
-                       const TypeArgument& arg,
-                       const SecurityType* sec = nullptr) override;
+    virtual bool bind(sharemind::StringView name,
+                      TypeArgument const & arg,
+                      SecurityType const * sec = nullptr) override;
 };
 
 } /* namespace SecreC */

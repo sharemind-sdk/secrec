@@ -33,7 +33,7 @@ namespace SecreC {
 namespace /* anonymous */ {
 
 std::size_t countQuantifiedParams (TreeNodeTemplate* templ) {
-    std::set<StringRef, StringRef::FastCmp > typeVariables;
+    std::set<sharemind::StringView, StringRef::FastCmp > typeVariables;
     std::size_t quantifiedParamCount = 0;
 
     for (TreeNodeQuantifier& quant : templ->quantifiers ()) {
@@ -213,7 +213,7 @@ void SymbolDataType::setTypeContext (TypeContext& cxt) const {
 *******************************************************************************/
 
 const SymbolKind::Parameters*
-SymbolKind::findType (StringRef name) const {
+SymbolKind::findType(sharemind::StringView name) const {
     auto it = m_types.find (name);
     if (it == m_types.end ())
         return nullptr;
@@ -221,10 +221,11 @@ SymbolKind::findType (StringRef name) const {
         return it->second;
 }
 
-void SymbolKind::addType (StringRef name,
-                          const DataType* type,
-                          boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                          boost::optional<uint64_t> size)
+void SymbolKind::addType(
+        sharemind::StringView name,
+        DataType const * type,
+        boost::optional<DataTypeBuiltinPrimitive const *> publicType,
+        boost::optional<std::uint64_t> size)
 {
     assert (m_types.find (name) == m_types.end ());
     auto params = new Parameters (type, publicType, size);
@@ -253,7 +254,8 @@ void SymbolDomain::setTypeContext (TypeContext& cxt) const {
   SymbolSymbol
 *******************************************************************************/
 
-SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid* valueType)
+SymbolSymbol::SymbolSymbol(sharemind::StringView name,
+                           TypeNonVoid const* valueType)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType(), nullptr)
@@ -264,7 +266,9 @@ SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid* valueType)
     setName(name);
 }
 
-SymbolSymbol::SymbolSymbol(StringRef name, const TypeNonVoid * valueType, bool)
+SymbolSymbol::SymbolSymbol(sharemind::StringView name,
+                           TypeNonVoid const * valueType,
+                           bool)
     : Symbol (SYM_SYMBOL, valueType)
     , m_scopeType (LOCAL)
     , m_dims (valueType->secrecDimType (), nullptr)
@@ -295,7 +299,9 @@ void SymbolSymbol::inheritShape (Symbol* from) {
     }
 }
 
-SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName) {
+SymbolSymbol * lookupField(SymbolSymbol * val,
+                           sharemind::StringView fieldName)
+{
     assert (val != nullptr && val->secrecType () != nullptr);
 
     const TypeNonVoid* ty = val->secrecType ();
@@ -322,7 +328,7 @@ std::vector<Symbol*> flattenSymbol (Symbol* sym) {
   SymbolProcedure
 *******************************************************************************/
 
-SymbolProcedure::SymbolProcedure(StringRef name,
+SymbolProcedure::SymbolProcedure(sharemind::StringView name,
                                  const TypeProc* type)
     : Symbol(SYM_PROCEDURE, type)
     , m_target(nullptr)
@@ -349,8 +355,8 @@ void SymbolProcedure::print(std::ostream & os) const {
   SymbolUserProcedure
 *******************************************************************************/
 
-SymbolUserProcedure::SymbolUserProcedure (StringRef name,
-                                          const TreeNodeProcDef * decl)
+SymbolUserProcedure::SymbolUserProcedure(sharemind::StringView name,
+                                         TreeNodeProcDef const * decl)
     : SymbolProcedure (name, decl->procedureType ())
     , m_decl (decl)
 { }
@@ -359,9 +365,8 @@ const Location * SymbolUserProcedure::location() const {
     return &m_decl->location();
 }
 
-StringRef SymbolUserProcedure::procedureName () const {
-    return m_decl->procedureName ();
-}
+sharemind::StringView SymbolUserProcedure::procedureName() const
+{ return m_decl->procedureName(); }
 
 void SymbolUserProcedure::print(std::ostream & os) const {
     printProcDef(os, m_decl);
@@ -407,7 +412,8 @@ void SymbolLabel::print(std::ostream & os) const {
   SymbolStruct
 *******************************************************************************/
 
-SymbolStruct::SymbolStruct(StringRef name, TreeNodeStructDecl *structDecl)
+SymbolStruct::SymbolStruct(sharemind::StringView name,
+                           TreeNodeStructDecl * structDecl)
     : Symbol (SYM_STRUCT, name)
     , m_structDecl (structDecl)
 { }

@@ -20,6 +20,9 @@
 #ifndef SECREC_PARSER_H
 #define SECREC_PARSER_H
 
+#ifdef __cplusplus
+#include <sharemind/StringView.h>
+#endif
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -31,12 +34,11 @@ namespace SecreC {
     class TreeNode;
     class TreeNodeModule;
     class StringTable;
-    class StringRef;
 } // namespace SecreC
 #define TYPE_TREENODE        SecreC::TreeNode*
 #define TYPE_TREENODEMODULE  SecreC::TreeNodeModule*
 #define TYPE_STRINGTABLE     SecreC::StringTable*
-#define TYPE_STRINGREF       const SecreC::StringRef*
+#define TYPE_STRINGREF       sharemind::StringView const *
 extern "C" {
 #else /* #ifdef __cplusplus */
 #define TYPE_TREENODE        void*

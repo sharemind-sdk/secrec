@@ -60,8 +60,11 @@ struct TemplateTypeVar {
  * @brief Type checking of template function declaration.
  */
 class TemplateVarChecker {
+
 public: /* Types: */
-    using TemplateVarMap = std::map<StringRef, TemplateTypeVar, StringRef::FastCmp>;
+
+    using TemplateVarMap =
+        std::map<sharemind::StringView, TemplateTypeVar, StringRef::FastCmp>;
 
 public:
 

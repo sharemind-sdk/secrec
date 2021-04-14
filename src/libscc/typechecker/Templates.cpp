@@ -157,7 +157,7 @@ const InstanceInfo& TemplateInstantiator::add (const Instantiation& i, ModuleInf
 
         auto it2 = i.getParams ().begin ();
         for (TreeNodeQuantifier& quant : i.getTemplate ()->decl ()->quantifiers ()) {
-            StringRef qname = quant.typeVariable ()->value ();
+            sharemind::StringView qname = quant.typeVariable()->value();
             local->appendSymbol (it2->bind (qname));
             ++ it2;
         }

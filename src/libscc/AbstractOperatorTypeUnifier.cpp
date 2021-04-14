@@ -39,7 +39,10 @@ namespace SecreC {
 
 AbstractOperatorTypeUnifier::~AbstractOperatorTypeUnifier() noexcept = default;
 
-bool AbstractOperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, const SecurityType*) {
+bool AbstractOperatorTypeUnifier::bind(sharemind::StringView name,
+                                       TypeArgument const & arg,
+                                       SecurityType const *)
+{
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg) {
         return false;
@@ -104,7 +107,7 @@ bool AbstractOperatorTypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* tvar,
                                                      const TypeNonVoid* type)
 {
     auto dataQuants = m_sym->dataTypeQuantifiers ();
-    StringRef var = tvar->identifier ()->value ();
+    sharemind::StringView var = tvar->identifier()->value();
     const DataType* argData = type->secrecDataType ();
 
     if (dataQuants.find (var) != dataQuants.end ()) {

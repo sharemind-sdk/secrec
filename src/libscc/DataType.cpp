@@ -404,10 +404,11 @@ void DataTypeUserPrimitive::print (std::ostream& os) const {
     os << m_name;
 }
 
-const DataTypeUserPrimitive* DataTypeUserPrimitive::get (StringRef name)
-{
+DataTypeUserPrimitive const *
+DataTypeUserPrimitive::get(sharemind::StringView name) {
     using namespace ::boost::flyweights;
-    using fw_t = flyweight<key_value<StringRef, DataTypeUserPrimitive>,
+    using fw_t = flyweight<key_value<sharemind::StringView,
+                                     DataTypeUserPrimitive>,
                            no_locking, no_tracking>;
     return &fw_t{name}.get();
 }
@@ -441,12 +442,13 @@ void DataTypeStruct::print (std::ostream& os) const {
     }
 }
 
-const DataTypeStruct* DataTypeStruct::get (StringRef name,
-                                           const DataTypeStruct::FieldList& fields,
-                                           const DataTypeStruct::TypeArgumentList& args)
+DataTypeStruct const *
+DataTypeStruct::get(sharemind::StringView name,
+                    DataTypeStruct::FieldList const & fields,
+                    DataTypeStruct::TypeArgumentList const & args)
 {
     using StructTypeMap = std::map<
-        std::pair<StringRef, std::vector<TypeArgument> >,
+        std::pair<sharemind::StringView, std::vector<TypeArgument> >,
         std::unique_ptr<const DataTypeStruct> >;
     static StructTypeMap structTypes;
 

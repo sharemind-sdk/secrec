@@ -102,7 +102,7 @@ CGResult CodeGen::cgLSelect (TreeNodeLSelect* lselect, SubscriptInfo& subInfo,
     // Pick the proper field:
     assert (dynamic_cast<SymbolSymbol*>(lvalResult.symbol ()) != nullptr);
     SymbolSymbol* exprValue = static_cast<SymbolSymbol*>(lvalResult.symbol ());
-    StringRef fieldName = lselect->identifier ()->value ();
+    sharemind::StringView fieldName = lselect->identifier()->value();
     if (SymbolSymbol* fieldValue = lookupField (exprValue, fieldName)) {
         result.setResult (fieldValue);
         return result;

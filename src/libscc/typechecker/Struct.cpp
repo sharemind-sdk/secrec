@@ -75,10 +75,10 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
 
     if (! quants.empty ()) {
-        std::set<StringRef> seen;
+        std::set<sharemind::StringView> seen;
         for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visitQuantifier (&q));
-            const StringRef name = q.typeVariable ()->value ();
+            sharemind::StringView const name = q.typeVariable()->value();
             if (! seen.insert (name).second) {
                 m_log.fatal () << "Duplicate quantifier at " << q.location () << ".";
                 return E_TYPE;
@@ -91,7 +91,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
     for (size_t i = 0; i < args.size (); ++ i) {
         const TypeArgument& arg = args[i];
         TreeNodeQuantifier* quant = &quants[i];
-        StringRef name = quant->typeVariable ()->value ();
+        sharemind::StringView name = quant->typeVariable()->value();
         m_st->appendSymbol (arg.bind (name));
     }
 
@@ -104,9 +104,9 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
         if (type->type () == NODE_TYPETYPE) {
             TreeNode* dataTypeNode = type->children ()[1];
             if (dataTypeNode->type () == NODE_DATATYPE_TEMPLATE_F) {
-                StringRef dataTypeName =
+                sharemind::StringView dataTypeName =
                     static_cast<TreeNodeDataTypeTemplateF*> (dataTypeNode)->identifier ()->value ();
-                for (StringRef& seenName : m_structsInProgress) {
+                for (sharemind::StringView & seenName : m_structsInProgress) {
                     if (seenName == dataTypeName) {
                         m_log.fatal () << "Recursive structure due to field at " << attr.location () << '.';
                         return E_TYPE;
@@ -125,7 +125,7 @@ TypeChecker::Status TypeChecker::checkStruct (TreeNodeStructDecl* decl,
         }
 
         const auto fieldType = static_cast<const TypeBasic*>(type->secrecType ());
-        StringRef name = attr.identifier ()->value ();
+        sharemind::StringView name = attr.identifier()->value();
         fields.push_back (make_field (fieldType, name));
         delete type;
     }
@@ -161,10 +161,10 @@ TypeChecker::Status TypeChecker::visitStructDecl (TreeNodeStructDecl* decl) {
     if (decl->isQuantified ()) {
         // Verify that there are not duplicate quantifiers.
         TreeNodeSeqView<TreeNodeQuantifier> quants = decl->quantifiers ();
-        std::set<StringRef> seen;
+        std::set<sharemind::StringView> seen;
         for (TreeNodeQuantifier& q : quants) {
             TCGUARD (visitQuantifier (&q));
-            const StringRef name = q.typeVariable ()->value ();
+            sharemind::StringView name = q.typeVariable()->value();
             if (! seen.insert (name).second) {
                 m_log.fatal () << "Duplicate quantifier at " << q.location () << ".";
                 return E_TYPE;

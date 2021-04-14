@@ -20,7 +20,7 @@
 #ifndef SECREC_APFLOAT_H
 #define SECREC_APFLOAT_H
 
-#include "StringRef.h"
+#include <sharemind/StringView.h>
 #include "ParserEnums.h"
 
 // NOTE: cstddef needs to be included before mpfr.h to support gcc-4.9
@@ -72,7 +72,7 @@ public: /* Types: */
 public: /* Methods: */
 
     explicit APFloat (prec_t p);
-    APFloat (prec_t p, StringRef str);
+    APFloat(prec_t p, sharemind::StringView str);
     APFloat (prec_t p, uint64_t value);
     APFloat (prec_t p, const APFloat& x, RoundMode mode = RNDN);
 

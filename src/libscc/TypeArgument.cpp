@@ -23,7 +23,6 @@
 #include "DataType.h"
 #include "Log.h"
 #include "SecurityType.h"
-#include "StringRef.h"
 #include "Symbol.h"
 #include "SymbolTable.h"
 #include "TreeNode.h"
@@ -37,7 +36,7 @@ namespace SecreC {
   TypeArgument
 *******************************************************************************/
 
-SymbolTypeVariable* TypeArgument::bind (StringRef name) const {
+SymbolTypeVariable* TypeArgument::bind(sharemind::StringView name) const {
     switch (m_kind) {
     case TA_SEC:  return new SymbolDomain (name, secType ());
     case TA_DATA: return new SymbolDataType (name, dataType ());
@@ -100,7 +99,7 @@ TypeChecker::Status TypeChecker::visitTypeArg (TreeNodeTypeArg *t) {
 }
 
 TypeChecker::Status TypeChecker::visitTypeArgVar(TreeNodeTypeArgVar* t) {
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     SymbolDomain* symDom = m_st->find<SYM_DOMAIN>(name);
     SymbolDataType* symTy = m_st->find<SYM_TYPE>(name);
     SymbolDimensionality* symDim = m_st->find<SYM_DIM>(name);

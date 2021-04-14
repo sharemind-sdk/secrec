@@ -36,9 +36,10 @@ public: /* Methods: */
 
     void appendOperator (Symbol* op);
 
-    std::vector<SymbolProcedure*> findOperators (StringRef name);
+    std::vector<SymbolProcedure *> findOperators(sharemind::StringView name);
 
-    std::vector<SymbolOperatorTemplate*> findOperatorTemplates (StringRef name);
+    std::vector<SymbolOperatorTemplate *>
+    findOperatorTemplates(sharemind::StringView name);
 
 private: /* Fields: */
 

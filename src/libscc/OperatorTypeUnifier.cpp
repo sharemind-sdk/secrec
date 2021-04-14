@@ -61,7 +61,10 @@ OperatorTypeUnifier::OperatorTypeUnifier (const std::vector<const TypeBasic*>& a
     }
 }
 
-bool OperatorTypeUnifier::bind (StringRef name, const TypeArgument& arg, const SecurityType* sec) {
+bool OperatorTypeUnifier::bind(sharemind::StringView name,
+                               TypeArgument const & arg,
+                               SecurityType const * sec)
+{
     auto it = m_names.find (name);
     if (it != m_names.end ()) {
         TypeArgument& bound = it->second;
@@ -109,7 +112,7 @@ bool OperatorTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType
         return secType->isPublic ();
     }
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     if (m_domainVar != nullptr && m_domainVar->typeVariable ()->value () == name) {
         // Domain variable, not domain
         return true;
@@ -180,7 +183,7 @@ bool OperatorTypeUnifier::checkSecLUB () {
     if (m_securityType->isPublic ())
         return retTy->secType ()->isPublic ();
 
-    StringRef templPD = retTy->secType ()->identifier ()->value ();
+    sharemind::StringView templPD = retTy->secType()->identifier()->value();
 
     return templPD == static_cast<const PrivateSecType*> (m_securityType)->name ();
 }

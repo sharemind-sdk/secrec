@@ -208,7 +208,7 @@ private: /* Methods: */
         assert (it != m_returnBlock->end ());
 
         Imop* retClean = &*it;
-        StringRef str ("Inlined procedure call landing pad");
+        sharemind::StringView str("Inlined procedure call landing pad");
         Imop* comment = new Imop (nullptr, Imop::COMMENT, nullptr,
                                   ConstantString::get (m_code.context (), str));
         retClean->replaceWith (*comment);

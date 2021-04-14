@@ -43,7 +43,7 @@ TemplateVarChecker::TemplateVarChecker(TypeChecker & typeChecker,
 TemplateVarChecker::~TemplateVarChecker() noexcept = default;
 
 bool TemplateVarChecker::visit (TreeNodeIdentifier* id, TypeArgumentKind kind) {
-    const StringRef name = id->value ();
+    sharemind::StringView const name = id->value();
     const auto it = m_vars.find (name);
     if (it != m_vars.end ()) {
         TemplateTypeVar& tv = it->second;
@@ -87,7 +87,7 @@ bool TemplateVarChecker::verifyKind (TypeArgumentKind expected,
 }
 
 bool TemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
-    const StringRef name = q->typeVariable ()->value ();
+    sharemind::StringView const name = q->typeVariable()->value();
     auto it = m_vars.find (name);
     if (it != m_vars.end ()) {
         m_log.fatal () << "Redeclaration of a type variable \'" << name << '\''
@@ -150,7 +150,7 @@ bool TemplateVarChecker::visitDataTypeF (TreeNodeDataTypeF* t, TypeArgumentKind 
 bool TemplateVarChecker::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t) {
     assert (t != nullptr);
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     SymbolStruct* sym = m_st->find<SYM_STRUCT>(name);
     if (sym == nullptr) {
         m_log.fatal () << "Invalid structure name at " << t->identifier ()->location () << ".";
@@ -219,7 +219,7 @@ bool TemplateVarChecker::visitTypeArgTemplate (TreeNodeTypeArgTemplate* t, TypeA
     if (! verifyKind (TA_DATA, kind, t->location ()))
         return false;
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     SymbolStruct* sym = m_st->find<SYM_STRUCT>(name);
     if (sym == nullptr) {
         m_log.fatal () << "Invalid structure name at " << t->identifier ()->location () << ".";

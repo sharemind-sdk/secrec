@@ -36,7 +36,7 @@ void CastTemplateVarChecker::badType (TreeNode* t) {
 }
 
 bool CastTemplateVarChecker::visitQuantifier (TreeNodeQuantifier* q) {
-    const StringRef name = q->typeVariable ()->value ();
+    sharemind::StringView const name = q->typeVariable()->value();
     auto it = m_vars.find (name);
     if (it != m_vars.end ()) {
         m_log.fatal () << "Redeclaration of a type variable \'" << name << '\''

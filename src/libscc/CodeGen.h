@@ -20,6 +20,7 @@
 #ifndef SECREC_CODE_GEN_H
 #define SECREC_CODE_GEN_H
 
+#include <sharemind/StringView.h>
 #include "CodeGenState.h"
 #include "ICodeList.h"
 #include "Location.h"
@@ -43,7 +44,6 @@ class ICodeList;
 class Imop;
 class ModuleInfo;
 class ModuleMap;
-class StringRef;
 class StringTable;
 class SymbolProcedure;
 class SymbolSymbol;
@@ -371,8 +371,8 @@ private:
     void newScope ();
     void popScope ();
 
-    Imop* newComment (StringRef commnet) const;
-    Imop* pushComment (StringRef comment);
+    Imop * newComment(sharemind::StringView comment) const;
+    Imop * pushComment(sharemind::StringView comment);
 
     /// Given result computes size of it
     void codeGenSize (CGResult& result);

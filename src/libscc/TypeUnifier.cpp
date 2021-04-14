@@ -39,7 +39,7 @@ namespace SecreC {
   TypeUnifier
 *******************************************************************************/
 
-bool TypeUnifier::bind (StringRef name, const TypeArgument& arg) {
+bool TypeUnifier::bind(sharemind::StringView name, const TypeArgument& arg) {
     auto it = m_names.find (name);
     if (it != m_names.end () && it->second != arg)
         return false;
@@ -47,7 +47,8 @@ bool TypeUnifier::bind (StringRef name, const TypeArgument& arg) {
     return true;
 }
 
-bool TypeUnifier::findName (StringRef name, TypeArgument& arg) const {
+bool TypeUnifier::findName(sharemind::StringView name, TypeArgument & arg) const
+{
     auto it = m_names.find (name);
     if (it == m_names.end ())
         return false;
@@ -90,7 +91,7 @@ bool TypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* secTyp
         return secType->isPublic ();
     }
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     auto domainQuants = m_sym->domainQuantifiers ();
 
     if (domainQuants.find (name) != domainQuants.end ()) {
@@ -125,7 +126,7 @@ bool TypeUnifier::visitDataTypeConstF (TreeNodeDataTypeConstF* t, const DataType
 bool TypeUnifier::visitDataTypeVarF (TreeNodeDataTypeVarF* t, const DataType* dataType) {
     assert (dataType != nullptr);
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     auto dataQuants = m_sym->dataTypeQuantifiers ();
 
     // We don't have to worry about the variable being a constant type
@@ -154,7 +155,7 @@ bool TypeUnifier::visitDataTypeTemplateF (TreeNodeDataTypeTemplateF* t, const Da
     TUGUARD (dataType->isComposite ());
 
     const auto structType = static_cast<const DataTypeStruct*>(dataType);
-    const StringRef name = t->identifier ()-> value ();
+    sharemind::StringView name = t->identifier()->value();
     auto args = t->arguments ();
     const auto& expectedArgs = structType->typeArgs ();
 
@@ -187,7 +188,7 @@ bool TypeUnifier::visitDimTypeConstF (TreeNodeDimTypeConstF* t, SecrecDimType di
 
 bool TypeUnifier::visitDimTypeVarF (TreeNodeDimTypeVarF* t, SecrecDimType dimType) {
     assert (t != nullptr);
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
 //    if (SymbolDimensionality* sym = m_st->find<SYM_DIM>(name)) {
 //        return sym->dimType () == dimType;
 //    }
@@ -204,7 +205,7 @@ bool TypeUnifier::visitTypeArg (TreeNodeTypeArg* t, const TypeArgument& arg) {
 }
 
 bool TypeUnifier::visitTypeArgVar (TreeNodeTypeArgVar* t, const TypeArgument& arg) {
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
 
     for (TreeNodeQuantifier& quant : m_sym->decl ()->quantifiers ()) {
         if (quant.typeVariable ()->value () == name) {

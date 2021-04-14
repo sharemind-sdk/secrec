@@ -194,13 +194,13 @@ CGStmtResult CodeGen::codeGenStmt(TreeNodeStmt * s) {
     return r;
 }
 
-Imop * CodeGen::newComment(StringRef comment) const {
+Imop * CodeGen::newComment(sharemind::StringView comment) const {
     ConstantString * str = ConstantString::get(getContext(), comment.str ());
     auto c = new Imop(m_node, Imop::COMMENT, nullptr, str);
     return c;
 }
 
-Imop * CodeGen::pushComment(StringRef comment) {
+Imop * CodeGen::pushComment(sharemind::StringView comment) {
     Imop * c = newComment(comment);
     push_imop(c);
     return c;

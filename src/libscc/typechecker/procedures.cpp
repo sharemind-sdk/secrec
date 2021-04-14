@@ -83,8 +83,9 @@ SymbolProcedure* appendOperator (OperatorTable* ops, const TreeNodeProcDef& proc
     return op;
 }
 
-std::vector<SymbolProcedure*>
-findProcedures (SymbolTable* st, StringRef name, const TypeProc* dt)
+std::vector<SymbolProcedure *> findProcedures(SymbolTable * st,
+                                              sharemind::StringView name,
+                                              TypeProc const * dt)
 {
     std::vector<SymbolProcedure* > out;
     const std::string actualName = mangleProcedure (name.str(), dt);
@@ -98,8 +99,8 @@ findProcedures (SymbolTable* st, StringRef name, const TypeProc* dt)
 }
 
 template <SymbolCategory symbolType>
-std::vector<typename SymbolTraits<symbolType>::Type*>
-findTemplates (SymbolTable* st, StringRef name)
+std::vector<typename SymbolTraits<symbolType>::Type *>
+findTemplates(SymbolTable * st, sharemind::StringView name)
 {
     using T = typename SymbolTraits<symbolType>::Type;
     std::vector<T*> out;
@@ -586,7 +587,7 @@ TypeChecker::Status TypeChecker::checkProcCall(TreeNodeIdentifier * name,
     const TreeNodeProcDef* def = symProc->decl ();
     assert (def->annotation () != nullptr);
     const TreeNodeAnnotation* ann = def->annotation ();
-    const StringRef procName = def->procedureName ();
+    sharemind::StringView const procName = def->procedureName();
 
     if (ann->identifier () != nullptr
         && ann->identifier ()->value() == "deprecated")
@@ -620,7 +621,7 @@ TypeChecker::Status TypeChecker::visitExprProcCall (TreeNodeExprProcCall * root)
 }
 
 TypeChecker::Status TypeChecker::findRegularProc(SymbolProcedure *& symProc,
-                                                 StringRef name,
+                                                 sharemind::StringView name,
                                                  const TypeContext & tyCxt,
                                                  const TypeProc * argTypes,
                                                  const TreeNode * errorCxt)
@@ -657,11 +658,12 @@ TypeChecker::Status TypeChecker::findRegularProc(SymbolProcedure *& symProc,
     return OK;
 }
 
-TypeChecker::Status TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
-                                                      StringRef name,
-                                                      const TypeContext & tyCxt,
-                                                      const TypeProc* argTypes,
-                                                      const TreeNode * errorCxt)
+TypeChecker::Status
+TypeChecker::findBestMatchingProc(SymbolProcedure *& symProc,
+                                  sharemind::StringView name,
+                                  TypeContext const & tyCxt,
+                                  TypeProc const * argTypes,
+                                  TreeNode const * errorCxt)
 {
     assert(errorCxt);
 
@@ -724,7 +726,7 @@ bool latticeLeqOp(const TypeNonVoid* a, const TypeNonVoid* b) {
 }
 
 TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
-                                                  StringRef name,
+                                                  sharemind::StringView name,
                                                   const TypeProc * callTypeProc,
                                                   const TreeNode * errorCxt)
 {
@@ -814,11 +816,12 @@ TypeChecker::Status TypeChecker::findRegularOpDef(SymbolProcedure *& symProc,
     return OK;
 }
 
-TypeChecker::Status TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symProc,
-                                                       StringRef name,
-                                                       const TypeContext & tyCxt,
-                                                       const TypeProc * callTypeProc,
-                                                       const TreeNode * errorCxt)
+TypeChecker::Status
+TypeChecker::findBestMatchingOpDef(SymbolProcedure *& symProc,
+                                   sharemind::StringView name,
+                                   TypeContext const & tyCxt,
+                                   TypeProc const * callTypeProc,
+                                   TreeNode const * errorCxt)
 {
     assert (errorCxt);
 
@@ -1037,7 +1040,7 @@ bool TypeChecker::unify (Instantiation& inst,
 
     const auto& varMap = typeUnifier.typeVars ();
     for (TreeNodeQuantifier& quant : t->quantifiers ()) {
-        StringRef typeVar = quant.typeVariable ()->value ();
+        sharemind::StringView typeVar = quant.typeVariable()->value();
         assert (varMap.find (typeVar) != varMap.end ());
         const TypeArgument& param = varMap.find (typeVar)->second;
         if (quant.type () == NODE_TEMPLATE_QUANTIFIER_DOMAIN) {

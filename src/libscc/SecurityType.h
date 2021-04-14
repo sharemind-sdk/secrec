@@ -84,29 +84,31 @@ class PrivateSecType : public SecurityType {
 public: /* Methods: */
 
     // For boost::flyweight
-    PrivateSecType(const std::pair<StringRef, SymbolKind*>& p)
+    PrivateSecType(std::pair<sharemind::StringView, SymbolKind *> const & p)
         : SecurityType (false)
         , m_name (p.first)
         , m_kind (p.second)
     { }
 
-    PrivateSecType (StringRef name,
-                    SymbolKind* kind)
+    PrivateSecType(sharemind::StringView name, SymbolKind * kind)
         : SecurityType (false)
         , m_name (std::move(name))
         , m_kind (kind)
     { }
 
-    inline StringRef name () const { return m_name; }
+    sharemind::StringView name() const noexcept { return m_name; }
     inline SymbolKind* securityKind () const { return m_kind; }
 
-    static const PrivateSecType* get (StringRef name, SymbolKind* kind);
+    static PrivateSecType const * get(sharemind::StringView name,
+                                      SymbolKind * kind);
 
 protected:
     void print (std::ostream & os) const override;
 
 private: /* Fields: */
-    StringRef   const m_name;
+
+    sharemind::StringView const m_name;
+
     SymbolKind* const m_kind;
 };
 

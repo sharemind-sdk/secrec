@@ -81,7 +81,8 @@ private: /* Methods: */
 public:
 
     static ConstantFloat* get (const DataType* type, uint64_t value);
-    static ConstantFloat* get (const DataType* type, StringRef str);
+    static ConstantFloat * get(DataType const * type,
+                               sharemind::StringView str);
     static ConstantFloat* get (const DataType* type, const APFloat& value);
 
     const APFloat& value () const { return m_value; }
@@ -100,21 +101,23 @@ private: /* Fields: */
 class ConstantString : public SymbolConstant {
 private: /* Methods: */
 
-    ConstantString (const TypeNonVoid* type, StringRef value)
+    ConstantString(TypeNonVoid const * type, sharemind::StringView value)
         : SymbolConstant (type)
         , m_value (std::move(value))
     { }
 
 public:
 
-    static ConstantString* get (Context& cxt, StringRef str);
-    StringRef value () const { return m_value; }
+    static ConstantString * get(Context & cxt, sharemind::StringView str);
+    sharemind::StringView value() const noexcept { return m_value; }
 
 protected:
     void print (std::ostream& os) const override;
 
 private: /* Fields: */
-    const StringRef m_value;
+
+    sharemind::StringView const m_value;
+
 };
 
 } // namespace SecreC

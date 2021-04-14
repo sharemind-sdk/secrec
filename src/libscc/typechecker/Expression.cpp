@@ -253,7 +253,7 @@ const TypeNonVoid* TypeChecker::checkSelect (const Location& loc,
 
     // Verify attribute access:
     const auto structType = static_cast<const DataTypeStruct*>(ty->secrecDataType ());
-    StringRef fieldName = id->value ();
+    sharemind::StringView fieldName = id->value();
     const TypeBasic* matchingFieldType = nullptr;
     for (const auto& field : structType->fields ()) {
         if (fieldName == field.name) {
@@ -1094,7 +1094,7 @@ uint64_t charToDigit(char c) {
     }
 }
 
-bool readIntLiteralSuffix(StringRef input,
+bool readIntLiteralSuffix(sharemind::StringView input,
                           std::size_t * length,
                           SecrecDataType * dataType)
 {
@@ -1128,7 +1128,7 @@ bool readIntLiteralSuffix(StringRef input,
     return false;
 }
 
-bool convertNumber(StringRef input,
+bool convertNumber(sharemind::StringView input,
                    SecrecDataType * dataType,
                    uint64_t * result)
 {
@@ -1236,7 +1236,7 @@ void TreeNodeExprInt::instantiateDataTypeV(SecrecDataType dType) {
 
 namespace /* anonymous */ {
 
-SecrecDataType readFloatLiteralSuffix(StringRef input)  {
+SecrecDataType readFloatLiteralSuffix(sharemind::StringView input) {
 
     if (input.endsWith("f32")) return DATATYPE_FLOAT32;
     if (input.endsWith("f64")) return DATATYPE_FLOAT64;
@@ -1401,16 +1401,17 @@ TypeChecker::Status TypeChecker::visitStringPartFragment(TreeNodeStringPartFragm
   TreeNodeStringPartIdentifier
 *******************************************************************************/
 
-StringRef TreeNodeStringPartIdentifier::staticValue () const {
+sharemind::StringView TreeNodeStringPartIdentifier::staticValue() const noexcept
+{
     assert (isConstant ());
-    return m_value->value ();
+    return m_value->value();
 }
 
 TypeChecker::Status TypeChecker::visitStringPartIdentifier(TreeNodeStringPartIdentifier * p) {
     if (p->value () || p->secrecType ())
         return OK;
 
-    const StringRef name = p->name ();
+    sharemind::StringView const name = p->name();
     SymbolDomain* symDom = m_st->find<SYM_DOMAIN>(name);
     SymbolDataType* symTy = m_st->find<SYM_TYPE>(name);
     SymbolSymbol* symSym = m_st->find<SYM_SYMBOL>(name);

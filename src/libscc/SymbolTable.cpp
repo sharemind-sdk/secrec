@@ -103,7 +103,7 @@ private: /* Fields: */
   SymbolTable
 *******************************************************************************/
 
-SymbolTable::SymbolTable (StringRef name)
+SymbolTable::SymbolTable(sharemind::StringView name)
     : m_parent (nullptr)
     , m_global (this)
     , m_other (new OtherSymbols ())
@@ -113,7 +113,7 @@ SymbolTable::SymbolTable (StringRef name)
     // Intentionally empty
 }
 
-SymbolTable::SymbolTable (SymbolTable *parent, StringRef name)
+SymbolTable::SymbolTable(SymbolTable *parent, sharemind::StringView name)
     : m_parent (parent)
     , m_global (parent->m_global)
     , m_other (parent->m_other)
@@ -181,7 +181,8 @@ SymbolSymbol *SymbolTable::appendTemporary (const TypeNonVoid* type) {
     return m_other->temporary (type);
 }
 
-Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
+Symbol *
+SymbolTable::find(SymbolCategory type, sharemind::StringView name) const {
     for (const SymbolTable* c = this; c != nullptr; c = c->m_parent) {
         const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
         if (syms.empty ()) continue;
@@ -193,14 +194,18 @@ Symbol *SymbolTable::find (SymbolCategory type, StringRef name) const {
 }
 
 std::vector<Symbol *>
-SymbolTable::findPrefixed(SymbolCategory type, StringRef prefix) const {
+SymbolTable::findPrefixed(SymbolCategory type,
+                          sharemind::StringView prefix) const
+{
     return findAll (
         [=](Symbol* s) {
-            return s->symbolType () == type && prefix.isPrefixOf (s->name ());
+            return s->symbolType() == type
+                    && sharemind::StringView(s->name()).startsWith(prefix);
         });
 }
 
-std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name) const {
+std::vector<Symbol* >
+SymbolTable::findAll(SymbolCategory type, sharemind::StringView name) const {
     std::vector<Symbol* > out;
     for (const SymbolTable* c = this; c != nullptr; c = c->m_parent) {
         const std::vector<Symbol*>& syms = c->findFromCurrentScope (type, name);
@@ -210,7 +215,10 @@ std::vector<Symbol* > SymbolTable::findAll (SymbolCategory type, StringRef name)
     return out;
 }
 
-std::vector<Symbol*> SymbolTable::findFromCurrentScope (SymbolCategory type, StringRef name) const {
+std::vector<Symbol *>
+SymbolTable::findFromCurrentScope(SymbolCategory type,
+                                  sharemind::StringView name) const
+{
     return findFromCurrentScope (
         [=](Symbol* s) {
             return s->symbolType () == type && s->name () == name;

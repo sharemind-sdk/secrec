@@ -62,7 +62,7 @@ bool CastTypeUnifier::visitSecTypeF (TreeNodeSecTypeF* t, const SecurityType* se
         return secType->isPublic ();
     }
 
-    const StringRef name = t->identifier ()->value ();
+    sharemind::StringView const name = t->identifier()->value();
     if (m_domainVar != nullptr && m_domainVar->typeVariable ()->value () == name) {
         // Domain variable, not domain
         return true;

@@ -139,9 +139,9 @@ ConstantFloat* ConstantFloat::get (const DataType* type, uint64_t value) {
     return get (type, APFloat (floatPrec (type), value));
 }
 
-ConstantFloat* ConstantFloat::get (const DataType* type, StringRef str) {
-    return get (type, APFloat (floatPrec (type), str));
-}
+ConstantFloat * ConstantFloat::get(DataType const * type,
+                                   sharemind::StringView str)
+{ return get(type, APFloat(floatPrec (type), str)); }
 
 // TODO: use flyweight
 // TODO: const correctness
@@ -168,8 +168,8 @@ void ConstantFloat::print (std::ostream &os) const
 
 // TODO: use flyweight
 // TODO: const correctness
-ConstantString* ConstantString::get (Context& cxt, StringRef str) {
-    using ConstantStringMap = std::map<StringRef, ConstantString>;
+ConstantString * ConstantString::get(Context & cxt, sharemind::StringView str) {
+    using ConstantStringMap = std::map<sharemind::StringView, ConstantString>;
     static ConstantStringMap stringLiterals;
 
     auto it = stringLiterals.find (str);

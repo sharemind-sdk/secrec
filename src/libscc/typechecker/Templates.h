@@ -52,7 +52,8 @@ class SymbolTypeVariable;
 class TypeNonVoid;
 
 
-using TemplateVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
+using TemplateVarMap =
+        std::map<sharemind::StringView, TypeArgument, StringRef::FastCmp>;
 
 /*******************************************************************************
   Instantiation

@@ -47,8 +47,10 @@ private: /* Types: */
     using Table = std::vector<std::unique_ptr<Symbol>>;
     using Scopes = std::vector<std::unique_ptr<SymbolTable>>;
 public: /* Methods: */
-    SymbolTable (StringRef name = "Global");
-    explicit SymbolTable(SymbolTable *parent, StringRef name = "Local");
+
+    SymbolTable(sharemind::StringView name = "Global");
+    explicit SymbolTable(SymbolTable * parent,
+                         sharemind::StringView name = "Local");
     SymbolTable (const SymbolTable&) = delete;
     SymbolTable& operator = (const SymbolTable&) = delete;
     ~SymbolTable();
@@ -58,10 +60,11 @@ public: /* Methods: */
     SymbolSymbol* appendTemporary (const TypeNonVoid* type);
     SymbolLabel* label (Imop* imop);
 
-    Symbol* find (SymbolCategory symbolType, StringRef name) const;
+    Symbol * find(SymbolCategory symbolType, sharemind::StringView name) const;
 
     template <SymbolCategory symbolType>
-    typename SymbolTraits<symbolType>::Type* find (StringRef name) const {
+    typename SymbolTraits<symbolType>::Type *
+    find(sharemind::StringView name) const {
         return static_cast<typename SymbolTraits<symbolType>::Type*>(find (symbolType, name));
     }
 
@@ -70,9 +73,11 @@ public: /* Methods: */
       \param[in] prefix the name prefix of the symbols to find.
       \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol *> findPrefixed (SymbolCategory type, StringRef prefix) const;
+    std::vector<Symbol *> findPrefixed(SymbolCategory type,
+                                       sharemind::StringView prefix) const;
 
-    std::vector<Symbol* > findAll (SymbolCategory type, StringRef name) const;
+    std::vector<Symbol* > findAll(SymbolCategory type,
+                                  sharemind::StringView name) const;
 
     template <typename Pred>
     std::vector<Symbol* > findAll (Pred pred) const {
@@ -95,7 +100,7 @@ public: /* Methods: */
      */
     bool addImport (SymbolTable* st);
 
-    void setName (StringRef name) { m_name = name; }
+    void setName(sharemind::StringView name) noexcept { m_name = name; }
 
     void print (std::ostream& os, unsigned level = 0, unsigned indent = 4) const;
 
@@ -106,7 +111,8 @@ public: /* Methods: */
        \param[in] name symbol name.
        \returns a vector of pointers to the matching symbols.
     */
-    std::vector<Symbol*> findFromCurrentScope (SymbolCategory type, StringRef name) const;
+    std::vector<Symbol *>
+    findFromCurrentScope(SymbolCategory type, sharemind::StringView name) const;
 
     /**
        Find a symbol in the current scope given a predicate, following imported modules.
@@ -141,7 +147,8 @@ private: /* Fields: */
     OtherSymbols* const         m_other;    ///< Temporaries and labels.
     std::vector<SymbolTable* >  m_imports;  ///< STs of imported modules.
     Scopes                      m_scopes;   ///< Local scopes.
-    StringRef                   m_name;     ///< Debugging.
+    sharemind::StringView m_name; ///< Debugging.
+
 };
 
 std::ostream & operator<<(std::ostream & out, const SymbolTable & st);

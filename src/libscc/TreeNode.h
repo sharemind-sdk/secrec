@@ -441,13 +441,14 @@ protected:
 
 class TreeNodeIdentifier: public TreeNode {
 public: /* Methods: */
-    inline TreeNodeIdentifier(StringRef value,
+
+    inline TreeNodeIdentifier(sharemind::StringView value,
                               const Location & loc)
         : TreeNode(NODE_IDENTIFIER, loc)
         , m_value(std::move(value))
     { }
 
-    inline StringRef value() const { return m_value; }
+    sharemind::StringView value() const noexcept { return m_value; }
 
 protected:
 
@@ -458,7 +459,9 @@ protected:
     }
 
 private: /* Fields: */
-    const StringRef m_value;
+
+    sharemind::StringView const m_value;
+
 };
 
 /******************************************************************
@@ -996,14 +999,14 @@ protected:
 class TreeNodeExprInt: public TreeNodeExpr {
 public: /* Methods: */
 
-    inline TreeNodeExprInt(StringRef value, const Location & loc)
+    inline TreeNodeExprInt(sharemind::StringView value, const Location & loc)
         : TreeNodeExpr(NODE_LITE_INT, loc)
         , m_stringValue(value)
     { }
 
     CGResult codeGenWith (CodeGen & cg) override final;
 
-    StringRef stringValue() const { return m_stringValue; }
+    sharemind::StringView stringValue() const noexcept { return m_stringValue; }
     bool haveActualValue() const { return m_haveActualValue; }
 
     uint64_t actualValue() const {
@@ -1030,7 +1033,7 @@ protected:
     void instantiateDataTypeV (SecrecDataType dType) override final;
 
 private: /* Fields: */
-    StringRef m_stringValue;
+    sharemind::StringView m_stringValue;
     bool m_haveActualValue = false;
     uint64_t m_actualValue = 0;
 };
@@ -1486,7 +1489,7 @@ public: /* Methods: */
     { }
 
     virtual bool isConstant () const = 0;
-    virtual StringRef staticValue () const = 0;
+    virtual sharemind::StringView staticValue () const noexcept = 0;
     virtual CGResult codeGenWith (CodeGen& cg) = 0;
 };
 
@@ -1497,13 +1500,17 @@ public: /* Methods: */
 class TreeNodeStringPartFragment: public TreeNodeStringPart {
 public: /* Methods: */
 
-    TreeNodeStringPartFragment (StringRef value, const Location& loc)
+    TreeNodeStringPartFragment(sharemind::StringView value,
+                               Location const & loc)
         : TreeNodeStringPart (NODE_STRING_PART_FRAGMENT, loc)
         , m_value (std::move(value))
     { }
 
     bool isConstant () const override final { return true; }
-    StringRef staticValue () const override final { return m_value; }
+
+    sharemind::StringView staticValue () const noexcept override final
+    { return m_value; }
+
     CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
@@ -1515,7 +1522,9 @@ protected:
     }
 
 public: /* Private: */
-    const StringRef m_value;
+
+    sharemind::StringView const m_value;
+
 };
 
 /******************************************************************
@@ -1525,21 +1534,22 @@ public: /* Private: */
 class TreeNodeStringPartIdentifier: public TreeNodeStringPart {
 public: /* Methods: */
 
-    TreeNodeStringPartIdentifier (StringRef name, const Location& loc)
+    TreeNodeStringPartIdentifier(sharemind::StringView name,
+                                 Location const & loc)
         : TreeNodeStringPart (NODE_STRING_PART_IDENTIFIER, loc)
         , m_name (std::move(name))
         , m_value (nullptr)
         , m_secrecType (nullptr)
     { }
 
-    StringRef name () const { return m_name; }
+    sharemind::StringView name () const noexcept { return m_name; }
     ConstantString* value () const { return m_value; }
     void setValue (ConstantString* value) { m_value = value; }
     const TypeNonVoid* secrecType () const { return m_secrecType; }
     void setSecrecType (const TypeNonVoid* secrecType) { m_secrecType = secrecType; }
 
     bool isConstant () const override final { return m_value != nullptr; }
-    StringRef staticValue () const override final;
+    sharemind::StringView staticValue () const noexcept override final;
     CGResult codeGenWith (CodeGen& cg) override final;
 
 protected:
@@ -1551,7 +1561,7 @@ protected:
     }
 
 public: /* Private: */
-    const StringRef m_name;
+    sharemind::StringView const m_name;
     ConstantString* m_value;
     const TypeNonVoid* m_secrecType;
 };
@@ -1562,13 +1572,13 @@ public: /* Private: */
 
 class TreeNodeExprFloat: public TreeNodeExpr {
 public: /* Methods: */
-    TreeNodeExprFloat (StringRef value,
-                       const Location & loc)
+    TreeNodeExprFloat(sharemind::StringView value,
+                      Location const & loc)
         : TreeNodeExpr (NODE_LITE_FLOAT, loc)
         , m_value (std::move(value))
     { }
 
-    inline StringRef value () const { return m_value; }
+    sharemind::StringView value() const noexcept { return m_value; }
     CGResult codeGenWith (CodeGen & cg) override final;
 
 protected:
@@ -1580,7 +1590,9 @@ protected:
     }
 
 private: /* Fields: */
-    const StringRef m_value;
+
+    sharemind::StringView const m_value;
+
 };
 
 /******************************************************************
@@ -1999,7 +2011,7 @@ public:
         return m_procSymbol;
     }
 
-    StringRef procedureName() const;
+    sharemind::StringView procedureName() const noexcept;
     const std::string printableSignature() const;
 
     inline bool haveProcedureType() const {
@@ -2218,7 +2230,7 @@ public: /* Methods: */
         : TreeNode (NODE_IMPORT, loc)
     { }
 
-    StringRef name () const;
+    sharemind::StringView name () const;
 
 protected:
 
@@ -2240,7 +2252,7 @@ public: /* Methods: */
     ~TreeNodeModule() override;
 
     bool hasName () const;
-    StringRef name () const;
+    sharemind::StringView name() const;
     TreeNodeProgram* program () const;
 
     void addGeneratedInstance (TreeNodeProcDef * instance) {
@@ -2324,7 +2336,7 @@ public: /* Methods: */
         : TreeNode (NODE_VAR_INIT, loc)
     { }
 
-    StringRef variableName() const;
+    sharemind::StringView variableName() const;
     TreeNodeSeqView<TreeNodeExpr> shape () const;
     bool hasRightHandSide() const;
     TreeNodeExpr* rightHandSide () const;
@@ -2374,7 +2386,7 @@ public: /* Methods: */
     TreeNodeVarInit* initializer () const;
     TreeNodeSeqView<TreeNodeVarInit> initializers () const;
     TreeNodeType* varType () const;
-    StringRef variableName() const;
+    sharemind::StringView variableName() const;
     TreeNodeSeqView<TreeNodeExpr> shape () const;
     TreeNodeExpr* rightHandSide () const;
 
@@ -2611,12 +2623,13 @@ protected:
 class TreeNodeDataTypeDecl : public TreeNode {
 public: /* Methods: */
 
-    explicit inline TreeNodeDataTypeDecl (StringRef typeName, const Location & loc)
+    explicit TreeNodeDataTypeDecl(sharemind::StringView typeName,
+                                  Location const & loc)
         : TreeNode (NODE_DATATYPE_DECL, loc)
         , m_typeName (typeName)
         {}
 
-    StringRef typeName () const { return m_typeName; }
+    sharemind::StringView typeName() const noexcept { return m_typeName; }
 
     TreeNodeSeqView<TreeNodeDataTypeDeclParam> parameters () const;
 
@@ -2626,7 +2639,9 @@ protected:
     }
 
 private: /* Fields: */
-    StringRef m_typeName;
+
+    sharemind::StringView m_typeName;
+
 };
 
 /******************************************************************

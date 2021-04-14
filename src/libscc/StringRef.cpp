@@ -21,23 +21,12 @@
 
 #include "StringTable.h"
 
-#include <ostream>
-
-namespace SecreC {
-
-std::ostream& operator << (std::ostream& os, StringRef sref) {
-    os.write (sref.data (), sref.size ());
-    return os;
-}
-
-
-} // namespace SecreC
 
 extern "C" {
 
-const SecreC::StringRef* add_string (SecreC::StringTable* table, const char * str, size_t size) {
-    return table->addString(str, size);
-}
+sharemind::StringView const *
+add_string(SecreC::StringTable * table, char const * str, std::size_t size)
+{ return table->addString(str, size); }
 
 }
 

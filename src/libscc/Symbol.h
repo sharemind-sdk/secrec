@@ -65,7 +65,7 @@ public: /* Methods: */
         , m_type (nullptr)
     { }
 
-    explicit inline Symbol (Type symbolType, StringRef name)
+    explicit Symbol(Type symbolType, sharemind::StringView name)
         : m_symbolType (symbolType)
         , m_type (nullptr)
         , m_name (name.str ())
@@ -76,7 +76,7 @@ public: /* Methods: */
     inline bool isConstant () const { return m_symbolType == SYM_CONSTANT; }
     inline Type symbolType() const { return m_symbolType; }
     inline const std::string &name() const { return m_name; }
-    inline void setName(StringRef name) { m_name = name.str(); }
+    void setName(sharemind::StringView name) { m_name = name.str(); }
     inline const TypeNonVoid* secrecType() const { return m_type; }
 
     bool isGlobal() const;
@@ -114,7 +114,7 @@ public: /* Methods: */
 class SymbolTypeVariable: public Symbol {
 public: /* Methods: */
 
-    SymbolTypeVariable(SymbolCategory symCategory, StringRef name)
+    SymbolTypeVariable(SymbolCategory symCategory, sharemind::StringView name)
         : Symbol (symCategory, name)
     { }
 
@@ -127,7 +127,7 @@ public: /* Methods: */
 
 class SymbolDimensionality : public SymbolTypeVariable {
 public: /* Methods: */
-    SymbolDimensionality(StringRef name, SecrecDimType dimType)
+    SymbolDimensionality(sharemind::StringView name, SecrecDimType dimType)
         : SymbolTypeVariable (SYM_DIM, name)
         , m_dimType (dimType)
     { }
@@ -149,7 +149,7 @@ private: /* Fields: */
 class SymbolDataType : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDataType (StringRef name, const DataType* dataType)
+    SymbolDataType(sharemind::StringView name, const DataType* dataType)
         : SymbolTypeVariable (SYM_TYPE, name)
         , m_dataType (dataType)
     { }
@@ -171,7 +171,7 @@ private: /* Fields: */
 class SymbolDomain : public SymbolTypeVariable {
 public: /* Methods: */
 
-    SymbolDomain(StringRef name,
+    SymbolDomain(sharemind::StringView name,
                  const SecurityType * secType,
                  const Location* loc = nullptr)
         : SymbolTypeVariable (SYM_DOMAIN, name)
@@ -215,11 +215,11 @@ public: /* Types: */
     };
 
 private: /* Types: */
-    using TypeMap = std::map<StringRef, const Parameters*>;
+    using TypeMap = std::map<sharemind::StringView, const Parameters*>;
 
 public: /* Methods: */
 
-    SymbolKind (StringRef name)
+    SymbolKind(sharemind::StringView name)
         : Symbol (SYM_KIND, name)
     { }
 
@@ -228,12 +228,12 @@ public: /* Methods: */
             delete it.second;
     }
 
-    const Parameters* findType (StringRef name) const;
+    Parameters const * findType(sharemind::StringView name) const;
 
-    void addType (StringRef name,
-                  const DataType* type,
-                  boost::optional<const DataTypeBuiltinPrimitive*> publicType,
-                  boost::optional<uint64_t> size);
+    void addType(sharemind::StringView name,
+                 DataType const * type,
+                 boost::optional<DataTypeBuiltinPrimitive const *> publicType,
+                 boost::optional<std::uint64_t> size);
 
 protected:
     void print (std::ostream & os) const override;
@@ -253,9 +253,12 @@ public: /* Types: */
 
 public: /* Methods: */
 
-    explicit SymbolSymbol(StringRef name, const TypeNonVoid * valueType);
+    explicit SymbolSymbol(sharemind::StringView name,
+                          TypeNonVoid const * valueType);
 
-    explicit SymbolSymbol(StringRef name, const TypeNonVoid * valueType, bool);
+    explicit SymbolSymbol(sharemind::StringView name,
+                          TypeNonVoid const * valueType,
+                          bool);
 
     inline ScopeType scopeType() const { return m_scopeType; }
     inline void setScopeType(ScopeType type) { m_scopeType = type; }
@@ -305,7 +308,7 @@ private: /* Fields: */
     SymbolSymbol*               m_parent; // TODO: this is a HUGE hack!
 };
 
-SymbolSymbol* lookupField (SymbolSymbol* val, StringRef fieldName);
+SymbolSymbol * lookupField(SymbolSymbol * val, sharemind::StringView fieldName);
 
 /**
  * @brief flattenSymbol Flatten the given symbol for returning it.
@@ -326,12 +329,12 @@ using SymbolTemporary = SymbolSymbol;
 // TODO: initialize global variables in procedures
 class SymbolProcedure: public Symbol {
 public: /* Methods: */
-    SymbolProcedure(StringRef name, const TypeProc* type);
+    SymbolProcedure(sharemind::StringView name, TypeProc const * type);
 
     inline Imop *target() const { return m_target; }
     inline void setTarget(Imop *target) { m_target = target; }
 
-    virtual StringRef procedureName () const { return name (); }
+    virtual sharemind::StringView procedureName() const { return name(); }
     virtual const TreeNodeProcDef * decl () const { assert (false); return nullptr; }
     virtual const Location * location () const override { return nullptr; }
 
@@ -350,10 +353,10 @@ private: /* Fields: */
 class SymbolUserProcedure : public SymbolProcedure {
 public: /* Methods: */
 
-    SymbolUserProcedure (StringRef name,
-                         const TreeNodeProcDef * decl);
+    SymbolUserProcedure(sharemind::StringView name,
+                        TreeNodeProcDef const * decl);
 
-    StringRef procedureName () const override;
+    sharemind::StringView procedureName() const override;
     virtual const TreeNodeProcDef * decl () const override { return m_decl; }
     virtual const Location * location() const override;
 
@@ -370,7 +373,8 @@ private: /* Fields: */
 
 class SymbolStruct: public Symbol {
 public: /* Methods: */
-    explicit SymbolStruct (StringRef name, TreeNodeStructDecl* structDecl);
+    explicit SymbolStruct(sharemind::StringView name,
+                          TreeNodeStructDecl * structDecl);
     TreeNodeStructDecl* decl () const { return m_structDecl; }
     const Location* location () const override;
 protected:
@@ -387,8 +391,12 @@ class SymbolTemplate: public Symbol {
 public: /* Methods: */
     inline TreeNodeTemplate* decl() const { return m_templ; }
     virtual const Location* location() const override;
-    const std::set<StringRef>& dataTypeQuantifiers () const { return m_dataTypeQuantifiers; }
-    const std::set<StringRef>& domainQuantifiers () const { return m_domainQuantifiers; }
+
+    std::set<sharemind::StringView> const & dataTypeQuantifiers() const noexcept
+    { return m_dataTypeQuantifiers; }
+
+    std::set<sharemind::StringView> const & domainQuantifiers() const noexcept
+    { return m_domainQuantifiers; }
 
 protected: /* Methods: */
     SymbolTemplate(SymbolCategory cat, TreeNodeTemplate* templ);
@@ -397,8 +405,9 @@ protected: /* Methods: */
 
 protected: /* Fields: */
     TreeNodeTemplate* const m_templ;
-    std::set<StringRef> m_dataTypeQuantifiers;
-    std::set<StringRef> m_domainQuantifiers;
+    std::set<sharemind::StringView> m_dataTypeQuantifiers;
+    std::set<sharemind::StringView> m_domainQuantifiers;
+
 };
 
 /*******************************************************************************

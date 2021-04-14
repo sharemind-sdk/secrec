@@ -42,7 +42,9 @@ class AbstractOperatorTypeUnifier {
 
 private: /* Types: */
 
-    using TypeVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
+    using TypeVarMap = std::map<sharemind::StringView,
+                                TypeArgument,
+                                StringRef::FastCmp>;
 
 public:
 
@@ -92,7 +94,9 @@ public: /* Methods: */
 
 protected:
 
-    virtual bool bind (StringRef name, const TypeArgument& arg, const SecurityType* sec = nullptr);
+    virtual bool bind(sharemind::StringView name,
+                      TypeArgument const & arg,
+                      SecurityType const * sec = nullptr);
 
 protected: /* Fields: */
 

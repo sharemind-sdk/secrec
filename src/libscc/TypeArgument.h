@@ -20,6 +20,7 @@
 #ifndef SECREC_TYPE_ARGUMENT_H
 #define SECREC_TYPE_ARGUMENT_H
 
+#include <sharemind/StringView.h>
 #include "ParserEnums.h"
 
 #include <cassert>
@@ -30,7 +31,6 @@ namespace SecreC {
 
 class DataType;
 class SecurityType;
-class StringRef;
 class SymbolTypeVariable;
 class TreeNodeQuantifier;
 
@@ -112,7 +112,7 @@ public: /* Methods: */
 
     TypeArgumentKind kind () const { return m_kind; }
 
-    SymbolTypeVariable* bind (StringRef name) const;
+    SymbolTypeVariable * bind(sharemind::StringView name) const;
 
     friend bool operator == (const TypeArgument& a, const TypeArgument& b);
     friend bool operator < (const TypeArgument& a, const TypeArgument& b);

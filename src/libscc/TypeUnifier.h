@@ -40,7 +40,8 @@ class Type;
 class TypeUnifier {
 private: /* Types: */
 
-    using TypeVarMap = std::map<StringRef, TypeArgument, StringRef::FastCmp>;
+    using TypeVarMap = std::map<sharemind::StringView,
+                                TypeArgument, StringRef::FastCmp>;
 
 public:
 
@@ -80,12 +81,12 @@ public: /* Methods: */
     bool visitTypeArgDimTypeConst (TreeNodeTypeArgDimTypeConst* t, const TypeArgument& arg);
     bool visitTypeArgPublic (TreeNodeTypeArgPublic* t, const TypeArgument& arg);
 
-    bool findName (StringRef name, TypeArgument& arg) const;
+    bool findName(sharemind::StringView name, TypeArgument & arg) const;
     const TypeVarMap& typeVars () const { return m_names; }
 
 private:
 
-    bool bind (StringRef name, const TypeArgument& arg);
+    bool bind(sharemind::StringView name, TypeArgument const & arg);
 
 private: /* Fields: */
     SymbolTable* m_st;

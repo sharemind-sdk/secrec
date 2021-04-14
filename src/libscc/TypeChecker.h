@@ -20,6 +20,7 @@
 #ifndef SECREC_TYPE_CHECKER_H
 #define SECREC_TYPE_CHECKER_H
 
+#include <sharemind/StringView.h>
 #include "ParserEnums.h"
 #include "SymbolFwd.h"
 #include "TreeNodeFwd.h"
@@ -38,7 +39,6 @@ class Location;
 class OperatorTable;
 class OverloadableOperator;
 class SecurityType;
-class StringRef;
 class SymbolTable;
 class TemplateInstantiator;
 class Type;
@@ -253,12 +253,12 @@ private: /* Methods: */
                     const TypeBasic * want) const;
 
     Status findRegularOpDef(SymbolProcedure *& symProc,
-                            StringRef name,
+                            sharemind::StringView name,
                             const TypeProc * callTypeProc,
                             const TreeNode * errorCxt);
 
     Status findRegularProc(SymbolProcedure *& symProc,
-                           StringRef name,
+                           sharemind::StringView name,
                            const TypeContext & tyCxt,
                            const TypeProc * argTypes,
                            const TreeNode * errorCxt);
@@ -276,13 +276,13 @@ private: /* Methods: */
      * \param[in] errorCxt the location about which to print errors.
      */
     Status findBestMatchingProc(SymbolProcedure *& symProc,
-                                StringRef name,
+                                sharemind::StringView name,
                                 const TypeContext & tyCxt,
                                 const TypeProc* argTypes,
                                 const TreeNode * errorCxt);
 
     Status findBestMatchingOpDef(SymbolProcedure *& symProc,
-                                 StringRef name,
+                                 sharemind::StringView name,
                                  const TypeContext & tyCxt,
                                  const TypeProc * callTypeProc,
                                  const TreeNode * errorCxt);
@@ -301,7 +301,7 @@ private: /* Fields: */
     CompileLog&            m_log;
     Context&               m_context;
     TemplateInstantiator*  m_instantiator;
-    std::vector<StringRef> m_structsInProgress;
+    std::vector<sharemind::StringView> m_structsInProgress;
 };
 
 } // namespace SecreC

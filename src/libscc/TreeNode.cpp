@@ -984,7 +984,7 @@ void TreeNodeExprInt::printXmlHelper (std::ostream & os) const {
   TreeNodeProcDef
 *******************************************************************************/
 
-StringRef TreeNodeProcDef::procedureName() const {
+sharemind::StringView TreeNodeProcDef::procedureName() const noexcept {
     return identifier ()->value ();
 }
 
@@ -1168,7 +1168,7 @@ void TreeNodeIdentifier::printXmlHelper (std::ostream & os) const {
   TreeNodeStmtDecl
 *******************************************************************************/
 
-StringRef TreeNodeStmtDecl::variableName() const {
+sharemind::StringView TreeNodeStmtDecl::variableName() const {
     return initializer ()->variableName ();
 }
 
@@ -1217,7 +1217,7 @@ TreeNodeExpr* TreeNodeVarInit::rightHandSide () const {
     return nullptr;
 }
 
-StringRef TreeNodeVarInit::variableName() const {
+sharemind::StringView TreeNodeVarInit::variableName() const {
     assert(children().size() > 0 && children().size() <= 3);
     return childAt<TreeNodeIdentifier>(this, 0)->value ();
 }
@@ -1393,14 +1393,14 @@ bool TreeNodeModule::hasName() const {
    return children().size() == 2;
 }
 
-StringRef TreeNodeModule::name() const {
+sharemind::StringView TreeNodeModule::name() const {
     assert(children().size() == 1 || children().size() == 2);
 
     if (hasName()) {
         return childAt<TreeNodeIdentifier>(this, 1)->value();
     }
 
-    return StringRef ("", 0);
+    return sharemind::StringView("", 0);
 }
 
 TreeNodeProgram * TreeNodeModule::program() const {
@@ -1412,7 +1412,7 @@ TreeNodeProgram * TreeNodeModule::program() const {
   TreeNodeImport
 *******************************************************************************/
 
-StringRef TreeNodeImport::name() const {
+sharemind::StringView TreeNodeImport::name() const {
     assert(children().size() == 1);
     return childAt<TreeNodeIdentifier>(this, 0)->value();
 }

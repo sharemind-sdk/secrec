@@ -314,7 +314,8 @@ CGStmtResult CodeGen::cgProcDef(TreeNodeProcDef * def, SymbolTable * localScope)
 *******************************************************************************/
 
 CGStmtResult CodeGen::cgModule(ModuleInfo * mod) {
-    const StringRef* name = getStringTable ().addString ("Module " + mod->body()->name().str());
+    sharemind::StringView const * name =
+            getStringTable().addString("Module " + mod->body()->name().str());
 
     assert(mod->status() == ModuleInfo::CGNotStarted);
     SymbolTable * moduleScope = m_st->newScope();

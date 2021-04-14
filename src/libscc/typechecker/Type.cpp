@@ -68,7 +68,7 @@ TypeChecker::Status TypeChecker::visitTypeVarF(TreeNodeTypeVarF* ty) {
     if (ty->typeVariable ())
         return OK;
 
-    const StringRef name = ty->identifier ()->value ();
+    sharemind::StringView const name = ty->identifier()->value();
     SymbolTypeVariable* symType = m_st->find<SYM_TYPE>(name);
     SymbolTypeVariable* symDomain = m_st->find<SYM_DOMAIN>(name);
     if (symType == nullptr && symDomain == nullptr) {
@@ -140,7 +140,8 @@ TypeChecker::Status TypeChecker::visitDataTypeConstF (TreeNodeDataTypeConstF *ty
 
     if (secType->isPrivate ()) {
         SymbolKind* kind = static_cast<const PrivateSecType*> (secType)->securityKind ();
-        StringRef typeName (SecrecFundDataTypeToString (ty->secrecDataType ()));
+        sharemind::StringView typeName(
+                    SecrecFundDataTypeToString(ty->secrecDataType()));
         const SymbolKind::Parameters* params = kind->findType (typeName);
         if (params == nullptr) {
             m_log.fatalInProc (ty) << "Kind '" << kind->name () << "' does not have type '"
@@ -182,7 +183,7 @@ TypeChecker::Status TypeChecker::visitDataTypeVarF (TreeNodeDataTypeVarF* ty,
         auto dtPrim = static_cast<const DataTypeUserPrimitive*> (dt);
 
         if (secType->isPublic ()) {
-            StringRef name = dtPrim->name ();
+            sharemind::StringView name = dtPrim->name();
             SecrecDataType scdt = stringToSecrecFundDataType (name.data ());
 
             if (scdt != DATATYPE_UNDEFINED) {
