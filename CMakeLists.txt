@@ -33,7 +33,7 @@ find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(MPFR REQUIRED)
 FIND_PACKAGE(SharemindCHeaders 1.3.0 REQUIRED)
-FIND_PACKAGE(SharemindCxxHeaders 0.8.0 REQUIRED)
+FIND_PACKAGE(SharemindCxxHeaders 0.9.0 REQUIRED)
 FIND_PACKAGE(SharemindLibAs 0.4.0 REQUIRED)
 FIND_PACKAGE(SharemindLibExecutable 0.4.0 REQUIRED)
 
