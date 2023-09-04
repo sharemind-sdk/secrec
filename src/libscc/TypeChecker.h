@@ -28,6 +28,7 @@
 
 #include <utility>
 #include <vector>
+#include <array>
 
 namespace SecreC {
 

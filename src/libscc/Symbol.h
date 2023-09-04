@@ -30,6 +30,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <cstdint>
 
 namespace SecreC {
 
