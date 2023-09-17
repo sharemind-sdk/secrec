@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 Cybernetica
+# Copyright (C) Cybernetica
 #
 # Research/Commercial License Usage
 # Licensees holding a valid Research License or Commercial License
@@ -18,7 +18,7 @@
 #
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
-PROJECT(SharemindSecrecFramework VERSION 2.5.0 LANGUAGES C CXX)
+PROJECT(SharemindSecrecFramework VERSION 2.5.1 LANGUAGES C CXX)
 
 INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/config.local" OPTIONAL)
 INCLUDE("${CMAKE_CURRENT_BINARY_DIR}/config.local" OPTIONAL)
