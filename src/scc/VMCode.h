@@ -54,10 +54,10 @@ public: /* Methods: */
         : m_name(std::move(name))
     {}
 
-    iterator begin () { return m_instructions.begin (); }
-    iterator end () { return m_instructions.end (); }
-    const_iterator begin () const { return m_instructions.begin (); }
-    const_iterator end () const { return m_instructions.end (); }
+    iterator begin () __attribute__((noinline)) { return m_instructions.begin (); }
+    iterator end () __attribute__((noinline)) { return m_instructions.end (); }
+    const_iterator begin () const __attribute__((noinline)) { return m_instructions.begin (); }
+    const_iterator end () const __attribute__((noinline)) { return m_instructions.end (); }
     void push_back (const VMInstruction& i) {
         m_instructions.push_back (i);
     }
@@ -66,6 +66,8 @@ public: /* Methods: */
         m_instructions.push_back (VMInstruction ());
         return m_instructions.back ();
     }
+
+    std::string toString() const;
 
     friend std::ostream& operator << (std::ostream& os, const VMBlock& block);
 

@@ -75,4 +75,10 @@ std::ostream & operator<<(std::ostream & os, VMInstruction const & instr) {
     return os;
 }
 
+std::string VMInstruction::toString() const {
+    std::ostringstream oss;
+    oss << *this;
+    return oss.str();
+}
+
 } // namespace SecreCC {

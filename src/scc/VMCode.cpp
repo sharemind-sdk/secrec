@@ -23,6 +23,7 @@
 #include <cassert>
 #include <ostream>
 #include <iterator>
+#include <sstream>
 
 
 namespace SecreCC {
@@ -38,6 +39,12 @@ std::ostream& operator << (std::ostream& os, const VMBlock& block) {
     std::copy (block.begin (), block.end (),
                std::ostream_iterator<VMInstruction>(os, "\n"));
     return os;
+}
+
+std::string VMBlock::toString() const {
+    std::ostringstream oss;
+    oss << *this;
+    return oss.str();
 }
 
 /*******************************************************************************

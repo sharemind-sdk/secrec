@@ -52,6 +52,8 @@ public: /* Methods: */
         return *this << *val;
     }
 
+    std::string toString() const;
+
 private: /* Methods: */
 
     friend std::ostream & operator<<(std::ostream & o,
