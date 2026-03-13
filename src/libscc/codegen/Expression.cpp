@@ -177,7 +177,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     SymbolSymbol * resSym = generateResultSymbol(result, e);
 
-    // 1. evaluate subexpressions
+    // Evaluate subexpressions
     TreeNodeExpr * eArg1 = e->expression ();
     const CGResult & argResult = codeGen(eArg1);
     append(result, argResult);
@@ -186,6 +186,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     }
 
     Symbol * x = argResult.symbol();
+    SymbolSymbol * xSymbol = dynamic_cast<SymbolSymbol *> (x);
 
     SubscriptInfo subscript;
     append(result, codeGenSubscript(subscript, x, e->indices ()));
@@ -196,7 +197,24 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     const SubscriptInfo::SPV & spv = subscript.spv();
     const SubscriptInfo::SliceIndices & slices = subscript.slices();
 
-    // 5. compute resulting shape
+    // This is a special case for better performance
+    if (isScalar)
+    {
+        pushComment("scalar cgExprIndex");
+        emplaceImopAfter(result, e, Imop::DECLARE, resSym);
+        Symbol * offset = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT64));
+        emplaceImopAfter(result, e, Imop::ASSIGN, offset, spv[0].first);
+        for (unsigned i = 1; i < spv.size(); i++)
+        {
+            emplaceImopAfter(result, e, Imop::MUL, offset, offset, xSymbol->dims()[i]);
+            emplaceImopAfter(result, e, Imop::ADD, offset, offset, spv[i].first);
+        }
+        emplaceImopAfter(result, e, Imop::LOAD, resSym, x, offset);
+        releaseTemporary(result, offset);
+        return result;
+    }
+
+    // Compute resulting shape
     {
         pushComment("Computing shape:");
         unsigned count = 0;
@@ -209,90 +227,68 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
         codeGenSize(result);
     }
 
-    // r = ALLOC def size (r = def)
-    {
-        if (!isScalar) {
-            if (resSym->secrecType()->secrecDataType()->isUserPrimitive()) {
-                assert(resSym->secrecType()->secrecSecType()->isPrivate());
-                emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym());
-            }
-            else {
-                Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-                emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), def);
-            }
-        }
-        else {
-            emplaceImopAfter(result, e, Imop::DECLARE, resSym);
-        }
+    // Allocate result
+    if (resSym->secrecType()->secrecDataType()->isUserPrimitive()) {
+        assert(resSym->secrecType()->secrecSecType()->isPrivate());
+        emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym());
+    }
+    else {
+        Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
+        emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), def);
     }
 
-    // 4. initialze required temporary symbols
-    LoopInfo loopInfo = prepareLoopInfo (subscript);
-    const TypeBasic * pubIntTy = TypeBasic::getIndexType();
-    Symbol * offset = m_st->appendTemporary(pubIntTy);
-    Symbol * tmp_result = m_st->appendTemporary(
-                TypeBasic::get(e->resultType()->secrecSecType(),
-                               e->resultType()->secrecDataType()));
-    Symbol * tmp_result2 = m_st->appendTemporary(pubIntTy);
+    pushComment("Performing arrgather:");
 
-    // 3. initialize strides
-    std::vector<ArrayStrideInfo > strides;
-    strides.push_back(x);
-    strides.push_back(resSym);
-    append(result, codeGenStride(strides[0]));
-    append(result, codeGenStride(strides[1]));
-    if (result.isNotOk()) {
-        return result;
+    const TypeBasic * indexArrayType = TypeBasic::get(DATATYPE_UINT64, 1);
+    auto xndim = xSymbol->dims().size();
+    
+    // dimensions array: xndim elements (full dimensionality of x)
+    Symbol * cref0 = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, cref0, indexConstant(xndim), indexConstant(0));
+    for (unsigned i = 0; i < xndim; ++i) {
+        Symbol * dimSym = xSymbol->dims()[i];
+        emplaceImop(e, Imop::STORE, cref0, indexConstant(i), dimSym);
     }
 
-    append(result, enterLoop(loopInfo, spv));
-    if (result.isNotOk()) {
-        return result;
+    // starts array: xndim elements (all dimensions)
+    Symbol * cref1 = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, cref1, indexConstant(xndim), indexConstant(0));
+    for (unsigned i = 0; i < xndim; ++i) {
+        Symbol * startSym = spv[i].first;
+        emplaceImop(e, Imop::STORE, cref1, indexConstant(i), startSym);
     }
 
-    // 8. compute offset for RHS
-    {
-        // old_ffset = 0
-        pushComment("Compute offset:");
-        emplaceImop(e, Imop::ASSIGN, offset, indexConstant(0));
-
-        auto itIt = loopInfo.begin();
-        auto itEnd = loopInfo.end();
-        for (unsigned k = 0; itIt != itEnd; ++ k, ++ itIt) {
-            // tmp_result2 = s[k] * idx[k]
-            emplaceImop(e, Imop::MUL, tmp_result2, strides[0].at(k), *itIt);
-
-            // old_offset = old_offset + tmp_result2
-            emplaceImop(e, Imop::ADD, offset, offset, tmp_result2);
+    // ends array: xndim elements (all dimensions)
+    Symbol * cref2 = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, cref2, indexConstant(xndim), indexConstant(0));
+    for (unsigned i = 0; i < xndim; ++i) {
+        Symbol * endSym;
+        if (spv[i].second) {
+            // It's a slice, use the end value
+            endSym = spv[i].second;
+        } else {
+            // It's a scalar index, set end = start + 1
+            Symbol * temp = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT64));
+            emplaceImopAfter(result, e, Imop::ADD, temp, spv[i].first, indexConstant(1));
+            endSym = temp;
         }
+        emplaceImop(e, Imop::STORE, cref2, indexConstant(i), endSym);
     }
 
-    // 9. load and store
-    {
-        pushComment("Load and store:");
-        if (isScalar) {
-            emplaceImop(e, Imop::LOAD, resSym, x, offset);
-        }
-        else {
-            emplaceImop(e, Imop::DECLARE, tmp_result);
-            emplaceImop(e, Imop::LOAD, tmp_result, x, offset);
-            emplaceImop(e, Imop::ASSIGN, offset, indexConstant(0));
+    SyscallPassingConvention passing = x->secrecType()->secrecSecType()->isPrivate() ? Push : PushRef;
+    SyscallOperands syscallOperands;
+    syscallOperands.emplace_back(x, passing);
+    syscallOperands.emplace_back(resSym, passing);
+    syscallOperands.emplace_back(cref0, SyscallPassingConvention::PushCRef);
+    syscallOperands.emplace_back(cref1, SyscallPassingConvention::PushCRef);
+    syscallOperands.emplace_back(cref2, SyscallPassingConvention::PushCRef);
+    ConstantString* syscallName = ConstantString::get(getContext(), "arrgather");
+    pushImopAfter(result, new Imop(e, syscallName, syscallOperands));
 
-            unsigned count = 0;
-            for (unsigned k : slices) {
-                Symbol * idx = loopInfo.at(k);
-                emplaceImop(e, Imop::SUB, tmp_result2, idx, spv[k].first);
-                emplaceImop(e, Imop::MUL, tmp_result2, tmp_result2, strides[1].at(count));
-                emplaceImop(e, Imop::ADD, offset, offset, tmp_result2);
-                ++ count;
-            }
-
-            emplaceImop(e, Imop::STORE, resSym, offset, tmp_result);
-            releaseTemporary(result, tmp_result);
-        }
-    }
-
-    append(result, exitLoop(loopInfo));
+    // Cleanup
+    releaseTemporary(result, cref0);
+    releaseTemporary(result, cref1);
+    releaseTemporary(result, cref2);
     releaseTemporary(result, x);
     return result;
 }
