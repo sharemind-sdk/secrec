@@ -269,6 +269,11 @@ public: /* Methods: */
     { return m_dims; }
 
     inline SymbolSymbol* getDim (SecrecDimType i) { return m_dims[i]; }
+
+    // you don't want to change the number of dimensions,
+    // because the used type would still have a different number of dimensions.
+    // use `TypeBasic::get` to create a new type.
+
     inline void setDim (SecrecDimType i, SymbolSymbol* sym) {
         if (sym != nullptr) {
             sym->setParent (this);

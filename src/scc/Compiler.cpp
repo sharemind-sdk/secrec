@@ -1017,26 +1017,35 @@ void Compiler::cgSyscall (VMBlock& block, const Imop& imop) {
 void Compiler::cgSyscallOperand(VMBlock& block, const SyscallOperand& op) {
     const auto arg = op.operand();
     switch (op.passingConvention()) {
-    case Push:
+    case Push: {
         block.push_new () << "push" << find (arg);
         break;
-    case PushRef:
+    }
+    case PushRef: {
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
-        assert (! arg->isConstant ());
+
+        // Handle constants by loading them to a temporary register first
+        VMValue* argValue = nullptr;
+        if (arg->isConstant ()) {
+            argValue = m_ra.temporaryReg ();
+            block.push_new () << "mov" << find (arg) << argValue;
+        } else {
+            argValue = find (arg);
+        }
 
         if (arg->isArray() || isString(arg)) {
-            block.push_new ()  << "pushref mem" << find (arg);
+            block.push_new ()  << "pushref mem" << argValue;
             return;
         }
 
         block.push_new ()
             << "pushrefpart"
-            << find (arg)
+            << argValue
             << "imm" << m_st.getImm(0)
             << sizeInBytes(representationType(arg->secrecType()));
         break;
-
-    case PushCRef:
+    }
+    case PushCRef: {
         assert (arg->secrecType ()->secrecSecType ()->isPublic ());
         if (isString (arg)) {
             pushString (block, arg);
@@ -1054,11 +1063,12 @@ void Compiler::cgSyscallOperand(VMBlock& block, const SyscallOperand& op) {
             << find (arg)
             << "imm" << m_st.getImm(0)
             << sizeInBytes(representationType(arg->secrecType()));
-        return;
-    case Return:
-        /* This case is handled by Compiler::cgSyscall! */
         break;
     }
+    case Return: {
+        /* This case is handled by Compiler::cgSyscall! */
+        break;
+    }}
 }
 
 void Compiler::cgPrint (VMBlock& block, const Imop& imop) {
