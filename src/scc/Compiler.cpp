@@ -746,7 +746,6 @@ void Compiler::cgCopy (VMBlock& block, const Imop& imop) {
     block.push_new ()
         << "tmul" << VM_UINT64 << rSize << rNum
         << m_st.getImm (elemSize);
-    block.push_new () << "uinc" << VM_UINT64 << rSize; // fehh! no 0 sized memory regions
     block.push_new () << "alloc" << find (imop.dest ()) << rSize;
     block.push_new ()
         << "mov"

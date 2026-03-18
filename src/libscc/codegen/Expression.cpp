@@ -1330,30 +1330,29 @@ CGResult CodeGen::cgExprStringFromBytes(TreeNodeExprStringFromBytes * e) {
         return result;
     }
 
+    pushComment("cgExprStringFromBytes");
+
     SymbolSymbol * arrSym = static_cast<SymbolSymbol *>(argResult.symbol());
     Symbol * sizeSym = m_st->appendTemporary(TypeBasic::getIndexType());
     Symbol * tempElem = m_st->appendTemporary(TypeBasic::get(DATATYPE_UINT8));
 
-    /**
-     * Allocate memory for the string:
-     */
-
+    // Allocate memory for the string:
     emplaceImopAfter(result, e, Imop::ASSIGN, sizeSym, arrSym->getDim(0));
-
-    // XXX TODO: giant hack
+    emplaceImopAfter(result, e, Imop::ADD, sizeSym, sizeSym, indexConstant(1)); // zero byte at the end of string
     emplaceImop(e, Imop::ALLOC, resSym, sizeSym, ConstantInt::get(DATATYPE_UINT8, 0)); // allocates 1 byte more
-    emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(DATATYPE_UINT8, 0)); // initialize last byte to zero
 
-    /**
-     * Copy the data from array to the string:
-     */
+    // initialize last byte to zero
+    emplaceImopAfter(result, e, Imop::SUB, sizeSym, sizeSym, indexConstant(1)); // reuse sizeSym as index for assignment
+    emplaceImop(e, Imop::STORE, resSym, sizeSym, ConstantInt::get(DATATYPE_UINT8, 0));
 
+    // Copy the data from array to the string:
     LoopInfo loopInfo;
     loopInfo.push_index(m_st->appendTemporary(TypeBasic::getIndexType()));
     append(result, enterLoop(loopInfo, arrSym));
     emplaceImop(e, Imop::LOAD, tempElem, arrSym, loopInfo.at(0));
     emplaceImop(e, Imop::STORE, resSym, loopInfo.at(0), tempElem);
     append(result, exitLoop(loopInfo));
+
     releaseTemporary(result, arrSym);
     return result;
 }
