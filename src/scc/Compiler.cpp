@@ -546,10 +546,12 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
         return;
     }
 
-    // Public values should have default value argument
-    assert (imop.nArgs () == 3);
+    // Public values: 2 args (size) or 3 args (size + default value)
+    assert (imop.nArgs () >= 2 && imop.nArgs () <= 3);
 
-    block.push_new () << "push" << find (imop.arg2 ());
+    // Push default value argument
+    block.push_new () << "push" << (imop.nArgs () == 3 ? find (imop.arg2 ()) : m_st.getImm (0));
+    // Push size argument
     block.push_new () << "push" << find (imop.arg1 ());
 
     VMLabel * target = nullptr;
