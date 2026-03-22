@@ -947,6 +947,9 @@ TreeNodeExpr* TreeNodeExprToString::expression () const {
   TreeNodeExprCat
 *******************************************************************************/
 
+// cat(a, b, 1) -> concatenates a and b, dimension 1 is increased in size
+// cat(a, b) := cat(a, b, 0)
+
 TreeNodeExpr* TreeNodeExprCat::leftExpression () const {
     assert (children().size() == 3 ||
             children().size() == 2);

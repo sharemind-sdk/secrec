@@ -395,7 +395,6 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     const TypeBasic * const pubBoolTy = TypeBasic::getPublicBoolType();
     auto k = static_cast<SecrecDimType>(e->dimensionality()->actualValue());
-    SecrecDimType n = e->resultType()->secrecDimType();
     auto const arg1ResultSymbol = static_cast<SymbolSymbol *>(arg1Result.symbol());
     auto const arg2ResultSymbol = static_cast<SymbolSymbol *>(arg2Result.symbol());
     auto const resSym = static_cast<SymbolSymbol *>(result.symbol());
@@ -426,101 +425,56 @@ CGResult CodeGen::cgExprCat(TreeNodeExprCat * e) {
 
     push_imop(err);
 
-    // Initialize strides:
-    std::vector<ArrayStrideInfo > strides;
-    strides.push_back(arg1ResultSymbol);
-    strides.push_back(arg2ResultSymbol);
-    strides.push_back(resSym);
-    for (unsigned i = 0; i < 3; ++ i) {
-        append(result, codeGenStride(strides[i]));
-        if (result.isNotOk()) {
-            return result;
-        }
-    }
-
-    // Symbols for running indices:
-    LoopInfo loopInfo;
-    const TypeBasic * pubIntTy = TypeBasic::getIndexType();
-    for (SecrecDimType it = 0; it < n; ++ it) {
-        loopInfo.push_index(m_st->appendTemporary(pubIntTy));
-    }
-
     // Compute size and allocate resulting array:
-    codeGenSize(result);
+    codeGenSize(result, resSym);
     if (result.isNotOk()) {
         return result;
     }
+    allocTemporaryResult(result, resSym);
 
-    const TypeBasic * elemType = TypeBasic::get(e->resultType()->secrecSecType(),
-                                                e->resultType()->secrecDataType());
-    Symbol * offset = m_st->appendTemporary(pubIntTy);
-    Symbol * tmpInt = m_st->appendTemporary(pubIntTy);
-    Symbol * tmp_elem = m_st->appendTemporary(elemType);
+    const TypeBasic * indexArrayType = TypeBasic::get(DATATYPE_UINT64, 1);
+    auto xndim = resSym->dims().size();
 
-    allocTemporaryResult(result);
-
-    // Allocate memory for the temporary if needed:
-    emplaceImopAfter(result, e, Imop::DECLARE, tmp_elem);
-
-    append(result, enterLoop(loopInfo, resSym));
-
-    // j = 0 (right hand side index)
-    emplaceImopAfter(result, e, Imop::ASSIGN, offset, indexConstant (0));
-
-    // IF (i_k >= d_k) GOTO T1;
-    SymbolTemporary * temp_bool = m_st->appendTemporary(TypeBasic::getPublicBoolType());
-    emplaceImop (e, Imop::GE, temp_bool, loopInfo.at(k), arg1ResultSymbol->getDim(k));
-
-    auto i = new Imop(e, Imop::JT, nullptr, temp_bool);
-    push_imop(i);
-    result.addToNextList(i);
-
-    // compute j if i < d (for e1)
-    pushComment ("Left argument:");
-    for (unsigned count = 0; count < strides[0].size(); ++ count) {
-        emplaceImop(e, Imop::MUL, tmpInt, strides[0].at(count), loopInfo.at(count));
-        emplaceImop(e, Imop::ADD, offset, offset, tmpInt);
+    Symbol * dest_dims = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, dest_dims, indexConstant(xndim), indexConstant(0));
+    for (unsigned i = 0; i < xndim; ++i) {
+        emplaceImopAfter(result, e, Imop::STORE, dest_dims, indexConstant(i), resSym->dims()[i]);
     }
 
-    // t = x[j]
-    emplaceImop (e, Imop::LOAD, tmp_elem, arg1Result.symbol(), offset);
-
-    // jump out
-    auto jump_out = new Imop(e, Imop::JUMP, nullptr);
-    push_imop(jump_out);
-
-    // compute j if i >= d (for e2)
-    for (SecrecDimType count = 0; static_cast<size_t>(count) < strides[1].size(); ++ count) {
-        if (count == k) {
-            emplaceImopAfter (result, e, Imop::SUB, tmpInt, loopInfo.at(count), arg1ResultSymbol->getDim(k));
-            emplaceImop (e, Imop::MUL, tmpInt, strides[1].at(count), tmpInt);
-        }
-        else {
-            emplaceImopAfter (result, e, Imop::MUL, tmpInt, strides[1].at(count), loopInfo.at(count));
-        }
-
-        emplaceImop (e, Imop::ADD, offset, offset, tmpInt);
+    Symbol * begins = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, begins, indexConstant(xndim), indexConstant(0));
+    //emplaceImopAfter(result, e, Imop::STORE, begins, indexConstant(k), indexConstant(0)); <- NOP
+    Symbol * ends = m_st->appendTemporary(indexArrayType);
+    emplaceImopAfter(result, e, Imop::ALLOC, ends, indexConstant(xndim));
+    for (unsigned i = 0; i < xndim; ++i)
+    {
+        emplaceImopAfter(result, e, Imop::STORE, ends, indexConstant(i), arg1ResultSymbol->getDim(i));
     }
 
-    // t = y[j]
-    emplaceImopAfter (result, e, Imop::LOAD, tmp_elem, arg2Result.symbol(), offset);
+    SyscallPassingConvention passing = resSym->secrecType()->secrecSecType()->isPrivate() ? Push : PushRef;
+    ConstantString* syscallName = ConstantString::get(getContext(), "arrscatter");
+    SyscallOperands syscallOperands1;
+    syscallOperands1.emplace_back(arg1ResultSymbol, passing);
+    syscallOperands1.emplace_back(resSym, passing);
+    syscallOperands1.emplace_back(dest_dims, SyscallPassingConvention::PushCRef);
+    syscallOperands1.emplace_back(begins, SyscallPassingConvention::PushCRef);
+    syscallOperands1.emplace_back(ends, SyscallPassingConvention::PushCRef);
+    pushImopAfter(result, new Imop(e, syscallName, syscallOperands1));
 
-    // out: r[i] = t
-    i = new Imop(e, Imop::ASSIGN, offset, indexConstant(0));
-    push_imop(i);
-    jump_out->setDest(m_st->label(i));
+    emplaceImopAfter(result, e, Imop::STORE, begins, indexConstant(k), arg1ResultSymbol->getDim(k));
+    emplaceImopAfter(result, e, Imop::STORE, ends, indexConstant(k), resSym->dims()[k]);
 
-    // compute j if i < d (for e1)
-    for (unsigned count = 0; count != strides[2].size(); ++ count) {
-        emplaceImop (e, Imop::MUL, tmpInt, strides[2].at(count), loopInfo.at(count));
-        emplaceImop (e, Imop::ADD, offset, offset, tmpInt);
-    }
+    SyscallOperands syscallOperands2;
+    syscallOperands2.emplace_back(arg2ResultSymbol, passing);
+    syscallOperands2.emplace_back(resSym, passing);
+    syscallOperands2.emplace_back(dest_dims, SyscallPassingConvention::PushCRef);
+    syscallOperands2.emplace_back(begins, SyscallPassingConvention::PushCRef);
+    syscallOperands2.emplace_back(ends, SyscallPassingConvention::PushCRef);
+    pushImopAfter(result, new Imop(e, syscallName, syscallOperands2));
 
-    emplaceImop (e, Imop::STORE, resSym, offset, tmp_elem);
-
-    append(result, exitLoop(loopInfo));
-
-    releaseTemporary(result, tmp_elem);
+    releaseTemporary(result, dest_dims);
+    releaseTemporary(result, begins);
+    releaseTemporary(result, ends);
     releaseTemporary(result, arg1ResultSymbol);
     releaseTemporary(result, arg2ResultSymbol);
     return result;
