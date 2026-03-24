@@ -233,8 +233,8 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
         emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym());
     }
     else {
-        Symbol * def = defaultConstant(getContext(), e->resultType()->secrecDataType());
-        emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym(), def);
+        // the array will be completely filled by the code below, so no need in default filling
+        emplaceImopAfter(result, e, Imop::ALLOC, resSym, resSym->getSizeSym());
     }
 
     pushComment("Performing arrgather:");
@@ -244,7 +244,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
     
     // dimensions array: xndim elements (full dimensionality of x)
     Symbol * cref0 = m_st->appendTemporary(indexArrayType);
-    emplaceImopAfter(result, e, Imop::ALLOC, cref0, indexConstant(xndim), indexConstant(0));
+    emplaceImopAfter(result, e, Imop::ALLOC, cref0, indexConstant(xndim));
     for (unsigned i = 0; i < xndim; ++i) {
         Symbol * dimSym = xSymbol->dims()[i];
         emplaceImop(e, Imop::STORE, cref0, indexConstant(i), dimSym);
@@ -252,7 +252,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // starts array: xndim elements (all dimensions)
     Symbol * cref1 = m_st->appendTemporary(indexArrayType);
-    emplaceImopAfter(result, e, Imop::ALLOC, cref1, indexConstant(xndim), indexConstant(0));
+    emplaceImopAfter(result, e, Imop::ALLOC, cref1, indexConstant(xndim));
     for (unsigned i = 0; i < xndim; ++i) {
         Symbol * startSym = spv[i].first;
         emplaceImop(e, Imop::STORE, cref1, indexConstant(i), startSym);
@@ -260,7 +260,7 @@ CGResult CodeGen::cgExprIndex(TreeNodeExprIndex * e) {
 
     // ends array: xndim elements (all dimensions)
     Symbol * cref2 = m_st->appendTemporary(indexArrayType);
-    emplaceImopAfter(result, e, Imop::ALLOC, cref2, indexConstant(xndim), indexConstant(0));
+    emplaceImopAfter(result, e, Imop::ALLOC, cref2, indexConstant(xndim));
     for (unsigned i = 0; i < xndim; ++i) {
         Symbol * endSym;
         if (spv[i].second) {

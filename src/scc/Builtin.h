@@ -89,6 +89,25 @@ private: /* Fields: */
 };
 
 /*******************************************************************************
+  BuiltinAllocNoFill
+*******************************************************************************/
+
+class __attribute__ ((visibility("internal"))) BuiltinAllocNoFill final
+    : public BuiltinFunction
+{
+    public: /* Methods: */
+    BuiltinAllocNoFill (unsigned size) : m_size (size) { }
+
+    void generate(VMFunction & function, VMSymbolTable & st) final override;
+
+    std::unique_ptr<BuiltinFunction> clone() const final override
+    { return std::make_unique<BuiltinAllocNoFill>(m_size); }
+
+    private: /* Fields: */
+    const unsigned m_size;
+};
+
+/*******************************************************************************
   BuiltinVArith
 *******************************************************************************/
 

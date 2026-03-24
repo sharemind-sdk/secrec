@@ -547,10 +547,14 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     }
 
     // Public values: 2 args (size) or 3 args (size + default value)
-    assert (imop.nArgs () >= 2 && imop.nArgs () <= 3);
+    assert (imop.nArgs () == 2 || imop.nArgs () == 3);
 
     // Push default value argument
-    block.push_new () << "push" << (imop.nArgs () == 3 ? find (imop.arg2 ()) : m_st.getImm (0));
+    if (imop.nArgs () == 3)
+    {
+        block.push_new () << "push" << (imop.nArgs () == 3 ? find (imop.arg2 ()) : m_st.getImm (0));
+    }
+
     // Push size argument
     block.push_new () << "push" << find (imop.arg1 ());
 
@@ -559,12 +563,17 @@ void Compiler::cgAlloc (VMBlock& block, const Imop& imop) {
     unsigned size = sizeInBytes (ty);
     {
         std::stringstream ss;
-        ss << ":secrecAlloc_" << size;
+        ss << (imop.nArgs () == 3 ? ":secrecAlloc_" : ":secrecAllocNoFill_") << size;
         target = m_st.getLabel (ss.str ());
     }
 
-    m_funcs.insert (target, BuiltinAlloc (size));
-
+    if (imop.nArgs () == 3)
+    {
+        m_funcs.insert (target, BuiltinAlloc (size));
+    } else
+    {
+        m_funcs.insert (target, BuiltinAllocNoFill (size));
+    }
     block.push_new () << "call" << target << find (imop.dest ());
 }
 

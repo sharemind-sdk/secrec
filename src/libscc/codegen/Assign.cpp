@@ -200,7 +200,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // dimensions array: xndim elements (full dimensionality of x)
         Symbol * dest_dims = m_st->appendTemporary(indexArrayType);
-        emplaceImopAfter(result, e, Imop::ALLOC, dest_dims, indexConstant(xndim), indexConstant(0));
+        emplaceImopAfter(result, e, Imop::ALLOC, dest_dims, indexConstant(xndim));
         for (unsigned i = 0; i < xndim; ++i) {
             Symbol * dimSym = destSym->dims()[i];
             emplaceImop(e, Imop::STORE, dest_dims, indexConstant(i), dimSym);
@@ -208,7 +208,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // starts array: xndim elements (all dimensions)
         Symbol * begins = m_st->appendTemporary(indexArrayType);
-        emplaceImopAfter(result, e, Imop::ALLOC, begins, indexConstant(xndim), indexConstant(0));
+        emplaceImopAfter(result, e, Imop::ALLOC, begins, indexConstant(xndim));
         for (unsigned i = 0; i < xndim; ++i) {
             Symbol * startSym = spv[i].first;
             emplaceImop(e, Imop::STORE, begins, indexConstant(i), startSym);
@@ -216,7 +216,7 @@ CGResult CodeGen::cgExprAssign(TreeNodeExprAssign * e) {
 
         // ends array: xndim elements (all dimensions)
         Symbol * ends = m_st->appendTemporary(indexArrayType);
-        emplaceImopAfter(result, e, Imop::ALLOC, ends, indexConstant(xndim), indexConstant(0));
+        emplaceImopAfter(result, e, Imop::ALLOC, ends, indexConstant(xndim));
         for (unsigned i = 0; i < xndim; ++i) {
             Symbol * endSym;
             if (spv[i].second) {

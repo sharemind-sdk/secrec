@@ -99,6 +99,30 @@ void BuiltinAlloc::generate (VMFunction& function, VMSymbolTable& st) {
 }
 
 /*******************************************************************************
+  BuiltinAllocNoFill
+*******************************************************************************/
+
+void BuiltinAllocNoFill::generate (VMFunction& function, VMSymbolTable& st) {
+    VMStack* rSize = st.getStack (0);
+    VMStack* rOut = st.getStack (1);
+    VMStack* rOffset = st.getStack (2);
+    VMImm*   iSize = st.getImm (m_size);
+
+    auto const lOut = st.getUniqLabel(":out_");
+
+    VMBlock entryB;
+    entryB.push_new () << "resizestack" << 3;
+    entryB.push_new () << "mov imm 0x0" << rOffset;
+    entryB.push_new () << "bmul uint64" << rSize << iSize;
+    entryB.push_new () << "alloc" << rOut << rSize;
+    function.push_back (entryB);
+
+    VMBlock exitB(lOut->nameStreamable());
+    exitB.push_new () << "return" << rOut;
+    function.push_back (exitB);
+}
+
+/*******************************************************************************
   BuiltinVArith
 *******************************************************************************/
 
